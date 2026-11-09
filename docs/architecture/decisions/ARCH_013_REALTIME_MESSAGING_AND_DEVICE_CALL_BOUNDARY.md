@@ -1,6 +1,8 @@
 # ARCH-013: Realtime messaging protocol and device-call boundary
 
 Status: Approved
+Placement superseded on 2026-11-09 by
+[ARCH-014](ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md); protocol and non-goals retained.
 Date: 2026-10-06
 Scope: boundary and contract record for one new package, `flagquantum/remote/realtime/`.
 No Stable Core change. No capability availability or maturity claim.

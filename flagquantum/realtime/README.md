@@ -35,27 +35,36 @@ than inferred from a vendor header.
   responsibility. A session owns its function table and nothing that carries it.
 - **No compiler surface.** There is no `device_call` lowering, no realtime
   dialect, and no slot-count, slot-size, or timeout flag family.
-- **No device lifecycle.** Per `flagquantum/remote/AGENTS.md`, this package does
+- **No device lifecycle.** Per ARCH-014, this package does
   not implement direct device lifecycle, simulation kernels, compiler passes, or
   Runtime scheduling.
 - **No simulator coupling.** `architecture.toml` forbids `simulation` from
-  importing `remote`, so a channel is not reachable from the simulator's inner
+  importing `realtime`, so a channel is not reachable from the simulator's inner
   loop. This is a boundary, not an oversight.
 
 ## Allowed dependencies
 
-Standard library, `flagquantum.remote`'s own modules, and nothing else. The
+Standard library, `flagquantum.realtime`'s own modules, and nothing else. The
 package imports no third-party library, no `flagquantum.simulation`, no
 `flagquantum.compiler`, and no `flagquantum.runtime`.
 
 ## Public entry points
 
-The package is reachable by module path and is **not** re-exported from
-`flagquantum.remote`, so nothing here is Stable Core:
+The package is a sibling of Runtime and Remote, reachable by its own module
+path. It adds no stable `fq` root export:
 
 ```python
-from flagquantum.remote import realtime as rt
+from flagquantum import realtime as rt
 ```
+
+The old `flagquantum.remote.realtime` package and its five submodules are frozen
+import aliases for compatibility. They return the same classes, enums and
+exceptions; no implementation remains there. Previously written pickles remain
+readable; newly written objects use the canonical `flagquantum.realtime` paths.
+Only the canonical import avoids initializing Remote's provider dependencies.
+The old `examples.remote.realtime_device_call` module forwards to the new example.
+See [ARCH-014](../../docs/architecture/decisions/ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md)
+for the approved migration.
 
 | Name | Use |
 | --- | --- |
@@ -89,7 +98,7 @@ from flagquantum.remote import realtime as rt
    transport:
 
    ```bash
-   python examples/remote/realtime_device_call.py
+   python -m examples.realtime.device_call
    ```
 
 ## How to exercise the protocol without hardware
@@ -98,16 +107,21 @@ from flagquantum.remote import realtime as rt
 through a `DeviceCallSession`, frames the response, and hands that back. A test
 that needs a channel registers `loopback_channel(name, session)` with a
 `DeviceCallChannelDriver` and opens it by name, exactly as a program would open a
-hardware channel. `examples/remote/realtime_device_call.py` is the ten-minute
-golden path: it builds a majority-vote QEC handler, dispatches one decoding round,
-and prints the request hex next to the response status.
+hardware channel. `examples/realtime/device_call.py` is the ten-minute
+golden path: it dispatches a majority-vote demonstration handler and prints the
+request hex next to the response status. It does not use the QEC decoder package.
 
 ## Evidence status
+
+The [realtime and QEC integration reservation](../../docs/architecture/REALTIME_QEC_INTEGRATION_BOUNDARY.md)
+maps a proposed decoder adapter onto these existing interfaces and records the
+semantic gates before implementation. It adds no QEC dependency, execution mode
+or hardware claim; ARCH-014 owns placement and retains ARCH-013's protocol boundary.
 
 No hardware was contacted and no hardware evidence exists. A realtime link has
 never been established by this package, and no latency, throughput, or scalability
 number is claimed or measurable here. The capability maturity entry for this
 package is `development_evidence`, and the parity rows for the hardware half of
 the surface stay `unsupported` in `contracts/cudaq-parity-matrix.toml`. See
-[ARCH-013](../../../docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md)
+[ARCH-013](../../docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md)
 for the boundary this package implements and the boundary it refuses.
