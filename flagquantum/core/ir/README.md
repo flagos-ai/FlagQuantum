@@ -33,6 +33,13 @@ control-flow graph.
   register metadata under proposal 103 prerequisites 0.11 and 0.12. Compiler
   owns array grouping and ordered port traversal. These metadata associations
   still require a later contract delta for executable register calls and returns.
+- `program/register_verifier.py` admits finite quantum words and owned CBit
+  ports under proposal 103 prerequisite 1.9. Both use linear register values.
+  CBit identity calls preserve element ownership, including arrays. Quantum
+  split/join and workspace operations reject classical handles. Execution type
+  checks additionally require matching classical widths, so the source's loose
+  opaque metadata comparison cannot erase a classical resource. Measurement
+  transitions and classical physical binding remain separate admission steps.
 
 ## What this package must not own
 

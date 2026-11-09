@@ -1347,3 +1347,30 @@ quantum work status and separate emitted/model resources. Retain the locked
 source Cirq-export failure as a boundary case. Do not claim a flat source gate
 stream for that unsupported export path. This is a contract/source prerequisite;
 native classical-port execution and its capability checkbox remain open.
+
+#### Owned CBit port admission
+
+Core now accepts the concrete existing `RegisterType("bit", 0, 1)` descriptor
+at finite function ports. Each scalar or row-major array element has its own
+linear `register` identity. Existing nested identity calls and the existing
+Compiler builder preserve single consumption. A CBit cannot substitute for a
+shareable `bool` feedback value. Quantum width inference, split/join and
+workspace allocation/free continue to reject classical descriptors.
+
+Execution compatibility additionally requires equal classical widths before
+applying the source's loose metadata predicate. That predicate intentionally
+accepts CBit versus opaque zero-qubit metadata. It cannot authorize erasing a
+classical resource at a call or return boundary. The metadata predicate retains
+its source behavior, and both directions of this execution refusal are tested.
+
+The acceptance suite includes two original CBit-to-CBit Cast calls, numerical
+values zero and one, stale-handle refusal, mixed classical/quantum arrays,
+zero-width quantum identities and malformed classical descriptors. The
+27 new cases and four source prerequisites are included in 4,977 concentrated
+passing tests. A 203-test focused run measures 98.19% statement/branch coverage
+of `register_verifier.py`. Nineteen locked source blobs are unchanged. Strict
+typing covers the same 17 production modules as GRAPH25, alongside format,
+architecture, Program/API, scope and four existing append/resource examples.
+This slice adds structural verification. Measurement-produced handles, native
+classical evaluation, physical-slot outputs, branch amplitudes and emitted
+classical resources still require the next implementation and acceptance.

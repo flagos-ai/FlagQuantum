@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from ..diagnostics import LevelDiagnostic, _diagnostic
 from .model import BlockRecord, FunctionRecord, OpcodeSignature, ValueRef
 from .register_compatibility import check_register_types_consistent
+from .register_types import classical_bit_type
 from .registers import Register, RegisterSide, RegisterType
 from .signatures import Signature
 
@@ -40,14 +41,21 @@ def executable_register_width(dtype: RegisterType) -> int:
 def register_port_types(
     function: FunctionRecord, side: RegisterSide
 ) -> tuple[RegisterType, ...]:
-    """Flatten admitted ports in declaration and row-major element order."""
+    """Flatten quantum-word and owned CBit ports in row-major element order."""
     if not isinstance(function.registers, tuple):
         raise ValueError("a register function requires immutable declared ports")
     if any(not isinstance(register, Register) for register in function.registers):
         raise ValueError("register ports must use neutral Register descriptors")
     signature = Signature(function.registers)
     for register in signature:
-        executable_register_width(register.dtype)
+        dtype = register.dtype
+        if not (
+            isinstance(dtype, RegisterType)
+            and type(dtype.quantum_bits) is int
+            and type(dtype.classical_bits) is int
+            and dtype == classical_bit_type()
+        ):
+            executable_register_width(dtype)
         if register.side not in (
             RegisterSide.LEFT,
             RegisterSide.RIGHT,
@@ -115,18 +123,17 @@ def verify_register_block(
                 types.update(zip(operation.results, right, strict=False))
         elif operation.opcode == "split_register":
             dtype = types.get(operation.operands[0]) if operation.operands else None
-            if dtype is None:
-                diagnostics.append(
-                    _diagnostic(
-                        "program.register_type",
-                        "split needs a producer-defined word type",
-                    )
-                )
+            try:
+                if dtype is None:
+                    raise ValueError("split needs a producer-defined word type")
+                width = executable_register_width(dtype)
+            except ValueError as exc:
+                diagnostics.append(_diagnostic("program.register_type", str(exc)))
             else:
                 signatures[position] = OpcodeSignature(
                     "split_register",
                     operand_kinds=("register",),
-                    result_kinds=("qubit",) * executable_register_width(dtype),
+                    result_kinds=("qubit",) * width,
                 )
         elif operation.opcode in {"join_register", "allocate_register"}:
             dtype = operation.register_type
@@ -153,13 +160,13 @@ def verify_register_block(
             signatures[position] = OpcodeSignature(
                 "free_register", operand_kinds=("register",)
             )
-            if not operation.operands or types.get(operation.operands[0]) is None:
-                diagnostics.append(
-                    _diagnostic(
-                        "program.register_type",
-                        "free needs a producer-defined word type",
-                    )
-                )
+            dtype = types.get(operation.operands[0]) if operation.operands else None
+            try:
+                if dtype is None:
+                    raise ValueError("free needs a producer-defined word type")
+                executable_register_width(dtype)
+            except ValueError as exc:
+                diagnostics.append(_diagnostic("program.register_type", str(exc)))
         workspace = operation.opcode in {"allocate_register", "free_register"}
         if workspace:
             if type(operation.workspace_dirty) is not bool:
@@ -233,7 +240,11 @@ def _check_port_types(
 ) -> None:
     for value, dtype in zip(values, expected, strict=False):
         actual = types.get(value)
-        if actual is None or not check_register_types_consistent(actual, dtype):
+        if (
+            actual is None
+            or actual.classical_bits != dtype.classical_bits
+            or not check_register_types_consistent(actual, dtype)
+        ):
             diagnostics.append(
                 _diagnostic(
                     "program.register_type",
