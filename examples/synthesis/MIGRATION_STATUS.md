@@ -400,7 +400,7 @@ Validated local Notebook workflows: **16/213**.
 | `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | validated |
 | `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | Pending | pending |
-| `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | pending |
 | `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | Pending | pending |

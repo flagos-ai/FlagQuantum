@@ -10,6 +10,7 @@ Native FlagQuantum programs currently available:
 - [execution_tutorial](basics/quantum_programming/execution_tutorial/README.md)
 - [execution_tutorial_part2](basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
+- [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
 
 ## Validated local Notebook workflows
 
