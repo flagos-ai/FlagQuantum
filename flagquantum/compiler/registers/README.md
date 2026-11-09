@@ -103,3 +103,21 @@ three-level packed hierarchy replacement, primitive equality, all measurement
 histories and independent resource checks. Source-style mutable construction,
 its failure prefixes, automatic clean/dirty allocation and direct numerical
 graph traversal retain separate acceptance work.
+
+## Finite register construction
+
+`component_builder.ComponentProgramBuilder` receives an ordered Signature and
+real immutable typed function definitions. `inputs`, `call_dict`, `call_tuple`
+and `call` preserve named/ordered port collection conventions. The shared
+binding collection helper allocates one fresh SSA value per element. The shared
+binding visitor preserves callback-before-dtype checks and consumption prefixes.
+Calls and returns are recorded directly as existing Program records. Core
+verifies every function body at finalization, including retained failed calls.
+A failed zero-port call can retain a valid empty instance, matching the source.
+
+Run `pytest tests/unit/test_component_program_builder.py` for identity, arrays,
+zero-width ownership, failed calls/returns and the unchanged real Add/QROM append
+consumer. These retain exact primitive instructions, all measurement histories,
+workspace cleanup and separately reported models. Only the concrete quantum
+bit/opaque/unsigned profile is admitted. Builder split/join, automatic clean or
+dirty workspace, additional descriptors and numerical traversal remain separate.
