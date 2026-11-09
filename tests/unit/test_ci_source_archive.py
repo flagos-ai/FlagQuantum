@@ -318,3 +318,144 @@ def test_cleanup_does_not_access_docker_on_hosted_or_non_docker_runners(monkeypa
     monkeypatch.setenv("RUNNER_ENVIRONMENT", "self-hosted")
     monkeypatch.setattr(archive.shutil, "which", lambda _: None)
     archive.cleanup_runner_containers()
+
+
+@pytest.mark.parametrize("tamper", [False, True])
+def test_large_source_addition_uses_bounded_parallel_verified_objects(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tamper: bool
+) -> None:
+    import base64
+    from threading import Barrier, Lock
+
+    from tools.ci_source_archive import _checkout, _materialize_api
+
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+    directory = tmp_path / "source"
+    directory.mkdir()
+    _git(directory, "init", "--quiet")
+    for index in range(96):
+        (directory / f"example-{index:03d}.txt").write_text(
+            f"original source {index}\n"
+        )
+    _git(directory, "add", ".")
+    tree = _git(directory, "write-tree").decode().strip()
+    raw = f"tree {tree}\nauthor Test <test@example.org> 1 +0000\ncommitter Test <test@example.org> 1 +0000\n\nsource\n".encode()
+    sha = (
+        _git(directory, "hash-object", "-t", "commit", "-w", "--stdin", data=raw)
+        .decode()
+        .strip()
+    )
+    objects: dict[str, object] = {}
+    entries = []
+    for record in _git(directory, "ls-tree", "-z", tree).split(b"\0"):
+        if not record:
+            continue
+        header, filename = record.decode().split("\t", 1)
+        mode, kind, child_sha = header.split()
+        entries.append({"mode": mode, "type": kind, "sha": child_sha, "path": filename})
+        content = (
+            b"altered" if tamper else _git(directory, "cat-file", "blob", child_sha)
+        )
+        objects[f"/git/blobs/{child_sha}"] = {
+            "sha": child_sha,
+            "encoding": "base64",
+            "content": base64.b64encode(content).decode(),
+        }
+    objects[f"/git/trees/{tree}"] = {"sha": tree, "tree": entries}
+    barrier = Barrier(8, timeout=10)
+    lock = Lock()
+    calls: list[str] = []
+
+    def get_json(path: str) -> object:
+        with lock:
+            calls.append(path)
+        if path.startswith("/git/blobs/"):
+            barrier.wait()
+        return objects[path]
+
+    workspace = tmp_path / "workspace"
+    workspace.mkdir()
+    commit = _Commit(sha, tree, raw)
+    if tamper:
+        with pytest.raises(ValueError, match="does not match its SHA"):
+            _materialize_api(workspace, commit, get_json)
+        with pytest.raises(subprocess.CalledProcessError):
+            _git(workspace, "rev-parse", "--verify", "HEAD")
+        return
+    assert _materialize_api(workspace, commit, get_json)
+    assert len(calls) == 97
+    _checkout(workspace, commit, None)
+    assert _git(workspace, "write-tree").decode().strip() == tree
+    assert _git(workspace, "status", "--porcelain") == b""
+    calls.clear()
+    assert _materialize_api(workspace, commit, get_json)
+    assert calls == []
+
+
+@pytest.mark.parametrize("lazy_guard", [True, False])
+def test_partial_clone_cache_repair_never_uses_implicit_git_fetch(
+    tmp_path: Path, source: _Source, monkeypatch: pytest.MonkeyPatch, lazy_guard: bool
+) -> None:
+    import base64
+    import shlex
+
+    from tools.ci_source_archive import _checkout, _materialize_api
+
+    directory = source.archive.parent / "source"
+    _git(directory, "config", "uploadpack.allowFilter", "true")
+    workspace = tmp_path / "partial-workspace"
+    _git(
+        tmp_path,
+        "clone",
+        "--quiet",
+        "--filter=blob:none",
+        "--no-checkout",
+        directory.as_uri(),
+        str(workspace),
+    )
+    assert (
+        _git(workspace, "config", "--get", "remote.origin.promisor").strip() == b"true"
+    )
+    marker = tmp_path / "implicit-fetch"
+    helper = tmp_path / "reject-upload-pack.sh"
+    helper.write_text(
+        f"#!/bin/sh\nprintf blocked > {shlex.quote(str(marker))}\nexit 99\n"
+    )
+    helper.chmod(0o755)
+    _git(workspace, "config", "remote.origin.uploadpack", shlex.quote(str(helper)))
+    missing = _git(
+        workspace, "rev-list", "--objects", "--missing=print", "--no-walk", "HEAD"
+    )
+    assert any(line.startswith(b"?") for line in missing.splitlines())
+    assert not marker.exists()
+    if not lazy_guard:
+        from tools import ci_source_archive as archive
+
+        monkeypatch.delenv("GIT_NO_LAZY_FETCH", raising=False)
+
+        def local_git(
+            directory: Path, *arguments: str, data: bytes | None = None
+        ) -> str:
+            return _git(directory, *arguments, data=data).decode().strip()
+
+        monkeypatch.setattr(archive, "_git", local_git)
+    calls = []
+
+    def get_json(path: str) -> object:
+        calls.append(path)
+        assert path.startswith("/git/blobs/")
+        sha = path.rsplit("/", 1)[1]
+        raw = _git(directory, "cat-file", "blob", sha)
+        return {
+            "sha": sha,
+            "encoding": "base64",
+            "content": base64.b64encode(raw).decode(),
+        }
+
+    assert _materialize_api(workspace, source.commit, get_json)
+    assert calls
+    assert not marker.exists(), "cache verification attempted an implicit Git fetch"
+    _checkout(workspace, source.commit, None)
+    assert _git(workspace, "status", "--porcelain") == b""
+    assert not marker.exists()

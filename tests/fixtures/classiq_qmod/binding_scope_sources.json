@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "quantum_autoencoder.qmod",
+      "source_path": "algorithms/QML/quantum_autoencoder/quantum_autoencoder.qmod",
+      "git_blob_sha1": "96bebed5db9119ee2ca6e2cb87b022cc4bdaf17f",
+      "sha256": "b718ab54e71f1fd79d440342121af585522d8e2918f1a98b24a751b808f2d3c8"
+    }
+  ]
+}

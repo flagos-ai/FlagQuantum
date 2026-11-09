@@ -4,7 +4,7 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis_const_calls import const_composition
+from examples.synthesis.tutorials.composition.const_calls.main import const_composition
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.register_expansion import expand_register_calls
 from flagquantum.compiler._construction.register_profile import (

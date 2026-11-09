@@ -7,8 +7,14 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_local_registers import local_composition
-from examples.synthesis_register_cleanup import copy_reference, flag_value, less
+from examples.synthesis.tutorials.composition.local_registers.main import (
+    local_composition,
+)
+from examples.synthesis.tutorials.composition.register_cleanup.main import (
+    copy_reference,
+    flag_value,
+    less,
+)
 from flagquantum import _api, synth
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import capture

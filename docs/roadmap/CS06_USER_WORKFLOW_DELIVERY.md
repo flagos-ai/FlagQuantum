@@ -46,7 +46,7 @@ Python, free/drop, opaque blocks and general Qmod compatibility are not implied.
 Run the complete basis/uniform/line workflow from the repository root:
 
 ```bash
-python -m examples.algorithms.synthesis_trial
+python -m examples.synthesis.tutorials.getting_started.trial.main
 ```
 
 The existing subprocess example test checks the printed values. Logical uniform

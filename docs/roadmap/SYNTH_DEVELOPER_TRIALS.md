@@ -15,7 +15,7 @@ in a clean environment. Use Python source files in the checkout and run with
 dtype and installed native extension status. Do not overwrite another user's
 checkout. No Classiq SDK, GPU, credentials or paid service is needed.
 
-Run `python -m examples.algorithms.synthesis_trial` as a warm-up. It should
+Run `python -m examples.synthesis.tutorials.getting_started.trial.main` as a warm-up. It should
 print basis (3,2,11) with probability 1, 16 uniform joint entries with probability
 1/16, a four-entry line example, and real resource statistics. If setup fails,
 record the actual failure before requesting help; do not count it as a quantum
@@ -91,7 +91,7 @@ As an optional advanced task, compose an emitted circuit with an existing
 Circuit using that API's explicit mappings. Expert composition may use gates
 and mappings, but it changes the program and requires fresh planning/validation.
 Do not use the original Program's checked report or reader to certify the
-modified circuit. The [workspace example](../../examples/synthesis_workspace.py)
+modified circuit. The [workspace example](../../examples/synthesis/tutorials/workspace/workspace/main.py)
 shows existing low-level composition; it is separate from the normal user path.
 
 ## Blank record, completed only by an actual tester

@@ -45,7 +45,7 @@ omits arithmetic_resources for phase while retaining existing value diagnostics.
 
 ## Actual contributor journey
 
-Run python -m examples.synthesis_phase_oracle. This is explicitly an expert
+Run python -m examples.synthesis.tutorials.control.phase_oracle.main. This is explicitly an expert
 private bridge, not a new maintained user entry. It captures x*x+y<5, selects a
 phase schedule, prepares a uniform input outside the oracle, creates the same
 checked Program and executes it. A full complex-state reference verifies every

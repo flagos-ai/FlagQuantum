@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "mcx.qmod",
+      "source_path": "tutorials/basic_tutorials/mcx/mcx.qmod",
+      "git_blob_sha1": "2ed1a06329f349016ed3333ce987a5bd41621d53",
+      "sha256": "5e2b976ea6c3dbac89621ec04a83f0fce81517a7a765e545bd81b825834f1716"
+    }
+  ]
+}

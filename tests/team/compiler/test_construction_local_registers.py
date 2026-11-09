@@ -5,7 +5,10 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis_local_registers import local_composition, local_marker
+from examples.synthesis.tutorials.composition.local_registers.main import (
+    local_composition,
+    local_marker,
+)
 from flagquantum.compiler._construction.lowering import Schedule
 from flagquantum.compiler._construction.register_expansion import expand_register_calls
 from flagquantum.compiler._construction.register_lowering import (

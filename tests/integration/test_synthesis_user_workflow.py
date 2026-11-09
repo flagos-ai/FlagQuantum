@@ -8,7 +8,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.algorithms.synthesis_trial import polynomial, pressure
+from examples.synthesis.tutorials.getting_started.trial.main import polynomial, pressure
 from flagquantum import synth
 from flagquantum.core.ir import Instruction
 from flagquantum.runtime.execution_plan import ExecutionPlan

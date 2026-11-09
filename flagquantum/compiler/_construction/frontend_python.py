@@ -100,10 +100,7 @@ def _source(
         indentation,
         allow_program
         and any(
-            isinstance(arg.annotation, ast.Subscript)
-            or isinstance(arg.annotation, ast.Constant)
-            and isinstance(arg.annotation.value, str)
-            and "[" in arg.annotation.value
+            arg.annotation is not None and _annotation_name(arg.annotation) != "int"
             for arg in (*node.args.posonlyargs, *node.args.args)
         ),
     )
@@ -235,7 +232,7 @@ def qfunc(function: Callable[..., object]) -> _QuantumFunction:
     source = _source(function, decorated=True, allow_program=True)
     if not source.program:
         return _QuantumFunction(source)
-    from .frontend_program import program_annotation_names, program_ports
+    from .frontend_ports import program_annotation_names, program_ports
 
     frame = inspect.currentframe()
     bindings: dict[str, object] = {}

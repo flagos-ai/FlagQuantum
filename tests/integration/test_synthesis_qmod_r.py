@@ -68,10 +68,31 @@ def test_r_coherent_input_with_decimal_angles() -> None:
     check_state(program, fq.run(program), expected)
 
 
-@pytest.mark.parametrize("args", ["1, q", "1, pi, q", "1, 9007199254740992.1, q"])
+@pytest.mark.parametrize("args", ["1, q", "1, 9007199254740992.1, q"])
 def test_r_rejects_invalid_signature_or_second_angle(args: str) -> None:
     with pytest.raises(InteropConversionError, match=r"qmod\.(signature|angle)"):
         synth.synthesize(
             f"qfunc main(output q:qbit) {{allocate(q);R({args});}}",
             source_format="qmod",
         )
+
+
+def test_r_second_angle_accepts_pi_on_coherent_input() -> None:
+    program = synth.synthesize(
+        "qfunc main(output q:qbit) {allocate(q);H(q);S(q);R(1,pi,q);}",
+        source_format="qmod",
+    )
+    circuit = (
+        fq.Circuit(1, dtype=torch.complex128)
+        .h(0)
+        .s(0)
+        .rz(0, -math.pi)
+        .rx(0, 1.0)
+        .rz(0, math.pi)
+    )
+    torch.testing.assert_close(
+        fq.run(program).statevector(),
+        fq.run(circuit).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )

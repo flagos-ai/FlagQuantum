@@ -72,3 +72,27 @@ class _EmbeddedRecordConverter:
             else:
                 result.append(torch.empty((len(records), 0), dtype=torch.bool))
         return result[0], result[1]
+
+
+class _EmbeddedDetectorSampler:
+    def __init__(
+        self, text: str, seed: int | None, detectors: int, observables: int
+    ) -> None:
+        self._native = import_module(f"{__package__}._embedded_stim")
+        self._handle = self._native.prepare_detector(text, seed)
+        self._widths = (detectors, observables)
+
+    def sample(self, shots: int) -> tuple[torch.Tensor, torch.Tensor]:
+        pair = self._native.sample_detectors(self._handle, shots)
+        if not isinstance(pair, tuple) or len(pair) != 2:
+            raise ValueError("embedded detector sampling returned an invalid pair")
+        results = []
+        for buffer, width in zip(pair, self._widths, strict=True):
+            if not isinstance(buffer, bytearray) or len(buffer) != shots * width:
+                raise ValueError("embedded detector sampling returned invalid bytes")
+            results.append(
+                torch.frombuffer(buffer, dtype=torch.bool).reshape(shots, width)
+                if width
+                else torch.empty((shots, 0), dtype=torch.bool)
+            )
+        return results[0], results[1]

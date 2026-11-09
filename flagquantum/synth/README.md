@@ -7,6 +7,19 @@ arithmetic and one-bit pi-predicate phases, known basis/uniform preparation,
 exact CPU statevectors and the admitted line profile.
 Independent developer trial records and final release review are still pending.
 
+The [original-case catalog](../../examples/synthesis/CATALOG.md) separates Qmod
+execution coverage from runnable native counterparts and independent Circuit
+references. The [native catalog admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md)
+adds direct `X`, `RZ`, `PHASE`, `RZZ`, Bell/GHZ and real amplitude/probability
+preparation calls to the existing Python profile. They share Compiler-owned
+verification and lowering with Qmod. `synth.X` is a captured gate; the existing
+`fq.X` observable constructor is unchanged. See each case for its supported
+bindings and the remaining native limitations. The
+[native views admission](../../docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md)
+adds `QArray[QBit]`, checked indexing/slices, bounded builtin `range`/`len`, H/S
+and plain writable helper ports. Mutable helpers currently contain only gates,
+bounded loops and other mutable helpers, with disjoint actual bit locations.
+
 
 ## Python quantum programs
 
@@ -46,20 +59,22 @@ Const inputs can share the same prepared register; fresh Outputs stay disjoint.
 All helper calls resolve to captured qfunc definitions, without a public registry
 or executing Python bodies. Names/types/operation aliases are checked by identity.
 
-Run `python -m examples.synthesis_python_program` for nested preparation,
-computation, equivalent Qmod and an independent Circuit reference. The generic
-program uses 18 qubits, 10 workspace, 166 operations and depth 124. The specialized
+Run `python -m examples.synthesis.tutorials.composition.python_program.main` for nested preparation,
+computation, equivalent Qmod and an independent Circuit reference. The UP-01
+measurement recorded 18 qubits, 10 workspace, 166 operations and depth 124. The specialized
 two-bit Boolean reference uses 9 qubits, one workspace and 15 operations. That
 reference requires a hand-derived algorithm; no optimum or equal-cost claim.
 See the [UP-01 delivery](../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.md).
 
-The first typed profile supports QBit and unsigned integer QNum, Output/Const,
+The typed profile supports QBit, unsigned integer QNum and QArray[QBit], Output/Const,
 literal basis initialization, allocation, Hadamard preparation, fresh `|=`
 expressions using +, *, literal powers 1..8, and acyclic positional qfunc calls.
-Root ports are Output-only. Signed/fractional types, Input/free/drop, local quantum
-variables, arrays/views, host callbacks, loops/branches, explicit phase/control/
-inverse and runtime classical parameters remain outside this Python profile.
-Existing scalar/Qmod capabilities retain their own documented scopes.
+Root ports are Output-only. The phase, within/apply, adjoint and scalar-control
+extensions retain their checked individual scopes. Array views and static loops
+follow the native views admission above. Signed/fractional types, Input/free/drop,
+nested arrays, host callbacks, dynamic loops/branches and runtime classical
+parameters remain outside this Python profile. Existing scalar/Qmod capabilities
+retain their own documented scopes.
 
 Do not combine typed roots with scalar inputs/InputState/constants/functions/
 custom preparation or predicate output_mode=phase. A root owns its preparation.
@@ -87,7 +102,7 @@ assert dict(program.probabilities(result, registers=("x", "y", "result"))) == {
 }
 ```
 
-Run `python -m examples.algorithms.synthesis_trial` for the complete basis,
+Run `python -m examples.synthesis.tutorials.getting_started.trial.main` for the complete basis,
 uniform and routed named workflows. The normal path needs no gate design,
 physical numbers, workspace maps, candidate choice or bit decoding. Optional
 qfunc supports the unsigned trial subset and the bounded typed program profile
@@ -150,7 +165,7 @@ True/False literals and Python if/while statements remain unsupported. Static ra
 use the bounded profile below. Native Qmod has a separately bounded binary
 comparison profile documented under local native source below.
 
-Run python -m examples.synthesis_predicate for basis and uniform workflows with
+Run python -m examples.synthesis.tutorials.arithmetic.predicate.main for basis and uniform workflows with
 no gate design, physical indices or bit decoding. For x*x+y<5 at two bits, the
 normal width objective selects 19 total qubits and 14 workspace qubits. The
 complete uniform example executes 273 operations at depth 178; these are this
@@ -199,7 +214,7 @@ interference tests verify the phase. Temporary predicate values and workspace
 are cleaned automatically through the existing schedules. No Boolean register
 type, new executor, manual gates, physical indices or decoding is needed.
 
-Run python -m examples.synthesis_boolean_predicate for both modes. See the
+Run python -m examples.synthesis.tutorials.arithmetic.boolean_predicate.main for both modes. See the
 [Boolean delivery](../../docs/roadmap/SYNTH_BOOLEAN_PREDICATES_DELIVERY.md) for
 measured costs, exact evidence and refusals. Existing unsupported statement branching,
 measurements, native grammar and independent trial/release gates remain in force.
@@ -235,7 +250,7 @@ print(dict(program.probabilities(result, registers=("x", "result"))))
 ```
 
 A string is always source text, never a filename. Files must be regular UTF-8
-.qmod files, at most 262144 bytes. Native input owns initialization, so inputs,
+.qmod files, at most 524288 bytes. Native input owns initialization, so inputs,
 input_state, constants, preparation and preparation_map must remain None and
 functions must be empty. The supported subset is one main, fresh unsigned scalar
 outputs, scalar Const/Output helpers, bounded arithmetic and admitted preparation;
@@ -260,7 +275,7 @@ forms report whole source_resources and actual resources, source locations,
 source_format and effective memory limit/origin. Native reports also retain
 source_name/source_version and omit the Python arithmetic_resources field.
 
-Run python -m examples.algorithms.synthesis_source_trial for the complete text
+Run python -m examples.synthesis.tutorials.getting_started.source_trial.main for the complete text
 workflow, or append a local .qmod path. Four unchanged originals have passed
 both public forms: the baseline three at 1/23/24 qubits and the added integer
 comparator at 10 allocated qubits. This is development evidence; independent
@@ -292,7 +307,7 @@ FlagQuantum also admits phase(x<y,pi) as a native predicate extension; see the
 [profile and upstream grammar boundary](../ecosystem/_qmod/README.md).
 The named flag remains a live output, with internal workspace cleaned. This
 does not change Python predicate phase mode. Run
-`python -m examples.synthesis_qmod_comparisons`; the complete circuit uses
+`python -m examples.synthesis.tutorials.qmod.qmod_comparisons.main`; the complete circuit uses
 10 total/used qubits, five work qubits, 49 operations and depth 40. See the
 [delivery record](../../docs/roadmap/SYNTH_QMOD_COMPARISONS_DELIVERY.md).
 
@@ -331,7 +346,7 @@ Every input pair has probability 1/16. The amplitude is -1/4 when x*x+y<5 and
 do not verify phase.** The acceptance suite compares complete complex amplitudes
 and checks interference, including the absolute sign of constant predicates.
 
-Run python -m examples.synthesis_phase_oracle. Users declare unsigned input
+Run python -m examples.synthesis.tutorials.control.phase_oracle.main. Users declare unsigned input
 widths, known preparation, the one-bit computation, its phase effect and resource
 ceilings. They do not design gates, select physical wires, decode bitstrings or
 write uncomputation. The default output_mode="value" retains the existing XOR
@@ -386,7 +401,7 @@ The two named results (0,0) and (1,1) each have probability 1/2, within floating
 precision. Default costs are 2 qubits, zero workspace, 4 operations (3 H, 1 CZ)
 and depth 3. Compiler handles arithmetic selection, exact inverse cleanup and
 wire layout; users supply register widths, preparation, phase intent and budgets.
-Run `python -m examples.synthesis_qmod_phase`. Arbitrary angles, multibit phase
+Run `python -m examples.synthesis.tutorials.qmod.qmod_phase.main`. Arbitrary angles, multibit phase
 results, fixed classical phase, helpers and explicit basis/line targets remain
 unsupported. The Python-only output_mode option is not needed for source phase
 statements. See the [delivery](../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
@@ -421,7 +436,7 @@ widths infer to 2, 2 and 4 bits. Compiler still handles gate design, temporary
 qubits, cleanup and layout; no gate sequence, physical index or bit decoding is
 needed. This source uses 18 qubits, 10 workspace, 166 operations and depth 124,
 including preparation and cleanup. Width/depth objectives select the same costs
-for this fixture. Run `python -m examples.synthesis_qmod_helpers`.
+for this fixture. Run `python -m examples.synthesis.tutorials.qmod.qmod_helpers.main`.
 
 Helpers accept fixed-width Const and fresh Output scalars. Const actuals must
 be initialized and can alias other Const arguments; Outputs remain disjoint and
@@ -456,7 +471,7 @@ print(dict(program.probabilities(result, registers=("x", "y", "energy"))))
 All sixteen `(x,y,x*x+y)` tuples have probability approximately 1/16, with
 18 qubits, 10 workspace, 166 operations and depth 124 for this complete example.
 Compiler generates arithmetic, selects work storage, cleans it and handles the
-layout. Run `python -m examples.synthesis_qmod_const`. Source roles can be
+layout. Run `python -m examples.synthesis.tutorials.qmod.qmod_const.main`. Source roles can be
 interleaved positionally; the adapter maps them to the same verified Compiler
 call ABI used by the previous internal slice.
 
@@ -505,7 +520,7 @@ and one CZ. The raw general prefix baseline uses four allocated qubits and
 seven gates; the direct raw marker uses two and one. Source and actual complete
 costs are distinct. No hardware timing or global optimality claim follows.
 
-Run python -m examples.synthesis_controlled_predicate for both examples.
+Run python -m examples.synthesis.tutorials.control.controlled_predicate.main for both examples.
 Uniform named probabilities alone cannot certify controlled phase; complete
 complex-state and interference acceptance does. Public phase remains logical
 CPU only. Generic unitary control, general within-apply, arbitrary angles and routed
@@ -546,7 +561,7 @@ and (1,1,4), each with probability 1/4. Result width and temporary qubits are
 inferred. Quantum loop-carried values become fresh SSA values; input registers
 and prior aliases retain their original encoded values. Workspace cleanup,
 choice between retain/recompute, target checking and named decoding remain
-automatic. Run python -m examples.synthesis_static_loop for this sum and a
+automatic. Run python -m examples.synthesis.tutorials.composition.static_loop.main for this sum and a
 loop-built one-bit predicate in phase mode.
 
 The supported loop is for name in range(...), with 1-3 nonnegative classical
@@ -618,7 +633,7 @@ existing exact CPU Program/run path. Complete amplitudes establish this phase;
 uniform probabilities alone cannot. Statement-level if/else, mutable quantum
 branches, generic controlled blocks and measurement feedback remain unsupported.
 
-Run `python -m examples.synthesis_conditional` for both numeric and phase
+Run `python -m examples.synthesis.tutorials.arithmetic.conditional.main` for both numeric and phase
 examples. See the [delivery record](../../docs/roadmap/SYNTH_CONDITIONAL_EXPRESSION_DELIVERY.md)
 for independent references and measured costs. Trial/release, target and native
 Qmod restrictions retain their existing gates.
@@ -661,7 +676,7 @@ or fixed-point comparisons remain unsupported.
 
 Use `output_mode="phase"` in the same call to mark each accepted basis amplitude
 by -1, with only input registers returned. Run
-`python -m examples.synthesis_interval` for both modes and real costs. Uniform
+`python -m examples.synthesis.tutorials.arithmetic.interval.main` for both modes and real costs. Uniform
 probabilities alone do not certify phase; acceptance compares full amplitudes
 including external reference entanglement and clean workspace. See the
 [delivery record](../../docs/roadmap/SYNTH_COMPARISON_CHAINS_DELIVERY.md).
@@ -694,7 +709,7 @@ temporary slot. The two scopes fit ten qubits, including six internal work bits;
 simultaneously preparing both flags needs eleven. Width and depth objectives
 both preserve these measured costs; scope orders are not automatically rewritten.
 
-Use `python -m examples.synthesis_qmod_within` or a local .qmod file through the
+Use `python -m examples.synthesis.tutorials.qmod.qmod_within.main` or a local .qmod file through the
 same entry. Local declarations are function-level; within prepares fresh
 quantum-dependent unsigned expressions, and apply permits phase or Const-only
 helpers. Sequential blocks may reuse the source name. Bare qnum infers once;
@@ -732,7 +747,7 @@ cleanup with native powers. No decorator, temporary register or multiplication
 chain is required. Users still declare input domains, preparation and budgets.
 Configured/computed exponents, bool, zero, negative, fractional and larger values
 are refused. See the [delivery](../../docs/roadmap/SYNTH_PYTHON_POWERS_DELIVERY.md).
-Run python -m examples.synthesis_python_powers from a saved source file.
+Run python -m examples.synthesis.tutorials.arithmetic.python_powers.main from a saved source file.
 
 ## Unified program contract and compatibility
 
@@ -769,6 +784,171 @@ This is a coherent variant with H, not the unmodified pinned RZ original.
 Amplitudes are exp(-0.95i)/sqrt(2) and exp(0.95i)/sqrt(2); probabilities are
 approximately 1/2 each. Decimal PHASE/RZ limits and gate-target restrictions are
 in the [compatibility delivery](../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md).
-Run `python -m examples.synthesis_native_and_qmod_rz` for current Python
+Run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main` for current Python
 high-level arithmetic, matching Qmod and the independent RZ Circuit reference.
 The example states the native phase gap rather than calling Circuit high-level.
+
+### Shared Boolean computations and original QAOA costs
+
+Native qfunc arithmetic and Qmod reuse the same Compiler Boolean candidate.
+For example, the user declares a product and a phase without choosing an AND
+ladder, scratch wires or cleanup gates:
+
+```python
+from flagquantum.synth import (
+    Output, QBit, QNum, qfunc, allocate, hadamard_transform,
+    within, apply, phase, synthesize,
+)
+
+@qfunc
+def main(a: Output[QBit], b: Output[QBit], c: Output[QBit], d: Output[QBit]):
+    allocate(a)
+    allocate(b)
+    allocate(c)
+    allocate(d)
+    hadamard_transform(a)
+    hadamard_transform(b)
+    hadamard_transform(c)
+    hadamard_transform(d)
+    with within():
+        selected: QNum[1] = a * b * c * d
+    with apply():
+        phase(selected, 0.37)
+
+program = synthesize(main, max_qubits=7, max_workspace=3)
+```
+
+Run `python -m examples.synthesis.tutorials.arithmetic.boolean_factors.main` for executable native qfunc,
+Qmod and independent Circuit forms. Both synthesized programs use seven qubits,
+17 operations and depth 14, including three clean workspace qubits. This does
+not add masked-integer expressions to the Python qfunc frontend.
+
+For original Qmod real costs, the flat polynomial path is retained. When its
+bounded expansion fails, the adapter can preserve shared products of signed bit
+literals using existing arithmetic calls. The Compiler verifies their inverse
+cleanup and chooses their physical realization. The original TSP and facility
+location files keep their bytes and layer counts; reproduce their independent
+full-state checks with `python tools/validate_qmod_phase_factors.py --case
+facility_location --scale .003 --output /tmp/facility.json` (one shell line).
+See [the bounded profile](../../docs/reference/KNOWN_LIMITATIONS.md) for the
+factor, active-bit, expression-depth and resource limits. This is a local
+integration capability pending the complete 216-original gate.
+
+### Large Pauli evolution originals
+
+The original 551-term, 12-bit Pauli workloads now use compact owned effects
+and bounded Compiler lowering. qDRIFT retains all 2000 seed-zero samples.
+Use the same public workflow with either unchanged local file:
+
+```python
+from pathlib import Path
+import flagquantum as fq
+from flagquantum import synth
+
+program = synth.synthesize(
+    Path("hamiltonian_evolution.qmod"),
+    max_qubits=12,
+    max_workspace=0,
+    memory_limit_bytes=64 * 1024**2,
+)
+result = fq.run(program)
+print(program.report["resources"])
+print(result.statevector())
+```
+
+Run `python tools/validate_qmod_large_pauli.py --case hamiltonian_evolution
+--output /tmp/qdrift.json` on one shell line for the pinned fixture, independent
+sample sequence and full-state Circuit reference. The companion case is
+`example_exponentiation`. Source files and their MIT license are hash checked.
+
+`python -m examples.synthesis.algorithms.hamiltonian_simulation.large_pauli.main` demonstrates a small Z evolution
+through native qfunc phase intent, Qmod and independent Circuit forms, including
+the absolute phase and each form's real workspace cost. It does not claim that
+Python qfunc accepts Hamiltonian arrays. The private compact operation is an
+implementation detail; normal users continue to call `synthesize` and `fq.run`.
+
+### Exact integer Qmod composition
+
+Qmod can pass an exact integer to a static loop. This public example binds
+the count by composing a helper with a literal argument.
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+
+source = """qfunc twist(steps:int, q:qbit[2]) {
+  power(steps) {phase(0.6*q[0]*q[1]);}
+}
+qfunc main(output q:qbit[2]) {
+  allocate(q);hadamard_transform(q);twist(2,q);
+}"""
+program = synth.synthesize(source, source_format="qmod")
+result = fq.run(program)
+print(program.report["resources"])
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+The |11> amplitude has phase 1.2 radians; each output probability is 1/4.
+Run `python -m examples.synthesis.tutorials.composition.integer_composition.main` to compare the Qmod,
+static native qfunc and independent Circuit forms. The corpus tools separately
+validate externally supplied classical inputs through an internal binding path.
+Python qfunc's parameter contract is unchanged. The adapter accepts exact int
+and int[] bindings, bounded static loops/if and finite classical-expression time
+arrays; it never reads quantum values to select host branches.
+
+Reproduce the unchanged originals with tools/validate_qmod_integer_composition.py:
+--case fermi_hubbard_1D --iterations 1 (then 2), --case credit_card_fraud
+--data-case 0 (then 1), or --case bb84_implementation, each with --output <path>.
+These source and MIT-license-checked runs compare complete complex128 vectors
+against independent Circuits, including global phase and numeric bit order.
+# Checked Grover composition in the Qmod integration profile
+
+The Qmod adapter supports grover_operator with a checked one-register phase
+callback and the built-in hadamard_transform preparation. Top-level int literal
+constants and bounded integer specialization share the exact integer profile.
+The phase callback cannot capture other quantum values, modify or transfer its
+borrowed array, allocate outputs or escape. Validation checks callback structure
+even with zero repetitions. General higher-order callback ports, custom
+preparation and predicate-output phase_oracle are not implied by this slice.
+
+python -m examples.synthesis.algorithms.grover.grover.main shows runnable Qmod, existing native qfunc
+phase composition and independent Circuit forms. The two original Grover
+fixtures are verified separately at r=0/1/2, including absolute global phase,
+numeric bit order, all workspace bits and resource-budget refusal. No new
+native Python Grover callable is exported by this compatibility slice.
+
+## Checked predicate phase oracles
+
+The Qmod integration profile admits a qperm with one Const whole array or flat
+fixed unsigned record, one distinct writable single-bit marker and optional
+exact scalar integer arguments. Its body must be exactly marker ^= predicate;
+the expression must prove a one-bit result and cannot read the marker. All
+definitions are checked, including unused definitions. Nominal record identity,
+scalar field widths and lexical bindings are retained; field names are not
+renamed when a same-named callback formal shadows its own actual register.
+
+phase_oracle accepts a named checked predicate or a two-argument forwarding
+lambda. The phase form marks satisfying states by -1. A direct predicate call
+XORs any initialized marker, including nonzero and coherent states, using the
+existing conditional phase effect between marker Hadamards. There is no new
+owned opcode or physical gate template. Capture, input/marker aliases, extra
+mutable ports, Output escape and malformed predicates fail closed.
+
+Mathematical negative differences are preserved through comparisons. Unsigned
+bitwise arithmetic and positive power-of-two literal modulo are evaluated only
+within the existing eight-input-bit predicate bound; monomial, degree, product,
+source and final instruction caps are not raised. Larger graph-coloring and
+whitebox predicates remain separate resource/semantic blockers, not implied
+coverage. grover_search composes uniform preparation with bounded checked Grover
+rounds and retains their absolute global phase. General callback ports, custom
+preparation and nested/array-valued borrowed records remain outside this slice.
+
+Three unchanged originals are accepted separately: grover_operator.qmod,
+oracles_workshop.qmod and grover.qmod (r=0/1/2). The workshop subtraction does not
+wrap; the graph original marks >=4, unlike the previous <=4 Max-Cut original.
+Run tools/validate_qmod_predicate_oracle.py --case grover --iterations 2
+--output /tmp/predicate.json for independent full-state Circuit comparison.
+python -m examples.synthesis.algorithms.grover.predicate_oracle.main compares Qmod, existing native
+qfunc phase intent and an independent Circuit. It does not add a native Python
+phase_oracle/Grover export or a Python QStruct API. The private contract is
+docs/api-changes/FQ-SYNTH-UP06-PREDICATE-ORACLE-20261105.md.

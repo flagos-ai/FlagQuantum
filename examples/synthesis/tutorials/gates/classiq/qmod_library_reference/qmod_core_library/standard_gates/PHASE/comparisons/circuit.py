@@ -1,0 +1,32 @@
+"""Compare the exact original Qmod, native program and independent Circuit."""
+
+import cmath
+from pathlib import Path
+
+import torch
+
+import flagquantum as fq
+from examples.synthesis.compare_states import compare_states
+from examples.synthesis.tutorials.gates.classiq.qmod_library_reference.qmod_core_library.standard_gates.PHASE.main import (
+    main,
+)
+from flagquantum import synth
+
+
+def reference_circuit() -> fq.Circuit:
+    return fq.Circuit(1, dtype=torch.complex128).any(
+        0, matrix=torch.diag(torch.tensor([1, cmath.exp(1j)], dtype=torch.complex128))
+    )
+
+
+def run_example() -> None:
+    compare_states(
+        synth.synthesize(main, memory_limit_bytes=512 * 1024**2),
+        Path(__file__).with_name("source.qmod"),
+        reference_circuit(),
+        ("q",),
+    )
+
+
+if __name__ == "__main__":
+    run_example()

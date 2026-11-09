@@ -324,7 +324,11 @@ def test_public_phase_example_reports_actual_resources():
     from pathlib import Path
 
     completed = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis_phase_oracle"],
+        [
+            sys.executable,
+            "-m",
+            "examples.synthesis.tutorials.control.phase_oracle.main",
+        ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

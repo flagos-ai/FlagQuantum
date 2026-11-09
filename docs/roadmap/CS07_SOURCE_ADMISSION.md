@@ -55,7 +55,7 @@ an already written analytic reference.
 ## Run the existing user workflow and boundary checks
 
 ```bash
-python -m examples.algorithms.synthesis_trial
+python -m examples.synthesis.tutorials.getting_started.trial.main
 python tests/fixtures/classiq_qmod/verify_sources.py
 python -m pytest tests/api_contract/test_synthesis_qmod_source_contract.py -q
 ```

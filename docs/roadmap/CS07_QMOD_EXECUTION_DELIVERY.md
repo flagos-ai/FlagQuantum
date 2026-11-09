@@ -26,7 +26,7 @@ program = synth.synthesize(
 assert dict(program.probabilities(fq.run(program))) == {(11,): 1.0}
 ```
 
-Run `python -m examples.algorithms.synthesis_trial` for basis, superposition,
+Run `python -m examples.synthesis.tutorials.getting_started.trial.main` for basis, superposition,
 constraint recovery and line routing. Users design no gates, physical ports or
 bit-string decoder. This PR reuses that workflow's execution and reading
 authority for an independent producer; it does not publish a new source API.

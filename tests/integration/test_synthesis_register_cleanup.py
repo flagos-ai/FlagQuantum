@@ -9,7 +9,11 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_register_cleanup import cleanup_composition, flag_value, less
+from examples.synthesis.tutorials.composition.register_cleanup.main import (
+    cleanup_composition,
+    flag_value,
+    less,
+)
 from flagquantum import _api, synth
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import Schedule

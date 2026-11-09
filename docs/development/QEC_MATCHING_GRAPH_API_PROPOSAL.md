@@ -3,6 +3,11 @@
 Status: owner approved13 paths; implementation candidate with local validation.
 The README-only fourteenth-path example-index amendment is separately approved. Fresh
 installed-candidate and actual-main acceptance remain pending. This supersedes method-sized proposals for this gap.
+The approved doctest amendment brings the final scope to 15 paths. The candidate
+now includes main's native detector delivery; its reconciled-source acceptance
+is recorded in the delivery plan. The planned example below is implemented in
+`examples/qec/check_matrix_matching.py` on this candidate, while merge and
+actual-main admission remain pending.
 Proposed title: feat(qec): support matrix-defined weighted matching workflows.
 Classification: single_device_fast_path, primary domain QEC.
 

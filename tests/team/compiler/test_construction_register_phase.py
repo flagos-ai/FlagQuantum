@@ -5,7 +5,7 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis_register_phase import phase_composition
+from examples.synthesis.tutorials.control.register_phase.main import phase_composition
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import Schedule
 from flagquantum.compiler._construction.register_lowering import (

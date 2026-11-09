@@ -136,7 +136,7 @@ def test_distinct_output_formals_cannot_alias_one_actual():
 
 
 def test_definition_count_budget_is_explicit():
-    helpers = [f"qfunc f{i}(output q:qbit) {{ q=0; }}" for i in range(32)]
+    helpers = [f"qfunc f{i}(output q:qbit) {{ q=0; }}" for i in range(64)]
     with pytest.raises(HybridVerificationError, match="qmod.budget.functions"):
         parse(" ".join(helpers) + " qfunc main(output q:qbit) { q=0; }")
 

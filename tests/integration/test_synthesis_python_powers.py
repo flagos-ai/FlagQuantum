@@ -6,7 +6,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis_python_powers import cube
+from examples.synthesis.tutorials.arithmetic.python_powers.main import cube
 from flagquantum import synth
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError

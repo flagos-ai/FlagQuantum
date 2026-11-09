@@ -53,6 +53,7 @@ from collections.abc import Sequence
 
 from ...circuit import Circuit
 from ...compiler._arithmetic_kernels import comparison_xor
+from ...core.controlled import _clean_mcx_instructions
 from .types import Predicate
 
 __all__ = [
@@ -136,7 +137,8 @@ def append_multi_controlled_x(
                 f"{ancilla_word}, got {len(spare)}"
             )
         _validate_ancillas(spare, ordered, target)
-    _append_ladder(circuit, ordered, target, spare)
+    for instruction in _clean_mcx_instructions(ordered, target, spare):
+        circuit.gate(instruction.name, instruction.wires)
 
 
 def append_comparator(
@@ -393,41 +395,6 @@ def append_bit_oracle(
         append_multi_controlled_x(circuit, ordered, target, ancillas=spare)
         for qubit in zeros:
             circuit.gate("x", qubit)
-
-
-def _append_ladder(
-    circuit: Circuit, controls: Sequence[int], target: int, ancillas: Sequence[int]
-) -> None:
-    """Emit the multi-controlled X ladder for ``controls``.
-
-    The first control pair seeds ``ancillas[0]``; each inner step folds the next control
-    onto the next ancilla, so ``ancillas[i]`` ends holding the conjunction of
-    ``controls[:i + 2]``. The last control is folded onto the target, after which the two
-    runs are replayed backwards to clear every ancilla. Each inner gate is emitted twice,
-    once on the way up and once on the way down, which is what returns the ancillas to
-    ``|0>``; a ladder that skipped the descending run would compute the right target and
-    leave every ancilla dirty.
-
-    Args:
-        circuit: The circuit to extend.
-        controls: The control qubits, at least one, none of them ``target``.
-        target: The qubit to flip on saturation.
-        ancillas: The ladder's ancillas, ``max(len(controls) - 2, 0)`` of them.
-    """
-    count = len(controls)
-    if count == 1:
-        circuit.gate("cx", (controls[0], target))
-        return
-    if count == 2:
-        circuit.gate("ccx", (controls[0], controls[1], target))
-        return
-    circuit.gate("ccx", (controls[0], controls[1], ancillas[0]))
-    for index in range(2, count - 1):
-        circuit.gate("ccx", (ancillas[index - 2], controls[index], ancillas[index - 1]))
-    circuit.gate("ccx", (ancillas[count - 3], controls[count - 1], target))
-    for index in reversed(range(2, count - 1)):
-        circuit.gate("ccx", (ancillas[index - 2], controls[index], ancillas[index - 1]))
-    circuit.gate("ccx", (controls[0], controls[1], ancillas[0]))
 
 
 def _validate_controls(controls: Sequence[int], target: int) -> None:

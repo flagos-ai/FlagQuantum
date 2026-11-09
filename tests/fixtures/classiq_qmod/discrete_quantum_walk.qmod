@@ -1,0 +1,21 @@
+qperm quantum_step_clockwise(x: qnum) {
+  x += 1;
+}
+
+qfunc single_step_walk_builtin(coin: qbit, x: qnum) {
+  H(coin);
+  control (coin == 0) {
+    quantum_step_clockwise(x);
+  }
+  control (coin == 1) {
+    invert {
+      quantum_step_clockwise(x);
+    }
+  }
+}
+
+qfunc main(output x: qnum<10>, output coin: qbit) {
+  allocate(x);
+  allocate(coin);
+  single_step_walk_builtin(coin, x);
+}

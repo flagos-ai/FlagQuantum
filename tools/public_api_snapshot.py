@@ -660,7 +660,30 @@ _SYNTH_ACTIVE_EXPORTS = (
     "U",
     "prepare_uniform_interval_state",
     "control",
+    "X",
+    "RZ",
+    "PHASE",
+    "RZZ",
+    "prepare_bell_state",
+    "prepare_ghz_state",
+    "prepare_amplitudes",
+    "prepare_state",
+    "QArray",
+    "H",
+    "S",
 )
+
+
+_SYNTH_ARRAY_SIGNATURES = {
+    "allocate": "(size_or_out: 'int | QNum | QArray[QBit]', out: 'QNum | QArray[QBit] | None' = None, /) -> 'None'",
+    "hadamard_transform": "(out: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_uniform_interval_state": "(start: 'int', stop: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "RZZ": "(angle: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_bell_state": "(state: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_ghz_state": "(size: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+}
 
 
 def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
@@ -775,7 +798,12 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
         synth.Program, "to_ir"
     ):
         errors.append("synthesis Program owner/coercion differs from admission")
-    if any(name in fq.__all__ for name in active_exports):
+    from flagquantum.observables import X as OBSERVABLE_X
+
+    if (
+        set(active_exports).intersection(fq.__all__) != {"X"}
+        or fq.X is not OBSERVABLE_X
+    ):
         errors.append("synthesis feature symbols must not enter stable root exports")
     for key, value in (
         ("probabilities_signature", synth.Program.probabilities),
@@ -1034,7 +1062,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         errors.append("native R differs from its authorization")
     if (
         str(inspect.signature(synth.prepare_uniform_interval_state))
-        != "(start: 'int', stop: 'int', target: 'QNum', /) -> 'None'"
+        != _SYNTH_ARRAY_SIGNATURES["prepare_uniform_interval_state"]
         or not (ROOT / "docs/api-changes/FQ-SYNTH-UNIFORM-INTERVAL.md").is_file()
     ):
         errors.append("native uniform interval differs from its authorization")
@@ -1064,6 +1092,57 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native pair gates differ from their authorization")
+    catalog_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-catalog-candidate.json").read_text()
+    )
+    catalog_signatures = {
+        "X": "(target: 'QBit', /) -> 'None'",
+        "RZ": "(angle: 'float', target: 'QBit', /) -> 'None'",
+        "PHASE": "(angle: 'float', target: 'QBit', /) -> 'None'",
+        "RZZ": "(angle: 'float', target: 'QNum', /) -> 'None'",
+        "prepare_bell_state": "(state: 'int', target: 'QNum', /) -> 'None'",
+        "prepare_ghz_state": "(size: 'int', target: 'QNum', /) -> 'None'",
+        "prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum', /) -> 'None'",
+        "prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum', /) -> 'None'",
+    }
+    if (
+        catalog_contract.get("namespace") != "flagquantum.synth"
+        or catalog_contract.get("signatures") != catalog_signatures
+        or catalog_contract.get("implementation_authorized") is not True
+        or catalog_contract.get("release_authorized") is not False
+        or catalog_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-CATALOG-20261107.md").is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name)))
+            != _SYNTH_ARRAY_SIGNATURES.get(name, signature)
+            for name, signature in catalog_signatures.items()
+        )
+    ):
+        errors.append("native catalog operations differ from their authorized scope")
+    views = json.loads(
+        (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
+    )
+    if (
+        views.get("namespace") != "flagquantum.synth"
+        or views.get("added_exports") != ["QArray", "H", "S"]
+        or views.get("expanded_signatures") != _SYNTH_ARRAY_SIGNATURES
+        or views.get("signatures")
+        != {"H": "(target: 'QBit', /) -> 'None'", "S": "(target: 'QBit', /) -> 'None'"}
+        or views.get("implementation_authorized") is not True
+        or views.get("release_authorized") is not False
+        or views.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md"
+        or not (ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-VIEWS-20261107.md").is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in {
+                **_SYNTH_ARRAY_SIGNATURES,
+                **views.get("signatures", {}),
+            }.items()
+        )
+    ):
+        errors.append("native bit-array operations differ from their authorized scope")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),
@@ -1072,9 +1151,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         if str(inspect.signature(value)) != contract[field]:
             errors.append("Python program must preserve run/read/synthesize signatures")
     for name, signature in contract["new_operation_signatures"].items():
-        if str(inspect.signature(getattr(synth, name))) != signature:
+        if str(inspect.signature(getattr(synth, name))) != _SYNTH_ARRAY_SIGNATURES.get(
+            name, signature
+        ):
             errors.append("Python program operation signature differs from approval")
-    if set(exports).intersection(fq.__all__):
+    from flagquantum.observables import X as OBSERVABLE_X
+
+    if set(exports).intersection(fq.__all__) != {"X"} or fq.X is not OBSERVABLE_X:
         errors.append("Python program symbols must not enter Stable Core exports")
     return errors
 

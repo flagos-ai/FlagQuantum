@@ -22,7 +22,7 @@ print(dict(program.probabilities(result, registers=("q",))))
 print(result.statevector())
 ```
 
-Run `python -m examples.synthesis_qmod_phase_gate`. Probabilities remain 1/2,
+Run `python -m examples.synthesis.tutorials.qmod.qmod_phase_gate.main`. Probabilities remain 1/2,
 but amplitudes are 1/sqrt(2) and exp(i)/sqrt(2), approximately 0.7071 and
 0.3821+0.5950i. PHASE(theta)=diag(1,exp(i*theta)), as defined by the retained
 Classiq standard-gates reference. RZ differs by a global phase and cannot be

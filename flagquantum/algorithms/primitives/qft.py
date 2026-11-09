@@ -17,10 +17,10 @@ emission, which is the relation the unitary satisfies.
 
 from __future__ import annotations
 
-import math
 from collections.abc import Sequence
 
 from ...circuit import Circuit
+from ...compiler._fourier_kernels import qft_instructions
 
 __all__ = ["append_qft", "qft"]
 
@@ -90,14 +90,6 @@ def _qft_circuit(n_qubits: int) -> Circuit:
         The forward transform, its qubits numbered ``0`` to ``n_qubits - 1``.
     """
     circuit = Circuit(n_qubits)
-    for position in range(n_qubits):
-        circuit.gate("h", position)
-        for offset in range(position + 1, n_qubits):
-            circuit.gate(
-                "cphase",
-                (offset, position),
-                theta=math.pi / 2 ** (offset - position),
-            )
-    for position in range(n_qubits // 2):
-        circuit.gate("swap", (position, n_qubits - 1 - position))
+    for instruction in qft_instructions(tuple(range(n_qubits))):
+        circuit.gate(instruction.name, instruction.wires, **instruction.params)
     return circuit

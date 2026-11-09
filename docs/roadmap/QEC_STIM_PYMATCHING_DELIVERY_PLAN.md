@@ -881,3 +881,55 @@ check also caught an omitted test-only SimpleNamespace import during assembly;
 it was restored in the existing test path without removing an assertion, and
 its original log remains. No numerical threshold, fixture, dependency or runner
 configuration is changed. R03/R08/FTS-04 remain partial; FTS-02 and M2 remain open.
+
+## Native circuit detector execution candidate
+
+The approved bounded native detector sampling/DEM contract is implemented as a
+direct-main candidate. `Circuit.compile_detector_sampler` and
+`Circuit.detector_error_model` consume the same explicit-record maps;
+`examples/qec/native_detector_sampling.py` demonstrates decoding all 35 records
+without requiring equal tied decoder solutions. No new upstream source files are
+needed. This extends FTS-04 / R03 / R08; those requirements remain partial.
+FTS-02, mixed-route M2, full Stim/PyMatching parity, natural monitoring reliability
+and performance/capacity/scalability evidence remain open. Main admission and
+final-head evidence are recorded separately; implementation is not an admission
+receipt. Historical raw evidence and prior failed CI records remain unchanged.
+
+## Integration after native detector delivery
+
+PR1107 merged as `2a073ab9d540f2868b57612a98a182bb6e41a915` after all 231
+reviewed-head CI jobs passed. Its actual-main source tree equals that reviewed
+head; 169 focused CPU tests and the native detector example passed. The exact-main
+installed-wheel smoke `42557150575` passed. The user explicitly authorized this
+CPU Stim delivery without GPU acceptance; its failed two-GPU performance job
+`128955855211` remains failed and retained, with no rerun or threshold change.
+Prior embedded no-SDK acceptance is reused for unchanged source/build inputs,
+not described as a fresh embedded installation on the merge commit.
+
+PR1092 is now reconciled with that main commit. The three overlapping append
+sections retain both graph and native-detector documentation, doctest entries
+and installed-profile tests. The approved difference from main remains 15 paths.
+Its previous head's 231 successful CI jobs and successful GPU checks are
+historical receipts; the reconciled head still requires its own automatic CI
+before merge and actual-main CPU acceptance. R03/R08/FTS-04 remain partial;
+FTS-02, R04, M2 and complete Stim/PyMatching parity remain open.
+
+### PR1092 reconciled-source acceptance
+
+The reconciled candidate passed Ruff, Black, strict Mypy for the nine focused
+Python files, dependency policy, documentation source/link checks and repository
+language checks. The SDK regression selection passed 219 tests with three
+existing environment-profile skips; it includes the independent exhaustive
+weighted-graph optimum oracle, real PyMatching comparisons, existing decoder
+contracts, public doctests and native detector execution/conformance. A separate
+source environment verified that neither Stim nor PyMatching was importable and
+passed 92 tests with five existing environment-dependent skips. These are source
+tests, not fresh installed-wheel/sdist evidence.
+
+The original strict-Mypy failure remains retained. Two existing test helpers
+received precise annotations: the syndrome list element type and the import
+interceptor's argument/return types. Assertions, missing-dependency behavior,
+thresholds and numerical code remain unchanged. No dependency installation,
+manual CI recovery or research execution was performed. Automatic checks and
+installed-profile admission on the final head, followed by actual-main
+acceptance, remain required before this candidate counts as delivered.

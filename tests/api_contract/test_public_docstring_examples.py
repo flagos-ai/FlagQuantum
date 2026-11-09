@@ -107,6 +107,7 @@ from flagquantum.qec.adapters.stim import (
 )
 from flagquantum.qec.decoders.batch import decode_batch
 from flagquantum.qec.decoders.matching_graph import MatchingGraph
+from flagquantum.qec.execution.detector_sampling import CompiledDetectorSampler
 from flagquantum.qec.execution.experiments import run_memory_experiment
 from flagquantum.qec.execution.measurement_conversion import (
     compile_m2d_converter,
@@ -203,7 +204,11 @@ pytestmark = pytest.mark.unit
 # entry point, whose example is the identity the pass ladder preserves, and the
 # density matrix and entanglement-entropy reads, whose examples show the two
 # figures a caller takes from one run rather than a second execution.
+
 ENTRIES = (
+    CompiledDetectorSampler,
+    fq.Circuit.compile_detector_sampler,
+    fq.Circuit.detector_error_model,
     fq.save,
     fq.load,
     run_memory_experiment,

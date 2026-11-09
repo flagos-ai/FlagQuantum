@@ -5,7 +5,7 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis_register_cleanup import (
+from examples.synthesis.tutorials.composition.register_cleanup.main import (
     cleanup_composition,
     copy_reference,
     flag_value,

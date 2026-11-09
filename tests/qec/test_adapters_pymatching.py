@@ -43,7 +43,9 @@ from __future__ import annotations
 import builtins
 import random
 import sys
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from types import ModuleType
 
 import pytest
 
@@ -163,7 +165,7 @@ def _syndromes(model: DetectorErrorModel, *, limit: int | None) -> list[list[int
         ]
     assert limit is not None
     rng = random.Random(20240517)
-    syndromes = [[]]
+    syndromes: list[list[int]] = [[]]
     for _ in range(400):
         size = rng.randint(1, limit)
         syndromes.append(sorted(rng.sample(range(count), size)))
@@ -495,10 +497,16 @@ def test_the_cross_check_names_the_extra_when_it_is_missing(
 
     real_import = builtins.__import__
 
-    def refuse(name: str, *args: object, **kwargs: object):
+    def refuse(
+        name: str,
+        globals: Mapping[str, object] | None = None,
+        locals: Mapping[str, object] | None = None,
+        fromlist: Sequence[str] | None = (),
+        level: int = 0,
+    ) -> ModuleType:
         if name == "pymatching" or name.startswith("pymatching."):
             raise ImportError("No module named 'pymatching'")
-        return real_import(name, *args, **kwargs)
+        return real_import(name, globals, locals, fromlist, level)
 
     model = _CONFIGURATIONS[0].model
     graph = DecodingGraph.from_detector_error_model(model)

@@ -1,4 +1,42 @@
-# Coherent integer construction profile
+# Construction compiler
+
+Python qfunc and adapted Qmod programs share the existing HybridProgram model.
+Compiler owns semantic verification, lifetime analysis, constrained candidate
+selection and lowering to CircuitIR.
+
+## Module ownership
+
+| Module | Responsibility |
+| --- | --- |
+| `frontend_program.py` | Capture source-retaining Python qfunc programs |
+| `frontend_ports.py` | Resolve annotation identities, quantum roles and bounded port types |
+| `frontend_preparation.py` | Capture bounded literal native preparation calls into existing register effects |
+| `frontend_views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
+| `frontend_python.py` | Capture the supported scalar Python expression profile |
+| `register_profile.py` | Register types, operation attribute admission, preparation and publication shapes |
+| `register_verifier.py` | Ordered effects, initialized storage, ownership, aliases and lifetime checks |
+| `register_expansion.py` | Expand verified static register calls and inverse composition |
+| `register_lowering.py` | Lower admitted register effects to existing gate kernels |
+| `lifetimes.py`, `lowering.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
+| `selection.py`, `target.py` | Evaluate supported schedules and verify target constraints |
+
+`verify_operation_attributes` checks the operation's exact permitted attributes
+before the body verifier inspects operands or modifies its local storage state.
+The body verifier remains the single authority for effects and lifecycle. This
+ordering preserves the first rejection when malformed attributes and invalid
+storage use occur together.
+
+For a small change, start with the relevant accepted and rejected scenarios in
+`tests/team/compiler/test_construction_registers.py` and the end-to-end
+`tests/integration/test_synthesis_python_program.py`. The [synthesis examples](../../../examples/synthesis/README.md)
+provide runnable public programs and independent Circuit comparisons.
+
+## Profile development notes
+
+The following notes retain the semantics and delivery context of the successive
+construction profiles.
+
+### Coherent integer construction profile
 
 Compiler owns this private profile of the existing `_hybrid.model` records.
 It verifies coherent integer expression definitions and physical binding
@@ -16,7 +54,9 @@ token. Function inputs are immutable basis borrows. Repeated reads of a value
 are legal; overlapping physical input/output/workspace ports are not.
 
 Supported records are `arith.constant` with classical INDEX type and a checked
-nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`.
+nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`. The Qmod adapter also uses
+`qint.subtract_mod` for raw word subtraction modulo the declared result width.
+Qmod owns sign extension and binary-point alignment before this operation.
 Functions return one quantum integer expression. Definitions form an acyclic
 call graph. This is a closed verifier profile, not an extension to the existing
 classical hybrid verifier or its lowering pipeline.
@@ -75,7 +115,7 @@ This is a deterministic heuristic, not a general free/drop operation or optimal
 pebbling. The private `schedule_arithmetic` diagnostic includes peak workspace
 and compute/cleanup events; `lower_arithmetic` still returns CircuitIR.
 
-Run `python -m examples.synthesis_workspace`, then
+Run `python -m examples.synthesis.tutorials.workspace.workspace.main`, then
 `tests/team/compiler/test_construction_scheduling.py` and
 `tests/integration/test_construction_scheduling_execution.py` for the shortest
 CS-05 contributor path. The [delivery record](../../../docs/roadmap/CS05_WORKSPACE_SCHEDULING_DELIVERY.md)
@@ -99,8 +139,8 @@ Each target stage retains its existing CoreIR content identity, and `validate()`
 rejects later mutations without compiling. Runtime confirmation still goes
 through CS06-A; C owns the single normal facade and named reading integration.
 
-Run `python -m examples.synthesis_selection` for the real constraint-driven
-phase/cleanup workflow, or `python -m examples.synthesis_selection_costs` for the
+Run `python -m examples.synthesis.tutorials.workspace.selection.main` for the real constraint-driven
+phase/cleanup workflow, or `python -m examples.synthesis.tutorials.workspace.selection_costs.main` for the
 complete static table and current manual comparison. Relevant tests are
 `tests/team/compiler/test_construction_selection.py` and
 `tests/integration/test_construction_selection_execution.py`. See the
@@ -186,7 +226,7 @@ schedules, value XOR lowering and phase prefix-adjoint cleanup own the resulting
 circuit. Definition and expanded-operation budgets apply to every generated
 operation. Value and phase target boundaries are unchanged.
 
-Run python -m examples.synthesis_boolean_predicate for the public workflow.
+Run python -m examples.synthesis.tutorials.arithmetic.boolean_predicate.main for the public workflow.
 For changes, start with tests/team/compiler/test_construction_booleans.py, then
 run tests/integration/test_synthesis_boolean_predicates.py. The latter verifies
 complete truth tables including nonzero XOR destinations, complex amplitudes
@@ -208,7 +248,7 @@ neither operand may be erased before marking. Preparation stays outside the
 oracle. This is controlled predicate phase, not generic control of an arbitrary
 unitary block. Public phase target admission stays logical CPU only.
 
-Run python -m examples.synthesis_controlled_predicate. The Compiler unit tests
+Run python -m examples.synthesis.tutorials.control.controlled_predicate.main. The Compiler unit tests
 compare actual trace/operation boundaries and an independent general prefix
 built from the unchanged value evaluator. Integration tests compare full states
 including control-zero references, true/false predicates, aliases, entanglement,
@@ -235,7 +275,7 @@ back so unsupported hidden calls cannot escape validation. Source helper names
 cannot be shadowed by numerical bindings. Structural/nesting/scope errors occur
 before lowering or planning; source body execution is never a fallback.
 
-Run python -m examples.synthesis_static_loop. Start changes with
+Run python -m examples.synthesis.tutorials.composition.static_loop.main. Start changes with
 `tests/team/compiler/test_construction_static_loops.py` and then
 `tests/integration/test_synthesis_static_loops.py`. Acceptance compares complete
 looped/explicitly expanded computations, arbitrary XOR targets, complex states,
@@ -264,7 +304,7 @@ flipping borrowed inputs. Retain/recompute and exact phase-prefix inversion
 remain authoritative. No public type, executor or generic controlled-block API
 is introduced; statement-level if/else remains unsupported.
 
-Run `python -m examples.synthesis_conditional`, then
+Run `python -m examples.synthesis.tutorials.arithmetic.conditional.main`, then
 `tests/team/compiler/test_construction_selection_expression.py` and
 `tests/integration/test_synthesis_conditional.py`. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CONDITIONAL-EXPRESSION-20261031.md)
@@ -285,7 +325,7 @@ Python short-circuit execution, identity/membership or statement-level control.
 The prior single-comparison refusal cases now have positive full-domain checks;
 false-prefix refusal is preserved using an unsupported identity test.
 
-Run `python -m examples.synthesis_interval`, then
+Run `python -m examples.synthesis.tutorials.arithmetic.interval.main`, then
 `tests/team/compiler/test_construction_comparison_chains.py` and
 `tests/integration/test_synthesis_comparison_chains.py`. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-COMPARISON-CHAINS-20261031.md) and
@@ -311,7 +351,7 @@ routing with physical layout retained. Its restored route is refused because
 the existing normalizer cancels restore-SWAP witnesses. That strict evidence
 check remains, and no unverified mapping is passed to Runtime.
 
-Run `python -m examples.synthesis_register_phase`, then
+Run `python -m examples.synthesis.tutorials.control.register_phase.main`, then
 `tests/team/compiler/test_construction_register_phase.py` and
 `tests/integration/test_synthesis_register_phase.py`. The example is a private
 owned-IR contributor trial. The public Python predicate path is unchanged;
@@ -344,12 +384,12 @@ nested calls cannot hide phase effects. Limits include 32 call levels, the
 existing 4096 source/final model nodes, and 4096 expansion visits including
 empty calls. No alternative executor, public type or role manager is needed.
 
-Run `python -m examples.synthesis_const_calls` for the contributor-only owned-IR
+Run `python -m examples.synthesis.tutorials.composition.const_calls.main` for the contributor-only owned-IR
 path, then `tests/team/compiler/test_construction_register_calls.py` and
 `tests/integration/test_synthesis_const_calls.py`. Public Python stays unchanged.
 Ecosystem now delegates native Const/Output helpers through this boundary; its
 former Output-only substitution and alias checker have been removed. The new
-public source example is `python -m examples.synthesis_qmod_const`; source role
+public source example is `python -m examples.synthesis.tutorials.qmod.qmod_const.main`; source role
 translation owns no duplicate Compiler role/effect checker. See
 the [contract](../../../docs/api-changes/FQ-SYNTH-CONST-CALLS-20261101.md) and
 [delivery](../../../docs/roadmap/SYNTH_CONST_CALLS_DELIVERY.md).
@@ -380,7 +420,7 @@ closed prerequisite for later local/within scopes, not a general unitary inverse
 Every helper verifies independently, including unused ones, and the expanded
 root verifies again through the existing call boundary.
 
-Run `python -m examples.synthesis_register_cleanup`, then
+Run `python -m examples.synthesis.tutorials.composition.register_cleanup.main`, then
 `tests/team/compiler/test_construction_register_cleanup.py` and
 `tests/integration/test_synthesis_register_cleanup.py`. This owned-record example
 is for contributors; public Python/native source syntax is unchanged. See the
@@ -414,7 +454,7 @@ independently and the expanded root verifies again. Existing model/visit/depth
 budgets and exact phase targets remain. No Runtime allocator or public API is
 added, and native local/within/free/drop syntax is still outside admission.
 
-Run `python -m examples.synthesis_local_registers`, then
+Run `python -m examples.synthesis.tutorials.composition.local_registers.main`, then
 `tests/team/compiler/test_construction_local_registers.py` and
 `tests/integration/test_synthesis_local_registers.py`. The contributor example
 returns x/y/reference, with every temporary hidden and zero. See the
@@ -430,7 +470,7 @@ complete-domain width checks and emission for +, * and powers. The square graph
 remains unchanged. No function body is evaluated or power kernel introduced.
 Boolean, zero, negative, fractional, configured, computed and larger exponents
 are refused. Compiler node/visit, 256-bit and physical resource budgets remain
-in force. Run python -m examples.synthesis_python_powers and the focused
+in force. Run python -m examples.synthesis.tutorials.arithmetic.python_powers.main and the focused
 Python power integration suite; this does not establish notebook acceptance.
 
 ## Range-proven constant addition
@@ -442,7 +482,7 @@ initialization does not narrow the domain. Zero, overlapping constants and two
 quantum operands keep ripple lowering. Existing inverse cleanup, retain and
 recompute schedules, resource accounting and Program execution remain shared.
 
-Run `python -m examples.synthesis_carry_free_add` and
+Run `python -m examples.synthesis.tutorials.arithmetic.carry_free_add.main` and
 `tests/integration/test_synthesis_carry_free_add.py`. The one-bit x+256 example
 uses 19 qubits and an 8 MiB planned state buffer. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-CARRY-FREE-ADD-20261101.md) and
@@ -457,7 +497,7 @@ still allocated. Forward, inverse and rematerialized computation read current
 bindings. Both operand orders work. Zero, one, other constants, two quantum
 operands and derived zero-bound values retain generic multiplication.
 
-Run `python -m examples.synthesis_power_two_multiply` and
+Run `python -m examples.synthesis.tutorials.arithmetic.power_two_multiply.main` and
 `tests/integration/test_synthesis_power_two_multiply.py`. The one-bit x*256
 example uses 19 qubits and an 8 MiB planned state buffer. See the
 [contract](../../../docs/api-changes/FQ-SYNTH-POWER-TWO-MULTIPLY-20261101.md) and
@@ -472,7 +512,7 @@ Const targets, unknown state and malformed indices/attributes remain refused,
 and gate writes retain dependency invalidation. Native source policy is owned
 by Ecosystem, which currently admits only integer literals 0..2**53 on qbits.
 
-Run `python -m examples.synthesis_qmod_phase_gate`, then
+Run `python -m examples.synthesis.tutorials.qmod.qmod_phase_gate.main`, then
 `tests/team/compiler/test_construction_phase_gate.py` and
 `tests/integration/test_synthesis_qmod_phase_gate.py`. Full complex amplitudes
 are necessary to distinguish phase from RZ's global-phase convention. See the
@@ -492,7 +532,7 @@ The closed constant-angle register gate set shares phase/rz validation and Core
 named-theta lowering. Source decimal gates are owned by Ecosystem, not the Python
 integer frontend. Run `tests/team/compiler/test_construction_rz_gate.py` and
 `tests/team/compiler/test_construction_program_boundary.py`; use
-`python -m examples.synthesis_native_and_qmod_rz` for runnable high-level integer,
+`python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main` for runnable high-level integer,
 Qmod and Circuit comparisons with the remaining native phase gap explicit.
 
 ## Python program capture (UP-01)
@@ -513,7 +553,7 @@ Const/fresh-Output, alias and cleanup proofs; selection/lowering reuse existing
 kernels, schedules, targets and resource checks. No Qmod string bridge or second
 IR is involved. General inverse/phase/control/local scopes remain later slices.
 
-Golden path: run `python -m examples.synthesis_python_program`, change a literal
+Golden path: run `python -m examples.synthesis.tutorials.composition.python_program.main`, change a literal
 allocation width, then run `tests/team/compiler/test_construction_python_program.py`
 and `tests/integration/test_synthesis_python_program.py`. Include full complex
 state/clean-workspace checks, not just output probabilities. The typed program
@@ -557,7 +597,7 @@ adjoint cleanup retains the matching original candidate's inverse evidence.
 The phase-mode emitter is unchanged; phase tests use the explicitly unnormalized
 value emitter when constructing their historical general reference.
 
-Run `python -m examples.synthesis_normalization` for the unified qfunc program,
+Run `python -m examples.synthesis.tutorials.arithmetic.normalization.main` for the unified qfunc program,
 Qmod and an independently derived Circuit reference. Follow
 `tests/team/compiler/test_construction_normalization.py` for a small rule change,
 then `tests/integration/test_synthesis_normalization.py` for complete-state,
@@ -584,7 +624,7 @@ to the external caller. Their paired compute/write and carry-cleanup events
 account for scratch without freeing caller output. Exact adjoints reverse those
 actual gates/events. The phase emitter remains conservative.
 
-Run `python -m examples.synthesis_arithmetic_implementations` for the complete
+Run `python -m examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main` for the complete
 native qfunc/Qmod workflow. Kernel tests are in
 `tests/team/compiler/test_construction_arithmetic_implementations.py`; integration
 acceptance covers coherent targets, controls, adjoints and both schedules.

@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/Classiq/classiq-library",
+  "commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "license_file": "LICENSE.txt",
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0",
+  "fixtures": [
+    {
+      "file": "swap_test.qmod",
+      "source_path": "algorithms/quantum_primitives/swap_test/swap_test.qmod",
+      "git_blob_sha1": "c686d373a0c2d12be1521b0e884e9413c48299af",
+      "sha256": "a5ac91c85f0868e14164385710af056a2c0e84b73b4eb1ccd5bc449d421b99f2"
+    }
+  ]
+}

@@ -302,7 +302,8 @@ def test_default_and_explicit_value_preserve_circuit_report_and_named_result():
 
 def test_public_example_has_no_private_imports_gates_or_decoding():
     source = (
-        Path(__file__).resolve().parents[2] / "examples/synthesis_phase_oracle.py"
+        Path(__file__).resolve().parents[2]
+        / "examples/synthesis/tutorials/control/phase_oracle/main.py"
     ).read_text()
     assert 'output_mode="phase"' in source
     assert "fq.run(program)" in source
