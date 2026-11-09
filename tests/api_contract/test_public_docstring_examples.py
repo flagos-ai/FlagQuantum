@@ -33,6 +33,7 @@ from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
 )
+from flagquantum.algorithms.fermion.preparation import prepare_slater
 from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
@@ -284,6 +285,7 @@ ENTRIES = (
     optimize,
     pauli_exponential_circuit,
     pauli_readout,
+    prepare_slater,
     PyMatchingDecoder.decode_batch,
     parity_encoding,
     plan_lindblad_evolution,
