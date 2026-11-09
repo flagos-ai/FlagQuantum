@@ -1174,3 +1174,42 @@ separately. A schedule is ownership evidence, not a numerical cleanup proof.
 The eight source-only witnesses pass in 1.95 seconds in
 `tests/unit/test_register_workspace_schedule_contract.py`. They are prerequisites,
 not completed native scheduling or additional accepted capability counts.
+
+### Physical binding entry and local connection ordering
+
+The first physical entry is Compiler-internal `bind_register_program(record,
+inputs, *, clean=(), borrowed=(), entry="main")`. Inputs are ordered physical
+wire tuples, one per declared left element. Return a frozen Compiler result with
+the existing `CircuitIR`, right-element wire tuples and immutable lifetime events.
+Each event records its flattened operation position, kind, ordered wires and
+source dirty metadata. These records serve the concrete binding and cleanup
+consumer. They do not attest numerical restoration. Existing gate-only lowering
+keeps its current result and semantics.
+
+For each actual function, reconstruct connections by consuming operand ports in
+operation order and then return ports in declaration order. Insert source and
+target nodes when an edge is first seen, as the source `_create_binst_graph` does.
+Parameter and feedback SSA introduce zero-width dependencies. Helper functions
+whose sole operation is Allocate/Free inherit that source scheduling priority.
+Keep every call's local ordering before finite expansion, reusing the existing
+explicit-stack call traversal. Unconnected source nodes originate in a frozenset
+and have no portable insertion tie. Native unconnected operations use declaration
+order. That is a deterministic admitted policy and needs a separately disclosed
+source tie limitation rather than an exact-order claim for that case.
+
+The first physical profile requires quantum-only entry arguments, supplied
+nonnegative built-in integer wires, disjoint input/clean/borrowed bindings and
+balanced physical workspace. Freeing caller inputs and returning nonempty live
+workspace require explicit ownership transfer and are refused. Register views
+and call-local aliases propagate the actual physical tuple. Partial free returns
+each wire to its original pool, independently of Free metadata. Zero-width
+logical identity is validated by Core before physical tuples are erased.
+
+Emit constants, classical parity, measurements, reset, primitive parameters and
+boolean feedback through existing Instruction and CircuitIR contracts. Preserve
+fresh measurement slots per actual invocation. The caller supplies initial clean
+and dirty states and receives unchanged wire numbering, including unused declared
+wires. Graph binding does not insert numerical cleanup. Exercise the entry in an
+unchanged circuit.append consumer by replacing its emitter and test native
+complex states plus all small measurement branches. Input/output transfer,
+classical entry ports and unconnected source node ties stay explicit limitations.
