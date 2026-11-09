@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **86/216**.
+Validated quantum-program counterparts: **89/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -34,12 +34,13 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (21 native programs)
+## Applications (22 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 - [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
+- [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
 - [vehicle_routing_problem](applications/logistics/vehicle_routing_problem/README.md)
 - [adapt_qaoa](applications/optimization/adapt_qaoa/README.md)
 - [electric_grid_optimization](applications/optimization/electric_grid_optimization/README.md)
@@ -129,7 +130,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (14 native programs)
+## Tutorials (16 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
@@ -145,6 +146,8 @@ Validated local Notebook workflows:
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
+- [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
+- [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
 
 Validated local Notebook workflows:
 

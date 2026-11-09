@@ -4007,7 +4007,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/finance/portfolio_optimization/main.py",
+        "scope": "Complete 12-bit three-layer quantum program with all covariance and return terms; two nonzero parameter vectors, both width/depth objectives, full source/native/independent Circuit amplitudes and resource rejection checks. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -8062,7 +8065,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/main.py",
+        "scope": "Complete 9-bit three-layer quantum program with all covariance and return terms; two nonzero parameter vectors, both width/depth objectives, full source/native/independent Circuit amplitudes and resource rejection checks. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -8083,7 +8089,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/main.py",
+        "scope": "Complete 6-bit three-layer quantum program with all covariance and return terms; two nonzero parameter vectors, both width/depth objectives, full source/native/independent Circuit amplitudes and resource rejection checks. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

@@ -6,6 +6,7 @@ Native FlagQuantum programs currently available:
 - [quantum_drude_oscillator](chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
 - [patch_min_vertex_cover](cybersecurity/patching_management/patch_min_vertex_cover/README.md)
+- [portfolio_optimization](finance/portfolio_optimization/README.md)
 - [vehicle_routing_problem](logistics/vehicle_routing_problem/README.md)
 - [adapt_qaoa](optimization/adapt_qaoa/README.md)
 - [electric_grid_optimization](optimization/electric_grid_optimization/README.md)
