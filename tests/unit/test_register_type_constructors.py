@@ -65,18 +65,36 @@ def source_contract(kind, width=OMITTED, bound=OMITTED):
 def native_factory(kind, width=OMITTED, bound=OMITTED):
     from flagquantum.core.ir.program.register_types import (
         bounded_unsigned_register_type,
+        classical_bit_type,
+        classical_bounded_unsigned_register_type,
+        classical_ones_complement_register_type,
+        classical_signed_register_type,
+        classical_unsigned_register_type,
+        ones_complement_register_type,
         opaque_register_type,
         quantum_bit_type,
+        signed_register_type,
         unsigned_register_type,
     )
 
-    if kind == "bit":
-        return quantum_bit_type()
-    if kind == "bounded":
-        if bound is OMITTED:
-            return bounded_unsigned_register_type(width)
-        return bounded_unsigned_register_type(width, bound)
-    return {"opaque": opaque_register_type, "uint": unsigned_register_type}[kind](width)
+    if kind in ("bit", "classical_bit"):
+        return {"bit": quantum_bit_type, "classical_bit": classical_bit_type}[kind]()
+    if kind in ("bounded", "classical_bounded"):
+        factory = (
+            bounded_unsigned_register_type
+            if kind == "bounded"
+            else classical_bounded_unsigned_register_type
+        )
+        return factory(width) if bound is OMITTED else factory(width, bound)
+    return {
+        "opaque": opaque_register_type,
+        "uint": unsigned_register_type,
+        "signed": signed_register_type,
+        "ones_complement": ones_complement_register_type,
+        "classical_uint": classical_unsigned_register_type,
+        "classical_signed": classical_signed_register_type,
+        "classical_ones_complement": classical_ones_complement_register_type,
+    }[kind](width)
 
 
 @pytest.fixture(params=["source_contract", "native"])
@@ -252,9 +270,9 @@ INTEGER_KINDS = (
 )
 
 
-@pytest.fixture(params=["source_contract"])
+@pytest.fixture(params=["source_contract", "native"])
 def construct_integer_type(request):
-    return source_contract
+    return source_contract if request.param == "source_contract" else native_factory
 
 
 @pytest.mark.parametrize("kind", INTEGER_KINDS)
@@ -341,3 +359,78 @@ def test_classical_bound_default_precedes_symbolic_guard(construct_integer_type)
     assert dtype.classical_bits is width
     assert dtype.parameters == (("storage", "classical"), ("bound", 7))
     assert events == [("power", 2), "symbolic"]
+
+
+@pytest.mark.parametrize("kind", INTEGER_KINDS)
+def test_constructed_integer_words_reuse_existing_codecs(construct_integer_type, kind):
+    from flagquantum.simulation.bit_encoding import bit_from_bits, bit_to_bits
+    from flagquantum.simulation.bounded_integer_encoding import (
+        bounded_integer_from_bits,
+        bounded_integer_to_bits,
+    )
+    from flagquantum.simulation.integer_encoding import (
+        integer_from_bits,
+        integer_to_bits,
+    )
+    from flagquantum.simulation.ones_complement_encoding import (
+        ones_complement_from_bits,
+        ones_complement_to_bits,
+    )
+
+    dtype = construct_integer_type(kind, 3)
+    width = (
+        dtype.classical_bits if kind.startswith("classical_") else dtype.quantum_bits
+    )
+    source = source_factory(kind, 3)
+    for value in source.get_classical_domain():
+        expected = source.to_bits(value)
+        if dtype.encoding == "bit":
+            bits = bit_to_bits(value)
+            decoded = bit_from_bits(bits)
+        elif dtype.encoding == "ones_complement":
+            bits = ones_complement_to_bits(value, width)
+            decoded = ones_complement_from_bits(bits, width)
+        elif "bound" in dict(dtype.parameters):
+            bound = dict(dtype.parameters)["bound"]
+            bits = bounded_integer_to_bits(value, width, bound)
+            decoded = bounded_integer_from_bits(bits, width, bound)
+        else:
+            signed = dtype.encoding == "signed"
+            bits = integer_to_bits(value, width, signed=signed)
+            decoded = integer_from_bits(bits, width, signed=signed)
+        assert bits == expected
+        assert decoded == source.from_bits(expected) == value
+        assert type(decoded) is type(source.from_bits(expected))
+
+
+def test_ones_complement_consumers_share_core_guard_identity():
+    from flagquantum.core.ir.program import register_types
+    from flagquantum.simulation import (
+        classical_signed_truncation,
+        ones_complement_encoding,
+    )
+
+    assert (
+        ones_complement_encoding.validate_ones_complement_width
+        is register_types.validate_ones_complement_width
+    )
+    assert (
+        classical_signed_truncation.validate_ones_complement_width
+        is register_types.validate_ones_complement_width
+    )
+
+
+@pytest.mark.parametrize("kind", INTEGER_KINDS)
+def test_integer_factories_without_optional_sympy(kind, monkeypatch):
+    import builtins
+
+    original = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "sympy":
+            raise ModuleNotFoundError("No module named 'sympy'", name="sympy")
+        return original(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    dtype = native_factory(kind, 3)
+    assert dtype.num_bits == (1 if kind == "classical_bit" else 3)

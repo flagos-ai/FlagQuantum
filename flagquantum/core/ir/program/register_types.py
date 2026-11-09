@@ -1,12 +1,12 @@
 # Copyright 2023 Google LLC
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 QBit, QAny, QUInt and BQUInt constructors.
+# Adapted from Qualtran v0.7.0 quantum/classical integer constructors.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/_infra/data_types.py
 
 """Construct native register metadata using the pinned type-specific rules.
 
-Proposal 103 prerequisite 0.3 separates constructor validation from numerical
+Proposal 103 prerequisites 0.3 and 0.4 separate constructor validation from numerical
 codecs, physical wire binding and executable component graph admission.
 """
 
@@ -49,15 +49,31 @@ def bounded_unsigned_register_type(
     An omitted bound is computed before symbolic classification. Numerical value
     validation and physical binding apply at their existing owning boundaries.
     """
+    resolved = _resolve_unsigned_bound(
+        width,
+        bound,
+        description="Bounded unsigned register",
+        bound_name="iteration length",
+    )
+    return RegisterType("uint", width, parameters=(("bound", resolved),))
+
+
+def _resolve_unsigned_bound(
+    width: RegisterWidth,
+    bound: RegisterWidth | _DefaultBound,
+    *,
+    description: str,
+    bound_name: str,
+) -> RegisterWidth:
     if bound is _DefaultBound.OMITTED:
         bound = 2**width
     if not is_symbolic_value(width, bound):
         if bound > 2**width:
             raise ValueError(
-                f"Bounded unsigned register({width}, {bound}) iteration length "
+                f"{description}({width}, {bound}) {bound_name} "
                 f"is too large for given bitsize. {bound} vs {2**width}"
             )
-    return RegisterType("uint", width, parameters=(("bound", bound),))
+    return bound
 
 
 def validate_ones_complement_width(width: RegisterWidth) -> None:
@@ -65,3 +81,53 @@ def validate_ones_complement_width(width: RegisterWidth) -> None:
     # Original constructors reject only a Python-int one, not all widths <=1.
     if isinstance(width, int) and width == 1:
         raise ValueError("bitsize must be > 1.")
+
+
+def signed_register_type(width: RegisterWidth) -> RegisterType:
+    """Retain a two's-complement quantum word's declared width."""
+    return RegisterType("signed", width)
+
+
+def ones_complement_register_type(width: RegisterWidth) -> RegisterType:
+    """Construct a quantum ones'-complement word with the original width guard."""
+    validate_ones_complement_width(width)
+    return RegisterType("ones_complement", width)
+
+
+def classical_bit_type() -> RegisterType:
+    """Return the existing single-classical-bit identity."""
+    return RegisterType("bit", 0, 1)
+
+
+def classical_unsigned_register_type(width: RegisterWidth) -> RegisterType:
+    """Retain classical storage identity even when the declared width is zero."""
+    return RegisterType("uint", 0, width, parameters=(("storage", "classical"),))
+
+
+def classical_signed_register_type(width: RegisterWidth) -> RegisterType:
+    """Construct a classical two's-complement word without numerical validation."""
+    return RegisterType("signed", 0, width, parameters=(("storage", "classical"),))
+
+
+def classical_ones_complement_register_type(width: RegisterWidth) -> RegisterType:
+    """Preserve the shared ones'-complement guard and classical storage identity."""
+    validate_ones_complement_width(width)
+    return RegisterType(
+        "ones_complement", 0, width, parameters=(("storage", "classical"),)
+    )
+
+
+def classical_bounded_unsigned_register_type(
+    width: RegisterWidth,
+    bound: RegisterWidth | _DefaultBound = _DefaultBound.OMITTED,
+) -> RegisterType:
+    """Construct a bounded classical word with source default and failure order."""
+    resolved = _resolve_unsigned_bound(
+        width,
+        bound,
+        description="Bounded classical unsigned register",
+        bound_name="bound",
+    )
+    return RegisterType(
+        "uint", 0, width, parameters=(("storage", "classical"), ("bound", resolved))
+    )

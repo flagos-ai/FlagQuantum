@@ -221,3 +221,32 @@ This run reports 13,495 passed, 51 skipped, 398 warnings and one failure in
 `g2-register-organization-baseline-failure.log`. The default run is recorded in
 `g2-type-constructors-default.log`. The existing Python 3.10 unused fallback-import
 suppression diagnostic in `simulation/numerics/conformance.py` remains open.
+
+## Signed and classical integer constructors
+
+Prerequisite 0.4 extends the existing factory module with signed two's-complement
+and ones'-complement quantum words and classical bit, unsigned, signed,
+ones'-complement and bounded unsigned words. Signed constructors keep the source
+absence of eager width checks. Ones'-complement construction rejects only a
+Python integer one, including True. NumPy and symbolic integer one retain their
+source constructor outcome.
+
+Classical integer factories retain `("storage", "classical")` in the existing
+ordered type parameters. Bounded classical words append their bound parameter.
+This preserves the distinction between zero-width classical and quantum types.
+The existing classical bit identity remains `RegisterType("bit", 0, 1)`.
+Signature explicitly retains zero-width scalar ports and continues its source
+classical-only filtering in `build_from_dtypes`.
+
+The original ones'-complement width-guard body moves unchanged to Core. Both
+Simulation's numerical codec and signed truncation use that authoritative
+function at their original validation sites. The shared bounded resolver keeps
+quantum `iteration length` and classical `bound` diagnostics distinct and retains
+omitted-bound exponentiation before symbolic classification.
+
+The source-backed contract adds 182 scenarios before implementation. Native
+factories pass the same scenarios. Codec, guard identity and optional-Sympy cases
+bring the constructor suite to 642 tests. With Register and Signature regression,
+997 cases pass without warnings or skips. The shared-guard relocation separately
+passes 1,678 cases with 64 existing paired source/native NumPy warnings. Its body
+AST is identical to the pre-move implementation.
