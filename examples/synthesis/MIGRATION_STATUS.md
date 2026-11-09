@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **19/213**.
+Validated local Notebook workflows: **20/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -324,7 +324,7 @@ Validated local Notebook workflows: **19/213**.
 | `functions/function_usage_examples/arithmetic/extremum/extremum_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/extremum/maximum_float_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/extremum/maximum_integer_example` | quantum_program | Pending | pending |
-| `functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example` | quantum_program | Pending | pending |
+| `functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example` | quantum_program | [Native program](functions/arithmetic/extremum/minimum_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/modulo/modulo_example` | notebook_workflow | [Native program](functions/arithmetic/modulo/modulo_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication` | notebook_workflow | Pending | pending |
@@ -400,7 +400,7 @@ Validated local Notebook workflows: **19/213**.
 | `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | validated |
 | `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | Pending | pending |
-| `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | pending |
+| `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | validated |
 | `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | Pending | pending |

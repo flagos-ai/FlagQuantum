@@ -1,4 +1,4 @@
-"""Prepare the retained six-qubit real amplitude vector using native qfunc."""
+"""Prepare the retained vector and run the full native eight-qubit bound sweep."""
 
 import flagquantum as fq
 from flagquantum import synth
@@ -88,3 +88,9 @@ if __name__ == "__main__":
     result = fq.run(program)
     print(dict(program.probabilities(result, registers=("out",))))
     print(program.report["resources"])
+
+    from examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep import (
+        run_example,
+    )
+
+    run_example()

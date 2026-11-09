@@ -662,3 +662,10 @@ validation owns matrix shape/unitarity and storage legality; shared lowering own
 the gate decomposition and absolute phase. No numerical matrix code is duplicated
 in capture. Run `tests/integration/test_synthesis_native_unitary.py` for independent
 matrix application, array/list bit order, helper views and fail-closed inputs.
+
+Typed qfunc arithmetic also admits `yes if predicate else no`. The scalar
+frontend owns predicate checks, branch-width inference and `qint.select`;
+register capture only admits the existing expression node. This is coherent
+value computation with fresh output storage, including checked helper calls.
+Run `tests/integration/test_synthesis_native_selection.py` for independent
+truth-table circuits, nested values, coherence, cleanup and refusal checks.

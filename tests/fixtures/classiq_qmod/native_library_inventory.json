@@ -5554,7 +5554,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/extremum/minimum_2vars_example/main.py",
+        "scope": "Complete source quantum program; sibling extremum Notebook remains pending fractional maximum support."
+      },
       "kind": "quantum_program"
     },
     {
@@ -7396,12 +7399,47 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
+      "workflow_status": "validated",
       "native_program": {
         "path": "examples/synthesis/tutorials/technology_demonstrations/approximated_state_preparation/main.py",
-        "scope": "Quantum program only; the complete Notebook approximation tradeoff and analysis workflow remains pending."
+        "scope": "Complete local Notebook workflow: reproduce seeded 256-element data, all ten bounds, executed resource/error measurements and saved plot. Retained six-bit Qmod counterpart remains separately available through build_program."
       },
-      "kind": "notebook_workflow"
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "b14596d13dd4f34f87f67f9e0aadd7b5276326d7d99745bff42643a9f24abe4c",
+        "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_amplitude_sweep.py",
+        "scope": "Complete local Notebook workflow: reproduce seeded 256-element data, all ten bounds, executed resource/error measurements and saved plot. Retained six-bit Qmod counterpart remains separately available through build_program.",
+        "native_semantic_adaptations": "Current exact native preparation satisfies all requested bounds and yields a flat resource curve; no approximation compression claim. Record native instruction-basis depth and CX counts, not Classiq custom CX/U transpilation metrics. NumPy RandomState(1) preserves the source data sequence without changing global random state. No cloud, remote timeout or hardware claim.",
+        "git_blob_sha1": "6d50c95f2359cfb5c7baecb15ad2c7648c1df300",
+        "notebook_path": "tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation.ipynb",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "172976f4ead9df24c77c9edc0bfbcddcf01414d1370449426a3484cdf15b8908"
+          },
+          {
+            "index": 3,
+            "sha256": "215e30114ecbd03abdeed0bc17cffb41435dcff1decf24ad8036aae218bb4769"
+          },
+          {
+            "index": 4,
+            "sha256": "2f384599b9f562e376bdfbe71b2dc915c8f006b6f9fce92e78f15aef1ae51042"
+          },
+          {
+            "index": 5,
+            "sha256": "b9bface76b1146988f8ca5ee87bdec6287a39830d87f4ae264537a8b88327039"
+          },
+          {
+            "index": 6,
+            "sha256": "bc4c492bff53f9d4b2455f761746e0f789ed6c4e35ef3fee739ea912d0cbf47b"
+          }
+        ],
+        "quantum_program_acceptance_test": "tests/integration/test_synthesis_native_approximate_preparation.py",
+        "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep"
+      }
     },
     {
       "id": "tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions",

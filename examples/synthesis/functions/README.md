@@ -10,6 +10,7 @@ Native FlagQuantum programs currently available:
 - [bitwise_or_integer_example](arithmetic/bitwise_or/bitwise_or_integer_example/README.md)
 - [bitwise_xor_integer_example](arithmetic/bitwise_xor/bitwise_xor_integer_example/README.md)
 - [comparator_integer_example](arithmetic/comparator/comparator_integer_example/README.md)
+- [minimum_2vars_example](arithmetic/extremum/minimum_2vars_example/README.md)
 - [modulo_example](arithmetic/modulo/modulo_example/README.md)
 - [multiplication_2vars_example](arithmetic/multiplication/multiplication_2vars_example/README.md)
 - [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)

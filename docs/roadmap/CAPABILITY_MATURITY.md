@@ -579,3 +579,13 @@ consistent least-significant-first array/list views. Host constructors, mutable
 global matrices and unsupported ownership fail closed. The maturity is local CPU
 semantic validation; complete application Notebooks require separate acceptance.
 See the [contract](../api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md).
+
+## Native unsigned conditional values
+
+Typed qfunc fresh assignment reuses scalar `qint.select` for Python conditional
+values. The unchanged minimum original has a native counterpart; independent
+reversible truth tables verify ties, nested values, wider branches, complex
+coherent states under both objectives, helper composition and clean workspace.
+Ownership and resource ceilings remain checked. Maturity is local CPU semantic
+validation, with no signed/fractional or dynamic host-branch claim. See the
+[contract](../api-changes/FQ-SYNTH-NATIVE-CONDITIONAL-VALUES-20261109.md).

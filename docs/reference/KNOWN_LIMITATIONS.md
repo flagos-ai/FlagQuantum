@@ -1014,3 +1014,8 @@ use local position zero as the least significant matrix bit. Mutable matrix
 globals, arbitrary constructors, classical parameter matrices and new native
 controlled/inverse helper forms are not admitted. Existing matrix decomposition
 is locally CPU verified with absolute phase; this is not a hardware claim.
+
+Native qfunc conditional values accept only unsigned expressions and one-bit
+predicates or comparisons. Both branches are checked statically; this does not
+admit host callbacks, Python min/max calls, signed arithmetic or fractional
+selection. The `max(3.5,a)` originals remain pending native fractional support.

@@ -10,6 +10,8 @@ rotation tree. Original and native outputs agree in every complex amplitude,
 including signs, absolute phase and bit order. Both use 6 qubits, 125 operations,
 depth 120 and no workspace. The probability-vector L2 error is below 1e-12.
 
-The complete Notebook additionally investigates approximation and resource
-tradeoffs. That workflow remains pending; only its retained quantum program is
-certified here. Source data, identity and this scope are recorded in provenance.
+The [complete Notebook workflow](WORKFLOW.md) separately retains its 256-element
+seeded data and ten-bound resource sweep. The current native exact kernel gives
+a flat resource curve and no approximation savings. The retained 64-element
+quantum program above remains available unchanged via `build_program()`. Source
+data, identities and both scopes are recorded in provenance.

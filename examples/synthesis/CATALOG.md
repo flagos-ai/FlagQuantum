@@ -3,8 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **52/216**.
-Validated local Notebook workflows: **19/213**.
+Validated quantum-program counterparts: **53/216**.
+Validated local Notebook workflows: **20/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -43,7 +43,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (31 native programs)
+## Functions (32 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -53,6 +53,7 @@ Validated local Notebook workflows:
 - [bitwise_or_integer_example](functions/arithmetic/bitwise_or/bitwise_or_integer_example/README.md)
 - [bitwise_xor_integer_example](functions/arithmetic/bitwise_xor/bitwise_xor_integer_example/README.md)
 - [comparator_integer_example](functions/arithmetic/comparator/comparator_integer_example/README.md)
+- [minimum_2vars_example](functions/arithmetic/extremum/minimum_2vars_example/README.md)
 - [modulo_example](functions/arithmetic/modulo/modulo_example/README.md)
 - [multiplication_2vars_example](functions/arithmetic/multiplication/multiplication_2vars_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
@@ -111,3 +112,4 @@ Validated local Notebook workflows:
 - [prepare_state](tutorials/basics/prepare_state/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
+- [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)

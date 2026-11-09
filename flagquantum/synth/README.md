@@ -1032,3 +1032,11 @@ position zero is the least significant matrix bit. Matrices are literal nested
 numeric lists/tuples or immutable global tuples; arbitrary host constructors and
 parameterized matrices remain refused. See the
 [unitary contract](../../docs/api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md).
+
+Typed qfunc fresh assignment accepts coherent conditional values, for example
+`res |= a if a < b else b`. The compiler derives a comparison and value-selection
+circuit, infers the wider branch width, and cleans its workspace. Nested values
+and checked helpers use the existing expression path. Conditions must be one
+bit, comparisons, or literal zero/one; host calls and signed/fractional branches
+remain refused. See the [conditional-value contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CONDITIONAL-VALUES-20261109.md)
+and the [native minimum example](../../examples/synthesis/functions/arithmetic/extremum/minimum_2vars_example/README.md).

@@ -316,13 +316,14 @@ class _Body:
             ast.LtE,
             ast.Gt,
             ast.GtE,
+            ast.IfExp,
         )
         if any(not isinstance(child, allowed) for child in ast.walk(expr)):
             _error(
                 self.source,
                 expr,
                 "program.expression",
-                "use unsigned arithmetic, comparisons, bitwise values or an unsigned literal",
+                "use unsigned arithmetic, comparisons, conditional values, bitwise values or an unsigned literal",
             )
         used = {child.id for child in ast.walk(expr) if isinstance(child, ast.Name)}
         if not used or not used.issubset(self.ports):
