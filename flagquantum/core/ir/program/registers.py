@@ -68,6 +68,14 @@ class RegisterType:
                     if name == "fractional_width"
                 ),
             )
+        if self.encoding == "finite_field":
+            return is_symbolic_value(
+                *(
+                    value
+                    for name, value in self.parameters
+                    if name in ("characteristic", "order")
+                )
+            )
         return is_symbolic_value(
             self.quantum_bits,
             self.classical_bits,
