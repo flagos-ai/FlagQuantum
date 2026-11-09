@@ -14,6 +14,10 @@ from flagquantum.compiler.registers.finite_field.field_multiplication import (
     bind_field_outputs,
     gf2_multiplication,
 )
+from flagquantum.core.ir.program.register_compatibility import (
+    check_register_types_consistent,
+)
+from flagquantum.core.ir.program.register_types import fixed_point_register_type
 from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 
 
@@ -23,6 +27,9 @@ def main() -> None:
     quantum_word = field.register_type()
     classical_word = field.register_type(classical=True)
     assert quantum_word.num_qubits == classical_word.num_cbits == 3
+    assert check_register_types_consistent(
+        quantum_word, fixed_point_register_type(3, 0)
+    )
     assert field.order == 8 and field.bitsize == 3
     bits = np.array(
         [field.to_bits(value) for value in field.get_domain()], dtype=np.uint8

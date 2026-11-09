@@ -556,3 +556,53 @@ previously reproduced rotation-fusion failure in 167.64 seconds. The prior
 Python 3.10 and Karatsuba/inverse reference exceptions remain open. Evidence
 logs use the `g2-field-projection-` prefix. Full typed graph binding, calls,
 returns and traversal remain pending after metadata compatibility.
+
+## Source-ordered register type consistency
+
+Prerequisite 0.10 adds Core's internal register_compatibility.py. Its
+RegisterTypeCheckingSeverity enum preserves LOOSE=0, ANY=1 and STRICT=2.
+`check_register_types_consistent(left, right, severity=LOOSE)` evaluates nominal
+equality and quantum-width equality before following the original decision tree.
+Identical declarations and equal single-qubit types precede STRICT. Quantum
+opaque matching precedes ANY. LOOSE retains the signed/unsigned/bounded/
+Montgomery integer group and the separate unsigned/bounded/Montgomery/field to
+whole or wholly fractional unsigned fixed-point group. Classical encodings and
+ones' complement retain their source exclusion from numeric conversion groups.
+The source uses quantum width for opaque matching, including when the opposite
+operand is classical. Tests preserve that observable decision.
+
+The predicate explicitly replays the pinned cross-None polynomial comparison
+TypeError before dimensional or severity decisions. Its diagnostic is source
+data, and Core operates entirely on neutral parameters. The source's canonical
+coefficient-field identity is carried by the accepted projection. Arbitrary
+manual FieldArray subclasses retain the previously stated coverage limit.
+Unsigned fixed-point num_int evaluation invokes the existing shared shape guard
+at the corresponding lazy source access point. Boolean and NumPy scalar results
+retain their original return classes and short-circuit behavior.
+
+The initial source-backed stand-in checks 35,643 combinations over 109
+supported declarations and three severities before implementation. The final
+20-test module checks the 43,200 combinations over 120 declarations against the
+unchanged source. It includes symbolic widths, NumPy integer and signedness
+scalars, None signedness, negative and zero widths, quantum/classical mixes,
+opaque and one-bit precedence, fixed-point signedness and fractional limits,
+field conversion asymmetry and cross-None exceptions. Source/native consistency
+checks are substituted in the same Signature-to-quadratic-multiplier consumer.
+Accepted bindings compare unmodified per-wire source gate streams and complete
+complex amplitudes; stricter admission decisions are checked before binding.
+The existing example consumes this shared predicate and keeps its append path.
+
+Model and emitted accounting stay separate. GF(8) emits 9 CCX and 3 CX with zero
+binding SWAPs, work wires or measurements. The independent source model is 9
+Toffoli and 3 Clifford. Existing field erasure/inverse regressions retain their
+measurement-branch, clean-workspace, KMX and native Kickmix evidence. Four
+examples, nine pinned source blobs, scoped Python 3.12 strict types, formatting,
+team scope, architecture, public API baseline and internal IR checks pass.
+The default tier records 15,921 passed, 51 skipped, 398 warnings and the same
+known rotation-fusion failure in 93.66 seconds, stopping on the first failure.
+The existing Python 3.10 and repaired-reference Karatsuba/inverse limits remain
+recorded. Logs use the `g2-type-consistency-` prefix. Concrete typed binding and
+component calls/returns/traversal are the following executable graph work.
+
+The final 26-file concentrated regression passes 3,884 tests without warnings
+or skips in 19.81 seconds, including the expanded 120-declaration matrix.
