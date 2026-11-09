@@ -77,11 +77,29 @@ process-group signalling and `ps` during child cleanup. No watchdog code or
 assertion was changed. This is not a clean full-suite result. CI capacity,
 merge-gate, testing-manual and dependency-audit contracts passed 82 tests after
 the Ubuntu test selections were extended.
-The existing independent Ubuntu matrix now explicitly runs FCIDUMP import
-isolation before optional dependencies and the two PySCF producer cases after
-the driver installation. Linux verification belongs to CI. Dependency #1109 has
-rebuilt all four fixed images and passed both Linux native-fermion matrix
-endpoints in run `42584600022`. This stacked PR inherits that lock and its
-qualification requirement; its diff changes neither dependency manifests nor
-image locks. Its own full Linux workflow must pass on the FCIDUMP revision,
-including the independent file-import and PySCF tests.
+The independent Ubuntu matrix runs FCIDUMP import isolation before optional
+dependencies and the two PySCF producer cases after driver installation. Linux
+verification belongs to CI. Dependency #1109 rebuilt and qualified all four fixed
+images and all 192 coverage worker caches. This stacked PR inherits that lock;
+its diff changes neither dependency manifests nor image locks.
+
+## Remote CI acceptance and review status
+
+The following results are bound to implementation revision
+`ca9a978fc1da07071e67817b7d291750455a6249`, before documentation reconciliation:
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Full Linux workflow | Manual CI run `42605814883` | 233 jobs successful; both science endpoints and FCIDUMP producer/isolation tests passed |
+| Runtime selection | Same CI run | 6,217 passed, 404 skipped; real distributed launches passed |
+| Coverage | Same CI run | 192 of 192 shards and aggregate passed |
+| GPU workflow | Run `42605825581` | Passed |
+
+The full workflow was dispatched explicitly because the stacked base does not
+trigger the main-target PR workflow. These remote results are separate from the
+local sandbox failure recorded above. Later commits need their own applicable
+checks; the run IDs above remain evidence for their recorded revision.
+
+PR #1110 is open and ready for maintainer review, with no merge performed. Merge
+#1109 first, then retarget this PR to main and run target-branch checks before
+merging. Neither workflow success nor review preparation is maintainer approval.
