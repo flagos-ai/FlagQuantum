@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from fractions import Fraction
 from os import PathLike
 from types import MappingProxyType
 from typing import Literal, overload
@@ -102,6 +103,8 @@ prepare_bell_state = program_types.prepare_bell_state
 prepare_ghz_state = program_types.prepare_ghz_state
 prepare_amplitudes = program_types.prepare_amplitudes
 prepare_state = program_types.prepare_state
+min = program_types.minimum
+max = program_types.maximum
 
 __all__ = (
     "ConstructionBudget",
@@ -149,6 +152,8 @@ __all__ = (
     "modular_exp",
     "suzuki_trotter",
     "qdrift",
+    "min",
+    "max",
 )
 
 
@@ -323,6 +328,56 @@ class Program:
             max_amplitudes=max_amplitudes,
             threshold=threshold,
         )
+
+    def numeric_probabilities(
+        self,
+        result: ExecutionResult,
+        *,
+        registers: Sequence[str] = ("result",),
+        max_bits: int = 16,
+        max_keys: int = 65536,
+        max_amplitudes: int = 1 << 22,
+        threshold: float = 1e-14,
+    ) -> Mapping[tuple[Fraction, ...], float]:
+        """Read exact signed/scaled values from verified native declarations.
+
+        Raw words remain available through probabilities. Older/source-adapter
+        products without native numeric declarations refuse decoded reading.
+
+        Examples:
+            >>> values = program.numeric_probabilities(result)  # doctest: +SKIP
+            >>> dict(values)  # doctest: +SKIP
+            {(Fraction(1, 2),): 1.0}
+        """
+        self._validate()
+        formats = {
+            name: (signed, fraction)
+            for name, signed, fraction in self._checked.numeric_formats
+        }
+        if not formats or any(name not in formats for name in registers):
+            raise ValueError(
+                "numeric reading requires verified native numeric declarations for every selected register"
+            )
+        raw = self.probabilities(
+            result,
+            registers=registers,
+            max_bits=max_bits,
+            max_keys=max_keys,
+            max_amplitudes=max_amplitudes,
+            threshold=threshold,
+        )
+        values = {}
+        for key, probability in raw.items():
+            decoded = []
+            for name, word in zip(registers, key, strict=True):
+                signed, fraction = formats[name]
+                width = len(self.registers[name])
+                integer = (
+                    word - (1 << width) if signed and word >> (width - 1) else word
+                )
+                decoded.append(Fraction(integer, 1 << fraction))
+            values[tuple(decoded)] = probability
+        return MappingProxyType(values)
 
 
 _DEFAULT_BUDGET = ConstructionBudget()
@@ -833,6 +888,7 @@ def _complete(
     memory_limit_bytes: int | None = None,
     memory_limit_origin: Literal["profile_default", "explicit"] = "profile_default",
     exact_mps: bool = False,
+    numeric_formats: tuple[tuple[str, bool, int], ...] = (),
 ) -> Program:
     """Admit either construction producer through one checked execution authority."""
     row = selection.selected
@@ -861,6 +917,7 @@ def _complete(
         coupling=row.target.coupling,
         registers=selection.registers,
     )
+    checked = replace(checked, numeric_formats=numeric_formats)
     if memory_limit_bytes is not None and execution.state_bytes > memory_limit_bytes:
         raise PlanningError(
             f"execution memory budget exceeded: state requires {execution.state_bytes} "

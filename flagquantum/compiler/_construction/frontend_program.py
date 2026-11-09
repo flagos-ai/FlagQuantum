@@ -26,6 +26,12 @@ from .frontend_evolution import (
     flush_evolutions,
 )
 from .frontend_matrix import capture_unitary
+from .frontend_numeric import (
+    assign_numeric,
+    has_numeric,
+    needs_numeric,
+    reject_numeric_reads,
+)
 from .frontend_phase import capture_polynomial_phase
 from .frontend_ports import (
     _annotation_node,
@@ -176,7 +182,10 @@ class _Capture:
                 self, definition, name, ports, self.classical if root else None
             )
             program = builder.finish()
-            resolved = tuple(replace(p, width=builder.widths[p.name]) for p in ports)
+            resolved = tuple(
+                replace(builder.ports[p.name], width=builder.widths[p.name])
+                for p in ports
+            )
         finally:
             self.active.remove(id(definition))
         self.cache[key] = (program, resolved)
@@ -273,6 +282,17 @@ class _Body:
         self.effect = following
 
     def assign(self, node: ast.AugAssign) -> None:
+        if (
+            isinstance(node.op, ast.BitXor)
+            or needs_numeric(self, node.value)
+            or (
+                isinstance(node.target, ast.Name)
+                and node.target.id in self.ports
+                and has_numeric(self.ports[node.target.id])
+            )
+        ):
+            assign_numeric(self, node)
+            return
         if not isinstance(node.op, ast.BitOr):
             _error(
                 self.source,
@@ -324,6 +344,7 @@ class _Body:
     def capture_expression(
         self, expr: ast.expr, statement: ast.AST
     ) -> tuple[HybridProgram, tuple[Value, ...]]:
+        reject_numeric_reads(self, expr, "unsigned expressions")
         allowed: tuple[type[ast.AST], ...] = (
             ast.BinOp,
             ast.Name,
@@ -726,6 +747,8 @@ class _Body:
                 )
             self.emit("qreg.phase", node, (), angle=gamma)
         elif function is phase:
+            for argument in node.args:
+                reject_numeric_reads(self, argument, "phase expressions")
             if len(node.args) != 2:
                 _error(
                     self.source,
@@ -771,6 +794,15 @@ class _Body:
                 self.emit("qreg.phase", node, actuals, callee=graph.name, **attributes)
         elif isinstance(function, _QuantumFunction) and function.source.program:
             formal = program_ports(function)
+            if any(has_numeric(port) for port in formal):
+                _error(
+                    self.source,
+                    node,
+                    "program.numeric",
+                    "numeric helper ports are not admitted",
+                )
+            for argument in node.args:
+                reject_numeric_reads(self, argument, "helper calls")
             if any(port.role == "inout" for port in formal):
                 if inverse or control_bit is not None:
                     _error(
@@ -829,6 +861,13 @@ class _Body:
                 if port.role == "const":
                     self.register(argument)
             program, resolved = self.owner.build(function, tuple(widths))
+            if any(has_numeric(port) for port in resolved):
+                _error(
+                    self.source,
+                    node,
+                    "program.numeric",
+                    "numeric helper results are not admitted",
+                )
             reads: list[Value] = []
             writes: list[Value] = []
             for argument, port in zip(node.args, resolved, strict=True):
@@ -919,6 +958,13 @@ class _Body:
                 location=self.source.location(node),
             )
         )
+        if needs_numeric(self, node.value):
+            _error(
+                self.source,
+                node,
+                "program.numeric",
+                "numeric arithmetic locals are not admitted",
+            )
         graph, actuals = self.capture_expression(node.value, node)
         self.emit("qreg.compute", node, (value, *actuals), callee=graph.name)
         return name
@@ -1027,7 +1073,14 @@ class _Body:
             Operation(
                 "qreg.declare",
                 results=(values[p.name],),
-                attributes={"name": p.name},
+                attributes={
+                    "name": p.name,
+                    **(
+                        {"numeric_format": (p.signed, p.fractional_bits)}
+                        if any(has_numeric(port) for port in self.ports.values())
+                        else {}
+                    ),
+                },
                 location=self.source.location(self.source.node),
             )
             for p in self.ports.values()

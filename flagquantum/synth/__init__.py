@@ -32,6 +32,8 @@ from ..services.synthesis import (
     apply,
     control,
     hadamard_transform,
+    max,
+    min,
     modular_exp,
     phase,
     prepare_amplitudes,
@@ -98,4 +100,6 @@ __all__ = (
     "modular_exp",
     "suzuki_trotter",
     "qdrift",
+    "min",
+    "max",
 )

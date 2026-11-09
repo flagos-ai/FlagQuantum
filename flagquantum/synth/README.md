@@ -1126,3 +1126,55 @@ mutable-helper coherent control is a separate boundary. The
 checks two nonzero parameter pairs; [randomized benchmarking](../../examples/synthesis/applications/benchmarking/randomized_benchmarking/main.py)
 keeps the original sequence and explicitly retains the global phase of SX.
 These are local quantum-program checks; full Notebook workflows remain separate.
+
+
+## Exact signed and binary-scaled numbers
+
+Native scalar annotations support `QNum[width, signed, fractional_bits]`.
+Use `Annotated[QNum, (width, signed, fractional_bits)]` for static Python type
+checking. A signed register uses two's complement; the encoded integer is
+scaled by `2**(-fractional_bits)`. Width-only QNum remains unsigned and unscaled.
+Fresh `|=` assignments infer the complete input domain, even when an input was
+prepared in a single basis state. Literal `^=` modifies a fitting raw initialized
+word; it never numerically adds or changes the scale.
+
+```python
+from typing import Annotated
+
+import flagquantum as fq
+from flagquantum.synth import Output, QNum, allocate, hadamard_transform, max, qfunc, synthesize
+
+
+@qfunc
+def main(a: Output[Annotated[QNum, 3]], result: Output[QNum]) -> None:
+    allocate(a)
+    hadamard_transform(a)
+    result |= max(3.5, a)
+
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.numeric_probabilities(result, registers=("result",))))
+```
+
+The exact numeric keys are `Fraction(7, 2)` with probability 1/2, and integers
+4, 5, 6 and 7 with probability 1/8 each. The existing `probabilities` method
+continues to return raw integer words. `numeric_probabilities` applies the same
+bounded named reading and returns immutable exact Fraction keys; verified native
+numeric declarations are required. It never infers scale from mutable report
+fields or Qmod-prefixed metadata.
+
+Import the typed `synth.min`/`synth.max` markers for quantum extrema; each takes
+exactly two positional values and returns a captured QNum. They refuse ordinary
+host execution. Python's unshadowed min/max are also recognized during capture,
+but their host annotations do not express quantum-valued extrema. After a
+wildcard synth import, use `builtins.min`/`builtins.max` in host-only code.
+
+The current slice supports mixed-sign integer bitwise operations/equality,
+subtraction/negation, unsigned exact binary multiplication and min/max. Decimal
+operands such as 0.1 refuse instead of rounding. Arithmetic reads of scaled
+inputs, general signed operators, numeric helpers/locals and signed/scaled
+phase/control expressions remain outside this admission. Complete native
+quantum examples and independent Circuit references live under
+[`examples/synthesis/functions/arithmetic`](../../examples/synthesis/functions/arithmetic/).
+Associated Notebook workflows are tracked separately.

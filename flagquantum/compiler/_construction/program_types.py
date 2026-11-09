@@ -17,22 +17,31 @@ class _QuantumRegister:
     """Shared annotation base for owned or borrowed quantum storage."""
 
 
-def _width_spec(spec: object) -> int:
+def _numeric_spec(spec: object) -> tuple[int, bool, int]:
     args = spec if isinstance(spec, tuple) else (spec,)
     if len(args) not in {1, 3}:
-        raise TypeError("QNum expects width or (width, False, 0)")
+        raise TypeError("QNum expects width or (width, signed, fractional_bits)")
     width = args[0]
-    if type(width) is not int or not 1 <= width <= 256:
+    if type(width) is not int or not isinstance(width, int) or not 1 <= width <= 256:
         raise ValueError("QNum width must be a plain integer in 1..256")
-    if len(args) == 3 and (
-        args[1] is not False or type(args[2]) is not int or args[2] != 0
+    signed, fractional = (False, 0) if len(args) == 1 else args[1:]
+    if type(signed) is not bool or not isinstance(signed, bool):
+        raise ValueError("QNum signedness must be a literal Boolean")
+    if (
+        type(fractional) is not int
+        or not isinstance(fractional, int)
+        or not 0 <= fractional <= width
     ):
-        raise ValueError("QNum supports unsigned integers only: False, 0")
-    return width
+        raise ValueError("QNum fractional bits must be an integer in 0..width")
+    return width, signed, fractional
+
+
+def _width_spec(spec: object) -> int:
+    return _numeric_spec(spec)[0]
 
 
 class QNum(_QuantumRegister):
-    """Quantum unsigned-number annotation, not a host numeric value.
+    """Quantum binary-scaled number annotation, not a host numeric value.
 
     Use Output[QNum] with allocate(size, out), or QNum[width, False, 0]
     in a captured annotation. Program arithmetic is compiled from retained AST.
@@ -58,13 +67,13 @@ class QNum(_QuantumRegister):
     __rmul__ = __mul__
 
     def __sub__(self, other: QNum | float) -> QNum:
-        raise TypeError("real subtraction is captured inside phase expressions only")
+        raise TypeError("numeric subtraction is captured inside qfunc")
 
     def __rsub__(self, other: float) -> QNum:
-        raise TypeError("real subtraction is captured inside phase expressions only")
+        raise TypeError("numeric subtraction is captured inside qfunc")
 
     def __neg__(self) -> QNum:
-        raise TypeError("real negation is captured inside phase expressions only")
+        raise TypeError("numeric negation is captured inside qfunc")
 
     def __truediv__(self, divisor: float) -> QNum:
         raise TypeError("real division is captured inside phase expressions only")
@@ -111,7 +120,10 @@ class QNum(_QuantumRegister):
     def __ge__(self, other: QNum | int) -> QBit:
         raise TypeError("quantum comparisons are captured inside qfunc, not executed")
 
-    def __ior__(self: _Num, expression: QNum | int) -> _Num:
+    def __ixor__(self: _Num, mask: QNum | int) -> _Num:
+        raise TypeError("raw word XOR is captured inside qfunc")
+
+    def __ior__(self: _Num, expression: QNum | float) -> _Num:
         raise TypeError("fresh quantum assignment is captured inside qfunc")
 
 
@@ -375,3 +387,13 @@ def apply() -> AbstractContextManager[None]:
 def adjoint() -> AbstractContextManager[None]:
     """Capture the checked inverse of static gates and reversible qfunc calls."""
     raise TypeError("adjoint is captured inside qfunc")
+
+
+def minimum(left: QNum | float, right: QNum | float, /) -> QNum:
+    """Capture an exact two-operand minimum inside a native qfunc."""
+    raise TypeError("numeric minimum is captured inside qfunc")
+
+
+def maximum(left: QNum | float, right: QNum | float, /) -> QNum:
+    """Capture an exact two-operand maximum inside a native qfunc."""
+    raise TypeError("numeric maximum is captured inside qfunc")

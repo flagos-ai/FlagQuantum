@@ -62,3 +62,14 @@ negative and extreme signed inputs, exact Fraction oracles, relative/global
 phase, nonzero target XOR, scratch cleanup, initialization/alias/format errors,
 nonbinary decimals and resource budgets are required. Each original counts as
 native only after its complete high-level workflow and readout acceptance.
+
+
+Typed extrema admission adds `synth.min` and `synth.max`, each with signature
+`(left: QNum | float, right: QNum | float, /) -> QNum`. They are retained-AST
+markers, like other synth operations, and never execute on host values. Their
+names retain the familiar two-operand source spelling; no iterable, key or
+variadic form is admitted. Unshadowed Python builtins remain accepted by capture,
+but their host typing cannot express quantum-valued extrema; native examples
+explicitly import the typed synth markers. Host-only code can use builtins.min
+and builtins.max after a wildcard synth import. This avoids changing comparison
+return types or pretending a quantum predicate is an ordinary Boolean.

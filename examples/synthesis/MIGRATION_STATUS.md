@@ -312,28 +312,28 @@ Validated local Notebook workflows: **24/213**.
 | `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_and/overview/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_and/bitwise_and_integer_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_invert/bitwise_invert_example/main.py) | validated |
-| `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_2vars_example` | quantum_program | Pending | pending |
+| `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_2vars_example` | quantum_program | [Native program](functions/arithmetic/bitwise_or/bitwise_or_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_or/bitwise_or_integer_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_2vars_example` | quantum_program | Pending | pending |
+| `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_2vars_example` | quantum_program | [Native program](functions/arithmetic/bitwise_xor/bitwise_xor_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_xor/bitwise_xor_integer_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/comparator/comparator_2vars_example` | quantum_program | Pending | pending |
+| `functions/function_usage_examples/arithmetic/comparator/comparator_2vars_example` | quantum_program | [Native program](functions/arithmetic/comparator/comparator_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/comparator/comparator_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/comparator/comparator_integer_example` | quantum_program | [Native program](functions/arithmetic/comparator/comparator_integer_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/extremum/extremum_example` | notebook_workflow | Pending | pending |
-| `functions/function_usage_examples/arithmetic/extremum/maximum_float_example` | quantum_program | Pending | pending |
-| `functions/function_usage_examples/arithmetic/extremum/maximum_integer_example` | quantum_program | Pending | pending |
+| `functions/function_usage_examples/arithmetic/extremum/maximum_float_example` | quantum_program | [Native program](functions/arithmetic/extremum/maximum_float_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/extremum/maximum_integer_example` | quantum_program | [Native program](functions/arithmetic/extremum/maximum_integer_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example` | quantum_program | [Native program](functions/arithmetic/extremum/minimum_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example` | notebook_workflow | [Native program](functions/arithmetic/modular_exp/modular_exp_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/modulo/modulo_example` | notebook_workflow | [Native program](functions/arithmetic/modulo/modulo_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_2vars_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example` | quantum_program | Pending | pending |
-| `functions/function_usage_examples/arithmetic/negation/negation_example` | notebook_workflow | Pending | pending |
-| `functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example` | quantum_program | Pending | pending |
+| `functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_float_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/negation/negation_example` | notebook_workflow | [Native program](functions/arithmetic/negation/negation_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_example` | notebook_workflow | Pending | pending |
-| `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | Pending | pending |
+| `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_float_example/main.py) | pending |
 | `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | [Native program](functions/mcx/mcx_example/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | Pending | pending |
@@ -401,7 +401,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | validated |
-| `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/main.py) | pending |
 | `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | [Native program](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/main.py) | validated |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example` | notebook_workflow | Pending | pending |

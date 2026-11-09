@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_2vars_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "162f3d7d09c7d31f02afd80bef8d9f017f5181f55adce65a0d7a7120efaf896a",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_xor.bitwise_xor_2vars_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_exact_numbers.py",
+  "scope": "Quantum program only; associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain complete signed input domains and exact binary output scales. Explicit Annotated metadata has the same meaning as QNum[width, signed, fractional_bits]. Native |= creates fresh numeric outputs; literal ^= modifies a raw initialized word. Numeric probabilities decode verified formats without changing the raw reader. Both maximum originals compute max(3.5,a), including the integer-named file."
+}

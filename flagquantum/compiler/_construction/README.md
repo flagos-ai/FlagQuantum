@@ -9,6 +9,7 @@ selection and lowering to CircuitIR.
 | Module | Responsibility |
 | --- | --- |
 | `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
+| `frontend_numeric.py` | Exact native numeric assignment, typed extrema and explicit scalar format admission |
 | `frontend_program.py` | Capture source-retaining Python qfunc programs |
 | `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
 | `frontend_statements.py` | Dispatch captured statements and specialize bounded classical branches |
@@ -66,7 +67,8 @@ nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qi
 `qint.subtract_mod` for raw word subtraction modulo the declared result width.
 The shared `numeric_expression.py` owns exact sign extension and binary-point
 alignment before this operation; the source adapter supplies syntax accessors
-and retains its diagnostics. Native numeric admission is a separate contract.
+and retains its diagnostics. Native numeric admission uses `frontend_numeric.py` and checked scalar
+`qreg.declare.numeric_format` metadata; raw storage widths retain their meaning.
 `tests/team/compiler/test_construction_numeric_expression.py` checks a second
 syntax consumer against independent full-domain rational/word oracles and
 nonzero XOR targets.

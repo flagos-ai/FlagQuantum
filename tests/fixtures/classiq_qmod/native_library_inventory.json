@@ -5533,7 +5533,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/bitwise_or/bitwise_or_2vars_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -5581,7 +5584,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/bitwise_xor/bitwise_xor_2vars_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -5629,7 +5635,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/comparator/comparator_2vars_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -5692,7 +5701,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/extremum/maximum_float_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -5707,7 +5719,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/extremum/maximum_integer_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -5867,7 +5882,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/multiplication/multiplication_float_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -5888,7 +5906,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/negation/negation_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -5903,7 +5924,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/subtraction/subtraction_2vars_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -5933,7 +5957,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/arithmetic/subtraction/subtraction_float_example/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -7708,7 +7735,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/arithmetic_expressions/main.py",
+        "scope": "Quantum program only; complete Notebook workflow pending."
+      },
       "kind": "notebook_workflow"
     },
     {

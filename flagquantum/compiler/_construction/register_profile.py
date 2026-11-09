@@ -519,6 +519,25 @@ def verify_operation_attributes(op: Operation) -> None:
     ):
         assert attributes is not None
         attributes = attributes | {"fields", "record_type"}
+    if op.name == "qreg.declare" and "numeric_format" in op.attributes:
+        numeric = op.attributes["numeric_format"]
+        if (
+            len(op.results) != 1
+            or not isinstance(numeric, tuple)
+            or len(numeric) != 2
+            or type(numeric[0]) is not bool
+            or type(numeric[1]) is not int
+            or not 0 <= numeric[1] <= register_width(op.results[0], op)
+            or "fields" in op.attributes
+            or "record_type" in op.attributes
+        ):
+            _fail(
+                "register.numeric",
+                "numeric format requires a scalar (bool, bounded fractional bits)",
+                op,
+            )
+        assert attributes is not None
+        attributes = attributes | {"numeric_format"}
     if op.name == "qreg.hidden" and "workspace" in op.attributes:
         if op.attributes["workspace"] is not True:
             _fail(

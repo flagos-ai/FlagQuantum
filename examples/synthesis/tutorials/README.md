@@ -16,6 +16,7 @@ Native FlagQuantum programs currently available:
 - [execution_tutorial_part2](basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
+- [arithmetic_expressions](technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
 - [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](technology_demonstrations/hardware_aware_mcx/README.md)

@@ -7,6 +7,7 @@ import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Operation, Value, ValueId
+from .frontend_numeric import reject_numeric_reads
 from .frontend_phase import capture_polynomial_phase
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import gate_target, locations
@@ -26,6 +27,8 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             "program.control",
             "expected control(bit, lambda: operation)",
         )
+    for argument in node.args:
+        reject_numeric_reads(owner, argument, "coherent control")
     condition, callback = node.args
     assert isinstance(callback, ast.Lambda)
     args = callback.args

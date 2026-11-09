@@ -368,6 +368,7 @@ class CheckedExecution:
     _identity: str
     _program_hash: str
     _controls_json: str
+    numeric_formats: tuple[tuple[str, bool, int], ...] = ()
 
     def _check(self, plan: ExecutionPlan) -> CircuitIR:
         program = _program(plan)

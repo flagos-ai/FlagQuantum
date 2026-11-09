@@ -92,6 +92,13 @@ def synthesize_registers(
             report["qmod_measurement_profile"] = "deferred_private_measurements"
         if signed_registers:
             report["qmod_signed_registers"] = signed_registers
+    formats = tuple(
+        (op.attributes["name"], *op.attributes["numeric_format"])
+        for op in program.body.blocks[0].operations
+        if op.name == "qreg.declare" and "numeric_format" in op.attributes
+    )
+    if formats:
+        report["numeric_formats"] = formats
     selected = selection.selected
     if (
         source_format == "python"
@@ -111,4 +118,5 @@ def synthesize_registers(
         memory_limit_bytes=memory_limit_bytes,
         memory_limit_origin=memory_limit_origin,
         exact_mps=exact_mps,
+        numeric_formats=formats,
     )

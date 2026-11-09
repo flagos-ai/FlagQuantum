@@ -681,6 +681,8 @@ _SYNTH_ACTIVE_EXPORTS = (
     "modular_exp",
     "suzuki_trotter",
     "qdrift",
+    "min",
+    "max",
 )
 
 
@@ -1378,6 +1380,47 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         errors.append(
             "native sampled Pauli evolution differs from its authorized scope"
         )
+    numeric_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-exact-numbers-candidate.json").read_text()
+    )
+    numeric_signature = "(self, result: 'ExecutionResult', *, registers: 'Sequence[str]' = ('result',), max_bits: 'int' = 16, max_keys: 'int' = 65536, max_amplitudes: 'int' = 4194304, threshold: 'float' = 1e-14) -> 'Mapping[tuple[Fraction, ...], float]'"
+    if numeric_admission != {
+        "schema": "flagquantum.synthesis_native_exact_numbers_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["min", "max"],
+        "signatures": dict.fromkeys(
+            ("min", "max"), "(left: 'QNum | float', right: 'QNum | float', /) -> 'QNum'"
+        ),
+        "added_program_methods": {"numeric_probabilities": numeric_signature},
+        "annotations": [
+            "QNum[width]",
+            "QNum[width, signed, fractional_bits]",
+            "Annotated[QNum, (width, signed, fractional_bits)]",
+        ],
+        "raw_probabilities_unchanged": True,
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-EXACT-NUMBERS-20261110.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        any(
+            str(inspect.signature(getattr(synth, name)))
+            != "(left: 'QNum | float', right: 'QNum | float', /) -> 'QNum'"
+            for name in ("min", "max")
+        )
+        or str(inspect.signature(synth.Program.numeric_probabilities))
+        != numeric_signature
+        or not (ROOT / numeric_admission["authorization_record"]).is_file()
+        or any(
+            type(numeric_admission.get(key)) is not bool
+            for key in (
+                "raw_probabilities_unchanged",
+                "implementation_authorized",
+                "release_authorized",
+            )
+        )
+    ):
+        errors.append("native numeric interpretation differs from its authorized scope")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),

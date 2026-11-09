@@ -282,8 +282,8 @@ def test_phase_respects_actual_resource_limits(budget: str) -> None:
         )
 
 
-@pytest.mark.parametrize("expression", ["q-0.5", "0.3*q", "q/2"])
-def test_real_phase_extension_does_not_enable_real_fresh_quantum_assignment(
+@pytest.mark.parametrize("expression", ["0.3*q", "q/2"])
+def test_inexact_decimals_and_division_are_not_fresh_numeric_assignments(
     expression: str,
 ) -> None:
     entry = definition(
@@ -327,3 +327,16 @@ def test_phase_rejects_final_angle_overflow_after_valid_polynomial_expansion() -
     entry = definition("allocate(2,q)\nphase(9007199254740992.0*q[0],2.0)")
     with pytest.raises(ERRORS, match="phase angle"):
         synth.synthesize(entry)
+
+
+def test_exact_binary_subtraction_has_an_explicit_numeric_result() -> None:
+    entry = definition(
+        "allocate(q)\nhadamard_transform(q)\ny |= q-0.5",
+        "q:Output[QBit],y:Output[QNum]",
+    )
+    program = synth.synthesize(entry)
+    from fractions import Fraction
+
+    assert dict(
+        program.numeric_probabilities(fq.run(program), registers=("q", "y"))
+    ) == pytest.approx({(0, Fraction(-1, 2)): 0.5, (1, Fraction(1, 2)): 0.5})

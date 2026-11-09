@@ -8,7 +8,7 @@ from types import FunctionType, ModuleType
 from typing import Annotated, Literal
 
 from .frontend_python import _error, _QuantumFunction, _Source
-from .program_types import Const, Output, QArray, QBit, QNum, _width_spec
+from .program_types import Const, Output, QArray, QBit, QNum, _numeric_spec
 
 
 @dataclass(frozen=True)
@@ -17,6 +17,8 @@ class _Port:
     role: Literal["output", "const", "inout"]
     kind: Literal["qbit", "qnum", "qarray"]
     width: int | None
+    signed: bool = False
+    fractional_bits: int = 0
 
 
 def _resolve(
@@ -162,6 +164,7 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
         else:
             quantum = node
         width = None
+        signed, fractional = False, 0
         if isinstance(quantum, ast.Subscript):
             kind = _resolve(definition, quantum.value, annotation=True)
             if kind is Annotated:
@@ -171,7 +174,6 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
                     or not isinstance(quantum.slice.elts[0], (ast.Name, ast.Attribute))
                     or _resolve(definition, quantum.slice.elts[0], annotation=True)
                     is not QNum
-                    or not isinstance(quantum.slice.elts[1], ast.Constant)
                 ):
                     _error(
                         source,
@@ -180,10 +182,9 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
                         "use Annotated[QNum, literal_width]",
                     )
                 size = quantum.slice.elts[1]
-                assert isinstance(size, ast.Constant)
                 try:
-                    width = _width_spec(size.value)
-                except (TypeError, ValueError) as error:
+                    width, signed, fractional = _numeric_spec(ast.literal_eval(size))
+                except (TypeError, ValueError, SyntaxError) as error:
                     _error(source, annotation, "annotation", str(error))
                 kind = QNum
             elif kind is QArray:
@@ -221,7 +222,7 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
                     size.value for size in sizes if isinstance(size, ast.Constant)
                 )
                 try:
-                    width = _width_spec(spec)
+                    width, signed, fractional = _numeric_spec(spec)
                 except (TypeError, ValueError) as error:
                     _error(source, annotation, "annotation", str(error))
         else:
@@ -246,6 +247,8 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
                 role,
                 "qbit" if kind is QBit else "qarray" if kind is QArray else "qnum",
                 1 if kind is QBit else width,
+                signed,
+                fractional,
             )
         )
     returned = source.node.returns
@@ -269,7 +272,7 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
     for index, statement in enumerate(statements):
         if (
             isinstance(statement, ast.AugAssign)
-            and isinstance(statement.op, ast.BitOr)
+            and isinstance(statement.op, (ast.BitOr, ast.BitXor))
             and isinstance(statement.target, ast.Name)
         ):
             continue
