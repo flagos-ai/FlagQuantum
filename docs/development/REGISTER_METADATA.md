@@ -51,10 +51,12 @@ Register methods follow unchanged Qualtran v0.7.0 `_infra/registers.py` at
 Source dtype names are replaced by a native immutable `RegisterType` descriptor.
 It carries encoding identity, exact quantum/classical widths and ordered type
 parameters. Equality distinguishes opaque/unsigned encodings, classical/quantum
-storage and bounds even when bit counts agree. The shared `register_types.py` factories construct bit, opaque, unsigned and
-bounded unsigned quantum descriptors using the source constructor rules.
-Other encoding constructors remain separate work. Numerical domains and bit
-codecs remain Simulation-owned.
+storage and bounds even when bit counts agree. Shared `register_types.py`
+factories construct bit, opaque, unsigned, bounded unsigned, signed,
+ones'-complement and Montgomery descriptors using the source constructor rules.
+Classical forms retain their storage identity. Fixed-point and finite-field
+constructors remain separate work. Numerical domains and bit codecs remain
+Simulation-owned.
 Unknown encodings and symbolic descriptors do not thereby acquire execution
 support. Source Register subclasses with additional constructor fields are also
 outside the current acceptance; their evolution behavior needs separate tests.
@@ -301,9 +303,32 @@ Sympy is covered separately from symbolic classification, which uses Sympy.
 
 Before implementation, 326 source-backed constructor and Signature scenarios
 pass. Both backends then run the same cases. Additional native classifier,
-optional-dependency and numerical replacement cases bring this module to 706
+optional-dependency and numerical replacement cases bring this module to 704
 tests. With existing Register, Signature and constructor tests, 1,703 cases pass
 without warnings or skips. The replacement cases exhaust small stored-residue
 conversion/product/inverse domains, including a composite modulus, using the
 existing Simulation functions. Metadata construction emits no gates and owns no
 work qubits. Montgomery gate-algorithm verification remains separate.
+
+The final Montgomery batch passes 2,660 tests across 20 files in 150.52 seconds,
+with 192 existing paired source/native NumPy overflow warnings and no skips.
+It reruns the source primitive streams, exact adjoints, complete complex
+amplitudes, measured branches, workspace cleanup and logical resource checks
+for the existing modular arithmetic paths. The three executed examples are
+`classical_montgomery_values`, `register_qrom_table` and
+`resource_model_comparison`. The Montgomery example now consumes the new
+quantum/classical metadata widths in existing numerical functions. Its append
+path emits 128 T/Tdag, 32 measurements and 21 declared wires. The source model
+reports 128 T equivalents, 32 measurements and 21 logical wires separately.
+The example constructs forward/adjoint IR. Execution evidence comes from the
+regression suite. Source composite-modulus Fermat discrepancies remain open.
+
+Nine locked source blobs remain unchanged. Strict Python 3.12 typing, Ruff,
+Black, Integration/Simulation scope, architecture, public API baseline and
+multi-level IR checks pass. Logs are retained as
+`g2-montgomery-type-native.log`, `g2-montgomery-type-regression.log`,
+`g2-montgomery-type-default.log` and `g2-montgomery-type-examples.log`.
+The default tier reports 14,149 passed, 51 skipped, 398 warnings and the same
+previously reproduced rotation-layer failure in 50.21 seconds. The existing
+Python 3.10 unused-ignore limitation remains open. Fixed-point/finite-field
+constructors, graph compatibility and typed component execution remain pending.

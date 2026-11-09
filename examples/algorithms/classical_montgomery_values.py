@@ -11,6 +11,10 @@ import numpy as np
 from examples.algorithms.register_windowed_mod_mul import (
     WindowedMontgomeryMultiplication,
 )
+from flagquantum.core.ir.program.register_types import (
+    classical_montgomery_register_type,
+    montgomery_register_type,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.simulation.classical_modular_multiplication import (
     controlled_modular_multiply_constant_classical_values,
@@ -41,8 +45,11 @@ from flagquantum.simulation.montgomery_values import (
 def main() -> None:
     assert modular_double_classical_value(2, 3) == 1
     assert controlled_modular_multiply_constant_classical_values(1, 2, 2, 3) == (1, 1)
-    encoded = integer_to_montgomery_value(1, 3, 3)
-    assert montgomery_to_integer_value(encoded, 3, 3) == 1
+    quantum_word = montgomery_register_type(3, 3)
+    classical_word = classical_montgomery_register_type(3, 3)
+    assert quantum_word.num_bits == classical_word.num_bits == 3
+    encoded = integer_to_montgomery_value(1, quantum_word.quantum_bits, 3)
+    assert montgomery_to_integer_value(encoded, classical_word.classical_bits, 3) == 1
     assert (
         montgomery_product_values(
             encoded, montgomery_inverse_value(encoded, 3, 3), 3, 3
@@ -51,8 +58,11 @@ def main() -> None:
     )
     assert tuple(montgomery_value_domain(3, 3)) == (1, 2)
     stored = np.array([[0, 1], [2, 7]])
-    packed = vectorized_integer_array_to_bits(stored, 3)
-    np.testing.assert_array_equal(vectorized_integer_array_from_bits(packed, 3), stored)
+    packed = vectorized_integer_array_to_bits(stored, classical_word.classical_bits)
+    np.testing.assert_array_equal(
+        vectorized_integer_array_from_bits(packed, classical_word.classical_bits),
+        stored,
+    )
     print(
         "Montgomery representation conversion/product/inverse and generic array round trip agree"
     )
