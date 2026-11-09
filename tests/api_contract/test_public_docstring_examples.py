@@ -99,12 +99,14 @@ from flagquantum.qec import (
     toric_code,
     triangular_colour_code,
 )
+from flagquantum.qec.adapters.pymatching_graph import PyMatchingGraphDecoder
 from flagquantum.qec.adapters.stim import (
     compile_stim_sampler,
     memory_to_stim_text,
     stim_circuit_to_dem_text,
 )
 from flagquantum.qec.decoders.batch import decode_batch
+from flagquantum.qec.decoders.matching_graph import MatchingGraph
 from flagquantum.qec.execution.detector_sampling import CompiledDetectorSampler
 from flagquantum.qec.execution.experiments import run_memory_experiment
 from flagquantum.qec.execution.measurement_conversion import (
@@ -285,6 +287,8 @@ ENTRIES = (
     pauli_exponential_circuit,
     pauli_readout,
     PyMatchingDecoder.decode_batch,
+    PyMatchingGraphDecoder,
+    MatchingGraph,
     parity_encoding,
     plan_lindblad_evolution,
     planner.plan,
