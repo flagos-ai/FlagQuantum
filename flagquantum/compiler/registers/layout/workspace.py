@@ -35,6 +35,28 @@ class RegisterWorkspace:
         self._live: dict[WorkspaceLease, tuple[int, ...]] = {}
         self._used: set[int] = set()
 
+    def adopt(self, wires: tuple[int, ...], *, dirty: bool = False) -> WorkspaceLease:
+        """Register an existing caller-owned lifetime without allocating wires."""
+        if (
+            not isinstance(wires, tuple)
+            or any(type(wire) is not int or wire < 0 for wire in wires)
+            or len(set(wires)) != len(wires)
+            or type(dirty) is not bool
+        ):
+            raise ValueError(
+                "Adoption requires distinct nonnegative integer wire tuples "
+                "and a boolean dirty flag"
+            )
+        occupied = {wire for remaining in self._live.values() for wire in remaining}
+        occupied.update(self._available[False])
+        occupied.update(self._available[True])
+        if occupied.intersection(wires):
+            raise ValueError("Adopted wires must not overlap available or live wires")
+        lease = WorkspaceLease(wires, dirty)
+        self._live[lease] = wires
+        self._used.update(wires)
+        return lease
+
     def allocate(self, count: int, *, dirty: bool = False) -> WorkspaceLease:
         """Take the next wires in order from the selected pool."""
         if type(count) is not int or count < 0 or type(dirty) is not bool:
