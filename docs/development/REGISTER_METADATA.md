@@ -852,3 +852,50 @@ remains the GRAPH17 run and its four independently reproduced baseline failures.
 The broader 39 call-builder source scenarios still include unadmitted classical
 handles and allocation-dependent signature changes. Automatic clean/dirty work
 and direct numerical traversal remain separate acceptance tasks.
+
+## Explicit workspace ownership and builder calls
+
+GRAPH20 source prerequisite `3d67f3c0`, machine contract `daa32e6c`, Core
+implementation `1b77d7df` and Compiler implementation `3afb85ef` add explicit
+workspace construction. Internal contract 0.8 appends optional
+`Operation.workspace_dirty`, retaining old default hashes and physical JSON
+keys. `allocate_register` produces one concrete owned word with an explicit
+descriptor. `free_register` consumes one producer-typed word. Both require
+built-in boolean flags. Existing SSA/linearity checks cover aliases, stale
+consumption and zero-width ownership. Core requires no pairing of allocation
+and free flags. Input release and allocated outputs preserve source behavior.
+
+Compiler `layout/component_workspace.py` provides real immutable helper bodies.
+Builder `allocate` and `free` use ordinary calls, preserving dtype precedence,
+call positions, connection order, failure prefixes and fresh successor ownership
+after calls or split/join. Source metadata supports more descriptors and flag
+values than the admitted concrete quantum execution profile. Physical lowering
+explicitly refuses lifetime operations throughout the module until pool scheduling
+is implemented. Graph acceptance alone establishes typed consumption.
+
+The sixteen original source builder scenarios run against native observations.
+Thirty-eight Core cases and thirty-seven native builder cases pass, plus two
+new machine-contract witnesses. The concentrated suite passes 4784 cases in
+30.88 seconds without warnings or skips. The focused 227 cases pass in 6.84
+seconds. Builder, workspace helper and register verifier each reach 100%
+statement and branch coverage. Ten pinned source blobs remain unchanged.
+Strict Python 3.12 passes on thirteen production files. Black/Ruff, architecture,
+both scopes, Program/public API checks and four existing examples pass.
+The saved scope audit is regenerated from the changed contract and record fields.
+
+Existing real Add/QROM consumers retain original primitive instructions,
+all four unnormalized complex measurement histories and zero work. Their
+GRAPH17 measured primitive counts and independent source models remain separate.
+The new construction path has no physical emission or numerical execution yet.
+Independent source allocation/free QEC models contain zero gates and their
+QubitCount is the declared width. Dirty source tensor/classical allocation uses
+zero, while the Cirq manager borrows unknown state. Future pool scheduling must
+prove clean zero-state and dirty original joint-state restoration separately.
+
+Persistent evidence is `ftqc-reference-env/g2-workspace-construction-{coverage,regression,checks,examples}.log`
+and `g2-workspace-construction-source.txt`. The current default smoke/unit run
+passes 5516 cases with 166 skips and 30 warnings before stopping at the same
+four QFT/rotation fusion failures after 297.91 seconds. It is recorded in
+`g2-workspace-construction-default.log`. All four failures reproduce on an
+independent pre-batch `4d57e638` archive with its import location asserted, in
+0.87 seconds. See `g2-workspace-construction-baseline-failures.log`.

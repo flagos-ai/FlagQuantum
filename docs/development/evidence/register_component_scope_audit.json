@@ -1,14 +1,14 @@
 {
   "basis": "observed_internal_program_scope",
-  "contract_version": "0.7",
+  "contract_version": "0.8",
   "contract_status": "implementation_authorized",
   "sha256": {
-    "contracts/multi-level-ir-internal-v1-candidate.json": "66325a77a533d28b482b4ab60643d7f2c90cf1a0e59e7e3eab811ad33429a6a8",
+    "contracts/multi-level-ir-internal-v1-candidate.json": "77fbb670533bd6d80cfc16f7a734eb19201822b7c00b3a6317918bdd9612efab",
     "docs/public_api_v1.json": "e85c03a07c45554d87660a3ed9806be6bb1532325554e1aa21fdfe22ea4d9add",
-    "flagquantum/core/ir/program/model.py": "8e2ca17612b4eeb190675bb2729de42c0f1fee6e8e27b7c02a6c766bc5a0b56e",
+    "flagquantum/core/ir/program/model.py": "2c35940f7e16464212fddadbe710408f74a103a50b5e2c4957a674e7f74f3465",
     "flagquantum/core/ir/program/verifier.py": "ce94b5eb0e1d2030c257fb9b8f5b22d2cbd4a46eeb213dca82bcbefbedda7bb9",
-    "flagquantum/core/ir/program/call_verifier.py": "82dcb44c8666cde9fcc488d10b17765d4a955bf9e012b88de61ed268c3bb25ca",
-    "flagquantum/core/ir/program/register_verifier.py": "270e2971db59a40ebb9059bfb39836356465b82581f94041ab9f193ac771f28b",
+    "flagquantum/core/ir/program/call_verifier.py": "035dd1076d691f6fe67a5255ba89664906e5b844c9897a138b63b7e986fca5db",
+    "flagquantum/core/ir/program/register_verifier.py": "8e61ab735fd58e53ab6936d5526a658f92043a4b2e5870c24bee38ae580e03c0",
     "flagquantum/core/ir/program/lowering.py": "b11aca3d530d566a01728abf15760fdcca23e43eaade9f85690f444240f2ef1d",
     "flagquantum/core/ir/program/physical_codec.py": "9f13dbacbe9aefff73db78aba691b4d40d4f3ec2fe71e3493a50fe74778ebd88",
     "flagquantum/core/operator_schema.py": "13edca5093d311a5315eda54795e7c3a730178d6aa6972f4987e388ce4ce4b13"
@@ -28,7 +28,8 @@
       "condition_clauses",
       "physical_data",
       "callee",
-      "register_type"
+      "register_type",
+      "workspace_dirty"
     ],
     "BlockRecord": [
       "name",

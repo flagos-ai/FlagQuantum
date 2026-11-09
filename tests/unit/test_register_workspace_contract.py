@@ -5,8 +5,8 @@ import pytest
 
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
-from tests.unit.test_register_rebinding_contract import SourceRebindings
 from tests.unit.test_register_bindings import SourceContract
+from tests.unit.test_register_rebinding_contract import SourceRebindings
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 

@@ -1116,3 +1116,11 @@ construction with real function bodies and verifies independent Core rejection.
 Numerical classical callbacks reuse existing Simulation allocation/free kernels.
 Source tensor dirty allocation uses zero while Cirq borrows unknown state. Keep
 those source entry points separately identified throughout acceptance.
+
+
+Prerequisite 1.5 construction is implemented by Core `1b77d7df` and Compiler
+`3afb85ef`, following machine contract `daa32e6c`. The concentrated suite passes
+4784 cases, and 227 focused cases cover the builder, workspace helper and register
+verifier with 100% statement and branch coverage. Ten pinned source blobs remain
+unchanged. Physical pool scheduling and clean/dirty numerical restoration remain
+separate acceptance work. Evidence is recorded in `REGISTER_METADATA.md`.
