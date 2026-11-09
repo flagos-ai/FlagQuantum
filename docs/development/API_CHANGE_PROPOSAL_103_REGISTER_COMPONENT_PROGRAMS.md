@@ -450,3 +450,46 @@ The prerequisite stand-in passes 109 source-backed cases before implementation.
 The retained audit records NumPy scalar return-type differences in the former
 Compiler helpers. These differences motivate preserving source classification
 and concrete scalar rounding at the shared owner.
+
+## Finite-field numerical encoding prerequisite 0.8
+
+Simulation owns `FiniteFieldEncoding`, adapting the unchanged `_GF` numerical
+codec and shared QGF/CGF polynomial construction chain. This is a numerical
+encoding object with cached field arithmetic, not a second register type system.
+Core RegisterType remains the authoritative neutral metadata record. Converting
+this numerical object to a register descriptor is a subsequent explicit boundary
+because source construction accepts inputs whose width fails only on access.
+
+The constructor retains characteristic and degree without coercion. An omitted
+polynomial invokes the original symbolic test and concrete GF default selection.
+Explicit None bypasses default selection. Both paths then import galois for the
+original converter, retaining Poly objects by identity and converting other
+inputs using Poly.Degrees. Field order, bit width and field class are cached only
+on access. The source degree > 1 condition and GF arguments, including
+verify=False and python-calculate, remain exact. Numerical scalar validation
+requires the actual field class. Array validation remains range-only. Scalar
+and array bit encoding use the existing big-endian integer and default vectorize
+boundaries, including their existing native diagnostic terminology.
+
+Galois 0.4.11 is the locked reference's MIT-licensed numerical dependency. It
+remains an explicitly installed optional Simulation dependency. This slice adds
+no package installation, manifest requirement, root export or automatic fetch.
+Imports are lazy until construction, including construction with explicit None.
+Galois owns field arithmetic, polynomial objects and FieldArray values exclusively
+inside Simulation. The finite-field codec is the replacement boundary and can
+be compared directly with the source codec without changing its consumers.
+A future replacement must preserve polynomial identity/conversion and the tested
+failure timing. Core must never import galois or retain its objects.
+
+Acceptance first runs source-backed construction and lazy-property cases before
+implementation, then the same cases against the native codec. Cover symbolic,
+NumPy and invalid raw inputs, omitted versus None, explicit polynomial identity,
+prime/extension fields, scalar and array round trips and validation failures.
+Replace source numerical bindings in actual binary-field multiplication consumers
+and compare their complete primitive streams. Rerun existing exact complex-state,
+measurement-branch, workspace-cleanup and separate model/emitted-count tests.
+Typed graph ports and neutral finite-field descriptor projection remain open.
+
+The source-backed prerequisite passes 157 cases before native implementation.
+Composite-characteristic cases can raise RuntimeError in the locked galois
+lookup-table builder. Preserve the observed exception at its original stage.
