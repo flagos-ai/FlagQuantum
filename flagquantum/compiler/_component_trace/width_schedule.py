@@ -68,9 +68,19 @@ def estimate_connection_width(
 
 
 def schedule_width_steps(
-    steps: Sequence[WidthStep], connections: Sequence[WidthConnection]
+    steps: Sequence[WidthStep],
+    connections: Sequence[WidthConnection],
+    *,
+    group_components: bool = True,
 ) -> tuple[tuple[int, ...], ...]:
-    """Return the stable greedy visitation order within each weak component."""
+    """Return stable greedy order, grouped for models or global for conversion.
+
+    Physical conversion uses ``group_components=False`` to share one priority
+    queue across the whole graph. The default retains weak-component grouping
+    required by existing peak-width estimates.
+    """
+    if type(group_components) is not bool:
+        raise ValueError("Component grouping must be a built-in boolean")
     incoming: list[list[WidthConnection]] = [[] for _ in steps]
     outgoing: list[list[WidthConnection]] = [[] for _ in steps]
     for connection in connections:
@@ -97,8 +107,8 @@ def schedule_width_steps(
     for first in range(len(steps)):
         if first in seen:
             continue
-        component = [first]
-        seen.add(first)
+        component = [first] if group_components else list(range(len(steps)))
+        seen.update(component)
         for node in component:
             neighbors = (
                 *(edge.source for edge in incoming[node]),

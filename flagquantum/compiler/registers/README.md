@@ -172,3 +172,12 @@ handles, and numerical restoration remains an emitter obligation.
 Run `pytest tests/unit/test_workspace_partial_release.py tests/unit/test_register_workspace.py`.
 This is the pool prerequisite for graph scheduling. `lower_register_program`
 continues to reject lifetime graphs until their physical schedule is admitted.
+
+For the physical scheduling prerequisite, the shared
+`_component_trace.width_schedule.schedule_width_steps` accepts
+`group_components=False`. It uses one global priority queue in source graph
+node insertion order. Existing peak estimates retain default weak-component
+grouping. The source graph adapter must supply actual graph insertion order,
+including isolated nodes, instead of assuming builder call positions. Run
+`pytest tests/unit/test_component_physical_schedule.py` for original-source
+physical visitation comparisons. Program physical binding is still pending.
