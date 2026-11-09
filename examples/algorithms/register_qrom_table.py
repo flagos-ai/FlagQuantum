@@ -26,6 +26,9 @@ def main(*, symbolic: bool = False) -> None:
 
         rows, bits, controls = symbols("N b c", integer=True, positive=True)
         table = QromTable.from_shape(rows, bits, num_controls=controls)
+        assert (
+            table.signature.n_qubits() == controls + table.selection_bitsizes[0] + bits
+        )
         formula_report = estimate_symbolic_ftqc_resources(table.resource_formula())
         print("Unknown-data logical formula:", formula_report.logical)
         print("Model T equivalents:", formula_report.t_equivalents)
@@ -33,6 +36,8 @@ def main(*, symbolic: bool = False) -> None:
         return
     data = (np.array([1, 3, 0, 2], dtype=int),)
     table = QromTable.from_shape(4, 2).with_data(*data)
+    assert table.signature.n_qubits() == 4
+    assert [register.name for register in table.signature] == ["selection", "target0_"]
     gates = table.bind_packed((0, 1, 2, 3), (4,), (0,))
     initial = torch.zeros(32, dtype=torch.complex128)
     amplitudes = torch.tensor([1, 1j, -1, -1j], dtype=torch.complex128) / 2

@@ -15,6 +15,8 @@ from dataclasses import dataclass, fields
 from math import prod
 from typing import cast
 
+from ...core.ir.program.registers import Register, RegisterType
+from ...core.ir.program.signatures import Signature
 from .._component_trace.arithmetic_call import ArithmeticCall
 from .._component_trace.gate_budget import GateCategories
 from .._component_trace.qec_gate_cost import query_qec_gate_cost
@@ -62,7 +64,13 @@ def source_add_resource_formula(
             declared_calls={root: arithmetic_callees(root)},
             legacy_shims=legacy_shims,
         )
-        peak = cast(SymbolicInt, smax(3, left_width + right_width))
+        signature = Signature(
+            (
+                Register("a", RegisterType("uint", left_width)),
+                Register("b", RegisterType("uint", right_width)),
+            )
+        )
+        peak = cast(SymbolicInt, smax(3, signature.n_qubits()))
     return SymbolicResourceFormula(
         logical_qubits=peak,
         **{

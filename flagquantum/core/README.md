@@ -24,6 +24,11 @@ Compute, Remote, ecosystem frameworks, gateways, and infrastructure libraries.
 - `value_parameters.py`: the internal symbolic-object predicate shared by register
   metadata and numerical consumers. It has no numerical kernels or mandatory
   Sympy import; the original single-checker return and error behavior is retained.
+- `value_math.py`: source-ordered products, sums and symbolic extrema shared by
+  register metadata and Compiler cost models. Optional Sympy stays lazy.
+- `ir/program/signatures.py`: internal ordered register collections with separate
+  input/output namespaces and quantum, classical and combined width queries.
+  Add symbolic resource queries and QROM layout consume this metadata.
 - `ir/program/registers.py`: internal, immutable register type/direction/shape
   metadata. Proposal 103 prerequisite 0.1 admits these standalone descriptions,
   not new Program IR value kinds or executable component calls. Numerical codecs

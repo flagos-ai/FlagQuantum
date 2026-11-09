@@ -185,7 +185,7 @@ def test_two_consumer_signatures_replace_source_contract_metadata(backend, consu
         source = QROM.build_from_data(np.array([1, 2, 0, 3]), target_bitsizes=(2,))
         native = (
             Register("selection", RegisterType("uint", 2, parameters=(("bound", 4),))),
-            Register("target0_", RegisterType("uint", 2)),
+            Register("target0_", RegisterType("opaque", 2)),
         )
         expected = [("selection", 2, (), "THRU"), ("target0_", 2, (), "THRU")]
     registers = tuple(source.signature) if backend == "source_contract" else native

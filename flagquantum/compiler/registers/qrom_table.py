@@ -8,6 +8,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import cached_property
 from math import prod
 from typing import cast
 
@@ -15,6 +16,9 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ...core.ir import Instruction
+from ...core.ir.program.registers import Register, RegisterType
+from ...core.ir.program.signatures import Signature
+from ...core.value_parameters import is_symbolic_value
 from .._component_trace.resource_model import ComponentCost
 from .._component_trace.symbolic_math import SymbolicInt, bit_length
 from .partition import RegisterLayout, partition_register
@@ -208,15 +212,37 @@ class QromTable:
         axes and Python-integer zero-width targets are omitted as in the source.
         Symbolic integer literals retain the original symbolic dispatch.
         """
-        controls = (("control", self.num_controls),) if self.num_controls else ()
-        targets = tuple(
-            (f"target{i}_", width * prod(shape))
-            for i, (width, shape) in enumerate(
+        return tuple(
+            (register.name, register.total_bits()) for register in self.signature
+        )
+
+    @cached_property
+    def signature(self) -> Signature:
+        """Retain source encoding, side and shape before physical flattening."""
+        registers = (
+            [Register("control", RegisterType("opaque", self.num_controls))]
+            if self.num_controls
+            else []
+        )
+        selected_axes = (
+            extent for extent in self.shape if is_symbolic_value(extent) or extent > 1
+        )
+        for (name, width), extent in zip(
+            self._selection_layout(), selected_axes, strict=True
+        ):
+            registers.append(
+                Register(
+                    name, RegisterType("uint", width, parameters=(("bound", extent),))
+                )
+            )
+        registers.extend(
+            Register(f"target{index}_", RegisterType("opaque", width), shape=shape)
+            for index, (width, shape) in enumerate(
                 zip(self.target_bitsizes, self.target_shapes, strict=True)
             )
-            if not isinstance(width, int) or width
+            if is_symbolic_value(width) or width
         )
-        return controls + self._selection_layout() + targets
+        return Signature(registers)
 
     def bind_packed(
         self,
