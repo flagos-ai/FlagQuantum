@@ -627,3 +627,32 @@ BloqBuilder.from_signature. Check callback traces independently of gate/resource
 regressions. Metadata traversal emits zero physical operations. Existing append
 consumers supply the separate primitive, complex-amplitude, measurement-branch,
 clean-workspace and resource evidence.
+
+## Binding collection prerequisite 0.12
+
+Compiler's existing `component_bindings.py` gains
+`create_register_bindings(value, register, available=None)`, following the
+pinned `_reg_to_soq` branches. It groups indexed Core RegisterBinding metadata
+around the supplied existing value identity. A scalar returns one binding.
+A shaped register returns an object ndarray with the exact declared shape and
+row-major elements. A zero-width scalar remains present, whereas a zero-length
+array has no elements. Symbolic shape refusal precedes array allocation.
+Symbolic element width alone remains valid metadata. This grouping does not
+allocate an SSA value or quantum workspace. Callers remain responsible for value
+definitions and any eventual executable admission.
+
+When supplied, the availability set receives each newly constructed binding
+immediately. Earlier additions survive a later registration error. Omitting the
+set simply omits that bookkeeping. Creation performs no direction filtering or
+dtype conversion. Those decisions belong to the caller's Signature traversal.
+Core retains indexed data ownership and Compiler retains NumPy object layout.
+The same binding processor from prerequisite 0.11 consumes these collections.
+
+Run source-backed creation scenarios before implementation, then substitute the
+native function without changing consumers. Cover scalar/shaped/empty and
+symbolic metadata, exact array shape and dtype, optional availability, callback
+failure effects during set registration, all directions and creation-to-binding
+round trips. Reuse the Add and XOR QROM append/branch/resource acceptance from
+0.11 with both manually supplied and factory-created binding collections.
+Finite component calls, explicit returns and general graph traversal remain the
+next contract slice.
