@@ -4223,7 +4223,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/logistics/traveling_salesman_problem/main.py",
+        "scope": "Quantum program only; complete associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4340,7 +4343,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/kidney_exchange/kidney_exchange_problem/main.py",
+        "scope": "Quantum program only; complete associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

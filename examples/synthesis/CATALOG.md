@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **126/216**.
+Validated quantum-program counterparts: **128/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -37,7 +37,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (34 native programs)
+## Applications (36 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -51,10 +51,12 @@ Validated local Notebook workflows:
 - [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
 - [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
 - [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
+- [traveling_salesman_problem](applications/logistics/traveling_salesman_problem/README.md)
 - [vehicle_routing_problem](applications/logistics/vehicle_routing_problem/README.md)
 - [adapt_qaoa](applications/optimization/adapt_qaoa/README.md)
 - [electric_grid_optimization](applications/optimization/electric_grid_optimization/README.md)
 - [integer_linear_programming](applications/optimization/integer_linear_programming/README.md)
+- [kidney_exchange_problem](applications/optimization/kidney_exchange/kidney_exchange_problem/README.md)
 - [evidence_scaling_labs](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/README.md)
 - [max_clique](applications/optimization/max_clique/README.md)
 - [max_independent_set](applications/optimization/max_independent_set/README.md)

@@ -250,12 +250,12 @@ Validated local Notebook workflows: **24/213**.
 | `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | Pending | pending |
 | `applications/logistics/facility_location/facility_location` | notebook_workflow | Pending | pending |
 | `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | [Native program](applications/logistics/task_scheduling_problem/main.py) | pending |
-| `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | Pending | pending |
+| `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | [Native program](applications/logistics/traveling_salesman_problem/main.py) | pending |
 | `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | [Native program](applications/logistics/vehicle_routing_problem/main.py) | pending |
 | `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/main.py) | pending |
 | `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | [Native program](applications/optimization/electric_grid_optimization/main.py) | pending |
 | `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/main.py) | pending |
-| `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | Pending | pending |
+| `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | [Native program](applications/optimization/kidney_exchange/kidney_exchange_problem/main.py) | pending |
 | `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | [Native program](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/main.py) | pending |
 | `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/main.py) | pending |
 | `applications/optimization/max_independent_set/max_independent_set` | notebook_workflow | [Native program](applications/optimization/max_independent_set/main.py) | pending |
