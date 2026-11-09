@@ -33,9 +33,26 @@ def source_contract(kind, width=OMITTED, bound=OMITTED):
     )
 
 
-@pytest.fixture(params=["source_contract"])
+def native_factory(kind, width=OMITTED, bound=OMITTED):
+    from flagquantum.core.ir.program.register_types import (
+        bounded_unsigned_register_type,
+        opaque_register_type,
+        quantum_bit_type,
+        unsigned_register_type,
+    )
+
+    if kind == "bit":
+        return quantum_bit_type()
+    if kind == "bounded":
+        if bound is OMITTED:
+            return bounded_unsigned_register_type(width)
+        return bounded_unsigned_register_type(width, bound)
+    return {"opaque": opaque_register_type, "uint": unsigned_register_type}[kind](width)
+
+
+@pytest.fixture(params=["source_contract", "native"])
 def construct_type(request):
-    return source_contract
+    return source_contract if request.param == "source_contract" else native_factory
 
 
 def outcome(factory, kind, width, bound=OMITTED):
@@ -48,7 +65,15 @@ def outcome(factory, kind, width, bound=OMITTED):
             .replace("BQUInt", "Bounded unsigned register")
         )
         return type(error), message
-    return value.encoding, value.quantum_bits, value.classical_bits, value.parameters
+    return (
+        value.encoding,
+        value.quantum_bits,
+        type(value.quantum_bits),
+        value.classical_bits,
+        tuple(
+            (name, parameter, type(parameter)) for name, parameter in value.parameters
+        ),
+    )
 
 
 @pytest.mark.parametrize("kind", ["opaque", "uint", "bounded"])

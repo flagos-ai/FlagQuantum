@@ -19,7 +19,7 @@ from typing import cast, overload
 
 from ...value_math import SymbolicInt as RegisterWidth
 from ...value_math import smax, ssum
-from ...value_parameters import is_symbolic_value
+from .register_types import opaque_register_type, quantum_bit_type
 from .registers import Register, RegisterSide, RegisterType
 
 
@@ -35,13 +35,7 @@ def _dedupe(registers: Iterable[tuple[str, Register]]) -> dict[str, Register]:
 
 
 def _width_register(name: str, width: RegisterWidth) -> Register:
-    if width == 1:
-        dtype = RegisterType("bit", 1)
-    else:
-        # Preserve QAny constructor validation after the convenience filter.
-        if not is_symbolic_value(width) and not isinstance(width, int):
-            raise ValueError(f"Bad bitsize for opaque register: {width}")
-        dtype = RegisterType("opaque", width)
+    dtype = quantum_bit_type() if width == 1 else opaque_register_type(width)
     return Register(name, dtype)
 
 

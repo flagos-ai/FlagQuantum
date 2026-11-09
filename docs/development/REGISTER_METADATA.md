@@ -1,7 +1,7 @@
 # Shared register metadata
 
 `core/ir/program/registers.py` and `signatures.py` own standalone metadata
-prerequisites 0.1 and 0.2
+prerequisites 0.1, 0.2 and 0.3
 specified in [proposal 103](API_CHANGE_PROPOSAL_103_REGISTER_COMPONENT_PROGRAMS.md).
 It is internal and adds no root export, Program IR opcode, value kind, serialized
 schema or executable component profile.
@@ -51,9 +51,10 @@ Register methods follow unchanged Qualtran v0.7.0 `_infra/registers.py` at
 Source dtype names are replaced by a native immutable `RegisterType` descriptor.
 It carries encoding identity, exact quantum/classical widths and ordered type
 parameters. Equality distinguishes opaque/unsigned encodings, classical/quantum
-storage and bounds even when bit counts agree. It is a descriptor of an already
-validated type, not a port of all upstream dtype constructors. Numerical domains,
-bit codecs and source dtype-constructor validation are not implemented here.
+storage and bounds even when bit counts agree. The shared `register_types.py` factories construct bit, opaque, unsigned and
+bounded unsigned quantum descriptors using the source constructor rules.
+Other encoding constructors remain separate work. Numerical domains and bit
+codecs remain Simulation-owned.
 Unknown encodings and symbolic descriptors do not thereby acquire execution
 support. Source Register subclasses with additional constructor fields are also
 outside the current acceptance; their evolution behavior needs separate tests.
@@ -160,3 +161,25 @@ Its diagnostic follows the installed NumPy array-to-integer error. The reference
 regression compares that native NumPy error and the original source failure
 frame instead of assuming an older dependency's message. This adjusts the test
 oracle for the environment while preserving the source failure boundary.
+
+## Shared type constructors
+
+Prerequisite 0.3 adds four internal factories in
+`core/ir/program/register_types.py`. They return the existing `RegisterType`
+without adding an upstream class hierarchy. The width convenience builder in
+Signature uses the bit/opaque factories after its existing truth filter and
+one-bit selection.
+
+Opaque construction preserves symbolic-first Python integer validation.
+Unsigned construction stores the declared width directly. Bounded construction
+computes an omitted bound before its variadic symbolic guard and compares the
+explicit bound with capacity only when both parameters are concrete. Explicit
+`None` remains distinct from an omitted bound. The tests preserve accepted
+negative/zero/bool and symbolic inputs and the type of stored scalar values.
+
+The source-backed constructor stand-in passes 124 scenarios before native
+implementation. Both implementations pass the same scenarios, yielding 248
+differential tests. With Signature, Register and internal multi-level IR
+regressions, the Core slice passes 634 tests without warnings or skips. This
+constructor comparison reads declared source width directly and excludes the
+separate lazy numerical codec construction.
