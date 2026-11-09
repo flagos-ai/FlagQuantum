@@ -625,7 +625,7 @@ The checked-in `ci.yml` defines twenty-seven jobs:
 - `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
   distributed semantics and release-contract checks — run separately from the core matrix;
 - `coverage-plan`: one complete collection of the maintained coverage selection,
-  partitioned in bounded file batches into at most 192 nonempty trusted PR shards or 16 hosted shards;
+  partitioned in bounded file batches into at most 192 nonempty trusted PR/manual shards or 16 hosted shards;
 - `coverage-shard`: execute the explicit node list for each planned partition
   under the unchanged marker expression on separate runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
@@ -666,6 +666,10 @@ Trusted core and runtime suites use the qualified A800 image caches. The
 locked core images still prove the absence of NumPy and optional frameworks.
 Quality and online SDK downloads use hosted runners. Coverage and distributed
 CPU work use the locked coverage image on the generic CPU pool.
+Trusted manual CI runs use the same qualified CPU pool and 192-partition coverage
+plan as same-repository pull requests. Fork pull requests retain hosted runners
+and 16 partitions. Manual runs continue to include slow tests; the runner choice
+does not change the collected selection, time limits, or coverage thresholds.
 Source preparation uses the generic CPU pool. Source hygiene runs on a hosted
 runner to download its pre-commit hooks.
 Dependency-bound and supply-chain checks retain the general CPU pool.
