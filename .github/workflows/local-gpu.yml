@@ -362,25 +362,45 @@ jobs:
         run: |
           python -c "import pytest, torch"
           python -m pip install --no-deps --no-build-isolation -e .
+      - name: Select two idle physical GPUs
+        run: |
+          python - <<'PYTHON'
+          import os
+          import subprocess
+          from pathlib import Path
+
+          result = subprocess.run(
+              ["nvidia-smi", "--query-gpu=index,memory.used,utilization.gpu", "--format=csv,noheader,nounits"],
+              check=True, capture_output=True, text=True, timeout=30,
+          )
+          devices = [tuple(map(int, row.split(","))) for row in result.stdout.splitlines()]
+          idle = [index for index, memory, utilization in devices if memory < 1024 and utilization == 0]
+          if len(set(idle)) < 2:
+              raise SystemExit("Two idle GPUs are required; other workloads must finish first")
+          selected = ",".join(map(str, idle[:2]))
+          with Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf-8") as output:
+              output.write(f"CUDA_VISIBLE_DEVICES={selected}\n")
+          print(f"Selected physical GPUs {selected}; occupancy remains checked by the performance gate")
+          PYTHON
       - name: Required two-GPU correctness and lifecycle gate
         run: |
           mkdir -p hardware-run
           set -o pipefail
-          CUDA_VISIBLE_DEVICES=0,1 python -c "import torch; assert torch.cuda.device_count() == 2"
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-forward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_forward_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-forward.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase backward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-backward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_reverse_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-reverse.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase train --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-train -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint --mode train 2>&1 | tee hardware-run/two-gpu-statevector-training.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-correctness -- torchrun --standalone --nproc-per-node=2 tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/two-gpu-correctness.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase semantic-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-semantics -- python -m pytest tests/distributed/test_mps_reverse.py::test_explicit_rank_owned_mps_reverse_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-torch.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs -s 2>&1 | tee hardware-run/two-gpu-jax.log
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
+          python -c "import torch; assert torch.cuda.device_count() == 2"
+          python tools/run_with_watchdog.py --phase forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-forward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_forward_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-forward.log
+          python tools/run_with_watchdog.py --phase backward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-backward -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_reverse_executor.py --backend nccl 2>&1 | tee hardware-run/two-gpu-statevector-reverse.log
+          python tools/run_with_watchdog.py --phase train --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-train -- torchrun --standalone --nproc-per-node=2 tests/distributed/statevector_training_runtime.py --backend nccl --checkpoint-dir hardware-run/training-checkpoint --mode train 2>&1 | tee hardware-run/two-gpu-statevector-training.log
+          python tools/run_with_watchdog.py --phase correctness --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-correctness -- torchrun --standalone --nproc-per-node=2 tests/distributed/correctness_hardware.py 2>&1 | tee hardware-run/two-gpu-correctness.log
+          python tools/run_with_watchdog.py --phase semantic-tests --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-semantics -- python -m pytest tests/distributed/test_mps_reverse.py::test_explicit_rank_owned_mps_reverse_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-torch.log
+          python tools/run_with_watchdog.py --phase mps-backward --stall-seconds 240 --timeout-seconds 900 --diagnostics hardware-run/watchdog-mps-backward -- python -m pytest tests/distributed/test_mps_accelerator_backward_evidence.py -q -rs -s 2>&1 | tee hardware-run/two-gpu-jax.log
+          python tools/run_with_watchdog.py --phase mps-forward --stall-seconds 180 --timeout-seconds 600 --diagnostics hardware-run/watchdog-mps-forward -- python -m pytest tests/distributed/test_mps_forward.py::test_rank_owned_mps_forward_nccl -q -rs 2>&1 | tee hardware-run/two-gpu-mps-forward.log
           # Batch enough unchanged iterations to average host scheduling jitter;
           # the former 50-iteration samples lasted only about 6-19 ms.
-          CUDA_VISIBLE_DEVICES=0,1 python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 2000 --output hardware-run/two-gpu-performance.json
+          python tools/run_with_watchdog.py --phase distributed-benchmark --stall-seconds 300 --timeout-seconds 1200 --diagnostics hardware-run/watchdog-distributed-benchmark -- torchrun --standalone --nproc-per-node=2 benchmarks/continuous_performance.py --mode distributed-shard --warmup 10 --repetitions 30 --inner-loops 2000 --output hardware-run/two-gpu-performance.json
           python tools/evaluate_performance_artifact.py --write hardware-run/two-gpu-performance.json
       - if: always()
         run: >-
-          CUDA_VISIBLE_DEVICES=0,1 python tools/hardware_run_manifest.py
+          python tools/hardware_run_manifest.py
           --output hardware-run/two-gpu.json
           --command 'two local GPUs torchrun native correctness/autograd plus JAX MPS backward/optimizer'
           --world-size 2
