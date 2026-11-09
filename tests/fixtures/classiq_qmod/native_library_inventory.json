@@ -4328,7 +4328,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/max_clique/main.py",
+        "scope": "Complete retained 7-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4349,7 +4352,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/max_independent_set/main.py",
+        "scope": "Complete retained 8-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4391,7 +4397,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/max_k_vertex_cover/main.py",
+        "scope": "Complete retained 10-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4541,7 +4550,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/set_partition/main.py",
+        "scope": "Complete retained 10-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4628,7 +4640,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/physical_systems/ising_model/main.py",
+        "scope": "Complete retained 6-bit 5-layer quantum program. Full classical optimization Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

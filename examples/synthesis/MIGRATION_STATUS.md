@@ -257,21 +257,21 @@ Validated local Notebook workflows: **24/213**.
 | `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | Pending | pending |
 | `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | Pending | pending |
 | `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | Pending | pending |
-| `applications/optimization/max_clique/max_clique` | notebook_workflow | Pending | pending |
-| `applications/optimization/max_independent_set/max_independent_set` | notebook_workflow | Pending | pending |
+| `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/main.py) | pending |
+| `applications/optimization/max_independent_set/max_independent_set` | notebook_workflow | [Native program](applications/optimization/max_independent_set/main.py) | pending |
 | `applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph` | notebook_workflow | Pending | pending |
-| `applications/optimization/max_k_vertex_cover/max_k_vertex_cover` | notebook_workflow | Pending | pending |
+| `applications/optimization/max_k_vertex_cover/max_k_vertex_cover` | notebook_workflow | [Native program](applications/optimization/max_k_vertex_cover/main.py) | pending |
 | `applications/optimization/min_graph_coloring/min_graph_coloring` | notebook_workflow | Pending | pending |
 | `applications/optimization/minimum_dominating_set/minimum_dominating_set` | notebook_workflow | Pending | pending |
 | `applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa` | notebook_workflow | Pending | pending |
 | `applications/optimization/rectangles_packing/rectangles_packing_grid` | notebook_workflow | Pending | pending |
 | `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | [Native program](applications/optimization/robust_posture_optimization/main.py) | pending |
 | `applications/optimization/set_cover/set_cover` | notebook_workflow | Pending | pending |
-| `applications/optimization/set_partition/set_partition` | notebook_workflow | Pending | pending |
+| `applications/optimization/set_partition/set_partition` | notebook_workflow | [Native program](applications/optimization/set_partition/main.py) | pending |
 | `applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution` | notebook_workflow | [Native program](applications/optimization/variational_quantum_imaginary_time_evolution/main.py) | pending |
 | `applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D` | notebook_workflow | Pending | pending |
 | `applications/physical_systems/hhl_lanchester/hhl_lanchester` | notebook_workflow | Pending | pending |
-| `applications/physical_systems/ising_model/ising_model` | notebook_workflow | Pending | pending |
+| `applications/physical_systems/ising_model/ising_model` | notebook_workflow | [Native program](applications/physical_systems/ising_model/main.py) | pending |
 | `applications/physical_systems/maxwell_equation/maxwell_2d_simulation` | notebook_workflow | Pending | pending |
 | `applications/physical_systems/maxwell_equation/maxwell_utils` | python_unclassified | Pending | pending |
 | `applications/physical_systems/quantum_chaos/quantum_sawtooth_map` | notebook_workflow | Pending | pending |

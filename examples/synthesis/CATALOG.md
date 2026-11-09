@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **65/216**.
+Validated quantum-program counterparts: **70/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -31,14 +31,19 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (6 native programs)
+## Applications (11 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 - [adapt_qaoa](applications/optimization/adapt_qaoa/README.md)
+- [max_clique](applications/optimization/max_clique/README.md)
+- [max_independent_set](applications/optimization/max_independent_set/README.md)
+- [max_k_vertex_cover](applications/optimization/max_k_vertex_cover/README.md)
 - [robust_posture_optimization](applications/optimization/robust_posture_optimization/README.md)
+- [set_partition](applications/optimization/set_partition/README.md)
 - [variational_quantum_imaginary_time_evolution](applications/optimization/variational_quantum_imaginary_time_evolution/README.md)
+- [ising_model](applications/physical_systems/ising_model/README.md)
 
 Validated local Notebook workflows:
 
