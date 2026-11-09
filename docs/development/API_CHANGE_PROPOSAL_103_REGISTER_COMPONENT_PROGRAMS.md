@@ -1034,3 +1034,29 @@ The two Compiler construction modules have 100% statement and branch coverage.
 Existing real Add/QROM consumer instructions, complete measurement histories,
 zero work and independent resource models are preserved. Detailed evidence and
 remaining admission boundaries are recorded in `REGISTER_METADATA.md`.
+
+## Builder split and join prerequisite 1.4
+
+Extend the same Compiler builder with scalar `split` and rank-one `join`.
+A split consumes one owned word and returns a bit-word array. A join consumes
+bit-word handles in the requested order and produces one fresh owned word.
+Source rank/one-bit guards run before reserving the call. Missing-width array
+indices, duplicate bindings and dtype failures retain the same reserved call
+position and consumed prefix as the source builder.
+
+`component_rebindings.py` supplies real immutable helper functions in the
+existing Program vocabulary. Split helpers use one existing split operation
+and one width-one join per output element. Join helpers split each width-one
+input word before the existing typed join. Thus the builder exposes uniformly
+owned word handles while existing gate SSA remains the lowering authority.
+These additional logical rebindings emit zero physical gates and require no
+workspace. A width-zero scalar still has one owned handle, while its split
+array has no elements. Helper names avoid collisions with supplied definitions.
+The helper functions remain Compiler-owned and are verified with the full module.
+
+Reuse the original 19 source witnesses through a native observation adapter.
+Original source resource queries stay in their original scenarios. For native
+programs derive zero rebinding primitives through actual gate lowering, with
+complex output permutations and existing Add/QROM measurement histories checked
+independently. This slice does not admit additional descriptor families or
+implicit clean/dirty work allocation.
