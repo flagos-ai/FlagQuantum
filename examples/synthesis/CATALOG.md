@@ -4,7 +4,7 @@ User examples contain native Python programs and independent Circuit comparisons
 Original source files and importer launchers are test/development evidence, not examples.
 
 Validated quantum-program counterparts: **32/216**.
-Validated local Notebook workflows: **3/213**.
+Validated local Notebook workflows: **6/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -59,6 +59,13 @@ Validated local Notebook workflows:
 - [swap](functions/standard_gates/swap/README.md)
 - [u](functions/standard_gates/u/README.md)
 - [x](functions/standard_gates/x/README.md)
+
+Validated local Notebook workflows:
+
+- [hadamard_transform](functions/hadamard_transform/README.md)
+- [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
+- [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
+
 
 ## Tutorials (6 native programs)
 

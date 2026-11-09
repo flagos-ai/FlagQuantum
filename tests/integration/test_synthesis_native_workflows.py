@@ -1,6 +1,8 @@
 """Native workflows cover notebook steps beyond source-file compilation."""
 
 import ast
+import runpy
+from pathlib import Path
 
 import pytest
 import torch
@@ -82,3 +84,23 @@ def test_deutsch_jozsa_classical_decision_checks_the_zero_mass() -> None:
     assert classify({(2,): 0.5, (5,): 0.5}) == "balanced"
     with pytest.raises(ValueError, match="promise"):
         classify({(0,): 0.5, (1,): 0.5})
+
+
+@pytest.mark.parametrize(
+    ("example", "expected"),
+    [
+        ("hadamard_transform", {(value,): 1 / 8 for value in range(8)}),
+        ("state_preparation/prepare_bell_state", {(1,): 0.5, (2,): 0.5}),
+        ("state_preparation/prepare_ghz_state", {(0,): 0.5, (31,): 0.5}),
+    ],
+)
+def test_state_preparation_notebook_workflows(
+    example: str,
+    expected: dict[tuple[int, ...], float],
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    path = Path(__file__).resolve().parents[2] / "examples/synthesis/functions"
+    runpy.run_path(str(path / example / "main.py"), run_name="__main__")
+    assert ast.literal_eval(capsys.readouterr().out) == pytest.approx(
+        expected, abs=1e-12
+    )

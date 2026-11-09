@@ -21,4 +21,10 @@ Native FlagQuantum programs currently available:
 - [u](standard_gates/u/README.md)
 - [x](standard_gates/x/README.md)
 
+## Validated local Notebook workflows
+
+- [hadamard_transform](hadamard_transform/README.md)
+- [prepare_bell_state](state_preparation/prepare_bell_state/README.md)
+- [prepare_ghz_state](state_preparation/prepare_ghz_state/README.md)
+
 See the [full migration inventory](../MIGRATION_STATUS.md).

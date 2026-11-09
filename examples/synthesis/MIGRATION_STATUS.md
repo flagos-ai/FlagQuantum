@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **3/213**.
+Validated local Notebook workflows: **6/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -337,7 +337,7 @@ Validated local Notebook workflows: **3/213**.
 | `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1` | quantum_program | Pending | pending |
@@ -348,9 +348,9 @@ Validated local Notebook workflows: **3/213**.
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_trimmed_state/main.py) | pending |

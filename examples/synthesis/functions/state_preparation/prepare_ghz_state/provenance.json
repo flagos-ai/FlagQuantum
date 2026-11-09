@@ -1,6 +1,21 @@
 {
   "upstream_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state.qmod",
-  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
   "original_sha256": "7c0d3be2c11fbca40a24f617d53a0257f375cec4e05ce0102d73ea45ac0b5992",
-  "scope": "Quantum program only; notebook workflow is separate."
+  "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
+  "notebook_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state.ipynb",
+  "git_blob_sha1": "ffd459681a8728215c57220b86895769d3fac4e0",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "31db2a761c7e0247dca0235a1e9ceaad7b4cb5bfaa7485d53d9822deb9d5e661"
+    },
+    {
+      "index": 6,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_ghz_state.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state."
 }
