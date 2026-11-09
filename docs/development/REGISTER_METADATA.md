@@ -1,5 +1,48 @@
 # Shared register metadata
 
+## Indexed binding acceptance
+
+G2-GRAPH12 and G2-GRAPH13 implement proposal 103 prerequisites 0.11 and 0.12.
+Core owns the immutable `RegisterBinding` association with existing `ValueRef`
+identities, register metadata and indices. Compiler owns
+`create_register_bindings` and `process_register_bindings`, preserving the
+unchanged source's scalar/object-array distinction, row-major order, incremental
+availability registration and callback-before-dtype failure order. Consumers
+select LEFT/RIGHT/THRU ports through the existing Signature.
+
+The source constructor accepts negative indices. The source processor ignores
+surplus array elements and performs no exact-shape validation. Those behaviors
+are preserved and tested. General executable admission must separately validate
+physical resources and aliases. A metadata binding emits zero physical gates.
+
+The source-backed contract passed 87 traversal/index cases and 65 creation cases
+before their respective implementations. The final two binding suites pass 330
+cases. Both manually supplied and factory-created collections feed actual Add
+and XOR QROM emitters through unchanged append consumers. Gate dependency order,
+operands and feedback match the original decompositions. All four raw histories
+per consumer retain exact unnormalized complex amplitudes and zero work.
+For Add, the source reverses qalloc order into low-bit-first carries, which the
+reference allocator supplies explicitly.
+
+| Consumer | Emitted physical primitives | Original logical model |
+| --- | --- | --- |
+| Add with 2-bit and 3-bit inputs | 8 T/Tdag, 20 CX, 2 measurements, 2 reset, 2 work wires, 7 total wires | 2 And, 11 Clifford, 2 measurements, 8 T equivalents, 7 peak qubits |
+| XOR QROM with four 2-bit rows | 8 T/Tdag, 18 CX, 2 measurements, 2 reset, 1 reused work wire, 5 total wires | 2 And, 10 Clifford, 2 measurements, 8 T equivalents, 5 peak qubits |
+
+The final concentrated regression has 4,339 passing cases without warnings or
+skips. Six pinned source blobs remain equal to the original inventory. Four
+existing user examples execute. The changed production modules pass strict
+Python 3.12 typing, Black, Ruff, scope, architecture, Program contract and public
+API checks. Persistent evidence is held in the integration workspace's
+`ftqc-reference-env/g2-binding-*` logs.
+
+These slices leave executable component calls, explicit returns, split/join
+ownership and graph traversal open. The existing Program 0.5 contract retains
+its gate-level admission. The default smoke/unit run has failures recorded
+separately from the passing concentrated scope, including example runtime-import
+policy and QFT ordering/fusion expectations. See the integration ledger for
+baseline reproduction evidence and exact default-run counts.
+
 Core's `registers.py`, `signatures.py`, `register_types.py` and `value_math.py`
 own standalone metadata and width-arithmetic prerequisites 0.1 through 0.7
 specified in [proposal 103](API_CHANGE_PROPOSAL_103_REGISTER_COMPONENT_PROGRAMS.md).

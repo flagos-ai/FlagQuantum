@@ -29,6 +29,10 @@ control-flow graph.
   approved typed Rydberg profile and its geometry/resource checks on that same
   graph; `physical_codec.py` encodes its actual source through the existing
   scalar codec. These are not another IR hierarchy or numerical engine.
+- `program/register_bindings.py` associates existing SSA identities with indexed
+  register metadata under proposal 103 prerequisites 0.11 and 0.12. Compiler
+  owns array grouping and ordered port traversal. These metadata associations
+  still require a later contract delta for executable register calls and returns.
 
 ## What this package must not own
 

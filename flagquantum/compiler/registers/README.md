@@ -36,6 +36,13 @@ User workflows continue through `circuit.append(op)`.
 Each subpackage initializer contains documentation only. Import a component from
 its owning module. Source attribution stays in the implementation headers.
 
+`component_bindings.py` groups Core indexed bindings into scalar/object-array
+collections and visits them in declared port order. A caller supplies existing
+value identities and owns connection/consumption effects. The shared Core dtype
+policy runs after each callback, retaining the pinned source's failure effects.
+The module provides the binding prerequisites for the future Program component
+builder. General calls, returns and numerical graph traversal remain pending.
+
 ## Contributor path
 
 Run an existing lookup consumer and the resource comparison example from the
