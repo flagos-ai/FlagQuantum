@@ -1,7 +1,7 @@
 # Shared register metadata
 
 `core/ir/program/registers.py` and `signatures.py` own standalone metadata
-prerequisites 0.1, 0.2 and 0.3
+prerequisites 0.1 through 0.6
 specified in [proposal 103](API_CHANGE_PROPOSAL_103_REGISTER_COMPONENT_PROGRAMS.md).
 It is internal and adds no root export, Program IR opcode, value kind, serialized
 schema or executable component profile.
@@ -53,8 +53,8 @@ It carries encoding identity, exact quantum/classical widths and ordered type
 parameters. Equality distinguishes opaque/unsigned encodings, classical/quantum
 storage and bounds even when bit counts agree. Shared `register_types.py`
 factories construct bit, opaque, unsigned, bounded unsigned, signed,
-ones'-complement and Montgomery descriptors using the source constructor rules.
-Classical forms retain their storage identity. Fixed-point and finite-field
+ones'-complement, Montgomery and fixed-point descriptors using the source
+constructor rules. Classical forms retain their storage identity. Finite-field
 constructors remain separate work. Numerical domains and bit codecs remain
 Simulation-owned.
 Unknown encodings and symbolic descriptors do not thereby acquire execution
@@ -357,3 +357,28 @@ and type constructor regression, 2,613 cases pass without warnings or skips.
 Existing numerical codecs accept the same source-backed or native descriptors.
 Metadata constructors emit no gates and allocate no work qubits. Real-to-word
 quantization and finite-field constructors remain pending work.
+
+Simulation's original shape-validation entry now delegates to the shared Core
+guard while preserving its signature and all existing validation sites. The
+real array/domain/scale consumers pass with either the source-backed or native
+guard. Their focused regression passes 1,334 cases without warnings or skips.
+
+The full batch passes 4,157 concentrated tests across 26 files in 50.19 seconds,
+with three existing paired numerical warnings and no skips. It includes phase
+and fixed-point source gate streams, exact adjoints, complete complex amplitudes,
+measured branches, zero workspace and separate resource accounting. Four
+existing examples execute. The fixed-point append example consumes the new
+metadata widths and restores every complex amplitude and its spectator after
+the inverse. It emits three phase instructions, zero explicit T, zero
+measurements and zero work. The source model counts two Clifford and one T.
+Montgomery, QROM and Add examples retain their separate emitted/model reports.
+
+Nine pinned source blobs remain unchanged. Strict Python 3.12 typing, Ruff,
+Black, Integration/Simulation scope, architecture, public API baseline and
+multi-level IR checks pass. Logs are `g2-fixed-point-type-contract.log`,
+`g2-fixed-point-type-native.log`, `g2-fixed-point-type-consumer.log`,
+`g2-fixed-point-type-regression.log`, `g2-fixed-point-type-examples.log` and
+`g2-fixed-point-type-default.log` in the reference environment. The default tier
+reports 15,061 passed, 51 skipped, 398 warnings and the independently reproduced
+rotation-layer baseline failure in 86.65 seconds. The Python 3.10 unused-ignore
+limitation remains open.

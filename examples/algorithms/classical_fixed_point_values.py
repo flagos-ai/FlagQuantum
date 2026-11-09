@@ -14,6 +14,10 @@ from flagquantum.compiler.registers.phase.phase_gradient import (
     phase_gradient_unitary_ir,
 )
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir.program.register_types import (
+    classical_fixed_point_register_type,
+    fixed_point_register_type,
+)
 from flagquantum.simulation.fixed_point_encoding import (
     fixed_point_array_from_bits,
     fixed_point_array_to_bits,
@@ -31,15 +35,26 @@ class Gradient:
 
 
 def main() -> None:
+    quantum_word = fixed_point_register_type(3, 2, True)
+    classical_word = classical_fixed_point_register_type(3, 2, True)
+    assert quantum_word.num_bits == classical_word.num_bits == 3
     values = np.array([-4, -1, 0, 3])
-    bits = fixed_point_array_to_bits(values, 3, 2, signed=True)
+    bits = fixed_point_array_to_bits(
+        values, classical_word.classical_bits, 2, signed=True
+    )
     np.testing.assert_array_equal(
-        fixed_point_array_from_bits(bits, 3, 2, signed=True), values
+        fixed_point_array_from_bits(
+            bits, classical_word.classical_bits, 2, signed=True
+        ),
+        values,
     )
     print("Stored signed integers:", values.tolist())
     print(
         "Real scale (two fractional bits):",
-        [fixed_point_real_value(int(v), 3, 2, signed=True) for v in values],
+        [
+            fixed_point_real_value(int(v), quantum_word.quantum_bits, 2, signed=True)
+            for v in values
+        ],
     )
 
     words = tuple(fixed_point_domain(3, 3))

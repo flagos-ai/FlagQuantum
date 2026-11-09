@@ -251,3 +251,33 @@ def test_raw_values_full_complex_phase_gradient_and_no_work():
     assert emitted.unconditional == {"phase": 3} and emitted.t_count == 0
     model = get_cost_value(source_gate, QECGatesCost())
     assert model.clifford == 2 and model.t == 1 and model.measurement == 0
+
+
+@pytest.mark.parametrize("backend", ["source", "native"])
+def test_shared_core_shape_guard_can_replace_real_numeric_consumer(
+    backend, monkeypatch
+):
+    import flagquantum.simulation.fixed_point_encoding as native
+
+    original_guard = native.validate_fixed_point_parameters
+    events = []
+
+    def guard(width, fractional_width, *, signed=False):
+        events.append((width, fractional_width, signed))
+        if backend == "source":
+            source(width, fractional_width, signed)
+        else:
+            original_guard(width, fractional_width, signed=signed)
+
+    monkeypatch.setattr(native, "validate_fixed_point_parameters", guard)
+    values = np.array([-4, -1, 0, 3])
+    packed = native.fixed_point_array_to_bits(values, 3, 2, signed=True)
+    np.testing.assert_array_equal(packed, source(3, 2, True).to_bits_array(values))
+    np.testing.assert_array_equal(
+        native.fixed_point_array_from_bits(packed, 3, 2, signed=True), values
+    )
+    assert native.fixed_point_real_value(-1, 3, 2, signed=True) == -0.25
+    assert tuple(native.fixed_point_domain(3, 2, signed=True)) == tuple(range(-4, 4))
+    assert events == [(3, 2, True)] * 4
+    with pytest.raises(ValueError, match="bitsize must be > 1"):
+        native.fixed_point_to_bits(0, 1, 0, signed=True)
