@@ -1,6 +1,6 @@
 # Native fermionic science migration
 
-The local branch `feat/native-fermion-migration` implements a selected scientific
+The feature branch `feat/native-fermion-migration` implements a selected scientific
 scope, not the entire OpenFermion API. Its base is `2a073ab9d`. The upstream
 reference is OpenFermion `34adf3196cd566f4ca53893f868753786797ae2a`.
 
@@ -131,7 +131,8 @@ capability maturity, team scope and qubit vocabulary gates pass without changes
 to the stable API snapshots. The source archive and arm64 wheel build with the
 existing isolated PyTorch 2.10 build configuration; all added domain sources and
 distributed attribution were checked in the wheel. The local PR description is
-in docs/development/OPENFERMION_NATIVE_PR.md. No remote change was performed.
+in docs/development/OPENFERMION_NATIVE_PR.md. This local acceptance run preceded
+the later publication and CI acceptance recorded below.
 
 ## Follow-up scientific and compatibility audit
 
@@ -192,7 +193,7 @@ scope makes these deliberate adjustments:
 | 08-09 | Reordered active selections, existing frozen-core formulas and direct optional closed-shell RHF | Automatic active spaces, open shells and geometry gradients |
 | 10-12 | Mathematical factors and separate lowering create Slater and canonical Gaussian vacuum circuits | Additional preparation-plan IR, stored decomposition residual field or excited Gaussian basis synthesis |
 | 13-15 | Signed density-square factors, independent FSWAP network and first/second-order evolution | Mandatory coupling of evolution to FSWAP or nearest-neighbor routing |
-| 16 | Local installation, compatibility, attribution, review and CI configuration | Linux acceptance and refreshed locked images remain merge prerequisites |
+| 16 | Local installation, compatibility, attribution, review and qualified Linux CI | Maintainer review and merge authorization remain outstanding |
 
 A decomposition is verified by reconstruction; it does not carry a separately
 stored residual field. This keeps the mathematical boundary small. Circuit
@@ -211,17 +212,32 @@ The new matrix depends on source preparation and is required by `ci-complete`.
 Existing merge-gate tests verify that failed, cancelled or skipped dependencies
 cannot produce a successful final check. The testing manual lists all 27 jobs.
 
-The new dependency manifests require rebuilding **all four** immutable CPU
-images. Both manifests are compared byte for byte by the offline wrapper,
-including on core profiles. `docker/ci/images.lock` is unchanged until real
-images are published and qualified through the existing workflow documented in
-`docs/development/TESTING.md`. Configuration-level tests do not prove the
-contents of a locked image. Earlier references to coverage containing the extra
-mean the requested profile, not that the pinned image has already been rebuilt.
+All four immutable CPU images were rebuilt and published. The lock records the
+verified registry and offline OCI identities; the offline wrapper still compares
+both dependency manifests byte for byte. The 192 coverage worker caches were
+qualified against those identities. No manifest comparison, coverage floor or
+merge gate was relaxed.
 
-Local Docker access was requested and granted, but the daemon remained
-unavailable and launching Docker Desktop returned `kLSNoExecutableErr`. The
-Ubuntu workflow and a separate local wheel-test recipe are prepared; no Linux
-execution is claimed. No production code or stable API changes were necessary
-in this review. The branch is reviewable locally but is not merge-ready until
-Linux execution and locked-image qualification have actual passing evidence.
+## Remote CI acceptance and review status
+
+The following results are bound to implementation revision
+`901472c81d72f52fa966520de47166557c52ed79`, before the documentation reconciliation:
+
+| Check | Evidence | Result |
+| --- | --- | --- |
+| Full Linux workflow | CI run `42595072278`, attempt 2 | 233 jobs successful; both native science endpoints passed |
+| Runtime selection | Same CI run | 6,215 passed, 403 skipped; real distributed launches passed |
+| Coverage | Same CI run | 192 of 192 shards and aggregate passed |
+| GPU workflow | Run `42595072337` | Passed |
+| Container publication | Run `42595072334` | Passed |
+
+These CI results complement the separately scoped local scientific evidence;
+they do not establish native fermionic GPU scalability or full upstream parity.
+Linux validation is owned by CI, as requested by the user. Local Docker was
+unavailable during the earlier attempt and is not cited as execution evidence.
+
+PR #1109 is open and ready for maintainer review; it has not been merged. The
+FCIDUMP follow-up is reviewed separately in stacked PR #1110. Merge #1109 first,
+then retarget #1110 to main and validate that target. Any later commit, including
+documentation changes, needs its own applicable checks; the runs above remain
+evidence for their recorded revision.

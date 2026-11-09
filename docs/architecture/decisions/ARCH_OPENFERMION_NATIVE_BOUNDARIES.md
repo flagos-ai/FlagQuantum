@@ -1,13 +1,16 @@
 # Native fermionic science boundaries
 
-Status: implemented on the local feature branch under the user-authorized migration plan.
+Status: implemented and submitted for maintainer review in PR #1109 under the
+user-authorized migration and subsequent publication instructions.
 
 ## Decision
 
-Deliver the selected OpenFermion capabilities on one local feature branch with
-reviewable commits. Do not push, create a remote PR, or change protected stable
-exports or their snapshots. Existing fermionic algebra remains authoritative;
-its public type identity, constructor and import path remain unchanged.
+Deliver the selected OpenFermion capabilities on one feature branch with
+reviewable commits. The original local-only delivery restriction was superseded
+by the user's subsequent instruction to publish PR #1109. Publication does not
+authorize merging. Protected stable exports and their snapshots remain unchanged.
+Existing fermionic algebra remains authoritative; its public type identity,
+constructor and import path remain unchanged.
 
 Introduce a complex Pauli value in Core because Observable intentionally accepts
 only real coefficients. New scientific algorithms consume the existing public
