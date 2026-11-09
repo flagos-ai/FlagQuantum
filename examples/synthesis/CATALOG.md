@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **128/216**.
+Validated quantum-program counterparts: **129/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -37,7 +37,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (36 native programs)
+## Applications (37 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -50,6 +50,7 @@ Validated local Notebook workflows:
 - [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
 - [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
 - [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
+- [facility_location](applications/logistics/facility_location/README.md)
 - [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
 - [traveling_salesman_problem](applications/logistics/traveling_salesman_problem/README.md)
 - [vehicle_routing_problem](applications/logistics/vehicle_routing_problem/README.md)

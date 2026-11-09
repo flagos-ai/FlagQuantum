@@ -6,7 +6,11 @@ import ast
 import math
 from typing import TYPE_CHECKING, NoReturn
 
+from .._hybrid.model import Value
+from .._hybrid.verifier import HybridVerificationError
+from .._phase_factors import Cube
 from .._phase_polynomial import Location, expand_phase
+from .frontend_phase_factors import emit_factor, expand_factored_phase
 from .frontend_python import _error
 from .frontend_views import locations
 
@@ -110,15 +114,35 @@ def capture_polynomial_phase(
         ):
             fail(node, "program.phase", "use +, -, *, / and literal powers 0..8")
         pending.extend((child, depth + 1) for child in children(node))
-    polynomial, reads = expand_phase(
-        expression,
-        quantum_word,
-        number,
-        operator_of=operator,
-        operands_of=children,
-        fail=fail,
-        condition=condition,
-    )
+    factors: tuple[tuple[Cube, Value], ...] = ()
+    try:
+        polynomial, reads = expand_phase(
+            expression,
+            quantum_word,
+            number,
+            operator_of=operator,
+            operands_of=children,
+            fail=fail,
+            condition=condition,
+        )
+    except HybridVerificationError as error:
+        if (
+            condition is not None
+            or any(isinstance(node, ast.Compare) for node in ast.walk(expression))
+            or not all(
+                diagnostic.code == "construction.python.budget.phase"
+                for diagnostic in error.diagnostics
+            )
+        ):
+            raise
+        expanded = expand_factored_phase(
+            owner, expression, quantum_word, number, operator, children, fail
+        )
+        if expanded is None:
+            raise
+        polynomial, reads, factors = expanded
+    for factor, value in factors:
+        emit_factor(owner, statement, factor, value)
     # Algebraic cancellation must not hide uninitialized or illegal reads.
     for value, bit in reads:
         owner.emit("qreg.control_phase", statement, (value,), indices=(bit,), angle=0.0)
@@ -139,3 +163,7 @@ def capture_polynomial_phase(
             )
         else:
             owner.emit("qreg.phase", statement, (), angle=float(angle))
+
+    for _, value in reversed(factors):
+        owner.emit("qreg.uncompute", statement, (value,))
+        owner.emit("qreg.release", statement, (value,))

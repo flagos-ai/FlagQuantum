@@ -43,7 +43,13 @@ Deduplication must preserve logical locations across helper views and multiple
 owners. Contradictory literals retain the established unfactored behavior.
 Absolute constant phase, asymmetric application bit order and the original
 finite-angle checks are preserved. No extra controlled-region semantics is
-admitted by this replacement; conditional budget refusals remain separate.
+admitted by this replacement; conditional budget refusals remain separate. Native conditional phase predicates keep their existing eight-physical-input
+boundary. Comparisons used as unconditional phase values remain unsupported;
+this arithmetic-only admission must not hide either boundary by replacing cubes.
+The existing Boolean candidate retains its twelve-bit intermediate-word ceiling.
+Masks addressing higher bits may require conservative lowering and substantially
+more work bits. Physical memory refusal must occur before allocation; this pass
+does not claim efficient cube lowering outside that existing candidate scope.
 
 ## Acceptance
 

@@ -39,7 +39,7 @@ def factored_cost_circuit(
 ) -> fq.Circuit:
     """Build exact cost/RX layers without a full 2**width classical cost table.
 
-    Parameters alternate gamma and beta. Each at-most-six-bit truth table is
+    Parameters alternate gamma and beta. Each at-most-eight-bit truth table is
     independently Walsh transformed into spin parities. This is a reference
     implementation using Circuit only, not a synthesis or execution backend.
     """
@@ -50,7 +50,7 @@ def factored_cost_circuit(
     parities: dict[tuple[int, ...], float] = defaultdict(float)
     for bits, table in factors:
         if (
-            len(bits) > 6
+            len(bits) > 8
             or len(set(bits)) != len(bits)
             or any(not 0 <= bit < width for bit in bits)
             or len(table) != 1 << len(bits)

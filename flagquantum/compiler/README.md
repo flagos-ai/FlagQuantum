@@ -1205,3 +1205,26 @@ behind both consumers, independent full complex states, global phase, logical
 bit order, helper/effect barriers, buffer bounds, storage refusals and physical
 resource limits. The complete retained AQC schedule exercises all 200 calls;
 no terms, repetitions or time literals are removed.
+
+## Shared Boolean phase factors
+
+`_phase_factors.py` owns the former Qmod cube-selection algorithm. It accepts
+syntax access/rewrite callbacks and resolved logical locations; the Qmod adapter
+and native phase capture both reuse it. Three-to-six distinct signed bit literals
+form a cube, and at most eight unique cubes are shared. It does not own syntax,
+allocate physical storage, execute states or select Runtime backends.
+
+Native `frontend_phase_factors.py` adapts AST nodes and emits predicate graphs
+through the existing exact WordExpression compiler. Existing checked locals,
+compute, phase, uncompute and release effects own lifetime verification. Only a
+phase-expansion budget refusal admits this alternative. Small expressions retain
+their previous resources. Original polynomial and physical-input bounds remain;
+conditional refusals and signed/scaled numeric reads do not gain new semantics.
+The Boolean candidate's twelve-bit intermediate bound also remains; higher masks
+may use conservative lowering and must respect actual memory limits.
+
+Run `tests/integration/test_synthesis_native_phase_factors.py` for replacement
+behind both consumers, Facility's full source/native/Circuit comparison, exact
+classical costs, ordered helper views, positive/negative literals, coherent
+spectators, multi-owner cubes, constant phase and workspace cleanup. Existing
+Qmod phase-factor tests and all frozen-source replays protect the source path.

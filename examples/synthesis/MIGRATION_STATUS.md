@@ -248,7 +248,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | Pending | pending |
 | `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | Pending | pending |
 | `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | Pending | pending |
-| `applications/logistics/facility_location/facility_location` | notebook_workflow | Pending | pending |
+| `applications/logistics/facility_location/facility_location` | notebook_workflow | [Native program](applications/logistics/facility_location/main.py) | pending |
 | `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | [Native program](applications/logistics/task_scheduling_problem/main.py) | pending |
 | `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | [Native program](applications/logistics/traveling_salesman_problem/main.py) | pending |
 | `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | [Native program](applications/logistics/vehicle_routing_problem/main.py) | pending |

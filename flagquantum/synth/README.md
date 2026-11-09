@@ -1184,3 +1184,15 @@ phase/control expressions remain outside this admission. Complete native
 quantum examples and independent Circuit references live under
 [`examples/synthesis/functions/arithmetic`](../../examples/synthesis/functions/arithmetic/).
 Associated Notebook workflows are tracked separately.
+
+## Shared Boolean factors in real phases
+
+Large expressions containing repeated Boolean products can retain those products
+as shared predicates instead of expanding every monomial. This is automatic after
+an existing expansion-budget refusal; the small-expression path is preserved.
+The compiler computes bounded predicates, applies the phase, and uncomputes their
+work bits. Existing operator, polynomial and physical resource limits still apply.
+This admits no new signed/scaled numeric or controlled-region semantics.
+
+See the [internal semantic contract](../../docs/api-changes/FQ-SYNTH-NATIVE-PHASE-FACTORS-20261110.md)
+and [native Facility Location workflow](../../examples/synthesis/applications/logistics/facility_location/WORKFLOW.md).

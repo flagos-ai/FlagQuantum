@@ -13,6 +13,7 @@ Native FlagQuantum programs currently available:
 - [patch_min_vertex_cover](cybersecurity/patching_management/patch_min_vertex_cover/README.md)
 - [credit_card_fraud](finance/credit_card_fraud/README.md)
 - [portfolio_optimization](finance/portfolio_optimization/README.md)
+- [facility_location](logistics/facility_location/README.md)
 - [task_scheduling_problem](logistics/task_scheduling_problem/README.md)
 - [traveling_salesman_problem](logistics/traveling_salesman_problem/README.md)
 - [vehicle_routing_problem](logistics/vehicle_routing_problem/README.md)
