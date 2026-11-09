@@ -14,7 +14,9 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 
 import numpy as np
+from numpy.typing import NDArray
 
+from ...core.ir.program.model import ValueRef
 from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_compatibility import check_register_types_consistent
 from ...core.ir.program.registers import Register
@@ -22,6 +24,32 @@ from ...core.ir.program.registers import Register
 
 class RegisterBindingError(ValueError):
     """A required component port is missing, surplus or type-inconsistent."""
+
+
+def create_register_bindings(
+    value: ValueRef,
+    register: Register,
+    available: set[RegisterBinding] | None = None,
+) -> RegisterBinding | NDArray[np.object_]:
+    """Group one value's indexed register metadata and optionally track it.
+
+    Scalars retain a binding even at width zero. Shaped ports retain their exact
+    object-array shape. The caller supplies the value identity and owns its
+    definition, direction and later resource-consumption policy.
+    """
+    if register.shape:
+        bindings: NDArray[np.object_] = np.empty(register.shape, dtype=object)
+        for index in register.all_idxs():
+            binding = RegisterBinding(value, register, index)
+            bindings[index] = binding
+            if available is not None:
+                available.add(binding)
+        return bindings
+
+    binding = RegisterBinding(value, register)
+    if available is not None:
+        available.add(binding)
+    return binding
 
 
 def process_register_bindings(

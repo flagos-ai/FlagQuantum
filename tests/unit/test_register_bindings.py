@@ -343,8 +343,9 @@ def test_shared_type_policy_is_called_after_actual_callback(monkeypatch):
 
 
 @pytest.mark.parametrize("consumer", ["add", "xor_qrom"])
+@pytest.mark.parametrize("factory_created", [False, True], ids=["manual", "created"])
 def test_bindings_feed_append_with_exact_measured_channels_and_resources(
-    backend, consumer
+    backend, consumer, factory_created
 ):
     from collections import Counter
 
@@ -376,7 +377,16 @@ def test_bindings_feed_append_with_exact_measured_channels_and_resources(
         source = QROM.build_from_data(np.array([1, 3, 0, 2]), target_bitsizes=(2,))
         groups, work = ((0, 1), (2, 3)), (4,)
 
-    bindings = {port.name: backend.binding(port) for port in registers.lefts()}
+    if factory_created:
+        from tests.unit.test_register_binding_creation import (
+            create_native,
+            create_source,
+        )
+
+        create = create_source if backend is SourceContract else create_native
+        bindings = {port.name: create(port) for port in registers.lefts()}
+    else:
+        bindings = {port.name: backend.binding(port) for port in registers.lefts()}
     physical = {
         bindings[port.name]: wires
         for port, wires in zip(registers.lefts(), groups, strict=True)
