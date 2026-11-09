@@ -649,3 +649,67 @@ component calls/returns/traversal are the following executable graph work.
 
 The final 26-file concentrated regression passes 3,884 tests without warnings
 or skips in 19.81 seconds, including the expanded 120-declaration matrix.
+
+## Finite gate calls and explicit returns
+
+Proposal 103 prerequisite 1.1 implements the finite gate-call dependency of the
+register graph. Internal contract 0.6 adds `Operation.callee` and
+`BlockRecord.return_values` to the existing Program records. Core resolves
+same-module definitions and checks all functions, including unreachable cycles.
+Explicit returns consume quantum values and distinguish empty from missing
+returns. Legacy gate-only hashes, implicit returns and physical source schemas
+retain their original behavior. A physical-codec regression caused by deriving
+serialized keys from dataclass fields was fixed by retaining the versioned
+physical schema's original field sets, with old-read and extra-field tests.
+
+Compiler's `registers/program_calls.py` expands calls with an invocation-local
+SSA map and an explicit stack. A 1300-call chain verifies without recursive
+Python traversal. Parameters and measurement-produced booleans cross real
+function boundaries. Boolean argument substitution re-canonicalizes DNF, merges
+duplicate tests and omits contradictory clauses. A provably false conditional
+gate forwards its operands. That exact native specialization is separate from
+unchanged-source primitive parity.
+
+The existing Add/QROM binding-to-append acceptance consumer is unchanged. Tests
+replace its emitter boundary with a three-level native Program hierarchy,
+expand it and independently attest its canonical payload. Both manual and
+factory-created binding paths then execute the restored instructions through
+`Circuit.append`. The restored instruction tuples are exactly equal to the
+original emitted tuples. The consumer independently compares source per-wire
+dependencies, operands and feedback, every one of four measurement histories,
+full unnormalized complex amplitudes and zero workspace sectors.
+
+These are the same concrete leaves used in GRAPH12, now exercised through native
+finite calls. Workspace remains explicit in their gate-function arguments and
+returns. Resource observations retain separate units.
+
+| Leaf | Observed primitive stream | Independent upstream model |
+| --- | --- | --- |
+| Add, 2-bit a and 3-bit b | 8 T/Tdag, 20 CX, 6 H, 2 S, 2 CZ, 2 measurements, 2 reset, 2 work wires, 7 declared wires | 2 And, 11 Clifford, 2 measurements, 8 T equivalents, 7 peak qubits |
+| XOR QROM, table [1,3,0,2], 2-bit rows | 8 T/Tdag, 18 CX, 6 X, 6 H, 2 S, 2 CZ, 2 measurements, 2 reset, 1 reused work wire, 5 declared wires | 2 And, 10 Clifford, 2 measurements, 8 T equivalents, 5 peak qubits |
+
+Core restoration independently re-lowers the payload. For explicit returns it
+also checks the final successor of every original physical input wire in wire
+order. Permuted or additional returned values cannot disappear behind a payload.
+A hierarchy requires Compiler expansion before public restoration.
+
+Packed register identities, source builder partial-failure mutation, typed
+split/join, clean/dirty allocation and direct numerical register-graph traversal
+remain separate acceptance work. The 39 source-backed register-builder contract
+scenarios continue to run against the source fake. This gate-level slice does
+not replace that fixture with a native register builder.
+
+
+GRAPH15 acceptance passed 4501 concentrated cases with no warnings or skips.
+Strict Python 3.12 typing passed for all six changed production files. Black,
+Ruff, architecture, internal Program contract, public API baseline and both team
+scope checks passed. Four existing append/resource examples executed successfully.
+Six pinned source blobs remained unchanged.
+
+The default smoke/unit run stopped at four failures after 5516 passes and 166
+skips. Both QFT fusion dtypes, product-state QFT fusion and terminal rotation
+fusion fail identically in the pre-batch `c3f211d7` archive. The baseline
+reproduction preserves those failures as separate evidence. Persistent logs are
+`ftqc-reference-env/g2-finite-call-regression.log`,
+`g2-finite-call-checks.log`, `g2-finite-call-examples.log`,
+`g2-finite-call-default.log` and `g2-finite-call-baseline-failures.log`.
