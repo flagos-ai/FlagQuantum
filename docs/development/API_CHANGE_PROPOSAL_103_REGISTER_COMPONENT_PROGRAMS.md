@@ -1302,3 +1302,48 @@ wires and does not certify parity with every possible manager reuse policy.
 This is a contract and source prerequisite. Native pool adoption and the new
 binding keyword have not been implemented at this commit. No migrated capability
 checkbox closes on this evidence alone.
+
+### Classical owned-port prerequisite 1.9
+
+The next boundary starts with actual locked-source classical register paths,
+not a synthetic quantum-port fake. Four contract witnesses in
+`tests/unit/test_register_classical_port_contract.py` cover CBit's zero
+quantum and one classical bit, a two-element Parity input and right output,
+MeasureZ's quantum-left/classical-right transition, and the current native
+executable-word refusal. Parity's original classical call retains the input
+array and returns its XOR for every two-bit value. MeasureZ's original model
+reports one measurement and peak one qubit. With a correctly shaped CBit input,
+the locked Parity Cirq path raises a zero-qubit arity error while attempting to
+wrap classical slots as qubits. The source explicitly refuses classical right
+wires later in the same adapter. This is a source Cirq-export limitation, not
+evidence of an executable classical-port circuit.
+
+The internal Core representation already has the exact nominal descriptor
+`RegisterType("bit", 0, 1)` and a linear `register` value kind. The
+existing `bool` kind remains a shareable measurement-feedback SSA value.
+An owned CBit port must not alias that `bool` value or inherit its fanout.
+The first implementation step must admit concrete CBit ports in the register
+verifier without changing quantum word width rules or the protected public IR.
+The source MeasureZ transition needs an explicit internal operation consuming
+one quantum resource and producing one owned CBit handle. Its physical binding
+emits one existing measurement instruction and associates the output handle
+with that measurement's classical slot. It does not manufacture a successor
+qubit, reset the measured wire, or treat a classical bit as a physical qubit.
+
+Physical result metadata must distinguish ordered quantum-wire outputs from
+ordered classical-slot outputs while retaining the existing CircuitIR and
+unchanged user `circuit.append(op)` path. A classical handle passed to a
+later component stays single-consumption; any parity or feedback uses must
+explicitly preserve the source's output ownership and consume the allocated
+classical slot. The builder must reject stale handles and width/type mismatches
+through the existing source-ordered validation. A source-only classical input
+requires a separately verified executor initialization contract before physical
+binding. The first executable slice may therefore accept measurement-produced
+CBit values and fail closed on external classical entry ports.
+
+Acceptance must compare source graph wiring, CBit arrays and XOR value order,
+measurement-slot dependencies, all two-outcome unnormalized complex branches,
+quantum work status and separate emitted/model resources. Retain the locked
+source Cirq-export failure as a boundary case. Do not claim a flat source gate
+stream for that unsupported export path. This is a contract/source prerequisite;
+native classical-port execution and its capability checkbox remain open.
