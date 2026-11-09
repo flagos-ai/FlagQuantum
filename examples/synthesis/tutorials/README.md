@@ -9,6 +9,11 @@ Native FlagQuantum programs currently available:
 - [execution_tutorial_part2](basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 
+## Validated local Notebook workflows
+
+- [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
+- [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
+
 ## Additional FlagQuantum teaching examples
 
 - [arithmetic_baseline](arithmetic/arithmetic_baseline/main.py)

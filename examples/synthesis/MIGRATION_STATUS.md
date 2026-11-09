@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **6/213**.
+Validated local Notebook workflows: **8/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -394,10 +394,10 @@ Validated local Notebook workflows: **6/213**.
 | `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | Pending | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | validated |
 | `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial_part2/main.py) | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | validated |
 | `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | Pending | pending |

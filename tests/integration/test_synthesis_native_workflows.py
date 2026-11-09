@@ -3,6 +3,7 @@
 import ast
 import runpy
 from pathlib import Path
+from typing import Literal
 
 import pytest
 import torch
@@ -22,6 +23,20 @@ from examples.synthesis.algorithms.foundational.deutsch_jozsa.main import (
     run_example as run_deutsch_jozsa,
 )
 from examples.synthesis.community.basic_examples.superposition.main import run_example
+from examples.synthesis.compare_states import compare_states
+from examples.synthesis.tutorials.basics.quantum_programming.classiq_overview_tutorial.main import (
+    run_example as run_overview,
+)
+from examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.comparisons.circuit import (
+    reference_circuit as arithmetic_reference,
+)
+from examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.main import (
+    build_program as build_arithmetic,
+)
+from examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.main import (
+    run_example as run_synthesis,
+)
+from flagquantum.compiler import ResourceEstimate
 
 pytestmark = pytest.mark.integration
 
@@ -104,3 +119,57 @@ def test_state_preparation_notebook_workflows(
     assert ast.literal_eval(capsys.readouterr().out) == pytest.approx(
         expected, abs=1e-12
     )
+
+
+def test_arithmetic_overview_draws_executes_and_samples_named_values(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    run_overview()
+    output = capsys.readouterr().out
+    diagram, readout = output.split("Probabilities: ", 1)
+    assert diagram.strip()
+    probabilities, counts = readout.split("\nCounts: ", 1)
+    expected = {(x, x * x + 1): 1 / 8 for x in range(8)}
+    assert ast.literal_eval(probabilities) == pytest.approx(expected, abs=1e-12)
+    observed = ast.literal_eval(counts)
+    assert observed.keys() == expected.keys()
+    assert sum(observed.values()) == 1000
+    assert all(80 < count < 170 for count in observed.values())
+
+
+@pytest.mark.parametrize("objective", ["width", "depth"])
+def test_both_synthesis_objectives_preserve_complete_arithmetic_state(
+    objective: Literal["width", "depth"],
+) -> None:
+    program = build_arithmetic(objective)
+    compare_states(program, arithmetic_reference(), ("x", "y"))
+    result = fq.run(program)
+    assert dict(program.probabilities(result, registers=("x", "y"))) == pytest.approx(
+        {(x, x * x + 1): 1 / 8 for x in range(8)}, abs=1e-12
+    )
+
+
+def test_synthesis_workflow_draws_and_reports_both_actual_objectives(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    run_synthesis()
+    output = capsys.readouterr().out
+    objectives: tuple[Literal["width", "depth"], ...] = ("width", "depth")
+    for objective in objectives:
+        report = next(
+            line
+            for line in output.splitlines()
+            if line.startswith(objective + " resources: ")
+        )
+        measured = ast.literal_eval(report.split("resources: ", 1)[1])
+        resources = build_arithmetic(objective).report["resources"]
+        assert isinstance(resources, ResourceEstimate)
+        assert measured == {"width": resources.n_qubits, "depth": resources.depth}
+    readouts = [
+        ast.literal_eval(line) for line in output.splitlines() if line.startswith("{(")
+    ]
+    assert len(readouts) == 2
+    for probabilities in readouts:
+        assert probabilities == pytest.approx(
+            {(x, x * x + 1): 1 / 8 for x in range(8)}, abs=1e-12
+        )

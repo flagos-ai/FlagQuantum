@@ -6816,12 +6816,48 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
+      "workflow_status": "validated",
       "native_program": {
         "path": "examples/synthesis/tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py",
-        "scope": "Validated quantum program; notebook/training/execution workflow not certified."
+        "scope": "Complete local computational Notebook workflow: native arithmetic program, synthesis, text circuit drawing and seeded sampling from executed named probabilities. Text drawing and local sampling replace cloud services; no hardware measurement is claimed."
       },
-      "kind": "notebook_workflow"
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "5e28d56fea67b203a6e0e0b44ef0fa8998e66ae477fc62a4b02d2c5c8bcd30d1",
+        "scope": "Complete local computational Notebook workflow: native arithmetic program, synthesis, text circuit drawing and seeded sampling from executed named probabilities. Text drawing and local sampling replace cloud services; no hardware measurement is claimed.",
+        "notebook_path": "tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.ipynb",
+        "git_blob_sha1": "1bdf9c4a1a32896778002bb047c17ad84603950e",
+        "reviewed_code_cells": [
+          {
+            "index": 1,
+            "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+          },
+          {
+            "index": 5,
+            "sha256": "37a7eb6ed3397ce7441faf8660f94201d7bdaca027da17db8a1e6a31b03ea1be"
+          },
+          {
+            "index": 10,
+            "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+          },
+          {
+            "index": 12,
+            "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+          },
+          {
+            "index": 17,
+            "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+          },
+          {
+            "index": 21,
+            "sha256": "32c220482c68413fbf8290e3b1e49b0a85901cfcd62ab0738760568a2a6e8a57"
+          }
+        ],
+        "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.classiq_overview_tutorial.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+      }
     },
     {
       "id": "tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial",
@@ -6888,12 +6924,52 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
+      "workflow_status": "validated",
       "native_program": {
         "path": "examples/synthesis/tutorials/basics/quantum_programming/synthesis_tutorial/main.py",
-        "scope": "Validated quantum program; notebook/training/execution workflow not certified."
+        "scope": "Complete local computational Notebook workflow: the same native arithmetic program synthesized under both width/depth objectives, text drawing and actual width/depth reports. Independent Circuit acceptance checks both objectives; execution and named readout additionally verify the result. No global-optimum or guaranteed resource improvement is claimed."
       },
-      "kind": "notebook_workflow"
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "4dbff47c68a449c918d30cdb63d8398de7084f02617e604d82c24191bcbfea8b",
+        "scope": "Complete local computational Notebook workflow: the same native arithmetic program synthesized under both width/depth objectives, text drawing and actual width/depth reports. Independent Circuit acceptance checks both objectives; execution and named readout additionally verify the result. No global-optimum or guaranteed resource improvement is claimed.",
+        "notebook_path": "tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial.ipynb",
+        "git_blob_sha1": "379a0ae78755d0a140fae79c9a7e8fe84e76a830",
+        "reviewed_code_cells": [
+          {
+            "index": 1,
+            "sha256": "1cf783653f9d5a1e6b0af6b1b420292c5632f87da53f56ce8f758b042f7faecf"
+          },
+          {
+            "index": 3,
+            "sha256": "9be0e79196a7d05af1c7d812b1949d99b9caf42b3be7e84a0e9a6c8ada1ddb40"
+          },
+          {
+            "index": 5,
+            "sha256": "18d2172f07011b60c5c3f9978203aa38fd228363a053b24c40a52386260f709c"
+          },
+          {
+            "index": 7,
+            "sha256": "53d8b2e3f4656fbb7e5ac96c6aa713995c03ecaffcca7a9e719c406cf7a903da"
+          },
+          {
+            "index": 9,
+            "sha256": "a8f3deeb01368d27ba9b61eb0ebd35dd32e1ad6c56550cfc2d1de3b9c563f055"
+          },
+          {
+            "index": 11,
+            "sha256": "21fcfcaa8145e1d09a5da18a3e4a40dd8736ba2fd20f8c488a4a40c552d9b893"
+          },
+          {
+            "index": 12,
+            "sha256": "fe0db7fc536523f42c67a5f8d4ce7b303e44f58294882628feab9b21d390c15d"
+          }
+        ],
+        "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+      }
     },
     {
       "id": "tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator",

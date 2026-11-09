@@ -337,7 +337,7 @@ def render(catalog: Catalog) -> dict[Path, str]:
         ]
         output[base / category / "README.md"] = "\n".join(category_lines)
         lines.append("")
-    output[base / "CATALOG.md"] = "\n".join(lines)
+    output[base / "CATALOG.md"] = "\n".join(lines).rstrip() + "\n"
     migration = [
         "# Five-category native migration",
         "",
