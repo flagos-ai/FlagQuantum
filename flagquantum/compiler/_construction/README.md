@@ -8,6 +8,7 @@ selection and lowering to CircuitIR.
 
 | Module | Responsibility |
 | --- | --- |
+| `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
 | `frontend_program.py` | Capture source-retaining Python qfunc programs |
 | `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
 | `frontend_statements.py` | Dispatch captured statements and specialize bounded classical branches |
@@ -63,7 +64,12 @@ are legal; overlapping physical input/output/workspace ports are not.
 Supported records are `arith.constant` with classical INDEX type and a checked
 nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`. The Qmod adapter also uses
 `qint.subtract_mod` for raw word subtraction modulo the declared result width.
-Qmod owns sign extension and binary-point alignment before this operation.
+The shared `numeric_expression.py` owns exact sign extension and binary-point
+alignment before this operation; the source adapter supplies syntax accessors
+and retains its diagnostics. Native numeric admission is a separate contract.
+`tests/team/compiler/test_construction_numeric_expression.py` checks a second
+syntax consumer against independent full-domain rational/word oracles and
+nonzero XOR targets.
 Functions return one quantum integer expression. Definitions form an acyclic
 call graph. This is a closed verifier profile, not an extension to the existing
 classical hybrid verifier or its lowering pipeline.
