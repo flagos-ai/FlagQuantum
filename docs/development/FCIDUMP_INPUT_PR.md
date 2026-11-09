@@ -79,5 +79,9 @@ merge-gate, testing-manual and dependency-audit contracts passed 82 tests after
 the Ubuntu test selections were extended.
 The existing independent Ubuntu matrix now explicitly runs FCIDUMP import
 isolation before optional dependencies and the two PySCF producer cases after
-the driver installation. Linux verification belongs to CI. The pending fixed-image qualification belongs
-to dependency #1109; this PR changes neither dependency manifests nor image locks.
+the driver installation. Linux verification belongs to CI. Dependency #1109 has
+rebuilt all four fixed images and passed both Linux native-fermion matrix
+endpoints in run `42584600022`. This stacked PR inherits that lock and its
+qualification requirement; its diff changes neither dependency manifests nor
+image locks. Its own full Linux workflow must pass on the FCIDUMP revision,
+including the independent file-import and PySCF tests.
