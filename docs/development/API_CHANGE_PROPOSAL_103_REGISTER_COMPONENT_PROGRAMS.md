@@ -1213,3 +1213,42 @@ wires. Graph binding does not insert numerical cleanup. Exercise the entry in an
 unchanged circuit.append consumer by replacing its emitter and test native
 complex states plus all small measurement branches. Input/output transfer,
 classical entry ports and unconnected source node ties stay explicit limitations.
+
+### Allocated output ownership transfer prerequisite 1.7
+
+Extend the internal physical binding entry with keyword-only
+`allow_workspace_outputs: bool = False`. Require a built-in boolean. The default
+retains balanced physical lifetimes. An explicit true value transfers any
+returned nonempty allocated wires to the caller through the existing ordered
+`outputs` result. Existing allocation events retain each wire's clean/borrowed
+origin and source flag. Returned work stays live, receives no artificial Free,
+and remains unavailable to later allocations within the same binding operation.
+
+Core's existing linear ownership verifies that live wires reach declared right
+ports. Transfer includes current split/join permutations, mixed input/allocated
+output words and nested call results. Entry port order and MSB order remain the
+same. A zero-width right word retains its logical Core identity and returns an
+empty physical tuple. The existing CircuitIR still requires at least one
+physical wire. No new Core record, serialized field or public export is needed.
+
+The caller now owns the output lifetime, including subsequent cleanup and final
+return of borrowed work. Binding preserves the exact state produced by the
+component. A borrowed output may remain entangled or transformed until its
+caller completes the enclosing algorithm. Numerical acceptance compares the
+whole source physical state, returned wire order and measurement branches.
+Source tensor allocation still starts from zero and is a different entry.
+
+Eight unchanged-source witnesses in
+`tests/unit/test_register_output_transfer_contract.py` pass in 2.67 seconds.
+Clean/borrowed right-only words of widths 0, 1 and 3 preserve reversed wire order,
+emit no gates, and cause allocation without a free event. Source QEC gate cost
+is empty and modeled peak includes data plus the right-only word. Two source
+default-manager witnesses reject freeing unmanaged external LineQubit inputs.
+Caller-input release remains a separately declared pool-ownership boundary.
+
+Compiler acceptance must retain the existing balanced-profile rejection, reject
+non-boolean policy values, and prove physical output transfer using real function
+bodies through an unchanged append consumer. Compare source primitive operands,
+all small unnormalized complex branches and joint spectator states. List output
+lifetime ownership, emitted resources and modeled peaks separately. The source
+contract witnesses alone do not certify native transfer execution.
