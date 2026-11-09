@@ -163,8 +163,8 @@ retain default balanced-profile rejection and reject non-boolean policy values.
 
 Contract commit `44c6300b` precedes Compiler implementation `021c0548`. External
 logs use `g2-output-transfer-{contract,native,regression,checks,examples,default}.log`
-and `g2-output-transfer-source.txt`. Caller-input pool adoption and general
-classical boundary ports remain separate acceptance work.
+and `g2-output-transfer-source.txt`. General classical boundary ports remain
+separate acceptance work.
 
 
 The output-transfer batch passes 4890 concentrated tests in 43.59 seconds,
@@ -174,3 +174,52 @@ Black/Ruff, both ownership scopes, architecture, Program/public API gates and
 four existing examples pass. The default smoke/unit tier again stops at the
 same four previously reproduced failures, with 5516 passes, 166 skips and
 30 warnings in 443.03 seconds. Its log is `g2-output-transfer-default.log`.
+
+## Pre-owned input pool adoption
+
+The internal keyword-only `input_ownership=((wire, dirty), ...)` declares which
+entry wires already belong to caller-owned clean or borrowed pools. Each wire
+is a distinct concrete input wire and each origin flag is a built-in boolean.
+An empty declaration keeps caller inputs unmanaged. The physical pool registers
+these leases atomically without emitting an allocation event or consuming
+available workspace. A partial word release must contain only declared owned
+wires. Free records its source dirty flag, while each wire returns to its
+original pool regardless of that flag.
+
+An unreleased adopted input may return through the ordinary right port. Once
+released, the same wire may be allocated as new Program work. Such an output
+requires `allow_workspace_outputs=True` and transfers its subsequent lifetime to
+the caller. The existing pool reuse order is preserved. The original Greedy
+manager witness has no spare available wires, so it establishes only this
+specific reuse case, not arbitrary manager-policy equivalence.
+
+Eight unmodified-source manager scenarios cover widths one and three, both
+input origins and both Free flags. The native binding matches their free-before-
+allocation events, reversed wire order, zero emitted primitives and source
+modeled peak equal to the width. A separate actual Program runs two CX gates
+on a joint complex state with a spectator. Both clean-zero and borrowed
+restoration match the original Cirq conversion, which models two Cliffords,
+zero T and zero measurements with peak width two. That numerical test has
+three physical wires including the spectator.
+
+A measured And compute/erase Program releases the adopted inputs after its
+private clean work returns to zero. Both unnormalized measurement branches
+match the unchanged-source decomposition, including all complex amplitudes,
+one spectator and clean work zero. Emitted primitives are 6 CX, 3 H, 2 T,
+2 T-dagger, 1 S, 1 measurement, 1 CZ and 1 reset. The independent source
+model reports one And, one Clifford, one measurement and four total
+T-equivalent gates, with peak width three. The numerical comparison has four
+physical wires including the spectator. Output allocation after input release
+uses the declared origin pool and has no quantum primitive of its own.
+
+The focused 130 tests cover the prior binding/output paths, pool collision
+atomicity, invalid ownership, mixed-origin joins, released-wire reuse and
+default policy rejection. Both modified production modules have 100% statement
+and branch coverage. The concentrated regression passes 4946 tests without
+skips or warnings. All 16 reference blobs match the locked inventory. Strict
+Python 3.12 checks of 17 production modules, Black/Ruff, both ownership scopes,
+architecture, Program/public API gates and four existing append/resource
+examples pass. Logs are stored under `g2-input-pool-{regression,checks,examples}.log`
+and `g2-input-pool-source.txt`. The default smoke/unit tier was not rerun in
+this batch. Its preceding run stopped at the four independently reproduced
+QFT/rotation fusion failures described above.

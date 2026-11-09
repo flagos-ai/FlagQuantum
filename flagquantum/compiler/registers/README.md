@@ -207,10 +207,13 @@ source graphs. Repeated calls keep local lifetime order before expansion.
 The default profile has quantum boundary ports and balanced nonempty work.
 Explicit `allow_workspace_outputs=True` transfers returned allocated wires and
 their subsequent lifetime to the caller. The pool retains their ownership during
-binding, including partial and nested output lifetimes. Caller-input pool
-adoption, general classical boundary ports and isolated source frozenset tie
-parity remain open. Binding ignores the
-optional restoration payload and executes the actual graph. See
+binding, including partial and nested output lifetimes. Explicit
+`input_ownership=((wire, dirty), ...)` adopts pre-owned input wires into
+their clean or borrowed origin pools. Releasing and reallocating these wires
+requires output transfer; returning an unreleased input does not. General
+classical boundary ports and isolated source frozenset tie parity remain open.
+Binding ignores the optional restoration payload and executes the actual graph.
+See
 [the interface and evidence](../../../docs/development/PHYSICAL_REGISTER_BINDING.md)
 for bit order, output semantics, slot alpha-renaming and separate resource counts.
 
@@ -220,3 +223,7 @@ for original-source output order, allocation-without-free events, full complex
 spectator states, all measured Add branches, nested live leases and partial
 release/reuse. Outputs contain wire tuples in declared port order. The caller
 owns cleanup and eventual borrowed-state restoration after transfer.
+
+Run `pytest tests/unit/test_register_input_pool.py
+tests/unit/test_workspace_adoption.py` for input adoption, source manager
+reuse, measured erasure branches and pool-origin validation.
