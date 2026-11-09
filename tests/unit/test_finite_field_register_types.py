@@ -185,3 +185,116 @@ def test_projection_does_not_resolve_target_field_or_recompute_width():
     assert "gf_type" not in field.__dict__
     assert field.register_type().parameters == field.register_type().parameters
     assert "bitsize" in field.__dict__ and "order" in field.__dict__
+
+
+@pytest.mark.parametrize("classical", [False, True])
+@pytest.mark.parametrize("characteristic_symbolic", [False, True])
+@pytest.mark.parametrize("order_symbolic", [False, True])
+def test_symbolic_protocol_uses_characteristic_then_cached_order(
+    project, classical, characteristic_symbolic, order_symbolic
+):
+    events = []
+
+    class Order(int):
+        def is_symbolic(self):
+            events.append("order")
+            return order_symbolic
+
+    class Characteristic(int):
+        def is_symbolic(self):
+            events.append("characteristic")
+            return characteristic_symbolic
+
+        def __pow__(self, degree):
+            return Order(8)
+
+    class Degree(int):
+        def is_symbolic(self):
+            raise AssertionError("Degree must not be examined during classification")
+
+    characteristic, degree = Characteristic(2), Degree(3)
+    source = original(classical, characteristic, degree, None)
+    _ = source.bitsize
+    events.clear()
+    expected = source.is_symbolic()
+    expected_events = events.copy()
+    dtype = project(classical, characteristic, degree, None)
+    events.clear()
+    assert dtype.is_symbolic() == expected
+    assert events == expected_events
+
+
+def test_projection_keeps_library_objects_inside_simulation(monkeypatch):
+    import flagquantum.simulation.finite_field_encoding as native
+
+    field = native.FiniteFieldEncoding(2, 3)
+
+    def forbidden(name):
+        raise AssertionError(
+            f"Projection must not construct the target field through {name}"
+        )
+
+    monkeypatch.setattr(native, "import_module", forbidden)
+    dtype = field.register_type()
+    assert "gf_type" not in field.__dict__
+    assert all(isinstance(value, (int, str)) for _, value in dtype.parameters)
+    assert dtype.parameters == field.register_type().parameters
+
+
+@pytest.mark.parametrize("degree", [2, 3])
+def test_projected_signature_binds_existing_append_multiplier(project, degree):
+    from collections import Counter
+
+    import torch
+    from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.circuit import Circuit
+    from flagquantum.compiler.registers.finite_field.field_multiplication import (
+        bind_field_outputs,
+        gf2_multiplication,
+    )
+    from tests.unit.test_field_multiplication import (
+        assert_gate_streams,
+        reference_gates,
+    )
+
+    dtype = project(False, 2, degree)
+    source = original(False, 2, degree)
+    width = int(dtype.num_qubits)
+    modulus = dict(dtype.parameters)["polynomial"]
+    registers = tuple(tuple(range(i * width, (i + 1) * width)) for i in range(3))
+    signature = Signature(tuple(Register(name, dtype) for name in ("x", "y", "result")))
+    plan = gf2_multiplication(*registers, (), modulus=modulus, algorithm="quadratic")
+    upstream = GF2Multiplication(source)
+    source_gates, outputs = reference_gates(
+        upstream, {"x": registers[0], "y": registers[1]}, registers[2]
+    )
+    assert_gate_streams(
+        [(gate.name, gate.wires) for gate in plan.instructions], source_gates
+    )
+    assert plan.outputs == (outputs["x"], outputs["y"], outputs["result"])
+    counts = Counter(gate.name for gate in plan.instructions)
+    model = get_cost_value(upstream, QECGatesCost())
+    assert (counts["ccx"], counts["cx"]) == (model.toffoli, model.clifford)
+    size = 1 << width
+    generator = torch.Generator().manual_seed(91)
+    initial = torch.randn(size * size, generator=generator, dtype=torch.complex128)
+    initial /= initial.norm()
+    state = torch.zeros(size**3, dtype=torch.complex128)
+    expected = torch.zeros_like(state)
+    for left in range(size):
+        for right in range(size):
+            index = (left * size + right) * size
+            state[index] = initial[left * size + right]
+            product = int(source.gf_type(left) * source.gf_type(right))
+            expected[index + product] = state[index]
+    gates = bind_field_outputs(plan, registers)
+    circuit = Circuit(int(signature.n_qubits()), inputs=state, dtype=torch.complex128)
+    result = (
+        circuit.append(FieldOperation(int(signature.n_qubits()), gates))
+        .state()
+        .flatten()
+    )
+    torch.testing.assert_close(result, expected, rtol=0, atol=1e-12)

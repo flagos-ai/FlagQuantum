@@ -17,6 +17,7 @@ from typing import Any, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from ..core.ir.program.registers import RegisterType, TypeParameter
 from ..core.value_math import SymbolicInt, bit_length
 from ..core.value_parameters import is_symbolic_value
 from .integer_encoding import (
@@ -86,6 +87,37 @@ class FiniteFieldEncoding:
             verify=False,
             repr="poly",
             compile="python-calculate",
+        )
+
+    def register_type(self, *, classical: bool = False) -> RegisterType:
+        """Explicitly resolve width and project the declaration to neutral metadata.
+
+        Polynomial identity is retained for canonical galois field factories.
+        The target numerical field class is not resolved by this projection.
+        """
+        width = self.bitsize
+        parameters: tuple[tuple[str, TypeParameter], ...] = (
+            (("storage", "classical"),) if classical else ()
+        )
+        parameters += (
+            ("characteristic", self.characteristic),
+            ("degree", self.degree),
+            ("order", self.order),
+        )
+        if self.irreducible_poly is not None:
+            field = self.irreducible_poly.field
+            parameters += (
+                ("polynomial", int(self.irreducible_poly)),
+                ("polynomial_field_characteristic", int(field.characteristic)),
+                ("polynomial_field_degree", int(field.degree)),
+                ("polynomial_field_primitive_element", int(field.primitive_element)),
+                ("polynomial_field_modulus", int(field.irreducible_poly)),
+            )
+        return RegisterType(
+            "finite_field",
+            0 if classical else width,
+            width if classical else 0,
+            parameters,
         )
 
     def get_domain(self) -> Iterable[Any]:
