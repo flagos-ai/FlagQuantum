@@ -188,6 +188,9 @@ These examples do not use that alias:
 - [`realtime/device_call.py`](realtime/device_call.py) — it imports
   the realtime messaging module directly, because the feedback loop it models is
   a channel between two programs rather than a program to run.
+- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) forwards to
+  `realtime/device_call.py` for compatibility with the previous example path.
+  Run `python -m examples.realtime.device_call` for the canonical offline workflow.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
 - [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports
