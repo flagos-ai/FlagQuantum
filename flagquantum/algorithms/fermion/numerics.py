@@ -31,8 +31,8 @@ def pauli_matrix(
         if any(q >= width for q in factors):
             raise ValueError("operator acts outside the declared register")
         matrix = torch.ones((1, 1), dtype=torch.complex128)
-        for wire in range(width):
-            matrix = torch.kron(matrix, axes[factors.get(wire, "i")])
+        for qubit in range(width):
+            matrix = torch.kron(matrix, axes[factors.get(qubit, "i")])
         result += term.coefficient * matrix
     return result
 

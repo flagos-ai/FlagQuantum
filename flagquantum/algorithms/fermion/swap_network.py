@@ -1,4 +1,4 @@
-"""Adjacent fermionic swaps with explicit logical-to-wire layout tracking."""
+"""Adjacent fermionic swaps with explicit logical-to-qubit layout tracking."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from ...core.algebra.pauli import count
 
 @dataclass(frozen=True, slots=True)
 class SwapNetwork:
-    """Each pair meets once; final_layout[wire] gives its logical mode."""
+    """Each pair meets once; final_layout[qubit] gives its logical mode."""
 
     circuit: Circuit
     interactions: tuple[tuple[int, int], ...]

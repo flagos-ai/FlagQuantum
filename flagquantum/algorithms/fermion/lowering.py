@@ -22,9 +22,9 @@ def append_orbital_rotation(circuit: Circuit, unitary: torch.Tensor) -> None:
     if unitary.shape != (circuit.n_qubits, circuit.n_qubits):
         raise ValueError("orbital unitary must match the circuit width")
     decomposition = decompose_orbital_rotation(unitary)
-    for wire, phase in enumerate(decomposition.phases):
+    for qubit, phase in enumerate(decomposition.phases):
         circuit.any(
-            wire,
+            qubit,
             matrix=torch.diag(torch.stack((torch.ones_like(phase), phase))),
             name="orbital_phase",
         )

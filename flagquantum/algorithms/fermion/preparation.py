@@ -46,8 +46,8 @@ def prepare_slater(occupied_orbitals: torch.Tensor) -> Circuit:
     ):
         raise ValueError("occupied orbital columns must be orthonormal")
     circuit = Circuit(n, dtype=torch.complex128)
-    for wire in range(k):
-        circuit.x(wire)
+    for qubit in range(k):
+        circuit.x(qubit)
     if k:
         complete, _ = torch.linalg.qr(orbitals, mode="complete")
         # Retain the supplied columns exactly; QR chooses different column phases.
@@ -117,7 +117,7 @@ def prepare_gaussian(annihilation: torch.Tensor, creation: torch.Tensor) -> Circ
                 current[:, start + column : start + column + 2] = (
                     current[:, start + column : start + column + 2].clone() @ action
                 )
-            # R_yxxy followed by a phase on the second wire has this orbital image.
+            # R_yxxy followed by a phase on the second qubit has this orbital image.
             cosine, sine = rotation[0, 0].real, rotation[1, 0].real
             phase = (
                 rotation[1, 1] / cosine

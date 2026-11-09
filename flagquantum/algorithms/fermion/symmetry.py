@@ -77,12 +77,12 @@ def _conjugate_cx(operator: PauliOperator, control: int, target: int) -> PauliOp
     result = PauliOperator()
     for term in operator.terms:
         image = pauli(term.coefficient)
-        for wire, axis in term.factors:
-            x = pauli(factors=((wire, "x"),))
-            z = pauli(factors=((wire, "z"),))
-            if wire == control:
+        for qubit, axis in term.factors:
+            x = pauli(factors=((qubit, "x"),))
+            z = pauli(factors=((qubit, "z"),))
+            if qubit == control:
                 x = x * pauli(factors=((target, "x"),))
-            if wire == target:
+            if qubit == target:
                 z = z * pauli(factors=((control, "z"),))
             image = image * (x if axis == "x" else z if axis == "z" else 1j * x * z)
         result = result + image

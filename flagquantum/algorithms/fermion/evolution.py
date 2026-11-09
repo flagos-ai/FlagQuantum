@@ -28,10 +28,10 @@ def _time_tensor(time: torch.Tensor | float) -> torch.Tensor:
     return torch.tensor(numeric.real, dtype=torch.float64)
 
 
-def _number_phase(circuit: Circuit, wire: int, angle: torch.Tensor) -> None:
+def _number_phase(circuit: Circuit, qubit: int, angle: torch.Tensor) -> None:
     phase = torch.exp(-1j * angle)
     circuit.any(
-        wire,
+        qubit,
         matrix=torch.diag(torch.stack((torch.ones_like(phase), phase))),
         name="density_phase",
     )
@@ -46,9 +46,9 @@ def _density_evolution(
     coefficient: float = 1,
 ) -> None:
     values = diagonal.to(device=time.device)
-    for wire, value in enumerate(values):
+    for qubit, value in enumerate(values):
         _number_phase(
-            circuit, wire, time * coefficient * (value.square() if squared else value)
+            circuit, qubit, time * coefficient * (value.square() if squared else value)
         )
     if squared:
         for left in range(len(values)):

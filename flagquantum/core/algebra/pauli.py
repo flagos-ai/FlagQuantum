@@ -49,15 +49,15 @@ class PauliTerm:
         object.__setattr__(self, "coefficient", scalar(self.coefficient))
         factors: list[tuple[int, str]] = []
         seen: set[int] = set()
-        for wire, axis in self.factors:
-            wire = count(wire, "qubit")
+        for qubit, axis in self.factors:
+            qubit = count(qubit, "qubit")
             if not isinstance(axis, str) or axis.lower() not in ("i", "x", "y", "z"):
                 raise ValueError("Pauli axis must be I, X, Y or Z")
-            if wire in seen:
+            if qubit in seen:
                 raise ValueError("a Pauli term cannot repeat a qubit")
-            seen.add(wire)
+            seen.add(qubit)
             if axis.lower() != "i":
-                factors.append((wire, axis.lower()))
+                factors.append((qubit, axis.lower()))
         object.__setattr__(self, "factors", tuple(sorted(factors)))
 
 
@@ -115,14 +115,14 @@ class PauliOperator:
             for right in other.terms:
                 factors = dict(left.factors)
                 phase = left.coefficient * right.coefficient
-                for wire, axis in right.factors:
-                    previous = factors.get(wire)
+                for qubit, axis in right.factors:
+                    previous = factors.get(qubit)
                     if previous is None:
-                        factors[wire] = axis
+                        factors[qubit] = axis
                     elif previous == axis:
-                        del factors[wire]
+                        del factors[qubit]
                     else:
-                        factors[wire], factor = _PRODUCT[previous, axis]
+                        factors[qubit], factor = _PRODUCT[previous, axis]
                         phase *= factor
                 terms.append(PauliTerm(phase, tuple(factors.items())))
         return PauliOperator(tuple(terms))

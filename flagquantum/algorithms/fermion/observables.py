@@ -18,7 +18,7 @@ def to_observable(operator: PauliOperator, *, atol: float = 1e-10) -> Observable
     axes = {"x": X, "y": Y, "z": Z}
     for term in operator.terms:
         word = I()
-        for wire, axis in term.factors:
-            word = word @ axes[axis](wire)
+        for qubit, axis in term.factors:
+            word = word @ axes[axis](qubit)
         result = result + term.coefficient.real * word
     return result
