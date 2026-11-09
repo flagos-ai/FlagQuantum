@@ -6,7 +6,7 @@
 
 """Construct native register metadata using the pinned type-specific rules.
 
-Proposal 103 prerequisites 0.3 and 0.4 separate constructor validation from numerical
+Proposal 103 prerequisites 0.3 through 0.5 separate constructor validation from numerical
 codecs, physical wire binding and executable component graph admission.
 """
 
@@ -16,7 +16,7 @@ from enum import Enum, auto
 
 from ...value_math import SymbolicInt as RegisterWidth
 from ...value_parameters import is_symbolic_value
-from .registers import RegisterType
+from .registers import RegisterType, TypeParameter
 
 
 class _DefaultBound(Enum):
@@ -131,3 +131,21 @@ def classical_bounded_unsigned_register_type(
     return RegisterType(
         "uint", 0, width, parameters=(("storage", "classical"), ("bound", resolved))
     )
+
+
+def montgomery_register_type(
+    width: RegisterWidth, modulus: RegisterWidth | None = None
+) -> RegisterType:
+    """Retain declared quantum Montgomery fields without numerical validation."""
+    parameters = () if modulus is None else (("modulus", modulus),)
+    return RegisterType("montgomery", width, parameters=parameters)
+
+
+def classical_montgomery_register_type(
+    width: RegisterWidth, modulus: RegisterWidth | None = None
+) -> RegisterType:
+    """Retain classical Montgomery storage identity and an optional modulus."""
+    parameters: tuple[tuple[str, TypeParameter], ...] = (("storage", "classical"),)
+    if modulus is not None:
+        parameters += (("modulus", modulus),)
+    return RegisterType("montgomery", 0, width, parameters=parameters)

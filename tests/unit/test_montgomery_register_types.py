@@ -118,3 +118,91 @@ def test_shaped_signature_consumes_montgomery_width(construct_type, classical, w
     assert signature.n_cbits() == source.n_cbits()
     assert signature.n_bits() == source.n_bits()
     assert signature.get_left("word").dtype is dtype
+
+
+@pytest.mark.parametrize("classical", [False, True])
+@pytest.mark.parametrize("width", [0, 3, N, np.int64(3), sympy.Integer(3)])
+@pytest.mark.parametrize("modulus", [None, 5, P])
+def test_montgomery_symbolic_classification_ignores_modulus(classical, width, modulus):
+    source = original_type(classical, width, modulus)
+    actual = native_factory(classical, width, modulus)
+    assert actual.is_symbolic() == source.is_symbolic()
+    assert Register("word", actual).is_symbolic() == source.is_symbolic()
+    generic = RegisterType("uint", 3, parameters=(("bound", P),))
+    assert generic.is_symbolic()
+
+
+@pytest.mark.parametrize("classical", [False, True])
+@pytest.mark.parametrize("width,modulus", [(3, 3), (4, 5), (5, 9), (6, 13)])
+def test_existing_numeric_consumers_accept_replaced_descriptor(
+    construct_type, classical, width, modulus
+):
+    from math import gcd
+
+    from flagquantum.simulation.montgomery_values import (
+        integer_to_montgomery_value,
+        montgomery_inverse_value,
+        montgomery_product_values,
+        montgomery_to_integer_value,
+        montgomery_value_domain,
+    )
+
+    descriptor = construct_type(classical, width, modulus)
+    source = original_type(classical, width, modulus)._bit_encoding
+    declared_width = descriptor.classical_bits if classical else descriptor.quantum_bits
+    declared_modulus = dict(descriptor.parameters)["modulus"]
+    assert (
+        montgomery_value_domain(declared_width, declared_modulus) == source.get_domain()
+    )
+    for left in range(modulus):
+        stored = integer_to_montgomery_value(left, declared_width, declared_modulus)
+        assert stored == source.uint_to_montgomery(left)
+        assert (
+            montgomery_to_integer_value(stored, declared_width, declared_modulus)
+            == left
+        )
+        for right in range(modulus):
+            other = integer_to_montgomery_value(right, declared_width, declared_modulus)
+            actual = montgomery_product_values(
+                stored, other, declared_width, declared_modulus
+            )
+            assert actual == source.montgomery_product(stored, other)
+            assert (
+                montgomery_to_integer_value(actual, declared_width, declared_modulus)
+                == (left * right) % modulus
+            )
+        if gcd(left, modulus) == 1:
+            assert montgomery_inverse_value(
+                stored, declared_width, declared_modulus
+            ) == source.montgomery_inverse(stored)
+
+
+@pytest.mark.parametrize("classical", [False, True])
+def test_symbolic_modulus_construction_precedes_numeric_failure(
+    construct_type, classical
+):
+    from flagquantum.simulation.montgomery_values import integer_to_montgomery_value
+
+    descriptor = construct_type(classical, 3, P)
+    assert descriptor.parameters[-1] == ("modulus", P)
+    with pytest.raises(AssertionError):
+        integer_to_montgomery_value(1, descriptor.num_bits, P)
+    with pytest.raises(AssertionError):
+        original_type(classical, 3, P)._bit_encoding.uint_to_montgomery(1)
+
+
+@pytest.mark.parametrize("classical", [False, True])
+def test_native_construction_without_optional_sympy(classical, monkeypatch):
+    import builtins
+
+    original_import = builtins.__import__
+
+    def guarded_import(name, *args, **kwargs):
+        if name == "sympy" or name.startswith("sympy."):
+            raise ImportError("Optional Sympy deliberately unavailable")
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", guarded_import)
+    descriptor = native_factory(classical, 3, 5)
+    assert descriptor.num_bits == 3
+    assert descriptor.parameters[-1] == ("modulus", 5)

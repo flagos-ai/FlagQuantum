@@ -55,6 +55,9 @@ class RegisterType:
         return self.num_qubits + self.num_cbits
 
     def is_symbolic(self) -> bool:
+        # Source Montgomery classification examines width, ignoring modulus.
+        if self.encoding == "montgomery":
+            return is_symbolic_value(self.quantum_bits, self.classical_bits)
         return is_symbolic_value(
             self.quantum_bits,
             self.classical_bits,

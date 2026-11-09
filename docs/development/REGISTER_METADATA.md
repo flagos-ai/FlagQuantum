@@ -282,3 +282,28 @@ reproduced rotation-layer baseline failure in 74.01 seconds. The Python 3.10
 fallback-import unused-ignore diagnostic remains open. Other dtype constructors,
 port compatibility, typed binding and component calls/returns/traversal remain
 pending G2 work.
+
+## Montgomery integer constructors
+
+Prerequisite 0.5 adds quantum and classical Montgomery factories in the existing
+Core constructor module. Both retain declared width and optional modulus without
+arithmetic, coercion or numerical validation. Encoding is `montgomery`. A
+non-None modulus is retained as a named parameter. Absent and explicit None
+moduli have the same identity. Classical storage retains its first marker,
+including zero-width words.
+
+The inherited source symbolic classifier examines width and ignores modulus.
+The existing RegisterType classifier now preserves that rule for Montgomery
+encodings. Other encodings retain their parameter-aware classification. Tests
+include a concrete width and symbolic modulus, whose numerical conversion fails
+at the original Simulation boundary. Constructor operation without optional
+Sympy is covered separately from symbolic classification, which uses Sympy.
+
+Before implementation, 326 source-backed constructor and Signature scenarios
+pass. Both backends then run the same cases. Additional native classifier,
+optional-dependency and numerical replacement cases bring this module to 706
+tests. With existing Register, Signature and constructor tests, 1,703 cases pass
+without warnings or skips. The replacement cases exhaust small stored-residue
+conversion/product/inverse domains, including a composite modulus, using the
+existing Simulation functions. Metadata construction emits no gates and owns no
+work qubits. Montgomery gate-algorithm verification remains separate.
