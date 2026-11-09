@@ -919,3 +919,67 @@ visitation domains must remain distinct. Source split and cross-allocation join
 also demonstrate that whole-register lease release needs a per-wire extension.
 Prerequisite 1.6 records those requirements before the next Compiler change.
 The source-only evidence is `ftqc-reference-env/g2-workspace-scheduling-contract.log`.
+
+## Partial physical wire release prerequisite
+
+GRAPH21 source/scheduling prerequisite `e743b7e5` and pool implementation
+`839877c9` extend the existing physical authority. `RegisterWorkspace.free_wires`
+accepts ordered live wires across leases, validates the whole request before
+mutation, and returns each wire to its original clean or borrowed pool. The pool
+retains remaining wires per lease, allowing whole-lease free of a split remainder.
+Foreign/stale/duplicate wires fail without partial changes. Empty words retain
+separate lease identity and use whole-lease release. Program SSA must enforce
+logical handle identity, while numeric wire release only checks current pool
+ownership. Clean and borrowed restoration remain numerical emitter obligations.
+
+Thirteen pool tests pass, with eight original-source scheduling prerequisites
+and seven existing pool/numerical cases for a focused total of 28 in 4.62 seconds.
+The pool has 100% statement and branch coverage. Original source split/join manager
+events compare against native ordered partial release and subsequent reuse.
+Complete complex clean/dirty source lifetime states remain prerequisite evidence,
+with exactly two CNOTs and no bookkeeping gates. Native graph physical execution
+is still pending and `lower_register_program` continues to refuse lifetimes.
+
+The concentrated regression passes 4817 cases in 21.19 seconds without warnings
+or skips. Twelve pinned source blobs are unchanged, including the actual source
+greedy iterator and Cirq graph converter. Strict Python 3.12 passes on fourteen
+production files. Format, architecture, scopes, Program/public API gates and four
+existing append/resource examples pass. Existing Add/QROM primitive sequences,
+all measurement histories and zero work remain in the regression, with measured
+and source-model resource categories retained separately from GRAPH17.
+
+Evidence is `ftqc-reference-env/g2-workspace-partial-release-{native,regression,checks,examples}.log`
+and `g2-workspace-partial-release-source.txt`. The default smoke/unit rerun is
+recorded separately in `g2-workspace-partial-release-default.log`. It passes
+5516 cases with 166 skips and 30 warnings before the same four QFT/rotation
+fusion failures stop the run in 206.55 seconds. GRAPH20 independently reproduced
+all four on the pre-batch `4d57e638` snapshot.
+
+## Whole-graph physical visitation prerequisite
+
+GRAPH22 `6d3bb78e` extends the existing stable greedy kernel with explicit
+`group_components=False`. A single queue now provides original physical graph
+visitation. The default still supplies weak-component orders for peak estimates.
+The input order must be the actual source graph node insertion order, including
+isolated nodes. A future Program adapter must reconstruct that order from edges
+and per-call structure before claiming full source scheduling parity.
+
+Six original source graphs compare their entire visitation order, including
+MultiAlloc, independent/serial/interior calls, partial free and joined free.
+Hand graphs distinguish interleaved global order from grouped model order and
+check isolated nodes, parallel edges, empty graphs, cycles and option admission.
+Eleven new cases and twelve existing width cases pass, 23 total in 3.41 seconds.
+The shared width module has 97% combined statement/branch coverage for this
+focused set. Two existing malformed input/output guard statements are uncovered
+in this set. No claim of complete pool-to-Program scheduling follows from it.
+
+All 4828 concentrated cases pass in 26.57 seconds without warnings or skips.
+Twelve pinned blobs remain unchanged. Strict Python 3.12 checks fifteen production
+files. Format, architecture, both scopes, Program/public API checks and four
+existing append/resource examples pass. Logs are
+`ftqc-reference-env/g2-workspace-global-order-{native,regression,checks,examples}.log`
+and `g2-workspace-global-order-source.txt`. The new traversal emits no physical
+gates. Native measured resource counts remain those of the existing regression
+consumers, separate from their source models. Whole-graph visitation is a Compiler
+prerequisite. Physical wire binding, lifetime events, output transfer and all
+native measurement branches still require the next slice.
