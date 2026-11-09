@@ -5,11 +5,12 @@ to encoded measurement, state preparation and low-rank evolution. Production
 execution uses FlagQuantum and PyTorch. OpenFermion and Cirq are not required.
 The existing FermionOperator, stable root exports and API snapshots are unchanged.
 
-This PR delivers the selected native fermionic workflow. Both Linux scientific
-matrix endpoints passed in CI run `42584600022`. All four fixed images were
-rebuilt in run `42582666522`, with registry and verified offline OCI identities
-recorded in the lock. Merging requires cache qualification and every required CI
-check to pass on the final revision. No merge has been performed.
+This PR delivers the selected native fermionic workflow and is ready for
+maintainer review. Full Linux CI run `42595072278` (attempt 2), GPU run
+`42595072337` and container publication run `42595072334` passed for revision
+`901472c81d72f52fa966520de47166557c52ed79`. All four fixed images and 192 coverage
+worker caches were qualified. No merge has been performed. Later commits require
+their own applicable checks; these run IDs describe the recorded revision.
 
 ## User workflow
 
@@ -58,7 +59,8 @@ the source archive also includes per-file adaptation provenance.
 
 ## Validation
 
-Verified execution is macOS arm64 CPU, complex128:
+The following local scientific results use macOS arm64 CPU, complex128; remote
+CI results are recorded separately below:
 
 | Environment or check | Result |
 | --- | --- |
@@ -90,7 +92,7 @@ A SciPy 1.15.3 wheel failed dynamic loading on the local minimum-version host.
 The successful PySCF 2.8 result uses SciPy 1.14.1; it does not certify all
 transitive dependency versions. No global pin was added for that local issue.
 
-## CI and merge prerequisites
+## CI acceptance and merge prerequisites
 
 The new `native-fermion` Ubuntu matrix installs Python 3.10 / PyTorch 2.10 and
 Python 3.12 / PyTorch 2.14, verifies a core environment without external science
@@ -113,8 +115,18 @@ tag or relaxed manifest comparison is used.
 
 The publisher now emits complete lock-row artifacts. Source restoration retries
 truncated HTTP responses within its existing two-retry bound while retaining Git
-object and commit verification. The focused CI infrastructure suite passed 135
-tests; the API transport tests also passed all 18 cases on Python 3.10.
+object and commit verification. The focused CI infrastructure suite initially passed 135
+tests; the API transport tests also passed all 18 cases on Python 3.10. The later
+expanded CI policy selection passed 488 tests. These selections overlap and their
+counts are not additive.
+
+Final implementation-revision CI run `42595072278` (attempt 2) completed all 233
+jobs successfully, including 192 coverage shards and the aggregate coverage gate.
+The runtime selection passed 6,215 tests with 403 skips; real distributed launch
+checks also passed. This is CI infrastructure evidence, not a native fermionic
+scalability claim. Maintainer review and merge authorization remain outstanding.
+The stacked FCIDUMP PR #1110 must follow #1109 and be retargeted to main after
+its dependency merges.
 
 ## Supported scope
 
