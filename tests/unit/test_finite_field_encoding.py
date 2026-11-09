@@ -101,9 +101,9 @@ def test_domain_scalar_round_trip_and_array_paths(factory, characteristic, degre
     assert list(field.get_domain()) == list(source.get_domain())
     for value in source.get_domain():
         assert field.to_bits(value) == source.to_bits(value)
-        assert outcome(lambda: field.from_bits(source.to_bits(value))) == outcome(
-            lambda: source.from_bits(source.to_bits(value))
-        )
+        assert outcome(
+            lambda value=value: field.from_bits(source.to_bits(value))
+        ) == outcome(lambda value=value: source.from_bits(source.to_bits(value)))
     bits = np.array(
         [source.to_bits(value) for value in source.get_domain()], dtype=np.uint8
     )
@@ -176,3 +176,185 @@ def test_explicit_none_preserves_delayed_failure(factory):
         lambda: source_factory(4, 2, None).gf_type
     )
     assert outcome(lambda: factory(4, 2)) == outcome(lambda: source_factory(4, 2))
+
+
+@pytest.mark.parametrize("polynomial", [OMITTED, None, [3, 1, 0]])
+@pytest.mark.parametrize("symbolic", [False, True])
+def test_symbolic_protocol_and_field_factory_call_order(
+    factory, monkeypatch, polynomial, symbolic
+):
+    import galois
+
+    events = []
+
+    class Characteristic(int):
+        def is_symbolic(self):
+            events.append("characteristic symbolic")
+            return symbolic
+
+    class Degree(int):
+        def is_symbolic(self):
+            events.append("degree symbolic")
+            return False
+
+    original = galois.GF
+
+    def traced(*args, **kwargs):
+        events.append((args, kwargs.copy()))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(galois, "GF", traced)
+    characteristic, degree = Characteristic(2), Degree(3)
+    source = source_factory(characteristic, degree, polynomial)
+    for name in ("order", "bitsize", "gf_type"):
+        outcome(lambda name=name: getattr(source, name))
+        outcome(lambda name=name: getattr(source, name))
+    expected = events.copy()
+    events.clear()
+    field = factory(characteristic, degree, polynomial)
+    for name in ("order", "bitsize", "gf_type"):
+        outcome(lambda name=name: getattr(field, name))
+        outcome(lambda name=name: getattr(field, name))
+    assert events == expected
+
+
+@pytest.mark.parametrize("shape", [(0, 3), (1, 3), (2, 3), (2, 2), (2, 4), (1, 2, 3)])
+def test_array_decode_shapes_and_diagnostics(factory, shape):
+    field, source = factory(2, 3), source_factory(2, 3)
+    bits = np.zeros(shape, dtype=np.uint8)
+    assert outcome(lambda: field.from_bits_array(bits)) == outcome(
+        lambda: source.from_bits_array(bits)
+    )
+
+
+def test_prime_field_ignores_explicit_extension_polynomial(factory):
+    import galois
+
+    polynomial = galois.Poly([1, 2, 1], field=galois.GF(3))
+    field = factory(5, 1, polynomial)
+    source = source_factory(5, 1, polynomial)
+    assert field.irreducible_poly is polynomial
+    assert field.gf_type is source.gf_type
+    assert field.gf_type.order == 5
+
+
+@pytest.mark.parametrize("degree,modulus", [(2, 7), (3, 11)])
+def test_numerical_binding_replacement_in_append_multiplication(
+    factory, degree, modulus
+):
+    import galois
+    import torch
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.circuit import Circuit
+    from flagquantum.compiler.registers.finite_field.field_multiplication import (
+        bind_field_outputs,
+        gf2_multiplication,
+    )
+
+    polynomial = galois.Poly.Int(modulus)
+    source = source_factory(2, degree, polynomial)
+    field = factory(2, degree, polynomial)
+    registers = tuple(tuple(range(i * degree, (i + 1) * degree)) for i in range(3))
+
+    def instructions(encoding):
+        plan = gf2_multiplication(
+            *registers,
+            (),
+            modulus=int(encoding.irreducible_poly),
+            algorithm="quadratic",
+        )
+        return bind_field_outputs(plan, registers)
+
+    gates = instructions(field)
+    assert gates == instructions(source)
+    from collections import Counter
+
+    from qualtran import QGF
+    from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2Multiplication
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    from tests.unit.test_field_multiplication import (
+        assert_gate_streams,
+        reference_gates,
+    )
+
+    plan = gf2_multiplication(*registers, (), modulus=modulus, algorithm="quadratic")
+    upstream = GF2Multiplication(QGF(2, degree, polynomial))
+    original_gates, original_outputs = reference_gates(
+        upstream, {"x": registers[0], "y": registers[1]}, registers[2]
+    )
+    assert_gate_streams(
+        [(gate.name, gate.wires) for gate in plan.instructions], original_gates
+    )
+    assert plan.outputs == (
+        original_outputs["x"],
+        original_outputs["y"],
+        original_outputs["result"],
+    )
+    emitted = Counter(gate.name for gate in plan.instructions)
+    model = get_cost_value(upstream, QECGatesCost())
+    assert (emitted["ccx"], emitted["cx"]) == (model.toffoli, model.clifford)
+    count = 1 << degree
+    generator = torch.Generator().manual_seed(73)
+    amplitudes = torch.randn(count * count, dtype=torch.complex128, generator=generator)
+    amplitudes /= amplitudes.norm()
+    state = torch.zeros(count**3, dtype=torch.complex128)
+    expected = torch.zeros_like(state)
+    for left in range(count):
+        for right in range(count):
+            value = amplitudes[left * count + right]
+            index = (left * count + right) * count
+            state[index] = value
+            bits = field.to_bits(field.gf_type(left) * field.gf_type(right))
+            product = int("".join(map(str, bits)), 2)
+            expected[index + product] = value
+    result = (
+        Circuit(3 * degree, inputs=state, dtype=torch.complex128)
+        .append(FieldOperation(3 * degree, gates))
+        .state()
+        .flatten()
+    )
+    torch.testing.assert_close(result, expected, rtol=0, atol=1e-12)
+
+
+def test_shared_unsigned_decoder_can_be_replaced(monkeypatch):
+    from qualtran._infra.data_types import _UInt
+
+    import flagquantum.simulation.finite_field_encoding as native
+
+    field = native.FiniteFieldEncoding(2, 3)
+    bits = np.asarray([[0, 1, 1], [1, 0, 1]], dtype=np.uint8)
+    expected = field.from_bits_array(bits)
+    calls = []
+
+    def source_decode(bits, width):
+        calls.append(width)
+        return _UInt(width).from_bits_array(bits)
+
+    monkeypatch.setattr(native, "integer_array_from_bits", source_decode)
+    np.testing.assert_array_equal(field.from_bits_array(bits), expected)
+    assert calls == [3]
+
+
+@pytest.mark.parametrize("polynomial", [OMITTED, None])
+def test_missing_optional_dependency_is_observable(factory, monkeypatch, polynomial):
+    import sys
+
+    monkeypatch.setitem(sys.modules, "galois", None)
+    with pytest.raises(ModuleNotFoundError, match="galois"):
+        factory(N, 2, polynomial)
+
+
+def test_different_polynomial_field_scalars_remain_nominal(factory):
+    import galois
+
+    field, source = factory(2, 3), source_factory(2, 3)
+    other = galois.GF(
+        2, 3, irreducible_poly=galois.Poly.Int(13), compile="python-calculate"
+    )
+    value = other(3)
+    assert outcome(lambda: field.to_bits(value)) == outcome(
+        lambda: source.to_bits(value)
+    )
+    assert outcome(lambda: field.assert_valid_val(value))[0] is ValueError
