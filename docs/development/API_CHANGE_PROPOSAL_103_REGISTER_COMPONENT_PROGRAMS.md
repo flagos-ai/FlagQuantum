@@ -252,3 +252,43 @@ warnings. The audit tool passes strict typing, Black and Ruff; architecture and
 the existing multi-level contract gate pass. Protected source and contract files
 are fingerprinted but unchanged. This evidence closes the scope investigation,
 not the contract fake, graph implementation, native metadata port or G2.
+
+## Type constructor prerequisite 0.3
+
+This G2 slice adds `core/ir/program/register_types.py` as the owner of native
+factories for bit, opaque, unsigned and bounded unsigned quantum metadata.
+Factories return the existing immutable `RegisterType`. They preserve the
+construction behavior of pinned QBit, QAny, QUInt and BQUInt without introducing
+foreign objects, bit codecs or new Program IR fields.
+
+The internal interfaces are `quantum_bit_type()`,
+`opaque_register_type(width)`, `unsigned_register_type(width)` and
+`bounded_unsigned_register_type(width, bound=...)`. An omitted bound is distinct
+from explicit `None`. Default exponentiation precedes symbolic classification.
+Opaque construction classifies symbolism before checking Python integer
+membership. Unsigned construction performs no eager width validation. Bounded
+construction retains the original variadic symbolic short circuit and the
+strict upper-capacity comparison. Negative, zero, bool and symbolic widths keep
+the original constructor outcomes. Native error text replaces the foreign type
+name, while preserving failure kind and evaluation order.
+
+Signature's width builder consumes bit/opaque factories after its existing
+truth filter and one-bit selection. QROM consumes opaque control/target and
+bounded selection factories after its existing dimensional and axis-fit
+validation. Its existing fit-axis diagnostic and physical binding checks remain
+at that boundary. Ports retain big-endian word order, row-major target shape,
+side, width and bound identity. These factories allocate no workspace and emit
+no instructions. Add resource and QROM consumers must preserve their existing
+primitive, amplitude, measured-branch, workspace and cost regressions.
+
+The test-only source-backed factory stand-in returns the same native descriptor
+type. Its constructor scenarios must run unchanged when native factories replace
+it. Differential cases include omitted/explicit bounds, symbolic literals,
+Python/NumPy scalar distinctions and original failure ordering. Numerical codecs
+remain Simulation-owned. Type compatibility between graph ports, other dtype
+families and executable typed graph admission require subsequent slices.
+
+The prerequisite contract stand-in passes 124 source-backed scenarios before
+native implementation. It reads declared width directly, avoiding the separate
+lazy `_bit_encoding` construction and its additional numeric validation. This
+records constructor behavior independently from later codec/property behavior.
