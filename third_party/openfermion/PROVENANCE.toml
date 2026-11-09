@@ -1,0 +1,9 @@
+repository = "https://github.com/quantumlib/OpenFermion"
+revision = "34adf3196cd566f4ca53893f868753786797ae2a"
+license = "Apache-2.0"
+notice = "NOTICE"
+
+[[adaptations]]
+upstream = "src/openfermion/transforms/opconversions/bravyi_kitaev.py"
+native = "flagquantum/algorithms/fermion/encoding.py"
+changes = "Fenwick sets and ladder images adapted to canonical native values, explicit width and native occupation basis metadata. JW/parity reuse existing mathematical conventions. No external runtime calls."
