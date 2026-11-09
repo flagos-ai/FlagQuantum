@@ -11,7 +11,7 @@ pytestmark = pytest.mark.integration
 
 
 def test_native_workflow_without_external_science_packages() -> None:
-    script = textwrap.dedent("""
+    script = """
         import importlib.abc
         import sys
         blocked = {"openfermion", "openfermionpyscf", "cirq", "pyscf", "scipy", "h5py", "numpy"}
@@ -60,7 +60,8 @@ def test_native_workflow_without_external_science_packages() -> None:
         else:
             raise AssertionError("optional driver import was not blocked")
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
-    """)
+    """
+    script = textwrap.dedent(script)
     root = Path(__file__).resolve().parents[2]
     result = subprocess.run(
         [sys.executable, "-c", script],
