@@ -51,7 +51,7 @@ SKIPPED_DIRECTORIES = frozenset(
 CANONICAL_KIND = "flagquantum.circuit_ir"
 
 EXPECTED_SCHEMA = "flagquantum.multi_level_ir_internal_contract"
-EXPECTED_VERSION = "0.5"
+EXPECTED_VERSION = "0.6"
 EXPECTED_STATUS = "implementation_authorized"
 EXPECTED_OWNER = "core"
 EXPECTED_PUBLIC_LEVEL = "circuit"
@@ -147,6 +147,10 @@ INTERNAL_ONLY_NAMES = (
 # function that must exist in WITNESS_TESTS. A rule absent from this mapping
 # fails the gate, which is what stops a new rule from being written as prose.
 RULE_READERS: dict[str, tuple[str, ...]] = {
+    "finite_calls": (
+        "test_finite_calls_use_explicit_returns",
+        "test_finite_calls_reject_unreachable_cycles",
+    ),
     "level_entry_and_exit": (
         "tool:realized_exits_are_declared",
         "test_lower_to_level_realizes_only_declared_exits",

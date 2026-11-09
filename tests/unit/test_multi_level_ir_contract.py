@@ -781,3 +781,60 @@ def test_the_boundary_gate_runs_in_ci_and_before_push():
     assert "python tools/check_multi_level_ir_contract.py" in workflow
     pre_push = (ROOT / "tools/pre_push.py").read_text(encoding="utf-8")
     assert '"tools/check_multi_level_ir_contract.py"' in pre_push
+
+
+def test_finite_calls_use_explicit_returns():
+    q0 = level_boundary.ValueRef("entry", 0, "qubit")
+    q1 = level_boundary.ValueRef("entry", 1, "qubit")
+    leaf = level_boundary.FunctionRecord(
+        "leaf", (level_boundary.BlockRecord("entry", (q0,), return_values=(q0,)),)
+    )
+    main = level_boundary.FunctionRecord(
+        "main",
+        (
+            level_boundary.BlockRecord(
+                "entry",
+                (q0,),
+                operations=(
+                    level_boundary.Operation("call", (q0,), (q1,), callee="leaf"),
+                ),
+                return_values=(q1,),
+            ),
+        ),
+    )
+    assert (
+        level_boundary.verify_program_record(level_boundary.ProgramRecord((main, leaf)))
+        == ()
+    )
+    missing = dataclasses.replace(main.blocks[0], return_values=())
+    invalid = dataclasses.replace(main, blocks=(missing,))
+    codes = {
+        item.code
+        for item in level_boundary.verify_program_record(
+            level_boundary.ProgramRecord((invalid, leaf))
+        )
+    }
+    assert "value.linear_unconsumed" in codes
+
+
+def test_finite_calls_reject_unreachable_cycles():
+    main = level_boundary.FunctionRecord(
+        "main", (level_boundary.BlockRecord("entry", return_values=()),)
+    )
+    cycle = level_boundary.FunctionRecord(
+        "cycle",
+        (
+            level_boundary.BlockRecord(
+                "entry",
+                operations=(level_boundary.Operation("call", callee="cycle"),),
+                return_values=(),
+            ),
+        ),
+    )
+    codes = {
+        item.code
+        for item in level_boundary.verify_program_record(
+            level_boundary.ProgramRecord((main, cycle))
+        )
+    }
+    assert "program.call_structure" in codes

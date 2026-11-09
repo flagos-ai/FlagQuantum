@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.multi_level_ir_internal_contract",
-  "version": "0.5",
+  "version": "0.6",
   "status": "implementation_authorized",
   "owner": "core",
   "approval_basis": "docs/development/API_CHANGE_IMPLEMENTATION_076_DYNAMIC_PROGRAM_IR_LOWERING.md",
@@ -153,6 +153,16 @@
       "meaning": "a function holds no block"
     },
     {
+      "code": "program.call_callee",
+      "level": "program",
+      "meaning": "a finite call has no unique valid callee"
+    },
+    {
+      "code": "program.call_structure",
+      "level": "program",
+      "meaning": "the finite gate-call profile has invalid structure or metadata"
+    },
+    {
       "code": "program.condition_kind",
       "level": "program",
       "meaning": "a condition reads a value whose kind is not bool"
@@ -279,7 +289,8 @@
     "rejection": "Malformed dynamic metadata, an unsupported dynamic marker, unmodelled structure, and a payload that no longer reads as a CircuitIR are rejected with diagnostics rather than approximated. An illegal control-flow graph is additionally refused as invalid input, including an unknown terminator, an unknown successor, a missing successor on a branch, a successor on a return, and a join whose kinds disagree.",
     "no_best_effort": "No implicit lossy mode exists. best_effort is not a support state, and no code path may report one conversion as another because the difference was believed to be small.",
     "no_second_pass_manager": "This boundary adds levels to the pass infrastructure that already exists at flagquantum.compiler.pass_manager; it does not introduce a pass manager, a pass registry, an analysis registry, an ExecutableArtifact, or a RuntimeAdapter of its own.",
-    "no_root_export": "The boundary module is internal: it is absent from the package root's exports, absent from the Stable Core snapshot, and adds no root export. CircuitIR schema 1.0 and IR_VERSION remain the only public serialized IR identity."
+    "no_root_export": "The boundary module is internal: it is absent from the package root's exports, absent from the Stable Core snapshot, and adds no root export. CircuitIR schema 1.0 and IR_VERSION remain the only public serialized IR identity.",
+    "finite_calls": "Finite single-block gate SSA calls resolve unique named definitions in the same module, require explicit typed returns, reject cycles including unreachable definitions, and preserve exact linear consumption. Explicit returns are independently attested in physical wire order during public restoration. Proposal 103 prerequisite 1.1 defines this internal scope."
   },
   "exclusions": [
     "no general-purpose classical language: recursion, unbounded loops, dynamic memory, exceptions, closures, or higher-order values",

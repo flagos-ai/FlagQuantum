@@ -765,3 +765,60 @@ own typed operations and explicit ownership rules before those consumers can
 claim graph execution. Their existing emitter tests remain required regression
 evidence. Passing the call fake alone certifies neither new primitive counts nor
 complex amplitudes, measurement branches or workspace cleanup.
+
+## Finite gate-call prerequisite 1.1
+
+The first native implementation stages the proposed storage by adding only
+`Operation.callee` and `BlockRecord.return_values`. It keeps existing value
+kinds, FunctionRecord fields and all public schemas. Concrete existing Add and
+XOR QROM emitters already produce gate-level bodies with explicit workspace
+wires. Those bodies supply executable leaves before packed register values,
+split/join and allocation/release are admitted. This prerequisite establishes
+finite calls over existing typed gate SSA. Register-valued calls remain in the
+larger slice 1.0 and retain its separate acceptance requirements.
+
+Internal contract 0.6 admits single-block functions with explicit returns for
+this profile. A call names a function in its ProgramRecord, binds its entry
+arguments positionally and defines successors matching its explicit returned
+value kinds. Callee names are unique and nonempty. Every definition, including
+unreachable definitions, is checked. Missing callees, cycles, absent explicit
+returns, non-return terminators and mixed physical profiles are refused.
+Conditions, literal constants and parameter bindings attach to the leaf's
+existing primitive operations, not to the call itself. A callee field on a
+primitive opcode is invalid. Calls add no implicit workspace allocation.
+
+Explicit return tuples participate in def-use and linearity. Every returned
+value must be defined, each qubit must be consumed exactly once, and omitted
+live qubits are errors. Empty and missing return tuples are distinct. Existing
+implicit gate-only returns keep their old behavior. A call result's type comes
+from the resolved callee's explicit returns. Classical bool and scalar values
+retain the existing fanout rules. Quantum output positions can be reordered,
+with the order carried by the explicit returns until lowering resolves them.
+
+Compiler owns `inline_program_calls` in `compiler/registers/program_calls.py`.
+It validates the complete module, binds one SSA environment per call, expands
+finite calls into the existing primitive operations and remaps conditions and
+parameters through the same environment. Its output is a single-function
+ProgramRecord with explicit returns. Source order within a function is retained.
+The inliner uses an explicit stack so valid deep finite call chains do not rely
+on the Python recursion limit. It validates its output and emits no numerical
+kernel or cost estimates. Consumers can replace a flat body with a hierarchical
+body without changing the emitted public circuit or append execution.
+
+Core's attested `program_to_circuit` still verifies and independently re-lowers
+the canonical payload. For a flat body with explicit returns, its expected
+returns are the final successor of each original physical input wire, in wire
+order. A permuted or additional return cannot disappear during restoration.
+Hierarchical bodies require Compiler expansion before restoration. A canonical
+payload cannot hide a malformed body, an extra definition or a changed return.
+Legacy records with absent new fields retain their old hashes and equality.
+
+Acceptance includes nested calls, classical output and parameter/feedback
+remapping, duplicate or unknown callees, unreachable cycles, missing/extra or
+stale returns, redefined identities, mixed profiles, deep finite chains and
+payload tampering. Actual Add and QROM leaves must survive native hierarchy
+expansion with their existing source primitive dependencies, operands and
+feedback, full complex measurement-branch amplitudes and clean workspace.
+Their measured primitive counts and independent upstream cost models continue
+as separate observations. No packed-register graph claim follows from this
+bit-level prerequisite.
