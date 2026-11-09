@@ -7,6 +7,7 @@ import random
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
+from ...compiler import _pauli_schedule
 from ...compiler._construction.register_profile import (
     MAX_PREPARED_AMPLITUDES,
     register_width,
@@ -212,20 +213,23 @@ def pauli_evolution(
     compact: bool = False,
 ) -> None:
     register, terms = self.pauli_terms(token, operator, target_arg)
-    step = time / repetitions
-    if order == 2:
-        step /= 2
-    sequence = terms if order == 1 else [*terms, *reversed(terms)]
     if compact:
-        angles = [(support, step * weight) for support, weight in sequence]
+        angles = [
+            (terms[index][0], step_time * terms[index][1])
+            for index, step_time in _pauli_schedule.ordered_pauli_steps(
+                len(terms), time / repetitions, order, 1
+            )
+        ]
         coalesced = compact_commuting(token, angles, repetitions)
         if coalesced is not None:
             for support, angle in coalesced:
                 self.pauli_exponential(token, register, support, angle)
             return
-    for _ in range(repetitions):
-        for support, weight in sequence:
-            self.pauli_exponential(token, register, support, step * weight)
+    for index, step_time in _pauli_schedule.ordered_pauli_steps(
+        len(terms), time, order, repetitions
+    ):
+        support, weight = terms[index]
+        self.pauli_exponential(token, register, support, step_time * weight)
 
 
 def qdrift(self: _Adapt, token: Token, args: tuple[Expression, ...]) -> None:

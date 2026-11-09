@@ -118,3 +118,10 @@ resource evidence remain distinct from the batch execution smoke results.
 profiles, restrictions, examples and validation notes. Early sections describe
 the narrower scope at that stage. Later sections record the subsequent supported
 profiles. Use this README for current module ownership and contributor navigation.
+
+First/second-order Pauli product-formula scheduling is shared with the existing
+algorithm Circuit builder through Compiler's private `_pauli_schedule.py`.
+The adapter still owns source parsing, static operator data, coefficient/time
+binding, repetition/resource bounds and commutation compaction. It emits the
+same checked register effects and retains term order, identity phase and source
+locations. No native evolution entry, external type leak or new IR is introduced.

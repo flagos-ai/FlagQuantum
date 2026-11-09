@@ -1163,3 +1163,19 @@ sweep; representatives are discarded when the block closes. This improves long
 repeated blocks without changing rule reach or storing a process-wide cache.
 Run tests/unit/test_compiler_commutation_scaling.py and the existing commutation
 matrix/conformance tests when modifying that grouping.
+
+## Shared Pauli product-formula schedule
+
+`_pauli_schedule.py` owns the private ordered Lie/Strang term schedule used by
+both algorithm Circuit construction and Qmod register-effect adaptation. It
+streams term indices and per-term times; it does not own Hamiltonian objects,
+coefficient tensors, external syntax, commutation optimization or gate kernels.
+Callers retain validation, supported orders, repetition/resource bounds, storage
+mapping and live gradient values. Division and declared term order are preserved.
+
+The existing `algorithms.trotter_circuit` and Qmod calls stay unchanged for users.
+Run `tests/integration/test_synthesis_shared_pauli_schedule.py` to replace this
+schedule behind both unchanged consumers, compare complete complex states and
+instruction hashes, and verify live tensor coefficient gradients. Existing
+Trotter, controlled/large-Pauli tests and frozen-source replays cover the full
+consumers. This refactor does not admit a new native high-level evolution entry.
