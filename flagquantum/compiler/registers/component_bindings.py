@@ -27,7 +27,7 @@ class RegisterBindingError(ValueError):
 
 
 def create_register_bindings(
-    value: ValueRef,
+    value: ValueRef | Callable[[], ValueRef],
     register: Register,
     available: set[RegisterBinding] | None = None,
 ) -> RegisterBinding | NDArray[np.object_]:
@@ -35,18 +35,21 @@ def create_register_bindings(
 
     Scalars retain a binding even at width zero. Shaped ports retain their exact
     object-array shape. The caller supplies the value identity and owns its
-    definition, direction and later resource-consumption policy.
+    definition, direction and later resource-consumption policy. An allocator
+    supplies a fresh value for each element and is never called for empty arrays.
     """
     if register.shape:
         bindings: NDArray[np.object_] = np.empty(register.shape, dtype=object)
         for index in register.all_idxs():
-            binding = RegisterBinding(value, register, index)
+            binding = RegisterBinding(
+                value() if callable(value) else value, register, index
+            )
             bindings[index] = binding
             if available is not None:
                 available.add(binding)
         return bindings
 
-    binding = RegisterBinding(value, register)
+    binding = RegisterBinding(value() if callable(value) else value, register)
     if available is not None:
         available.add(binding)
     return binding

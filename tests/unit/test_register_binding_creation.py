@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 import sympy
 
+from flagquantum.compiler.registers.component_bindings import create_register_bindings
 from flagquantum.core.ir.program.model import ValueRef
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from tests.unit.test_register_bindings import NativeContract, SourceContract
@@ -106,3 +107,46 @@ def test_existing_availability_and_scalar_identity_are_preserved(backend):
     assert scalar in available
     assert available == {scalar, *shaped}
     assert contract.index(scalar) == ()
+
+
+@pytest.mark.parametrize("shape", [(), (2, 3), (0, 2)])
+def test_allocator_visits_exactly_the_same_elements_and_preserves_fixed_identity_callers(
+    shape,
+):
+    register = Register("word", RegisterType("uint", 0), shape)
+    seen = []
+
+    def allocate():
+        value = ValueRef("entry", len(seen), "register")
+        seen.append(value)
+        return value
+
+    created = create_register_bindings(allocate, register)
+    assert [binding.value for binding in np.asarray(created).flat] == seen
+    assert len(seen) == len(tuple(register.all_idxs()))
+    fixed = ValueRef("entry", 42, "register")
+    original = create_register_bindings(fixed, register)
+    assert all(binding.value == fixed for binding in np.asarray(original).flat)
+
+
+def test_allocator_failure_retains_prior_definitions_and_availability():
+    from flagquantum.compiler.registers.component_bindings import (
+        create_register_bindings,
+    )
+
+    available = set()
+    seen = []
+
+    def allocate():
+        if len(seen) == 2:
+            raise RuntimeError("allocation stopped")
+        value = ValueRef("entry", len(seen), "register")
+        seen.append(value)
+        return value
+
+    with pytest.raises(RuntimeError, match="allocation stopped"):
+        create_register_bindings(
+            allocate, Register("words", RegisterType("uint", 0), (2, 2)), available
+        )
+    assert {b.value for b in available} == set(seen)
+    assert {b.index for b in available} == {(0, 0), (0, 1)}
