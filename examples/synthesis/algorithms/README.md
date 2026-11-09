@@ -7,6 +7,7 @@ Native FlagQuantum programs currently available:
 - [quantum_autoencoder](machine_learning/quantum_autoencoder/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
+- [hamiltonian_simulation_guide_trotter](hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
 

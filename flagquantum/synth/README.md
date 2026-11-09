@@ -1048,3 +1048,12 @@ must be positive and coprime to the modulus. Static integer parameters, target
 width 1..5 and exponent width 1..10 use existing validation and lowering. See the
 [modular contract](../../docs/api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md)
 and [complete native workflow](../../examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example/WORKFLOW.md).
+
+`suzuki_trotter(operator,time,order,repetitions,target)` accepts a static native
+`fq.Observable` and finite classical time. Indices address target elements,
+with zero the least significant bit. Orders 1/2 and 1..256 repetitions preserve
+declared term order and identity global phase using the shared Pauli lowering.
+The result is the specified product formula; no general exact-exponential or
+approximation-error guarantee is implied. See the
+[native evolution contract](../../docs/api-changes/FQ-SYNTH-NATIVE-EVOLUTION-20261109.md)
+and [native example](../../examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter/WORKFLOW.md).

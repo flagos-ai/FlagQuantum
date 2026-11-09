@@ -676,3 +676,11 @@ validator owns coprimality, storage legality and width limits, while shared
 lowering owns permutations and scratch accounting. Run
 `tests/integration/test_synthesis_native_modular_exp.py` for independent modular
 truth tables, coherent amplitudes, helper borrowing and budget refusals.
+
+Native `suzuki_trotter` capture in `frontend_evolution.py` snapshots existing
+immutable Observable terms, validates logical target indices and emits existing
+Pauli rotations through the shared ordered product-formula schedule. It owns
+neither numerical execution nor a new Hamiltonian representation. Complete
+registers and mutable helpers are supported; Const, partial views and oversized
+formulas fail closed. Run `tests/integration/test_synthesis_native_evolution.py`
+for independent dense products, absolute phase, coherence and refusal checks.

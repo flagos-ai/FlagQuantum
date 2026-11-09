@@ -7,6 +7,8 @@ from contextlib import AbstractContextManager
 from types import GenericAlias
 from typing import Annotated, Generic, TypeAlias, TypeVar, overload
 
+from ...observables import Observable
+
 _Num = TypeVar("_Num", bound="_QuantumRegister")
 _Element = TypeVar("_Element", bound="QNum")
 
@@ -170,6 +172,23 @@ def qft(target: QNum | QArray[QBit], /) -> None:
     reversal. Capture this call inside qfunc and execute the synthesized program.
     """
     raise TypeError("qft is captured inside qfunc")
+
+
+def suzuki_trotter(
+    operator: Observable,
+    time: float,
+    order: int,
+    repetitions: int,
+    target: QNum | QArray[QBit],
+    /,
+) -> None:
+    """Apply an ordered first/second-order Pauli product formula inside qfunc.
+
+    Observable indices address target elements: index zero is the least
+    significant bit. Bind a static Observable; time may be a classical real
+    parameter. The formula preserves identity phase and declared term order.
+    """
+    raise TypeError("suzuki_trotter is captured inside qfunc")
 
 
 def modular_exp(n: int, a: int, x: QNum, power: QNum, /) -> None:

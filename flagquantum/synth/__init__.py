@@ -41,6 +41,7 @@ from ..services.synthesis import (
     prepare_uniform_interval_state,
     qft,
     qfunc,
+    suzuki_trotter,
     synthesize,
     unitary,
     within,
@@ -86,4 +87,5 @@ __all__ = (
     "qft",
     "unitary",
     "modular_exp",
+    "suzuki_trotter",
 )

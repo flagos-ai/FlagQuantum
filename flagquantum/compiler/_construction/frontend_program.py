@@ -18,6 +18,7 @@ from .._hybrid.model import (
     ValueId,
 )
 from .frontend_classical import ClassicalValue, bind_inputs, real_number
+from .frontend_evolution import capture_suzuki_trotter
 from .frontend_matrix import capture_unitary
 from .frontend_ports import (
     _annotation_node,
@@ -61,6 +62,7 @@ from .program_types import (
     rz,
     rzz,
     s,
+    suzuki_trotter,
     swap,
     u,
     unitary,
@@ -439,6 +441,7 @@ class _Body:
                     qft,
                     unitary,
                     modular_exp,
+                    suzuki_trotter,
                 )
             )
             or isinstance(function, _QuantumFunction)
@@ -500,6 +503,8 @@ class _Body:
             self.emit("qreg.allocate", node, (destination,))
         elif function is unitary:
             capture_unitary(self, node)
+        elif function is suzuki_trotter:
+            capture_suzuki_trotter(self, node)
         elif function is modular_exp:
             if len(node.args) != 4:
                 _error(

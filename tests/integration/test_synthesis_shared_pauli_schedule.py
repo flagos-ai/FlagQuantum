@@ -11,6 +11,7 @@ from flagquantum import synth
 from flagquantum.algorithms import Hamiltonian, pauli_term, trotter_circuit
 from flagquantum.compiler import _pauli_schedule
 from tests.integration.test_synthesis_qmod_suzuki_trotter import _reference
+from tests.team.compiler.test_construction_python_program import program_definition
 from tests.unit.test_trotter import _coefficient_value_and_gradient
 
 pytestmark = pytest.mark.integration
@@ -34,7 +35,7 @@ def alternative_steps(
 @pytest.mark.parametrize("order", [1, 2])
 @pytest.mark.parametrize("repetitions", [1, 3])
 @pytest.mark.parametrize("time", [0.37, -0.29])
-def test_both_consumers_keep_full_complex_states_and_identical_instruction_sequences(
+def test_three_consumers_keep_full_complex_states_and_identical_instruction_sequences(
     monkeypatch: pytest.MonkeyPatch, order: int, repetitions: int, time: float
 ) -> None:
     hamiltonian = Hamiltonian(
@@ -42,7 +43,14 @@ def test_both_consumers_keep_full_complex_states_and_identical_instruction_seque
     )
     source = SOURCE.read_text().replace("x, 1, 1", f"x, {order}, {repetitions}")
 
-    def consumers() -> tuple[fq.Circuit, synth.Program]:
+    entry = program_definition(
+        "import flagquantum as fq\nfrom flagquantum.synth import *\n"
+        "OPERATOR=1.5*(fq.X(0)@fq.X(1)@fq.Z(2))+0.5*(fq.Y(0)@fq.X(1)@fq.Z(2))\n"
+        "@qfunc\ndef main(time:float,q:Output[QArray[QBit]]):\n    allocate(3,q)\n"
+        f"    suzuki_trotter(OPERATOR,time,{order},{repetitions},q)\n"
+    )
+
+    def consumers() -> tuple[fq.Circuit, synth.Program, synth.Program]:
         return (
             trotter_circuit(
                 hamiltonian,
@@ -54,9 +62,10 @@ def test_both_consumers_keep_full_complex_states_and_identical_instruction_seque
             synth.synthesize(
                 source, source_format="qmod", classical_inputs={"x": time}
             ),
+            synth.synthesize(entry, classical_inputs={"time": time}),
         )
 
-    original_circuit, original_program = consumers()
+    original_circuit, original_program, original_native = consumers()
     calls = []
 
     def replacement(
@@ -66,13 +75,21 @@ def test_both_consumers_keep_full_complex_states_and_identical_instruction_seque
         return alternative_steps(count, duration, product_order, steps)
 
     monkeypatch.setattr(_pauli_schedule, "ordered_pauli_steps", replacement)
-    circuit, program = consumers()
-    assert len(calls) >= 2
+    circuit, program, native = consumers()
+    assert len(calls) >= 3
     assert all(call == (2, time, order, repetitions) for call in calls)
     assert circuit.to_ir().content_hash == original_circuit.to_ir().content_hash
     assert program.circuit.content_hash == original_program.circuit.content_hash
+    assert native.circuit.content_hash == original_native.circuit.content_hash
     expected = fq.run(_reference(time, order, repetitions)).statevector()
-    for value in (original_circuit, original_program, circuit, program):
+    for value in (
+        original_circuit,
+        original_program,
+        original_native,
+        circuit,
+        program,
+        native,
+    ):
         torch.testing.assert_close(
             fq.run(value).statevector(), expected, atol=1e-12, rtol=0
         )

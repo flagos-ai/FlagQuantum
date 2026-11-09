@@ -675,6 +675,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "qft",
     "unitary",
     "modular_exp",
+    "suzuki_trotter",
 )
 
 
@@ -1271,6 +1272,26 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.modular_exp)) != modular_signature
     ):
         errors.append("native modular exponentiation differs from its authorized scope")
+    evolution_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-evolution-candidate.json").read_text()
+    )
+    evolution_signature = "(operator: 'Observable', time: 'float', order: 'int', repetitions: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'"
+    if evolution_admission != {
+        "schema": "flagquantum.synthesis_native_evolution_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["suzuki_trotter"],
+        "signatures": {"suzuki_trotter": evolution_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-EVOLUTION-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(evolution_admission.get("implementation_authorized")) is not bool
+        or type(evolution_admission.get("release_authorized")) is not bool
+        or not (ROOT / evolution_admission["authorization_record"]).is_file()
+        or str(inspect.signature(synth.suzuki_trotter)) != evolution_signature
+    ):
+        errors.append("native Pauli evolution differs from its authorized scope")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),

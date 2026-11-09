@@ -78,6 +78,7 @@ from ._synthesis_readout import probabilities as _probabilities
 qft = program_types.qft
 unitary = program_types.unitary
 modular_exp = program_types.modular_exp
+suzuki_trotter = program_types.suzuki_trotter
 H = program_types.h
 S = program_types.s
 CX = program_types.cx
@@ -137,6 +138,7 @@ __all__ = (
     "qft",
     "unitary",
     "modular_exp",
+    "suzuki_trotter",
 )
 
 

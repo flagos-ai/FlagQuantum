@@ -2552,7 +2552,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/main.py",
+        "scope": "Complete original two-bit Hamiltonian quantum program: ordered first-order evolution at time one with ten repetitions. The broader multi-method Notebook remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6353,9 +6356,29 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter/main.py",
+        "scope": "Complete local single-cell Notebook program construction with explicit finite real parameter specialization; execution and independent-state checks are additional validation."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "49625dc957773acbc0722b77c25e6af997c815694bf6b73301cd964d8906ab56",
+        "native_entrypoint": "examples.synthesis.functions.hamiltonian_evolution.suzuki_trotter.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_evolution.py",
+        "scope": "Complete local single-cell Notebook program construction with explicit finite real parameter specialization; execution and independent-state checks are additional validation.",
+        "native_semantic_adaptations": "Reuse native Observable tensor products and ordered Pauli rotations. Static coefficients, declared order, repetitions, bit order and absolute phase preserved. Classical CReal is explicitly specialized to a supplied finite real; no symbolic parameter retention or cloud execution claim.",
+        "git_blob_sha1": "d36dd8f0a0753ea79b9656dd98667246f289e28c",
+        "notebook_path": "functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter.ipynb",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "7be2bf433661aa064bacba8fac7527b3233eb9edb71525ed1f109f7c61cd4acf"
+          }
+        ]
+      }
     },
     {
       "id": "functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes",

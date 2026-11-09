@@ -3,21 +3,22 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **54/216**.
-Validated local Notebook workflows: **21/213**.
+Validated quantum-program counterparts: **56/216**.
+Validated local Notebook workflows: **22/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (7 native programs)
+## Algorithms (8 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
 - [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+- [hamiltonian_simulation_guide_trotter](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
 
@@ -43,7 +44,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (33 native programs)
+## Functions (34 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -66,6 +67,7 @@ Validated local Notebook workflows:
 - [prepare_uniform_trimmed_state](functions/state_preparation/prepare_uniform_trimmed_state/README.md)
 - [encode_in_angle](functions/data_encoding/encode_in_angle/README.md)
 - [encode_on_bloch](functions/data_encoding/encode_on_bloch/README.md)
+- [suzuki_trotter](functions/hamiltonian_evolution/suzuki_trotter/README.md)
 - [example_prepare_amplitudes](functions/state_preparation/example_prepare_amplitudes/README.md)
 - [example_prepare_state](functions/state_preparation/example_prepare_state/README.md)
 - [crx](functions/standard_gates/crx/README.md)
@@ -91,6 +93,7 @@ Validated local Notebook workflows:
 - [qft](functions/qft/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
+- [suzuki_trotter](functions/hamiltonian_evolution/suzuki_trotter/README.md)
 - [prepare_state_and_amplitudes](functions/state_preparation/prepare_state_and_amplitudes/README.md)
 - [overview](functions/standard_gates/overview/README.md)
 - [unitary](functions/unitary/README.md)
