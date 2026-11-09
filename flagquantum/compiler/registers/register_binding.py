@@ -45,15 +45,18 @@ def bind_register_program(
     clean: tuple[int, ...] = (),
     borrowed: tuple[int, ...] = (),
     entry: str = "main",
+    allow_workspace_outputs: bool = False,
 ) -> BoundRegisterProgram:
     """Bind quantum ports and balanced work to caller-supplied physical wires.
 
     Local connection order is scheduled before finite call expansion. Quantum
     entry ports and disjoint concrete input/clean/borrowed wires are required.
-    Input release and live workspace outputs need a separate ownership-transfer
-    profile. Clean zero and borrowed joint-state restoration remain obligations
-    of the component emitter and are verified numerically by its consumers.
+    Explicitly allowing workspace outputs transfers their live physical wires
+    to the caller through ordered outputs. The caller owns subsequent cleanup
+    and borrowed-state restoration. Input release requires caller pool ownership.
     """
+    if type(allow_workspace_outputs) is not bool:
+        raise ValueError("workspace output policy requires a built-in boolean")
     diagnostics = verify_program_record(record)
     if diagnostics:
         raise ValueError(f"invalid register Program: {diagnostics}")
@@ -119,7 +122,7 @@ def bind_register_program(
     for position, operation in enumerate(operations):
         binder.emit(position, operation)
     outputs = tuple(binder.wires[value] for value in returned)
-    if binder.live:
+    if binder.live and not allow_workspace_outputs:
         raise ValueError(
             "live workspace outputs require explicit caller ownership transfer"
         )
