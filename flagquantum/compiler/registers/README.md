@@ -137,3 +137,26 @@ source scenarios compare connection order and source model cost against native
 zero-primitive lowering. Complex spectator/permutation checks include a real X
 call. Existing Add/QROM consumers retain all measurement histories and resources
 after explicit split/join around every returned word, including width zero.
+
+## Explicit workspace construction
+
+`layout/component_workspace.py` supplies real typed allocation and release
+function bodies. `ComponentProgramBuilder.allocate` and `free` use ordinary
+finite calls and existing per-element SSA ownership. Explicit dtype overrides
+`n`, zero-width scalar words retain ownership, and stale free calls reserve an
+instance before failing. Both clean and dirty flags survive in the leaf record.
+The admitted profile requires concrete quantum bit/opaque/uint descriptors and
+built-in boolean flags. Source metadata construction has a wider domain.
+
+Run `pytest tests/unit/test_component_workspace.py tests/unit/test_program_workspace.py`.
+Sixteen unchanged source builder scenarios accept the native observation adapter.
+The tests also verify real helper bodies, dtype changes after split/join, call
+forwarding, source resource models and independent Core rejection.
+
+`lower_register_program` rejects allocation/release anywhere in the module until
+physical scheduling is admitted. The existing `layout/workspace.py` pool remains
+the physical lease authority for that next slice. Graph acceptance establishes
+typed consumption. Clean zero-state and dirty original-joint-state restoration
+need separate numerical evidence. Source tensor/classical allocation uses zero
+even for dirty allocation, while its Cirq path borrows unknown state. Keep those
+entry points distinct when extending execution.

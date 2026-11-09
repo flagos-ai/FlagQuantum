@@ -31,6 +31,7 @@ from .component_bindings import (
     process_register_bindings,
 )
 from .component_rebindings import join_word_function, split_word_function
+from .layout.component_workspace import allocate_word_function, free_word_function
 
 BindingCollection = RegisterBinding | NDArray[np.object_]
 
@@ -40,8 +41,9 @@ class ComponentProgramBuilder:
 
     Inputs and call outputs use independent SSA identities per port element.
     Failed calls reserve their operation and retain consumed input prefixes.
-    Core independently verifies every definition at finalization. Automatic work
-    allocation and classical register handles require separate admission.
+    Core independently verifies every definition at finalization. Workspace
+    construction is explicit. Physical scheduling and classical handles require
+    separate admission.
     """
 
     def __init__(
@@ -220,3 +222,29 @@ class ComponentProgramBuilder:
         result = outputs["reg"]
         assert isinstance(result, RegisterBinding)
         return result
+
+    def allocate(
+        self, n: int = 1, dtype: RegisterType | None = None, dirty: bool = False
+    ) -> RegisterBinding:
+        """Allocate one owned word, with an explicit dtype taking precedence over n.
+
+        Concrete quantum descriptors and built-in boolean flags are required.
+        This records a lifetime. Physical scheduling is a separate boundary.
+        """
+        target = RegisterType("opaque", n) if dtype is None else dtype
+        function = allocate_word_function(self._rebinding_name(), target, dirty)
+        self._functions[function.name] = function
+        outputs = self.call_dict(function.name, {})
+        result = outputs["reg"]
+        assert isinstance(result, RegisterBinding)
+        return result
+
+    def free(self, binding: RegisterBinding, dirty: bool = False) -> None:
+        """Consume one scalar owned word, retaining stale-call failure timing."""
+        if not isinstance(binding, RegisterBinding):
+            raise ValueError("free expects a single register binding")
+        function = free_word_function(
+            self._rebinding_name(), binding.register.dtype, dirty
+        )
+        self._functions[function.name] = function
+        self.call_dict(function.name, {"reg": binding})

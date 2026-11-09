@@ -38,6 +38,16 @@ def lower_register_program(record: ProgramRecord, entry: str = "main") -> Progra
     diagnostics = verify_program_record(record)
     if diagnostics:
         raise ValueError(f"invalid register Program: {diagnostics}")
+    if any(
+        operation.opcode in {"allocate_register", "free_register"}
+        for function in record.functions
+        for block in function.blocks
+        for operation in block.operations
+    ):
+        raise ValueError(
+            "register workspace lifetimes require physical pool scheduling and "
+            "clean/dirty restoration evidence before gate lowering"
+        )
     functions = {function.name: function for function in record.functions}
     lowered = replace(
         record,
