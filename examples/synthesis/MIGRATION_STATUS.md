@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **8/213**.
+Validated local Notebook workflows: **9/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -381,7 +381,7 @@ Validated local Notebook workflows: **8/213**.
 | `tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe` | notebook_workflow | Pending | pending |
 | `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | Pending | pending |
 | `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | Pending | pending |
-| `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | pending |
+| `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | validated |
 | `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | Pending | pending |

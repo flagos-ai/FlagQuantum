@@ -24,6 +24,17 @@ from examples.synthesis.algorithms.foundational.deutsch_jozsa.main import (
 )
 from examples.synthesis.community.basic_examples.superposition.main import run_example
 from examples.synthesis.compare_states import compare_states
+from examples.synthesis.tutorials.basics.entanglement.comparisons.circuit import (
+    bell_reference_circuit,
+    exercise_reference_circuit,
+)
+from examples.synthesis.tutorials.basics.entanglement.comparisons.circuit import (
+    reference_circuit as ghz_reference_circuit,
+)
+from examples.synthesis.tutorials.basics.entanglement.main import bell, exercise, main
+from examples.synthesis.tutorials.basics.entanglement.main import (
+    run_example as run_entanglement,
+)
 from examples.synthesis.tutorials.basics.quantum_programming.classiq_overview_tutorial.main import (
     run_example as run_overview,
 )
@@ -36,9 +47,42 @@ from examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.
 from examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.main import (
     run_example as run_synthesis,
 )
+from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
 
 pytestmark = pytest.mark.integration
+
+
+@pytest.mark.parametrize("stage", ["bell", "exercise", "ghz"])
+def test_entanglement_notebook_complete_states(stage: str) -> None:
+    function, reference, register, expected = {
+        "bell": (bell, bell_reference_circuit, "registers", {(0,): 0.5, (3,): 0.5}),
+        "exercise": (exercise, exercise_reference_circuit, "reg", {(0,): 1.0}),
+        "ghz": (main, ghz_reference_circuit, "reg", {(0,): 0.5, (63,): 0.5}),
+    }[stage]
+    program = synth.synthesize(function)
+    compare_states(program, reference(), (register,))
+    assert program.report["workspace_qubits"] == 0
+    assert dict(program.probabilities(fq.run(program), registers=(register,))) == (
+        pytest.approx(expected, abs=1e-12)
+    )
+
+
+def test_entanglement_notebook_draws_and_reads_all_three_programs(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    run_entanglement()
+    output = capsys.readouterr().out
+    for label in ("Bell pair", "Blank six-qubit exercise", "Six-qubit GHZ solution"):
+        assert label in output
+    readouts = [
+        ast.literal_eval(line) for line in output.splitlines() if line.startswith("{")
+    ]
+    assert readouts == [
+        pytest.approx({(0,): 0.5, (3,): 0.5}, abs=1e-12),
+        {(0,): 1.0},
+        pytest.approx({(0,): 0.5, (63,): 0.5}, abs=1e-12),
+    ]
 
 
 def test_superposition_notebook_build_draw_and_named_readout(

@@ -11,6 +11,7 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
+- [entanglement](basics/entanglement/README.md)
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 

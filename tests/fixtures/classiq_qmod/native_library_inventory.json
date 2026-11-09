@@ -6537,12 +6537,36 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
+      "workflow_status": "validated",
       "native_program": {
         "path": "examples/synthesis/tutorials/basics/entanglement/main.py",
-        "scope": "Validated quantum program; notebook/training/execution workflow not certified."
+        "scope": "Complete local computational Notebook workflow: helper-built two-qubit Bell pair, blank six-qubit exercise and adjacent-CX-chain GHZ solution; native synthesis and text drawing replace cloud viewing. Actual execution and independent Circuit full-state references additionally check all three programs; no remote execution or hardware measurement is claimed."
       },
-      "kind": "notebook_workflow"
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/basic_tutorials/entanglement/entanglement.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "76216eed7b9c4bd2b6a7756de4431078ed1cb96a0574441a054599e7b0e0281b",
+        "scope": "Complete local computational Notebook workflow: helper-built two-qubit Bell pair, blank six-qubit exercise and adjacent-CX-chain GHZ solution; native synthesis and text drawing replace cloud viewing. Actual execution and independent Circuit full-state references additionally check all three programs; no remote execution or hardware measurement is claimed.",
+        "notebook_path": "tutorials/basic_tutorials/entanglement/entanglement.ipynb",
+        "git_blob_sha1": "4e5c176f86b67a1eb6b8e24d76b789d7419940f5",
+        "reviewed_code_cells": [
+          {
+            "index": 1,
+            "sha256": "9be84d411d3b33d5aeb885df34b38e7702ba90de5dfaba7c096485e2d0ec5de3"
+          },
+          {
+            "index": 4,
+            "sha256": "6c486e9fc322a2c8e75cf93fd259c0982677a3982b8cddb68cae221bfee702e7"
+          },
+          {
+            "index": 6,
+            "sha256": "d0e235afd3966fc6c41fa115e61d499b425326db7de4cfffb7c99fcf13198a73"
+          }
+        ],
+        "native_entrypoint": "examples.synthesis.tutorials.basics.entanglement.main",
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+      }
     },
     {
       "id": "tutorials/basic_tutorials/exponentiation/example_exponentiation",

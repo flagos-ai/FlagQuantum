@@ -4,7 +4,7 @@ User examples contain native Python programs and independent Circuit comparisons
 Original source files and importer launchers are test/development evidence, not examples.
 
 Validated quantum-program counterparts: **32/216**.
-Validated local Notebook workflows: **8/213**.
+Validated local Notebook workflows: **9/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -78,5 +78,6 @@ Validated local Notebook workflows:
 
 Validated local Notebook workflows:
 
+- [entanglement](tutorials/basics/entanglement/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
