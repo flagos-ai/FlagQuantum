@@ -1252,3 +1252,53 @@ bodies through an unchanged append consumer. Compare source primitive operands,
 all small unnormalized complex branches and joint spectator states. List output
 lifetime ownership, emitted resources and modeled peaks separately. The source
 contract witnesses alone do not certify native transfer execution.
+
+### Pre-owned input pool prerequisite 1.8
+
+Eight source witnesses in `tests/unit/test_register_input_pool_contract.py`
+pass in 5.24 seconds. A real GreedyQubitManager first owns the input through
+qalloc/qborrow. The component reverses that input, frees it and returns a new
+right-only allocation. Original local greedy traversal frees the input before
+allocating the output. With no other available wires, the output reuses exactly
+the released physical tuple for widths 1 and 3 and both allocation/Free flags.
+The manager receives no dirty argument on free. Primitive emission is empty,
+source QEC cost is empty and modeled peak equals width.
+
+These witnesses complement prerequisite 1.7's default-manager refusal of
+unmanaged external inputs. Neither result permits implicit input adoption.
+The next internal binding extension is keyword-only
+`input_ownership: tuple[tuple[int, bool], ...] = ()`. Each pair declares an input
+physical wire already owned by the caller's clean or borrowed pool, with the
+built-in boolean representing dirty origin. All pairs must be immutable,
+distinct, valid input wires with built-in boolean flags. Empty declarations
+retain unmanaged input behavior. A partially declared input word cannot release
+an undeclared wire. Validate the complete release before mutation.
+
+Extend the existing RegisterWorkspace with atomic `adopt(wires, *, dirty=False)`
+returning its existing WorkspaceLease. Adoption registers an existing lifetime.
+It emits no Program Allocate event, consumes no available workspace, and refuses
+collisions with either available or active wires. Reuse existing pool ownership
+and partial release. Input leases must be distinguished from allocations created
+inside the Program, so unchanged returned inputs remain ordinary caller outputs.
+Released input wires return to their declared origin pool, independently of the
+source Free flag, and may subsequently be allocated through the ordinary path.
+
+Core retains its current logical single-consumption authority, including
+zero-width values. Compiler declares physical pool ownership only. The existing
+balanced-profile rule concerns newly allocated nonempty work. Existing
+`allow_workspace_outputs` governs any newly allocated work that escapes, even
+if it reuses a previously released input wire. Adoption alone does not authorize
+arbitrary workspace outputs. Free still requires the emitter/caller's clean-zero
+or borrowed-joint-state restoration obligations at its actual lifetime boundary.
+
+Acceptance must compare original source manager events and output tuples, prove
+exact complex spectator states, all small measurement branches, per-wire pool
+origin and subsequent reuse. Include both Free flags, mixed input/allocated
+words, partial ownership failure without release prefixes, live returned inputs,
+policy validation and retry safety. Preserve the existing pool's established
+reuse policy. The source GreedyQubitManager witness above has no spare available
+wires and does not certify parity with every possible manager reuse policy.
+
+This is a contract and source prerequisite. Native pool adoption and the new
+binding keyword have not been implemented at this commit. No migrated capability
+checkbox closes on this evidence alone.
