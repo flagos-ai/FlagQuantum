@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 def capture_unitary(owner: _Body, node: ast.Call) -> None:
-    """Reuse the checked unitary effect and its existing indexed-wire contract."""
+    """Reuse the checked unitary effect and its existing contract for indexed qubits."""
     if len(node.args) != 2:
         _error(
             owner.source, node, "program.signature", "unitary takes matrix and target"
