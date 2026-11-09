@@ -4,12 +4,6 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis.tutorials.workspace.selection.main import (
-    addition,
-    polynomial,
-    pressure,
-    product,
-)
 from flagquantum.compiler import estimate_resources
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import capture
@@ -22,6 +16,12 @@ from flagquantum.compiler._construction.target import Target, compile_target
 from flagquantum.compiler.basis_conversion import BasisConversionError
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
+from tools.synthesis_compiler_examples.selection.main import (
+    addition,
+    polynomial,
+    pressure,
+    product,
+)
 
 pytestmark = pytest.mark.unit
 BASIS = ("x", "h", "s", "sdg", "t", "tdg", "ry", "rz", "cx", "u3", "swap")

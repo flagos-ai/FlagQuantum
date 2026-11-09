@@ -49,8 +49,8 @@ No new IR, gate compiler, executor or vendor adapter is added.
 
 ## User workflow and acceptance
 
-Run the [native QML example](../../examples/synthesis/tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/main.py)
-and its [three-form comparison](../../examples/synthesis/tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/comparisons/circuit.py).
+Run the [native QML example](../../examples/synthesis/tutorials/basics/qml/main.py)
+and its [native/Circuit comparison](../../examples/synthesis/tutorials/basics/qml/comparisons/circuit.py).
 The untouched Qmod and native qfunc must agree with an independent single
 RX(input_0 + weight_0) Circuit for (0.37, -0.81) and (1.2, 6.1), comparing every
 complex amplitude at absolute tolerance 1e-12 without aligning global phase.

@@ -115,7 +115,7 @@ This is a deterministic heuristic, not a general free/drop operation or optimal
 pebbling. The private `schedule_arithmetic` diagnostic includes peak workspace
 and compute/cleanup events; `lower_arithmetic` still returns CircuitIR.
 
-Run `python -m examples.synthesis.tutorials.workspace.workspace.main`, then
+Run `python -m tools.synthesis_compiler_examples.workspace.main`, then
 `tests/team/compiler/test_construction_scheduling.py` and
 `tests/integration/test_construction_scheduling_execution.py` for the shortest
 CS-05 contributor path. The [delivery record](../../../docs/roadmap/CS05_WORKSPACE_SCHEDULING_DELIVERY.md)
@@ -139,8 +139,8 @@ Each target stage retains its existing CoreIR content identity, and `validate()`
 rejects later mutations without compiling. Runtime confirmation still goes
 through CS06-A; C owns the single normal facade and named reading integration.
 
-Run `python -m examples.synthesis.tutorials.workspace.selection.main` for the real constraint-driven
-phase/cleanup workflow, or `python -m examples.synthesis.tutorials.workspace.selection_costs.main` for the
+Run `python -m tools.synthesis_compiler_examples.selection.main` for the real constraint-driven
+phase/cleanup workflow, or `python -m tools.synthesis_compiler_examples.selection_costs.main` for the
 complete static table and current manual comparison. Relevant tests are
 `tests/team/compiler/test_construction_selection.py` and
 `tests/integration/test_construction_selection_execution.py`. See the
@@ -351,7 +351,7 @@ routing with physical layout retained. Its restored route is refused because
 the existing normalizer cancels restore-SWAP witnesses. That strict evidence
 check remains, and no unverified mapping is passed to Runtime.
 
-Run `python -m examples.synthesis.tutorials.control.register_phase.main`, then
+Run `python -m tools.synthesis_compiler_examples.register_phase.main`, then
 `tests/team/compiler/test_construction_register_phase.py` and
 `tests/integration/test_synthesis_register_phase.py`. The example is a private
 owned-IR contributor trial. The public Python predicate path is unchanged;
@@ -384,7 +384,7 @@ nested calls cannot hide phase effects. Limits include 32 call levels, the
 existing 4096 source/final model nodes, and 4096 expansion visits including
 empty calls. No alternative executor, public type or role manager is needed.
 
-Run `python -m examples.synthesis.tutorials.composition.const_calls.main` for the contributor-only owned-IR
+Run `python -m tools.synthesis_compiler_examples.const_calls.main` for the contributor-only owned-IR
 path, then `tests/team/compiler/test_construction_register_calls.py` and
 `tests/integration/test_synthesis_const_calls.py`. Public Python stays unchanged.
 Ecosystem now delegates native Const/Output helpers through this boundary; its
@@ -420,7 +420,7 @@ closed prerequisite for later local/within scopes, not a general unitary inverse
 Every helper verifies independently, including unused ones, and the expanded
 root verifies again through the existing call boundary.
 
-Run `python -m examples.synthesis.tutorials.composition.register_cleanup.main`, then
+Run `python -m tools.synthesis_compiler_examples.register_cleanup.main`, then
 `tests/team/compiler/test_construction_register_cleanup.py` and
 `tests/integration/test_synthesis_register_cleanup.py`. This owned-record example
 is for contributors; public Python/native source syntax is unchanged. See the
@@ -454,7 +454,7 @@ independently and the expanded root verifies again. Existing model/visit/depth
 budgets and exact phase targets remain. No Runtime allocator or public API is
 added, and native local/within/free/drop syntax is still outside admission.
 
-Run `python -m examples.synthesis.tutorials.composition.local_registers.main`, then
+Run `python -m tools.synthesis_compiler_examples.local_registers.main`, then
 `tests/team/compiler/test_construction_local_registers.py` and
 `tests/integration/test_synthesis_local_registers.py`. The contributor example
 returns x/y/reference, with every temporary hidden and zero. See the

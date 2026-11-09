@@ -1,0 +1,4 @@
+qfunc main(output counter:qnum<1,UNSIGNED,1>,output data:qbit) {
+ allocate(counter);allocate(data);X(data);
+ qpe(lambda(){PHASE(1.5707963267948966,data);},counter);
+}

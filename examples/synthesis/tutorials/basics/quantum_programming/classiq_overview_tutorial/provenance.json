@@ -1,0 +1,6 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5e28d56fea67b203a6e0e0b44ef0fa8998e66ae477fc62a4b02d2c5c8bcd30d1",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

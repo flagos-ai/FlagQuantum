@@ -1,12 +1,18 @@
 """Classified examples retain source identity, honest coverage and executable cases."""
 
+import ast
+import json
+import re
+from collections import Counter
 from copy import deepcopy
+from pathlib import Path
 
 import pytest
 
-from examples.synthesis.run_qmod import run_case
+from tools.run_qmod_catalog import run_case
 from tools.synthesis_catalog import (
     CATALOG,
+    ROOT,
     example_path,
     load_catalog,
     render,
@@ -14,6 +20,60 @@ from tools.synthesis_catalog import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def test_native_user_library_contains_no_importer_sources_or_calls() -> None:
+    library = ROOT / "examples/synthesis"
+    assert not list(library.rglob("*.qmod"))
+    for path in library.rglob("*.py"):
+        tree = ast.parse(path.read_text())
+        for node in ast.walk(tree):
+            if (
+                isinstance(node, ast.ImportFrom)
+                and node.module
+                and node.module.startswith("flagquantum.")
+            ):
+                assert not any(
+                    part.startswith("_") for part in node.module.split(".")
+                ), path
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                assert not re.search(
+                    r"\bqfunc\s+\w+\s*\([^)]*\)\s*\{", node.value
+                ), path
+            if isinstance(node, ast.Call):
+                assert not any(
+                    keyword.arg == "source_format"
+                    and isinstance(keyword.value, ast.Constant)
+                    and keyword.value.value == "qmod"
+                    for keyword in node.keywords
+                ), path
+
+
+def test_expanded_inventory_tracks_all_five_categories_without_workflow_claims() -> (
+    None
+):
+    data = json.loads((CATALOG.parent / "native_library_inventory.json").read_text())
+    assert set(data["categories"]) == {
+        "algorithms",
+        "applications",
+        "community",
+        "functions",
+        "tutorials",
+    }
+    groups = data["groups"]
+    assert len(groups) == 417 == len({group["id"] for group in groups})
+    sources = [source for group in groups for source in group["sources"]]
+    assert len(sources) == 577 == len({source["path"] for source in sources})
+    assert Counter(Path(source["path"]).suffix for source in sources) == {
+        ".qmod": 216,
+        ".ipynb": 213,
+        ".py": 148,
+    }
+    for group in groups:
+        assert group["category"] == Path(group["id"]).parts[0]
+        assert group["workflow_status"] == "pending"
+        if group["native_program"]:
+            assert (ROOT / group["native_program"]["path"]).is_file()
 
 
 def test_complete_catalog_preserves_sources_and_generated_navigation() -> None:
@@ -25,6 +85,8 @@ def test_complete_catalog_preserves_sources_and_generated_navigation() -> None:
         "tutorials",
         "algorithms",
         "applications",
+        "community",
+        "functions",
     }
     assert CATALOG.is_file()
 

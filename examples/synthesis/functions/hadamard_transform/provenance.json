@@ -1,0 +1,6 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "22e4cc216165feb902b6319eaf0ca9cbb8f90e42b23e4a27f1e0d440676e8ade",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

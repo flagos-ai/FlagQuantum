@@ -1,0 +1,6 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/entanglement/entanglement.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "76216eed7b9c4bd2b6a7756de4431078ed1cb96a0574441a054599e7b0e0281b",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

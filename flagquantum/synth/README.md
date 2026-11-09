@@ -116,7 +116,7 @@ or allocation widths. Parameterized mutable helpers retain the gate/loop-only
 scope: no allocation, Output escape, adjoint or coherent control. Bindings do not
 become runtime tensors or differentiable parameters; synthesize again to rebind.
 See the [semantic contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md)
-and [runnable three-form QML comparison](../../examples/synthesis/tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/comparisons/circuit.py).
+and [native/Circuit QML comparison](../../examples/synthesis/tutorials/basics/qml/comparisons/circuit.py).
 
 ## Pure-function convenience
 
@@ -312,7 +312,7 @@ forms report whole source_resources and actual resources, source locations,
 source_format and effective memory limit/origin. Native reports also retain
 source_name/source_version and omit the Python arithmetic_resources field.
 
-Run python -m examples.synthesis.tutorials.getting_started.source_trial.main for the complete text
+Run python -m tools.synthesis_import_examples.source_trial.main for the complete text
 workflow, or append a local .qmod path. Four unchanged originals have passed
 both public forms: the baseline three at 1/23/24 qubits and the added integer
 comparator at 10 allocated qubits. This is development evidence; independent
@@ -344,7 +344,7 @@ FlagQuantum also admits phase(x<y,pi) as a native predicate extension; see the
 [profile and upstream grammar boundary](../ecosystem/_qmod/README.md).
 The named flag remains a live output, with internal workspace cleaned. This
 does not change Python predicate phase mode. Run
-`python -m examples.synthesis.tutorials.qmod.qmod_comparisons.main`; the complete circuit uses
+`python -m tools.synthesis_import_examples.qmod_comparisons.main`; the complete circuit uses
 10 total/used qubits, five work qubits, 49 operations and depth 40. See the
 [delivery record](../../docs/roadmap/SYNTH_QMOD_COMPARISONS_DELIVERY.md).
 
@@ -438,7 +438,7 @@ The two named results (0,0) and (1,1) each have probability 1/2, within floating
 precision. Default costs are 2 qubits, zero workspace, 4 operations (3 H, 1 CZ)
 and depth 3. Compiler handles arithmetic selection, exact inverse cleanup and
 wire layout; users supply register widths, preparation, phase intent and budgets.
-Run `python -m examples.synthesis.tutorials.qmod.qmod_phase.main`. Arbitrary angles, multibit phase
+Run `python -m tools.synthesis_import_examples.qmod_phase.main`. Arbitrary angles, multibit phase
 results, fixed classical phase, helpers and explicit basis/line targets remain
 unsupported. The Python-only output_mode option is not needed for source phase
 statements. See the [delivery](../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
@@ -473,7 +473,7 @@ widths infer to 2, 2 and 4 bits. Compiler still handles gate design, temporary
 qubits, cleanup and layout; no gate sequence, physical index or bit decoding is
 needed. This source uses 18 qubits, 10 workspace, 166 operations and depth 124,
 including preparation and cleanup. Width/depth objectives select the same costs
-for this fixture. Run `python -m examples.synthesis.tutorials.qmod.qmod_helpers.main`.
+for this fixture. Run `python -m tools.synthesis_import_examples.qmod_helpers.main`.
 
 Helpers accept fixed-width Const and fresh Output scalars. Const actuals must
 be initialized and can alias other Const arguments; Outputs remain disjoint and
@@ -508,7 +508,7 @@ print(dict(program.probabilities(result, registers=("x", "y", "energy"))))
 All sixteen `(x,y,x*x+y)` tuples have probability approximately 1/16, with
 18 qubits, 10 workspace, 166 operations and depth 124 for this complete example.
 Compiler generates arithmetic, selects work storage, cleans it and handles the
-layout. Run `python -m examples.synthesis.tutorials.qmod.qmod_const.main`. Source roles can be
+layout. Run `python -m tools.synthesis_import_examples.qmod_const.main`. Source roles can be
 interleaved positionally; the adapter maps them to the same verified Compiler
 call ABI used by the previous internal slice.
 
@@ -746,7 +746,7 @@ temporary slot. The two scopes fit ten qubits, including six internal work bits;
 simultaneously preparing both flags needs eleven. Width and depth objectives
 both preserve these measured costs; scope orders are not automatically rewritten.
 
-Use `python -m examples.synthesis.tutorials.qmod.qmod_within.main` or a local .qmod file through the
+Use `python -m tools.synthesis_import_examples.qmod_within.main` or a local .qmod file through the
 same entry. Local declarations are function-level; within prepares fresh
 quantum-dependent unsigned expressions, and apply permits phase or Const-only
 helpers. Sequential blocks may reuse the source name. Bare qnum infers once;
@@ -821,7 +821,7 @@ This is a coherent variant with H, not the unmodified pinned RZ original.
 Amplitudes are exp(-0.95i)/sqrt(2) and exp(0.95i)/sqrt(2); probabilities are
 approximately 1/2 each. Decimal PHASE/RZ limits and gate-target restrictions are
 in the [compatibility delivery](../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md).
-Run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main` for current Python
+Run `python -m tools.synthesis_import_examples.native_and_qmod_rz.main` for current Python
 high-level arithmetic, matching Qmod and the independent RZ Circuit reference.
 The example states the native phase gap rather than calling Circuit high-level.
 

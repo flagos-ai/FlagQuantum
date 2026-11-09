@@ -34,7 +34,7 @@ python -m examples.algorithms.sparse_select
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
 python -m examples.synthesis.tutorials.getting_started.trial.main
-python -m examples.synthesis.tutorials.getting_started.source_trial.main
+python -m tools.synthesis_import_examples.source_trial.main
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -166,88 +166,3 @@ What they show:
   a constrained line-topology example. Finite candidate selection and exact
   local CPU statevectors are supported. There is no optimality claim; independent
   developer trials and final release review remain pending.
-
-- [`synthesis_source_trial.py`](../synthesis/tutorials/getting_started/source_trial/main.py): the unreleased pinned
-  Qmod subset uses the same checked Program, exact CPU execution and named reader.
-  With no arguments, it runs coherent `x*x+1` source text. Append a local `.qmod`
-  path to run a bounded regular UTF-8 file instead. Native synthesis defaults to
-  a 512 MiB planned-state buffer ceiling; larger named reads remain explicitly
-  bounded. This does not imply general Qmod standard-library compatibility.
-
-## These scripts use the subpackage surface
-
-The algorithm units are reachable at `flagquantum.algorithms.<unit>` and carry no
-root-level `fq.` name, with one exception. The algorithm scripts import from the
-subpackage -- `from flagquantum.algorithms.pca import principal_components` --
-rather than through `import flagquantum as fq`. `spsa_optimizer.py` imports both:
-the optimizer from the subpackage, and `flagquantum` itself for the `fq.Circuit`
-and `fq.run` calls its objective makes. `nelder_mead_optimizer.py` imports both as
-well, for one more reason: it imports `SPSAOptimizer` beside
-`NelderMeadOptimizer` from the subpackage, so the comparison it prints is run
-through the two shipped units rather than reimplemented in the script.
-`cobyla_optimizer.py` imports both as well: the constrained optimizer from the
-subpackage, and `flagquantum` itself for the `fq.Circuit` and `fq.run` calls the
-energy it constrains is built from.
-`trotter.py` needs no root alias either:
-the circuit it builds is a `flagquantum.circuit.Circuit`, and the readout it takes
-is the package's own `expectation_ps`. `block_encoding.py` needs no root alias
-either: it composes `flagquantum.circuit.Circuit` and reads the unitary back with
-the package's own `get_unitary`. `linear_combination.py` needs no root alias
-either, and for the same reason: it builds the encoding from
-`flagquantum.algorithms.core.Hamiltonian`, composes `flagquantum.circuit.Circuit`,
-and reads the step back with `flagquantum.simulation.unitary.get_unitary`.
-`logical_resources.py` imports both: the estimator
-and the patch-size helper from the subpackage, and `flagquantum` itself for the
-`fq.Circuit` programs it costs. `arithmetic.py` imports both as well: the
-constructor and the register map from the subpackage, and `flagquantum` itself for
-the `fq.Circuit` register the adder is run on. `folding.py` needs no root alias
-either: it composes `flagquantum.circuit.Circuit`, wraps the programs it compares
-through `flagquantum.core.ir`, and reaches the fold itself from the subpackage
-with `from flagquantum.algorithms import fold_program`. `variational_solvers.py`
-needs no root alias either: it builds its basis states with
-`flagquantum.circuit.Circuit` and reaches the operator, the ansatz, and the solver
-from the subpackage, because the energy it reports is an expectation of a
-`flagquantum.algorithms.core.Hamiltonian` rather than a root-level object.
-`vqe_solvers.py` needs no root alias either, and for the same reason as
-`variational_solvers.py`: every object it touches -- the operator, the ansatz,
-the four entry points and the circuit it builds the reference state from -- comes
-from `flagquantum.circuit` or the `flagquantum.algorithms` subpackage, and the
-energy it reports is an expectation of a subpackage `Hamiltonian` rather than a
-root-level object. `examples/README.md` records that boundary.
-
-Each script prints the premise its unit rests on, because the premise is the part
-that is easiest to lose: quantum PCA's density matrix, its exponential and the
-purification's amplitudes are all built classically here, quantum k-medians
-compares a distance table built classically and synthesizes its oracle from a
-truth table, quantum kernel estimation builds each feature state gate by gate
-from a classical vector, feature selection runs no solver, the frequent-item
-fractions iterate the transactions in Python, the singular values come from a
-state built out of the classical `torch.linalg.svd` the readout estimates,
-zero-noise extrapolation rests on a polynomial-in-the-scale-factor assumption
-that is not checkable from the measurements it fits, probabilistic error
-cancellation rests on the noise being exactly the channel the model declares at
-the location it declares it and pays for the inversion in programs rather than
-shots, gate and circuit folding rests on the noise being local to the instruction
-that carries it -- so repeating a gate with its own inverse repeats its error --
-and reports the length ratio it realized rather than any estimate of the noise it
-amplified, the QAOA solver pairs one checked edge list with both the circuit that
-rotates by it and the operator it is scored against, turns the uniform
-superposition's stationary point into a required start, and reports an energy
-that is a cost to compare rather than a bound, the SPSA update is built from a finite-difference estimate that is an
-estimate rather than a gradient, the Nelder-Mead search decides every step by
-ranking two objective values against each other, so a stochastic objective turns
-those decisions into a coin toss and the flag it ends on reports a collapsed
-simplex rather than a global minimum, and the product formula approximates the
-evolution with a defect that is measured rather than bounded, because a bound
-needs a commutator norm the caller has to supply, and the block encoding is
-built from a dense exact eigendecomposition whose cost is diagonalising the
-matrix with nothing here bounding the error of an approximate one, and the logical
-resource report counts rather than measures -- no circuit runs, no wall-clock time
-or memory is read, and the failure rate is absent because a logical error rate
-needs a device's threshold fit, so that number belongs to the device rather than to
-the unit. The adder is a construction and its T-cost is the compiler's own Toffoli
-rule rather than a second expansion of it written beside the circuit, and it is
-Cuccaro's ripple rather than the smaller Gidney-Ekera construction, because
-uncomputing by measurement and feedforward needs a mid-circuit measurement path
-this repository does not have in a circuit it can cost. The guide holds the full
-boundary for each.

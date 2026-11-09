@@ -8,7 +8,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis.tutorials.basics.classiq.qml_with_classiq_guide.qml_with_classiq_guide.main import (
+from examples.synthesis.tutorials.basics.qml.main import (
     main,
 )
 from flagquantum import synth
@@ -34,7 +34,7 @@ def test_original_qml_two_nonzero_bindings_and_absolute_phase(
 ) -> None:
     bindings = {"input_0": input_0, "weight_0": weight_0}
     source = Path(
-        "examples/synthesis/tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/comparisons/source.qmod"
+        "tests/fixtures/classiq_qmod/corpus/original/tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide.qmod"
     )
     reference = fq.run(
         fq.Circuit(1, dtype=torch.complex128).rx(0, theta=input_0 + weight_0)

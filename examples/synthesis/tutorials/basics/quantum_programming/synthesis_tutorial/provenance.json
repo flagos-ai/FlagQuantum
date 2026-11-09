@@ -1,0 +1,6 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "4dbff47c68a449c918d30cdb63d8398de7084f02617e604d82c24191bcbfea8b",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

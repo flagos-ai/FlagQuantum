@@ -27,7 +27,7 @@ def test_all_sixteen_basis_inputs_of_output_arithmetic_helper(x, y):
 def test_nested_helpers_replace_flat_source_behind_same_consumer(
     tmp_path, objective, producer
 ):
-    from examples.synthesis.tutorials.qmod.qmod_helpers.main import SOURCE
+    from tools.synthesis_import_examples.qmod_helpers.main import SOURCE
 
     if producer == "file":
         path = tmp_path / "helpers.qmod"
@@ -87,7 +87,7 @@ def test_invalid_calls_never_plan(monkeypatch, body):
 
 
 def test_synthesis_never_executes_and_source_metadata_is_retained(monkeypatch):
-    from examples.synthesis.tutorials.qmod.qmod_helpers.main import SOURCE
+    from tools.synthesis_import_examples.qmod_helpers.main import SOURCE
 
     monkeypatch.setattr(_api, "run", lambda *a, **k: pytest.fail("synthesis executed"))
     program = synth.synthesize(SOURCE, source_format="qmod", source_name="helpers.qmod")

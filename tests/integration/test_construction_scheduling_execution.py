@@ -23,7 +23,7 @@ pytestmark = pytest.mark.integration
 
 def test_workspace_example_runs_the_fixed_cost_table_and_both_cpu_paths() -> None:
     result = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis.tutorials.workspace.workspace.main"],
+        [sys.executable, "-m", "tools.synthesis_compiler_examples.workspace.main"],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,

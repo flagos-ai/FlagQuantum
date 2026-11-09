@@ -1,17 +1,18 @@
-# Synthesis algorithms
+# Algorithms
 
-The [complete original Qmod catalog](../CATALOG.md) includes **53** classified
-algorithms cases, with source, execution and native/Circuit availability.
-The table below lists the existing teaching examples.
+Native FlagQuantum programs currently available:
 
-| Example | Entry profile |
-| --- | --- |
-| [amplitude_amplification/amplification_iterations](amplitude_amplification/amplification_iterations/README.md) | High-level Python example |
-| [amplitude_amplification/exact_amplification](amplitude_amplification/exact_amplification/README.md) | High-level Python example |
-| [grover/grover](grover/grover/README.md) | High-level Python example |
-| [grover/predicate_oracle](grover/predicate_oracle/README.md) | High-level Python example |
-| [hamiltonian_simulation/controlled_evolution](hamiltonian_simulation/controlled_evolution/README.md) | High-level Python example |
-| [hamiltonian_simulation/large_pauli](hamiltonian_simulation/large_pauli/README.md) | High-level Python example |
-| [hidden_shift/quantum_callbacks](hidden_shift/quantum_callbacks/README.md) | High-level Python example |
-| [phase_estimation/static_qpe](phase_estimation/static_qpe/README.md) | High-level Python example |
-| [state_preparation/swap_test](state_preparation/swap_test/README.md) | High-level Python example |
+- [quantum_autoencoder](machine_learning/quantum_autoencoder/README.md)
+- [classical_shadow_tomography](metrology/classical_shadow_tomography/README.md)
+- [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
+
+## Additional FlagQuantum teaching examples
+
+- [amplification_iterations](amplitude_amplification/amplification_iterations/main.py)
+- [grover](grover/grover/main.py)
+- [predicate_oracle](grover/predicate_oracle/main.py)
+- [large_pauli](hamiltonian_simulation/large_pauli/main.py)
+- [static_qpe](phase_estimation/static_qpe/main.py)
+- [swap_test](state_preparation/swap_test/main.py)
+
+See the [full migration inventory](../MIGRATION_STATUS.md).

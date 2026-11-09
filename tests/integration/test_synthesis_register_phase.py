@@ -11,7 +11,6 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis.tutorials.control.register_phase.main import phase_composition
 from flagquantum import _api
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import Definition, capture
@@ -29,6 +28,7 @@ from flagquantum.services._synthesis_registers import synthesize_registers
 from flagquantum.services.synthesis import SynthesisError
 from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers
+from tools.synthesis_compiler_examples.register_phase.main import phase_composition
 
 pytestmark = pytest.mark.integration
 MEMORY = 256 * 1024**2
@@ -306,7 +306,7 @@ def test_private_contributor_example_runs_through_existing_program_and_named_rea
         [
             sys.executable,
             "-m",
-            "examples.synthesis.tutorials.control.register_phase.main",
+            "tools.synthesis_compiler_examples.register_phase.main",
         ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,

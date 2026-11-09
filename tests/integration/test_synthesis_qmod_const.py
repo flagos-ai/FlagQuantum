@@ -7,13 +7,13 @@ from typing import Literal
 import pytest
 
 import flagquantum as fq
-from examples.synthesis.tutorials.qmod.qmod_const.main import SOURCE
 from flagquantum import _api, synth
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
 from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import tutorial_program
+from tools.synthesis_import_examples.qmod_const.main import SOURCE
 
 pytestmark = pytest.mark.integration
 

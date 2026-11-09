@@ -41,8 +41,6 @@ These examples do not use that alias:
 - [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
   converts repeated-slot dynamic records to reference-normalized detector and
   observable flips using explicit measurement ordinals.
-- [`synthesis/run_qmod.py`](synthesis/run_qmod.py) verifies catalog source hashes
-  and delegates execution to the existing Qmod corpus audit tool.
 
 - [`qec/compiled_measurement_sampler.py`](qec/compiled_measurement_sampler.py)
   reuses one Clifford sampler for dense records, packed records and a b8 file

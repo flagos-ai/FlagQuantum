@@ -4,6 +4,7 @@ import cmath
 import importlib
 import importlib.util
 import json
+import runpy
 from pathlib import Path
 
 import pytest
@@ -31,18 +32,32 @@ from flagquantum.synth import (
     prepare_state,
     qfunc,
 )
-from tools.synthesis_catalog import ROOT, Case, load_catalog
+from tools.synthesis_catalog import ROOT
 
 pytestmark = pytest.mark.integration
-NATIVE_CASES = [case for case in load_catalog()["cases"] if case["native_comparison"]]
+NATIVE_COMPARISONS = sorted(
+    (ROOT / "examples/synthesis").rglob("comparisons/circuit.py")
+)
+SOURCE_COMPARISONS = sorted(
+    (ROOT / "tests/fixtures/classiq_qmod/example_references").rglob(
+        "comparisons/circuit.py"
+    )
+)
 
 
-@pytest.mark.parametrize("case", NATIVE_CASES, ids=lambda case: case["id"])
-def test_original_native_and_independent_circuit(case: Case) -> None:
-    assert case["native_comparison"] is not None
-    path = Path(case["native_comparison"])
-    module = importlib.import_module(".".join(path.with_suffix("").parts))
-    module.run_example()
+@pytest.mark.parametrize(
+    "path", NATIVE_COMPARISONS, ids=lambda path: str(path.relative_to(ROOT))
+)
+def test_native_and_independent_circuit(path: Path) -> None:
+    runpy.run_path(str(path), run_name="__main__")
+
+
+@pytest.mark.parametrize(
+    "path", SOURCE_COMPARISONS, ids=lambda path: str(path.relative_to(ROOT))
+)
+def test_original_source_reference_remains_a_test_only_check(path: Path) -> None:
+    """Preserve the former three-form checks outside the native user library."""
+    runpy.run_path(str(path), run_name="__main__")
 
 
 @qfunc

@@ -7,14 +7,6 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis.tutorials.composition.local_registers.main import (
-    local_composition,
-)
-from examples.synthesis.tutorials.composition.register_cleanup.main import (
-    copy_reference,
-    flag_value,
-    less,
-)
 from flagquantum import _api, synth
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import capture
@@ -44,6 +36,14 @@ from flagquantum.services.synthesis import SynthesisError
 from tests.integration.test_construction_register_execution import _check
 from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers
+from tools.synthesis_compiler_examples.local_registers.main import (
+    local_composition,
+)
+from tools.synthesis_compiler_examples.register_cleanup.main import (
+    copy_reference,
+    flag_value,
+    less,
+)
 
 pytestmark = pytest.mark.integration
 MEMORY = 64 * 1024**2

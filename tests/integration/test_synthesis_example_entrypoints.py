@@ -28,7 +28,11 @@ def _run(name: str, *args: str) -> str:
         [
             sys.executable,
             "-m",
-            f"examples.synthesis.tutorials.getting_started.{name}.main",
+            (
+                "tools.synthesis_import_examples.source_trial.main"
+                if name == "source_trial"
+                else f"examples.synthesis.tutorials.getting_started.{name}.main"
+            ),
             *args,
         ],
         cwd=ROOT,
