@@ -57,6 +57,7 @@ def test_low_rank_reconstructs_signed_interactions_and_correction() -> None:
                     2 * p + spin
                 ) * annihilate(2 * q + spin)
     expected = fock_matrix(correction, width)
+    density_squares = []
     for weight, factor in zip(factors.eigenvalues, factors.factors, strict=True):
         density = FermionOperator()
         for p in range(2):
@@ -66,7 +67,9 @@ def test_low_rank_reconstructs_signed_interactions_and_correction() -> None:
                         2 * p + spin
                     ) * annihilate(2 * q + spin)
         matrix = fock_matrix(density, width)
-        expected = expected + 0.5 * weight * matrix @ matrix
+        contribution = 0.5 * weight * matrix @ matrix
+        density_squares.append(contribution)
+        expected = expected + contribution
     interaction = MolecularProblem(
         torch.zeros_like(molecule.one_body), molecule.two_body, 2
     )
@@ -74,15 +77,14 @@ def test_low_rank_reconstructs_signed_interactions_and_correction() -> None:
         expected, fock_matrix(fermion_hamiltonian(interaction), width)
     )
     truncated = decompose_two_body(molecule.two_body, rank=1)
+    torch.testing.assert_close(truncated.correction, factors.correction)
     delta = molecule.two_body - torch.einsum(
         "l,lpq,lrs->pqrs", truncated.eigenvalues, truncated.factors, truncated.factors
     )
-    error = fock_matrix(
-        fermion_hamiltonian(
-            MolecularProblem(torch.zeros_like(molecule.one_body), delta, 2)
-        ),
-        width,
-    )
+    # The truncated density-square model retains the full contraction, rather
+    # than replacing the ERI and contracting that different tensor again.
+    approximate = fock_matrix(correction, width) + density_squares[0]
+    error = fock_matrix(fermion_hamiltonian(interaction), width) - approximate
     assert (
         float(torch.linalg.matrix_norm(error, ord=2))
         <= truncated.discarded_bound + 1e-10
