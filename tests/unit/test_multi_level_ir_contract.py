@@ -881,3 +881,45 @@ def test_register_rebindings_reject_declared_width_tampering():
         )
     }
     assert "program.register_type" in codes
+
+
+def test_register_workspace_keeps_zero_width_ownership():
+    from tests.unit.test_program_workspace import workspace_function
+
+    function = workspace_function(0)
+    assert (
+        level_boundary.verify_program_record(level_boundary.ProgramRecord((function,)))
+        == ()
+    )
+    block = function.blocks[0]
+    invalid = dataclasses.replace(
+        function, blocks=(dataclasses.replace(block, operations=block.operations[:1]),)
+    )
+    codes = {
+        d.code
+        for d in level_boundary.verify_program_record(
+            level_boundary.ProgramRecord((invalid,))
+        )
+    }
+    assert "value.linear_unconsumed" in codes
+
+
+def test_register_workspace_requires_explicit_dirty_flags():
+    from tests.unit.test_program_workspace import workspace_function
+
+    function = workspace_function(1)
+    block = function.blocks[0]
+    changed = dataclasses.replace(block.operations[0], workspace_dirty=None)
+    invalid = dataclasses.replace(
+        function,
+        blocks=(
+            dataclasses.replace(block, operations=(changed, *block.operations[1:])),
+        ),
+    )
+    codes = {
+        d.code
+        for d in level_boundary.verify_program_record(
+            level_boundary.ProgramRecord((invalid,))
+        )
+    }
+    assert "program.register_structure" in codes

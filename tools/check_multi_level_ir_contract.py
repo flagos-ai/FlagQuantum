@@ -51,7 +51,7 @@ SKIPPED_DIRECTORIES = frozenset(
 CANONICAL_KIND = "flagquantum.circuit_ir"
 
 EXPECTED_SCHEMA = "flagquantum.multi_level_ir_internal_contract"
-EXPECTED_VERSION = "0.7"
+EXPECTED_VERSION = "0.8"
 EXPECTED_STATUS = "implementation_authorized"
 EXPECTED_OWNER = "core"
 EXPECTED_PUBLIC_LEVEL = "circuit"
@@ -147,6 +147,10 @@ INTERNAL_ONLY_NAMES = (
 # function that must exist in WITNESS_TESTS. A rule absent from this mapping
 # fails the gate, which is what stops a new rule from being written as prose.
 RULE_READERS: dict[str, tuple[str, ...]] = {
+    "register_workspace": (
+        "test_register_workspace_keeps_zero_width_ownership",
+        "test_register_workspace_requires_explicit_dirty_flags",
+    ),
     "register_rebindings": (
         "test_register_rebindings_preserve_zero_width_ownership",
         "test_register_rebindings_reject_declared_width_tampering",

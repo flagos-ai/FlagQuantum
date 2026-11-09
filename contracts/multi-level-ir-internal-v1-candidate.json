@@ -1,6 +1,6 @@
 {
   "schema": "flagquantum.multi_level_ir_internal_contract",
-  "version": "0.7",
+  "version": "0.8",
   "status": "implementation_authorized",
   "owner": "core",
   "approval_basis": "docs/development/API_CHANGE_IMPLEMENTATION_076_DYNAMIC_PROGRAM_IR_LOWERING.md",
@@ -303,7 +303,8 @@
     "no_second_pass_manager": "This boundary adds levels to the pass infrastructure that already exists at flagquantum.compiler.pass_manager; it does not introduce a pass manager, a pass registry, an analysis registry, an ExecutableArtifact, or a RuntimeAdapter of its own.",
     "no_root_export": "The boundary module is internal: it is absent from the package root's exports, absent from the Stable Core snapshot, and adds no root export. CircuitIR schema 1.0 and IR_VERSION remain the only public serialized IR identity.",
     "finite_calls": "Finite single-block gate SSA calls resolve unique named definitions in the same module, require explicit typed returns, reject cycles including unreachable definitions, and preserve exact linear consumption. Explicit returns are independently attested in physical wire order during public restoration. Proposal 103 prerequisite 1.1 defines this internal scope.",
-    "register_rebindings": "Proposal 103 prerequisite 1.2 admits finite concrete quantum bit/opaque/uint register words with unique element identities, producer-derived types and single consumption including zero width. Typed split/join only rebind ordered MSB-first gate SSA. Missing types, invalid ports, aliases and incompatible returns are refused. Canonical public restoration requires verified Compiler lowering."
+    "register_rebindings": "Proposal 103 prerequisite 1.2 admits finite concrete quantum bit/opaque/uint register words with unique element identities, producer-derived types and single consumption including zero width. Typed split/join only rebind ordered MSB-first gate SSA. Missing types, invalid ports, aliases and incompatible returns are refused. Canonical public restoration requires verified Compiler lowering.",
+    "register_workspace": "Proposal 103 prerequisite 1.5 admits explicit allocate_register and free_register ownership in finite packed-word functions. Allocation defines one word with an explicit concrete descriptor. Free consumes one producer-typed word. Both require built-in boolean workspace_dirty and refuse primitive, condition, physical or callee metadata. Zero-width ownership remains linear. Acceptance proves typed lifetimes only. Physical lowering requires separate workspace scheduling and numerical restoration evidence."
   },
   "exclusions": [
     "no general-purpose classical language: recursion, unbounded loops, dynamic memory, exceptions, closures, or higher-order values",
