@@ -104,6 +104,11 @@ and prints the request hex next to the response status.
 
 ## Evidence status
 
+The [realtime and QEC integration reservation](../../../docs/architecture/REALTIME_QEC_INTEGRATION_BOUNDARY.md)
+maps a proposed decoder adapter onto these existing interfaces and records the
+semantic gates before implementation. It adds no QEC dependency, execution mode,
+package move or hardware claim; ARCH-013 remains the approved boundary.
+
 No hardware was contacted and no hardware evidence exists. A realtime link has
 never been established by this package, and no latency, throughput, or scalability
 number is claimed or measurable here. The capability maturity entry for this

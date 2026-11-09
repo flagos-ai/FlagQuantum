@@ -27,6 +27,7 @@ tests. An implemented path is not automatically a release-certified capability.
 - [Discrete-event simulation design](DES_FRAMEWORK_ARCHITECTURE.md)
 - [Architecture decisions](decisions/README.md)
 - [QEC and FTQC protocol ownership proposal](QEC_FTQC_PROTOCOL_BOUNDARY.md)
+- [Realtime and QEC integration reservation](REALTIME_QEC_INTEGRATION_BOUNDARY.md)
 
 These documents retain design rationale, proposed interfaces, and recorded
 approval boundaries. Their original baselines and phase checklists do not

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -17,6 +18,7 @@ def _run() -> str:
         check=True,
         capture_output=True,
         text=True,
+        timeout=30,
     )
     return completed.stdout
 
@@ -27,6 +29,40 @@ def test_realtime_device_call_user_example_runs_end_to_end() -> None:
     assert "FlagQuantum realtime device call check passed" in stdout
     assert "registered channels: ('host-dispatch',)" in stdout
     assert "round 1 correction: 1" in stdout
+
+
+def test_realtime_round_trip_does_not_require_qec() -> None:
+    """Keep the messaging workflow usable before a QEC adapter is admitted."""
+    root = Path(__file__).resolve().parents[2]
+    script = textwrap.dedent("""\
+        import importlib.abc
+        import runpy
+        import sys
+
+        class RejectQEC(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path=None, target=None):
+                if fullname == "flagquantum.qec" or fullname.startswith("flagquantum.qec."):
+                    raise AssertionError(f"Messaging unexpectedly requires {fullname}")
+
+        sys.meta_path.insert(0, RejectQEC())
+        runpy.run_module("examples.remote.realtime_device_call", run_name="__main__")
+        assert not any(
+            name == "flagquantum.qec" or name.startswith("flagquantum.qec.")
+            for name in sys.modules
+        )
+        """)
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert "round 1 correction: 1" in completed.stdout
+    assert "mismatched schema status: -2" in completed.stdout
+    assert "FlagQuantum realtime device call check passed" in completed.stdout
 
 
 def test_the_wire_format_is_stated_rather_than_implied() -> None:
