@@ -832,3 +832,109 @@ are collapsed. Contradictory clauses are omitted. If every clause is false, the
 conditional gate forwards its quantum operands to its results and emits no gate.
 This is exact specialization under the native call binding, recorded separately
 from unchanged upstream decomposition parity. It requires no new boolean opcode.
+
+
+## Packed register and gate rebindings prerequisite 1.2
+
+This contract prerequisite fixes the representation before the next Core and
+Compiler implementation. Contract 0.6 remains the executable authority until
+that independent implementation lands. Source-backed witnesses in
+`test_register_rebinding_contract.py` exercise the unchanged builder, including
+zero-width scalar ownership and failed join consumption. They do not implement
+native register execution. Existing numerical codecs and physical-wire
+split/join helpers remain authoritative in their own domains.
+
+### Exact storage and type derivation
+
+Append `FunctionRecord.registers: tuple[Register, ...] | None = None` and
+`Operation.register_type: RegisterType | None = None` after existing fields.
+Default fields preserve the existing hash tuple and physical JSON schemas.
+`register_type` is present only on `join_register`. Its exact immutable neutral
+descriptor states the destination word type, including width zero. A split
+infers its word descriptor from its operand's defining port or join. No mutable
+type environment, foreign dtype or table payload is persisted beside the graph.
+
+Add the internal linear value kind `register`. A value identifies one owned
+logical element, even at width zero. Function arguments bind left ports and
+returns bind right ports in declaration order, then each port's row-major
+`all_idxs()` order. Empty-shaped arrays contribute no values. Each element has
+a distinct `(scope, index)`. The existing collection helper groups metadata
+around a supplied identity and must not allocate executable identities.
+
+The first executable descriptor set is concrete quantum `bit`, `opaque` and
+`uint`, with built-in integer nonnegative width, zero classical width and no
+extra parameters. `bit` has width one. Metadata constructors retain their wider
+symbolic and negative-width behavior. Executable admission rejects unresolved,
+negative, classical or unsupported descriptors before lowering. This bounded
+admission does not silently reinterpret other encodings.
+
+A register function has one explicit-return block. Every declared argument and
+return has kind `register`. Its body may also contain gate-level SSA values.
+A gate function retains `registers=None` and cannot accept or return a register
+value. Calls bind the resolved entry/return kinds and, for register values, the
+producer's inferred descriptor against the callee's declared descriptors through
+the existing LOOSE predicate. Register-type flow comes from function inputs,
+resolved call outputs and join target descriptors. Returned bindings are checked
+against right ports through that same predicate. Direct cross-profile operands
+are refused. A register function may call a gate leaf after explicitly splitting
+its words into qubits and rejoin those qubit successors before returning words.
+
+### Rebinding operations
+
+`split_register` consumes exactly one `register` and defines one ordered `qubit`
+per bit of its inferred descriptor. `join_register` consumes the declared
+number of ordered qubits and defines exactly one `register` with its stated
+descriptor. These primitive qubit SSA values are the existing gate values, so
+no second logical-bit kind or bridge graph is introduced. Source QBit register
+handles in the eventual source-like builder still require the builder's explicit
+binding policy. They must not be confused with untyped numerical booleans.
+
+Both rebindings forbid conditions, literals, primitive parameter bindings,
+physical data and callees. A split forbids `register_type` because its producer
+already states that type. A join requires it, including zero width. Type and
+arity inference must not rely on the operation's claimed result count. Existing
+def-use and linear-consumption checks apply to both words and qubits. A stale
+word, duplicated bit, omitted split bit or unreturned zero-width word is invalid.
+For width zero, split consumes one owned word and yields no bits, while join
+consumes no bits and creates a fresh owned word. There is no physical allocation
+or quantum zero claim in either operation.
+
+### Compiler lowering and attestation
+
+Compiler expands register words into ordered tuples of the existing qubit SSA.
+Input port ordering is declaration/row-major, and the bit order inside each word
+is MSB first, as in the accepted Split/Join wire helpers. Split and join only
+rebind tuples. Reordered join operands retain their order, with no emitted SWAP.
+An entry register function lowers to one gate function, with explicit flat
+qubit arguments and returns. Canonical-payload attestation still runs through
+Core's existing gate restoration after lowering. A returned bit permutation
+cannot disappear behind an unchanged payload. If callers need a physical output
+permutation, that mapping must be explicitly represented and accepted at its
+own boundary. Zero-width logical identities disappear from physical tuples only
+after their ownership has been verified.
+
+Finite nested calls use invocation-local maps and explicit traversal stacks.
+The current `inline_program_calls` gate-only consumer must either lower an
+admitted register graph first or refuse it explicitly. It must not accidentally
+inline register words as gate operands. Source-free production lowering imports
+no upstream graph or numerical simulator and assigns no cost to rebindings.
+Existing Add/QROM primitive streams, source dependencies, measurement feedback,
+all four complex-amplitude histories, work cleanup and independent cost models
+are reused as replacement tests after actual implementation.
+
+### Source witness boundaries
+
+The source builder consumes a scalar zero-width word through Split, records its
+instance and produces an empty bit array. Join of that empty array records a new
+zero-width word. Shaped empty outputs have no element handles. Duplicate-bit
+joins fail after consuming their first input, reserve their instance number and
+retain the consumed prefix. A dtype width mismatch can consume the available
+prefix before array indexing fails. Construction-time mutation belongs to the
+later Compiler builder and is distinct from immutable Core graph validation.
+No such failed state may be admitted merely because its source builder exists.
+
+A source classical-value zero-width failure remains separate from a valid
+zero-wire graph rebinding. Existing `test_register_split_join.py` already
+records that numerical codec boundary, physical permutation amplitudes and zero
+bookkeeping gate resources. Reuse those tests without weakening their source
+exceptions or claiming numerical zero-width support from structural evidence.
