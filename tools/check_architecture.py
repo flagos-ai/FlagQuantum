@@ -6,6 +6,7 @@ from __future__ import annotations
 import ast
 import json
 import sys
+from importlib.util import resolve_name
 from pathlib import Path
 
 try:
@@ -129,6 +130,48 @@ def _module_name(path: Path, package_root: Path) -> str:
     if parts[-1] == "__init__":
         parts = parts[:-1]
     return ".".join((package_root.name, *parts))
+
+
+def _realtime_dependency_errors(path: Path) -> tuple[str, ...]:
+    """Keep realtime independent and preserve its unadmitted consumer boundary."""
+    relative = path.relative_to(PACKAGE)
+    domain = relative.parts[0]
+    consumers = CONFIG["realtime_boundaries"]["forbidden_consumers"]
+    if domain != "realtime" and domain not in consumers:
+        return ()
+    module = _module_name(path, PACKAGE)
+    package = module if path.name == "__init__.py" else module.rpartition(".")[0]
+    errors: list[str] = []
+    for node in ast.walk(ast.parse(path.read_text(encoding="utf-8-sig"))):
+        if isinstance(node, ast.Import):
+            candidates = [alias.name for alias in node.names]
+        elif isinstance(node, ast.ImportFrom):
+            base = node.module or ""
+            if node.level:
+                base = resolve_name("." * node.level + base, package)
+            candidates = [base, *(f"{base}.{alias.name}" for alias in node.names)]
+        else:
+            continue
+        for candidate in candidates:
+            own = candidate == "flagquantum.realtime" or candidate.startswith(
+                "flagquantum.realtime."
+            )
+            compatibility = (
+                candidate == "flagquantum.remote.realtime"
+                or candidate.startswith("flagquantum.remote.realtime.")
+            )
+            if domain == "realtime":
+                if not own and candidate.split(".")[0] not in sys.stdlib_module_names:
+                    errors.append(
+                        f"{path.relative_to(ROOT)}: realtime may import only itself "
+                        f"and the standard library: {candidate}"
+                    )
+            elif own or compatibility:
+                errors.append(
+                    f"{path.relative_to(ROOT)}: {domain} imports realtime before "
+                    f"integration admission: {candidate}"
+                )
+    return tuple(dict.fromkeys(errors))
 
 
 def _is_type_checking_guard(node: ast.expr) -> bool:
@@ -283,6 +326,8 @@ def _imports_jax_executor(path: Path) -> bool:
 
 def architecture_errors() -> tuple[str, ...]:
     errors = list(_long_horizon_contract_errors())
+    if not (ROOT / CONFIG["realtime_boundaries"]["approval"]).is_file():
+        errors.append("realtime boundary approval record is missing")
     for cycle in eager_import_cycles():
         errors.append("eager import cycle: " + " -> ".join((*cycle, cycle[0])))
     allowed_package_directories = set(
@@ -445,6 +490,7 @@ def architecture_errors() -> tuple[str, ...]:
                 )
 
     for path in sorted(PACKAGE.rglob("*.py")):
+        errors.extend(_realtime_dependency_errors(path))
         relative = path.relative_to(ROOT).as_posix()
         imports = _imports(path)
         if relative.startswith(NON_JAX_EXECUTORS) and _imports_jax_executor(path):

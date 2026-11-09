@@ -185,7 +185,7 @@ These examples do not use that alias:
   circuit the declared device can actually run, so a provider sees the whole path
   end to end without FlagQuantum changing to accept the device.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
-- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) — it imports
+- [`realtime/device_call.py`](realtime/device_call.py) — it imports
   the realtime messaging module directly, because the feedback loop it models is
   a channel between two programs rather than a program to run.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —

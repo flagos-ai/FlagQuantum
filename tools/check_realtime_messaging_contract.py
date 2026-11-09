@@ -6,7 +6,7 @@ payload type system, the status vocabulary, the function-id hash, and the
 device-call abstraction, so a hardware partner can implement a channel without
 reading this repository's source. A contract nobody reads is decoration, so this
 gate is its reader: every section of the contract is reconciled with
-``flagquantum.remote.realtime`` rather than with a second copy of the same
+``flagquantum.realtime`` rather than with a second copy of the same
 numbers.
 
 Two claims are checked against sources outside this repository, because a
@@ -30,13 +30,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from flagquantum.remote import realtime as rt
-from flagquantum.remote.realtime import protocol as realtime_protocol
+from flagquantum import realtime as rt
+from flagquantum.realtime import protocol as realtime_protocol
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTRACT = ROOT / "contracts" / "realtime-messaging-v1-candidate.json"
 WITNESS_TESTS = ROOT / "tests" / "unit" / "test_realtime_protocol.py"
-PACKAGE_INIT = ROOT / "flagquantum" / "remote" / "realtime" / "__init__.py"
+PACKAGE_INIT = ROOT / "flagquantum" / "realtime" / "__init__.py"
 
 EXPECTED_SCHEMA = "flagquantum.realtime_messaging_contract"
 EXPECTED_SCHEMA_VERSION = "1.0"

@@ -1,7 +1,8 @@
 # Realtime and QEC Integration Reservation
 
-Status: Proposed integration direction; architecture review only. No new API,
-package, wire schema, dependency exception, or execution mode is admitted.
+Status: Proposed QEC integration direction; architecture review only. Package
+placement is separately approved by ARCH-014. No QEC adapter, wire schema,
+dependency exception or execution mode is admitted by this reservation.
 
 ## Purpose and current authority
 
@@ -11,8 +12,9 @@ contract. Protocol work can proceed now; a QEC adapter needs a bounded, reviewed
 decoder workflow, rather than maturity of every QEC algorithm.
 
 [ARCH-013](decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md)
-remains the approved authority. Its implementation lives in
-[`flagquantum.remote.realtime`](../../flagquantum/remote/realtime/README.md):
+remains the protocol authority; its placement is superseded by
+[ARCH-014](decisions/ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md). The implementation lives in
+[`flagquantum.realtime`](../../flagquantum/realtime/README.md):
 headers and payloads, function tables, channel selection, sessions, and an
 offline loopback transport. The
 [messaging contract](../../contracts/realtime-messaging-v1-candidate.json) and
@@ -27,9 +29,9 @@ correctness or a deadline guarantee.
 
 | Concern | Existing owner | Reservation for a later integration |
 | --- | --- | --- |
-| Headers, payload types, handler dispatch, channel and session interfaces | `remote.realtime` | Keep messages domain neutral; accept an application-supplied handler through the existing function table. |
+| Headers, payload types, handler dispatch, channel and session interfaces | `realtime` | Keep messages domain neutral; accept an application-supplied handler through the existing function table. |
 | Code, syndrome meaning, decoding and correction coordinates | `qec` | Preserve existing decoder contracts; define any translation at an explicitly reviewed application boundary. |
-| Circuit lowering and execution | Compiler, Runtime and Simulation | Continue through their existing contracts; no simulator-to-remote import or realtime scheduling inside this package. |
+| Circuit lowering and execution | Compiler, Runtime and Simulation | Continue through their existing contracts; no simulator-to-realtime import or realtime scheduling inside this package. |
 | Transport and physical control | Outside the current software implementation | Require a separate owner, concrete implementation and conformance evidence before admission. Remote does not acquire direct device lifecycle ownership. |
 | Composition of decoder and messaging | Candidate application adapter, placement subject to review | Translate approved domain records to an existing `HandlerSchema` and back; do not create another decoder or execution engine. |
 
@@ -38,16 +40,12 @@ imports that composition, and realtime modules must not import QEC. A caller
 selects a handler and a channel independently; choosing a decoder must not
 require changing slot framing or transport consumers.
 
-The current package is under `remote`, not a sibling of `runtime`. A future
-top-level `flagquantum.realtime` is an ownership alternative only: it requires a
-separate architectural decision, dependency review and compatibility plan.
-This reservation creates no directory, root export or module alias.
-
-The realtime source modules use standard-library and local imports. Importing
-the package still executes the existing `remote` initializer and its provider
-imports, including Compiler/Core and PyTorch dependencies. This proposal does
-not claim transitive isolation from those packages. The executable guard below
-checks the narrower requirement that the software round trip needs no QEC.
+The implementation now lives at `flagquantum.realtime`, beside Runtime and
+Remote. ARCH-014 preserves the old `flagquantum.remote.realtime` imports through
+a frozen adapter. Canonical realtime modules import only the standard library
+and themselves; the fresh-process round trip below rejects Remote, Compiler,
+Runtime, Simulation, QEC and PyTorch imports. Using the old compatibility path
+still executes its Remote parent initializer.
 
 ## Contract questions before a QEC adapter
 
@@ -93,7 +91,7 @@ their existing evidence process.
 From the checkout with a supported core installation:
 
 ```bash
-python -m examples.remote.realtime_device_call
+python -m examples.realtime.device_call
 python tools/check_realtime_messaging_contract.py
 python -m pytest tests/unit/test_realtime_protocol.py tests/integration/test_realtime_device_call_golden_path.py -q
 ```
@@ -110,6 +108,6 @@ FlagQuantum realtime device call check passed
 ```
 
 The integration tests also run this same workflow in a fresh interpreter that
-rejects imports of `flagquantum.qec` and its descendants. This witnesses the
+rejects imports of Remote, Compiler, Runtime, Simulation, QEC and PyTorch. This witnesses the
 current ability to exercise messaging before a QEC adapter exists; it does not
 validate the proposed adapter, a hardware transport or a timing budget.
