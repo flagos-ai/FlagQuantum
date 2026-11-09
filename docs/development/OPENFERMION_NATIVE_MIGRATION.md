@@ -56,3 +56,60 @@ Integration-owned boundary changes precede their implementations in local
 history. Keep machine-readable protected API snapshots unchanged. Stop only the
 affected part if an unavoidable stable contract conflict is discovered and
 present the concrete compatibility options.
+
+## Implemented modules and support matrix
+
+| Module | Owns | Verified scope |
+| --- | --- | --- |
+| core.algebra.pauli | Complex canonical Pauli values | Standard library, no circuit or tensor dependency |
+| algorithms.fermion.encoding | General operator and occupation encoding | JW, prefix parity, Fenwick BK; explicit idle width |
+| algorithms.fermion.observables | Hermitian measurement boundary | Complex values validated before native Observable conversion |
+| algorithms.fermion.symmetry | Selected diagonal parity sectors | Independent encoded Z products; affine state embedding |
+| algorithms.chemistry_domain | Static molecular data and active selections | Real spatial chemist ERIs, closed shell, interleaved spin, explicit offsets |
+| ecosystem.chemistry.pyscf | Optional RHF integral driver | H2 STO-3G/6-31G, LiH STO-3G; native data returned immediately |
+| algorithms.fermion.decomposition | Adjacent orbital unitary factors | Complex unitary reconstruction and determinant phase |
+| algorithms.fermion.lowering | Small native orbital gates | JW occupation order; one- and two-qubit matrices |
+| algorithms.fermion.preparation | Slater and canonical Gaussian vacua | Complex minors, canonical annihilator constraints, even/odd parity |
+| algorithms.fermion.low_rank | Signed density-square factors | Real chemist ERIs, explicit rank, full one-body correction |
+| algorithms.fermion.swap_network | Adjacent FSWAP and output ordering | Every logical pair once; explicit final layout and fermion signs |
+| algorithms.fermion.evolution | First/second-order product formulas | JW full register, exact offset phase, differentiable scalar time |
+
+All execution evidence here is local CPU complex128. Static decompositions own
+CPU snapshots and reject autograd inputs. Time differentiation is verified with
+finite differences; geometry, integrals, orbital frames, rank selection and
+Gaussian block differentiation are unsupported. Encoding and reduction results
+are separate contracts: preparation/evolution circuits do not accept encoded or
+reduced values and always use the unreduced JW occupation register.
+
+The swap network is independently usable and tested. Low-rank evolution uses
+explicit density-pair gates, which may be nonadjacent, and restores its input
+layout after each orbital basis change. It does not insert the swap network or
+claim nearest-neighbor connectivity. This avoids an unnecessary dependency
+between evolution and routing. A future connectivity pass can consume ordinary
+IR and handle this at the compiler boundary.
+
+The low-rank approximation keeps the full contraction correction. Consequently,
+a truncated density-square model is not obtained by simply replacing the ERI
+and recomputing its correction. discarded_bound bounds omitted density-square
+operator norms; it is not a bound on time integration error. The default retains
+all eigenpairs. Dense helpers are bounded inspection paths, not scalability
+implementations.
+
+## Executable workflow and checks
+
+```bash
+python -m examples.algorithms.fermion_chemistry
+# All three encodings: HF energy -1.1166843871 Ha.
+# The example also differentiates a native evolution amplitude with respect to time.
+python -m pytest tests/unit/fermion -q
+python -m pytest tests/integration/test_native_fermion_isolation.py -q
+python -m pytest tests/integration/test_native_chemistry_driver.py -q
+```
+
+The isolation test runs in a fresh interpreter that refuses imports of
+OpenFermion, openfermionpyscf, Cirq, PySCF, SciPy and h5py. It covers chemistry
+data, all encodings, measurement, Slater/Gaussian preparation and differentiable
+evolution. The optional PySCF entry raises an actionable missing-extra error in
+that environment. Independent references use Fock-space ladder action, complex
+Slater minors, annihilator-vacuum residuals and exact quadratic/full Hamiltonian
+matrix exponentials. They do not require OpenFermion or Cirq as test oracles.

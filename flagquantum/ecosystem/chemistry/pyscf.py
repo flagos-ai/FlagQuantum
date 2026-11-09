@@ -29,6 +29,7 @@ def build_molecular_problem(
     charge = operator.index(charge)
     if isinstance(max_cycles, bool) or operator.index(max_cycles) < 1:
         raise ValueError("max_cycles must be a positive integer")
+    max_cycles = operator.index(max_cycles)
     if not math.isfinite(convergence_tolerance) or convergence_tolerance <= 0:
         raise ValueError("convergence_tolerance must be finite and positive")
     if not isinstance(basis, str) or not basis.strip():

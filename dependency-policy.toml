@@ -62,7 +62,7 @@ optional_extra_allowed = false
 
 [import_policy]
 core_allowed_distributions = ["torch", "tomli"]
-core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "numpy", "pennylane", "pymatching", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
+core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "numpy", "openfermion", "openfermionpyscf", "pennylane", "pymatching", "pyscf", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
 
 # A root named here may be referenced in a collected module only behind a guard,
 # and each entry records which other root's guard also covers it. That fact
