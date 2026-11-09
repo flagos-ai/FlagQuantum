@@ -6,6 +6,7 @@ Native FlagQuantum programs currently available:
 - [qml](basics/qml/README.md)
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [execution_tutorial](basics/quantum_programming/execution_tutorial/README.md)
+- [execution_tutorial_part2](basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 
 ## Additional FlagQuantum teaching examples

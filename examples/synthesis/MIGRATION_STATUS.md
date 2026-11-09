@@ -7,13 +7,14 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
+Validated local Notebook workflows: **1/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
 | `algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority` | notebook_workflow | Pending | pending |
 | `algorithms/QML/qgan/qgan_bars_and_strips` | notebook_workflow | Pending | pending |
 | `algorithms/QML/qsvm/qsvm` | notebook_workflow | Pending | pending |
-| `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Validated program only](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
+| `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | Pending | pending |
@@ -173,10 +174,10 @@ No notebook workflow is certified by a quantum-only counterpart.
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization` | notebook_workflow | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_utils` | python_unclassified | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion` | notebook_workflow | Pending | pending |
-| `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Validated program only](algorithms/metrology/classical_shadow_tomography/main.py) | pending |
+| `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Native program](algorithms/metrology/classical_shadow_tomography/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | Pending | pending |
 | `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | Pending | pending |
-| `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Validated program only](algorithms/number_theory_and_cryptography/hidden_shift/main.py) | pending |
+| `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/hidden_shift/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/lchs/lchs` | notebook_workflow | Pending | pending |
@@ -264,7 +265,7 @@ No notebook workflow is certified by a quantum-only counterpart.
 | `applications/optimization/minimum_dominating_set/minimum_dominating_set` | notebook_workflow | Pending | pending |
 | `applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa` | notebook_workflow | Pending | pending |
 | `applications/optimization/rectangles_packing/rectangles_packing_grid` | notebook_workflow | Pending | pending |
-| `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | Pending | pending |
+| `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | [Native program](applications/optimization/robust_posture_optimization/main.py) | pending |
 | `applications/optimization/set_cover/set_cover` | notebook_workflow | Pending | pending |
 | `applications/optimization/set_partition/set_partition` | notebook_workflow | Pending | pending |
 | `applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution` | notebook_workflow | Pending | pending |
@@ -288,7 +289,7 @@ No notebook workflow is certified by a quantum-only counterpart.
 | `community/Hackathons/iQuHack_2025/Workshop/WS_iQuHack_2025_final` | notebook_workflow | Pending | pending |
 | `community/basic_examples/hw_aware_synthesis/hw_aware_synthesis` | notebook_workflow | Pending | pending |
 | `community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob` | notebook_workflow | Pending | pending |
-| `community/basic_examples/superposition/superposition` | notebook_workflow | Pending | pending |
+| `community/basic_examples/superposition/superposition` | notebook_workflow | [Native program](community/basic_examples/superposition/main.py) | validated |
 | `community/basic_examples/vqe/vqe` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Laplacian_BE` | notebook_workflow | Pending | pending |
@@ -299,8 +300,8 @@ No notebook workflow is certified by a quantum-only counterpart.
 | `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/block_encoding/toeplitz_BE_N16` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/block_encoding/tridiagonal_BE_size16` | quantum_program | Pending | pending |
-| `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Validated program only](community/paper_implementation_project/bpde/main.py) | pending |
-| `community/paper_implementation_project/classical_shadows/classical_shadows` | quantum_program | [Validated program only](community/paper_implementation_project/classical_shadows/main.py) | pending |
+| `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Native program](community/paper_implementation_project/bpde/main.py) | pending |
+| `community/paper_implementation_project/classical_shadows/classical_shadows` | quantum_program | [Native program](community/paper_implementation_project/classical_shadows/main.py) | pending |
 | `community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states` | notebook_workflow | Pending | pending |
@@ -327,16 +328,16 @@ No notebook workflow is certified by a quantum-only counterpart.
 | `functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/modulo/modulo_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication` | notebook_workflow | Pending | pending |
-| `functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example` | quantum_program | [Validated program only](functions/arithmetic/multiplication/multiplication_2vars_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/negation/negation_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Validated program only](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Validated program only](functions/hadamard_transform/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1` | quantum_program | Pending | pending |
@@ -347,29 +348,29 @@ No notebook workflow is certified by a quantum-only counterpart.
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Validated program only](functions/state_preparation/prepare_bell_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Validated program only](functions/state_preparation/prepare_ghz_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Validated program only](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state` | quantum_program | [Validated program only](functions/state_preparation/prepare_uniform_trimmed_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_trimmed_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes` | quantum_program | [Validated program only](functions/state_preparation/example_prepare_amplitudes/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state` | quantum_program | [Validated program only](functions/state_preparation/example_prepare_state/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes` | quantum_program | [Native program](functions/state_preparation/example_prepare_amplitudes/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state` | quantum_program | [Native program](functions/state_preparation/example_prepare_state/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/prepare_state_and_amplitudes` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/CRX` | quantum_program | [Validated program only](functions/standard_gates/crx/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/CX` | quantum_program | [Validated program only](functions/standard_gates/cx/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE` | quantum_program | [Validated program only](functions/standard_gates/phase/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/R` | quantum_program | [Validated program only](functions/standard_gates/r/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/RZ` | quantum_program | [Validated program only](functions/standard_gates/rz/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/RZZ` | quantum_program | [Validated program only](functions/standard_gates/rzz/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP` | quantum_program | [Validated program only](functions/standard_gates/swap/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/U` | quantum_program | [Validated program only](functions/standard_gates/u/main.py) | pending |
-| `functions/qmod_library_reference/qmod_core_library/standard_gates/X` | quantum_program | [Validated program only](functions/standard_gates/x/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/CRX` | quantum_program | [Native program](functions/standard_gates/crx/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/CX` | quantum_program | [Native program](functions/standard_gates/cx/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE` | quantum_program | [Native program](functions/standard_gates/phase/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/R` | quantum_program | [Native program](functions/standard_gates/r/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/RZ` | quantum_program | [Native program](functions/standard_gates/rz/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/RZZ` | quantum_program | [Native program](functions/standard_gates/rzz/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP` | quantum_program | [Native program](functions/standard_gates/swap/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/U` | quantum_program | [Native program](functions/standard_gates/u/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/standard_gates/X` | quantum_program | [Native program](functions/standard_gates/x/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/standard_gates/standard_gates` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/qmod_core_library/unitary/unitary` | notebook_workflow | Pending | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk/discrete_quantum_walk` | notebook_workflow | Pending | pending |
@@ -380,23 +381,23 @@ No notebook workflow is certified by a quantum-only counterpart.
 | `tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe` | notebook_workflow | Pending | pending |
 | `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | Pending | pending |
 | `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | Pending | pending |
-| `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Validated program only](tutorials/basics/entanglement/main.py) | pending |
+| `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | pending |
 | `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | Pending | pending |
-| `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Validated program only](tutorials/basics/qml/main.py) | pending |
+| `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/main.py) | pending |
 | `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | Pending | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Validated program only](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial` | notebook_workflow | [Validated program only](tutorials/basics/quantum_programming/execution_tutorial/main.py) | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2` | notebook_workflow | Pending | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Validated program only](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial/main.py) | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial_part2/main.py) | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | Pending | pending |

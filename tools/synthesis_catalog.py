@@ -175,6 +175,16 @@ def verify_catalog(catalog: Catalog) -> None:
                 or not (ROOT / reference).is_file()
             ):
                 raise ValueError(f"missing validation source: {reference}")
+        for companion in case["companion_files"]:
+            if companion["path"].endswith(".synthesis_options.json") and asset_path(
+                companion["path"]
+            ) not in {
+                asset_path(source["path"]).with_suffix(".synthesis_options.json")
+                for source in (case["original"], case["approved"])
+            }:
+                raise ValueError(
+                    f"companion preferences are not adjacent to their source: {case['id']}"
+                )
         assets.extend([case["original"], case["approved"], *case["companion_files"]])
     for asset in assets:
         if (
@@ -231,6 +241,10 @@ def render(catalog: Catalog) -> dict[Path, str]:
     )
     groups = inventory["groups"]
     source_count = sum(len(group["sources"]) for group in groups)
+    notebooks = [group for group in groups if group["kind"] == "notebook_workflow"]
+    validated_workflows = sum(
+        group["workflow_status"] == "validated" for group in notebooks
+    )
     lines = [
         "# Native FlagQuantum example library",
         "",
@@ -238,6 +252,7 @@ def render(catalog: Catalog) -> dict[Path, str]:
         "Original source files and importer launchers are test/development evidence, not examples.",
         "",
         f"Validated quantum-program counterparts: **{len(available)}/216**.",
+        f"Validated local Notebook workflows: **{validated_workflows}/{len(notebooks)}**.",
         f"Expanded inventory: **{source_count}** source artifacts in **{len(groups)}** provisional path groups.",
         "Python groups still require main-case/helper review. A quantum-program counterpart",
         "does not certify its notebook workflow. Pending entries have no runnable placeholder.",
@@ -275,7 +290,23 @@ def render(catalog: Catalog) -> dict[Path, str]:
             category_lines += [
                 "No upstream counterpart has completed native validation in this category yet."
             ]
+        workflows = [
+            group
+            for group in notebooks
+            if group["category"] == category and group["workflow_status"] == "validated"
+        ]
+        if workflows:
+            category_lines += ["", "## Validated local Notebook workflows", ""]
+            lines += ["", "Validated local Notebook workflows:", ""]
+            for group in workflows:
+                path = Path(group["native_program"]["path"]).with_name("README.md")
+                category_lines.append(
+                    "- " + _link(str(path), base / category, path.parent.name)
+                )
+                lines.append("- " + _link(str(path), base, path.parent.name))
+            lines.append("")
         tracked = {case["native_example"] for case in available}
+        tracked.update(group["native_program"]["path"] for group in workflows)
         additional = sorted(
             path
             for path in (base / category).rglob("main.py")
@@ -308,17 +339,14 @@ def render(catalog: Catalog) -> dict[Path, str]:
         "main cases, helpers, data dependencies and verification criteria are reviewed.",
         "",
         "No notebook workflow is certified by a quantum-only counterpart.",
+        f"Validated local Notebook workflows: **{validated_workflows}/{len(notebooks)}**.",
         "",
         "| Upstream group | Kind | Native quantum program | Full workflow |",
         "| --- | --- | --- | --- |",
     ]
     for group in groups:
         native = group["native_program"]
-        link = (
-            _link(native["path"], base, "Validated program only")
-            if native
-            else "Pending"
-        )
+        link = _link(native["path"], base, "Native program") if native else "Pending"
         migration.append(
             f"| `{group['id']}` | {group['kind']} | {link} | {group['workflow_status']} |"
         )

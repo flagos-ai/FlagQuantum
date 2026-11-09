@@ -49,9 +49,7 @@ def test_native_user_library_contains_no_importer_sources_or_calls() -> None:
                 ), path
 
 
-def test_expanded_inventory_tracks_all_five_categories_without_workflow_claims() -> (
-    None
-):
+def test_expanded_inventory_separates_quantum_and_workflow_acceptance() -> None:
     data = json.loads((CATALOG.parent / "native_library_inventory.json").read_text())
     assert set(data["categories"]) == {
         "algorithms",
@@ -71,7 +69,21 @@ def test_expanded_inventory_tracks_all_five_categories_without_workflow_claims()
     }
     for group in groups:
         assert group["category"] == Path(group["id"]).parts[0]
-        assert group["workflow_status"] == "pending"
+        assert group["workflow_status"] in {"pending", "validated"}
+        if group["workflow_status"] == "validated":
+            proof = group["workflow_validation"]
+            assert group["native_program"]
+            assert proof["reviewed_code_cells"]
+            assert (ROOT / proof["acceptance_test"]).is_file()
+            notebook = next(
+                source for source in group["sources"] if source["kind"] == "notebook"
+            )
+            assert proof["git_blob_sha1"] == notebook["git_blob_sha1"]
+            assert proof["upstream_commit"] == data["upstream_commit"]
+            provenance = ROOT / group["native_program"]["path"]
+            assert (
+                json.loads(provenance.with_name("provenance.json").read_text()) == proof
+            )
         if group["native_program"]:
             assert (ROOT / group["native_program"]["path"]).is_file()
 
@@ -151,3 +163,21 @@ def test_original_simple_case_uses_its_recorded_resources() -> None:
     assert observed["stage"] == "execution_smoke_passed"
     for field in ("qubits", "operations", "depth"):
         assert observed[field] == case["recorded_approved"][field]
+
+
+def test_companion_preferences_keep_the_source_basename() -> None:
+    catalog = load_catalog()
+    case = next(case for case in catalog["cases"] if case["companion_files"])
+    case["companion_files"][0]["path"] = catalog["license"]["path"]
+    case["companion_files"][0]["path"] += ".synthesis_options.json"
+    with pytest.raises(ValueError, match="companion preferences"):
+        verify_catalog(catalog)
+
+
+def test_autocallable_companion_precision_is_consumed_after_relocation() -> None:
+    catalog = load_catalog()
+    case = next(case for case in catalog["cases"] if case["companion_files"])
+    observed = run_case(case, catalog, revision="original")
+    assert observed["stage"] == "execution_smoke_passed"
+    for field in ("qubits", "operations", "depth"):
+        assert observed[field] == case["recorded_original"][field]

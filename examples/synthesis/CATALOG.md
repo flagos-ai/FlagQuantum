@@ -3,7 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **28/216**.
+Validated quantum-program counterparts: **30/216**.
+Validated local Notebook workflows: **1/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -16,13 +17,19 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
 
-## Applications (0 native programs)
+## Applications (1 native programs)
 
+- [robust_posture_optimization](applications/optimization/robust_posture_optimization/README.md)
 
 ## Community (2 native programs)
 
 - [bpde](community/paper_implementation_project/bpde/README.md)
 - [classical_shadows](community/paper_implementation_project/classical_shadows/README.md)
+
+Validated local Notebook workflows:
+
+- [superposition](community/basic_examples/superposition/README.md)
+
 
 ## Functions (18 native programs)
 
@@ -45,10 +52,11 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [u](functions/standard_gates/u/README.md)
 - [x](functions/standard_gates/x/README.md)
 
-## Tutorials (5 native programs)
+## Tutorials (6 native programs)
 
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [qml](tutorials/basics/qml/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [execution_tutorial](tutorials/basics/quantum_programming/execution_tutorial/README.md)
+- [execution_tutorial_part2](tutorials/basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
