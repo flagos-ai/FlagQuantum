@@ -4208,7 +4208,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/logistics/vehicle_routing_problem/main.py",
+        "scope": "Complete retained 16-bit 12-layer quantum program. Two nonzero parameter vectors and both width/depth objectives; raw full-state comparison with independent factored classical costs and Circuit parities. Complete Notebook optimizer workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4253,7 +4256,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/electric_grid_optimization/main.py",
+        "scope": "Complete retained eighteen-bit, four-layer electric-grid quantum program. Two nonzero parameter vectors; raw full-state comparison with independent local supply, balance and slack cost factors plus Circuit parities. Notebook optimizer workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4274,7 +4280,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/integer_linear_programming/main.py",
+        "scope": "Complete retained eight-bit, three-layer integer/slack quantum program. Two nonzero parameter vectors, both objectives and independent 256-state cost table/Circuit parity rotations. Full Notebook optimizer workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4760,7 +4769,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/telecom/network_traffic_optimization/main.py",
+        "scope": "Complete retained 24-bit 5-layer quantum program. Two nonzero parameter vectors and both width/depth objectives; raw full-state comparison with independent factored classical costs and Circuit parities. Complete Notebook optimizer workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4802,7 +4814,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/telecom/resiliency_planning/main.py",
+        "scope": "Complete retained 24-bit 20-layer quantum program. Two nonzero parameter vectors and both width/depth objectives; raw full-state comparison with independent factored classical costs and Circuit parities. Complete Notebook optimizer workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4823,7 +4838,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/telecom/resiliency_planning/resiliency_planning_amd/main.py",
+        "scope": "Complete retained 24-bit 20-layer quantum program. Two nonzero parameter vectors and both width/depth objectives; raw full-state comparison with independent factored classical costs and Circuit parities. Complete Notebook optimizer workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

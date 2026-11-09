@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/telecom/resiliency_planning/resiliency_planning_AMD.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "7742c197895a44808e86f4282fdfda5289b1e6030e0900d05b01ad07a622f7d0",
+  "native_entrypoint": "examples.synthesis.applications.telecom.resiliency_planning.resiliency_planning_amd.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_flow_costs.py",
+  "scope": "Complete retained 24-bit 20-layer quantum program. Two nonzero parameter vectors and both width/depth objectives; raw full-state comparison with independent factored classical costs and Circuit parities. Complete Notebook optimizer workflow remains pending.",
+  "native_semantic_adaptations": "Parameters retain interleaved gamma/beta order. Native static loops replace repeat/apply_to_all. Source coefficients, widths and layers are unchanged. No source importer in user examples. Each reference factor enumerates at most six logical bits, with independent Walsh spin-parity Circuit construction; no Compiler algorithms reused. The AMD-named original is byte-identical to the hardware-neutral source; both original paths are verified, and native helpers and reference are shared. Four migrated artifact paths represent three distinct quantum programs."
+}

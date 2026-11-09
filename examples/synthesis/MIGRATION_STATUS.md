@@ -251,10 +251,10 @@ Validated local Notebook workflows: **24/213**.
 | `applications/logistics/facility_location/facility_location` | notebook_workflow | Pending | pending |
 | `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | Pending | pending |
 | `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | Pending | pending |
-| `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | Pending | pending |
+| `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | [Native program](applications/logistics/vehicle_routing_problem/main.py) | pending |
 | `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/main.py) | pending |
-| `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | Pending | pending |
-| `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | Pending | pending |
+| `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | [Native program](applications/optimization/electric_grid_optimization/main.py) | pending |
+| `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/main.py) | pending |
 | `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | Pending | pending |
 | `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | Pending | pending |
 | `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/main.py) | pending |
@@ -277,10 +277,10 @@ Validated local Notebook workflows: **24/213**.
 | `applications/physical_systems/quantum_chaos/quantum_sawtooth_map` | notebook_workflow | Pending | pending |
 | `applications/plasma/vlasov_ampere/vlasov_ampere` | notebook_workflow | Pending | pending |
 | `applications/plasma/vlasov_ampere/vlasov_ampere_qiskit` | notebook_workflow | Pending | pending |
-| `applications/telecom/network_traffic_optimization/network_traffic_optimization` | notebook_workflow | Pending | pending |
+| `applications/telecom/network_traffic_optimization/network_traffic_optimization` | notebook_workflow | [Native program](applications/telecom/network_traffic_optimization/main.py) | pending |
 | `applications/telecom/radio_access_network/radio_access_network_positioning_antennas` | notebook_workflow | Pending | pending |
-| `applications/telecom/resiliency_planning/resiliency_planning` | notebook_workflow | Pending | pending |
-| `applications/telecom/resiliency_planning/resiliency_planning_AMD` | notebook_workflow | Pending | pending |
+| `applications/telecom/resiliency_planning/resiliency_planning` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/main.py) | pending |
+| `applications/telecom/resiliency_planning/resiliency_planning_AMD` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/resiliency_planning_amd/main.py) | pending |
 | `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_2nd_place_submission` | notebook_workflow | Pending | pending |
 | `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_winning_submission` | notebook_workflow | Pending | pending |
 | `community/Hackathons/iQuHack_2025/Challenge/classiq_iQuHack_2025_final` | notebook_workflow | Pending | pending |
