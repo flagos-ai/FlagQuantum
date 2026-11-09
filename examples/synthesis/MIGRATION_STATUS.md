@@ -232,7 +232,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | [Native program](applications/chemistry/quantum_walk_fmo/main.py) | validated |
 | `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | Pending | pending |
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | Pending | pending |
-| `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | Pending | pending |
+| `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | [Native program](applications/cybersecurity/link_monitoring/main.py) | pending |
 | `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py) | pending |
 | `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | Pending | pending |
 | `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | Pending | pending |
@@ -249,22 +249,22 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | Pending | pending |
 | `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | Pending | pending |
 | `applications/logistics/facility_location/facility_location` | notebook_workflow | Pending | pending |
-| `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | Pending | pending |
+| `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | [Native program](applications/logistics/task_scheduling_problem/main.py) | pending |
 | `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | Pending | pending |
 | `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | [Native program](applications/logistics/vehicle_routing_problem/main.py) | pending |
 | `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/main.py) | pending |
 | `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | [Native program](applications/optimization/electric_grid_optimization/main.py) | pending |
 | `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/main.py) | pending |
 | `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | Pending | pending |
-| `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | Pending | pending |
+| `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | [Native program](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/main.py) | pending |
 | `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/main.py) | pending |
 | `applications/optimization/max_independent_set/max_independent_set` | notebook_workflow | [Native program](applications/optimization/max_independent_set/main.py) | pending |
 | `applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph` | notebook_workflow | [Native program](applications/optimization/max_induced_k_color_subgraph/main.py) | pending |
 | `applications/optimization/max_k_vertex_cover/max_k_vertex_cover` | notebook_workflow | [Native program](applications/optimization/max_k_vertex_cover/main.py) | pending |
 | `applications/optimization/min_graph_coloring/min_graph_coloring` | notebook_workflow | Pending | pending |
 | `applications/optimization/minimum_dominating_set/minimum_dominating_set` | notebook_workflow | [Native program](applications/optimization/minimum_dominating_set/main.py) | pending |
-| `applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa` | notebook_workflow | Pending | pending |
-| `applications/optimization/rectangles_packing/rectangles_packing_grid` | notebook_workflow | Pending | pending |
+| `applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa` | notebook_workflow | [Native program](applications/optimization/qaoa_in_qaoa/main.py) | pending |
+| `applications/optimization/rectangles_packing/rectangles_packing_grid` | notebook_workflow | [Native program](applications/optimization/rectangles_packing/rectangles_packing_grid/main.py) | pending |
 | `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | [Native program](applications/optimization/robust_posture_optimization/main.py) | pending |
 | `applications/optimization/set_cover/set_cover` | notebook_workflow | [Native program](applications/optimization/set_cover/main.py) | pending |
 | `applications/optimization/set_partition/set_partition` | notebook_workflow | [Native program](applications/optimization/set_partition/main.py) | pending |
@@ -278,7 +278,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/plasma/vlasov_ampere/vlasov_ampere` | notebook_workflow | Pending | pending |
 | `applications/plasma/vlasov_ampere/vlasov_ampere_qiskit` | notebook_workflow | Pending | pending |
 | `applications/telecom/network_traffic_optimization/network_traffic_optimization` | notebook_workflow | [Native program](applications/telecom/network_traffic_optimization/main.py) | pending |
-| `applications/telecom/radio_access_network/radio_access_network_positioning_antennas` | notebook_workflow | Pending | pending |
+| `applications/telecom/radio_access_network/radio_access_network_positioning_antennas` | notebook_workflow | [Native program](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/main.py) | pending |
 | `applications/telecom/resiliency_planning/resiliency_planning` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/main.py) | pending |
 | `applications/telecom/resiliency_planning/resiliency_planning_AMD` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/resiliency_planning_amd/main.py) | pending |
 | `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_2nd_place_submission` | notebook_workflow | Pending | pending |
@@ -417,7 +417,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | Pending | pending |
-| `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/main.py) | pending |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut` | notebook_workflow | [Native program](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/main.py) | pending |

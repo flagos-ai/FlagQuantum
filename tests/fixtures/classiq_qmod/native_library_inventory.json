@@ -3815,7 +3815,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/cybersecurity/link_monitoring/main.py",
+        "scope": "Complete 12-bit 1-layer quantum ansatz with every one of the 21 original cost terms and 2 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4172,7 +4175,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/logistics/task_scheduling_problem/main.py",
+        "scope": "Complete 24-bit 8-layer quantum ansatz with every one of the 103 original cost terms and 16 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4331,7 +4337,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/main.py",
+        "scope": "Complete 13-bit 3-layer quantum ansatz with every one of the 162 original cost terms and 6 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4493,7 +4502,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/qaoa_in_qaoa/main.py",
+        "scope": "Complete 6-bit 2-layer quantum ansatz with every one of the 12 original cost terms and 4 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4514,7 +4526,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/rectangles_packing/rectangles_packing_grid/main.py",
+        "scope": "Complete 17-bit 10-layer quantum ansatz with every one of the 102 original cost terms and 20 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4808,7 +4823,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/telecom/radio_access_network/radio_access_network_positioning_antennas/main.py",
+        "scope": "Complete 16-bit 4-layer quantum ansatz with every one of the 137 original cost terms and 8 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7957,7 +7975,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/qaoa/qaoa_demonstration/main.py",
+        "scope": "Complete 7-bit 10-layer quantum ansatz with every one of the 61 original cost terms and 20 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
