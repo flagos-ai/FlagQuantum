@@ -508,3 +508,51 @@ one existing terminal-rotation fusion failure, previously reproduced at the
 original baseline. It is not a green whole-repository result. The existing
 Python 3.10 strict-type limitation also remains open. Evidence logs under the
 locked reference environment use the `g2-field-encoding-` prefix.
+
+## Explicit neutral finite-field projection
+
+Prerequisite 0.9 adds `FiniteFieldEncoding.register_type(classical=False)`.
+Requesting this projection resolves the cached bitsize explicitly and returns
+Core's existing RegisterType with encoding `finite_field`. Classical projection
+retains the first storage marker, zero quantum width and the declared classical
+width. Parameters preserve characteristic, degree and cached order with their
+original scalar classes. Core symbolic classification examines characteristic
+and cached order in source order and ignores degree and polynomial parameters.
+
+Present polynomials are converted inside Simulation to ordinary Python integers.
+The neutral parameters retain the polynomial integer and its coefficient field's
+characteristic, degree, primitive element and irreducible polynomial. Together
+these identify canonical field classes produced by the locked galois factories,
+including different primitive elements over the same prime or extension field.
+The projection preserves a supplied degree-one polynomial even though numerical
+field resolution ignores it. It does not resolve the target gf_type. Explicit
+None remains distinct from a present default polynomial. Arbitrary manually
+subclassed FieldArray classes bypassing canonical factories remain outside the
+nominal-identity acceptance.
+
+The source equality audit found a specific exception. Comparing QGF/CGF with a
+None polynomial against the same declared type with a present Poly raises
+TypeError in galois Poly.Like. Neutral record equality returns unequal for those
+descriptors. Tests record the original exception separately. Both-None and
+both-present canonical polynomial comparisons match source nominal equality.
+The subsequent dtype-consistency operation must preserve the source cross-None
+exception before its dimensional and severity decisions. This projection does
+not certify full source operator equality.
+
+The source-backed prerequisite passes 132 cases before implementation. The
+finished projection module passes 286 cases, including raw projection failures,
+quantum/classical shaped Signatures, symbolic protocol order, coefficient-field
+identity, target-field non-resolution and actual descriptor-driven quadratic
+multiplier bindings. GF(4)/GF(8) bindings compare unmodified source per-wire gate
+streams, logical output maps, complete coherent complex amplitudes and separate
+model/emitted counts. The example now derives width and modulus from the neutral
+descriptor and still executes through `circuit.append(operation)`.
+
+The 25-file regression passes 3,864 tests without warnings or skips in 46.91
+seconds. Four examples run, nine source blobs remain unchanged, and scoped
+strict Python 3.12 typing, format, scope, architecture, API and IR checks pass.
+The default tier reports 15,698 passed, 51 skipped, 398 warnings and the same
+previously reproduced rotation-fusion failure in 167.64 seconds. The prior
+Python 3.10 and Karatsuba/inverse reference exceptions remain open. Evidence
+logs use the `g2-field-projection-` prefix. Full typed graph binding, calls,
+returns and traversal remain pending after metadata compatibility.

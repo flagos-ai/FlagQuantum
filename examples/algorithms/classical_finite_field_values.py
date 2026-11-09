@@ -20,6 +20,9 @@ from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 def main() -> None:
     """Bind the numerical field's explicit binary modulus to existing gates."""
     field = FiniteFieldEncoding(2, 3, [3, 1, 0])
+    quantum_word = field.register_type()
+    classical_word = field.register_type(classical=True)
+    assert quantum_word.num_qubits == classical_word.num_cbits == 3
     assert field.order == 8 and field.bitsize == 3
     bits = np.array(
         [field.to_bits(value) for value in field.get_domain()], dtype=np.uint8
@@ -28,10 +31,11 @@ def main() -> None:
     product = field.gf_type(3) * field.gf_type(5)
     assert int(product) == 4 and field.to_bits(product) == [1, 0, 0]
 
-    registers = ((0, 1, 2), (3, 4, 5), (6, 7, 8))
-    plan = gf2_multiplication(
-        *registers, (), modulus=int(field.irreducible_poly), algorithm="quadratic"
-    )
+    width = int(quantum_word.num_qubits)
+    modulus = int(dict(quantum_word.parameters)["polynomial"])
+    x, y, target = (tuple(range(i * width, (i + 1) * width)) for i in range(3))
+    registers = (x, y, target)
+    plan = gf2_multiplication(*registers, (), modulus=modulus, algorithm="quadratic")
     gates = bind_field_outputs(plan, registers)
     state = torch.zeros(512, dtype=torch.complex128)
     state[(3 << 6) | (5 << 3)] = 1
