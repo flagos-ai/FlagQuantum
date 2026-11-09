@@ -294,7 +294,7 @@ Validated local Notebook workflows: **23/213**.
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Laplacian_BE` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE` | quantum_program | Pending | pending |
-| `community/paper_implementation_project/bb84/bb84_implementation` | notebook_workflow | Pending | pending |
+| `community/paper_implementation_project/bb84/bb84_implementation` | notebook_workflow | [Native program](community/paper_implementation_project/bb84/bb84_implementation/main.py) | pending |
 | `community/paper_implementation_project/block_encoding/checkerboard_BE_N8` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | Pending | pending |

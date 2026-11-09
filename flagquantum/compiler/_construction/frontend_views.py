@@ -58,18 +58,22 @@ def static_integer(owner: _Body, node: ast.expr, depth: int = 0) -> int:
     if isinstance(node, ast.Constant):
         value = node.value
     elif isinstance(node, ast.Name):
-        if node.id in owner.classical:
+        if node.id in owner.classical and type(owner.classical[node.id]) is not int:
             _error(
                 owner.source,
                 node,
                 "program.loop",
                 "real parameters cannot be static integers",
             )
-        value = owner.loop_variables.get(node.id)
+        value = owner.classical.get(node.id, owner.loop_variables.get(node.id))
         if value is None and node.id not in (
             owner.aliases if owner.aliases is not None else owner.ports
         ):
             value = _resolve(owner.definition, node)
+    elif isinstance(node, ast.Subscript):
+        from .frontend_classical import classical_number
+
+        value = classical_number(owner, node, depth + 1)
     elif isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
         value = static_integer(owner, node.operand, depth + 1)
         if isinstance(node.op, ast.USub):

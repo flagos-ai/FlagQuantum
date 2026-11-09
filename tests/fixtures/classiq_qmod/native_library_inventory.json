@@ -5029,7 +5029,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/community/paper_implementation_project/bb84/bb84_implementation/main.py",
+        "scope": "Complete original eight-signal quantum preparation/rotation program, plus explicit native integer-array data bindings. The full BB84 Notebook protocol, sampling, sifting and security discussion remain pending."
+      },
       "kind": "notebook_workflow"
     },
     {

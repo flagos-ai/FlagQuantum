@@ -9,6 +9,8 @@ selection and lowering to CircuitIR.
 | Module | Responsibility |
 | --- | --- |
 | `frontend_program.py` | Capture source-retaining Python qfunc programs |
+| `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
+| `frontend_statements.py` | Dispatch captured statements and specialize bounded classical branches |
 | `frontend_ports.py` | Resolve annotation identities, quantum roles and bounded port types |
 | `frontend_preparation.py` | Capture bounded literal native preparation calls into existing register effects |
 | `frontend_views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
@@ -684,3 +686,13 @@ neither numerical execution nor a new Hamiltonian representation. Complete
 registers and mutable helpers are supported; Const, partial views and oversized
 formulas fail closed. Run `tests/integration/test_synthesis_native_evolution.py`
 for independent dense products, absolute phase, coherence and refusal checks.
+
+Native classical specialization also admits `int` and `list[int]`, with exact
+built-in integer binding distinct from real binding and quantum numeric ports.
+Static `if` selects a branch from finite comparisons and boolean combinations;
+it never reads quantum values or calls host code. Integer range/index uses and
+branch nesting remain bounded, and helper calls restore binding scopes. Only
+the selected arm is captured; neither arm may contain branch control flow.
+Run `tests/integration/test_synthesis_native_integer_control.py` for complete
+BB84 statevectors, coherent borrowed signals, ownership and resource refusals.
+See the [integer and branch contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-INTEGER-CONTROL-20261109.md).

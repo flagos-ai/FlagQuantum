@@ -13,7 +13,7 @@ from .frontend_python import _error, _QuantumFunction
 if TYPE_CHECKING:
     from .frontend_program import _Body
 
-ClassicalValue = float | tuple[float, ...]
+ClassicalValue = int | float | tuple[int | float, ...]
 
 
 def _checked_real(
@@ -34,11 +34,24 @@ def _checked_real(
     return float(value)
 
 
+def _checked_integer(
+    definition: _QuantumFunction, node: ast.expr | ast.stmt, value: object
+) -> int:
+    if type(value) is not int or not isinstance(value, int) or abs(value) > 2**53:
+        _error(
+            definition.source,
+            node,
+            "program.binding",
+            "integer bindings require built-in int in ±2**53, excluding bool and float",
+        )
+    return value
+
+
 def bind_inputs(
     definition: _QuantumFunction,
     supplied: Mapping[str, float | Sequence[float]] | None,
 ) -> dict[str, ClassicalValue]:
-    """Validate names and snapshot bounded real arrays before program capture."""
+    """Validate names and snapshot bounded numeric arrays before program capture."""
     parameters = classical_parameters(definition)
     values = {} if supplied is None else supplied
     if not isinstance(values, Mapping) or set(values) != set(parameters):
@@ -50,15 +63,16 @@ def bind_inputs(
         )
     bound: dict[str, ClassicalValue] = {}
     elements = 0
-    for name, array in parameters.items():
+    for name, parameter in parameters.items():
         value = values[name]
-        if array:
+        check = _checked_integer if parameter.integer else _checked_real
+        if parameter.array:
             if type(value) not in (list, tuple) or not isinstance(value, (list, tuple)):
                 _error(
                     definition.source,
                     definition.source.node,
                     "program.binding",
-                    f"classical array {name!r} requires a list or tuple of reals",
+                    f"classical array {name!r} requires a built-in numeric list or tuple",
                 )
             elements += len(value)
             if not 1 <= len(value) <= 4096 or elements > 4096:
@@ -69,8 +83,7 @@ def bind_inputs(
                     "classical arrays require 1..4096 elements and at most 4096 in total",
                 )
             bound[name] = tuple(
-                _checked_real(definition, definition.source.node, item)
-                for item in value
+                check(definition, definition.source.node, item) for item in value
             )
         else:
             elements += 1
@@ -81,11 +94,13 @@ def bind_inputs(
                     "budget",
                     "too many bindings",
                 )
-            bound[name] = _checked_real(definition, definition.source.node, value)
+            bound[name] = check(definition, definition.source.node, value)
     return bound
 
 
-def real_number(owner: _Body, node: ast.expr, depth: int = 0) -> float | None:
+def classical_number(
+    owner: _Body, node: ast.expr, depth: int = 0
+) -> int | float | None:
     """Interpret finite scalar arithmetic, never call host Python or read a qubit."""
     if depth >= 32:
         _error(owner.source, node, "budget", "classical expression depth exceeds 32")
@@ -117,11 +132,11 @@ def real_number(owner: _Body, node: ast.expr, depth: int = 0) -> float | None:
                 owner.source,
                 node,
                 "program.binding",
-                "index a one-dimensional real array",
+                "index a one-dimensional numeric array",
             )
         from .frontend_views import static_integer
 
-        index = static_integer(owner, node.slice)
+        index = static_integer(owner, node.slice, depth + 1)
         if not 0 <= index < len(array):
             _error(
                 owner.source,
@@ -131,15 +146,15 @@ def real_number(owner: _Body, node: ast.expr, depth: int = 0) -> float | None:
             )
         value = array[index]
     elif isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
-        operand = real_number(owner, node.operand, depth + 1)
+        operand = classical_number(owner, node.operand, depth + 1)
         if operand is None:
             return None
         value = -operand if isinstance(node.op, ast.USub) else operand
     elif isinstance(node, ast.BinOp) and isinstance(
         node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div)
     ):
-        left = real_number(owner, node.left, depth + 1)
-        right = real_number(owner, node.right, depth + 1)
+        left = classical_number(owner, node.left, depth + 1)
+        right = classical_number(owner, node.right, depth + 1)
         if left is None or right is None:
             return None
         if isinstance(node.op, ast.Div) and right == 0:
@@ -159,7 +174,13 @@ def real_number(owner: _Body, node: ast.expr, depth: int = 0) -> float | None:
         converted = float(value)
     except OverflowError:
         return None
-    return converted if math.isfinite(converted) else None
+    return value if math.isfinite(converted) else None
+
+
+def real_number(owner: _Body, node: ast.expr, depth: int = 0) -> float | None:
+    """Convert an admitted classical scalar only at a real-valued use site."""
+    value = classical_number(owner, node, depth)
+    return None if value is None else float(value)
 
 
 def bind_helper(
@@ -182,7 +203,9 @@ def bind_helper(
         if formal.arg not in parameters:
             quantum.append(actual)
             continue
-        if parameters[formal.arg]:
+        parameter = parameters[formal.arg]
+        check = _checked_integer if parameter.integer else _checked_real
+        if parameter.array:
             if isinstance(actual, ast.Name) and isinstance(
                 owner.classical.get(actual.id), tuple
             ):
@@ -194,15 +217,15 @@ def bind_helper(
                         owner.source,
                         actual,
                         "budget",
-                        "real arrays require 1..4096 elements",
+                        "numeric arrays require 1..4096 elements",
                     )
-                items = tuple(real_number(owner, item) for item in actual.elts)
+                items = tuple(classical_number(owner, item) for item in actual.elts)
                 if any(item is None for item in items):
                     _error(
                         owner.source,
                         actual,
                         "program.binding",
-                        "array elements require finite static reals",
+                        "array elements require finite static numbers",
                     )
                 value = tuple(item for item in items if item is not None)
             else:
@@ -210,15 +233,15 @@ def bind_helper(
                     owner.source,
                     actual,
                     "program.binding",
-                    "pass a bound real array or literal array",
+                    "pass a bound numeric array or literal array",
                 )
             elements += len(value)
             bindings[formal.arg] = tuple(
-                _checked_real(owner.definition, actual, item) for item in value
+                check(owner.definition, actual, item) for item in value
             )
         else:
-            number = real_number(owner, actual)
-            bindings[formal.arg] = _checked_real(owner.definition, actual, number)
+            number = classical_number(owner, actual)
+            bindings[formal.arg] = check(owner.definition, actual, number)
             elements += 1
         if elements > 4096:
             _error(

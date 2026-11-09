@@ -1012,13 +1012,13 @@ def _validate_authorized_synthesis_classical(contract: Any) -> list[str]:
     )
     expected = {
         "schema": "flagquantum.synthesis_native_classical_admission",
-        "version": "1.0",
+        "version": "1.1",
         "namespace": "flagquantum.synth",
         "added_exports": ["RX"],
         "signatures": {"RX": "(angle: 'float', target: 'QBit', /) -> 'None'"},
         "synthesize_signature": expected_signature,
         "previous_synthesize_signature": previous,
-        "annotations": ["float", "list[float]"],
+        "annotations": ["float", "list[float]", "int", "list[int]"],
         "binding": "synthesis_time",
         "real_input_bound": 2**53,
         "max_classical_elements": 4096,
@@ -1028,6 +1028,21 @@ def _validate_authorized_synthesis_classical(contract: Any) -> list[str]:
         "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md",
         "implementation_authorized": True,
         "release_authorized": False,
+        "integer_input_bound": 2**53,
+        "integer_index_bound": 4096,
+        "classical_conditionals": {
+            "binding": "synthesis_time",
+            "numeric_comparisons": ["==", "!=", "<", "<=", ">", ">="],
+            "logical_operators": ["and", "or", "not"],
+            "boolean_literals": True,
+            "numeric_truthiness": False,
+            "quantum_conditions": "refuse; use coherent control",
+            "max_condition_depth": 32,
+            "max_branch_nesting": 32,
+            "unselected_branch": "not captured; no branch return/break/continue anywhere",
+            "shared_capture_and_resource_budgets": True,
+        },
+        "extension_authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-INTEGER-CONTROL-20261109.md",
     }
     errors = []
     if contract != expected or any(
@@ -1040,6 +1055,8 @@ def _validate_authorized_synthesis_classical(contract: Any) -> list[str]:
         errors.append("native RX signature differs from approval")
     if not (ROOT / str(expected["authorization_record"])).is_file():
         errors.append("native classical authorization is missing")
+    if not (ROOT / str(expected["extension_authorization_record"])).is_file():
+        errors.append("native integer/control authorization is missing")
     return errors
 
 

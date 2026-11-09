@@ -332,7 +332,7 @@ def test_values_are_snapshotted_and_host_calls_are_not_executed(tmp_path: Path) 
 
 
 @pytest.mark.parametrize(
-    "annotation", ["list[list[float]]", "list[int]", "Output[float]"]
+    "annotation", ["list[list[float]]", "list[bool]", "Output[float]"]
 )
 def test_classical_annotations_do_not_expand_quantum_or_array_types(
     tmp_path: Path, annotation: str

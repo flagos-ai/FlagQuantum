@@ -29,8 +29,8 @@ from .frontend_ports import (
 )
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
+from .frontend_statements import capture_statements
 from .frontend_views import (
-    capture_loop,
     gate_target,
     inline_mutable,
     locations,
@@ -195,6 +195,7 @@ class _Body:
         self.counter = len(ports) + 1
         self.operations: list[Operation] = []
         self.evolutions: list[_Evolution] = []
+        self.branch_depth = 0
         self.expressions = 0
         self.aliases: dict[str, tuple[tuple[Value, int], ...]] | None = None
         self.array_names = {p.name for p in ports if p.kind == "qarray"}
@@ -262,6 +263,13 @@ class _Body:
         self.effect = following
 
     def assign(self, node: ast.AugAssign) -> None:
+        if not isinstance(node.op, ast.BitOr):
+            _error(
+                self.source,
+                node,
+                "program.expression",
+                "initialize fresh outputs with |= only",
+            )
         if (
             isinstance(node.target, ast.Name)
             and node.target.id in self.ports
@@ -1133,62 +1141,7 @@ class _Body:
             self.call(statement.value, inverse=True)
 
     def statements(self, body: Sequence[ast.stmt], *, nested: bool = False) -> None:
-        statements = iter(body)
-        for statement in statements:
-            if isinstance(statement, ast.For):
-                capture_loop(self, statement)
-            elif isinstance(statement, ast.AugAssign):
-                if self.aliases is not None:
-                    _error(
-                        self.source,
-                        statement,
-                        "program.borrow",
-                        "mutable helpers cannot initialize or compute Outputs",
-                    )
-                self.assign(statement)
-            elif isinstance(statement, ast.With):
-                flush_evolutions(self)
-                if self.aliases is not None:
-                    _error(
-                        self.source,
-                        statement,
-                        "program.borrow",
-                        "mutable helpers accept gate effects only",
-                    )
-                if self.region_marker(statement) is adjoint:
-                    self.adjoint_scope(statement)
-                else:
-                    self.within_apply(statement, next(statements, None))
-            elif isinstance(statement, ast.Expr) and isinstance(
-                statement.value, ast.Call
-            ):
-                self.call(statement.value)
-            elif isinstance(statement, ast.Return) and (
-                statement.value is None
-                or isinstance(statement.value, ast.Constant)
-                and statement.value.value is None
-            ):
-                if nested:
-                    _error(
-                        self.source,
-                        statement,
-                        "program.loop",
-                        "return inside a static loop is not admitted",
-                    )
-                continue
-            elif (
-                isinstance(statement, ast.Expr)
-                and isinstance(statement.value, ast.Constant)
-                and isinstance(statement.value.value, str)
-            ):
-                continue
-            else:
-                _error(
-                    self.source,
-                    statement,
-                    "program.statement",
-                    "use captured operations and bounded static for loops",
-                )
+        capture_statements(self, body, nested=nested)
 
     def finish(self) -> HybridProgram:
         self.statements(self.source.node.body)

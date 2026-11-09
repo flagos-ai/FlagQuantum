@@ -56,7 +56,7 @@ def _resolve(
                     )
         if node.id in function.__globals__:
             return function.__globals__[node.id]
-        if annotation and node.id in {"float", "list"}:
+        if annotation and node.id in {"int", "float", "list"}:
             import builtins
 
             namespace = function.__globals__.get("__builtins__", builtins)
@@ -100,9 +100,19 @@ def program_annotation_names(source: _Source) -> set[str]:
     }
 
 
-def classical_parameters(definition: _QuantumFunction) -> dict[str, bool]:
-    """Identify finite real scalars and one-dimensional real array annotations."""
-    parameters: dict[str, bool] = {}
+@dataclass(frozen=True)
+class _ClassicalParameter:
+    """Annotation-owned scalar kind and shape; binding never infers either."""
+
+    integer: bool
+    array: bool
+
+
+def classical_parameters(
+    definition: _QuantumFunction,
+) -> dict[str, _ClassicalParameter]:
+    """Identify finite synthesis-time numeric scalars and flat numeric arrays."""
+    parameters: dict[str, _ClassicalParameter] = {}
     for argument in (
         *definition.source.node.args.posonlyargs,
         *definition.source.node.args.args,
@@ -110,16 +120,16 @@ def classical_parameters(definition: _QuantumFunction) -> dict[str, bool]:
         if argument.annotation is None:
             continue
         node = _annotation_node(definition.source, argument.annotation)
+        array = isinstance(node, ast.Subscript)
+        if array:
+            assert isinstance(node, ast.Subscript)
+            if _resolve(definition, node.value, annotation=True) is not list:
+                continue
+            node = node.slice
         if isinstance(node, (ast.Name, ast.Attribute)):
-            if _resolve(definition, node, annotation=True) is float:
-                parameters[argument.arg] = False
-        elif isinstance(node, ast.Subscript):
-            if (
-                _resolve(definition, node.value, annotation=True) is list
-                and isinstance(node.slice, (ast.Name, ast.Attribute))
-                and _resolve(definition, node.slice, annotation=True) is float
-            ):
-                parameters[argument.arg] = True
+            scalar = _resolve(definition, node, annotation=True)
+            if scalar is int or scalar is float:
+                parameters[argument.arg] = _ClassicalParameter(scalar is int, array)
     return parameters
 
 
@@ -263,7 +273,7 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
             and isinstance(statement.target, ast.Name)
         ):
             continue
-        if isinstance(statement, (ast.With, ast.For)):
+        if isinstance(statement, (ast.With, ast.For, ast.If)):
             continue
         if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
             continue

@@ -15,9 +15,12 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def contract() -> dict[str, object]:
-    return json.loads(
+    value: object = json.loads(
         (ROOT / "contracts/synthesis-native-classical-candidate.json").read_text()
     )
+    if not isinstance(value, dict):
+        raise ValueError("classical admission contract must be an object")
+    return value
 
 
 def test_successor_and_predecessor_signatures_are_both_protected() -> None:
@@ -33,7 +36,7 @@ def test_successor_and_predecessor_signatures_are_both_protected() -> None:
     assert str(prior) == active["previous_synthesize_signature"]
     assert synth.RX is __import__("flagquantum.services.synthesis", fromlist=["RX"]).RX
     with pytest.raises(TypeError, match="captured"):
-        synth.RX(0.3, None)  # type: ignore[arg-type]
+        synth.RX(0.3, None)
 
 
 @pytest.mark.parametrize(
@@ -48,6 +51,10 @@ def test_successor_and_predecessor_signatures_are_both_protected() -> None:
         ("implementation_authorized", 1),
         ("release_authorized", True),
         ("new_ir", True),
+        ("integer_input_bound", 2**53 + 1),
+        ("integer_index_bound", 4097),
+        ("extension_authorization_record", "missing.md"),
+        ("classical_conditionals", {}),
         ("unknown", True),
     ],
 )
