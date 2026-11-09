@@ -172,6 +172,16 @@ def qft(target: QNum | QArray[QBit], /) -> None:
     raise TypeError("qft is captured inside qfunc")
 
 
+def modular_exp(n: int, a: int, x: QNum, power: QNum, /) -> None:
+    """Apply x <- a**power * x mod n on the valid residue subspace.
+
+    Values of x at least n stay unchanged. The static base must be coprime to
+    n; initialized target and exponent registers must be distinct. Capture the
+    operation inside qfunc, then synthesize and execute the program.
+    """
+    raise TypeError("modular_exp is captured inside qfunc")
+
+
 def phase(expression: QNum | float, coefficient: float, /) -> None:
     """Apply exp(i * coefficient * expression) inside a captured qfunc."""
     raise TypeError("phase is captured inside qfunc")

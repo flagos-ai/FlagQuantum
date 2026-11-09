@@ -28,7 +28,13 @@ from .frontend_ports import (
 )
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
-from .frontend_views import capture_loop, gate_target, inline_mutable, locations
+from .frontend_views import (
+    capture_loop,
+    gate_target,
+    inline_mutable,
+    locations,
+    static_integer,
+)
 from .profile import _width
 from .program_types import (
     QNum,
@@ -41,6 +47,7 @@ from .program_types import (
     cx,
     h,
     hadamard_transform,
+    modular_exp,
     phase,
     phase_gate,
     prepare_amplitudes,
@@ -431,6 +438,7 @@ class _Body:
                     hadamard_transform,
                     qft,
                     unitary,
+                    modular_exp,
                 )
             )
             or isinstance(function, _QuantumFunction)
@@ -492,6 +500,47 @@ class _Body:
             self.emit("qreg.allocate", node, (destination,))
         elif function is unitary:
             capture_unitary(self, node)
+        elif function is modular_exp:
+            if len(node.args) != 4:
+                _error(
+                    self.source,
+                    node,
+                    "program.signature",
+                    "modular_exp takes modulus, base, target and exponent",
+                )
+            modulus, base = (static_integer(self, arg) for arg in node.args[:2])
+            modular_operands = []
+            for argument in node.args[2:]:
+                if (
+                    not isinstance(argument, ast.Name)
+                    or argument.id not in self.ports
+                    or self.ports[argument.id].kind not in {"qnum", "qbit"}
+                ):
+                    _error(
+                        self.source,
+                        argument,
+                        "program.modular_exp",
+                        "modular_exp requires complete numeric registers",
+                    )
+                targets = locations(self, argument)
+                destination = targets[0][0]
+                if targets != tuple(
+                    (destination, bit) for bit in range(register_width(destination))
+                ):
+                    _error(
+                        self.source,
+                        argument,
+                        "program.view",
+                        "modular_exp requires complete registers in logical bit order",
+                    )
+                modular_operands.append(destination)
+            self.emit(
+                "qreg.modular_exp",
+                node,
+                tuple(modular_operands),
+                modulus=modulus,
+                base=base,
+            )
         elif function is qft:
             if len(node.args) != 1:
                 _error(self.source, node, "program.signature", "qft takes one register")

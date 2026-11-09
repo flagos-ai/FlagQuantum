@@ -3,8 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **53/216**.
-Validated local Notebook workflows: **20/213**.
+Validated quantum-program counterparts: **54/216**.
+Validated local Notebook workflows: **21/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -43,7 +43,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (32 native programs)
+## Functions (33 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -54,6 +54,7 @@ Validated local Notebook workflows:
 - [bitwise_xor_integer_example](functions/arithmetic/bitwise_xor/bitwise_xor_integer_example/README.md)
 - [comparator_integer_example](functions/arithmetic/comparator/comparator_integer_example/README.md)
 - [minimum_2vars_example](functions/arithmetic/extremum/minimum_2vars_example/README.md)
+- [modular_exp_example](functions/arithmetic/modular_exp/modular_exp_example/README.md)
 - [modulo_example](functions/arithmetic/modulo/modulo_example/README.md)
 - [multiplication_2vars_example](functions/arithmetic/multiplication/multiplication_2vars_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
@@ -83,6 +84,7 @@ Validated local Notebook workflows:
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
 - [overview](functions/arithmetic/bitwise_and/overview/README.md)
 - [bitwise_invert_example](functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md)
+- [modular_exp_example](functions/arithmetic/modular_exp/modular_exp_example/README.md)
 - [modulo_example](functions/arithmetic/modulo/modulo_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)

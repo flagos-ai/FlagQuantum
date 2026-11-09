@@ -1019,3 +1019,9 @@ Native qfunc conditional values accept only unsigned expressions and one-bit
 predicates or comparisons. Both branches are checked statically; this does not
 admit host callbacks, Python min/max calls, signed arithmetic or fractional
 selection. The `max(3.5,a)` originals remain pending native fractional support.
+
+Native modular exponentiation admits complete initialized unsigned numeric
+registers: target 1..5 bits and exponent 1..10 bits. Modulus/base are bounded
+static integers, with a fitting modulus and positive coprime base. Padding
+states stay unchanged. Partial views, real/quantum modulus/base, mixed mutable/
+Const helpers, and new native controlled/adjoint forms remain outside admission.

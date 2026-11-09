@@ -669,3 +669,10 @@ register capture only admits the existing expression node. This is coherent
 value computation with fresh output storage, including checked helper calls.
 Run `tests/integration/test_synthesis_native_selection.py` for independent
 truth-table circuits, nested values, coherence, cleanup and refusal checks.
+
+Native `modular_exp(n,a,x,power)` emits the existing modular-permutation effect.
+Capture reads bounded static integers and complete numeric ports; the register
+validator owns coprimality, storage legality and width limits, while shared
+lowering owns permutations and scratch accounting. Run
+`tests/integration/test_synthesis_native_modular_exp.py` for independent modular
+truth tables, coherent amplitudes, helper borrowing and budget refusals.

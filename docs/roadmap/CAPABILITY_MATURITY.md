@@ -589,3 +589,13 @@ coherent states under both objectives, helper composition and clean workspace.
 Ownership and resource ceilings remain checked. Maturity is local CPU semantic
 validation, with no signed/fractional or dynamic host-branch claim. See the
 [contract](../api-changes/FQ-SYNTH-NATIVE-CONDITIONAL-VALUES-20261109.md).
+
+## Native bounded modular powers
+
+Native `modular_exp` reuses checked register permutations and scratch scheduling.
+The retained example and full local Notebook sampling/assertion workflow have
+native counterparts. Independent permutation matrices cover all small columns,
+padding states, nontrivial coherent phases, helper composition and width bounds.
+Maturity is local CPU semantic validation with resource refusal checks; this does
+not establish scalable Shor performance or hardware execution. See the
+[contract](../api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md).

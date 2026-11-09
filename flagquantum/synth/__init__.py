@@ -32,6 +32,7 @@ from ..services.synthesis import (
     apply,
     control,
     hadamard_transform,
+    modular_exp,
     phase,
     prepare_amplitudes,
     prepare_bell_state,
@@ -84,4 +85,5 @@ __all__ = (
     "RX",
     "qft",
     "unitary",
+    "modular_exp",
 )

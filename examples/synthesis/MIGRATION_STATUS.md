@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **20/213**.
+Validated local Notebook workflows: **21/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -325,7 +325,7 @@ Validated local Notebook workflows: **20/213**.
 | `functions/function_usage_examples/arithmetic/extremum/maximum_float_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/extremum/maximum_integer_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example` | quantum_program | [Native program](functions/arithmetic/extremum/minimum_2vars_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example` | notebook_workflow | Pending | pending |
+| `functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example` | notebook_workflow | [Native program](functions/arithmetic/modular_exp/modular_exp_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/modulo/modulo_example` | notebook_workflow | [Native program](functions/arithmetic/modulo/modulo_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_2vars_example/main.py) | pending |

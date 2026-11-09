@@ -1040,3 +1040,11 @@ and checked helpers use the existing expression path. Conditions must be one
 bit, comparisons, or literal zero/one; host calls and signed/fractional branches
 remain refused. See the [conditional-value contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CONDITIONAL-VALUES-20261109.md)
 and the [native minimum example](../../examples/synthesis/functions/arithmetic/extremum/minimum_2vars_example/README.md).
+
+`modular_exp(n, a, x, power)` applies coherent modular multiplication to an
+initialized numeric target `x` using a distinct exponent `power`. Starting from
+`x=1` computes `a**power mod n`; padding states `x>=n` stay unchanged. The base
+must be positive and coprime to the modulus. Static integer parameters, target
+width 1..5 and exponent width 1..10 use existing validation and lowering. See the
+[modular contract](../../docs/api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md)
+and [complete native workflow](../../examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example/WORKFLOW.md).

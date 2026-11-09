@@ -66,6 +66,7 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         "RX",
         "qft",
         "unitary",
+        "modular_exp",
     )
     assert (
         str(

@@ -674,6 +674,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "RX",
     "qft",
     "unitary",
+    "modular_exp",
 )
 
 
@@ -1250,6 +1251,26 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.unitary)) != matrix_signature
     ):
         errors.append("native unitary operation differs from its authorized scope")
+    modular_admission = json.loads(
+        (ROOT / "contracts/synthesis-native-modular-exp-candidate.json").read_text()
+    )
+    modular_signature = "(n: 'int', a: 'int', x: 'QNum', power: 'QNum', /) -> 'None'"
+    if modular_admission != {
+        "schema": "flagquantum.synthesis_native_modular_exp_admission",
+        "version": "1.0",
+        "namespace": "flagquantum.synth",
+        "added_exports": ["modular_exp"],
+        "signatures": {"modular_exp": modular_signature},
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+    } or (
+        type(modular_admission.get("implementation_authorized")) is not bool
+        or type(modular_admission.get("release_authorized")) is not bool
+        or not (ROOT / modular_admission["authorization_record"]).is_file()
+        or str(inspect.signature(synth.modular_exp)) != modular_signature
+    ):
+        errors.append("native modular exponentiation differs from its authorized scope")
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),
