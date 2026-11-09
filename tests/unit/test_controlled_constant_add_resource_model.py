@@ -9,7 +9,9 @@ import sympy
 from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
 from flagquantum.compiler._component_trace.resource_generalization import CliffordCall
-from flagquantum.compiler.registers.arithmetic_declarations import arithmetic_call_graph
+from flagquantum.compiler.registers.arithmetic.arithmetic_declarations import (
+    arithmetic_call_graph,
+)
 from tests.unit.test_constant_add_resource_model import CASES
 from tests.unit.test_constant_add_resource_model import source as plain_source
 
@@ -83,7 +85,7 @@ def test_existing_query_consumes_replacement_controlled_declarations(cv):
 def test_shared_controlled_formula_matches_all_original_fields_and_widths(root):
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_controlled_constant_add_resource_formula,
     )
 
@@ -115,7 +117,7 @@ def test_controlled_concrete_shape_component_keeps_original_fallback_with_symbol
     from flagquantum.compiler._component_trace.resource_model import (
         estimate_component_resources,
     )
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_controlled_constant_add_cost,
         source_controlled_constant_add_resource_formula,
     )
@@ -140,7 +142,7 @@ def test_controlled_concrete_shape_component_keeps_original_fallback_with_symbol
 def test_original_controlled_peak_python_literal_and_symbolic_reconstruction_are_distinct(
     cv,
 ):
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_controlled_constant_add_resource_formula,
     )
 
@@ -164,8 +166,8 @@ def test_original_controlled_peak_python_literal_and_symbolic_reconstruction_are
 def test_controlled_formula_consumes_shared_add_model_all_categories_and_original_lifetime_rule(
     monkeypatch, cv
 ):
-    import flagquantum.compiler.registers.constant_add_resource_model as module
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    import flagquantum.compiler.registers.arithmetic.constant_add_resource_model as module
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         SymbolicResourceFormula,
     )
 
@@ -207,7 +209,7 @@ def test_controlled_formula_consumes_shared_add_model_all_categories_and_origina
 def test_controlled_formula_refuses_invalid_control_instead_of_becoming_uncontrolled(
     options,
 ):
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_controlled_constant_add_resource_formula,
     )
 
@@ -228,10 +230,10 @@ def test_controlled_model_and_literal_source_primitive_stream_across_all_encodin
 ):
     from collections import Counter
 
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_controlled_constant_add_resource_formula,
     )
-    from flagquantum.compiler.registers.controlled_addition import (
+    from flagquantum.compiler.registers.arithmetic.controlled_addition import (
         controlled_add_constant_adjoint_ir,
         controlled_add_constant_ir,
     )
@@ -286,7 +288,7 @@ def test_all_coherent_control_target_spectator_branches_preserve_phase_and_clean
 ):
     import torch
 
-    from flagquantum.compiler.registers.controlled_addition import (
+    from flagquantum.compiler.registers.arithmetic.controlled_addition import (
         controlled_add_constant_adjoint_ir,
         controlled_add_constant_ir,
     )

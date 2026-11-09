@@ -16,7 +16,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     FixedTCall,
 )
-from flagquantum.compiler.registers.pauli_gate import pauli_gate_ir
+from flagquantum.compiler.registers.primitives.pauli_gate import pauli_gate_ir
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (

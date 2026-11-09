@@ -9,10 +9,10 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.controlled_modular_addition import (
+from flagquantum.compiler.registers.modular.controlled_modular_addition import (
     controlled_modular_add_ir,
 )
-from flagquantum.compiler.registers.controlled_modular_addition_adjoint import (
+from flagquantum.compiler.registers.modular.controlled_modular_addition_adjoint import (
     controlled_modular_add_adjoint_ir,
 )
 from flagquantum.core.ir import CircuitIR

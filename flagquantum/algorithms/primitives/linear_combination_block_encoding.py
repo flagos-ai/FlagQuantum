@@ -16,19 +16,19 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
-from ...compiler.registers.control_predicate import (
+from ...compiler.registers.control.control_predicate import (
     ControlRegister,
     bind_control_registers,
 )
-from ...compiler.registers.controlled_component import (
+from ...compiler.registers.control.controlled_component import (
     controlled_component_ir,
     extend_controlled_component_ir,
 )
-from ...compiler.registers.controlled_component_resource_model import (
+from ...compiler.registers.control.controlled_component_resource_model import (
     controlled_component_cost,
     extended_controlled_component_cost,
 )
-from ...compiler.registers.partition import partition_register
+from ...compiler.registers.layout.partition import partition_register
 from ...core.ir import Instruction
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from ._block_metadata import _BlockMetadata

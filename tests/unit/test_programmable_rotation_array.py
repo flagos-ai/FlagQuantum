@@ -7,10 +7,10 @@ from math import sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.programmable_rotation_array import (
+from flagquantum.compiler.registers.lookup.source_qrom import source_qrom_workspace_size
+from flagquantum.compiler.registers.phase.programmable_rotation_array import (
     programmable_rotation_array_ir,
 )
-from flagquantum.compiler.registers.source_qrom import source_qrom_workspace_size
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_subtraction import assert_source

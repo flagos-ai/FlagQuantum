@@ -11,10 +11,10 @@ from collections import Counter
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.comparison_resource_model import (
+from flagquantum.compiler.registers.comparison.comparison_resource_model import (
     source_less_equal_cost,
 )
-from flagquantum.compiler.registers.less_equal import (
+from flagquantum.compiler.registers.comparison.less_equal import (
     less_equal_ir,
     less_equal_requirements,
 )

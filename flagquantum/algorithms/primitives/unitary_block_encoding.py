@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler._component_trace.symbolic_math import SymbolicReal
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.partition import (
     RegisterLayout,
     partition_register,
     partition_width,

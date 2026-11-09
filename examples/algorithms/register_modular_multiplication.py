@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.modular_multiplication import (
+from flagquantum.compiler.registers.modular.modular_multiplication import (
     controlled_modular_multiply_constant_adjoint_ir,
     controlled_modular_multiply_constant_ir,
 )

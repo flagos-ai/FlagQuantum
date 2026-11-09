@@ -14,22 +14,22 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.less_equal import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.comparison.less_equal import (
     less_equal_ir,
     less_equal_requirements,
     source_equal_width_less_equal_cost,
 )
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.qroam_resource_model import (
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.lookup.qroam_resource_model import (
     source_qroam_measurement_erase_cost,
 )
-from ...compiler.registers.uniform_preparation import (
+from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
+from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.ir import CircuitIR, Instruction
 from .sparse_chemistry_data import SparseChemistryData
 

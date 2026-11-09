@@ -7,11 +7,11 @@ from dataclasses import dataclass, replace
 from math import isfinite, tau
 
 from ....circuit import Circuit
-from ....compiler.registers.arithmetic import (
+from ....compiler.registers.arithmetic.addition import (
     controlled_add_or_subtract_ir,
     measurement_add_or_subtract_ir,
 )
-from ....compiler.registers.qrom import controlled_qrom_ir
+from ....compiler.registers.lookup.qrom import controlled_qrom_ir
 from ....core.ir import CircuitIR
 from ....errors import ValidationError
 

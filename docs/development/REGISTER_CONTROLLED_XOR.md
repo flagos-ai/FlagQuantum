@@ -1,6 +1,6 @@
 # Controlled register XOR
 
-`compiler/registers/controlled_register_xor.py` owns two concrete entries:
+`compiler/registers/bits/controlled_register_xor.py` owns two concrete entries:
 `controlled_xor_ir` binds one positive control; `grouped_controlled_xor_ir` binds
 existing `ControlRegister` groups around that body. Both preserve the source word
 and XOR it into any equal-width target. Registers use MSB-first order. The

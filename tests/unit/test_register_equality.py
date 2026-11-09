@@ -6,7 +6,10 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.equality import equality_constant_ir, equality_ir
+from flagquantum.compiler.registers.comparison.equality import (
+    equality_constant_ir,
+    equality_ir,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

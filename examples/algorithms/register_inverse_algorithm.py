@@ -9,7 +9,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 import flagquantum as fq
-from flagquantum.compiler.registers.inverse_algorithm import (
+from flagquantum.compiler.registers.modular.inversion.inverse_algorithm import (
     inverse_algorithm_ir,
     inverse_algorithm_outputs,
 )

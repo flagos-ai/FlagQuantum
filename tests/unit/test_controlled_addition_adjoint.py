@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.controlled_addition import (
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
     controlled_add_adjoint_ir,
     controlled_add_ir,
 )

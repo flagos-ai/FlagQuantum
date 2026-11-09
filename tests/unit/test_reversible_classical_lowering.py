@@ -225,13 +225,13 @@ def test_negative_parity_predicate_uses_owned_classical_scratch() -> None:
 def _unlookup_core(
     n: int, mode: int, classical: tuple[int, int]
 ) -> tuple[CircuitIR, torch.Tensor]:
-    from flagquantum.compiler.registers.finite_field import (
+    from flagquantum.compiler.registers.finite_field.coefficients import (
         ClassicalFieldCoefficient as C,
     )
-    from flagquantum.compiler.registers.measured_unlookup import (
+    from flagquantum.compiler.registers.lookup.measured_unlookup import (
         measured_unlookup_operations,
     )
-    from flagquantum.compiler.registers.recursive_lookup import (
+    from flagquantum.compiler.registers.lookup.recursive_lookup import (
         recursive_lookup_operations,
     )
 

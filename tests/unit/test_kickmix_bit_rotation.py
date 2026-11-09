@@ -9,8 +9,10 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseProgram
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient as Bit
-from flagquantum.compiler.registers.kickmix_bit_rotation import kickmix_bit_rotation_ir
+from flagquantum.compiler.registers.bits.bit_rotation import kickmix_bit_rotation_ir
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient as Bit,
+)
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit

@@ -5,8 +5,10 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.field_polynomial_layout import FieldPolynomialLayout
-from flagquantum.compiler.registers.finite_field import gf2_add_constant_ir
+from flagquantum.compiler.registers.finite_field.coefficients import gf2_add_constant_ir
+from flagquantum.compiler.registers.finite_field.field_polynomial_layout import (
+    FieldPolynomialLayout,
+)
 
 pytestmark = pytest.mark.unit
 

@@ -74,7 +74,7 @@ bases and are not substituted for one another in this table.
 
 ```python
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.kickmix_modular_doubling import (
+from flagquantum.compiler.registers.modular.exact_modular_doubling import (
     kickmix_exact_modular_doubling_ir,
 )
 from flagquantum.dynamic import DynamicCircuit

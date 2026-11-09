@@ -90,8 +90,10 @@ def test_complete_complex_raw_permutation_exact_stream_and_inverse(controlled):
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
-    from flagquantum.compiler.registers.controlled_swap import controlled_swap_ir
-    from flagquantum.compiler.registers.swap import swap_register_ir
+    from flagquantum.compiler.registers.primitives.controlled_swap import (
+        controlled_swap_ir,
+    )
+    from flagquantum.compiler.registers.primitives.swap import swap_register_ir
 
     gates = (
         controlled_swap_ir(0, (1,), (2,))
@@ -124,7 +126,7 @@ def test_relative_callback_permutation_does_not_erase_original_quantum_phases():
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
-    from flagquantum.compiler.registers.relative_controlled_swap import (
+    from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
         relative_controlled_swap_ir,
     )
     from tests.unit.test_relative_controlled_swap import (

@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from ....circuit import Circuit
 from ....compiler._component_trace.resource_model import ComponentCost
-from ....compiler.registers.bounded_pauli_select import (
+from ....compiler.registers.lookup.bounded_pauli_select import (
     bounded_pauli_select_ir,
     source_bounded_pauli_select_cost,
 )

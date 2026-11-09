@@ -145,7 +145,9 @@ def test_native_add_model_with_bystander_matches_source_composite() -> None:
     from qualtran.bloqs.arithmetic import Add
     from qualtran.resource_counting import QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+    from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+        source_add_cost,
+    )
 
     adder = source_add_cost(2, 2)
     steps = [

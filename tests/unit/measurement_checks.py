@@ -79,11 +79,13 @@ def certified_and_channel_map(
     are independently proved on all eight inputs before composition. This is a test certificate,
     not an execution backend or a sampled branch check.
     """
-    from flagquantum.compiler.registers.and_compute import (
+    from flagquantum.compiler.registers.primitives.and_compute import (
         and_compute_ir,
         and_uncompute_ir,
     )
-    from flagquantum.compiler.registers.controlled_swap import controlled_swap_bit_ir
+    from flagquantum.compiler.registers.primitives.controlled_swap import (
+        controlled_swap_bit_ir,
+    )
 
     if not basis_bits or not basis_bits[0]:
         raise AssertionError("Channel certificate needs nonempty basis inputs")

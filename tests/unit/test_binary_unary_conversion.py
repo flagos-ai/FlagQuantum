@@ -14,7 +14,7 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.binary_unary_conversion import (
+from flagquantum.compiler.registers.bits.binary_unary_conversion import (
     binary_to_unary_operations,
     unary_to_binary_operations,
 )

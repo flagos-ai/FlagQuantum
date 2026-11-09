@@ -9,7 +9,7 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.arithmetic import add_constant_ir
+from flagquantum.compiler.registers.arithmetic.addition import add_constant_ir
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

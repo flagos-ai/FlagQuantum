@@ -6,8 +6,8 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.arithmetic import add_constant_ir
-from flagquantum.compiler.registers.controlled_addition import (
+from flagquantum.compiler.registers.arithmetic.addition import add_constant_ir
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
     controlled_add_constant_ir,
 )
 from flagquantum.dynamic import DynamicCircuit

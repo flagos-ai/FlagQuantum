@@ -9,8 +9,8 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.relative_controlled_swap import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
     control_relative_swap_ir,
     relative_controlled_swap_ir,
 )

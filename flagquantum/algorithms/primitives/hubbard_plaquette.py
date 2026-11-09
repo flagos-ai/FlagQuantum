@@ -1,6 +1,6 @@
 """Executable four-mode hopping from Appendix E of arXiv:2012.09238."""
 
-from ...compiler.registers.partition import unpartition_register
+from ...compiler.registers.layout.partition import unpartition_register
 from ...core._composition import inverted_instruction
 from ...core.ir import Instruction
 from .fermionic_fourier import two_bit_fermionic_fourier_ir

@@ -12,17 +12,17 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.qroam_resource_model import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.layout.workspace import RegisterWorkspace
+from flagquantum.compiler.registers.lookup.qroam_resource_model import (
     source_select_swap_qrom_cost,
 )
-from flagquantum.compiler.registers.select_swap_qrom import (
+from flagquantum.compiler.registers.lookup.select_swap_qrom import (
     control_select_swap_qrom_ir,
     optimal_select_swap_log_block_sizes,
     select_swap_qrom_ir,
 )
-from flagquantum.compiler.registers.source_qroam_clean import QroamCleanTable
-from flagquantum.compiler.registers.workspace import RegisterWorkspace
+from flagquantum.compiler.registers.lookup.source_qroam_clean import QroamCleanTable
 from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (

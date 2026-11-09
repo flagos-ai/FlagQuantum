@@ -16,9 +16,13 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.arithmetic_declarations import arithmetic_callees
-from flagquantum.compiler.registers.hamming_weight import hamming_weight_resource_widths
-from flagquantum.compiler.registers.hamming_weight_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_declarations import (
+    arithmetic_callees,
+)
+from flagquantum.compiler.registers.bits.hamming_weight import (
+    hamming_weight_resource_widths,
+)
+from flagquantum.compiler.registers.bits.hamming_weight_resource_model import (
     source_hamming_weight_cost,
     source_hamming_weight_resource_formula,
 )
@@ -171,7 +175,7 @@ def test_symbolic_lower_bound_changes_counts_without_casting_literal():
 def test_phasing_composes_replaceable_count_models_without_duplicate_equations(
     monkeypatch,
 ):
-    import flagquantum.compiler.registers.hamming_weight_phasing as consumer
+    import flagquantum.compiler.registers.phase.hamming_weight_phasing as consumer
 
     seen = []
 

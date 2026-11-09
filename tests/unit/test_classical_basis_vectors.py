@@ -135,7 +135,7 @@ def test_raw_state_and_effect_values_bind_existing_complex_quantum_consumers(
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
-    from flagquantum.compiler.registers.int_vector import (
+    from flagquantum.compiler.registers.layout.int_vector import (
         int_effect_bindings,
         int_state_ir,
     )

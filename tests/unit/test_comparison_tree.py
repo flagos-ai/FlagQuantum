@@ -7,7 +7,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.comparison_tree import (
+from flagquantum.compiler.registers.comparison.comparison_tree import (
     bi_qubits_mixer_ir,
     single_qubit_compare_ir,
 )

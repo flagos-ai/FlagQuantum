@@ -12,15 +12,15 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.controlled_component import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.controlled_component import (
     extend_controlled_component_ir,
 )
-from flagquantum.compiler.registers.controlled_component_resource_model import (
+from flagquantum.compiler.registers.control.controlled_component_resource_model import (
     controlled_component_cost,
     extended_controlled_component_cost,
 )
-from flagquantum.compiler.registers.indexed_component_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_resource_model import (
     indexed_component_cost,
 )
 from flagquantum.core.ir import Instruction

@@ -8,8 +8,8 @@ from itertools import product
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.arithmetic import add_adjoint_ir, add_ir
-from flagquantum.compiler.registers.auto_partition import AutoPartition
+from flagquantum.compiler.registers.arithmetic.addition import add_adjoint_ir, add_ir
+from flagquantum.compiler.registers.layout.auto_partition import AutoPartition
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

@@ -153,7 +153,7 @@ def test_bound_two_dimensional_words_keep_all_complex_amplitudes_and_source_xor_
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
-    from flagquantum.compiler.registers.bitwise import xor_constant_ir
+    from flagquantum.compiler.registers.bits.bitwise import xor_constant_ir
     from flagquantum.simulation.classical_bitwise import xor_constant_classical_value
 
     source = XorK(QUInt(2), 1)

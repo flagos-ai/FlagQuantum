@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.control_predicate import (
+from flagquantum.compiler.registers.control.control_predicate import (
     ControlRegister,
     IntegerEncoding,
     control_predicate_ir,

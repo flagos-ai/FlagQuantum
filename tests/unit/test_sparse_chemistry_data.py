@@ -94,7 +94,7 @@ def test_named_lookup_matches_source_gate_stream(log: int) -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
 
-    from flagquantum.compiler.registers.partition import partition_register
+    from flagquantum.compiler.registers.layout.partition import partition_register
     from flagquantum.core.ir import CircuitIR
     from flagquantum.dynamic import DynamicCircuit
     from tests.unit.measurement_checks import forced_branch

@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.field_inverse import (
+from flagquantum.compiler.registers.finite_field.field_inverse import (
     gf2_inverse_decomposition,
     gf2_inverse_ir,
     gf2_inverse_workspace_size,

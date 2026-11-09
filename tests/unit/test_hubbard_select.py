@@ -13,7 +13,7 @@ from flagquantum.compiler._component_trace.resource_comparison import (
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

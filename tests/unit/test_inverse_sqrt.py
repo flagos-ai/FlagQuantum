@@ -9,15 +9,15 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.inverse_sqrt import (
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt import (
     inverse_sqrt_ir,
     inverse_sqrt_requirements,
 )
-from flagquantum.compiler.registers.inverse_sqrt_newton import (
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt_newton import (
     inverse_sqrt_newton_requirements,
     inverse_sqrt_newton_step_ir,
 )
-from flagquantum.compiler.registers.inverse_sqrt_seed import (
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt_seed import (
     inverse_sqrt_seed_ir,
     inverse_sqrt_seed_requirements,
 )

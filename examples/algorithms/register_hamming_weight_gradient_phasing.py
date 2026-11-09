@@ -10,10 +10,10 @@ from math import pi
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.hamming_weight_phasing import (
+from flagquantum.compiler.registers.phase.hamming_weight_phasing import (
     hamming_weight_gradient_phasing_ir,
 )
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

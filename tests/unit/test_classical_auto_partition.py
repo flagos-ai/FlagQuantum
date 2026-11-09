@@ -38,7 +38,7 @@ def configuration(kind):
     from qualtran.bloqs.arithmetic import Add
     from qualtran.bloqs.bookkeeping.auto_partition import AutoPartition, Unused
 
-    from flagquantum.compiler.registers.auto_partition import (
+    from flagquantum.compiler.registers.layout.auto_partition import (
         AutoPartition as NativeAutoPartition,
     )
     from flagquantum.simulation.integer_encoding import (
@@ -171,8 +171,10 @@ def test_measured_add_original_stream_complete_complex_branches_clean_work_and_m
     from flagquantum.compiler._component_trace.resource_model import (
         estimate_component_resources,
     )
-    from flagquantum.compiler.registers.arithmetic import add_ir
-    from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+    from flagquantum.compiler.registers.arithmetic.addition import add_ir
+    from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+        source_add_cost,
+    )
     from tests.unit.measurement_checks import forced_branch
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates
     from tests.unit.test_register_subtraction import assert_source

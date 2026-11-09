@@ -12,19 +12,19 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.less_equal import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.comparison.less_equal import (
     less_equal_ir,
     less_equal_requirements,
     source_equal_width_less_equal_cost,
 )
-from ...compiler.registers.qrom_table import QromTable
-from ...compiler.registers.uniform_preparation import (
+from ...compiler.registers.lookup.qrom_table import QromTable
+from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
+from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.ir import Instruction
 from .alias_sampling import AliasSamplingTable
 from .black_box_prepare import BlackBoxPrepare

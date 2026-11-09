@@ -11,7 +11,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
 from flagquantum.compiler._component_trace.resource_generalization import (
     BookkeepingCall,
 )
-from flagquantum.compiler.registers.partition import (
+from flagquantum.compiler.registers.layout.partition import (
     join_integer_pair,
     join_register_pair,
     partition_register,

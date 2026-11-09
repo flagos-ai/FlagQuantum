@@ -213,7 +213,9 @@ def test_raw_values_full_complex_phase_gradient_and_no_work():
     from flagquantum.compiler._component_trace.resource_comparison import (
         count_emitted_instructions,
     )
-    from flagquantum.compiler.registers.phase_gradient import phase_gradient_unitary_ir
+    from flagquantum.compiler.registers.phase.phase_gradient import (
+        phase_gradient_unitary_ir,
+    )
     from flagquantum.core.ir import CircuitIR
 
     weights = torch.arange(1, 17, dtype=torch.float64)

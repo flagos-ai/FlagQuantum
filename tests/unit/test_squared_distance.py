@@ -4,7 +4,7 @@ from itertools import product
 
 import pytest
 
-from flagquantum.compiler.registers.squared_distance import (
+from flagquantum.compiler.registers.fixed_point.squared_distance import (
     squared_distance_ir,
     squared_distance_requirements,
 )

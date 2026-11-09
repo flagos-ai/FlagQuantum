@@ -131,7 +131,7 @@ def test_source_missing_decomposition_and_through_signature_error_remain_explici
 def test_occupied_target_all_complex_states_all_measurements_and_work_cleanup(columns):
     import torch
 
-    from flagquantum.compiler.registers.contiguous_index import (
+    from flagquantum.compiler.registers.sorting.contiguous_index import (
         contiguous_index_columns_ir,
         contiguous_index_columns_workspace_size,
         contiguous_index_ir,
@@ -178,7 +178,7 @@ def test_source_budget_and_emitted_report_keep_measurement_and_width_bases_separ
     from qualtran.bloqs.arithmetic.conversions.contiguous_index import ToContiguousIndex
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.contiguous_index import (
+    from flagquantum.compiler.registers.sorting.contiguous_index import (
         contiguous_index_columns_ir,
         source_contiguous_index_cost,
     )

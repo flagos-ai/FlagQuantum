@@ -12,7 +12,7 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bitwise import on_each_ir
+from flagquantum.compiler.registers.bits.bitwise import on_each_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.classical_on_each import on_each_classical_value
 from flagquantum.simulation.classical_pauli_values import (

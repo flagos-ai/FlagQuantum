@@ -8,9 +8,9 @@
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
-from ...compiler.registers.auto_partition import AutoPartition
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import RegisterLayout
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.auto_partition import AutoPartition
+from ...compiler.registers.layout.partition import RegisterLayout
 from ...core.ir import Instruction
 
 PrepareEmitter = Callable[

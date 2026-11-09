@@ -12,11 +12,11 @@ from typing import Literal
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.modular_addition import (
+from flagquantum.compiler.registers.modular.modular_addition import (
     modular_add_adjoint_ir,
     modular_add_ir,
 )
-from flagquantum.compiler.registers.modular_subtraction import (
+from flagquantum.compiler.registers.modular.modular_subtraction import (
     modular_subtract_adjoint_ir,
     modular_subtract_ir,
 )

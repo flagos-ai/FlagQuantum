@@ -9,7 +9,7 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.inverse_sqrt_newton import (
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt_newton import (
     inverse_sqrt_newton_requirements,
     inverse_sqrt_newton_step_ir,
 )

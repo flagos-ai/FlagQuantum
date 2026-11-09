@@ -15,11 +15,11 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.auto_partition import AutoPartition, PartitionGroups
-from ...compiler.registers.indexed_component import indexed_component_ir
-from ...compiler.registers.indexed_component_resource_model import (
+from ...compiler.registers.control.indexed_component import indexed_component_ir
+from ...compiler.registers.control.indexed_component_resource_model import (
     indexed_component_cost,
 )
+from ...compiler.registers.layout.auto_partition import AutoPartition, PartitionGroups
 from ...core.ir import Instruction
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata

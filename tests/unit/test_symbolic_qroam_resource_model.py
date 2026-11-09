@@ -2,15 +2,15 @@
 
 import pytest
 
-from flagquantum.compiler.registers.qroam_resource_model import (
+from flagquantum.compiler.registers.lookup.qroam_resource_model import (
     source_qroam_measurement_erase_cost,
 )
-from flagquantum.compiler.registers.source_qroam_clean import QroamCleanTable
-from flagquantum.compiler.registers.symbolic_qroam_resource_model import (
+from flagquantum.compiler.registers.lookup.source_qroam_clean import QroamCleanTable
+from flagquantum.compiler.registers.lookup.symbolic_qroam_resource_model import (
     source_blocked_lookup_resource_formula,
     source_shape_erasure_resource_formula,
 )
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 

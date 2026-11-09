@@ -6,7 +6,10 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.int_vector import int_effect_bindings, int_state_ir
+from flagquantum.compiler.registers.layout.int_vector import (
+    int_effect_bindings,
+    int_state_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.simulation.classical_basis_vectors import (
     bit_basis_classical_values,

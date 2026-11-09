@@ -10,7 +10,7 @@ from ._component_trace.gate_budget import GateCategories, t_and_ccz_budget
 from ._component_trace.resource_comparison import count_emitted_instructions
 from ._component_trace.resource_model import ComponentCost, estimate_component_resources
 from ._component_trace.symbolic_math import SymbolicInt
-from .registers.symbolic_resource_model import SymbolicResourceFormula
+from .registers.resources.symbolic_resource_model import SymbolicResourceFormula
 
 
 def _json_count(value: SymbolicInt) -> int | str:

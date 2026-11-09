@@ -9,7 +9,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.zpow_phase_gradient import (
+from flagquantum.compiler.registers.phase.zpow_phase_gradient import (
     zpow_phase_gradient_constant,
     zpow_via_phase_gradient_ir,
 )

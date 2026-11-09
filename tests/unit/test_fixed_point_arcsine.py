@@ -8,7 +8,7 @@ from math import asin, floor, pi, sqrt
 
 import pytest
 
-from flagquantum.compiler.registers.fixed_point_arcsine import (
+from flagquantum.compiler.registers.fixed_point.fixed_point_arcsine import (
     fixed_point_arcsine_ir,
     fixed_point_arcsine_requirements,
 )

@@ -5,7 +5,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.multi_controlled_constant_addition import (
+from flagquantum.compiler.registers.arithmetic.multi_controlled_constant_addition import (
     multi_controlled_add_constant_ir,
 )
 from tests.unit.measurement_checks import forced_branch
@@ -129,7 +129,7 @@ def test_original_resource_categories_and_peak(m, n, values, adjoint, legacy):
     from flagquantum.compiler._component_trace.resource_model import (
         estimate_component_resources,
     )
-    from flagquantum.compiler.registers.multi_controlled_constant_addition import (
+    from flagquantum.compiler.registers.arithmetic.multi_controlled_constant_addition import (
         source_multi_controlled_constant_add_cost,
     )
 
@@ -173,7 +173,7 @@ def test_ownership_and_control_validation_precedes_returned_instructions(change)
 def test_shared_component_implementations_can_be_replaced_without_consumer_changes(
     monkeypatch,
 ):
-    import flagquantum.compiler.registers.multi_controlled_constant_addition as module
+    import flagquantum.compiler.registers.arithmetic.multi_controlled_constant_addition as module
     from flagquantum.compiler._component_trace.resource_model import (
         ComponentCost,
         GateCost,
@@ -183,7 +183,7 @@ def test_shared_component_implementations_can_be_replaced_without_consumer_chang
     compute = ComponentCost("predicate", 5, GateCost(t=2))
     erase = ComponentCost("erase", 7, GateCost(measurement=3))
     addition = ComponentCost("addition", 11, GateCost(cswap=5))
-    import flagquantum.compiler.registers.controlled_component_resource_model as owner
+    import flagquantum.compiler.registers.control.controlled_component_resource_model as owner
 
     monkeypatch.setattr(
         owner,

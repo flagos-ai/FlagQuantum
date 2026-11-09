@@ -16,7 +16,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     FixedTCall,
 )
-from flagquantum.compiler.registers.controlled_not import (
+from flagquantum.compiler.registers.primitives.controlled_not import (
     cnot_with_controls_ir,
     toffoli_with_controls_ir,
 )

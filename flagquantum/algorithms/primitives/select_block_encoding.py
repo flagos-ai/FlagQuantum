@@ -11,8 +11,8 @@ from functools import partial
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import RegisterLayout, partition_register
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.partition import RegisterLayout, partition_register
 from ...core.ir import CircuitIR, Instruction
 from .black_box_prepare import BlackBoxPrepare
 

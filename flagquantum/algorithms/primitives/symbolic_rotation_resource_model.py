@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import cast
 
 from ...compiler._component_trace.symbolic_math import SymbolicInt, bit_length, smax
-from ...compiler.registers.symbolic_resource_model import (
+from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_permutation_cycle_resource_formula,
     source_phase_gradient_lookup_resource_formula,

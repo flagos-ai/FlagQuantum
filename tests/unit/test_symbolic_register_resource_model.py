@@ -5,8 +5,10 @@ import sys
 
 import pytest
 
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_add_resource_formula,
     source_permutation_cycle_resource_formula,
@@ -128,7 +130,7 @@ class BlockSympy(MetaPathFinder):
         return None
 
 sys.meta_path.insert(0, BlockSympy())
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     source_add_resource_formula,
     source_permutation_cycle_resource_formula,
     source_phase_gradient_lookup_resource_formula, source_qrom_resource_formula,
@@ -179,7 +181,7 @@ def test_shape_only_permutation_cycle(concrete_width: int | None) -> None:
 def test_symbolic_add_queries_replaceable_native_recipe(monkeypatch, mode, legacy):
     import sympy
 
-    import flagquantum.compiler.registers.symbolic_resource_model as module
+    import flagquantum.compiler.registers.resources.symbolic_resource_model as module
     from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
     from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
 
@@ -204,7 +206,7 @@ def test_symbolic_add_queries_replaceable_native_recipe(monkeypatch, mode, legac
 
 
 def test_concrete_add_formula_preserves_all_child_categories_and_lifetimes(monkeypatch):
-    import flagquantum.compiler.registers.symbolic_resource_model as module
+    import flagquantum.compiler.registers.resources.symbolic_resource_model as module
     from flagquantum.compiler._component_trace.resource_model import (
         ComponentCost,
         CostCall,

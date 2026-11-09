@@ -10,7 +10,7 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.arithmetic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
     source_controlled_add_cost,
 )
 
@@ -54,7 +54,7 @@ def test_all_original_categories_and_peak_both_directions(widths, cv, legacy, dt
 def test_shared_model_replacement_retains_stage_order_and_live_bystanders(
     monkeypatch, cv, legacy
 ):
-    import flagquantum.compiler.registers.arithmetic_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.arithmetic_resource_model as module
 
     add = ComponentCost("replacement_add", 19, GateCost(t=5))
     compute = ComponentCost("replacement_predicate", 7, GateCost(clifford=11))

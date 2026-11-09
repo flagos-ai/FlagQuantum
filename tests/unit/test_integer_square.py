@@ -7,7 +7,7 @@ from math import sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.integer_square import (
+from flagquantum.compiler.registers.arithmetic.integer_square import (
     integer_square_ir,
     integer_square_workspace_size,
 )

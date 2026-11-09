@@ -9,10 +9,12 @@ import flagquantum as fq
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.arithmetic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
     source_controlled_add_cost,
 )
-from flagquantum.compiler.registers.controlled_addition import controlled_add_ir
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
+    controlled_add_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.rank_uniform_preparation import (
+from flagquantum.compiler.registers.preparation.rank_uniform_preparation import (
     rank_rotation_word,
     rank_uniform_ir,
     rank_uniform_requirements,

@@ -18,7 +18,9 @@ from flagquantum.compiler._component_trace.terminal_t_cost import (
     estimate_terminal_t_cost,
     rotation_t_cost,
 )
-from flagquantum.compiler.registers.controlled_swap import controlled_swap_bit_ir
+from flagquantum.compiler.registers.primitives.controlled_swap import (
+    controlled_swap_bit_ir,
+)
 
 pytestmark = pytest.mark.unit
 

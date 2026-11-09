@@ -11,7 +11,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
 from flagquantum.compiler._component_trace.resource_generalization import (
     BookkeepingCall,
 )
-from flagquantum.compiler.registers.register_cast import RegisterCast
+from flagquantum.compiler.registers.layout.register_cast import RegisterCast
 
 pytestmark = pytest.mark.unit
 

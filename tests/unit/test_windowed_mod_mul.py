@@ -7,10 +7,10 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.single_window_mod_mul import (
+from flagquantum.compiler.registers.modular.single_window_mod_mul import (
     single_window_qroam_table,
 )
-from flagquantum.compiler.registers.windowed_mod_mul import windowed_mod_mul_ir
+from flagquantum.compiler.registers.modular.windowed_mod_mul import windowed_mod_mul_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.classical_montgomery_multiplication import (
     montgomery_multiply_classical_values,

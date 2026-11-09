@@ -8,9 +8,9 @@
 from dataclasses import dataclass
 from math import hypot, isfinite
 
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import split_register_pair
-from ...compiler.registers.permutation import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.partition import split_register_pair
+from ...compiler.registers.sorting.permutation import (
     permutation_ir,
     source_partial_permutation_cycles,
 )

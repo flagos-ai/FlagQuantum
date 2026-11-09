@@ -14,14 +14,14 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.control_predicate import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.control.control_predicate import (
     ControlRegister,
     bind_control_registers,
 )
-from ...compiler.registers.controlled_component import controlled_component_ir
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.prepare_reflection import (
+from ...compiler.registers.control.controlled_component import controlled_component_ir
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     source_prepare_reflection_cost,
 )

@@ -11,7 +11,7 @@ from flagquantum.algorithms.primitives.thc_uniform_preparation import (
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_sparse_chemistry_prepare import _branch

@@ -158,7 +158,7 @@ def test_all_raw_sign_words_source_stream_spectator_and_cleared_prefix(ones):
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
     import flagquantum as fq
-    from flagquantum.compiler.registers.sign_extension import sign_extend_ir
+    from flagquantum.compiler.registers.bits.sign_extension import sign_extend_ir
     from flagquantum.core.ir import CircuitIR
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates
     from tests.unit.test_register_subtraction import assert_source

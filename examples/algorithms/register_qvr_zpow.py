@@ -10,7 +10,7 @@ from math import tau
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.qvr_zpow import qvr_zpow_ir
+from flagquantum.compiler.registers.phase.qvr_zpow import qvr_zpow_ir
 from flagquantum.core.ir import CircuitIR
 
 

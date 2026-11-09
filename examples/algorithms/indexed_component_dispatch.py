@@ -11,7 +11,9 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
-from flagquantum.compiler.registers.indexed_component import indexed_component_ir
+from flagquantum.compiler.registers.control.indexed_component import (
+    indexed_component_ir,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

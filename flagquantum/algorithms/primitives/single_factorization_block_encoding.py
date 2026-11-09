@@ -4,11 +4,11 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from ...circuit import Circuit
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.multi_control import multi_and_ir
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.prepare_reflection import prepare_reflection_ir
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.control.multi_control import multi_and_ir
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.preparation.prepare_reflection import prepare_reflection_ir
+from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit

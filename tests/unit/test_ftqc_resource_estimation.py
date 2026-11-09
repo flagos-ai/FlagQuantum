@@ -13,7 +13,7 @@ from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_qrom_resource_formula,
 )

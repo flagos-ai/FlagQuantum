@@ -7,10 +7,10 @@ import torch
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.multi_control import multi_and_ir
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.prepare_reflection import prepare_reflection_ir
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.control.multi_control import multi_and_ir
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.preparation.prepare_reflection import prepare_reflection_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit

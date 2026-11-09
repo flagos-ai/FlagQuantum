@@ -8,7 +8,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.kickmix_field_product import (
+from flagquantum.compiler.registers.finite_field.polynomial_product import (
     kickmix_controlled_field_product_xor_ir,
 )
 from flagquantum.core.ir import CircuitIR

@@ -6,10 +6,10 @@ from math import isfinite, pi
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost
-from ...compiler.registers.global_phase import scalar_phase_ir
-from ...compiler.registers.hamming_weight import hamming_weight_requirements
-from ...compiler.registers.hamming_weight_phasing import hamming_weight_phasing_ir
-from ...compiler.registers.partition import unpartition_register
+from ...compiler.registers.bits.hamming_weight import hamming_weight_requirements
+from ...compiler.registers.layout.partition import unpartition_register
+from ...compiler.registers.phase.hamming_weight_phasing import hamming_weight_phasing_ir
+from ...compiler.registers.primitives.global_phase import scalar_phase_ir
 from ...core._composition import inverted_instruction
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction

@@ -10,7 +10,9 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_unitary_ir
+from flagquantum.compiler.registers.phase.phase_gradient import (
+    phase_gradient_unitary_ir,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.fixed_point_encoding import (
     fixed_point_array_from_bits,

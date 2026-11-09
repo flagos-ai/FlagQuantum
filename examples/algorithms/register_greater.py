@@ -12,12 +12,12 @@ from typing import Literal
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.less_equal import less_equal_requirements
-from flagquantum.compiler.registers.linear_comparison import (
+from flagquantum.compiler.registers.comparison.less_equal import less_equal_requirements
+from flagquantum.compiler.registers.comparison.linear_comparison import (
     linear_greater_ir,
     linear_greater_requirements,
 )
-from flagquantum.compiler.registers.ordering import greater_ir
+from flagquantum.compiler.registers.comparison.ordering import greater_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

@@ -16,11 +16,11 @@ from flagquantum.algorithms.primitives.alias_sampling import (
     alias_sampling_table,
     sparse_alias_sampling_table,
 )
-from flagquantum.compiler.registers.less_equal import (
+from flagquantum.compiler.registers.comparison.less_equal import (
     less_equal_ir,
     less_equal_requirements,
 )
-from flagquantum.compiler.registers.source_qrom import source_qrom_workspace_size
+from flagquantum.compiler.registers.lookup.source_qrom import source_qrom_workspace_size
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from tests.unit.measurement_checks import forced_branch

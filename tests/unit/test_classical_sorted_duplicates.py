@@ -160,7 +160,7 @@ def test_original_callback_values_drive_active_complex_channel_and_clean_work(
     import torch
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
-    from flagquantum.compiler.registers.sorted_duplicates import (
+    from flagquantum.compiler.registers.sorting.sorted_duplicates import (
         sorted_duplicate_requirements,
         sorted_duplicates_ir,
     )
@@ -212,7 +212,9 @@ def test_original_callback_values_drive_active_complex_channel_and_clean_work(
 def test_original_controlled_callback_ignores_control_but_decomposition_does_not():
     import torch
 
-    from flagquantum.compiler.registers.sorted_duplicates import sorted_duplicates_ir
+    from flagquantum.compiler.registers.sorting.sorted_duplicates import (
+        sorted_duplicates_ir,
+    )
     from tests.unit.measurement_checks import forced_branch
     from tests.unit.test_sorted_duplicates import layout
 

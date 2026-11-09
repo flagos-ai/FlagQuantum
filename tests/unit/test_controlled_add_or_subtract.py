@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arithmetic import (
+from flagquantum.compiler.registers.arithmetic.addition import (
     add_ir,
     controlled_add_or_subtract_ir,
     measurement_add_or_subtract_ir,
@@ -136,7 +136,7 @@ def test_complete_complex_control_and_spectator_all_raw_branches(
 def test_shared_complement_is_replaceable_in_both_existing_consumers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.compiler.registers import arithmetic
+    from flagquantum.compiler.registers.arithmetic import addition as arithmetic
 
     calls = []
 

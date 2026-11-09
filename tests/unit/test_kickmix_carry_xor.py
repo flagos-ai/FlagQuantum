@@ -8,9 +8,11 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient
-from flagquantum.compiler.registers.kickmix_carry_xor import kickmix_carry_xor_ir
-from flagquantum.compiler.registers.measurement import measure_x_clear_ir
+from flagquantum.compiler.registers.arithmetic.carry_parity import kickmix_carry_xor_ir
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient,
+)
+from flagquantum.compiler.registers.primitives.measurement import measure_x_clear_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

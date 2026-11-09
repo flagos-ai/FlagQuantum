@@ -12,7 +12,9 @@ from flagquantum.algorithms.primitives.grid_kinetic import (
     source_grid_kinetic_cost,
 )
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.integer_square import sum_of_squares_requirements
+from flagquantum.compiler.registers.arithmetic.integer_square import (
+    sum_of_squares_requirements,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources

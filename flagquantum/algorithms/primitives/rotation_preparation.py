@@ -8,8 +8,8 @@
 from dataclasses import dataclass
 from math import pi
 
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.phase_gradient_lookup import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.phase.phase_gradient_lookup import (
     phase_gradient_lookup_ir,
     phase_gradient_lookup_requirements,
 )

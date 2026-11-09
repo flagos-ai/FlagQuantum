@@ -9,7 +9,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.basis_translation import translate
-from flagquantum.compiler.registers.uniform_preparation import (
+from flagquantum.compiler.registers.preparation.uniform_preparation import (
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )

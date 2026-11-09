@@ -13,12 +13,17 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.always import Always, always_component_cost
-from flagquantum.compiler.registers.arithmetic import add_adjoint_ir, add_ir
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
-from flagquantum.compiler.registers.controlled_addition import (
+from flagquantum.compiler.registers.arithmetic.addition import add_adjoint_ir, add_ir
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
     controlled_add_constant_adjoint_ir,
     controlled_add_constant_ir,
+)
+from flagquantum.compiler.registers.primitives.always import (
+    Always,
+    always_component_cost,
 )
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

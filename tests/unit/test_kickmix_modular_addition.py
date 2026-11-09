@@ -12,8 +12,10 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient
-from flagquantum.compiler.registers.kickmix_modular_addition import (
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient,
+)
+from flagquantum.compiler.registers.modular.mixed_modular_addition import (
     kickmix_modular_addition_program,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor

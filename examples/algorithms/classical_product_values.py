@@ -8,7 +8,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.integer_square import integer_square_ir
+from flagquantum.compiler.registers.arithmetic.integer_square import integer_square_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

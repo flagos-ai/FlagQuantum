@@ -1,0 +1,1 @@
+"""Internal primitives register decompositions."""

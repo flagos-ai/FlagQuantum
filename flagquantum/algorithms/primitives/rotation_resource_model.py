@@ -11,9 +11,13 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.arithmetic_resource_model import source_phase_add_cost
-from ...compiler.registers.permutation_resource_model import source_permutation_cost
-from ...compiler.registers.qrom_resource_model import source_qrom_cost
+from ...compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_phase_add_cost,
+)
+from ...compiler.registers.lookup.qrom_resource_model import source_qrom_cost
+from ...compiler.registers.sorting.permutation_resource_model import (
+    source_permutation_cost,
+)
 from .rotation_preparation import RotationPreparation
 from .rotation_tables import rotation_tables
 from .sparse_rotation_preparation import SparseRotationPreparation

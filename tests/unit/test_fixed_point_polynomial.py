@@ -9,9 +9,11 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.bitwise import xor_constant_ir, xor_ir
-from flagquantum.compiler.registers.fixed_point_horner import fixed_point_horner_step_ir
-from flagquantum.compiler.registers.fixed_point_polynomial import (
+from flagquantum.compiler.registers.bits.bitwise import xor_constant_ir, xor_ir
+from flagquantum.compiler.registers.fixed_point.fixed_point_horner import (
+    fixed_point_horner_step_ir,
+)
+from flagquantum.compiler.registers.fixed_point.fixed_point_polynomial import (
     fixed_point_polynomial_ir,
     fixed_point_polynomial_requirements,
 )

@@ -8,13 +8,13 @@ from math import sqrt, tau
 import pytest
 import torch
 
-from flagquantum.compiler.registers.phase_addition import phase_add_workspace_size
-from flagquantum.compiler.registers.qvr_phase_gradient import (
+from flagquantum.compiler.registers.phase.phase_addition import phase_add_workspace_size
+from flagquantum.compiler.registers.phase.qvr_phase_gradient import (
     QvrPhaseFormat,
     qvr_phase_format,
     qvr_phase_gradient_ir,
 )
-from flagquantum.compiler.registers.scaled_phase_addition import (
+from flagquantum.compiler.registers.phase.scaled_phase_addition import (
     scaled_phase_add_ir,
     scaled_phase_add_terms,
 )

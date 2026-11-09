@@ -7,7 +7,9 @@ import torch
 
 from flagquantum.algorithms.primitives.phase_block_encoding import PhaseBlockEncoding
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.measurement_checks import forced_branch
@@ -193,7 +195,7 @@ def test_existing_select_and_lcu_consumers_need_no_binding_changes(lcu, adjoint)
     from flagquantum.algorithms.primitives.select_block_encoding import (
         SelectBlockEncoding,
     )
-    from flagquantum.compiler.registers.multiplexed_swap import (
+    from flagquantum.compiler.registers.lookup.multiplexed_swap import (
         multiplexed_cswap_ir,
         source_multiplexed_cswap_cost,
     )

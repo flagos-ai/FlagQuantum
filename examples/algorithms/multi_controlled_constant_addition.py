@@ -9,7 +9,7 @@ import flagquantum as fq
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.multi_controlled_constant_addition import (
+from flagquantum.compiler.registers.arithmetic.multi_controlled_constant_addition import (
     multi_controlled_add_constant_ir,
     source_multi_controlled_constant_add_cost,
 )

@@ -140,7 +140,9 @@ def test_component_family_attribution_matches_source(custom: bool) -> None:
     from qualtran.bloqs.for_testing.costing import CostingBloq
     from qualtran.resource_counting.classify_bloqs import classify_t_count_by_bloq_type
 
-    from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+    from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+        source_add_cost,
+    )
 
     t = ComponentCost("T", 1, GateCost(t=1))
     swap = ComponentCost(

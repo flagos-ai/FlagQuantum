@@ -9,8 +9,10 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.modular_addition import modular_add_ir
-from flagquantum.compiler.registers.modular_subtraction import modular_subtract_ir
+from flagquantum.compiler.registers.modular.modular_addition import modular_add_ir
+from flagquantum.compiler.registers.modular.modular_subtraction import (
+    modular_subtract_ir,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

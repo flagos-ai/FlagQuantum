@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.modular_constant_addition import (
+from flagquantum.compiler.registers.modular.modular_constant_addition import (
     controlled_modular_add_constant_ir,
     modular_constant_requirements,
 )

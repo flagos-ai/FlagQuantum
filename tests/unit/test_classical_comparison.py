@@ -147,14 +147,14 @@ def test_native_values_connect_to_original_stream_full_complex_branches_and_clea
     )
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
-    from flagquantum.compiler.registers.comparison import (
-        less_than_constant_ir,
-        less_than_constant_workspace_size,
-    )
-    from flagquantum.compiler.registers.equality import equality_ir
-    from flagquantum.compiler.registers.less_equal import (
+    from flagquantum.compiler.registers.comparison.equality import equality_ir
+    from flagquantum.compiler.registers.comparison.less_equal import (
         less_equal_ir,
         less_equal_requirements,
+    )
+    from flagquantum.compiler.registers.comparison.less_than import (
+        less_than_constant_ir,
+        less_than_constant_workspace_size,
     )
     from tests.unit.measurement_checks import forced_branch
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates

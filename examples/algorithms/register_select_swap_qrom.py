@@ -8,8 +8,8 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.select_swap_qrom import select_swap_qrom_ir
-from flagquantum.compiler.registers.source_qroam_clean import QroamCleanTable
+from flagquantum.compiler.registers.lookup.select_swap_qrom import select_swap_qrom_ir
+from flagquantum.compiler.registers.lookup.source_qroam_clean import QroamCleanTable
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

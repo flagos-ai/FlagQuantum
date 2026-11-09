@@ -6,7 +6,7 @@ from flagquantum.algorithms.primitives.symbolic_rotation_resource_model import (
     source_rotation_preparation_resource_formula,
     source_sparse_rotation_preparation_resource_formula,
 )
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 

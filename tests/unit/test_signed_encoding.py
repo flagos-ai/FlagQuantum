@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.signed_encoding import (
+from flagquantum.compiler.registers.bits.signed_encoding import (
     ones_complement_to_twos_ir,
     sign_magnitude_to_twos_ir,
     signed_encoding_workspace_size,

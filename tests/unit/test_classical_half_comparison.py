@@ -165,7 +165,9 @@ def test_invalid_private_source_relation_keeps_original_else_branch():
 
 @pytest.mark.parametrize("relation", [">=", "<"])
 def test_original_classical_erase_and_physical_port_aliases_remain_distinct(relation):
-    from flagquantum.compiler.registers.half_ordering import half_compare_outputs
+    from flagquantum.compiler.registers.comparison.half_ordering import (
+        half_compare_outputs,
+    )
 
     original = source(2, "unsigned", relation)
     values = original.on_classical_vals(1, 0)
@@ -195,7 +197,7 @@ def test_value_outputs_drive_full_complex_half_compute_and_all_erase_histories(
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
     import flagquantum as fq
-    from flagquantum.compiler.registers.half_ordering import (
+    from flagquantum.compiler.registers.comparison.half_ordering import (
         half_compare_ir,
         half_compare_outputs,
     )

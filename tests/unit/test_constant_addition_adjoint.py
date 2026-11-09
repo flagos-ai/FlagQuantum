@@ -6,11 +6,11 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arithmetic import (
+from flagquantum.compiler.registers.arithmetic.addition import (
     add_constant_adjoint_ir,
     add_constant_ir,
 )
-from flagquantum.compiler.registers.controlled_addition import (
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
     controlled_add_constant_adjoint_ir,
     controlled_add_constant_ir,
 )

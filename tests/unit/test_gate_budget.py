@@ -10,8 +10,10 @@ from flagquantum.compiler._component_trace.gate_budget import (
     toffoli_only_budget,
 )
 from flagquantum.compiler._component_trace.resource_model import GateCost
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_add_resource_formula,
 )

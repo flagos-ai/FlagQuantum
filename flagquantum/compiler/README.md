@@ -8,6 +8,10 @@ plans, evidence, and target artifacts. `registers/` owns register-level
 decompositions. Documented compiler entry modules remain importable at their
 existing paths.
 
+The internal [register package guide](registers/README.md) maps arithmetic,
+modular arithmetic, finite fields, lookup, control and the other register
+domains to their owning subpackages and focused tests.
+
 Transform quantum programs while preserving their numerical meaning,
 measurement behavior, and required gradients. The design direction is one
 verified path from quantum-classical source to target-legal output.

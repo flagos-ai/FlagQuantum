@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.linear_comparison import (
+from flagquantum.compiler.registers.comparison.linear_comparison import (
     linear_greater_ir,
     linear_greater_requirements,
 )

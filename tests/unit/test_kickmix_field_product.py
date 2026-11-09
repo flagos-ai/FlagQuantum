@@ -5,7 +5,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.kickmix_field_product import (
+from flagquantum.compiler.registers.finite_field.polynomial_product import (
     kickmix_field_product_xor_ir,
 )
 from tests.unit.test_field_linear import _source_type

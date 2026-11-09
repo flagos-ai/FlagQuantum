@@ -125,7 +125,7 @@ def test_shape_only_controls_use_existing_predicate_model_without_materializing_
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
     from qualtran.symbolics import Shaped
 
-    from flagquantum.compiler.registers.control_predicate_resource_model import (
+    from flagquantum.compiler.registers.control.control_predicate_resource_model import (
         control_predicate_resource_formula,
     )
 

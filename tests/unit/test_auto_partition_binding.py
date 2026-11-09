@@ -12,7 +12,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     PartitionedCall,
 )
-from flagquantum.compiler.registers.auto_partition import AutoPartition
+from flagquantum.compiler.registers.layout.auto_partition import AutoPartition
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     tensor_network_basis_effect,

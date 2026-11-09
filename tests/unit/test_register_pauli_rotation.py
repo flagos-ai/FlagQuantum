@@ -9,7 +9,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
 from flagquantum.compiler._component_trace.resource_generalization import RotationCall
-from flagquantum.compiler.registers.pauli_rotation import (
+from flagquantum.compiler.registers.primitives.pauli_rotation import (
     PauliAxis,
     pauli_power_ir,
     pauli_rotation_ir,

@@ -14,11 +14,15 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient as C
-from flagquantum.compiler.registers.measured_unlookup import (
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient as C,
+)
+from flagquantum.compiler.registers.lookup.measured_unlookup import (
     measured_unlookup_operations,
 )
-from flagquantum.compiler.registers.recursive_lookup import recursive_lookup_operations
+from flagquantum.compiler.registers.lookup.recursive_lookup import (
+    recursive_lookup_operations,
+)
 from flagquantum.core.classical_dataflow import ClassicalXor
 from tests.unit.measurement_checks import expand_reset_branches, forced_branch
 
@@ -385,7 +389,7 @@ def test_shared_components_can_be_replaced_without_changing_consumer(
     from flagquantum.compiler.artifacts.reversible_phase import (
         ReversiblePhaseOperation as Op,
     )
-    from flagquantum.compiler.registers import measured_unlookup as consumer
+    from flagquantum.compiler.registers.lookup import measured_unlookup as consumer
 
     calls: list[tuple[str, object]] = []
     buffer = (5, 4, 2, 3)

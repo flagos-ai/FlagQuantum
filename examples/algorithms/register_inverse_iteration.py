@@ -11,7 +11,7 @@ from math import sqrt
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.inverse_iteration import (
+from flagquantum.compiler.registers.modular.inversion.inverse_iteration import (
     inverse_iteration_ir,
     inverse_iteration_outputs,
 )

@@ -5,12 +5,12 @@ import pytest
 from flagquantum.algorithms.first_quantization_nu_resource_model import (
     source_prepare_nu_cost,
 )
-from flagquantum.compiler.registers.arithmetic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
     source_product_cost,
     source_sum_of_squares_cost,
 )
-from flagquantum.compiler.registers.ordering import source_greater_cost
-from flagquantum.compiler.registers.uniform_preparation import (
+from flagquantum.compiler.registers.comparison.ordering import source_greater_cost
+from flagquantum.compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
 from tests.unit.test_first_quantization_resource_model import assert_source_model

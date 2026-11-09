@@ -9,12 +9,16 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.reciprocal import (
+from flagquantum.compiler.registers.fixed_point.reciprocal import (
     reciprocal_ir,
     reciprocal_requirements,
 )
-from flagquantum.compiler.registers.reciprocal_newton import reciprocal_newton_step_ir
-from flagquantum.compiler.registers.reciprocal_seed import reciprocal_seed_ir
+from flagquantum.compiler.registers.fixed_point.reciprocal_newton import (
+    reciprocal_newton_step_ir,
+)
+from flagquantum.compiler.registers.fixed_point.reciprocal_seed import (
+    reciprocal_seed_ir,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.sparse_register_execution import execute_sparse_register

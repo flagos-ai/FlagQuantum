@@ -12,10 +12,10 @@ from math import sqrt
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.arithmetic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
     source_controlled_add_cost,
 )
-from flagquantum.compiler.registers.controlled_addition import (
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
     controlled_add_constant_ir,
     controlled_add_ir,
 )

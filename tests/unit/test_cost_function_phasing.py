@@ -9,16 +9,18 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.cost_function_phasing import (
+from flagquantum.compiler.registers.bits.hamming_weight import hamming_weight_ir
+from flagquantum.compiler.registers.phase.cost_function_phasing import (
     RegisterPorts,
     cost_function_phasing_ir,
 )
-from flagquantum.compiler.registers.hamming_weight import hamming_weight_ir
-from flagquantum.compiler.registers.phase_addition import phase_add_workspace_size
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
-from flagquantum.compiler.registers.qvr_phase_gradient import qvr_phase_gradient_ir
-from flagquantum.compiler.registers.qvr_zpow import qvr_zpow_ir
-from flagquantum.compiler.registers.scaled_phase_addition import (
+from flagquantum.compiler.registers.phase.phase_addition import phase_add_workspace_size
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.phase.qvr_phase_gradient import (
+    qvr_phase_gradient_ir,
+)
+from flagquantum.compiler.registers.phase.qvr_zpow import qvr_zpow_ir
+from flagquantum.compiler.registers.phase.scaled_phase_addition import (
     scaled_phase_add_ir,
     scaled_phase_add_terms,
 )

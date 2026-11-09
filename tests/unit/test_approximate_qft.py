@@ -10,7 +10,7 @@ from flagquantum.algorithms.primitives.approximate_qft import (
     approximate_qft_precision,
     approximate_qft_workspace_size,
 )
-from flagquantum.compiler.registers.phase_addition import phase_add_ir
+from flagquantum.compiler.registers.phase.phase_addition import phase_add_ir
 from flagquantum.core.ir import Instruction
 from tests.unit.test_qft_phase_gradient import check_source_operator, layout
 
@@ -114,7 +114,9 @@ def test_truncated_gradient_kickback_and_cleanup():
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
-    from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
+    from flagquantum.compiler.registers.phase.phase_gradient import (
+        phase_gradient_state_ir,
+    )
     from flagquantum.dynamic import DynamicCircuit
     from flagquantum.runtime.dynamic.execution import run_dynamic
     from tests.unit.test_uniform_preparation import embedded

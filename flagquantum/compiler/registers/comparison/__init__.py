@@ -1,0 +1,1 @@
+"""Internal comparison register decompositions."""

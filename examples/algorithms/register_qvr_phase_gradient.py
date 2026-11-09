@@ -8,8 +8,8 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
-from flagquantum.compiler.registers.qvr_phase_gradient import (
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.phase.qvr_phase_gradient import (
     qvr_phase_format,
     qvr_phase_gradient_ir,
 )

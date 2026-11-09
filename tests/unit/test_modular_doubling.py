@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.modular_doubling import (
+from flagquantum.compiler.registers.modular.modular_doubling import (
     modular_double_ir,
     modular_double_outputs,
     modular_double_requirements,
@@ -66,7 +66,9 @@ def basis(
 ) -> tuple[tuple[tuple[int, ...], ...], tuple[tuple[int, ...], ...]]:
     t, w, _ = layout(n)
     if half:
-        from flagquantum.compiler.registers.modular_halving import modular_half_outputs
+        from flagquantum.compiler.registers.modular.modular_halving import (
+            modular_half_outputs,
+        )
 
         out, clean = modular_half_outputs(t, w)
     else:

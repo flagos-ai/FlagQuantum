@@ -12,10 +12,10 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.qrom_resource_model import source_qrom_cost
-from flagquantum.compiler.registers.qrom_table import QromTable
-from flagquantum.compiler.registers.source_qrom import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.lookup.qrom_resource_model import source_qrom_cost
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
+from flagquantum.compiler.registers.lookup.source_qrom import (
     control_source_qrom_ir,
     source_qrom_ir,
     source_qrom_workspace_size,

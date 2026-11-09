@@ -10,7 +10,9 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.prepare_reflection import source_prepare_reflection_cost
+from ...compiler.registers.preparation.prepare_reflection import (
+    source_prepare_reflection_cost,
+)
 from .double_factorization_prepare_model import (
     _auxiliary_width,
     _df_address_widths,

@@ -4,7 +4,7 @@ from itertools import product
 
 import pytest
 
-from flagquantum.compiler.registers.uniform_preparation_resource_model import (
+from flagquantum.compiler.registers.preparation.uniform_preparation_resource_model import (
     source_uniform_preparation_resource_formula,
 )
 
@@ -108,7 +108,7 @@ def test_invalid_controls_cannot_hide_in_symbolic_omitted_calls(pattern):
 def test_symbolic_integer_does_not_dispatch_to_concrete_emitter_model(monkeypatch):
     import sympy
 
-    import flagquantum.compiler.registers.uniform_preparation_resource_model as module
+    import flagquantum.compiler.registers.preparation.uniform_preparation_resource_model as module
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Symbolic width was normalized into the concrete path")
@@ -124,7 +124,7 @@ def test_symbolic_integer_does_not_dispatch_to_concrete_emitter_model(monkeypatc
 def test_concrete_formula_consumes_shared_model_and_profile_replacement(monkeypatch):
     from dataclasses import replace
 
-    import flagquantum.compiler.registers.uniform_preparation_resource_model as module
+    import flagquantum.compiler.registers.preparation.uniform_preparation_resource_model as module
 
     original = module.source_uniform_preparation_cost
     baseline = module.source_uniform_preparation_resource_formula(

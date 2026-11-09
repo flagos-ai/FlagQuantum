@@ -5,16 +5,16 @@ from itertools import combinations
 from math import isfinite, ldexp
 
 from ...circuit import Circuit
-from ...compiler.registers.inverse_sqrt import (
+from ...compiler.registers.fixed_point.inverse_sqrt import (
     _with_inverse_sqrt_estimate_ir,
     inverse_sqrt_requirements,
 )
-from ...compiler.registers.partition import unpartition_register
-from ...compiler.registers.squared_distance import (
+from ...compiler.registers.fixed_point.squared_distance import (
     PointWires,
     squared_distance_ir,
     squared_distance_requirements,
 )
+from ...compiler.registers.layout.partition import unpartition_register
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit

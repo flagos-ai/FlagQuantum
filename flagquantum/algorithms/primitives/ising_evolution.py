@@ -14,7 +14,7 @@ from typing import Literal
 from ...compiler._component_trace.resource_classification import classify_resource_gate
 from ...compiler._component_trace.resource_generalization import RotationCall
 from ...compiler._component_trace.resource_model import ComponentCost, GateCost
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
 from ...core.ir import Instruction
 from .trotter_product import (
     EvolutionAngle,

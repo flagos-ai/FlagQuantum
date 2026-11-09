@@ -15,7 +15,7 @@ from flagquantum.algorithms.primitives.alias_sampling import (
     sparse_alias_sampling_table,
 )
 from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
-from flagquantum.compiler.registers.prepare_reflection import (
+from flagquantum.compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
 )

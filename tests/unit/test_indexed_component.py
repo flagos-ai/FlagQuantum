@@ -9,7 +9,7 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.indexed_component import (
+from flagquantum.compiler.registers.control.indexed_component import (
     indexed_component_ir,
     indexed_component_workspace,
     indexed_pauli_targets_ir,

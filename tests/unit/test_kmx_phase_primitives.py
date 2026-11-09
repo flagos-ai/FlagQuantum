@@ -6,7 +6,10 @@ import pytest
 
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.global_phase import ccz_ir, scalar_sign_ir
+from flagquantum.compiler.registers.primitives.global_phase import (
+    ccz_ir,
+    scalar_sign_ir,
+)
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import CapabilityError

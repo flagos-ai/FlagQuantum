@@ -7,8 +7,10 @@ from math import floor, pi, sqrt
 
 import pytest
 
-from flagquantum.compiler.registers.fixed_point_arcsine import fixed_point_arcsine_ir
-from flagquantum.compiler.registers.signed_arcsine import (
+from flagquantum.compiler.registers.fixed_point.fixed_point_arcsine import (
+    fixed_point_arcsine_ir,
+)
+from flagquantum.compiler.registers.fixed_point.signed_arcsine import (
     signed_arcsine_ir,
     signed_arcsine_requirements,
 )

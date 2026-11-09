@@ -8,7 +8,7 @@ from math import atan, floor, pi, sqrt
 
 import pytest
 
-from flagquantum.compiler.registers.arctan_arithmetic import (
+from flagquantum.compiler.registers.fixed_point.arctan_arithmetic import (
     _normalized_arctan_coefficients,
     arctan_arithmetic_ir,
     arctan_arithmetic_requirements,

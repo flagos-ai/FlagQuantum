@@ -14,10 +14,12 @@ from flagquantum.algorithms.primitives.pauli_hamiltonian_walk import (
     pauli_hamiltonian_walk,
     prepare_precision_from_eigenphase,
 )
-from flagquantum.compiler.registers.prepare_reflection import (
+from flagquantum.compiler.registers.lookup.unary_iteration import (
+    unary_iteration_workspace,
+)
+from flagquantum.compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_requirements,
 )
-from flagquantum.compiler.registers.unary_iteration import unary_iteration_workspace
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.measurement_checks import forced_branch

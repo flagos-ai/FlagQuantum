@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from ....circuit import Circuit
 from ....compiler._component_trace.resource_model import ComponentCost
-from ....compiler.registers.phase_gradient import phase_gradient_state_ir
+from ....compiler.registers.phase.phase_gradient import phase_gradient_state_ir
 from ....core.classical_control import validate_classical_control
 from ....errors import ValidationError
 from ....runtime.dynamic.circuit import DynamicCircuit

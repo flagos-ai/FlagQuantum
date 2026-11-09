@@ -4,7 +4,7 @@ from importlib.metadata import version
 
 import pytest
 
-from flagquantum.compiler.registers.qrom import controlled_qrom_ir
+from flagquantum.compiler.registers.lookup.qrom import controlled_qrom_ir
 from flagquantum.core.ir import CircuitIR
 from tests.unit.algorithms.primitives.multiplexers.test_thc_qrom import _execute_sparse
 
@@ -23,8 +23,12 @@ def test_qualtran_v070_component_decompositions() -> None:
     from qualtran.bloqs.data_loading import QROM, QROAMClean
     from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
 
-    from flagquantum.compiler.registers.arithmetic import controlled_add_or_subtract_ir
-    from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
+    from flagquantum.compiler.registers.arithmetic.addition import (
+        controlled_add_or_subtract_ir,
+    )
+    from flagquantum.compiler.registers.phase.phase_gradient import (
+        phase_gradient_state_ir,
+    )
 
     words = (6, 1, 5, 0)
     for blocked in (False, True):
@@ -81,7 +85,7 @@ def test_qualtran_add_gate_sequence_and_complex_amplitudes() -> None:
     from qualtran.bloqs.arithmetic import Add
     from qualtran.bloqs.mcmt.and_bloq import And
 
-    from flagquantum.compiler.registers.arithmetic import add_ir
+    from flagquantum.compiler.registers.arithmetic.addition import add_ir
 
     for width in (1, 3, 8):
         wires = cirq.LineQubit.range(2 * width)

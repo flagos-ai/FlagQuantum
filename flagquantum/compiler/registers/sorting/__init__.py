@@ -1,0 +1,1 @@
+"""Internal sorting register decompositions."""

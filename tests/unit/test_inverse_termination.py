@@ -4,7 +4,9 @@ from collections import Counter
 
 import pytest
 
-from flagquantum.compiler.registers.inverse_termination import inverse_termination_ir
+from flagquantum.compiler.registers.modular.inversion.inverse_termination import (
+    inverse_termination_ir,
+)
 from tests.unit.inverse_flag_checks import check_flag_channel
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source

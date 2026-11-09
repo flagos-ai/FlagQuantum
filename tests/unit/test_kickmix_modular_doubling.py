@@ -9,8 +9,10 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient as Bit
-from flagquantum.compiler.registers.kickmix_modular_doubling import (
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient as Bit,
+)
+from flagquantum.compiler.registers.modular.exact_modular_doubling import (
     kickmix_exact_modular_doubling_ir,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor

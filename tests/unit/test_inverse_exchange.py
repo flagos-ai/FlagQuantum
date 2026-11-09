@@ -8,7 +8,9 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.inverse_exchange import inverse_exchange_ir
+from flagquantum.compiler.registers.modular.inversion.inverse_exchange import (
+    inverse_exchange_ir,
+)
 from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source

@@ -6,12 +6,14 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.controlled_comparison import controlled_greater_ir
-from flagquantum.compiler.registers.controlled_modular_addition import (
+from flagquantum.compiler.registers.comparison.controlled_comparison import (
+    controlled_greater_ir,
+)
+from flagquantum.compiler.registers.modular.controlled_modular_addition import (
     _controlled_modular_workspace,
     controlled_modular_add_ir,
 )
-from flagquantum.compiler.registers.controlled_modular_addition_adjoint import (
+from flagquantum.compiler.registers.modular.controlled_modular_addition_adjoint import (
     controlled_modular_add_adjoint_ir,
 )
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
@@ -170,7 +172,7 @@ def test_raw_complex_channels_and_clean_work(n: int, p: int, cv: int) -> None:
 
 
 def test_source_cmodsub_is_a_distinct_decomposition_with_separate_cost() -> None:
-    from flagquantum.compiler.registers.controlled_modular_subtraction import (
+    from flagquantum.compiler.registers.modular.controlled_modular_subtraction import (
         controlled_modular_subtract_ir,
     )
 

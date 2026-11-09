@@ -8,7 +8,7 @@ from math import sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.integer_square import (
+from flagquantum.compiler.registers.arithmetic.integer_square import (
     integer_square_ir,
     sum_of_squares_ir,
     sum_of_squares_requirements,

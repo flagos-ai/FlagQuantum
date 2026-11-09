@@ -12,7 +12,7 @@ from flagquantum.algorithms.primitives.single_factorization_outer_prepare import
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_sparse_chemistry_prepare import _branch
 

@@ -13,8 +13,10 @@ from typing import overload
 from ...compiler._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler._component_trace.symbolic_math import SymbolicReal
-from ...compiler.registers.bounded_pauli_select import source_bounded_pauli_select_cost
-from ...compiler.registers.prepare_reflection import (
+from ...compiler.registers.lookup.bounded_pauli_select import (
+    source_bounded_pauli_select_cost,
+)
+from ...compiler.registers.preparation.prepare_reflection import (
     source_uncontrolled_prepare_reflection_cost,
 )
 from ...core.ir import Instruction

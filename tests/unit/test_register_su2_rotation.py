@@ -10,7 +10,7 @@ import torch
 import flagquantum as fq
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
-from flagquantum.compiler.registers.su2_rotation import (
+from flagquantum.compiler.registers.phase.su2_rotation import (
     su2_angles_from_matrix,
     su2_angles_from_zxz,
     su2_rotation_calls,

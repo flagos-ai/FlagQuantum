@@ -12,7 +12,7 @@ from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseProgr
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.binary_unary_conversion import (
+from flagquantum.compiler.registers.bits.binary_unary_conversion import (
     binary_to_unary_operations,
     unary_to_binary_operations,
 )

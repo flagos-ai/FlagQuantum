@@ -7,8 +7,11 @@
 
 from math import ceil, isfinite, log2, pi, sqrt
 
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.phase_addition import phase_add_ir, phase_add_workspace_size
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.phase.phase_addition import (
+    phase_add_ir,
+    phase_add_workspace_size,
+)
 from ...core.ir import Instruction
 
 

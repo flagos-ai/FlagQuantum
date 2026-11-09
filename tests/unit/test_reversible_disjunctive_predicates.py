@@ -296,7 +296,7 @@ def test_guarded_effect_disjunction_stays_outside_core_grammar() -> None:
 def test_all_measurement_branches_clear_quantum_work_and_recompute_mask(
     clauses: Clauses,
 ) -> None:
-    from flagquantum.compiler.registers.measurement import measure_x_clear_ir
+    from flagquantum.compiler.registers.primitives.measurement import measure_x_clear_ir
     from tests.unit.measurement_checks import forced_branch
 
     ir = CircuitIR(

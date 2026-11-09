@@ -12,8 +12,8 @@ from flagquantum.algorithms.primitives.sparse_chemistry_prepare import (
     PrepareSparseChemistry,
 )
 from flagquantum.algorithms.primitives.sparse_chemistry_walk import SparseChemistryWalk
-from flagquantum.compiler.registers.partition import partition_register
-from flagquantum.compiler.registers.prepare_reflection import (
+from flagquantum.compiler.registers.layout.partition import partition_register
+from flagquantum.compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
 )

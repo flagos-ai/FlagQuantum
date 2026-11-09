@@ -16,7 +16,7 @@ from flagquantum.compiler._component_trace.trace import ComponentTrace
 from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseProgram
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.qrom import controlled_qrom_ir
+from flagquantum.compiler.registers.lookup.qrom import controlled_qrom_ir
 from flagquantum.core.classical_control import instruction_condition_clauses
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit

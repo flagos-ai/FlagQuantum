@@ -110,7 +110,7 @@ Pass `source_multiplexed_cswap_cost` to the shared resource estimator
 to price the operation before constructing its circuit.
 
 ```python
-from flagquantum.compiler.registers.multiplexed_swap import (
+from flagquantum.compiler.registers.lookup.multiplexed_swap import (
     source_multiplexed_cswap_cost,
 )
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources

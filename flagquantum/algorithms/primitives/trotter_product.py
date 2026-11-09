@@ -14,7 +14,7 @@ from typing import Protocol, TypeAlias
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
 from ...core._composition import inverted_instruction
 from ...core.ir import CircuitIR, Instruction
 from ...core.parameters import Parameter, ParameterExpression

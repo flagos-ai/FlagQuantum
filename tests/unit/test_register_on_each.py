@@ -17,7 +17,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
 from flagquantum.compiler._component_trace.selected_call_count import (
     count_selected_calls,
 )
-from flagquantum.compiler.registers.bitwise import bitwise_not_ir, on_each_ir
+from flagquantum.compiler.registers.bits.bitwise import bitwise_not_ir, on_each_ir
 from flagquantum.core.ir import Instruction
 from tests.unit.register_source_graph import (
     SourcePorts,

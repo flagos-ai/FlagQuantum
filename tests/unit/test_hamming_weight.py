@@ -8,7 +8,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.hamming_weight import (
+from flagquantum.compiler.registers.bits.hamming_weight import (
     hamming_weight_ir,
     hamming_weight_requirements,
 )

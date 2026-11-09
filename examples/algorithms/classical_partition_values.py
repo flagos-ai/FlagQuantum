@@ -9,7 +9,7 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.bit_encoding import (
     bit_array_from_bits,

@@ -19,8 +19,10 @@ from flagquantum.compiler._component_trace.resource_generalization import (
 from flagquantum.compiler._component_trace.selected_call_count import (
     count_selected_calls,
 )
-from flagquantum.compiler.registers.controlled_rotation import controlled_z_power_ir
-from flagquantum.compiler.registers.power import register_power_ir
+from flagquantum.compiler.registers.primitives.controlled_rotation import (
+    controlled_z_power_ir,
+)
+from flagquantum.compiler.registers.primitives.power import register_power_ir
 from flagquantum.core.classical_control import validate_classical_control
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.operator_schema import MAX_POWER_REPEATS

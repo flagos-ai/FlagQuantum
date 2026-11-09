@@ -197,7 +197,7 @@ def test_prepare_ij_cost(eta: int, precision: int) -> None:
 
 
 def test_kinetic_prepare_resource_report_separates_emitted_coordinate() -> None:
-    from flagquantum.compiler.registers.uniform_preparation import (
+    from flagquantum.compiler.registers.preparation.uniform_preparation import (
         uniform_preparation_ir,
         uniform_preparation_requirements,
     )

@@ -10,9 +10,13 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.contiguous_index import source_contiguous_index_cost
-from ...compiler.registers.less_equal import source_equal_width_less_equal_cost
-from ...compiler.registers.uniform_preparation import source_uniform_preparation_cost
+from ...compiler.registers.comparison.less_equal import (
+    source_equal_width_less_equal_cost,
+)
+from ...compiler.registers.preparation.uniform_preparation import (
+    source_uniform_preparation_cost,
+)
+from ...compiler.registers.sorting.contiguous_index import source_contiguous_index_cost
 from .chemistry_qroam_model import (
     source_chemistry_qroam_cost,
     source_chemistry_qroam_two_axis_cost,

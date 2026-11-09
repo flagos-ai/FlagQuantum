@@ -5,23 +5,26 @@ from dataclasses import dataclass
 from typing import ClassVar, Self
 
 from ...circuit import Circuit
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.less_equal import less_equal_ir, less_equal_requirements
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.qroam_bank_binding import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.comparison.less_equal import (
+    less_equal_ir,
+    less_equal_requirements,
+)
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.lookup.qroam_bank_binding import (
     bind_clean_banks,
     clean_bank_output_layout,
 )
-from ...compiler.registers.source_qroam_clean import (
+from ...compiler.registers.lookup.source_qroam_clean import (
     QroamCleanTable,
     source_qroam_clean_ir,
     source_qroam_clean_uncompute_ir,
 )
-from ...compiler.registers.uniform_preparation import (
+from ...compiler.registers.preparation.uniform_preparation import (
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
+from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit

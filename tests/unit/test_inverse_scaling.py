@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.inverse_scaling import (
+from flagquantum.compiler.registers.modular.inversion.inverse_scaling import (
     inverse_scaling_ir,
     inverse_scaling_outputs,
 )

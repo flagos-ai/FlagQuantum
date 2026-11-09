@@ -11,8 +11,10 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     FixedTCall,
 )
-from flagquantum.compiler.registers.arithmetic_declarations import arithmetic_callees
-from flagquantum.compiler.registers.xor_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_declarations import (
+    arithmetic_callees,
+)
+from flagquantum.compiler.registers.bits.xor_resource_model import (
     source_grouped_xor_resource_formula,
     source_xor_resource_formula,
 )
@@ -142,7 +144,7 @@ def test_original_zero_width_failure_is_not_repaired_by_formula(width, control):
 
 
 def test_unconstrained_symbol_does_not_discard_source_callee_peak():
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     assert source_xor_resource_formula(z).logical_qubits == sympy.Max(2, 2 * z)
     grouped = source_grouped_xor_resource_formula(z, (ControlRegister(1, (0, 1)),))
@@ -170,11 +172,11 @@ def test_invalid_parameters_are_not_cast(kwargs):
 
 
 def test_concrete_consumer_queries_replaceable_native_declarations(monkeypatch):
-    import flagquantum.compiler.registers.controlled_register_xor as consumer
+    import flagquantum.compiler.registers.bits.controlled_register_xor as consumer
     from flagquantum.compiler._component_trace.resource_model import (
         estimate_component_resources,
     )
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     seen = []
 

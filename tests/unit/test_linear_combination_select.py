@@ -15,7 +15,9 @@ from flagquantum.algorithms.primitives.unitary_block_encoding import (
     UnitaryBlockEncoding,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.indexed_component import indexed_component_workspace
+from flagquantum.compiler.registers.control.indexed_component import (
+    indexed_component_workspace,
+)
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -186,7 +188,7 @@ def test_measured_children_reuse_private_pool_and_clean_every_branch(
     from qualtran.bloqs.block_encoding.unitary import Unitary
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.controlled_addition import (
+    from flagquantum.compiler.registers.arithmetic.controlled_addition import (
         controlled_add_ir,
     )
 
@@ -215,7 +217,7 @@ def test_measured_children_reuse_private_pool_and_clean_every_branch(
 
     def bind(predicate, ports, work, bits, inverse):
         if inverse:
-            from flagquantum.compiler.registers.controlled_not import (
+            from flagquantum.compiler.registers.primitives.controlled_not import (
                 cnot_with_controls_ir,
             )
 

@@ -11,8 +11,8 @@ from typing import Literal
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bitonic_merge import bitonic_merge_ir
-from flagquantum.compiler.registers.bitonic_sort import bitonic_sort_ir
+from flagquantum.compiler.registers.sorting.bitonic_merge import bitonic_merge_ir
+from flagquantum.compiler.registers.sorting.bitonic_sort import bitonic_sort_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

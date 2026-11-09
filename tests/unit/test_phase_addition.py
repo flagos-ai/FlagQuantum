@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.phase_addition import (
+from flagquantum.compiler.registers.phase.phase_addition import (
     phase_add_ir,
     phase_add_workspace_size,
 )

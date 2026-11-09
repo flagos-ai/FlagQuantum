@@ -15,7 +15,7 @@ import torch
 import flagquantum as fq
 from examples.algorithms.classical_action_dispatch import evaluate_word_paulis
 from examples.algorithms.classical_controlled_values import WordControlledPaulis
-from flagquantum.compiler.registers.power import register_power_ir
+from flagquantum.compiler.registers.primitives.power import register_power_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

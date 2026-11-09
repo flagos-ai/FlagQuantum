@@ -4,7 +4,7 @@ from itertools import product
 
 import pytest
 
-from flagquantum.compiler.registers.comparison_resource_model import (
+from flagquantum.compiler.registers.comparison.comparison_resource_model import (
     source_less_equal_cost,
     source_less_equal_resource_formula,
 )
@@ -103,7 +103,7 @@ def test_profile_validation_applies_to_concrete_and_symbolic_branches(flag):
 
 
 def test_comparison_cost_queries_never_invoke_an_emitter(monkeypatch):
-    import flagquantum.compiler.registers.less_equal as module
+    import flagquantum.compiler.registers.comparison.less_equal as module
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Cost query invoked comparison emitter")

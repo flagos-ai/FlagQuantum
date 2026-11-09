@@ -12,7 +12,7 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.hamming_weight_phasing import (
+from flagquantum.compiler.registers.phase.hamming_weight_phasing import (
     hamming_weight_phasing_ir,
     source_hamming_weight_phasing_cost,
 )

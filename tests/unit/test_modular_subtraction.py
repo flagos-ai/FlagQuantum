@@ -6,11 +6,13 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.modular_addition import (
+from flagquantum.compiler.registers.modular.modular_addition import (
     _modular_workspace,
     modular_add_ir,
 )
-from flagquantum.compiler.registers.modular_subtraction import modular_subtract_ir
+from flagquantum.compiler.registers.modular.modular_subtraction import (
+    modular_subtract_ir,
+)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_modular_addition import layout, reference_binding, residue_states
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -110,11 +112,11 @@ def test_pinned_all_ones_modulus_cannot_load_modulus_plus_one(n: int) -> None:
 
 
 def test_subtraction_uses_exact_adjoint_not_negative_constant() -> None:
-    from flagquantum.compiler.registers.arithmetic import (
+    from flagquantum.compiler.registers.arithmetic.addition import (
         add_constant_adjoint_ir,
         add_constant_ir,
     )
-    from flagquantum.compiler.registers.bitwise import bitwise_not_ir
+    from flagquantum.compiler.registers.bits.bitwise import bitwise_not_ir
 
     a, b, w, bits = layout(3)
     _, _, constant, carry, _ = _modular_workspace(a, b, 3, w, bits)

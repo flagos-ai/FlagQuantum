@@ -14,7 +14,9 @@ from flagquantum.algorithms.primitives.phase_block_encoding import PhaseBlockEnc
 from flagquantum.algorithms.primitives.unitary_block_encoding import (
     UnitaryBlockEncoding,
 )
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.runtime.dynamic.execution import run_dynamic

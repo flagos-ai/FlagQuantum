@@ -18,7 +18,7 @@ from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.multi_control import multi_control_z_ir
+from flagquantum.compiler.registers.control.multi_control import multi_control_z_ir
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source

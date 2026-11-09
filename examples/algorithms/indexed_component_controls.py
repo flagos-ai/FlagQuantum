@@ -11,12 +11,12 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.indexed_component_control import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.indexed_component_control import (
     conjoined_indexed_component_ir,
     specialized_indexed_component_ir,
 )
-from flagquantum.compiler.registers.indexed_component_control_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_control_resource_model import (
     conjoined_indexed_component_cost,
     specialized_indexed_component_cost,
 )

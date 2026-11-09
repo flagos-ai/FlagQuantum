@@ -5,8 +5,8 @@ from math import cos, sin, sqrt, tau
 
 import pytest
 
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
-from flagquantum.compiler.registers.programmed_givens import programmed_givens_ir
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.phase.programmed_givens import programmed_givens_ir
 from tests.unit.test_sparse_chemistry_prepare import _branch
 
 pytestmark = pytest.mark.unit

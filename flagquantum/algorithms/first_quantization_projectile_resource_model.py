@@ -11,7 +11,7 @@ from ..compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from ..compiler.registers.arithmetic_resource_model import source_add_cost
+from ..compiler.registers.arithmetic.arithmetic_resource_model import source_add_cost
 from .first_quantization import (
     source_controlled_multiplexed_cswap_3d_cost,
     source_multiplexed_cswap_3d_cost,

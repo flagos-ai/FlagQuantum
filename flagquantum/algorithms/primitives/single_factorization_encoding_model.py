@@ -10,7 +10,9 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.prepare_reflection import source_prepare_reflection_cost
+from ...compiler.registers.preparation.prepare_reflection import (
+    source_prepare_reflection_cost,
+)
 from .single_factorization_resource_model import (
     _controlled_swap_cost,
     _spatial_width,

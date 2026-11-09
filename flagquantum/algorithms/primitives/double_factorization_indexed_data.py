@@ -5,13 +5,13 @@ from dataclasses import dataclass, field
 from itertools import accumulate
 
 from ...circuit import Circuit
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.qroam_bank_binding import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.lookup.qroam_bank_binding import (
     bind_clean_banks,
     clean_bank_output_layout,
 )
-from ...compiler.registers.source_qroam_clean import (
+from ...compiler.registers.lookup.source_qroam_clean import (
     QroamCleanTable,
     source_qroam_clean_ir,
     source_qroam_clean_uncompute_ir,

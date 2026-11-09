@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.comparison import (
+from flagquantum.compiler.registers.comparison.less_than import (
     less_than_constant_ir,
     less_than_constant_workspace_size,
 )

@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.single_window_mod_mul import (
+from flagquantum.compiler.registers.modular.single_window_mod_mul import (
     single_window_mod_mul_ir,
     single_window_qroam_table,
 )

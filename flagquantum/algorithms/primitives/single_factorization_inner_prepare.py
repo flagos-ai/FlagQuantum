@@ -6,26 +6,29 @@ from functools import cached_property
 from math import isfinite
 
 from ...circuit import Circuit
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.contiguous_index import (
-    contiguous_index_columns_ir,
-    contiguous_index_columns_workspace_size,
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.comparison.less_equal import (
+    less_equal_ir,
+    less_equal_requirements,
 )
-from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.less_equal import less_equal_ir, less_equal_requirements
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.qroam_bank_binding import (
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.lookup.qroam_bank_binding import (
     bind_clean_banks,
     clean_bank_output_layout,
 )
-from ...compiler.registers.source_qroam_clean import (
+from ...compiler.registers.lookup.source_qroam_clean import (
     QroamCleanTable,
     source_qroam_clean_ir,
     source_qroam_clean_uncompute_ir,
 )
-from ...compiler.registers.triangular_uniform_preparation import (
+from ...compiler.registers.preparation.triangular_uniform_preparation import (
     triangular_uniform_ir,
     triangular_uniform_requirements,
+)
+from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
+from ...compiler.registers.sorting.contiguous_index import (
+    contiguous_index_columns_ir,
+    contiguous_index_columns_workspace_size,
 )
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction

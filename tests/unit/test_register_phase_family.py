@@ -17,7 +17,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     PhaseCall,
     ResourceCall,
 )
-from flagquantum.compiler.registers.phase_family import phase_family_ir
+from flagquantum.compiler.registers.phase.phase_family import phase_family_ir
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (

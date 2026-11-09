@@ -11,8 +11,10 @@ from flagquantum.algorithms.primitives.unitary_block_encoding import (
     UnitaryBlockEncoding,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.arithmetic import add_adjoint_ir, add_ir
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+from flagquantum.compiler.registers.arithmetic.addition import add_adjoint_ir, add_ir
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_indexed_component_cost_profiles import _assert_model

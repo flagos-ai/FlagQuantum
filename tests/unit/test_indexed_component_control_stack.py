@@ -9,13 +9,13 @@ import pytest
 import torch
 
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.indexed_component_control import (
+from flagquantum.compiler.registers.control.indexed_component_control import (
     conjoined_indexed_component_ir,
 )
-from flagquantum.compiler.registers.indexed_component_control_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_control_resource_model import (
     conjoined_indexed_component_cost,
 )
-from flagquantum.compiler.registers.phase_family import phase_family_ir
+from flagquantum.compiler.registers.phase.phase_family import phase_family_ir
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_indexed_component_cost_profiles import _assert_model

@@ -10,9 +10,11 @@ from flagquantum.compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from flagquantum.compiler.registers.arithmetic import add_ir
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.addition import add_ir
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     source_add_resource_formula,
 )
 from flagquantum.compiler.resource_reporting import resource_model_report
@@ -100,7 +102,7 @@ def test_rotation_budget_matches_original_without_altering_categories(
 ):
     from qualtran.resource_counting import GateCounts
 
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         SymbolicResourceFormula,
     )
 

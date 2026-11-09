@@ -15,16 +15,21 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.and_compute import and_compute_ir, and_uncompute_ir
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.bounded_majorana_select import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.lookup.bounded_majorana_select import (
     bounded_majorana_ir,
     bounded_majorana_workspace,
 )
-from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.global_phase import scalar_phase_ir
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.unary_iteration import append_nested_bounded_unary_tree
+from ...compiler.registers.lookup.unary_iteration import (
+    append_nested_bounded_unary_tree,
+)
+from ...compiler.registers.primitives.and_compute import (
+    and_compute_ir,
+    and_uncompute_ir,
+)
+from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
+from ...compiler.registers.primitives.global_phase import scalar_phase_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit

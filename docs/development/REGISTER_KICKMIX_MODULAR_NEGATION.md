@@ -74,7 +74,7 @@ from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.kickmix_modular_negation import (
+from flagquantum.compiler.registers.modular.mixed_modular_negation import (
     kickmix_modular_negation_program,
 )
 from flagquantum.dynamic import DynamicCircuit

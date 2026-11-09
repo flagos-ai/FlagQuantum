@@ -4,8 +4,8 @@ from itertools import product
 
 import pytest
 
-from flagquantum.compiler.registers.qrom_table import QromTable
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     source_qrom_resource_formula,
 )
 

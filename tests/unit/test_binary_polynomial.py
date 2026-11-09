@@ -7,7 +7,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.polynomial import (
+from flagquantum.compiler.registers.finite_field.polynomial import (
     binary_polynomial_product_ir,
     binary_polynomial_workspace_size,
 )

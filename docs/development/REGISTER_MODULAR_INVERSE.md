@@ -1,6 +1,6 @@
 # Public in-place modular inverse
 
-`compiler/registers/modular_inverse.py` ports the unchanged Qualtran v0.7.0
+`compiler/registers/modular/modular_inverse.py` ports the unchanged Qualtran v0.7.0
 `KaliskiModInverse` compute/uncompute wrapper. Its body reuses
 [inverse_algorithm](REGISTER_INVERSE_ALGORITHM.md) and the six existing
 iteration layers. It emits native IR only, with no source-package or runtime

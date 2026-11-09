@@ -7,8 +7,8 @@ from itertools import product
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.controlled_swap import controlled_swap_ir
-from flagquantum.compiler.registers.relative_controlled_swap import (
+from flagquantum.compiler.registers.primitives.controlled_swap import controlled_swap_ir
+from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
     relative_controlled_swap_ir,
 )
 from flagquantum.core.ir import CircuitIR

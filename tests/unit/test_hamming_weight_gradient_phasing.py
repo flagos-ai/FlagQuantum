@@ -9,11 +9,11 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.hamming_weight_phasing import (
+from flagquantum.compiler.registers.phase.hamming_weight_phasing import (
     hamming_weight_gradient_phasing_ir,
 )
-from flagquantum.compiler.registers.phase_addition import phase_add_workspace_size
-from flagquantum.compiler.registers.scaled_phase_addition import (
+from flagquantum.compiler.registers.phase.phase_addition import phase_add_workspace_size
+from flagquantum.compiler.registers.phase.scaled_phase_addition import (
     scaled_phase_add_ir,
     scaled_phase_add_terms,
 )

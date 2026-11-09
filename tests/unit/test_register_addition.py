@@ -5,7 +5,7 @@ from importlib.metadata import version
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arithmetic import (
+from flagquantum.compiler.registers.arithmetic.addition import (
     add_ir,
     measurement_add_or_subtract_ir,
 )

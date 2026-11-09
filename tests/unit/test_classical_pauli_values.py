@@ -95,7 +95,7 @@ def test_source_tensor_and_complete_complex_native_action_inverse_and_resources(
     from flagquantum.compiler._component_trace.resource_generalization import (
         CliffordCall,
     )
-    from flagquantum.compiler.registers.pauli_gate import pauli_gate_ir
+    from flagquantum.compiler.registers.primitives.pauli_gate import pauli_gate_ir
 
     source = {"x": XGate(), "z": ZGate(), "cz": CZ()}[kind]
     arity = 2 if kind == "cz" else 1

@@ -4,8 +4,10 @@ from dataclasses import asdict
 
 import pytest
 
-from flagquantum.compiler.registers.less_equal import source_equal_width_less_equal_cost
-from flagquantum.compiler.registers.uniform_preparation import (
+from flagquantum.compiler.registers.comparison.less_equal import (
+    source_equal_width_less_equal_cost,
+)
+from flagquantum.compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources

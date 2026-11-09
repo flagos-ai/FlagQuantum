@@ -12,7 +12,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
 from flagquantum.compiler._component_trace.resource_generalization import (
     identity_cost_key,
 )
-from flagquantum.compiler.registers.identity import register_identity_ir
+from flagquantum.compiler.registers.primitives.identity import register_identity_ir
 from flagquantum.core.ir import Instruction
 
 pytestmark = pytest.mark.unit

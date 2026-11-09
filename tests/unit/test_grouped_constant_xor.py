@@ -9,11 +9,11 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.grouped_constant_xor import (
+from flagquantum.compiler.registers.bits.grouped_constant_xor import (
     grouped_controlled_xor_constant_ir,
     source_grouped_constant_xor_cost,
 )
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_grouped_controlled_constant_addition import EXTRA
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

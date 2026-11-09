@@ -14,7 +14,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     PhaseCall,
     arbitrary_clifford_cost_key,
 )
-from flagquantum.compiler.registers.int_vector import int_vector_cost_key
+from flagquantum.compiler.registers.layout.int_vector import int_vector_cost_key
 
 pytestmark = pytest.mark.unit
 

@@ -107,7 +107,7 @@ def test_word_activation_original_stream_full_complex_branches_and_resource_coun
     from qualtran.bloqs.basic_gates import XGate
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.pauli_gate import pauli_gate_ir
+    from flagquantum.compiler.registers.primitives.pauli_gate import pauli_gate_ir
     from tests.unit.measurement_checks import forced_branch
     from tests.unit.test_register_constant_addition import reference_arithmetic_gates
     from tests.unit.test_register_subtraction import assert_source

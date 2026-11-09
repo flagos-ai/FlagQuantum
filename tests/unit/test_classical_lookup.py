@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 import torch
 
-from flagquantum.compiler.registers.qrom_table import QromTable
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
 from flagquantum.simulation.classical_lookup import lookup_classical_values
 from tests.unit.measurement_checks import forced_branch
 

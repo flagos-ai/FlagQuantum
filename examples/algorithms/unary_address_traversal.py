@@ -15,7 +15,7 @@ from flagquantum.compiler.artifacts.reversible_phase import (
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.kickmix_unary_iteration import (
+from flagquantum.compiler.registers.lookup.recursive_unary_iteration import (
     unary_iteration_operations,
 )
 from flagquantum.dynamic import DynamicCircuit

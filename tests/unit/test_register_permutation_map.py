@@ -4,7 +4,9 @@ from itertools import combinations, permutations
 
 import pytest
 
-from flagquantum.compiler.registers.permutation import source_partial_permutation_cycles
+from flagquantum.compiler.registers.sorting.permutation import (
+    source_partial_permutation_cycles,
+)
 
 pytestmark = pytest.mark.unit
 

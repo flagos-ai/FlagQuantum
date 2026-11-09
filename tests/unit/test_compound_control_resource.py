@@ -21,9 +21,13 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     MergedFredkinCall,
     PredicateControlledCall,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.controlled_component import controlled_component_ir
-from flagquantum.compiler.registers.controlled_swap import controlled_swap_bit_ir
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.controlled_component import (
+    controlled_component_ir,
+)
+from flagquantum.compiler.registers.primitives.controlled_swap import (
+    controlled_swap_bit_ir,
+)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source

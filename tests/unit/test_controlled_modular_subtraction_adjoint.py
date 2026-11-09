@@ -5,11 +5,11 @@ from collections import Counter
 import pytest
 import torch
 
-from flagquantum.compiler.registers.controlled_modular_addition import (
+from flagquantum.compiler.registers.modular.controlled_modular_addition import (
     _controlled_modular_workspace,
     controlled_modular_add_ir,
 )
-from flagquantum.compiler.registers.controlled_modular_subtraction import (
+from flagquantum.compiler.registers.modular.controlled_modular_subtraction import (
     controlled_modular_subtract_adjoint_ir,
     controlled_modular_subtract_ir,
 )

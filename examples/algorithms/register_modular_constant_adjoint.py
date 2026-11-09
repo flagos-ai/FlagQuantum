@@ -10,11 +10,11 @@ from typing import Literal
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.controlled_modular_subtraction import (
+from flagquantum.compiler.registers.modular.controlled_modular_subtraction import (
     controlled_modular_subtract_adjoint_ir,
     controlled_modular_subtract_ir,
 )
-from flagquantum.compiler.registers.modular_constant_addition import (
+from flagquantum.compiler.registers.modular.modular_constant_addition import (
     controlled_modular_add_constant_adjoint_ir,
     controlled_modular_add_constant_ir,
 )

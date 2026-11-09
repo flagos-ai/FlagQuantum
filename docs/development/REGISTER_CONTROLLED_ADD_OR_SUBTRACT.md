@@ -7,7 +7,7 @@ Google copyright and Apache-2.0 source attribution remain in the compiler.
 
 ## Interface and ownership
 
-`compiler/registers/arithmetic.py::measurement_add_or_subtract_ir` owns native IR
+`compiler/registers/arithmetic/addition.py::measurement_add_or_subtract_ir` owns native IR
 emission only. Inputs are a coherent control and big-endian bit-pattern registers
 `a`, `b`, where `1 <= len(a) <= len(b)`. The caller supplies `len(b)-1` clean
 carry wires and distinct nonnegative classical slots. Quantum wires must be

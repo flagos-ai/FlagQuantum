@@ -5,7 +5,7 @@ from itertools import product
 import pytest
 
 from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
-from flagquantum.compiler.registers.modular_declarations import (
+from flagquantum.compiler.registers.modular.modular_declarations import (
     modular_arithmetic_calls,
     modular_arithmetic_registers,
     source_modular_arithmetic_resource_formula,
@@ -150,7 +150,7 @@ def test_original_placeholders_do_not_have_gate_or_classical_decompositions(kind
 
 @pytest.mark.parametrize("legacy", [False, True])
 def test_csub_consumes_shared_controlled_add_model(monkeypatch, legacy):
-    import flagquantum.compiler.registers.modular_declarations as module
+    import flagquantum.compiler.registers.modular.modular_declarations as module
     from flagquantum.compiler._component_trace.resource_model import (
         ComponentCost,
         GateCost,

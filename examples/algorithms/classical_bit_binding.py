@@ -8,8 +8,11 @@ from itertools import product
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.register_bits import join_register, split_register
-from flagquantum.compiler.registers.register_cast import RegisterCast
+from flagquantum.compiler.registers.layout.register_bits import (
+    join_register,
+    split_register,
+)
+from flagquantum.compiler.registers.layout.register_cast import RegisterCast
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.classical_bit_binding import (
     allocate_classical_value,

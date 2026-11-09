@@ -12,7 +12,9 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     ConjunctionCall,
 )
-from flagquantum.compiler.registers.arithmetic_declarations import arithmetic_call_graph
+from flagquantum.compiler.registers.arithmetic.arithmetic_declarations import (
+    arithmetic_call_graph,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 WIDTHS = (
@@ -72,7 +74,7 @@ def test_shared_formula_matches_all_source_fields_and_width_queries(
     from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.out_of_place_add_resource_model import (
         source_out_of_place_add_resource_formula,
     )
 
@@ -101,7 +103,7 @@ def test_concrete_component_is_the_same_shared_model(width, msb, adjoint, legacy
     from flagquantum.compiler._component_trace.resource_model import (
         estimate_component_resources,
     )
-    from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.out_of_place_add_resource_model import (
         source_out_of_place_add_cost,
         source_out_of_place_add_resource_formula,
     )
@@ -120,7 +122,7 @@ def test_source_python_zero_failure_and_symbolic_zero_fallback_are_distinct():
     from qualtran.bloqs.arithmetic.addition import OutOfPlaceAdder
     from qualtran.resource_counting import QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.out_of_place_add_resource_model import (
         source_out_of_place_add_resource_formula,
     )
 
@@ -150,7 +152,7 @@ def test_source_python_zero_failure_and_symbolic_zero_fallback_are_distinct():
     ],
 )
 def test_resource_query_validation_does_not_coerce_bad_values(options):
-    from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.out_of_place_add_resource_model import (
         source_out_of_place_add_resource_formula,
     )
 
@@ -159,7 +161,7 @@ def test_resource_query_validation_does_not_coerce_bad_values(options):
 
 
 def test_formula_uses_replaceable_declared_graph_without_changing_consumer(monkeypatch):
-    import flagquantum.compiler.registers.out_of_place_add_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.out_of_place_add_resource_model as module
     from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
 
     n = sympy.Symbol("n", integer=True, positive=True)
@@ -190,10 +192,12 @@ def test_shared_model_t_and_measurements_close_against_emitted_primitives(
 ):
     from collections import Counter
 
-    from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.out_of_place_add_resource_model import (
         source_out_of_place_add_resource_formula,
     )
-    from flagquantum.compiler.registers.out_of_place_addition import out_of_place_add_ir
+    from flagquantum.compiler.registers.arithmetic.out_of_place_addition import (
+        out_of_place_add_ir,
+    )
 
     left, right = tuple(range(width)), tuple(range(width, 2 * width))
     output = tuple(range(2 * width, 3 * width + int(msb)))

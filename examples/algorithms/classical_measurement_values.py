@@ -16,7 +16,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_c
 from flagquantum.compiler._component_trace.resource_generalization import (
     MeasurementCall,
 )
-from flagquantum.compiler.registers.measurement import measure_x_clear_ir
+from flagquantum.compiler.registers.primitives.measurement import measure_x_clear_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

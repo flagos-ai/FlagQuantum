@@ -5,7 +5,7 @@ from math import sqrt
 
 import pytest
 
-from flagquantum.compiler.registers.triangular_uniform_preparation import (
+from flagquantum.compiler.registers.preparation.triangular_uniform_preparation import (
     triangular_uniform_ir,
     triangular_uniform_requirements,
 )

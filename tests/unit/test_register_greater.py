@@ -4,8 +4,8 @@ from collections import Counter
 
 import pytest
 
-from flagquantum.compiler.registers.less_equal import less_equal_requirements
-from flagquantum.compiler.registers.ordering import greater_ir
+from flagquantum.compiler.registers.comparison.less_equal import less_equal_requirements
+from flagquantum.compiler.registers.comparison.ordering import greater_ir
 from tests.unit.greater_checks import check_greater_amplitudes
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source

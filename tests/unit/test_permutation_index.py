@@ -6,7 +6,7 @@ from itertools import combinations, permutations, product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.permutation_index import (
+from flagquantum.compiler.registers.sorting.permutation_index import (
     permutation_index_requirements,
     permutation_rank_xor_ir,
     permutation_words_xor_ir,

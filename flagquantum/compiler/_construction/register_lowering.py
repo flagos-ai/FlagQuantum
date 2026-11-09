@@ -15,7 +15,7 @@ from typing import Literal
 from ...core._composition import controlled_instruction
 from ...core.ir import CircuitIR, Instruction
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
-from ..registers.global_phase import scalar_phase_ir
+from ..registers.primitives.global_phase import scalar_phase_ir
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .lowering import (
     ArithmeticCandidate,

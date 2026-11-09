@@ -8,11 +8,11 @@ from typing import Literal
 import pytest
 import torch
 
-from flagquantum.compiler.registers.indexed_component import (
+from flagquantum.compiler.registers.control.indexed_component import (
     indexed_component_ir,
     indexed_pauli_targets_ir,
 )
-from flagquantum.compiler.registers.phase_family import phase_family_ir
+from flagquantum.compiler.registers.phase.phase_family import phase_family_ir
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_indexed_component import _layout

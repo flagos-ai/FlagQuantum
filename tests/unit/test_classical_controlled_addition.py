@@ -6,7 +6,9 @@ import numpy as np
 import pytest
 import torch
 
-from flagquantum.compiler.registers.controlled_addition import controlled_add_ir
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
+    controlled_add_ir,
+)
 from flagquantum.simulation.classical_controlled_addition import (
     controlled_add_classical_values,
 )

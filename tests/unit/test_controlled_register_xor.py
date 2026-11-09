@@ -10,12 +10,12 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.controlled_register_xor import (
+from flagquantum.compiler.registers.bits.controlled_register_xor import (
     controlled_xor_ir,
     grouped_controlled_xor_ir,
     source_grouped_xor_cost,
 )
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (

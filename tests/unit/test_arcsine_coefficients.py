@@ -7,10 +7,10 @@ from math import asin, comb, sqrt
 
 import pytest
 
-from flagquantum.compiler.registers.arcsine_coefficients import (
+from flagquantum.compiler.registers.fixed_point.arcsine_coefficients import (
     arcsine_polynomial_coefficients,
 )
-from flagquantum.compiler.registers.signed_arcsine import signed_arcsine_ir
+from flagquantum.compiler.registers.fixed_point.signed_arcsine import signed_arcsine_ir
 from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_fixed_point_arcsine import oracle as unsigned_oracle

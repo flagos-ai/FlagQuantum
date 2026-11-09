@@ -6,7 +6,7 @@ from itertools import combinations, product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.symmetric_difference import (
+from flagquantum.compiler.registers.sorting.symmetric_difference import (
     symmetric_difference_ir,
     symmetric_difference_requirements,
 )
@@ -147,7 +147,7 @@ def test_locked_model_and_native_network_gate_dependencies():
     from qualtran.bloqs.mcmt.and_bloq import And
     from qualtran.resource_counting import SympySymbolAllocator
 
-    from flagquantum.compiler.registers.comparison_layout import (
+    from flagquantum.compiler.registers.comparison.comparison_layout import (
         comparison_network_requirements,
     )
     from flagquantum.core.ir import Instruction

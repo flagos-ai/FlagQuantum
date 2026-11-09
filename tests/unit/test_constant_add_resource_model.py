@@ -13,7 +13,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     ConjunctionCall,
 )
-from flagquantum.compiler.registers.arithmetic_declarations import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_declarations import (
     arithmetic_call_graph,
     arithmetic_callees,
 )
@@ -138,7 +138,7 @@ def test_concrete_source_range_failures_are_not_wrapped_as_valid_constants(
 def test_shared_formula_matches_unmodified_source_categories_and_peak(root):
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_constant_add_resource_formula,
     )
 
@@ -169,7 +169,7 @@ def test_concrete_shape_component_keeps_the_same_model_even_with_symbolic_consta
     from flagquantum.compiler._component_trace.resource_model import (
         estimate_component_resources,
     )
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_constant_add_cost,
         source_constant_add_resource_formula,
     )
@@ -187,8 +187,8 @@ def test_concrete_shape_component_keeps_the_same_model_even_with_symbolic_consta
 
 
 def test_shared_add_model_replacement_preserves_every_category_and_peak(monkeypatch):
-    import flagquantum.compiler.registers.constant_add_resource_model as module
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    import flagquantum.compiler.registers.arithmetic.constant_add_resource_model as module
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         SymbolicResourceFormula,
     )
 
@@ -213,7 +213,7 @@ def test_shared_add_model_replacement_preserves_every_category_and_peak(monkeypa
 def test_shared_graph_recipe_is_replaceable_without_changing_formula_consumer(
     monkeypatch,
 ):
-    import flagquantum.compiler.registers.constant_add_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.constant_add_resource_model as module
     from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
 
     def graph(root):
@@ -232,7 +232,7 @@ def test_shared_graph_recipe_is_replaceable_without_changing_formula_consumer(
 def test_original_zero_width_pair_query_failure_remains_explicit(width):
     from qualtran.resource_counting import QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_constant_add_resource_formula,
     )
 
@@ -257,7 +257,7 @@ def test_original_zero_width_pair_query_failure_remains_explicit(width):
     ],
 )
 def test_formula_refuses_invalid_values_without_coercion(options):
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_constant_add_resource_formula,
     )
 
@@ -266,7 +266,7 @@ def test_formula_refuses_invalid_values_without_coercion(options):
 
 
 def test_concrete_component_does_not_coerce_a_symbolic_width():
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_constant_add_cost,
     )
 
@@ -285,11 +285,11 @@ def test_concrete_component_does_not_coerce_a_symbolic_width():
 def test_unmodified_source_primitive_stream_and_model_counts_across_encodings(root):
     from collections import Counter
 
-    from flagquantum.compiler.registers.arithmetic import (
+    from flagquantum.compiler.registers.arithmetic.addition import (
         add_constant_adjoint_ir,
         add_constant_ir,
     )
-    from flagquantum.compiler.registers.constant_add_resource_model import (
+    from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
         source_constant_add_resource_formula,
     )
     from tests.unit.test_register_constant_addition import layout, source_gates
@@ -326,7 +326,7 @@ def test_all_raw_complex_branches_match_source_values_and_clean_all_work(
 ):
     import torch
 
-    from flagquantum.compiler.registers.arithmetic import (
+    from flagquantum.compiler.registers.arithmetic.addition import (
         add_constant_adjoint_ir,
         add_constant_ir,
     )

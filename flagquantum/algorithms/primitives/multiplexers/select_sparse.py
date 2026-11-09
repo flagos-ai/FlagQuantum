@@ -16,13 +16,13 @@ from ....compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ....compiler.registers.bitwise import _validate_wires
-from ....compiler.registers.bounded_majorana_select import (
+from ....compiler.registers.bits.bitwise import _validate_wires
+from ....compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ....compiler.registers.lookup.bounded_majorana_select import (
     bounded_majorana_ir,
     bounded_majorana_workspace,
     source_bounded_majorana_cost,
 )
-from ....compiler.registers.partition import RegisterLayout, unpartition_register
 from ....core.ir import CircuitIR, Instruction
 from ....errors import ValidationError
 from .selected_majorana_fermion import SelectedMajoranaFermion

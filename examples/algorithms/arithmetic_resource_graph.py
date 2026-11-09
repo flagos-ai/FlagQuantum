@@ -13,26 +13,28 @@ from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_c
 from flagquantum.compiler._component_trace.terminal_t_cost import (
     estimate_terminal_t_cost,
 )
-from flagquantum.compiler.registers.arithmetic_declarations import arithmetic_call_graph
-from flagquantum.compiler.registers.constant_add_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_declarations import (
+    arithmetic_call_graph,
+)
+from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
     source_constant_add_resource_formula,
     source_controlled_constant_add_resource_formula,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.grouped_constant_add_resource_model import (
+from flagquantum.compiler.registers.arithmetic.grouped_constant_add_resource_model import (
     source_grouped_constant_add_resource_formula,
 )
-from flagquantum.compiler.registers.hamming_weight_resource_model import (
-    source_hamming_weight_resource_formula,
-)
-from flagquantum.compiler.registers.out_of_place_add_resource_model import (
+from flagquantum.compiler.registers.arithmetic.out_of_place_add_resource_model import (
     source_out_of_place_add_resource_formula,
 )
-from flagquantum.compiler.registers.xor_resource_model import (
+from flagquantum.compiler.registers.bits.hamming_weight_resource_model import (
+    source_hamming_weight_resource_formula,
+)
+from flagquantum.compiler.registers.bits.xor_resource_model import (
     source_grouped_xor_resource_formula,
     source_pattern_controlled_xor_resource_formula,
     source_xor_resource_formula,
 )
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
 
 def main() -> None:

@@ -4,17 +4,20 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal, localcontext
 
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.fixed_point_horner import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.control.multi_control import multi_and_ir
+from ...compiler.registers.fixed_point.fixed_point_horner import (
     register_horner_step_ir,
     register_horner_step_requirements,
 )
-from ...compiler.registers.inverse_sqrt_newton import (
+from ...compiler.registers.fixed_point.inverse_sqrt_newton import (
     inverse_sqrt_newton_requirements,
     inverse_sqrt_newton_step_ir,
 )
-from ...compiler.registers.multi_control import multi_and_ir
-from ...compiler.registers.source_qrom import source_qrom_ir, source_qrom_workspace_size
+from ...compiler.registers.lookup.source_qrom import (
+    source_qrom_ir,
+    source_qrom_workspace_size,
+)
 from ...core.ir import Instruction
 from .grid_inverse_sqrt import _HIGH_DECIMAL, _LOW_DECIMAL
 

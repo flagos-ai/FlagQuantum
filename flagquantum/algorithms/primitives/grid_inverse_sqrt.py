@@ -10,7 +10,7 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.arithmetic_resource_model import source_add_cost
+from ...compiler.registers.arithmetic.arithmetic_resource_model import source_add_cost
 
 _LOW_DECIMAL = (
     "0.99994132489119882162",

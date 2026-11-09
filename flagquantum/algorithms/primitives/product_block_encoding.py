@@ -22,9 +22,9 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicReal
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.multi_control import multi_control_x_ir
-from ...compiler.registers.partition import partition_register
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.control.multi_control import multi_control_x_ir
+from ...compiler.registers.layout.partition import partition_register
 from ...core.ir import Instruction
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata

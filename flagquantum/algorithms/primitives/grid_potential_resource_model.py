@@ -11,11 +11,13 @@ from ...compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
 )
-from ...compiler.registers.arithmetic_resource_model import source_sum_of_squares_cost
-from ...compiler.registers.out_of_place_add_resource_model import (
+from ...compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_sum_of_squares_cost,
+)
+from ...compiler.registers.arithmetic.out_of_place_add_resource_model import (
     source_out_of_place_add_cost,
 )
-from ...compiler.registers.qrom_resource_model import source_qrom_cost
+from ...compiler.registers.lookup.qrom_resource_model import source_qrom_cost
 from .grid_inverse_sqrt import (
     grid_inverse_sqrt_qrom_data,
     source_grid_inverse_sqrt_newton_cost,

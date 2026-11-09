@@ -2,7 +2,7 @@
 
 import pytest
 
-from flagquantum.compiler.registers.qroam_bank_binding import (
+from flagquantum.compiler.registers.lookup.qroam_bank_binding import (
     bind_clean_banks,
     clean_bank_output_layout,
 )

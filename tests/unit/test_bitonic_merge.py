@@ -7,12 +7,12 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.bitonic_merge import (
+from flagquantum.compiler.registers.comparison.comparison_layout import (
+    comparison_network_requirements,
+)
+from flagquantum.compiler.registers.sorting.bitonic_merge import (
     bitonic_merge_history_count,
     bitonic_merge_ir,
-)
-from flagquantum.compiler.registers.comparison_layout import (
-    comparison_network_requirements,
 )
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
@@ -58,7 +58,7 @@ def reference_network(
     temporary birth order. Walk original component graphs instead; only wire
     names are bound here. All leaf gates come from unchanged Comparator objects.
     """
-    from flagquantum.compiler.registers.ordering import greater_ir
+    from flagquantum.compiler.registers.comparison.ordering import greater_ir
 
     def leaf(
         bloq: Any, inputs: SourcePorts, desired: SourcePorts
@@ -244,7 +244,7 @@ def raw_channels(
     if merge:
         emit = bitonic_merge_ir
     else:
-        from flagquantum.compiler.registers.bitonic_sort import bitonic_sort_ir
+        from flagquantum.compiler.registers.sorting.bitonic_sort import bitonic_sort_ir
 
         emit = bitonic_sort_ir
     gates = emit(words, h, w, bits, adjoint=adjoint)

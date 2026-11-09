@@ -9,13 +9,13 @@ import torch
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
-from flagquantum.compiler.registers.qroam_clean_erasure import (
+from flagquantum.compiler.registers.lookup.qroam_clean_erasure import (
     qroam_clean_measurement_erase_ir,
 )
-from flagquantum.compiler.registers.qroam_resource_model import (
+from flagquantum.compiler.registers.lookup.qroam_resource_model import (
     source_qroam_measurement_erase_cost,
 )
-from flagquantum.compiler.registers.source_qroam_clean import (
+from flagquantum.compiler.registers.lookup.source_qroam_clean import (
     QroamCleanTable,
     source_qroam_clean_ir,
 )

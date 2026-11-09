@@ -18,7 +18,7 @@ from ..compiler._construction.register_profile import (
     verify_register_program,
 )
 from ..compiler._hybrid.model import HybridProgram, ValueId
-from ..compiler.registers.multi_control import multi_and_stages
+from ..compiler.registers.control.multi_control import multi_and_stages
 
 
 @dataclass(frozen=True)

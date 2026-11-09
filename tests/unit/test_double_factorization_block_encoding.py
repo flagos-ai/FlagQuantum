@@ -15,7 +15,7 @@ from flagquantum.algorithms.primitives.double_factorization_block_encoding impor
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_select_double_factorization import _basis_matrix
 from tests.unit.test_single_factorization_block_encoding import _probabilities

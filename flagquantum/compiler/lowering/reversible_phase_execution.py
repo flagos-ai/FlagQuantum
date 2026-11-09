@@ -8,7 +8,7 @@ from ..artifacts.reversible_phase import (
     ReversiblePhaseOperation,
     ReversiblePhaseProgram,
 )
-from ..registers.global_phase import ccz_ir, scalar_sign_ir
+from ..registers.primitives.global_phase import ccz_ir, scalar_sign_ir
 
 
 def _phase_instruction(

@@ -9,7 +9,9 @@ from flagquantum.algorithms.primitives.tensor_product_block_encoding import (
     TensorProductBlockEncoding,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_indexed_component_cost_profiles import _assert_model
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

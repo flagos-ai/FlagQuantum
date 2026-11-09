@@ -12,13 +12,17 @@ from flagquantum.compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
-from flagquantum.compiler.registers.controlled_addition import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
     controlled_add_constant_adjoint_ir,
     controlled_add_constant_ir,
 )
-from flagquantum.compiler.registers.indexed_component import indexed_component_ir
-from flagquantum.compiler.registers.indexed_component_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component import (
+    indexed_component_ir,
+)
+from flagquantum.compiler.registers.control.indexed_component_resource_model import (
     indexed_component_cost,
 )
 from flagquantum.core.ir import Instruction

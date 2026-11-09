@@ -5,9 +5,13 @@
 
 """Recursive Fourier transform with an explicit phase-gradient register."""
 
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.integer_product import integer_product_requirements
-from ...compiler.registers.product_accumulation import product_accumulation_ir
+from ...compiler.registers.arithmetic.integer_product import (
+    integer_product_requirements,
+)
+from ...compiler.registers.arithmetic.product_accumulation import (
+    product_accumulation_ir,
+)
+from ...compiler.registers.bits.bitwise import _validate_wires
 from ...core.ir import Instruction
 
 

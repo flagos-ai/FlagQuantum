@@ -12,7 +12,7 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.bitwise import _validate_wires
+from ...compiler.registers.bits.bitwise import _validate_wires
 from ...core.ir import Instruction
 
 

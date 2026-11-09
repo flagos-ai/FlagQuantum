@@ -1,6 +1,6 @@
 # QROM table metadata
 
-`compiler/registers/qrom_table.py` owns concrete data normalization, selection
+`compiler/registers/lookup/qrom_table.py` owns concrete data normalization, selection
 axes, target array shapes, and default widths. It ports QROMBase's data and
 concrete/symbolic shape factories from Qualtran v0.7.0, commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`. Copyright and source attribution
@@ -122,7 +122,7 @@ counts and emitted primitive counts remain in their existing separate models.
 
 ## Phase-gradient lookup consumer (G2-ROM13)
 
-`compiler/registers/phase_gradient_lookup.py` now builds one native QROM table
+`compiler/registers/phase/phase_gradient_lookup.py` now builds one native QROM table
 layout for the original PRGAViaPhaseGradient call chain. Workspace queries use
 its `workspace_size` and emitted loads use `bind_packed`. The caller still owns
 the angle register, reusable scratch and classical slots; the stream remains

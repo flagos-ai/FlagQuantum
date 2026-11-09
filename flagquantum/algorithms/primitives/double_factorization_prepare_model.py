@@ -12,8 +12,10 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.arithmetic_resource_model import source_add_cost
-from ...compiler.registers.uniform_preparation import source_uniform_preparation_cost
+from ...compiler.registers.arithmetic.arithmetic_resource_model import source_add_cost
+from ...compiler.registers.preparation.uniform_preparation import (
+    source_uniform_preparation_cost,
+)
 from .chemistry_qroam_model import source_chemistry_qroam_cost
 
 _TOFFOLI = ComponentCost("Toffoli", 3, GateCost(toffoli=1))

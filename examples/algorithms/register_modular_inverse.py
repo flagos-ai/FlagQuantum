@@ -8,7 +8,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 import flagquantum as fq
-from flagquantum.compiler.registers.modular_inverse import (
+from flagquantum.compiler.registers.modular.modular_inverse import (
     modular_inverse_ir,
     modular_inverse_outputs,
 )

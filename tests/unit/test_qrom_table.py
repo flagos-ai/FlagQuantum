@@ -5,7 +5,7 @@ from dataclasses import replace
 import numpy as np
 import pytest
 
-from flagquantum.compiler.registers.qrom_table import QromTable
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
 
 pytestmark = pytest.mark.unit
 

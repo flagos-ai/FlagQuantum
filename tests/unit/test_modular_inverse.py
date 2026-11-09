@@ -5,7 +5,7 @@ from typing import Any
 
 import pytest
 
-from flagquantum.compiler.registers.modular_inverse import (
+from flagquantum.compiler.registers.modular.modular_inverse import (
     modular_inverse_ir,
     modular_inverse_outputs,
 )

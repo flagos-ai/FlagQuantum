@@ -9,7 +9,7 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.reciprocal_newton import (
+from flagquantum.compiler.registers.fixed_point.reciprocal_newton import (
     reciprocal_newton_requirements,
     reciprocal_newton_step_ir,
 )

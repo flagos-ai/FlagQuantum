@@ -133,7 +133,7 @@ def test_boolean_target_add_modulo_type_differs_from_controlled_xor():
 def test_controlled_native_values_full_complex_states_all_histories_and_work(cv):
     import torch
 
-    from flagquantum.compiler.registers.controlled_comparison import (
+    from flagquantum.compiler.registers.comparison.controlled_comparison import (
         controlled_greater_ir,
         controlled_greater_requirements,
     )
@@ -172,7 +172,9 @@ def test_signed_root_numerical_gate_disagreement_is_preserved_not_repaired():
     import torch
     from qualtran.bloqs.arithmetic.comparison import LinearDepthGreaterThan
 
-    from flagquantum.compiler.registers.linear_comparison import linear_greater_ir
+    from flagquantum.compiler.registers.comparison.linear_comparison import (
+        linear_greater_ir,
+    )
     from tests.unit.measurement_checks import forced_branch
 
     original = LinearDepthGreaterThan(2, signed=True)

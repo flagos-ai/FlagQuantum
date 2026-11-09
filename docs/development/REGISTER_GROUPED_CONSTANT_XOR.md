@@ -1,7 +1,7 @@
 # Grouped constant XOR
 
 The compiler owns `grouped_controlled_xor_constant_ir` in
-`compiler/registers/grouped_constant_xor.py`. It binds existing `ControlRegister`
+`compiler/registers/bits/grouped_constant_xor.py`. It binds existing `ControlRegister`
 word descriptors to the shared `controlled_component_ir` predicate schedule and
 existing positive `controlled_xor_constant_ir`. It introduces no new control
 representation, execution engine or resource registry.

@@ -14,9 +14,9 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.prepare_reflection import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
     source_uncontrolled_prepare_reflection_cost,

@@ -6,7 +6,10 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.ordering import greater_adjoint_ir, greater_ir
+from flagquantum.compiler.registers.comparison.ordering import (
+    greater_adjoint_ir,
+    greater_ir,
+)
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_less_equal import CASES, layout

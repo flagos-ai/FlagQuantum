@@ -17,11 +17,11 @@ from flagquantum.algorithms.primitives.unitary_block_encoding import (
     UnitaryBlockEncoding,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.indexed_component import (
+from flagquantum.compiler.registers.control.indexed_component import (
     indexed_component_ir,
     indexed_component_workspace,
 )
-from flagquantum.compiler.registers.indexed_component_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_resource_model import (
     indexed_component_cost,
 )
 from flagquantum.core.ir import Instruction

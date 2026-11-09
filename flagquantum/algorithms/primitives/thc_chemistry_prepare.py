@@ -15,23 +15,23 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.contiguous_index import (
-    contiguous_index_columns_ir,
-    contiguous_index_columns_workspace_size,
-    source_contiguous_index_cost,
-)
-from ...compiler.registers.controlled_swap import controlled_swap_ir
-from ...compiler.registers.equality import equality_constant_ir
-from ...compiler.registers.less_equal import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.comparison.equality import equality_constant_ir
+from ...compiler.registers.comparison.less_equal import (
     less_equal_ir,
     less_equal_requirements,
     source_equal_width_less_equal_cost,
 )
-from ...compiler.registers.multi_control import multi_control_x_ir
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.qroam_resource_model import (
+from ...compiler.registers.control.multi_control import multi_control_x_ir
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.lookup.qroam_resource_model import (
     source_qroam_measurement_erase_cost,
+)
+from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
+from ...compiler.registers.sorting.contiguous_index import (
+    contiguous_index_columns_ir,
+    contiguous_index_columns_workspace_size,
+    source_contiguous_index_cost,
 )
 from ...core.ir import CircuitIR, Instruction
 from .thc_chemistry_data import THCChemistryData

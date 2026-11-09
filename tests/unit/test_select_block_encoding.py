@@ -7,7 +7,7 @@ import pytest
 from flagquantum.algorithms.primitives.alias_preparation import alias_black_box_prepare
 from flagquantum.algorithms.primitives.alias_sampling import alias_sampling_table
 from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
-from flagquantum.compiler.registers.multiplexed_swap import (
+from flagquantum.compiler.registers.lookup.multiplexed_swap import (
     multiplexed_cswap_ir,
     source_multiplexed_cswap_cost,
 )

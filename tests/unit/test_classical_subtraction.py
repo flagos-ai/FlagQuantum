@@ -7,7 +7,10 @@ import pytest
 import sympy
 import torch
 
-from flagquantum.compiler.registers.subtraction import subtract_from_ir, subtract_ir
+from flagquantum.compiler.registers.arithmetic.subtraction import (
+    subtract_from_ir,
+    subtract_ir,
+)
 from flagquantum.simulation.classical_subtraction import (
     subtract_classical_values,
     subtract_from_classical_values,

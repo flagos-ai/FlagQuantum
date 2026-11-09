@@ -9,8 +9,8 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.multiplexed_swap import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.lookup.multiplexed_swap import (
     control_multiplexed_cswap_ir,
     multiplexed_cswap_ir,
     source_multiplexed_cswap_cost,

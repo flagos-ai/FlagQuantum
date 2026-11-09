@@ -9,7 +9,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
     QECGateCost,
     query_qec_gate_cost,
 )
-from flagquantum.compiler.registers.int_vector import (
+from flagquantum.compiler.registers.layout.int_vector import (
     int_effect_bindings,
     int_state_ir,
     int_vector_cost_key,

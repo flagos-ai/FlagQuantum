@@ -8,7 +8,7 @@ from math import sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.contiguous_index import (
+from flagquantum.compiler.registers.sorting.contiguous_index import (
     contiguous_index_columns_ir,
     contiguous_index_columns_workspace_size,
     contiguous_index_ir,

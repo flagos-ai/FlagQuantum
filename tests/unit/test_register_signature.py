@@ -290,7 +290,7 @@ def test_qrom_uses_shared_typed_signature_before_existing_wire_partition(
 ):
     from qualtran.bloqs.data_loading.qrom import QROM
 
-    from flagquantum.compiler.registers.qrom_table import QromTable
+    from flagquantum.compiler.registers.lookup.qrom_table import QromTable
     from tests.unit.test_qrom_table_layout import shape_case
 
     shape, widths, targets = shape_case(case)
@@ -308,7 +308,7 @@ def test_qrom_uses_shared_typed_signature_before_existing_wire_partition(
 
 
 def test_add_symbolic_cost_consumer_reads_replaceable_signature(monkeypatch):
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         source_add_resource_formula,
     )
 
@@ -322,7 +322,7 @@ def test_add_symbolic_cost_consumer_reads_replaceable_signature(monkeypatch):
 
 
 def test_qrom_partition_consumer_accepts_replacement_signature(monkeypatch):
-    from flagquantum.compiler.registers.qrom_table import QromTable
+    from flagquantum.compiler.registers.lookup.qrom_table import QromTable
 
     replacement = Signature([Register("bound", RegisterType("opaque", 3), (2,))])
     monkeypatch.setattr(QromTable, "signature", property(lambda _: replacement))

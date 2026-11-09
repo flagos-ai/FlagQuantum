@@ -4,7 +4,7 @@ from typing import Literal
 
 import pytest
 
-from flagquantum.compiler.registers.half_ordering import (
+from flagquantum.compiler.registers.comparison.half_ordering import (
     half_compare_ir,
     half_compare_outputs,
 )

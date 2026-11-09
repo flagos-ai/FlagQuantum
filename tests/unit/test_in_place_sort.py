@@ -6,7 +6,7 @@ from itertools import combinations, permutations, product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.in_place_sort import (
+from flagquantum.compiler.registers.sorting.in_place_sort import (
     in_place_sort_ir,
     in_place_sort_requirements,
 )
@@ -137,10 +137,10 @@ def test_assembled_gate_stream_and_locked_sort_model(count, width):
     from qualtran.bloqs.arithmetic.sorting import BitonicSort, Comparator
     from qualtran.resource_counting import SympySymbolAllocator
 
-    from flagquantum.compiler.registers.comparison_layout import (
+    from flagquantum.compiler.registers.comparison.comparison_layout import (
         comparison_network_requirements,
     )
-    from flagquantum.compiler.registers.permutation_index import (
+    from flagquantum.compiler.registers.sorting.permutation_index import (
         permutation_index_requirements,
         permutation_rank_xor_ir,
         permutation_words_xor_ir,

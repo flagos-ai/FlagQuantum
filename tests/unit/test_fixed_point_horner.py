@@ -9,7 +9,7 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.fixed_point_horner import (
+from flagquantum.compiler.registers.fixed_point.fixed_point_horner import (
     fixed_point_horner_step_ir,
     fixed_point_horner_step_requirements,
 )
@@ -196,7 +196,7 @@ def test_horner_invalid_layout(change, match):
     "argument_width,width,fraction", [(1, 1, 1), (2, 3, 2), (3, 2, 1)]
 )
 def test_register_horner_exhaustive_words_and_branches(argument_width, width, fraction):
-    from flagquantum.compiler.registers.fixed_point_horner import (
+    from flagquantum.compiler.registers.fixed_point.fixed_point_horner import (
         register_horner_step_ir,
         register_horner_step_requirements,
     )

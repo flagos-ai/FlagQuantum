@@ -2,7 +2,7 @@
 
 import pytest
 
-from flagquantum.compiler.registers.comparison_layout import (
+from flagquantum.compiler.registers.comparison.comparison_layout import (
     comparison_network_requirements,
     validate_comparison_layout,
 )

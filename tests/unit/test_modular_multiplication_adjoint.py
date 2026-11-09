@@ -5,7 +5,7 @@ from collections import Counter
 import pytest
 import torch
 
-from flagquantum.compiler.registers.modular_multiplication import (
+from flagquantum.compiler.registers.modular.modular_multiplication import (
     controlled_modular_multiply_constant_adjoint_ir,
     controlled_modular_multiply_constant_ir,
 )
@@ -111,7 +111,9 @@ def test_not_forward_inverse_multiplier_and_shared_validation() -> None:
     exact = controlled_modular_multiply_constant_adjoint_ir(0, target, 2, 5, w, bits)
     other = controlled_modular_multiply_constant_ir(0, target, 3, 5, w, bits)
     assert exact != other
-    from flagquantum.compiler.registers.controlled_swap import controlled_swap_ir
+    from flagquantum.compiler.registers.primitives.controlled_swap import (
+        controlled_swap_ir,
+    )
 
     swap = controlled_swap_ir(0, target, w[:3])
     assert exact[: len(swap)] == swap

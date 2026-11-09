@@ -5,7 +5,7 @@ from itertools import product
 import pytest
 import sympy
 
-from flagquantum.compiler.registers.qrom_table import QromTable
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 

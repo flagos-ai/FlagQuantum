@@ -9,17 +9,17 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.modular_constant_addition import (
+from flagquantum.compiler.registers.modular.modular_constant_addition import (
     controlled_modular_add_constant_adjoint_ir,
     controlled_modular_add_constant_ir,
     modular_constant_requirements,
 )
-from flagquantum.compiler.registers.modular_negation import (
+from flagquantum.compiler.registers.modular.modular_negation import (
     modular_negate_adjoint_ir,
     modular_negate_ir,
     modular_negation_requirements,
 )
-from flagquantum.compiler.registers.modular_scaled_addition import (
+from flagquantum.compiler.registers.modular.modular_scaled_addition import (
     controlled_modular_scaled_add_adjoint_ir,
     controlled_modular_scaled_add_ir,
     modular_scaled_requirements,

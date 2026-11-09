@@ -6,8 +6,10 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.compare_exchange import compare_exchange_ir
-from flagquantum.compiler.registers.less_equal import less_equal_requirements
+from flagquantum.compiler.registers.comparison.compare_exchange import (
+    compare_exchange_ir,
+)
+from flagquantum.compiler.registers.comparison.less_equal import less_equal_requirements
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

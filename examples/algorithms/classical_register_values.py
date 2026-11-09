@@ -6,7 +6,7 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bitwise import xor_constant_ir
+from flagquantum.compiler.registers.bits.bitwise import xor_constant_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.simulation.classical_bitwise import xor_constant_classical_value
 from flagquantum.simulation.classical_registers import (

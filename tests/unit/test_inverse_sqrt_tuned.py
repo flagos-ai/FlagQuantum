@@ -7,9 +7,13 @@ from math import floor, sqrt
 
 import pytest
 
-from flagquantum.compiler.registers.fixed_point_sqrt import fixed_point_sqrt_ir
-from flagquantum.compiler.registers.inverse_sqrt import inverse_sqrt_ir
-from flagquantum.compiler.registers.inverse_sqrt_seed import inverse_sqrt_seed_ir
+from flagquantum.compiler.registers.fixed_point.fixed_point_sqrt import (
+    fixed_point_sqrt_ir,
+)
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt import inverse_sqrt_ir
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt_seed import (
+    inverse_sqrt_seed_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.sparse_register_execution import execute_sparse_register

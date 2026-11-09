@@ -14,7 +14,7 @@ from flagquantum.algorithms.primitives.sparse_chemistry_data import (
 from flagquantum.algorithms.primitives.sparse_chemistry_prepare import (
     PrepareSparseChemistry,
 )
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources

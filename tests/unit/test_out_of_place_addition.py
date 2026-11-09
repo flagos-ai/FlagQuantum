@@ -7,7 +7,9 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.out_of_place_addition import out_of_place_add_ir
+from flagquantum.compiler.registers.arithmetic.out_of_place_addition import (
+    out_of_place_add_ir,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

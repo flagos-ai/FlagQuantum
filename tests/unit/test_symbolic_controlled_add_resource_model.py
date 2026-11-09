@@ -11,10 +11,10 @@ from flagquantum.compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from flagquantum.compiler.registers.controlled_add_resource_model import (
+from flagquantum.compiler.registers.arithmetic.controlled_add_resource_model import (
     source_controlled_add_resource_formula,
 )
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_add_resource_formula,
 )
@@ -125,7 +125,7 @@ def test_shared_add_formula_keeps_original_profile_and_dispatch(mode, legacy):
 def test_shared_symbolic_children_are_replaceable_and_all_categories_propagate(
     monkeypatch,
 ):
-    import flagquantum.compiler.registers.controlled_add_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.controlled_add_resource_model as module
 
     n = sympy.Symbol("n", positive=True, integer=True)
     add = SymbolicResourceFormula(2, 3, 5, 17, t=7, toffoli=11, cswap=13, rotation=19)
@@ -169,7 +169,7 @@ def test_shared_symbolic_children_are_replaceable_and_all_categories_propagate(
 
 
 def test_concrete_dispatch_uses_composed_peak_instead_of_root_ports(monkeypatch):
-    import flagquantum.compiler.registers.controlled_add_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.controlled_add_resource_model as module
 
     child = ComponentCost("child", 29, GateCost(t=3))
     root = ComponentCost("root", 11, calls=(CostCall(child, 2, 3),))
@@ -245,7 +245,7 @@ def test_numpy_width_requires_explicit_native_integer_conversion():
 
 
 def test_symbolic_formula_consumes_replaceable_native_call_recipe(monkeypatch):
-    import flagquantum.compiler.registers.controlled_add_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.controlled_add_resource_model as module
     from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
     from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
 

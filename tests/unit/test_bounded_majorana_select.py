@@ -5,7 +5,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.bounded_majorana_select import (
+from flagquantum.compiler.registers.lookup.bounded_majorana_select import (
     bounded_majorana_ir,
     bounded_majorana_workspace,
     source_bounded_majorana_cost,

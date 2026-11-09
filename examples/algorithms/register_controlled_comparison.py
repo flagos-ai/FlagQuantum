@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.controlled_comparison import (
+from flagquantum.compiler.registers.comparison.controlled_comparison import (
     controlled_greater_ir,
     controlled_greater_requirements,
 )

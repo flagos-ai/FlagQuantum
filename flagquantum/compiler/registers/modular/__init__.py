@@ -1,0 +1,1 @@
+"""Internal modular register decompositions."""

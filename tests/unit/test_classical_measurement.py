@@ -255,7 +255,7 @@ def test_complete_complex_measurement_channels_and_copy_erasure_all_branches():
     from flagquantum.compiler._component_trace.resource_generalization import (
         MeasurementCall,
     )
-    from flagquantum.compiler.registers.measurement import measure_x_clear_ir
+    from flagquantum.compiler.registers.primitives.measurement import measure_x_clear_ir
     from flagquantum.dynamic import DynamicCircuit
     from tests.unit.measurement_checks import forced_branch
 

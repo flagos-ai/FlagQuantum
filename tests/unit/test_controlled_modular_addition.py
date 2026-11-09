@@ -8,11 +8,14 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.and_compute import and_compute_ir, and_uncompute_ir
-from flagquantum.compiler.registers.controlled_modular_addition import (
+from flagquantum.compiler.registers.modular.controlled_modular_addition import (
     _controlled_modular_workspace,
     controlled_modular_add_ir,
     controlled_modular_requirements,
+)
+from flagquantum.compiler.registers.primitives.and_compute import (
+    and_compute_ir,
+    and_uncompute_ir,
 )
 from flagquantum.simulation.classical_modular_addition import (
     controlled_modular_add_classical_values,

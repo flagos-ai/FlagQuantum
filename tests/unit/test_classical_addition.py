@@ -6,8 +6,10 @@ import numpy as np
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arithmetic import add_ir
-from flagquantum.compiler.registers.out_of_place_addition import out_of_place_add_ir
+from flagquantum.compiler.registers.arithmetic.addition import add_ir
+from flagquantum.compiler.registers.arithmetic.out_of_place_addition import (
+    out_of_place_add_ir,
+)
 from flagquantum.simulation.classical_addition import (
     add_constant_classical_value,
     add_integer_values,

@@ -12,9 +12,11 @@ from dataclasses import dataclass
 from sympy import Symbol
 
 import flagquantum as fq
-from flagquantum.compiler.registers.arithmetic import add_ir
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.addition import add_ir
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     source_add_resource_formula,
 )
 from flagquantum.compiler.resource_reporting import resource_model_report

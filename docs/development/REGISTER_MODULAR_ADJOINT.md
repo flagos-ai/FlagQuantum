@@ -9,7 +9,7 @@ different add/subtract algorithm for an exact component adjoint.
 
 ## Compiler ownership and interfaces
 
-`modular_add_adjoint_ir` belongs to compiler/registers/modular_addition.py and
+`modular_add_adjoint_ir` belongs to compiler/registers/modular/modular_addition.py and
 has the same signature as modular_add_ir: left, right, modulus, workspace,
 classical_bits. Registers are big-endian, x lies in [0,p], y in [0,p),
 1<=p<2**n. It preserves x and updates y=(y-x)%p, keeping original x/y ports.

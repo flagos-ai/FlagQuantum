@@ -10,7 +10,7 @@ import pytest
 import torch
 
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.field_multiplication import (
+from flagquantum.compiler.registers.finite_field.field_multiplication import (
     bind_field_outputs,
     gf2_multiplication,
 )

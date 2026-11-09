@@ -10,20 +10,24 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.field_erasure import gf2_product_erasure
-from flagquantum.compiler.registers.field_inverse import (
+from flagquantum.compiler.registers.finite_field.field_erasure import (
+    gf2_product_erasure,
+)
+from flagquantum.compiler.registers.finite_field.field_inverse import (
     gf2_inverse_ir,
     gf2_inverse_workspace_size,
 )
-from flagquantum.compiler.registers.field_linear import (
+from flagquantum.compiler.registers.finite_field.field_linear import (
     gf2_constant_multiplication,
     gf2_monomial_multiplication,
 )
-from flagquantum.compiler.registers.field_multiplication import (
+from flagquantum.compiler.registers.finite_field.field_multiplication import (
     bind_field_outputs,
     gf2_multiplication,
 )
-from flagquantum.compiler.registers.polynomial import binary_polynomial_product_ir
+from flagquantum.compiler.registers.finite_field.polynomial import (
+    binary_polynomial_product_ir,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

@@ -5,7 +5,7 @@ from collections import Counter
 import pytest
 import torch
 
-from flagquantum.compiler.registers.modular_multiplication import (
+from flagquantum.compiler.registers.modular.modular_multiplication import (
     controlled_modular_multiply_constant_ir,
     modular_multiplication_requirements,
 )

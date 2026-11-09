@@ -11,7 +11,9 @@ from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import (
     SelectPauliLCU,
 )
 from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
-from flagquantum.compiler.registers.unary_iteration import unary_iteration_workspace
+from flagquantum.compiler.registers.lookup.unary_iteration import (
+    unary_iteration_workspace,
+)
 from flagquantum.compiler.select_lowering import unary_select_ir
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources

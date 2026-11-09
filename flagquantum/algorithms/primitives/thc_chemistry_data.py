@@ -14,13 +14,13 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ...compiler._component_trace.resource_model import ComponentCost
-from ...compiler.registers.partition import RegisterLayout
-from ...compiler.registers.qroam_bank_binding import (
+from ...compiler.registers.layout.partition import RegisterLayout
+from ...compiler.registers.lookup.qroam_bank_binding import (
     bind_clean_banks,
     clean_bank_output_layout,
 )
-from ...compiler.registers.qroam_resource_model import source_qroam_clean_cost
-from ...compiler.registers.source_qroam_clean import (
+from ...compiler.registers.lookup.qroam_resource_model import source_qroam_clean_cost
+from ...compiler.registers.lookup.source_qroam_clean import (
     QroamCleanTable,
     optimal_qroam_clean_log_block_size,
     source_qroam_clean_ir,

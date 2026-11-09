@@ -8,8 +8,8 @@ from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.arithmetic import add_ir
-from flagquantum.compiler.registers.arithmetic_resource_model import (
+from flagquantum.compiler.registers.arithmetic.addition import add_ir
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
     source_add_cost,
     source_phase_add_cost,
 )
@@ -83,7 +83,7 @@ def test_phase_add_model(
 @pytest.mark.parametrize("left,right", [(1, 1), (2, 3), (8, 8)])
 @pytest.mark.parametrize("legacy", (False, True))
 def test_add_cost_consumes_replaceable_native_recipe(monkeypatch, left, right, legacy):
-    import flagquantum.compiler.registers.arithmetic_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.arithmetic_resource_model as module
     from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
     from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
 

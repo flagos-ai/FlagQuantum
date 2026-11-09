@@ -14,7 +14,7 @@ from flagquantum.compiler._component_trace.compound_control_resource import (
     global_phase_cost_key,
 )
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
-from flagquantum.compiler.registers.global_phase import (
+from flagquantum.compiler.registers.primitives.global_phase import (
     global_phase_exponent,
     global_phase_ir,
 )

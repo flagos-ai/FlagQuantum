@@ -66,7 +66,7 @@ The existing example wrapper retains `circuit.append(op)`:
 
 ```python
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.kickmix_bit_rotation import kickmix_bit_rotation_ir
+from flagquantum.compiler.registers.bits.bit_rotation import kickmix_bit_rotation_ir
 from flagquantum.dynamic import DynamicCircuit
 
 operation = FieldOperation(4, kickmix_bit_rotation_ir((0, 1, 2, 3), 1))

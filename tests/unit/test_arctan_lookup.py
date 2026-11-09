@@ -7,7 +7,7 @@ from math import atan, pi, sqrt
 
 import pytest
 
-from flagquantum.compiler.registers.arctan_lookup import (
+from flagquantum.compiler.registers.lookup.arctan_lookup import (
     _arctan_magnitude_words,
     arctan_lookup_ir,
     arctan_lookup_requirements,

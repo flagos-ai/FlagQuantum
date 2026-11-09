@@ -4,22 +4,22 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
 from ....circuit import Circuit
-from ....compiler.registers.arithmetic import add_adjoint_ir, add_ir
-from ....compiler.registers.bitwise import _validate_wires, xor_ir
-from ....compiler.registers.controlled_swap import controlled_swap_ir
-from ....compiler.registers.multi_control import multi_and_ir
-from ....compiler.registers.partition import RegisterLayout, unpartition_register
-from ....compiler.registers.phase_gradient import phase_gradient_state_ir
-from ....compiler.registers.programmed_givens import programmed_givens_ir
-from ....compiler.registers.qroam_bank_binding import (
+from ....compiler.registers.arithmetic.addition import add_adjoint_ir, add_ir
+from ....compiler.registers.bits.bitwise import _validate_wires, xor_ir
+from ....compiler.registers.control.multi_control import multi_and_ir
+from ....compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ....compiler.registers.lookup.qroam_bank_binding import (
     bind_clean_banks,
     clean_bank_output_layout,
 )
-from ....compiler.registers.source_qroam_clean import (
+from ....compiler.registers.lookup.source_qroam_clean import (
     QroamCleanTable,
     source_qroam_clean_ir,
     source_qroam_clean_uncompute_ir,
 )
+from ....compiler.registers.phase.phase_gradient import phase_gradient_state_ir
+from ....compiler.registers.phase.programmed_givens import programmed_givens_ir
+from ....compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ....core.classical_control import validate_classical_control
 from ....core.ir import CircuitIR, Instruction
 from ....dynamic import DynamicCircuit

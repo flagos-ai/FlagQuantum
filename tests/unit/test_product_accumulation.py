@@ -7,11 +7,13 @@ from math import sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.integer_product import (
+from flagquantum.compiler.registers.arithmetic.integer_product import (
     integer_product_ir,
     integer_product_requirements,
 )
-from flagquantum.compiler.registers.product_accumulation import product_accumulation_ir
+from flagquantum.compiler.registers.arithmetic.product_accumulation import (
+    product_accumulation_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.simulation.classical_product_accumulation import (
     accumulate_product_classical_values,

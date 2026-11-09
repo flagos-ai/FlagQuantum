@@ -11,8 +11,8 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
 from flagquantum.compiler._component_trace.resource_generalization import (
     BookkeepingCall,
 )
-from flagquantum.compiler.registers.int_vector import int_effect_bindings
-from flagquantum.compiler.registers.workspace import RegisterWorkspace
+from flagquantum.compiler.registers.layout.int_vector import int_effect_bindings
+from flagquantum.compiler.registers.layout.workspace import RegisterWorkspace
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     tensor_network_basis_effect,

@@ -12,8 +12,8 @@ from dataclasses import dataclass
 
 from ..circuit import Circuit
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall
-from ..compiler.registers.bitwise import _validate_wires
-from ..compiler.registers.multiplexed_swap import (
+from ..compiler.registers.bits.bitwise import _validate_wires
+from ..compiler.registers.lookup.multiplexed_swap import (
     multiplexed_cswap_ir,
     source_multiplexed_cswap_cost,
 )

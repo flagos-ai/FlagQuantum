@@ -10,7 +10,9 @@ from __future__ import annotations
 from typing import cast
 
 from ...compiler._component_trace.symbolic_math import SymbolicInt, ceil, log2, smax
-from ...compiler.registers.symbolic_resource_model import SymbolicResourceFormula
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+)
 
 
 def _leaf_width(side: SymbolicInt, controlled: bool, accumulator: int) -> SymbolicInt:

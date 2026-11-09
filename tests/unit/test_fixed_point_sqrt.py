@@ -9,11 +9,11 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.fixed_point_sqrt import (
+from flagquantum.compiler.registers.fixed_point.fixed_point_sqrt import (
     fixed_point_sqrt_ir,
     fixed_point_sqrt_requirements,
 )
-from flagquantum.compiler.registers.inverse_sqrt import (
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt import (
     inverse_sqrt_ir,
     inverse_sqrt_requirements,
 )

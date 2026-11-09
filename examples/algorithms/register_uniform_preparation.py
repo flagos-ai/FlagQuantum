@@ -10,11 +10,11 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.basis_translation import translate
-from flagquantum.compiler.registers.uniform_preparation import (
+from flagquantum.compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
 )
-from flagquantum.compiler.registers.uniform_preparation_resource_model import (
+from flagquantum.compiler.registers.preparation.uniform_preparation_resource_model import (
     source_uniform_preparation_resource_formula,
 )
 from flagquantum.core.ir import Instruction

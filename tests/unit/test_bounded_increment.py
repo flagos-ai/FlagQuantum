@@ -8,7 +8,7 @@ import pytest
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.bounded_increment import (
+from flagquantum.compiler.registers.arithmetic.bounded_increment import (
     bounded_increment_ir,
     bounded_increment_requirements,
     source_bounded_increment_cost,

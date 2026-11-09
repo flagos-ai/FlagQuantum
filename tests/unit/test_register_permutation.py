@@ -10,11 +10,11 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.permutation import (
+from flagquantum.compiler.registers.sorting.permutation import (
     permutation_cycle_ir,
     permutation_ir,
 )
-from flagquantum.compiler.registers.permutation_resource_model import (
+from flagquantum.compiler.registers.sorting.permutation_resource_model import (
     source_permutation_cost,
 )
 from tests.unit.measurement_checks import forced_branch

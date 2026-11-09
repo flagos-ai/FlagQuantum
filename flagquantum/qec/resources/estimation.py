@@ -16,7 +16,9 @@ from ...compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicInt
-from ...compiler.registers.symbolic_resource_model import SymbolicResourceFormula
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+)
 from ...core.ir import CircuitIR
 from .beverland import BeverlandEstimate, estimate_beverland_resources
 

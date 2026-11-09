@@ -6,7 +6,7 @@ import pytest
 
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.measurement import measure_x_clear_ir
+from flagquantum.compiler.registers.primitives.measurement import measure_x_clear_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 
 pytestmark = pytest.mark.unit

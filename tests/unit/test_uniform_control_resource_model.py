@@ -5,7 +5,7 @@ from itertools import product
 
 import pytest
 
-from flagquantum.compiler.registers.uniform_preparation import (
+from flagquantum.compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_requirements,
 )
@@ -39,8 +39,8 @@ def test_each_initial_h_retains_a_separate_predicate_model(values):
     from flagquantum.compiler._component_trace.compound_control_resource import (
         CONTROLLED_HADAMARD_COST,
     )
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
-    from flagquantum.compiler.registers.controlled_component_resource_model import (
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.controlled_component_resource_model import (
         controlled_component_cost,
     )
 
@@ -86,7 +86,7 @@ def test_source_controlled_singleton_cost_failure_is_not_claimed_as_valid():
 
 
 def test_resource_only_control_query_never_emits_quantum_instructions(monkeypatch):
-    import flagquantum.compiler.registers.uniform_preparation as module
+    import flagquantum.compiler.registers.preparation.uniform_preparation as module
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Resource query invoked quantum emitter")

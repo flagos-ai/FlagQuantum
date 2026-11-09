@@ -132,7 +132,7 @@ def test_complete_complex_valid_bit_action_and_inverse_without_work(kind):
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.circuit import Circuit
-    from flagquantum.compiler.registers.bitwise import fanout_ir
+    from flagquantum.compiler.registers.bits.bitwise import fanout_ir
     from flagquantum.core.ir import Instruction
 
     gates = {

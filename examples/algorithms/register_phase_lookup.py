@@ -10,11 +10,11 @@ from math import sqrt, tau
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.phase_gradient_lookup import (
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
+from flagquantum.compiler.registers.phase.phase_gradient_lookup import (
     phase_gradient_lookup_ir,
     phase_gradient_lookup_requirements,
 )
-from flagquantum.compiler.registers.qrom_table import QromTable
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 

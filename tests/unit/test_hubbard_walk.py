@@ -16,8 +16,8 @@ from flagquantum.compiler._component_trace.resource_comparison import (
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.partition import partition_register
-from flagquantum.compiler.registers.prepare_reflection import (
+from flagquantum.compiler.registers.layout.partition import partition_register
+from flagquantum.compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
 )

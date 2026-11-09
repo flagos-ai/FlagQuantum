@@ -14,7 +14,7 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.hamming_weight_phasing import (
+from ...compiler.registers.phase.hamming_weight_phasing import (
     source_hamming_weight_phasing_cost,
 )
 from .fermionic_fourier import source_two_bit_fermionic_fourier_cost

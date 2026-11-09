@@ -7,7 +7,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.bitwise import controlled_xor_constant_ir
+from flagquantum.compiler.registers.bits.bitwise import controlled_xor_constant_ir
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 

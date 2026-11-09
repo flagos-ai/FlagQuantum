@@ -6,8 +6,8 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.less_equal import less_equal_requirements
-from flagquantum.compiler.registers.parallel_comparison import (
+from flagquantum.compiler.registers.comparison.less_equal import less_equal_requirements
+from flagquantum.compiler.registers.comparison.parallel_comparison import (
     parallel_compare_ir,
     parallel_comparison_pairs,
 )

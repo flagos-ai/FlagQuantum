@@ -9,8 +9,12 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.inverse_parity import inverse_parity_ir
-from flagquantum.compiler.registers.inverse_termination import inverse_termination_ir
+from flagquantum.compiler.registers.modular.inversion.inverse_parity import (
+    inverse_parity_ir,
+)
+from flagquantum.compiler.registers.modular.inversion.inverse_termination import (
+    inverse_termination_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

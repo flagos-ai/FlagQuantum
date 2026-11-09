@@ -4,7 +4,7 @@ from collections import Counter
 
 import pytest
 
-from flagquantum.compiler.registers.bitonic_sort import (
+from flagquantum.compiler.registers.sorting.bitonic_sort import (
     bitonic_sort_history_count,
     bitonic_sort_ir,
 )

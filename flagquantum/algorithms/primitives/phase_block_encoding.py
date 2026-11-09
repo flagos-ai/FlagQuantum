@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from ...circuit import Circuit, _CircuitOperation
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler._component_trace.symbolic_math import SymbolicReal
-from ...compiler.registers.global_phase import global_phase_ir
+from ...compiler.registers.primitives.global_phase import global_phase_ir
 from ...core.ir import CircuitIR, Instruction
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare

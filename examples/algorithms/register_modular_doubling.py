@@ -9,11 +9,11 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.modular_doubling import (
+from flagquantum.compiler.registers.modular.modular_doubling import (
     modular_double_ir,
     modular_double_outputs,
 )
-from flagquantum.compiler.registers.modular_halving import (
+from flagquantum.compiler.registers.modular.modular_halving import (
     modular_half_ir,
     modular_half_outputs,
 )

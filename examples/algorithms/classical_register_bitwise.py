@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bitwise import bitwise_not_ir
+from flagquantum.compiler.registers.bits.bitwise import bitwise_not_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.simulation.classical_bitwise import (
     bitwise_not_classical_value,

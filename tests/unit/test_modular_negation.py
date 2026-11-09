@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.modular_negation import (
+from flagquantum.compiler.registers.modular.modular_negation import (
     modular_negate_ir,
     modular_negation_requirements,
 )

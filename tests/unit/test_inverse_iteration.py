@@ -7,7 +7,7 @@ import pytest
 import torch
 
 from examples.algorithms.register_inverse_updates import pack
-from flagquantum.compiler.registers.inverse_iteration import (
+from flagquantum.compiler.registers.modular.inversion.inverse_iteration import (
     inverse_iteration_ir,
     inverse_iteration_outputs,
 )

@@ -9,8 +9,8 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers import programmed_phase
-from flagquantum.compiler.registers.programmed_phase import (
+from flagquantum.compiler.registers.phase import programmed_phase
+from flagquantum.compiler.registers.phase.programmed_phase import (
     programmed_phase_ir,
     programmed_phase_rotation_ir,
 )

@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import sympy
 
-from flagquantum.compiler.registers.grouped_constant_add_resource_model import (
+from flagquantum.compiler.registers.arithmetic.grouped_constant_add_resource_model import (
     source_grouped_constant_add_resource_formula,
 )
 from tests.unit.test_grouped_controlled_constant_addition import EXTRA
@@ -57,7 +57,7 @@ def test_all_original_categories_and_fallback_with_unchanged_dimension_objects(
 
 
 def test_literal_reconstruction_keeps_inner_fallback_and_outer_live_predicates():
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     regs = (ControlRegister(2, (1,)),)
     concrete = source_grouped_constant_add_resource_formula(3, 5, regs)
@@ -83,13 +83,13 @@ def test_literal_reconstruction_keeps_inner_fallback_and_outer_live_predicates()
 def test_all_shared_child_categories_and_symbolic_width_connections_remain_replaceable(
     monkeypatch,
 ):
-    import flagquantum.compiler.registers.grouped_constant_add_resource_model as module
+    import flagquantum.compiler.registers.arithmetic.grouped_constant_add_resource_model as module
     from flagquantum.compiler._component_trace.resource_model import (
         ComponentCost,
         GateCost,
     )
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         SymbolicResourceFormula,
     )
 
@@ -108,7 +108,7 @@ def test_all_shared_child_categories_and_symbolic_width_connections_remain_repla
     monkeypatch.setattr(
         module, "source_controlled_constant_add_resource_formula", positive
     )
-    import flagquantum.compiler.registers.controlled_component_resource_model as shared
+    import flagquantum.compiler.registers.control.controlled_component_resource_model as shared
 
     monkeypatch.setattr(
         shared,
@@ -135,7 +135,7 @@ def test_all_shared_child_categories_and_symbolic_width_connections_remain_repla
     ],
 )
 def test_symbolic_query_does_not_coerce_invalid_contract_inputs(kwargs):
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     with pytest.raises(ValueError):
         source_grouped_constant_add_resource_formula(

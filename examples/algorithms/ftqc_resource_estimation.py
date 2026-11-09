@@ -21,7 +21,7 @@ from flagquantum.compiler._component_trace.gate_budget import (
     t_and_ccz_budget,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_add_resource_formula,
     source_qrom_resource_formula,

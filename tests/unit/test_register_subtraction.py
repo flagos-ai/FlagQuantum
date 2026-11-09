@@ -7,7 +7,10 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.subtraction import subtract_from_ir, subtract_ir
+from flagquantum.compiler.registers.arithmetic.subtraction import (
+    subtract_from_ir,
+    subtract_ir,
+)
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -137,7 +140,7 @@ def test_all_entangled_complex_amplitudes_work_cleanup_and_round_trip(
     )
     # Subtract is an involution; SubtractFrom is inverted by the already validated Add.
     if from_right:
-        from flagquantum.compiler.registers.arithmetic import add_ir
+        from flagquantum.compiler.registers.arithmetic.addition import add_ir
 
         inverse = add_ir(a, b, carry, bits)
     else:

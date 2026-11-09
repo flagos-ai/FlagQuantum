@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import sympy
 
-from flagquantum.compiler.registers.modular_declarations import (
+from flagquantum.compiler.registers.modular.modular_declarations import (
     modular_arithmetic_calls,
     modular_arithmetic_registers,
     source_modular_arithmetic_resource_formula,
@@ -138,13 +138,13 @@ def test_original_signed_flag_retains_the_same_symbolic_declaration(mode, legacy
 
 
 def test_csub_consumes_shared_symbolic_add_and_existing_on_each_query(monkeypatch):
-    import flagquantum.compiler.registers.modular_declarations as module
+    import flagquantum.compiler.registers.modular.modular_declarations as module
     from flagquantum.compiler._component_trace.qec_gate_cost import QECGateCost
     from flagquantum.compiler._component_trace.resource_generalization import (
         CliffordCall,
         OnEachCall,
     )
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         SymbolicResourceFormula,
     )
 
@@ -294,7 +294,7 @@ def test_symbolic_options_keep_explicit_validation(kwargs):
 def test_all_modular_formula_consumers_use_replaceable_native_edges(
     monkeypatch, kind, width, legacy
 ):
-    import flagquantum.compiler.registers.modular_declarations as module
+    import flagquantum.compiler.registers.modular.modular_declarations as module
     from flagquantum.compiler._component_trace.arithmetic_call import ArithmeticCall
     from flagquantum.compiler._component_trace.resource_generalization import FixedTCall
 

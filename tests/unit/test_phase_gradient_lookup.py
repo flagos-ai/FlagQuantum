@@ -7,11 +7,11 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.phase_gradient_lookup import (
+from flagquantum.compiler.registers.lookup.source_qrom import source_qrom_workspace_size
+from flagquantum.compiler.registers.phase.phase_gradient_lookup import (
     phase_gradient_lookup_ir,
     phase_gradient_lookup_requirements,
 )
-from flagquantum.compiler.registers.source_qrom import source_qrom_workspace_size
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (

@@ -98,7 +98,8 @@ def test_alias_and_coefficient_factories_require_boolean_profiles(value):
 
 def test_model_only_profile_query_does_not_invoke_a_quantum_emitter(monkeypatch):
     import flagquantum.algorithms.primitives.alias_preparation as alias
-    from flagquantum.compiler.registers import less_equal, uniform_preparation
+    from flagquantum.compiler.registers.comparison import less_equal
+    from flagquantum.compiler.registers.preparation import uniform_preparation
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Cost query invoked an emitter")

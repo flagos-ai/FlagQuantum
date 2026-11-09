@@ -12,8 +12,10 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
-from flagquantum.compiler.registers.indexed_component_resource_model import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
+from flagquantum.compiler.registers.control.indexed_component_resource_model import (
     indexed_component_cost,
 )
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -222,7 +224,7 @@ def test_heterogeneous_child_work_is_charged_at_its_actual_prefix(
 def test_dimension_model_does_not_emit_or_execute(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import flagquantum.compiler.registers.indexed_component as emitters
+    import flagquantum.compiler.registers.control.indexed_component as emitters
 
     def unexpected(*args: object, **kwargs: object) -> None:
         pytest.fail("Analytical indexed costs must not construct a gate stream")

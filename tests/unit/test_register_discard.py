@@ -11,7 +11,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
     query_qec_gate_cost,
 )
 from flagquantum.compiler._component_trace.resource_generalization import ZeroCostCall
-from flagquantum.compiler.registers.measurement import discard_qubit_ir
+from flagquantum.compiler.registers.primitives.measurement import discard_qubit_ir
 from flagquantum.core.ir import Instruction
 from flagquantum.runtime.dynamic.circuit import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

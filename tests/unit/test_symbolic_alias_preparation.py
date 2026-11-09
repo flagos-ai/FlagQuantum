@@ -172,7 +172,7 @@ def test_native_symbolic_alias_preserves_shared_model_replacement_and_profile(
 
 def test_symbolic_model_queries_do_not_invoke_emitters(monkeypatch):
     import flagquantum.algorithms.primitives.alias_preparation as alias
-    import flagquantum.compiler.registers.uniform_preparation as uniform
+    import flagquantum.compiler.registers.preparation.uniform_preparation as uniform
 
     def forbidden(*args, **kwargs):
         raise AssertionError("Shape model invoked an emitter")

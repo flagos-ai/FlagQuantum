@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bitwise import fanout_ir
+from flagquantum.compiler.registers.bits.bitwise import fanout_ir
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.classical_controlled_bits import (
     cnot_classical_values,

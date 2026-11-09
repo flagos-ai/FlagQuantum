@@ -9,12 +9,14 @@ from dataclasses import dataclass
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler.registers.arithmetic_resource_model import source_sum_of_squares_cost
-from ...compiler.registers.integer_square import (
+from ...compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_sum_of_squares_cost,
+)
+from ...compiler.registers.arithmetic.integer_square import (
     sum_of_squares_ir,
     sum_of_squares_requirements,
 )
-from ...compiler.registers.partition import unpartition_register
+from ...compiler.registers.layout.partition import unpartition_register
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit

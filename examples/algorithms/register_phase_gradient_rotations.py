@@ -10,9 +10,11 @@ from math import tau
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
-from flagquantum.compiler.registers.rz_phase_gradient import rz_via_phase_gradient_ir
-from flagquantum.compiler.registers.zpow_phase_gradient import (
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.phase.rz_phase_gradient import (
+    rz_via_phase_gradient_ir,
+)
+from flagquantum.compiler.registers.phase.zpow_phase_gradient import (
     zpow_via_phase_gradient_ir,
 )
 from flagquantum.core.ir import CircuitIR

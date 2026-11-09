@@ -235,7 +235,7 @@ def test_original_grouped_extension_failure_is_a_separate_execution_boundary(val
         grouped.decompose_bloq()
     with pytest.raises(RuntimeError):
         get_cost_value(grouped, QubitCount())
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     options |= dict(
         controls=((0, options["system"][0]),),
@@ -287,7 +287,7 @@ def test_repeated_root_model_contracts_and_circuit_free_query(monkeypatch):
         LinearCombinationBlockEncoding,
     )
     from flagquantum.compiler._component_trace.resource_model import ComponentCost
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     native, _, _, _, _, _, _, _, _, _, _ = fixture(
         (0, 1), 0, "supplied", False, precision=1
@@ -338,7 +338,7 @@ def test_nonhermitian_phase_children_preserve_direction_and_absolute_branch_phas
     from qualtran.bloqs.basic_gates import SGate, TGate
 
     from examples.algorithms.binary_field_arithmetic import FieldOperation
-    from flagquantum.compiler.registers.phase_family import phase_family_ir
+    from flagquantum.compiler.registers.phase.phase_family import phase_family_ir
 
     native, source, _, ports, p, pb, w, bits, options, _, _ = fixture(
         (0, 1), new_value, "default", inverse, precision=1

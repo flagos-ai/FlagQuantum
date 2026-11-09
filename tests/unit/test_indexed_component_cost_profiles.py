@@ -7,14 +7,14 @@ from math import prod
 import pytest
 
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.control_predicate_resource_model import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.control_predicate_resource_model import (
     control_predicate_cost,
 )
-from flagquantum.compiler.registers.indexed_component_control_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_control_resource_model import (
     specialized_indexed_component_cost,
 )
-from flagquantum.compiler.registers.indexed_component_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_resource_model import (
     indexed_component_cost,
 )
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -145,7 +145,7 @@ def test_nonboolean_profile_rejected(legacy):
 
 
 def test_model_profile_does_not_emit_or_change_execution(monkeypatch):
-    import flagquantum.compiler.registers.indexed_component as dispatch
+    import flagquantum.compiler.registers.control.indexed_component as dispatch
     from tests.unit.test_indexed_component_control import _native
 
     before = _native((0, 1), 0, False)[0]

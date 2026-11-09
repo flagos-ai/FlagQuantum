@@ -17,7 +17,9 @@ from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseProgr
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.recursive_lookup import recursive_lookup_operations
+from flagquantum.compiler.registers.lookup.recursive_lookup import (
+    recursive_lookup_operations,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 

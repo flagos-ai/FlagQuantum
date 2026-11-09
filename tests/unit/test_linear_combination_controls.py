@@ -8,7 +8,7 @@ import pytest
 import torch
 
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.indexed_component_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_resource_model import (
     indexed_component_cost,
 )
 from flagquantum.core.classical_control import instruction_condition_clauses
@@ -335,7 +335,7 @@ def test_original_control_adder_interface_matches_returned_root(case, inverse):
     ],
 )
 def test_control_binding_contracts_reject_ambiguous_or_overlapping_storage(change):
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     native, _, _, _, _, p, _, w, _, options, binders, _ = fixture(
         CASES[2], "default", False, precision=1
@@ -369,7 +369,7 @@ def test_control_model_rejects_ambiguous_mode_and_does_not_emit(monkeypatch):
     from flagquantum.algorithms.primitives.linear_combination_block_encoding import (
         LinearCombinationBlockEncoding,
     )
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     native, _, _, _, _, _, _, _, _, options, _, model = fixture(
         CASES[2], "default", False, precision=1

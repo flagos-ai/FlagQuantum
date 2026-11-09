@@ -9,11 +9,11 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.controlled_modular_negation import (
+from flagquantum.compiler.registers.modular.controlled_modular_negation import (
     controlled_modular_negate_adjoint_ir,
     controlled_modular_negate_ir,
 )
-from flagquantum.compiler.registers.modular_negation import (
+from flagquantum.compiler.registers.modular.modular_negation import (
     modular_negate_adjoint_ir,
     modular_negate_ir,
 )

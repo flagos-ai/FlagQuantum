@@ -7,7 +7,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.bitwise import (
+from flagquantum.compiler.registers.bits.bitwise import (
     bitwise_not_ir,
     xor_constant_ir,
     xor_ir,

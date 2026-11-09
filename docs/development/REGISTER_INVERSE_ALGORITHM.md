@@ -1,6 +1,6 @@
 # Complete modular inverse body
 
-`compiler/registers/inverse_algorithm.py` ports the unchanged Qualtran v0.7.0
+`compiler/registers/modular/inversion/inverse_algorithm.py` ports the unchanged Qualtran v0.7.0
 `_KaliskiModInverseImpl` call chain into shared native register IR. It composes
 initialization, 2n complete iterations, final coefficient conversion and the
 zero-input correction. It owns no execution backend or upstream runtime objects.

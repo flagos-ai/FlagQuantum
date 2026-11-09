@@ -8,7 +8,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.kickmix_field_inverse import (
+from flagquantum.compiler.registers.finite_field.inverse_chain import (
     kickmix_field_inverse_chain_erase_ir,
     kickmix_field_inverse_chain_ir,
     kickmix_field_inverse_chain_size,

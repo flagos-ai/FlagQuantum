@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.qvr_zpow import qvr_zpow_ir, qvr_zpow_schedule
+from flagquantum.compiler.registers.phase.qvr_zpow import qvr_zpow_ir, qvr_zpow_schedule
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (

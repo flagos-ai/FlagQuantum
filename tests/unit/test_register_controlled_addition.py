@@ -7,8 +7,13 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.and_compute import and_compute_ir, and_uncompute_ir
-from flagquantum.compiler.registers.controlled_addition import controlled_add_ir
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
+    controlled_add_ir,
+)
+from flagquantum.compiler.registers.primitives.and_compute import (
+    and_compute_ir,
+    and_uncompute_ir,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

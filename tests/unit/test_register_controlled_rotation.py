@@ -13,7 +13,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     ControlledZPowerCall,
     ControlledZRotationCall,
 )
-from flagquantum.compiler.registers.controlled_rotation import (
+from flagquantum.compiler.registers.primitives.controlled_rotation import (
     controlled_rz_ir,
     controlled_z_power_ir,
 )

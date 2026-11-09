@@ -14,7 +14,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     PhaseCall,
     PredicateControlledCall,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
 pytestmark = pytest.mark.unit
 

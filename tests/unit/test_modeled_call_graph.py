@@ -229,7 +229,7 @@ def test_repeated_shape_qrom_estimate_matches_source() -> None:
     from qualtran.resource_counting import QECGatesCost, get_cost_value
     from sympy import expand, symbols
 
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         source_qrom_resource_formula,
     )
 

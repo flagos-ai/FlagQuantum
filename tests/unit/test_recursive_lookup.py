@@ -14,8 +14,10 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient as C
-from flagquantum.compiler.registers.recursive_lookup import (
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient as C,
+)
+from flagquantum.compiler.registers.lookup.recursive_lookup import (
     TableBit,
     recursive_lookup_operations,
 )

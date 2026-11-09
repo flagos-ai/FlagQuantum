@@ -11,7 +11,7 @@ from flagquantum.algorithms.primitives.double_factorization_indexed_data import 
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_register_subtraction import assert_source
 from tests.unit.test_relative_controlled_swap import source_relative_swap

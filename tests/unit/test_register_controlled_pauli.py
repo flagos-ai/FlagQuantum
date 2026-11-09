@@ -13,7 +13,9 @@ from flagquantum.compiler._component_trace.compound_control_resource import (
 )
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
 from flagquantum.compiler._component_trace.resource_generalization import CliffordCall
-from flagquantum.compiler.registers.pauli_gate import controlled_pauli_with_controls_ir
+from flagquantum.compiler.registers.primitives.pauli_gate import (
+    controlled_pauli_with_controls_ir,
+)
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (

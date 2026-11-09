@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from ...circuit import Circuit, _CircuitOperation
-from ...compiler.registers.bitwise import _validate_wires
+from ...compiler.registers.bits.bitwise import _validate_wires
 from ...core.ir import CircuitIR, Instruction
 
 

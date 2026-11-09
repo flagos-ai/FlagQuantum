@@ -8,7 +8,9 @@
 from math import ceil, floor, log2
 
 from ...compiler._component_trace.resource_model import ComponentCost, GateCost
-from ...compiler.registers.source_qroam_clean import optimal_qroam_clean_log_block_size
+from ...compiler.registers.lookup.source_qroam_clean import (
+    optimal_qroam_clean_log_block_size,
+)
 
 
 def source_chemistry_qroam_cost(

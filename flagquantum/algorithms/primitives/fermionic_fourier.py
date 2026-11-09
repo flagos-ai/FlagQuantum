@@ -10,7 +10,7 @@ from math import pi
 from ...compiler._component_trace.resource_classification import classify_resource_gate
 from ...compiler._component_trace.resource_generalization import RotationCall
 from ...compiler._component_trace.resource_model import ComponentCost, GateCost
-from ...compiler.registers.bitwise import _validate_wires
+from ...compiler.registers.bits.bitwise import _validate_wires
 from ...core.ir import Instruction
 
 _ADJOINT = {"s": "sdg", "t": "tdg", "tdg": "t"}

@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.primitives.multiplexers import SelectTHC
-from flagquantum.compiler.registers.qrom import controlled_qrom_ir
+from flagquantum.compiler.registers.lookup.qrom import controlled_qrom_ir
 from flagquantum.core.classical_control import (
     validate_classical_control,
 )
@@ -155,7 +155,7 @@ def test_paired_qrom_erasure_on_native_dynamic_runtime() -> None:
 
 
 def test_controlled_adder_preserves_complex_superposition() -> None:
-    from flagquantum.compiler.registers.arithmetic import (
+    from flagquantum.compiler.registers.arithmetic.addition import (
         measurement_add_or_subtract_ir,
     )
 

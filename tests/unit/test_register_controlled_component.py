@@ -6,9 +6,13 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.controlled_addition import controlled_add_ir
-from flagquantum.compiler.registers.controlled_component import controlled_component_ir
+from flagquantum.compiler.registers.arithmetic.controlled_addition import (
+    controlled_add_ir,
+)
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.controlled_component import (
+    controlled_component_ir,
+)
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates

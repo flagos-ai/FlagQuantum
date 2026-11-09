@@ -5,7 +5,7 @@ from collections import Counter
 import pytest
 import torch
 
-from flagquantum.compiler.registers.modular_scaled_addition import (
+from flagquantum.compiler.registers.modular.modular_scaled_addition import (
     controlled_modular_scaled_add_ir,
     modular_scaled_requirements,
 )

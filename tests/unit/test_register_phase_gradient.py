@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.phase_gradient import (
+from flagquantum.compiler.registers.phase.phase_gradient import (
     phase_gradient_state_ir,
     phase_gradient_unitary_ir,
 )

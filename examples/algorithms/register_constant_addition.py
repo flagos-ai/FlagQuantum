@@ -13,8 +13,11 @@ import flagquantum as fq
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.arithmetic import add_constant_ir, negate_ir
-from flagquantum.compiler.registers.constant_add_resource_model import (
+from flagquantum.compiler.registers.arithmetic.addition import (
+    add_constant_ir,
+    negate_ir,
+)
+from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
     source_constant_add_cost,
 )
 from flagquantum.core.ir import CircuitIR

@@ -7,7 +7,10 @@ import pytest
 import torch
 
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.finite_field import gf2_add_constant_ir, gf2_add_ir
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    gf2_add_constant_ir,
+    gf2_add_ir,
+)
 from flagquantum.core.ir import CircuitIR
 
 pytestmark = pytest.mark.unit

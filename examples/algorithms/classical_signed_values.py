@@ -10,7 +10,9 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.signed_encoding import ones_complement_to_twos_ir
+from flagquantum.compiler.registers.bits.signed_encoding import (
+    ones_complement_to_twos_ir,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

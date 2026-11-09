@@ -8,8 +8,10 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
-from flagquantum.compiler.registers.scaled_phase_addition import scaled_phase_add_ir
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.phase.scaled_phase_addition import (
+    scaled_phase_add_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

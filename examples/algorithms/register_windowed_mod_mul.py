@@ -7,7 +7,7 @@ from collections import Counter
 from dataclasses import dataclass
 
 import flagquantum as fq
-from flagquantum.compiler.registers.windowed_mod_mul import windowed_mod_mul_ir
+from flagquantum.compiler.registers.modular.windowed_mod_mul import windowed_mod_mul_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 

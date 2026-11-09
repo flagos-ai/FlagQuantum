@@ -1,0 +1,1 @@
+"""Internal resources register decompositions."""

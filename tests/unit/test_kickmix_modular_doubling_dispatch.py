@@ -10,8 +10,10 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient as Bit
-from flagquantum.compiler.registers.kickmix_modular_doubling_dispatch import (
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient as Bit,
+)
+from flagquantum.compiler.registers.modular.modular_doubling_dispatch import (
     kickmix_modular_doubling_program,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
@@ -98,7 +100,7 @@ def test_full_precision_space_fallback_matches_every_valid_signed_history(
 
 def test_dispatch_and_known_empty_offset_boundary() -> None:
     from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-    from flagquantum.compiler.registers.kickmix_modular_doubling import (
+    from flagquantum.compiler.registers.modular.exact_modular_doubling import (
         kickmix_exact_modular_doubling_ir,
     )
     from flagquantum.core.ir import CircuitIR

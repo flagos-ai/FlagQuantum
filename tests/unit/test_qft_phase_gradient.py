@@ -13,9 +13,13 @@ from flagquantum.algorithms.primitives.qft_phase_gradient import (
     qft_phase_gradient_ir,
     qft_phase_gradient_requirements,
 )
-from flagquantum.compiler.registers.integer_product import integer_product_requirements
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
-from flagquantum.compiler.registers.product_accumulation import product_accumulation_ir
+from flagquantum.compiler.registers.arithmetic.integer_product import (
+    integer_product_requirements,
+)
+from flagquantum.compiler.registers.arithmetic.product_accumulation import (
+    product_accumulation_ir,
+)
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

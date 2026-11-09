@@ -6,8 +6,10 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.linear_comparison import linear_greater_ir
-from flagquantum.compiler.registers.modular_addition import (
+from flagquantum.compiler.registers.comparison.linear_comparison import (
+    linear_greater_ir,
+)
+from flagquantum.compiler.registers.modular.modular_addition import (
     _modular_workspace,
     modular_add_adjoint_ir,
     modular_add_ir,
@@ -191,7 +193,9 @@ def test_raw_complex_channels_spectator_and_work_zero(n: int, p: int) -> None:
 
 
 def test_shared_validation_and_distinct_modsub_stream() -> None:
-    from flagquantum.compiler.registers.modular_subtraction import modular_subtract_ir
+    from flagquantum.compiler.registers.modular.modular_subtraction import (
+        modular_subtract_ir,
+    )
 
     a, b, w, bits = layout(3)
     exact = modular_add_adjoint_ir(a, b, 3, w, bits)

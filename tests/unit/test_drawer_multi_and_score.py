@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.multi_control import multi_and_ir
+from flagquantum.compiler.registers.control.multi_control import multi_and_ir
 from flagquantum.drawer.register_score import multi_and_register_score
 from flagquantum.drawer.register_score_data import register_score_data
 from flagquantum.dynamic import DynamicCircuit

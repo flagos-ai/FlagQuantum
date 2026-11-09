@@ -6,14 +6,14 @@ from itertools import product
 import pytest
 import sympy
 
-from flagquantum.compiler.registers.control_predicate_resource_model import (
-    control_predicate_resource_formula,
-)
-from flagquantum.compiler.registers.grouped_constant_add_resource_model import (
+from flagquantum.compiler.registers.arithmetic.grouped_constant_add_resource_model import (
     source_pattern_controlled_constant_add_resource_formula,
 )
-from flagquantum.compiler.registers.xor_resource_model import (
+from flagquantum.compiler.registers.bits.xor_resource_model import (
     source_pattern_controlled_xor_resource_formula,
+)
+from flagquantum.compiler.registers.control.control_predicate_resource_model import (
+    control_predicate_resource_formula,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -166,8 +166,8 @@ def test_control_shape_metadata_cannot_silently_change_dispatch(shapes):
 
 @pytest.mark.parametrize("shape", ((m,), ()))
 def test_shared_predicate_replacement_reaches_both_shape_dispatches(monkeypatch, shape):
-    import flagquantum.compiler.registers.controlled_component_resource_model as shared
-    from flagquantum.compiler.registers.symbolic_resource_model import (
+    import flagquantum.compiler.registers.control.controlled_component_resource_model as shared
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
         SymbolicResourceFormula,
     )
 

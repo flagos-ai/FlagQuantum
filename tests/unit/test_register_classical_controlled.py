@@ -5,10 +5,10 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.classical_controlled import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.primitives.classical_controlled import (
     classically_controlled_ir,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
 from flagquantum.core.classical_control import validate_classical_control
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch

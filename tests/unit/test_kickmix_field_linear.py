@@ -5,7 +5,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.kickmix_field_linear import (
+from flagquantum.compiler.registers.finite_field.binary_linear_map import (
     kickmix_binary_linear_map_ir,
     kickmix_field_constant_scale_ir,
     kickmix_field_frobenius_ir,

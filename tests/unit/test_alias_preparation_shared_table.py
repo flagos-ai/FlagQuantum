@@ -12,7 +12,7 @@ from flagquantum.algorithms.primitives.alias_sampling import (
     sparse_alias_sampling_table,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.qrom_table import QromTable
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
 from flagquantum.core.ir import Instruction
 from tests.unit.test_alias_preparation import layout
 

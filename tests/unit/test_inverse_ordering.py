@@ -6,7 +6,9 @@ from typing import Any
 
 import pytest
 
-from flagquantum.compiler.registers.inverse_ordering import inverse_ordering_ir
+from flagquantum.compiler.registers.modular.inversion.inverse_ordering import (
+    inverse_ordering_ir,
+)
 from flagquantum.core.ir import Instruction
 from tests.unit.inverse_flag_checks import check_flag_channel
 from tests.unit.measurement_checks import certified_and_channel_map

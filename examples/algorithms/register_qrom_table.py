@@ -10,7 +10,7 @@ import numpy as np
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.qrom_table import QromTable
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import (
     estimate_ftqc_resources,

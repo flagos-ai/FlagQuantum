@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arithmetic import negate_ir
+from flagquantum.compiler.registers.arithmetic.addition import negate_ir
 from flagquantum.simulation.classical_negation import negate_classical_value
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import layout

@@ -5,11 +5,11 @@ import torch
 
 import flagquantum as fq
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.controlled_swap import (
+from flagquantum.compiler.registers.primitives.controlled_swap import (
     controlled_swap_bit_ir,
     controlled_swap_ir,
 )
-from flagquantum.compiler.registers.swap import (
+from flagquantum.compiler.registers.primitives.swap import (
     source_swap_resource_formula,
     swap_bit_ir,
     swap_register_ir,

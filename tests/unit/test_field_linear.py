@@ -8,11 +8,11 @@ import pytest
 import torch
 
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.field_linear import (
+from flagquantum.compiler.registers.finite_field.field_linear import (
     gf2_constant_multiplication,
     gf2_monomial_multiplication,
 )
-from flagquantum.compiler.registers.field_multiplication import (
+from flagquantum.compiler.registers.finite_field.field_multiplication import (
     FieldDecomposition,
     bind_field_outputs,
 )

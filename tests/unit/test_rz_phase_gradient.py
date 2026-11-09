@@ -9,7 +9,9 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.rz_phase_gradient import rz_via_phase_gradient_ir
+from flagquantum.compiler.registers.phase.rz_phase_gradient import (
+    rz_via_phase_gradient_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.register_source_graph import (

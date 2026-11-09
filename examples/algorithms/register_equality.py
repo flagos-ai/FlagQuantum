@@ -11,7 +11,10 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.equality import equality_constant_ir, equality_ir
+from flagquantum.compiler.registers.comparison.equality import (
+    equality_constant_ir,
+    equality_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

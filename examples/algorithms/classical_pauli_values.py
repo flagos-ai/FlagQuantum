@@ -7,7 +7,7 @@ from itertools import product
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.pauli_gate import pauli_gate_ir
+from flagquantum.compiler.registers.primitives.pauli_gate import pauli_gate_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.simulation.classical_pauli_values import (
     cz_basis_phase,

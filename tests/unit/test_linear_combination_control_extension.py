@@ -240,7 +240,7 @@ def test_extension_model_never_requests_emission_and_rejects_ambiguous_modes(
         LinearCombinationBlockEncoding,
     )
     from flagquantum.compiler._component_trace.resource_model import ComponentCost
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     native, _, _, _, _, _, _, _, _, _, _, _ = fixture(
         CASES[0], "supplied", False, precision=1

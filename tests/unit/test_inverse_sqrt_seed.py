@@ -9,7 +9,7 @@ from math import floor, sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.inverse_sqrt_seed import (
+from flagquantum.compiler.registers.fixed_point.inverse_sqrt_seed import (
     inverse_sqrt_seed_ir,
     inverse_sqrt_seed_requirements,
 )

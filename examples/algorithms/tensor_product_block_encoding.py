@@ -18,7 +18,9 @@ from flagquantum.algorithms.primitives.unitary_block_encoding import (
 )
 from flagquantum.circuit import _CircuitOperation
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+    source_add_cost,
+)
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources

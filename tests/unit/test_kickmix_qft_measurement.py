@@ -13,7 +13,7 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.kickmix_qft_measurement import (
+from flagquantum.compiler.registers.phase.qft_measurement import (
     kickmix_qft_measurement_operations,
     kickmix_qft_measurement_program,
 )

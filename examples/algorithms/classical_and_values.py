@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.multi_control import multi_and_ir
+from flagquantum.compiler.registers.control.multi_control import multi_and_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

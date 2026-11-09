@@ -14,7 +14,10 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.and_compute import and_compute_ir, and_uncompute_ir
+from flagquantum.compiler.registers.primitives.and_compute import (
+    and_compute_ir,
+    and_uncompute_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from tests.unit.measurement_checks import forced_branch
 

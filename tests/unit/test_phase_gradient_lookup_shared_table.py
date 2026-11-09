@@ -4,11 +4,11 @@ from itertools import product
 
 import pytest
 
-from flagquantum.compiler.registers.phase_gradient_lookup import (
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
+from flagquantum.compiler.registers.phase.phase_gradient_lookup import (
     phase_gradient_lookup_ir,
     phase_gradient_lookup_requirements,
 )
-from flagquantum.compiler.registers.qrom_table import QromTable
 from flagquantum.core.ir import Instruction
 
 pytestmark = pytest.mark.unit

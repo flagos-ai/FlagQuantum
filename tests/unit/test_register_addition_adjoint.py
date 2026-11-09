@@ -6,7 +6,7 @@ from itertools import product
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arithmetic import add_adjoint_ir, add_ir
+from flagquantum.compiler.registers.arithmetic.addition import add_adjoint_ir, add_ir
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source

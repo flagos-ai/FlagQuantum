@@ -1,6 +1,6 @@
 # Original modular inverse iteration
 
-`compiler/registers/inverse_iteration.py` composes the six shared register
+`compiler/registers/modular/inversion/inverse_iteration.py` composes the six shared register
 layers in the unchanged Qualtran v0.7.0 `_KaliskiIteration` order. It owns
 composition and physical register roles, not arithmetic kernels or execution.
 Source: [pinned modular division](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mod_arithmetic/mod_division.py),

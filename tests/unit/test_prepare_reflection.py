@@ -12,12 +12,12 @@ from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.prepare_reflection import (
+from flagquantum.compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
     source_uncontrolled_prepare_reflection_cost,
 )
-from flagquantum.compiler.registers.uniform_preparation import (
+from flagquantum.compiler.registers.preparation.uniform_preparation import (
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )

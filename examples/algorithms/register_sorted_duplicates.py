@@ -8,7 +8,9 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.sorted_duplicates import sorted_duplicates_ir
+from flagquantum.compiler.registers.sorting.sorted_duplicates import (
+    sorted_duplicates_ir,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

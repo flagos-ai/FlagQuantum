@@ -9,7 +9,7 @@ import torch
 
 import flagquantum as fq
 from examples.algorithms.register_sorted_duplicates import SortedDuplicates
-from flagquantum.compiler.registers.sign_extension import sign_extend_ir
+from flagquantum.compiler.registers.bits.sign_extension import sign_extend_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

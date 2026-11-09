@@ -12,7 +12,10 @@ from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phas
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.compiler.registers.global_phase import ccz_ir, scalar_sign_ir
+from flagquantum.compiler.registers.primitives.global_phase import (
+    ccz_ir,
+    scalar_sign_ir,
+)
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.dynamic import DynamicCircuit

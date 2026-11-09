@@ -10,7 +10,7 @@ from flagquantum.algorithms.primitives.grid_cubic_inverse_sqrt import (
     grid_cubic_inverse_sqrt_requirements,
     with_grid_cubic_inverse_sqrt_ir,
 )
-from flagquantum.compiler.registers.bitwise import xor_ir
+from flagquantum.compiler.registers.bits.bitwise import xor_ir
 from flagquantum.core.ir import CircuitIR
 from tests.unit.sparse_register_execution import execute_sparse_register
 

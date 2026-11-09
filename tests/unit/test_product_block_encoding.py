@@ -334,7 +334,9 @@ def test_measured_child_and_success_flag_share_clean_work_lifetimes(adjoint):
     from qualtran.bloqs.block_encoding.unitary import Unitary
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    from flagquantum.compiler.registers.arithmetic_resource_model import source_add_cost
+    from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+        source_add_cost,
+    )
     from tests.unit.test_unitary_block_encoding import _fixture
 
     blocks = (_fixture("add2", 2, 0)[0], _fixture("add2", 3, 0)[0])

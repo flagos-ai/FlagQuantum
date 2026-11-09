@@ -8,12 +8,14 @@
 """Resource models for preparing the first-quantized momentum transfer."""
 
 from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
-from ..compiler.registers.arithmetic_resource_model import (
+from ..compiler.registers.arithmetic.arithmetic_resource_model import (
     source_product_cost,
     source_sum_of_squares_cost,
 )
-from ..compiler.registers.ordering import source_greater_cost
-from ..compiler.registers.uniform_preparation import source_uniform_preparation_cost
+from ..compiler.registers.comparison.ordering import source_greater_cost
+from ..compiler.registers.preparation.uniform_preparation import (
+    source_uniform_preparation_cost,
+)
 
 
 def _inequality_cost(p: int, m: int, adjoint: bool) -> ComponentCost:

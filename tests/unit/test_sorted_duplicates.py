@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.sorted_duplicates import (
+from flagquantum.compiler.registers.sorting.sorted_duplicates import (
     sorted_duplicate_requirements,
     sorted_duplicates_ir,
 )

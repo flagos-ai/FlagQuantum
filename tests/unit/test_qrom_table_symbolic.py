@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 import sympy
 
-from flagquantum.compiler.registers.qrom_table import QromTable
-from flagquantum.compiler.registers.symbolic_resource_model import (
+from flagquantum.compiler.registers.lookup.qrom_table import QromTable
+from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 
@@ -112,7 +112,7 @@ def test_original_shape_factory_and_all_resource_categories(mode, legacy):
 
 
 def test_shared_formula_is_the_only_shape_cost_authority(monkeypatch):
-    import flagquantum.compiler.registers.qrom_table as module
+    import flagquantum.compiler.registers.lookup.qrom_table as module
 
     n, b, c = sympy.symbols("n b c", integer=True, positive=True)
     table = QromTable.from_shape(n, b, num_controls=c)

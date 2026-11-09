@@ -10,8 +10,8 @@ from flagquantum.algorithms.primitives.thc_chemistry_data import thc_chemistry_d
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
-from flagquantum.compiler.registers.partition import partition_register
-from flagquantum.compiler.registers.qroam_bank_binding import bind_clean_banks
+from flagquantum.compiler.registers.layout.partition import partition_register
+from flagquantum.compiler.registers.lookup.qroam_bank_binding import bind_clean_banks
 from flagquantum.core.ir import CircuitIR
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_subtraction import assert_source

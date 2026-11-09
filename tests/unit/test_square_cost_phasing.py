@@ -9,14 +9,14 @@ from typing import Any
 import pytest
 import torch
 
-from flagquantum.compiler.registers.integer_square import integer_square_ir
-from flagquantum.compiler.registers.phase_addition import phase_add_workspace_size
-from flagquantum.compiler.registers.phase_gradient import phase_gradient_state_ir
-from flagquantum.compiler.registers.scaled_phase_addition import (
+from flagquantum.compiler.registers.arithmetic.integer_square import integer_square_ir
+from flagquantum.compiler.registers.phase.phase_addition import phase_add_workspace_size
+from flagquantum.compiler.registers.phase.phase_gradient import phase_gradient_state_ir
+from flagquantum.compiler.registers.phase.scaled_phase_addition import (
     scaled_phase_add_ir,
     scaled_phase_add_terms,
 )
-from flagquantum.compiler.registers.square_cost_phasing import (
+from flagquantum.compiler.registers.phase.square_cost_phasing import (
     square_cost_gradient_ir,
     square_cost_zpow_ir,
 )

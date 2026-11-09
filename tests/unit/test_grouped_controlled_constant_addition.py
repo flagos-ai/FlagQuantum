@@ -9,7 +9,7 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.multi_controlled_constant_addition import (
+from flagquantum.compiler.registers.arithmetic.multi_controlled_constant_addition import (
     grouped_controlled_add_constant_ir,
     source_grouped_controlled_constant_add_cost,
 )
@@ -121,7 +121,7 @@ def test_every_small_coherent_grouped_input_history_and_work_cleanup(case, adjoi
 
 @pytest.mark.parametrize("change", ("shape", "wire", "slots", "encoding", "empty"))
 def test_grouped_port_and_ownership_failures_do_not_silently_flatten_bad_inputs(change):
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     groups = ((0, 1),)
     registers = (ControlRegister(2, (-1,), "twos_complement"),)
@@ -149,7 +149,7 @@ def test_concrete_width_grouped_model_preserves_inner_symbolic_fallback_and_oute
     from flagquantum.compiler._component_trace.resource_model import (
         estimate_component_resources,
     )
-    from flagquantum.compiler.registers.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 
     model = source_grouped_controlled_constant_add_cost(
         3, sympy.Integer(5), (ControlRegister(2, (1,)),)

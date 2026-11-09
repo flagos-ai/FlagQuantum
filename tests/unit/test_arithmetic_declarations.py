@@ -18,7 +18,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
 from flagquantum.compiler._component_trace.terminal_t_cost import (
     estimate_terminal_t_cost,
 )
-from flagquantum.compiler.registers.arithmetic_declarations import (
+from flagquantum.compiler.registers.arithmetic.arithmetic_declarations import (
     arithmetic_call_graph,
     arithmetic_callees,
 )

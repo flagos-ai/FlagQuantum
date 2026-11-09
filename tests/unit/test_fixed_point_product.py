@@ -8,10 +8,13 @@ from math import sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.and_compute import and_compute_ir, and_uncompute_ir
-from flagquantum.compiler.registers.fixed_point_scaling import (
+from flagquantum.compiler.registers.fixed_point.fixed_point_scaling import (
     fixed_point_product_ir,
     fixed_point_product_workspace_size,
+)
+from flagquantum.compiler.registers.primitives.and_compute import (
+    and_compute_ir,
+    and_uncompute_ir,
 )
 from flagquantum.core.ir import CircuitIR
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch

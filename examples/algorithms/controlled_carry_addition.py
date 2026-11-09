@@ -9,7 +9,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.kickmix_controlled_addition import (
+from flagquantum.compiler.registers.arithmetic.carry_controlled_addition import (
     kickmix_controlled_addition_ir,
 )
 from flagquantum.core.ir import CircuitIR

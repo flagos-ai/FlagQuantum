@@ -64,7 +64,7 @@ def test_original_multi_and_broadcast_shape_prefix_and_scalar_dtype(values, cont
 def test_complex_prefix_outputs_and_all_erasure_histories(values):
     import torch
 
-    from flagquantum.compiler.registers.multi_control import multi_and_ir
+    from flagquantum.compiler.registers.control.multi_control import multi_and_ir
     from tests.unit.measurement_checks import forced_branch
 
     grid = torch.arange(1, 17, dtype=torch.float64)
@@ -102,7 +102,7 @@ def test_source_model_and_existing_native_ladder_cost(values):
     from qualtran.bloqs.mcmt.and_bloq import MultiAnd
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
-    from flagquantum.compiler.registers.multi_control import multi_and_ir
+    from flagquantum.compiler.registers.control.multi_control import multi_and_ir
 
     n = len(values)
     controls, work = tuple(range(n)), tuple(range(n, 2 * n - 1))

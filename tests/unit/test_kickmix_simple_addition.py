@@ -8,9 +8,11 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.finite_field import ClassicalFieldCoefficient
-from flagquantum.compiler.registers.kickmix_simple_addition import (
+from flagquantum.compiler.registers.arithmetic.measured_carry_addition import (
     kickmix_simple_addition_ir,
+)
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR

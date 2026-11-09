@@ -7,7 +7,7 @@ Add --symbolic and/or --legacy-profile for the original shape/profile queries.
 import argparse
 
 from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
-from flagquantum.compiler.registers.modular_declarations import (
+from flagquantum.compiler.registers.modular.modular_declarations import (
     ModularDeclaration,
     modular_arithmetic_registers,
     source_modular_arithmetic_resource_formula,

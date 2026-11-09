@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
-from flagquantum.compiler.registers.comparison import (
+from flagquantum.compiler.registers.comparison.less_than import (
     less_than_constant_ir,
     less_than_constant_workspace_size,
     source_less_than_constant_cost,

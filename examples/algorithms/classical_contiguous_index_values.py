@@ -6,7 +6,7 @@ from itertools import product
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.contiguous_index import (
+from flagquantum.compiler.registers.sorting.contiguous_index import (
     contiguous_index_columns_ir,
     source_contiguous_index_cost,
 )

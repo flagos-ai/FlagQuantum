@@ -2,7 +2,9 @@
 
 from typing import Any
 
-from flagquantum.compiler.registers.inverse_iteration import inverse_iteration_outputs
+from flagquantum.compiler.registers.modular.inversion.inverse_iteration import (
+    inverse_iteration_outputs,
+)
 from flagquantum.core.ir import Instruction
 from tests.unit.register_source_graph import (
     SourcePorts,

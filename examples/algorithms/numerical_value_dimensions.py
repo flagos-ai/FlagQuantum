@@ -9,10 +9,10 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.control_predicate_resource_model import (
+from flagquantum.compiler.registers.control.control_predicate_resource_model import (
     control_predicate_resource_formula,
 )
-from flagquantum.compiler.registers.pauli_gate import pauli_gate_ir
+from flagquantum.compiler.registers.primitives.pauli_gate import pauli_gate_ir
 from flagquantum.compiler.resource_reporting import resource_model_report
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit

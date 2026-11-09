@@ -4,7 +4,7 @@ import pytest
 import torch
 
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.field_linear import (
+from flagquantum.compiler.registers.finite_field.field_linear import (
     gf2_frobenius,
     source_gf2_square_resource_bound,
 )

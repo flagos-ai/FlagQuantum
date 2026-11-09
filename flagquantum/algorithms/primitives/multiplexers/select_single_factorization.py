@@ -5,12 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ....circuit import Circuit
-from ....compiler.registers.bitwise import _validate_wires
-from ....compiler.registers.bounded_majorana_select import (
+from ....compiler.registers.bits.bitwise import _validate_wires
+from ....compiler.registers.control.multi_control import multi_and_ir
+from ....compiler.registers.lookup.bounded_majorana_select import (
     bounded_majorana_ir,
     bounded_majorana_workspace,
 )
-from ....compiler.registers.multi_control import multi_and_ir
 from ....core.classical_control import validate_classical_control
 from ....core.ir import CircuitIR, Instruction
 from ....dynamic import DynamicCircuit

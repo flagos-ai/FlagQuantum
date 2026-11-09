@@ -11,7 +11,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_c
 from flagquantum.compiler._component_trace.resource_generalization import (
     MeasurementCall,
 )
-from flagquantum.compiler.registers.measurement import (
+from flagquantum.compiler.registers.primitives.measurement import (
     measure_x_clear_ir,
     measure_z_clear_ir,
 )

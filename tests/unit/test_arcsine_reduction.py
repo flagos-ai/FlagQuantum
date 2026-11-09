@@ -9,7 +9,7 @@ from math import sqrt
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arcsine_reduction import (
+from flagquantum.compiler.registers.fixed_point.arcsine_reduction import (
     arcsine_reduction_ir,
     arcsine_reduction_requirements,
 )

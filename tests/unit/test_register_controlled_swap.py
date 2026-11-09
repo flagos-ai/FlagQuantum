@@ -7,7 +7,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.controlled_swap import (
+from flagquantum.compiler.registers.primitives.controlled_swap import (
     controlled_swap_bit_ir,
     controlled_swap_ir,
 )

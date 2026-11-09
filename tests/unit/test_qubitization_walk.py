@@ -12,7 +12,7 @@ from flagquantum.algorithms.primitives.multiplexers.select_pauli_lcu import (
 from flagquantum.algorithms.primitives.qubitization_walk import QubitizationWalk
 from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -321,7 +321,7 @@ def test_reflection_source_model(width: int, controlled: bool) -> None:
         ReflectionUsingPrepare,
     )
 
-    from flagquantum.compiler.registers.prepare_reflection import (
+    from flagquantum.compiler.registers.preparation.prepare_reflection import (
         source_prepare_reflection_cost,
     )
 

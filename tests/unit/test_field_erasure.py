@@ -14,9 +14,16 @@ import torch
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
-from flagquantum.compiler.registers.field_erasure import gf2_product_erasure
-from flagquantum.compiler.registers.field_multiplication import gf2_multiplication
-from flagquantum.compiler.registers.measurement import ParityPhase, measure_x_clear_ir
+from flagquantum.compiler.registers.finite_field.field_erasure import (
+    gf2_product_erasure,
+)
+from flagquantum.compiler.registers.finite_field.field_multiplication import (
+    gf2_multiplication,
+)
+from flagquantum.compiler.registers.primitives.measurement import (
+    ParityPhase,
+    measure_x_clear_ir,
+)
 from flagquantum.core.classical_dataflow import parse_classical_xor
 from flagquantum.core.ir import CircuitIR
 from flagquantum.runtime.dynamic.circuit import DynamicCircuit
@@ -288,7 +295,7 @@ def test_erasure_and_shared_primitive_validation() -> None:
 def test_qroam_consumer_accepts_replaced_measurement_primitives(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.compiler.registers import qroam
+    from flagquantum.compiler.registers.lookup import qroam
     from flagquantum.core.ir import Instruction
 
     arguments = dict(

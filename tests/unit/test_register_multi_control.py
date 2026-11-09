@@ -7,7 +7,7 @@ import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
-from flagquantum.compiler.registers.multi_control import (
+from flagquantum.compiler.registers.control.multi_control import (
     multi_and_ir,
     multi_control_x_ir,
 )

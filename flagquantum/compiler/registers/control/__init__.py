@@ -1,0 +1,1 @@
+"""Internal control register decompositions."""

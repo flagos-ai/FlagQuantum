@@ -12,8 +12,8 @@ from typing import Literal
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bitwise import xor_ir
-from flagquantum.compiler.registers.half_ordering import (
+from flagquantum.compiler.registers.bits.bitwise import xor_ir
+from flagquantum.compiler.registers.comparison.half_ordering import (
     half_compare_ir,
     half_compare_outputs,
 )

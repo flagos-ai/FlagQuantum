@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.pauli_gate import pauli_gate_ir
+from flagquantum.compiler.registers.primitives.pauli_gate import pauli_gate_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic

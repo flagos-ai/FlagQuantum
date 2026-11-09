@@ -6,8 +6,8 @@ from math import prod
 
 import pytest
 
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.swap_with_zero import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.lookup.swap_with_zero import (
     control_swap_with_zero_ir,
     swap_with_zero_ir,
 )

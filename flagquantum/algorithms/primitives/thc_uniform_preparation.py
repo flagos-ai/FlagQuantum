@@ -15,20 +15,20 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler.registers.bitwise import _validate_wires
-from ...compiler.registers.comparison import (
-    less_than_constant_ir,
-    less_than_constant_workspace_size,
-    source_less_than_constant_cost,
-)
-from ...compiler.registers.equality import equality_constant_ir
-from ...compiler.registers.less_equal import (
+from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.comparison.equality import equality_constant_ir
+from ...compiler.registers.comparison.less_equal import (
     less_equal_ir,
     less_equal_requirements,
     source_equal_width_less_equal_cost,
 )
-from ...compiler.registers.partition import RegisterLayout, unpartition_register
-from ...compiler.registers.prepare_reflection import (
+from ...compiler.registers.comparison.less_than import (
+    less_than_constant_ir,
+    less_than_constant_workspace_size,
+    source_less_than_constant_cost,
+)
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
+from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
     source_uncontrolled_prepare_reflection_cost,

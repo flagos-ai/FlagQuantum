@@ -6,7 +6,7 @@ import pytest
 import torch
 
 from flagquantum.algorithms.primitives.multiplexers.select_sparse import SelectSparse
-from flagquantum.compiler.registers.partition import partition_register
+from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources

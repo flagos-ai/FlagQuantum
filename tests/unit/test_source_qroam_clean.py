@@ -12,11 +12,11 @@ import torch
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.qroam_resource_model import (
+from flagquantum.compiler.registers.lookup.qroam_resource_model import (
     source_qroam_clean_cost,
     source_qroam_measurement_erase_cost,
 )
-from flagquantum.compiler.registers.source_qroam_clean import (
+from flagquantum.compiler.registers.lookup.source_qroam_clean import (
     QroamCleanTable,
     optimal_qroam_clean_log_block_size,
     source_qroam_clean_ir,

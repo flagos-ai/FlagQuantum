@@ -1,6 +1,6 @@
 # Pinned signed difference-sign path
 
-`compiler/registers/linear_comparison.py` now shares the original concrete
+`compiler/registers/comparison/linear_comparison.py` now shares the original concrete
 `LinearDepthGreaterThan(signed=True)` carry program with the unsigned path.
 The original is Qualtran v0.7.0, commit
 `bcb17bb25360ed68ce3bc084645db3e929799389`,

@@ -9,7 +9,7 @@ from flagquantum.compiler._component_trace.qec_gate_cost import (
     QECGateCost,
     query_qec_gate_cost,
 )
-from flagquantum.compiler.registers.basis_state import (
+from flagquantum.compiler.registers.primitives.basis_state import (
     Basis,
     basis_effect_cost_key,
     basis_state_cost_key,

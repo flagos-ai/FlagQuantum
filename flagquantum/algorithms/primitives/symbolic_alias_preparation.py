@@ -19,15 +19,15 @@ from ...compiler._component_trace.symbolic_math import (
     log2,
     smax,
 )
-from ...compiler.registers.comparison_resource_model import (
+from ...compiler.registers.comparison.comparison_resource_model import (
     source_less_equal_resource_formula,
 )
-from ...compiler.registers.symbolic_resource_model import (
+from ...compiler.registers.preparation.uniform_preparation_resource_model import (
+    source_uniform_preparation_resource_formula,
+)
+from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_qrom_resource_formula,
-)
-from ...compiler.registers.uniform_preparation_resource_model import (
-    source_uniform_preparation_resource_formula,
 )
 
 

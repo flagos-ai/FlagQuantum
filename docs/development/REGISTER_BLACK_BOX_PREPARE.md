@@ -1,6 +1,6 @@
 # Packed preparation ports
 
-`compiler/registers/partition.py` binds named slices of a caller-owned register.
+`compiler/registers/layout/partition.py` binds named slices of a caller-owned register.
 The tuple order defines the layout, and each slice retains its input bit order.
 Flatten shaped ports in row-major order before binding. Empty slices are allowed.
 The binding emits no gates and allocates no work qubits.

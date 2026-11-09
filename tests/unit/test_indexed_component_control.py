@@ -8,11 +8,11 @@ import pytest
 import torch
 
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, GateCost
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.indexed_component_control import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.control.indexed_component_control import (
     specialized_indexed_component_ir,
 )
-from flagquantum.compiler.registers.indexed_component_control_resource_model import (
+from flagquantum.compiler.registers.control.indexed_component_control_resource_model import (
     specialized_indexed_component_cost,
 )
 from flagquantum.core.ir import Instruction

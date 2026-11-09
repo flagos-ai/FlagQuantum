@@ -19,8 +19,8 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     FixedTCall,
     MergedFredkinCall,
 )
-from flagquantum.compiler.registers.control_predicate import ControlRegister
-from flagquantum.compiler.registers.controlled_swap import (
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+from flagquantum.compiler.registers.primitives.controlled_swap import (
     control_bit_cswap_ir,
     control_register_cswap_ir,
     controlled_swap_with_predicate_ir,

@@ -10,8 +10,8 @@ from collections import Counter
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bitwise import xor_ir
-from flagquantum.compiler.registers.hamming_weight import hamming_weight_ir
+from flagquantum.compiler.registers.bits.bitwise import xor_ir
+from flagquantum.compiler.registers.bits.hamming_weight import hamming_weight_ir
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
