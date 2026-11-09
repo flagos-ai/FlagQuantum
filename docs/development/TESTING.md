@@ -154,7 +154,7 @@ so the check is per test rather than per file.
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
 The coverage job installs `jax`, `braket`, `cirq`, `pennylane`, `cotengra`,
-`stim`, and `pymatching` because its marker
+`stim`, `pymatching`, `kaiwu`, and `chemistry-pyscf` because its marker
 expression selects their suites, and installs neither `qiskit` nor `triton`: the
 other two cannot be measured there.
 `cotengra` is a pure-Python wheel whose only dependency is `autoray`, so it does
@@ -552,7 +552,7 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-six jobs:
+The checked-in `ci.yml` defines twenty-seven jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
@@ -567,6 +567,9 @@ The checked-in `ci.yml` defines twenty-six jobs:
   dependency-policy synchronization, architecture-boundary, generated-document,
   capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
   PennyLane interoperability contracts, and repository-hygiene checks;
+- `native-fermion`: independent Ubuntu source installations on Python 3.10 and
+  3.12, testing the native fermion workflow without optional science packages
+  before installing PySCF and requiring three real RHF cases to pass;
 - `cpu-core`: Python 3.10 and 3.11 compile, import, dependency-isolation, and
   smoke compatibility on pull requests; manual full validation runs the complete
   smoke/unit suite on both interpreters;
@@ -946,6 +949,18 @@ records their exact installed distributions, and checks them with networking
 disabled. Copy the four resulting image digests into the lock file and validate
 the PR. An outdated image is rejected when its dependency manifest differs from
 the checkout.
+
+The native fermionic migration changes both `pyproject.toml` and the coverage
+profile. All four locked images must therefore be rebuilt and qualified before
+that PR can merge. A source-only manifest update does not update the immutable
+images. The `native-fermion` Ubuntu job independently installs the source and
+tests Python 3.10 / PyTorch 2.10 and Python 3.12 / PyTorch 2.14, first without
+optional science packages and then with PySCF 2.8 and 2.15 respectively. It runs
+on each PR and checks driver import before the real RHF tests. Coverage planning
+and execution also require a working PySCF import, so missing optional chemistry
+cannot turn those cases into a green run with only skips. These workflow changes
+are configured locally; a successful remote run and refreshed image locks remain
+merge prerequisites until their evidence is recorded.
 
 
 ## CPU runner routing and reliability

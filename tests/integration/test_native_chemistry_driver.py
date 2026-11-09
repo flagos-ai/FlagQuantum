@@ -15,13 +15,17 @@ from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 from flagquantum.ecosystem.chemistry.pyscf import build_molecular_problem
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        importlib.util.find_spec("pyscf") is None,
+        reason="install flagquantum[chemistry-pyscf] for direct RHF tests",
+    ),
+]
 
 
 @pytest.fixture(autouse=True)
 def require_pyscf() -> None:
-    if importlib.util.find_spec("pyscf") is None:
-        pytest.skip("install flagquantum[chemistry-pyscf] for direct RHF tests")
     # An installed but broken driver must fail instead of hiding behind a skip.
     importlib.import_module("pyscf")
 

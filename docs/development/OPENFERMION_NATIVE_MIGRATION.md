@@ -176,3 +176,52 @@ contains no execution imports, mathematical decomposition remains independent
 of circuits, optional SDK objects stop at the chemistry adapter, existing
 chemistry formulas are reused, and routing remains independent of evolution.
 The audit made no production source or stable API changes.
+
+## Final scope reconciliation and CI review
+
+The original delivery units describe responsibilities, not sixteen remote PRs
+or a commitment to preserve every proposed intermediate type. The implemented
+scope makes these deliberate adjustments:
+
+| Units | Final decision | Deferred or excluded work |
+| --- | --- | --- |
+| 01 | Fixed revision, provenance, import isolation and separate numeric reference process | Complete upstream API catalog and compatibility |
+| 02-03 | Reuse FermionOperator in place; add complex Pauli values and explicit measurement conversion | Relocating stable types or rewriting existing Hermitian encodings |
+| 04-06 | Native molecular snapshots and three explicit encodings share existing assembly and measurement | Automatic encoded ansatz selection |
+| 07 | Exact independent encoded Z-parity sectors and affine embedding | General stabilizer tapering or automatic symmetry discovery |
+| 08-09 | Reordered active selections, existing frozen-core formulas and direct optional closed-shell RHF | Automatic active spaces, open shells and geometry gradients |
+| 10-12 | Mathematical factors and separate lowering create Slater and canonical Gaussian vacuum circuits | Additional preparation-plan IR, stored decomposition residual field or excited Gaussian basis synthesis |
+| 13-15 | Signed density-square factors, independent FSWAP network and first/second-order evolution | Mandatory coupling of evolution to FSWAP or nearest-neighbor routing |
+| 16 | Local installation, compatibility, attribution, review and CI configuration | Linux acceptance and refreshed locked images remain merge prerequisites |
+
+A decomposition is verified by reconstruction; it does not carry a separately
+stored residual field. This keeps the mathematical boundary small. Circuit
+builders consume the mathematical results directly through the existing IR
+rather than introducing a second general preparation-plan language. JW/parity
+formulas are intentionally retained in the protected Hermitian API while the
+new general-complex path has its own small ladder images. Neither becomes an
+adapter to an external framework.
+
+The `native-fermion` Ubuntu matrix checks both Python/PyTorch endpoints and the
+real optional RHF driver independently from the offline images. Coverage plan
+and shard preflight also import PySCF explicitly. The driver skip condition is
+visible at module scope, where the existing lane-dependency audit reads it;
+missing PySCF skips, while an installed broken driver still fails.
+The new matrix depends on source preparation and is required by `ci-complete`.
+Existing merge-gate tests verify that failed, cancelled or skipped dependencies
+cannot produce a successful final check. The testing manual lists all 27 jobs.
+
+The new dependency manifests require rebuilding **all four** immutable CPU
+images. Both manifests are compared byte for byte by the offline wrapper,
+including on core profiles. `docker/ci/images.lock` is unchanged until real
+images are published and qualified through the existing workflow documented in
+`docs/development/TESTING.md`. Configuration-level tests do not prove the
+contents of a locked image. Earlier references to coverage containing the extra
+mean the requested profile, not that the pinned image has already been rebuilt.
+
+Local Docker access was requested and granted, but the daemon remained
+unavailable and launching Docker Desktop returned `kLSNoExecutableErr`. The
+Ubuntu workflow and a separate local wheel-test recipe are prepared; no Linux
+execution is claimed. No production code or stable API changes were necessary
+in this review. The branch is reviewable locally but is not merge-ready until
+Linux execution and locked-image qualification have actual passing evidence.
