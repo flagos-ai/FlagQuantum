@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "9b0f65a58d107bbe25217e5a6ff9f08c2eb1a55a3ca751f09c3aae9c85b09730",
+  "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_exponential_state.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_static_algorithms.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Specify the original rate0.1 five-bit exponential probability distribution with native prepare_state on fresh zero storage. Independent Circuit uses softmax amplitudes and a Householder reflection. Equivalence covers the frozen fresh-state program; it does not claim the same unitary action as prepare_exponential_state on existing nonzero or entangled input. No new public exponential-preparation API or importer in user examples. Resource differences are measured separately."
+}

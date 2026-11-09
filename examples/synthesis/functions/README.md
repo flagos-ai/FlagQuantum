@@ -32,6 +32,7 @@ Native FlagQuantum programs currently available:
 - [qst_type2](qct_qst/qst_type2/README.md)
 - [qft](qft/README.md)
 - [prepare_bell_state](state_preparation/prepare_bell_state/README.md)
+- [prepare_exponential_state](state_preparation/prepare_exponential_state/README.md)
 - [prepare_ghz_state](state_preparation/prepare_ghz_state/README.md)
 - [prepare_uniform_interval_state](state_preparation/prepare_uniform_interval_state/README.md)
 - [prepare_uniform_trimmed_state](state_preparation/prepare_uniform_trimmed_state/README.md)

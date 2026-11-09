@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **132/216**.
+Validated quantum-program counterparts: **135/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (17 native programs)
+## Algorithms (19 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -19,6 +19,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+- [simon](algorithms/foundational/simon/README.md)
 - [hamiltonian_simulation_guide](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/README.md)
 - [hamiltonian_simulation_guide_qdrift](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md)
 - [hamiltonian_simulation_guide_trotter](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
@@ -30,6 +31,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [adapt_vqe](algorithms/quantum_state_preparation/adapt_vqe/README.md)
 - [qaoa](algorithms/search_and_optimization/qaoa/README.md)
 - [qaoa_knapsack](algorithms/search_and_optimization/qaoa/qaoa_knapsack/README.md)
+- [qaoa_max_cut](algorithms/search_and_optimization/qaoa/qaoa_max_cut/README.md)
 
 Validated local Notebook workflows:
 
@@ -95,7 +97,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (49 native programs)
+## Functions (50 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -127,6 +129,7 @@ Validated local Notebook workflows:
 - [qst_type2](functions/qct_qst/qst_type2/README.md)
 - [qft](functions/qft/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
+- [prepare_exponential_state](functions/state_preparation/prepare_exponential_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
 - [prepare_uniform_interval_state](functions/state_preparation/prepare_uniform_interval_state/README.md)
 - [prepare_uniform_trimmed_state](functions/state_preparation/prepare_uniform_trimmed_state/README.md)

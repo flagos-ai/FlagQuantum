@@ -2504,7 +2504,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/foundational/simon/main.py",
+        "scope": "Quantum program only; complete associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -3182,7 +3185,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/search_and_optimization/qaoa/qaoa_max_cut/main.py",
+        "scope": "Quantum program only; complete associated Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -6393,7 +6399,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/state_preparation/prepare_exponential_state/main.py",
+        "scope": "Quantum program only; complete associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

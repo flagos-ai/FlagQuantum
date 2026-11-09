@@ -165,7 +165,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/foundational/bernstein_vazirani/bernstein_vazirani` | notebook_workflow | [Native program](algorithms/foundational/bernstein_vazirani/main.py) | validated |
 | `algorithms/foundational/deutsch_jozsa/deutsch_jozsa` | notebook_workflow | [Native program](algorithms/foundational/deutsch_jozsa/main.py) | validated |
 | `algorithms/foundational/quantum_teleportation/quantum_teleportation` | notebook_workflow | Pending | pending |
-| `algorithms/foundational/simon/simon` | notebook_workflow | Pending | pending |
+| `algorithms/foundational/simon/simon` | notebook_workflow | [Native program](algorithms/foundational/simon/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/main.py) | pending |
@@ -200,7 +200,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/quantum_walks/glued_trees/glued_trees` | notebook_workflow | Pending | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/qaoa/main.py) | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py) | pending |
-| `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | Pending | pending |
+| `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_max_cut/main.py) | pending |
 | `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | Pending | pending |
 | `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | Pending | pending |
 | `algorithms/search_and_optimization/grover/grover` | notebook_workflow | Pending | pending |
@@ -349,7 +349,7 @@ Validated local Notebook workflows: **24/213**.
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_exponential_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |

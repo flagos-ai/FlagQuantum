@@ -8,6 +8,7 @@ Native FlagQuantum programs currently available:
 - [quantum_autoencoder](machine_learning/quantum_autoencoder/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
+- [simon](foundational/simon/README.md)
 - [hamiltonian_simulation_guide](hamiltonian_simulation/hamiltonian_simulation_guide/README.md)
 - [hamiltonian_simulation_guide_qdrift](hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md)
 - [hamiltonian_simulation_guide_trotter](hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
@@ -19,6 +20,7 @@ Native FlagQuantum programs currently available:
 - [adapt_vqe](quantum_state_preparation/adapt_vqe/README.md)
 - [qaoa](search_and_optimization/qaoa/README.md)
 - [qaoa_knapsack](search_and_optimization/qaoa/qaoa_knapsack/README.md)
+- [qaoa_max_cut](search_and_optimization/qaoa/qaoa_max_cut/README.md)
 
 ## Validated local Notebook workflows
 
