@@ -8,6 +8,8 @@ import importlib.util
 import sys
 from importlib import import_module
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Literal
 from unittest.mock import patch
 
 import torch
@@ -37,6 +39,34 @@ def main() -> None:
     with patch.object(native, "sample", wraps=native.sample) as sample:
         assert sampler.sample(2, bit_packed=True).tolist() == [[1], [1]]
         sample.assert_called_once()
+    repeated_slot = (
+        DynamicCircuit(1)
+        .x(0)
+        .measure(0, classical_bit=0)
+        .reset(0)
+        .measure(0, classical_bit=0)
+    )
+    expected: dict[Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes] = {
+        "01": b"10\n" * 64,
+        "b8": b"\x01" * 64,
+        "r8": b"\x00\x01" * 64,
+        "hits": b"0\n" * 64,
+        "dets": b"shot M0\n" * 64,
+        "ptb64": b"\xff" * 8 + b"\x00" * 8,
+    }
+    with TemporaryDirectory() as directory:
+        for format, reference in expected.items():
+            writer = "write_b8" if format == "b8" else "write_records"
+            with patch.object(native, writer, wraps=getattr(native, writer)) as write:
+                output = Path(directory) / format
+                repeated_slot.compile_sampler(seed=7).sample_write(
+                    64, filepath=output, format=format
+                )
+                write.assert_called_once()
+                assert output.read_bytes() == reference
+    print(
+        "embedded measurement files: six formats, exact bytes, repeated slot, actual native calls"
+    )
     with patch.object(
         native, "prepare_converter", wraps=native.prepare_converter
     ) as prepare_converter:
@@ -127,6 +157,14 @@ def main() -> None:
         DynamicCircuit(1).t(0).measure(0),
         DynamicCircuit(1).measure(0).conditional("h", 0, classical_bit=0).measure(0),
     ):
+        with patch.object(native, "prepare", wraps=native.prepare) as untouched_sampler:
+            try:
+                refused.compile_sampler(seed=7)
+            except CapabilityError:
+                pass
+            else:
+                raise AssertionError("unsupported measurement program was admitted")
+            untouched_sampler.assert_not_called()
         width = len([g for g in refused.to_ir().instructions if g.name == "measure"])
         with patch.object(
             native, "prepare_detector", wraps=native.prepare_detector

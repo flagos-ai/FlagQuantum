@@ -933,3 +933,34 @@ thresholds and numerical code remain unchanged. No dependency installation,
 manual CI recovery or research execution was performed. Automatic checks and
 installed-profile admission on the final head, followed by actual-main
 acceptance, remain required before this candidate counts as delivered.
+
+
+## PR1092 actual-main CPU acceptance and next file-format slice
+
+PR1092 is merged at `fdc8a75c1ea28ebb7e77ab2fe8197ea2c73f570f`, with reviewed
+head `00274ba5c1ac5a91fcbad79f2f6eda0bcd11f474` and identical source tree
+`3f8fbf183560fc8c715f74f7da5c643b1e8900c4`. The previous pending wording is
+historical. CI run `42560162309` passed all 231 jobs on attempt 1 without reruns.
+Four wheel profiles and sdist-both passed installed acceptance; artifact
+`13650100440` has SHA-256
+`f2a4da687b88dfd342dd83e2615e177ff719c1af9f6e1eb4bf15bcd43a7f6f39`.
+Actual-main focused regression passed 97 tests and installed-wheel main smoke
+`42563554390` passed. Matrix mapping `(0, 1, 2)`, weights `(2.0, 3.0, 1.0)` and
+selected edge `(2,)` at cost `1.0` were verified on the actual main.
+
+GPU run `42560162316` failed its variance threshold with concurrent GPU use
+reported. That failure remains retained and excluded from this CPU delivery
+under user instruction. An extra local installed-smoke invocation against a
+source-overlay environment correctly failed its provenance guard; it is not
+installation evidence and was not retried. Valid installation evidence is the
+five CI profiles and actual-main installed-wheel smoke described above.
+
+The approved next slice completes the six measurement file output formats
+through the existing compiled sampler. Implementation/acceptance is in progress;
+no PR number or new-head/main acceptance is claimed yet. It reuses the 96-file
+Stim 1.16.0 closure, preserves source occurrence columns and the single-slot X
+feedback path, and adds no detector file output or public file reader.
+FTS-04/R03/R08 remain partial, gaining this slice only after its own acceptance.
+FTS-02/R04/M2 are unchanged. No performance, threshold or scalability evidence
+is inferred. Next gaps are detector-file output, measurement-to-detector file
+conversion/streaming decode, and remaining inventoried upstream APIs.

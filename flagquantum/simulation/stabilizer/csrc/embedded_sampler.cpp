@@ -106,11 +106,15 @@ PyObject *sample(PyObject *, PyObject *args) {
     }
 }
 
-PyObject *write_b8(PyObject *, PyObject *args) {
+PyObject *write_measurements(PyObject *args, bool select_format) {
     PyObject *capsule;
     Py_ssize_t shots;
     const char *path;
-    if (!PyArg_ParseTuple(args, "Ons", &capsule, &shots, &path)) {
+    const char *format = "b8";
+    const bool parsed = select_format
+        ? PyArg_ParseTuple(args, "Onss", &capsule, &shots, &path, &format)
+        : PyArg_ParseTuple(args, "Ons", &capsule, &shots, &path);
+    if (!parsed) {
         return nullptr;
     }
     auto *sampler = static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
@@ -121,22 +125,42 @@ PyObject *write_b8(PyObject *, PyObject *args) {
         if (shots <= 0) {
             throw std::invalid_argument("Invalid embedded sampler shot count.");
         }
+        stim::SampleFormat output_format;
+        if (strcmp(format, "01") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_01;
+        else if (strcmp(format, "b8") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_B8;
+        else if (strcmp(format, "r8") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_R8;
+        else if (strcmp(format, "hits") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_HITS;
+        else if (strcmp(format, "dets") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_DETS;
+        else if (strcmp(format, "ptb64") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_PTB64;
+        else throw std::invalid_argument("Unknown measurement file format.");
+        if (output_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64 && shots % 64) {
+            throw std::invalid_argument("ptb64 shots must be a multiple of 64.");
+        }
         std::unique_ptr<FILE, decltype(&fclose)> file(fopen(path, "wb"), fclose);
         if (file == nullptr) {
-            throw std::runtime_error("Could not open the staged b8 output.");
+            throw std::runtime_error("Could not open the staged measurement output.");
         }
         stim::sample_batch_measurements_writing_results_to_disk(
             sampler->circuit, sampler->reference, size_t(shots), file.get(),
-            stim::SampleFormat::SAMPLE_FORMAT_B8, sampler->rng);
+            output_format, sampler->rng);
         const bool write_failed = ferror(file.get()) != 0;
         if (fclose(file.release()) != 0 || write_failed) {
-            throw std::runtime_error("Could not complete the staged b8 output.");
+            throw std::runtime_error("Could not complete the staged measurement output.");
         }
         Py_RETURN_NONE;
     } catch (const std::exception &error) {
         PyErr_SetString(PyExc_RuntimeError, error.what());
         return nullptr;
     }
+}
+
+
+PyObject *write_b8(PyObject *, PyObject *args) {
+    return write_measurements(args, false);
+}
+
+PyObject *write_records(PyObject *, PyObject *args) {
+    return write_measurements(args, true);
 }
 
 
@@ -341,6 +365,7 @@ PyMethodDef methods[] = {
     {"prepare", prepare, METH_VARARGS, nullptr},
     {"sample", sample, METH_VARARGS, nullptr},
     {"write_b8", write_b8, METH_VARARGS, nullptr},
+    {"write_records", write_records, METH_VARARGS, nullptr},
     {nullptr, nullptr, 0, nullptr},
 };
 

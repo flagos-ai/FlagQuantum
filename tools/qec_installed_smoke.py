@@ -439,7 +439,23 @@ def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | 
         sampler.sample_write(2, filepath=output, format="b8")
         packed = output.read_bytes()
         assert packed == b"\x01\x01"
-    return {"packed_samples": samples.tolist(), "b8_hex": packed.hex()}
+        formats: dict[Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes] = {
+            "01": b"10\n" * 64,
+            "b8": b"\x01" * 64,
+            "r8": b"\x00\x01" * 64,
+            "hits": b"0\n" * 64,
+            "dets": b"shot M0\n" * 64,
+            "ptb64": b"\xff" * 8 + b"\x00" * 8,
+        }
+        for format, reference in formats.items():
+            output = Path(directory) / f"format-{format}"
+            sampler.sample_write(64, filepath=output, format=format)
+            assert output.read_bytes() == reference
+    return {
+        "packed_samples": samples.tolist(),
+        "b8_hex": packed.hex(),
+        "file_format_sizes": {format: len(data) for format, data in formats.items()},
+    }
 
 
 def _exercise_native_detector_execution(profile: str) -> dict[str, object] | None:
