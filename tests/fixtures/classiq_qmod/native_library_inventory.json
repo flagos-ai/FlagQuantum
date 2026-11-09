@@ -7168,7 +7168,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/mcx/main.py",
+        "scope": "Complete original50 controls, helper,64 physical bits/13 clean scratch,169 gates/depth167. Public native exact product-MPS, no dense conversion; original/native/independent Circuit product tensors, active/near-active and nonzero target, absolute sign, named readout and all budgets. Notebook workflow pending."
+      },
       "kind": "notebook_workflow"
     },
     {

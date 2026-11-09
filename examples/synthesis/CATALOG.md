@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **111/216**.
+Validated quantum-program counterparts: **112/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -148,11 +148,12 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (20 native programs)
+## Tutorials (21 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [example_exponentiation](tutorials/basics/exponentiation/example_exponentiation/README.md)
+- [mcx](tutorials/basics/mcx/README.md)
 - [learning_optimization](tutorials/basics/optimization/learning_optimization/README.md)
 - [prepare_state](tutorials/basics/prepare_state/README.md)
 - [qml](tutorials/basics/qml/README.md)

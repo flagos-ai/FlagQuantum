@@ -140,20 +140,27 @@ def _program(plan: ExecutionPlan) -> CircuitIR:
     if decision["mode"] == "mps":
         from ..runtime.planner.estimates import (
             estimate_mps_bytes,
+            exact_basis_mps_bond,
             exact_interval_mps_bond,
         )
 
-        bond = exact_interval_mps_bond(
-            tuple(gate.wires for gate in actual.instructions)
+        bounds = (
+            exact_basis_mps_bond(actual),
+            exact_interval_mps_bond(tuple(gate.wires for gate in actual.instructions)),
         )
-        if bond is None or plan.state_bytes != estimate_mps_bytes(
-            actual.n_wires,
-            max_bond=bond,
-            complex_bytes=16 if decision["precision"] == "complex128" else 8,
+        if not any(
+            bond is not None
+            and plan.state_bytes
+            == estimate_mps_bytes(
+                actual.n_wires,
+                max_bond=bond,
+                complex_bytes=16 if decision["precision"] == "complex128" else 8,
+            )
+            for bond in bounds
         ):
             raise ExecutionContractError(
                 "execution.profile",
-                "exact MPS requires independently bounded wire intervals",
+                "exact MPS requires a checked basis-product or independent-interval rank bound",
             )
     # Runtime already recomputed this fingerprint from the sealed program. Keep
     # its authoritative layer reconstruction, without rebuilding the record again.

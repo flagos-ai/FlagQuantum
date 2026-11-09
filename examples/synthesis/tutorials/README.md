@@ -5,6 +5,7 @@ Native FlagQuantum programs currently available:
 - [add_bell_states](basics/add_bell_states/README.md)
 - [entanglement](basics/entanglement/README.md)
 - [example_exponentiation](basics/exponentiation/example_exponentiation/README.md)
+- [mcx](basics/mcx/README.md)
 - [learning_optimization](basics/optimization/learning_optimization/README.md)
 - [prepare_state](basics/prepare_state/README.md)
 - [qml](basics/qml/README.md)

@@ -36,8 +36,14 @@ static element or nonempty slice. Every control bit must be one; a numeric
 condition here does not mean nonzero. The target is one distinct writable bit.
 The same spelling works inside static mutable helpers. Existing indexed
 control-X verification and lowering choose clean scratch and charge it to all
-resource budgets. General array-controlled unitary callbacks and the public
-native 50-control MPS execution path remain pending.
+resource budgets. General array-controlled unitary callbacks remain pending. The
+[50-control native example](../../examples/synthesis/tutorials/basics/mcx/main.py)
+uses a checked exact product-MPS plan, with no dense state allocation. This
+[planning admission](../../docs/api-changes/FQ-SYNTH-NATIVE-BASIS-MPS-20261110.md)
+is limited to more than32 physical wires and closed I/X/Z/CCX instructions
+on the raw IR implicit zero input. The report records the profile and rank bound;
+state-buffer, scratch and named-read budgets remain enforced. CX/SWAP and
+unproven coherent programs do not qualify for this storage proof.
 
 
 ## Python quantum programs

@@ -1,0 +1,7 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/mcx/mcx.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5e2b976ea6c3dbac89621ec04a83f0fce81517a7a765e545bd81b825834f1716",
+  "scope": "Complete retained50-control quantum program and static helper; independent exact MPS product-state acceptance. Complete companion Notebook workflow pending.",
+  "native_semantic_adaptations": "Native qfunc, shared indexed control-X lowering and Runtime-proved rank-one MPS planning. No source importer or dense state materialization."
+}
