@@ -3002,7 +3002,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/quantum_primitives/hadamard_test/main.py",
+        "scope": "Complete four-bit-target Hadamard-test quantum program. Raw five-qubit joint states and ancilla readout checked against original and independent Fourier Circuit. Complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -7243,7 +7246,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/quantum_primitives/hadamard_test_tutorial/main.py",
+        "scope": "Complete four-bit-target Hadamard-test quantum program. Raw five-qubit joint states and ancilla readout checked against original and independent Fourier Circuit. Complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

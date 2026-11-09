@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **81/216**.
+Validated quantum-program counterparts: **83/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (13 native programs)
+## Algorithms (14 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -23,6 +23,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
 - [solving_qlsp_with_aqc](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
+- [hadamard_test](algorithms/quantum_primitives/hadamard_test/README.md)
 - [adapt_vqe](algorithms/quantum_state_preparation/adapt_vqe/README.md)
 - [qaoa](algorithms/search_and_optimization/qaoa/README.md)
 - [qaoa_knapsack](algorithms/search_and_optimization/qaoa/qaoa_knapsack/README.md)
@@ -125,13 +126,14 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (13 native programs)
+## Tutorials (14 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [learning_optimization](tutorials/basics/optimization/learning_optimization/README.md)
 - [prepare_state](tutorials/basics/prepare_state/README.md)
 - [qml](tutorials/basics/qml/README.md)
+- [hadamard_test_tutorial](tutorials/basics/quantum_primitives/hadamard_test_tutorial/README.md)
 - [qmod_tutorial_part1](tutorials/basics/quantum_programming/qmod_tutorial_part1/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [execution_tutorial](tutorials/basics/quantum_programming/execution_tutorial/README.md)

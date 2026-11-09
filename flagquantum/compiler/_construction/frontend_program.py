@@ -1115,7 +1115,9 @@ class _Body:
         else:
             predicate = self.register(condition)
             inputs = (predicate,)
-        if operation is hadamard_transform and len(body.args) == 1:
+        if (operation is hadamard_transform or operation is qft) and len(
+            body.args
+        ) == 1:
             target = self.register(body.args[0])
             if target in inputs:
                 _error(
@@ -1124,7 +1126,8 @@ class _Body:
                     "program.control",
                     "condition and target must be disjoint",
                 )
-            self.emit("qreg.control_h", node, (predicate, target))
+            opcode = "qreg.control_qft" if operation is qft else "qreg.control_h"
+            self.emit(opcode, node, (predicate, target))
         elif operation is phase and len(body.args) == 2:
             expression, coefficient = body.args
             angle = self.phase_number(coefficient)
@@ -1165,7 +1168,7 @@ class _Body:
                 self.source,
                 body,
                 "program.control",
-                "expected scalar phase or Hadamard",
+                "expected phase, Hadamard, QFT or a supported qfunc call",
             )
 
         if isinstance(condition, ast.Compare):

@@ -191,7 +191,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/quantum_primitives/gqsp/gqsp` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation_helpers` | python_unclassified | Pending | pending |
-| `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/hadamard_test/main.py) | pending |
 | `algorithms/quantum_primitives/quantum_oracle_sketching_boolean/quantum_oracle_sketching_boolean` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/adapt_vqe/main.py) | pending |
@@ -389,7 +389,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | [Native program](tutorials/basics/prepare_state/main.py) | validated |
 | `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/main.py) | pending |
-| `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | Pending | pending |
+| `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/main.py) | pending |
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part1/main.py) | pending |

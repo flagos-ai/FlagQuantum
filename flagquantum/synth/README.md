@@ -20,6 +20,16 @@ adds `QArray[QBit]`, checked indexing/slices, bounded builtin `range`/`len`, H/S
 and plain writable helper ports. Mutable helpers currently contain only gates,
 bounded loops and other mutable helpers, with disjoint actual bit locations.
 
+Root qfunc programs also support `control(bit, lambda: qft(target))`, including
+the existing bounded comparison conditions. This reuses the checked controlled
+Fourier transform; target and condition inputs must be disjoint. Mutable-helper
+control retains its phase-only scope. See the
+[controlled Fourier admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-FOURIER-20261110.md)
+and the [Hadamard-test program](../../examples/synthesis/algorithms/quantum_primitives/hadamard_test/main.py).
+That program retains its entangled four-bit target as an explicit Output and
+selects the ancilla in `program.probabilities`. Selecting readout neither resets
+nor frees the target; all five physical qubits remain charged to budgets.
+
 
 ## Python quantum programs
 
