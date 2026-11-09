@@ -21,6 +21,10 @@ from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 
 
 def main() -> None:
+    print(
+        "premise: fixed STO-3G hydrogen integrals; two product-formula steps "
+        "approximate evolution, and integral reconstruction is not an evolution error bound.\n"
+    )
     problem = from_native_molecule(
         create_molecular_hamiltonian([("H", (0, 0, 0)), ("H", (0, 0, 0.7414))])
     )

@@ -13,6 +13,7 @@ from flagquantum.observables import number
 
 
 def main() -> None:
+    print("premise: exact statevector simulation; no sampling or hardware noise.\n")
     hamiltonian = 1.3 * number(0) - 0.4 * number(1)
     for encoding in ENCODINGS:
         encoded = encode_fermion(hamiltonian, n_modes=3, encoding=encoding)
