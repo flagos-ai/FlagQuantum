@@ -40,8 +40,8 @@ its owning module. Source attribution stays in the implementation headers.
 collections and visits them in declared port order. A caller supplies existing
 value identities and owns connection/consumption effects. The shared Core dtype
 policy runs after each callback, retaining the pinned source's failure effects.
-The module provides the binding prerequisites for the future Program component
-builder. General calls, returns and numerical graph traversal remain pending.
+The module supplies binding collections and traversal for the finite Program
+component builder below. Direct numerical graph traversal remains pending.
 
 ## Contributor path
 
@@ -100,9 +100,9 @@ Gate-only `inline_program_calls` refuses unlowered register functions.
 Run `pytest tests/unit/test_register_program_lowering.py` for the shortest
 contributor path. The existing Add/QROM append consumer runs unchanged with
 three-level packed hierarchy replacement, primitive equality, all measurement
-histories and independent resource checks. Source-style mutable construction,
-its failure prefixes, automatic clean/dirty allocation and direct numerical
-graph traversal retain separate acceptance work.
+histories and independent resource checks. Finite mutable construction and
+rebindings are implemented below. Automatic clean/dirty allocation and direct
+numerical graph traversal retain separate acceptance work.
 
 ## Finite register construction
 
@@ -119,5 +119,21 @@ Run `pytest tests/unit/test_component_program_builder.py` for identity, arrays,
 zero-width ownership, failed calls/returns and the unchanged real Add/QROM append
 consumer. These retain exact primitive instructions, all measurement histories,
 workspace cleanup and separately reported models. Only the concrete quantum
-bit/opaque/unsigned profile is admitted. Builder split/join, automatic clean or
-dirty workspace, additional descriptors and numerical traversal remain separate.
+bit/opaque/unsigned profile is admitted. Automatic clean or dirty workspace,
+additional descriptors and numerical traversal remain separate.
+
+
+## Builder word and bit rebindings
+
+`component_rebindings.py` supplies real typed helper functions consumed by the
+same builder's `split` and `join` methods. Each logical bit retains an owned word
+handle. Helpers convert those words through the existing gate SSA rebindings.
+The extra logical split/join operations lower to zero physical primitives and
+zero workspace. These helpers carry executable bodies, not signature stubs.
+
+Run `pytest tests/unit/test_component_rebindings.py`. Fifteen original ownership
+and failed-join scenarios accept the native observation adapter. Four remaining
+source scenarios compare connection order and source model cost against native
+zero-primitive lowering. Complex spectator/permutation checks include a real X
+call. Existing Add/QROM consumers retain all measurement histories and resources
+after explicit split/join around every returned word, including width zero.

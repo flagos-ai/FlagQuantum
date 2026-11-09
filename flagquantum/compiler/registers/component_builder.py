@@ -23,13 +23,14 @@ from ...core.ir.program import (
 )
 from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_verifier import register_port_types
-from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...core.ir.program.signatures import Signature
 from .component_bindings import (
     RegisterBindingError,
     create_register_bindings,
     process_register_bindings,
 )
+from .component_rebindings import join_word_function, split_word_function
 
 BindingCollection = RegisterBinding | NDArray[np.object_]
 
@@ -181,3 +182,41 @@ class ComponentProgramBuilder:
         if diagnostics:
             raise ValueError(f"invalid constructed register Program: {diagnostics}")
         return module
+
+    def _rebinding_name(self) -> str:
+        index = len(self._functions)
+        name = f"__fq_rebinding_{index}"
+        while name in self._functions or name == self._name:
+            index += 1
+            name = f"__fq_rebinding_{index}"
+        return name
+
+    def split(self, binding: RegisterBinding) -> NDArray[np.object_]:
+        """Consume one quantum word and return its ordered bit-word handles."""
+        if not isinstance(binding, RegisterBinding):
+            raise ValueError("split expects a single register binding")
+        function = split_word_function(self._rebinding_name(), binding.register.dtype)
+        self._functions[function.name] = function
+        outputs = self.call_dict(function.name, {"reg": binding})
+        bits = outputs["reg"]
+        assert isinstance(bits, np.ndarray)
+        return bits
+
+    def join(
+        self, bindings: object, dtype: RegisterType | None = None
+    ) -> RegisterBinding:
+        """Consume a rank-one bit-word collection in order, retaining failures."""
+        try:
+            values = np.asarray(bindings)
+            (width,) = values.shape
+        except (AttributeError, ValueError):
+            raise ValueError("join expects a 1-d array of input bindings") from None
+        if not all(binding.register.bitsize == 1 for binding in values):
+            raise ValueError("join can only join bindings of width 1")
+        target = RegisterType("opaque", width) if dtype is None else dtype
+        function = join_word_function(self._rebinding_name(), target)
+        self._functions[function.name] = function
+        outputs = self.call_dict(function.name, {"reg": values})
+        result = outputs["reg"]
+        assert isinstance(result, RegisterBinding)
+        return result
