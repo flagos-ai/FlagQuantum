@@ -1,9 +1,21 @@
 {
   "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example.qmod",
-  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
-  "original_sha256": "7ec7ce1ccc51f567147112a7b7e6f5490a4e13fb6cd2f97a44c876895cf3d139",
-  "scope": "Quantum program only; the complete Notebook workflow is validated in the adjacent local workflow.",
-  "native_semantic_adaptations": "Fresh unsigned expression assignment uses a finite-width inversion based on the inferred quantum encoding.",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "26ca415f8f140b18f66d63c56e5bcbfb251523b3",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "a3ecc2e6e1ab0944344043d9b1b97d6e212f19716c6c840284c39d580eddfdfa"
+    },
+    {
+      "index": 3,
+      "sha256": "50a976632f63282450edf0ac5a16877d3072bbe0a52e2942775369d4b83f0ef6"
+    }
+  ],
   "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_invert.bitwise_invert_example.main",
-  "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py"
+  "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py",
+  "scope": "Complete local computational Notebook workflow: native finite-width inversion, synthesis, execution and 1000 seeded named samples; local sampling replaces the cloud call and does not claim hardware execution.",
+  "native_semantic_adaptations": "Existing FlagQuantum qfunc with finite-width complement; local execution and seeded host sampling from executed named probabilities replace the cloud sampler.",
+  "notebook_path": "functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example.ipynb",
+  "original_sha256": "7ec7ce1ccc51f567147112a7b7e6f5490a4e13fb6cd2f97a44c876895cf3d139"
 }

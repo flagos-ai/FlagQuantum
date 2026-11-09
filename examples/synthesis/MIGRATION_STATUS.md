@@ -309,9 +309,9 @@ Validated local Notebook workflows: **14/213**.
 | `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_2vars_example` | quantum_program | [Native program](functions/arithmetic/bitwise_and/bitwise_and_2vars_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_and/overview/run_workflow.py) | validated |
+| `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_and/overview/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_and/bitwise_and_integer_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_invert/inversion_workflow/run_workflow.py) | validated |
+| `functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_invert/bitwise_invert_example/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_2vars_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_or/bitwise_or_integer_example/main.py) | pending |

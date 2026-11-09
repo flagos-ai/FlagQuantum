@@ -71,7 +71,7 @@ Validated local Notebook workflows:
 Validated local Notebook workflows:
 
 - [overview](functions/arithmetic/bitwise_and/overview/README.md)
-- [inversion_workflow](functions/arithmetic/bitwise_invert/inversion_workflow/README.md)
+- [bitwise_invert_example](functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)

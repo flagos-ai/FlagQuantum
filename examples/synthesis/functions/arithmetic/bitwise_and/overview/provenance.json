@@ -20,7 +20,7 @@
       "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
     }
   ],
-  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_and.overview.run_workflow",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_and.overview.main",
   "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py",
   "scope": "Complete local computational Notebook workflow: two-register AND and literal-mask AND, synthesis, execution and 1000 seeded samples each. Local execution replaces cloud sampling; no hardware claim.",
   "native_semantic_adaptations": "Reuse both native unsigned qfunc examples and replace cloud samples/dataframe display with local executed named probabilities and seeded count dictionaries."
