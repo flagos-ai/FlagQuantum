@@ -3560,7 +3560,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/chemistry/molecular_energy_curve/main.py",
+        "scope": "Complete retained one-qubit molecular quantum ansatz. Two nonzero angles, both width/depth objectives, exact original/native/independent Circuit complex amplitudes, clean workspace, accepted one-instruction budget and insufficient-memory refusal are checked. Complete chemistry Notebook data/energy/optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -3581,7 +3584,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/chemistry/molecule_eigensolver/main.py",
+        "scope": "Complete retained one-qubit molecular quantum ansatz. Two nonzero angles, both width/depth objectives, exact original/native/independent Circuit complex amplitudes, clean workspace, accepted one-instruction budget and insufficient-memory refusal are checked. Complete chemistry Notebook data/energy/optimization workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

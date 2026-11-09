@@ -3,6 +3,8 @@
 Native FlagQuantum programs currently available:
 
 - [quantum_volume](benchmarking/quantum_volume/README.md)
+- [molecular_energy_curve](chemistry/molecular_energy_curve/README.md)
+- [molecule_eigensolver](chemistry/molecule_eigensolver/README.md)
 - [quantum_drude_oscillator](chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
 - [link_monitoring](cybersecurity/link_monitoring/README.md)

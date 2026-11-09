@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **96/216**.
+Validated quantum-program counterparts: **98/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -34,9 +34,11 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (28 native programs)
+## Applications (30 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
+- [molecular_energy_curve](applications/chemistry/molecular_energy_curve/README.md)
+- [molecule_eigensolver](applications/chemistry/molecule_eigensolver/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 - [link_monitoring](applications/cybersecurity/link_monitoring/README.md)
