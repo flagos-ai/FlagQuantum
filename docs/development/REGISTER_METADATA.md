@@ -431,3 +431,80 @@ previously reproduced rotation-layer baseline failure in 61.76 seconds.
 The Python 3.10 unused-ignore limitation remains open. Finite-field metadata,
 its numerical polynomial conversion boundary and typed graph execution remain
 pending G2 work.
+
+## Finite-field numerical construction and codecs
+
+Prerequisite 0.8 is owned by Simulation's `finite_field_encoding.py`.
+`FiniteFieldEncoding(characteristic, degree, irreducible_poly=...)` adapts the
+unchanged `_GF` constructor and the shared QGF/CGF polynomial conversion chain.
+The omitted argument performs source default selection. Explicit None bypasses
+that selection. A supplied galois Poly retains object identity, including its
+coefficient field. Degree-list conversion uses Poly.Degrees without integer
+polynomial normalization. Order, bit width and the numerical field class remain
+lazy cached properties. Invalid raw parameters retain their constructor versus
+property failure timing. The locked galois library can raise RuntimeError for
+some composite-characteristic lookup-table construction attempts.
+
+Numerical field classes and polynomial objects stay inside Simulation. The
+existing Core descriptor continues to own register metadata. Projecting this
+codec into a neutral finite-field descriptor is pending, as are graph-port
+compatibility and typed executable calls. Resolving width at codec construction
+would fail earlier than the source on explicit-None inputs. This slice therefore
+leaves that conversion as an explicit subsequent boundary.
+
+The optional numerical dependency is galois 0.4.11, licensed MIT in its installed
+package metadata. The implementation imports it only during construction and
+field resolution. Even explicit None retains the original converter import.
+There is no new manifest requirement or automatic installation. Its dynamic
+Poly and FieldArray objects and associated Any annotations stop at this
+Simulation boundary. Ordinary integer and fixed-point users keep their existing
+import paths. Replacement evidence substitutes the source unsigned decoder in
+the actual native field codec, then substitutes the source/native field codec
+when binding the existing binary-field multiplier.
+
+The shared integer codecs retain big-endian bit order. Field scalar validation
+requires the exact resolved field class. Ordinary integers and scalars from a
+field with another polynomial retain source failures. Array validation keeps
+its range-only checks. Default vectorized encoding retains its source scalar
+extraction failures. Array decoding uses the existing unsigned array decoder
+before constructing the field array, retaining shape and field-range failures.
+
+Run the numerical-to-circuit example with the optional dependency installed.
+
+```bash
+python -m examples.algorithms.classical_finite_field_values
+```
+
+The example passes an explicit binary polynomial to the existing quadratic
+multiplier and uses `circuit.append(operation)`. All GF(8) values round-trip
+through big-endian encoding, and numerical and quantum multiplication agree.
+The constructor and codec allocate no quantum wires or gates themselves.
+
+| GF(8) quadratic product accounting | Value |
+|---|---|
+| Emitted decomposition primitives | 9 CCX and 3 CX |
+| Emitted output-binding SWAPs | 0 |
+| Physical wires | 9, including 3 logical product outputs |
+| Additional work wires and measurements | 0 and 0 |
+| Independent pinned source model | 9 Toffoli and 3 Clifford |
+
+The source-backed prerequisite passed 157 cases before implementation. The final
+new module has 351 construction, lazy-property, polynomial-identity, dependency,
+codec and consumer tests. Complete complex amplitudes are checked for coherent
+GF(4)/GF(8) products, and the new quadratic binding cases compare ordered
+per-wire source primitives and output maps against the unmodified decomposition.
+Model values are compared separately from emitted instruction categories.
+The 22-file concentrated regression passes 2,769 tests without warnings or
+skips. It also reruns existing field inverses, measured erasure branches,
+zero-work cleanup, KMX/native Kickmix round trips and resource accounting.
+Existing repaired-reference Karatsuba/inverse exceptions remain recorded in the
+main ledger and retain their existing acceptance scope.
+
+Four examples execute successfully. The nine pinned source blobs remain
+unchanged. Scoped strict Python 3.12 typing, Ruff, Black, team scope,
+architecture, public API baseline and internal multi-level IR checks pass.
+The default smoke/unit tier reports 15,412 passed, 51 skipped, 398 warnings and
+one existing terminal-rotation fusion failure, previously reproduced at the
+original baseline. It is not a green whole-repository result. The existing
+Python 3.10 strict-type limitation also remains open. Evidence logs under the
+locked reference environment use the `g2-field-encoding-` prefix.
