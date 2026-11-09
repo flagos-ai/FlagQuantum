@@ -225,7 +225,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/chemistry/molecular_energy_curve/molecular_energy_curve` | notebook_workflow | [Native program](applications/chemistry/molecular_energy_curve/main.py) | pending |
 | `applications/chemistry/molecule_eigensolver/molecule_eigensolver` | notebook_workflow | [Native program](applications/chemistry/molecule_eigensolver/main.py) | pending |
 | `applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial` | notebook_workflow | Pending | pending |
-| `applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding` | notebook_workflow | Pending | pending |
+| `applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/main.py) | pending |
 | `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | Pending | pending |
 | `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | Pending | pending |
 | `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/main.py) | pending |
