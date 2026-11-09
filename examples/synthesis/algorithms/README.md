@@ -2,6 +2,8 @@
 
 Native FlagQuantum programs currently available:
 
+- [hybrid_qnn_for_subset_majority](machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
+- [qgan_bars_and_strips](machine_learning/qgan/qgan_bars_and_strips/README.md)
 - [quantum_autoencoder](machine_learning/quantum_autoencoder/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)

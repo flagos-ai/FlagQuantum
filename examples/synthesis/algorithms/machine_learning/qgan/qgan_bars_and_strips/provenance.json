@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/QML/qgan/qgan_bars_and_strips.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "00008898f2081de7f9ccf5109a029023df940b048752b76f49f6bf1cea7657d8",
+  "scope": "Quantum program only. The training, data preparation and optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve four features, 8 weights and 4 output qubits. Fixed source array shapes specialize the gate-only mutable helpers. R(theta,pi/2,q) preserves RY entrywise, but currently costs three rotations instead of one; no resource parity claim. The source qbv.len>2 condition is always true for the declared four-bit root; its last RZZ is included explicitly.",
+  "native_entrypoint": "examples.synthesis.algorithms.machine_learning.qgan.qgan_bars_and_strips.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qml_encoders.py"
+}

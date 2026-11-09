@@ -28,7 +28,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/main.py",
+        "scope": "Quantum program only; complete training/Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -49,7 +52,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/machine_learning/qgan/qgan_bars_and_strips/main.py",
+        "scope": "Quantum program only; complete training/Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

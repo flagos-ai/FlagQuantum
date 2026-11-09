@@ -11,8 +11,8 @@ Validated local Notebook workflows: **14/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
-| `algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority` | notebook_workflow | Pending | pending |
-| `algorithms/QML/qgan/qgan_bars_and_strips` | notebook_workflow | Pending | pending |
+| `algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority` | notebook_workflow | [Native program](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/main.py) | pending |
+| `algorithms/QML/qgan/qgan_bars_and_strips` | notebook_workflow | [Native program](algorithms/machine_learning/qgan/qgan_bars_and_strips/main.py) | pending |
 | `algorithms/QML/qsvm/qsvm` | notebook_workflow | Pending | pending |
 | `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | Pending | pending |
