@@ -2888,7 +2888,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/main.py",
+        "scope": "Complete retained variational ansatz; three nonzero angle vectors, both objectives, source/native/independent Circuit absolute complex amplitudes, zero workspace, shape and budget rejection. Full linear-solver/chemistry Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -3779,7 +3782,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/chemistry/second_quantized_hamiltonian/main.py",
+        "scope": "Complete retained variational ansatz; three nonzero angle vectors, both objectives, source/native/independent Circuit absolute complex amplitudes, zero workspace, shape and budget rejection. Full linear-solver/chemistry Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

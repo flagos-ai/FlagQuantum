@@ -185,7 +185,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/main.py) | pending |
 | `algorithms/quantum_linear_solvers/hhl/hhl` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | Pending | pending |
-| `algorithms/quantum_linear_solvers/vqls/vqls_with_lcu` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_linear_solvers/vqls/vqls_with_lcu` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/main.py) | pending |
 | `algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/gqsp/gqsp` | notebook_workflow | Pending | pending |
@@ -230,7 +230,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | Pending | pending |
 | `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/main.py) | pending |
 | `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | [Native program](applications/chemistry/quantum_walk_fmo/main.py) | validated |
-| `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | Pending | pending |
+| `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | [Native program](applications/chemistry/second_quantized_hamiltonian/main.py) | pending |
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | Pending | pending |
 | `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | [Native program](applications/cybersecurity/link_monitoring/main.py) | pending |
 | `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py) | pending |

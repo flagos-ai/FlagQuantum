@@ -7,6 +7,7 @@ Native FlagQuantum programs currently available:
 - [molecule_eigensolver](chemistry/molecule_eigensolver/README.md)
 - [quantum_drude_oscillator](chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
+- [second_quantized_hamiltonian](chemistry/second_quantized_hamiltonian/README.md)
 - [link_monitoring](cybersecurity/link_monitoring/README.md)
 - [patch_min_vertex_cover](cybersecurity/patching_management/patch_min_vertex_cover/README.md)
 - [portfolio_optimization](finance/portfolio_optimization/README.md)
