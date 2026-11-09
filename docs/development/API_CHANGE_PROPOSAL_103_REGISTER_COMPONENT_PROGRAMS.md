@@ -376,3 +376,46 @@ full graph-port compatibility and typed component execution remain later slices.
 
 Before native implementation, all 326 source-backed constructor, identity and
 Signature consumer scenarios pass. They read declared source fields directly.
+
+## Fixed-point type prerequisite 0.6
+
+Core's existing register type module gains `fixed_point_register_type(width,
+fractional_width, signed=False)` and
+`classical_fixed_point_register_type(width, fractional_width, signed=False)`.
+They return existing RegisterType records with encoding `fixed_point`, ordered
+`fractional_width` and `signed` parameters and original declared scalar values.
+Classical storage retains its first storage marker, including zero-width words.
+Both adapt the unchanged QFxp/CFxp eager shape checks and diagnostic order.
+Only the diagnostic type name QFxp changes to the native fixed-point register.
+The inherited quantum wording `num_qubits` remains for both source counterparts.
+
+The shape decision tree belongs in Core as `validate_fixed_point_parameters`.
+Its default diagnostic context retains the original _Fxp numerical codec text.
+The two type constructors select the source QFxp/CFxp context. Simulation's
+existing `validate_fixed_point_shape` keeps its signature and validation sites
+and delegates to this shared guard. Width classification remains repeated at
+the original points, including its short circuits and observable protocol calls.
+No eager integer-domain, encoding, real quantization or positivity check is added.
+
+Fixed-point symbolic classification examines width and fractional width, as the
+source does. It ignores signed and storage parameters. This encoding-specific
+rule extends the existing RegisterType method. Generic parameter classification
+for other encodings and the Montgomery width-only rule remain unchanged.
+
+Acceptance uses a source-backed stand-in before implementation and the same
+native constructor scenarios afterward. Compare raw fields and scalar types,
+eager failures, zero-width storage identity, symbolic/NumPy inputs, protocol
+call order and shaped Signature consumers. Reuse constructed widths/parameters
+in existing fixed-point numerical codecs and exhaust small signed/unsigned
+stored integer domains. Compare shared guard diagnostic contexts and replace
+the guard in its real Simulation consumer. Rerun existing phase/fixed-point
+primitive-stream, exact-adjoint, complex-amplitude, measured-branch, workspace
+and separately counted resource tests, plus the existing append example.
+
+The slice preserves current Program IR and public API/schema contracts. It
+introduces no real quantization dependency, execution opcode or foreign type.
+Finite-field constructors and typed graph connections/calls remain subsequent
+G2 work.
+
+The source-backed prerequisite passes 430 constructor/Signature/protocol cases
+before native implementation, including the eager failure contexts.
