@@ -25,6 +25,15 @@ exp(-i * coefficient * step * Pauli), including identity global phase. Terms
 are never silently sorted or combined. This is the declared product formula,
 not an exact exponential of a general noncommuting sum or an error guarantee.
 The 4096-effect capture bound and existing operation/qubit/memory budgets apply.
+For otherwise over-budget consecutive calls on a complete one-to-three-qubit
+register, capture shares the existing Qmod compact product transformation.
+A buffer holds at most 256 calls; composition emits a checked `qreg.unitary` for
+each 64-call chunk. Calls retain all terms, declared order and repetitions.
+A phase-equivariant Newton polar correction is admitted only for a finite Gram
+residual at most 1e-11. Small programs retain their previous rotation expansion.
+Intervening effects, changed targets and helper ownership boundaries flush the
+buffer; Const, initialization and alias verification remain mandatory. Physical
+operation, depth and memory budgets still apply after unitary lowering.
 No Hamiltonian type, numerical kernel or execution route is added.
 
 ```python

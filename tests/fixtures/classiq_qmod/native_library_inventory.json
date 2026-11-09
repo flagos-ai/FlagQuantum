@@ -76,7 +76,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/machine_learning/qsvm/main.py",
+        "scope": "Complete original one-bit feature-overlap kernel with both real-array data bindings and the exact reversed inverse encoding. The full QSVM data/training Notebook remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -2819,7 +2822,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/main.py",
+        "scope": "Complete retained three-bit AQC quantum program: both full Pauli tables, original probability preparation, all200 ordered calls and repetitions. The larger multi-scenario linear-solver Notebook remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -4553,7 +4559,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/variational_quantum_imaginary_time_evolution/main.py",
+        "scope": "Complete original four-bit six-generator quantum ansatz with real-array parameters and coherent preparation. The full variational imaginary-time optimizer and molecular workflow remain pending."
+      },
       "kind": "notebook_workflow"
     },
     {

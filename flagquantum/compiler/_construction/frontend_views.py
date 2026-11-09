@@ -255,6 +255,8 @@ def inline_mutable(
     owner: _Body, node: ast.Call, definition: _QuantumFunction, ports: Sequence[_Port]
 ) -> None:
     """Expand gate-only borrowed helpers into the caller's checked owned effects."""
+    from .frontend_evolution import flush_evolutions
+
     if any(port.role != "inout" for port in ports):
         _error(
             owner.source,
@@ -330,6 +332,7 @@ def inline_mutable(
     owner.owner.active.add(id(definition))
     try:
         owner.statements(definition.source.node.body)
+        flush_evolutions(owner)
     finally:
         owner.owner.active.remove(id(definition))
         (

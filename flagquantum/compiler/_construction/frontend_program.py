@@ -18,7 +18,7 @@ from .._hybrid.model import (
     ValueId,
 )
 from .frontend_classical import ClassicalValue, bind_inputs, real_number
-from .frontend_evolution import capture_suzuki_trotter
+from .frontend_evolution import _Evolution, capture_suzuki_trotter, flush_evolutions
 from .frontend_matrix import capture_unitary
 from .frontend_ports import (
     _annotation_node,
@@ -194,6 +194,7 @@ class _Body:
         self.effect = self.entry
         self.counter = len(ports) + 1
         self.operations: list[Operation] = []
+        self.evolutions: list[_Evolution] = []
         self.expressions = 0
         self.aliases: dict[str, tuple[tuple[Value, int], ...]] | None = None
         self.array_names = {p.name for p in ports if p.kind == "qarray"}
@@ -242,6 +243,7 @@ class _Body:
         values: Sequence[Value],
         **attributes: object,
     ) -> None:
+        flush_evolutions(self)
         if len(self.operations) >= 4096:
             _error(
                 self.source, node, "budget", "program exceeds 4096 effect operations"
@@ -421,6 +423,8 @@ class _Body:
                 "use positional arguments without unpacking",
             )
         function = self.resolve_callable(node.func)
+        if function is not suzuki_trotter:
+            flush_evolutions(self)
         if self.aliases is not None and not (
             any(
                 function is marker
@@ -1143,6 +1147,7 @@ class _Body:
                     )
                 self.assign(statement)
             elif isinstance(statement, ast.With):
+                flush_evolutions(self)
                 if self.aliases is not None:
                     _error(
                         self.source,
@@ -1187,6 +1192,7 @@ class _Body:
 
     def finish(self) -> HybridProgram:
         self.statements(self.source.node.body)
+        flush_evolutions(self)
         values = {
             name: self.register(
                 ast.copy_location(ast.Name(id=name, ctx=ast.Load()), self.source.node)

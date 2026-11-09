@@ -1179,4 +1179,22 @@ schedule behind all three consumers, compare complete complex states and
 instruction hashes, and verify live tensor coefficient gradients. Existing
 Trotter, controlled/large-Pauli tests and frozen-source replays cover the full
 consumers. Native capture uses the same schedule and existing Pauli effects;
-it adds no alternate Hamiltonian representation or numerical implementation.
+it adds no alternate Hamiltonian representation or execution kernel.
+
+`_pauli_products.py` owns bounded compile-time composition for complete targets
+of at most three logical qubits. It replaces the former Qmod-private matrix
+implementation and is shared by the native frontend. It composes static
+operators, never user statevectors. The adapters own finite-value, width,
+term-count and repetition checks. Native capture buffers at most 256 consecutive
+same-target calls and compacts otherwise over-budget sequences in 64-call chunks;
+small programs retain their previous streamed rotation effects. Intervening
+operations, target changes and mutable-helper ownership boundaries flush the
+buffer. Existing unitary verification, lowering and physical planning budgets
+remain authoritative. A phase-equivariant polar correction only repairs products
+inside the documented 1e-11 Gram-residual envelope.
+
+Run `tests/integration/test_synthesis_native_compact_evolution.py` for replacement
+behind both consumers, independent full complex states, global phase, logical
+bit order, helper/effect barriers, buffer bounds, storage refusals and physical
+resource limits. The complete retained AQC schedule exercises all 200 calls;
+no terms, repetitions or time literals are removed.

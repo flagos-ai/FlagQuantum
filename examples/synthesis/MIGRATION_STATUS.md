@@ -13,7 +13,7 @@ Validated local Notebook workflows: **23/213**.
 | --- | --- | --- | --- |
 | `algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority` | notebook_workflow | [Native program](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/main.py) | pending |
 | `algorithms/QML/qgan/qgan_bars_and_strips` | notebook_workflow | [Native program](algorithms/machine_learning/qgan/qgan_bars_and_strips/main.py) | pending |
-| `algorithms/QML/qsvm/qsvm` | notebook_workflow | Pending | pending |
+| `algorithms/QML/qsvm/qsvm` | notebook_workflow | [Native program](algorithms/machine_learning/qsvm/main.py) | pending |
 | `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | Pending | pending |
@@ -182,7 +182,7 @@ Validated local Notebook workflows: **23/213**.
 | `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/lchs/lchs` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | Pending | pending |
-| `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/main.py) | pending |
 | `algorithms/quantum_linear_solvers/hhl/hhl` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_linear_solvers/vqls/vqls_with_lcu` | notebook_workflow | Pending | pending |
@@ -268,7 +268,7 @@ Validated local Notebook workflows: **23/213**.
 | `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | [Native program](applications/optimization/robust_posture_optimization/main.py) | pending |
 | `applications/optimization/set_cover/set_cover` | notebook_workflow | Pending | pending |
 | `applications/optimization/set_partition/set_partition` | notebook_workflow | Pending | pending |
-| `applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution` | notebook_workflow | Pending | pending |
+| `applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution` | notebook_workflow | [Native program](applications/optimization/variational_quantum_imaginary_time_evolution/main.py) | pending |
 | `applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D` | notebook_workflow | Pending | pending |
 | `applications/physical_systems/hhl_lanchester/hhl_lanchester` | notebook_workflow | Pending | pending |
 | `applications/physical_systems/ising_model/ising_model` | notebook_workflow | Pending | pending |
