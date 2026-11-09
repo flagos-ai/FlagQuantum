@@ -50,3 +50,54 @@ def test_concrete_math_and_empty_extrema() -> None:
         smax()
     with pytest.raises(ValueError, match="empty sequence"):
         smin(iter(()))
+
+
+def test_compiler_functions_share_core_authority() -> None:
+    from flagquantum.compiler._component_trace import symbolic_math
+    from flagquantum.core import value_math
+
+    for name in ("ceil", "floor", "log2", "bit_length", "smax", "smin"):
+        assert getattr(symbolic_math, name) is getattr(value_math, name)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("backend", ["source", "native"])
+def test_actual_width_consumers_accept_replacement(
+    backend: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import sympy
+    from qualtran.symbolics import bit_length as source_width
+
+    from flagquantum.compiler.registers.bits import hamming_weight
+    from flagquantum.compiler.registers.lookup import qrom_table
+    from flagquantum.compiler.registers.resources import symbolic_resource_model
+    from flagquantum.core.value_math import SymbolicInt
+    from flagquantum.core.value_math import bit_length as native_width
+
+    n = sympy.Symbol("n", integer=True, positive=True)
+    baseline = qrom_table.QromTable.from_data([0, 1, 2, 3], num_controls=1)
+    work = tuple(range(5, 5 + baseline.workspace_size))
+    bits = tuple(range(baseline.workspace_size))
+    expected_gates = baseline.bind_packed(tuple(range(5)), work, bits)
+    expected_hamming = hamming_weight.hamming_weight_resource_widths(n)
+    expected_formula = symbolic_resource_model.source_qrom_resource_formula(
+        (n, 3), (2,)
+    )
+    calls: list[SymbolicInt] = []
+    dependency = source_width if backend == "source" else native_width
+
+    def width(value: SymbolicInt) -> SymbolicInt:
+        calls.append(value)
+        return dependency(value)
+
+    for consumer in (qrom_table, hamming_weight, symbolic_resource_model):
+        monkeypatch.setattr(consumer, "bit_length", width)
+    table = qrom_table.QromTable.from_data([0, 1, 2, 3], num_controls=1)
+    assert table.signature == baseline.signature
+    assert table.bind_packed(tuple(range(5)), work, bits) == expected_gates
+    assert hamming_weight.hamming_weight_resource_widths(n) == expected_hamming
+    assert (
+        symbolic_resource_model.source_qrom_resource_formula((n, 3), (2,))
+        == expected_formula
+    )
+    assert n in calls and n - 1 in calls and 2 in calls and 3 in calls

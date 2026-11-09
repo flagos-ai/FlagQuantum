@@ -1,7 +1,7 @@
 # Shared register metadata
 
-`core/ir/program/registers.py` and `signatures.py` own standalone metadata
-prerequisites 0.1 through 0.6
+Core's `registers.py`, `signatures.py`, `register_types.py` and `value_math.py`
+own standalone metadata and width-arithmetic prerequisites 0.1 through 0.7
 specified in [proposal 103](API_CHANGE_PROPOSAL_103_REGISTER_COMPONENT_PROGRAMS.md).
 It is internal and adds no root export, Program IR opcode, value kind, serialized
 schema or executable component profile.
@@ -401,3 +401,33 @@ optional-dependency slice passes 223 cases without warnings or skips. Outcome
 comparisons include scalar types, NaN, infinities, large integers, exact
 exceptions, captured warnings and symbolic protocol evaluation order. The
 source audit is retained as g2-width-math-audit.log.
+
+Compiler now imports the same function objects from Core, removing its separate
+implementations. Source-backed and native width functions replace dependencies
+in actual QROM binding, Hamming resource width and QROM resource formula
+consumers. The complete QROM packed instruction tuple remains equal. The focused
+consumer regression passes 397 cases without warnings or skips. Exact built-in
+numeric cases preserve their existing path without importing optional Sympy.
+Integer subclasses and NumPy scalars still execute source classification.
+
+The batch passes 3,308 concentrated tests across 25 files in 26.75 seconds,
+without warnings or skips. It covers QROM/QROAM gate streams and erasure,
+Hamming and uniform-preparation primitive streams, complete complex amplitudes,
+measurement branches, zero workspace, resource formulas and register metadata.
+Four existing examples run. Fixed-point execution restores the spectator and
+all complex amplitudes. Its emitted three phase instructions remain separate
+from the source two Clifford and one T model. Montgomery reports emitted
+128 T/Tdag, 32 measurements and 21 declared wires alongside its separate source
+model. QROM and Add retain their own emitted/model reports.
+
+Nine pinned source blobs remain unchanged. Strict Python 3.12 typing for the two
+changed production modules, Ruff, Black, Integration/Compiler scope,
+architecture, public API baseline and multi-level IR checks pass. Logs are
+`g2-width-math-contract.log`, `g2-width-math-native.log`,
+`g2-width-math-consumers.log`, `g2-width-math-regression.log`,
+`g2-width-math-examples.log` and `g2-width-math-default.log`.
+The default tier reports 15,061 passed, 51 skipped, 398 warnings and the same
+previously reproduced rotation-layer baseline failure in 61.76 seconds.
+The Python 3.10 unused-ignore limitation remains open. Finite-field metadata,
+its numerical polynomial conversion boundary and typed graph execution remain
+pending G2 work.
