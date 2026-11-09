@@ -34,7 +34,9 @@ def capture_polynomial_phase(
     def children(node: ast.expr) -> tuple[ast.expr, ...]:
         if isinstance(node, ast.BinOp):
             return node.left, node.right
-        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+        if isinstance(node, ast.UnaryOp) and isinstance(
+            node.op, (ast.USub, ast.Invert)
+        ):
             return (node.operand,)
         if isinstance(node, ast.Compare):
             return node.left, *node.comparators
@@ -60,7 +62,12 @@ def capture_polynomial_phase(
             (ast.Mult, "*"),
             (ast.Div, "/"),
             (ast.Pow, "**"),
+            (ast.BitAnd, "&"),
+            (ast.BitOr, "|"),
+            (ast.BitXor, "^"),
+            (ast.Mod, "%"),
             (ast.USub, "-"),
+            (ast.Invert, "~"),
         ):
             if isinstance(operation, kind):
                 return symbol
@@ -93,11 +100,11 @@ def capture_polynomial_phase(
         return value
 
     # Source limits bound total nodes; this guard also bounds recursive expansion.
-    pending = [(expression, 0)]
+    pending: list[tuple[ast.expr, int, bool]] = [(expression, 0, False)]
     if condition is not None:
-        pending.append((condition, 0))
+        pending.append((condition, 0, True))
     while pending:
-        node, depth = pending.pop()
+        node, depth, is_condition = pending.pop()
         if depth >= 128:
             fail(node, "budget.phase", "native phase expression depth exceeds 128")
         if isinstance(node, ast.Compare) and (
@@ -109,11 +116,44 @@ def capture_polynomial_phase(
             fail(
                 node, "program.control", "phase control requires one integer comparison"
             )
-        if isinstance(node, ast.BinOp) and not isinstance(
-            node.op, (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow)
+        if isinstance(node, ast.BinOp):
+            allowed: tuple[type[ast.operator], ...]
+            if is_condition:
+                allowed = (
+                    ast.Add,
+                    ast.Sub,
+                    ast.Mult,
+                    ast.Div,
+                    ast.Pow,
+                    ast.BitAnd,
+                    ast.BitOr,
+                    ast.BitXor,
+                    ast.Mod,
+                )
+            else:
+                allowed = (ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Pow)
+            if not isinstance(node.op, allowed):
+                fail(
+                    node,
+                    "program.phase",
+                    "use +, -, *, / and literal powers 0..8"
+                    + (
+                        " with bounded &, |, ^ and % in predicates"
+                        if is_condition
+                        else ""
+                    ),
+                )
+        if (
+            isinstance(node, ast.UnaryOp)
+            and isinstance(node.op, ast.Invert)
+            and not is_condition
         ):
-            fail(node, "program.phase", "use +, -, *, / and literal powers 0..8")
-        pending.extend((child, depth + 1) for child in children(node))
+            fail(
+                node,
+                "program.phase",
+                "bitwise inversion is only supported in predicates",
+            )
+        pending.extend((child, depth + 1, is_condition) for child in children(node))
     factors: tuple[tuple[Cube, Value], ...] = ()
     try:
         polynomial, reads = expand_phase(

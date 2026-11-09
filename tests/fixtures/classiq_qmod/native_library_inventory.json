@@ -3248,7 +3248,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/search_and_optimization/grover/grover/main.py",
+        "scope": "Quantum program only; the associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -6084,7 +6087,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/functions/grover_operator/main.py",
+        "scope": "Quantum program only; the associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -8320,7 +8326,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/workshops/oracle_workshop/oracles_workshop/main.py",
+        "scope": "Quantum program only; the associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     }
   ]

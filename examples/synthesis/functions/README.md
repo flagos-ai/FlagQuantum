@@ -25,6 +25,7 @@ Native FlagQuantum programs currently available:
 - [subtraction_float_example](arithmetic/subtraction/subtraction_float_example/README.md)
 - [mcx_example](mcx/mcx_example/README.md)
 - [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)
+- [grover_operator](grover_operator/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
 - [qct_qst_type1](qct_qst/qct_qst_type1/README.md)
 - [qct_qst_type2](qct_qst/qct_qst_type2/README.md)

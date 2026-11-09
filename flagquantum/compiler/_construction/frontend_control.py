@@ -71,12 +71,23 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     phase_constant = None
     if operation is phase and len(body.args) == 2:
         phase_constant = owner.phase_number(body.args[0])
+
+    def needs_predicate_phase_capture(expression: ast.expr) -> bool:
+        """Route bounded compound predicates through the shared phase kernel."""
+        return any(
+            isinstance(
+                child, (ast.BitAnd, ast.BitOr, ast.BitXor, ast.Mod, ast.Invert, ast.Sub)
+            )
+            for child in ast.walk(expression)
+        )
+
     if (
         operation is phase
         and len(body.args) == 2
         and (
             owner.aliases is not None
             or isinstance(condition, ast.Subscript)
+            or needs_predicate_phase_capture(condition)
             or phase_constant is None
             and (
                 not isinstance(body.args[0], ast.Name)

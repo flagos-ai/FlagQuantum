@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **137/216**.
+Validated quantum-program counterparts: **140/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (21 native programs)
+## Algorithms (22 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -33,6 +33,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [qaoa_knapsack](algorithms/search_and_optimization/qaoa/qaoa_knapsack/README.md)
 - [qaoa_max_cut](algorithms/search_and_optimization/qaoa/qaoa_max_cut/README.md)
 - [three_sat_grover](algorithms/search_and_optimization/grover/three_sat_grover/README.md)
+- [grover](algorithms/search_and_optimization/grover/grover/README.md)
 - [grover_max_cut](algorithms/search_and_optimization/grover/grover_max_cut/README.md)
 
 Validated local Notebook workflows:
@@ -99,7 +100,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (50 native programs)
+## Functions (51 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -124,6 +125,7 @@ Validated local Notebook workflows:
 - [subtraction_float_example](functions/arithmetic/subtraction/subtraction_float_example/README.md)
 - [mcx_example](functions/mcx/mcx_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
+- [grover_operator](functions/grover_operator/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)
 - [qct_qst_type1](functions/qct_qst/qct_qst_type1/README.md)
 - [qct_qst_type2](functions/qct_qst/qct_qst_type2/README.md)
@@ -170,7 +172,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (24 native programs)
+## Tutorials (25 native programs)
 
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
@@ -196,6 +198,7 @@ Validated local Notebook workflows:
 - [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
+- [oracles_workshop](tutorials/workshops/oracle_workshop/oracles_workshop/README.md)
 
 Validated local Notebook workflows:
 

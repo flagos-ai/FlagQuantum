@@ -203,7 +203,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_max_cut/main.py) | pending |
 | `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | Pending | pending |
 | `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | [Native program](algorithms/search_and_optimization/grover/three_sat_grover/main.py) | pending |
-| `algorithms/search_and_optimization/grover/grover` | notebook_workflow | Pending | pending |
+| `algorithms/search_and_optimization/grover/grover` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover/grover/main.py) | pending |
 | `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/grover/grover_max_cut/main.py) | pending |
 | `algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa` | notebook_workflow | Pending | pending |
 | `algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation` | notebook_workflow | Pending | pending |
@@ -336,7 +336,7 @@ Validated local Notebook workflows: **24/213**.
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_float_example/main.py) | pending |
 | `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | [Native program](functions/mcx/mcx_example/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | [Native program](functions/grover_operator/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | Pending | pending |
@@ -427,4 +427,4 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | Pending | pending |
-| `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | Pending | pending |
+| `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/main.py) | pending |

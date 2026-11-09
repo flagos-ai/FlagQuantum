@@ -777,7 +777,21 @@ class _Body:
                     )
                 self.emit("qreg.phase", node, (), angle=radians)
             elif self.aliases is not None or any(
-                isinstance(child, (ast.Subscript, ast.Sub, ast.USub, ast.Div, ast.Pow))
+                isinstance(
+                    child,
+                    (
+                        ast.Subscript,
+                        ast.Sub,
+                        ast.USub,
+                        ast.Div,
+                        ast.Pow,
+                        ast.BitAnd,
+                        ast.BitOr,
+                        ast.BitXor,
+                        ast.Mod,
+                        ast.Invert,
+                    ),
+                )
                 or isinstance(child, ast.Name)
                 and child.id in self.classical
                 or isinstance(child, ast.Constant)

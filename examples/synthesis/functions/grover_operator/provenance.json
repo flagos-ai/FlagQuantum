@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "e683a404b90804f257a73f3aa7b9e281d757098885c08c951d7ea08dfce677f6",
+  "native_entrypoint": "examples.synthesis.functions.grover_operator.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_phase_predicates.py",
+  "scope": "Quantum program only; the associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Specialize the original four-bit product/modulo predicate and two Grover iterations as typed qfuncs. Use an independently constructed dense phase oracle and exact 2|s><s|-I reflection. Preserve the declared x-then-y output order and compare complete complex amplitudes, including global phase and hidden-work probability."
+}
