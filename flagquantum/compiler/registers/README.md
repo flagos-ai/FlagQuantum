@@ -204,9 +204,19 @@ amplitudes and clean-zero work. Borrowed work is verified with entangled externa
 spectators. Pool events and complete local operation order match six original
 source graphs. Repeated calls keep local lifetime order before expansion.
 
-The admitted profile has quantum boundary ports and balanced nonempty work.
-Caller-input free and live-workspace output transfer, general classical boundary
-ports and isolated source frozenset tie parity remain open. Binding ignores the
+The default profile has quantum boundary ports and balanced nonempty work.
+Explicit `allow_workspace_outputs=True` transfers returned allocated wires and
+their subsequent lifetime to the caller. The pool retains their ownership during
+binding, including partial and nested output lifetimes. Caller-input pool
+adoption, general classical boundary ports and isolated source frozenset tie
+parity remain open. Binding ignores the
 optional restoration payload and executes the actual graph. See
 [the interface and evidence](../../../docs/development/PHYSICAL_REGISTER_BINDING.md)
 for bit order, output semantics, slot alpha-renaming and separate resource counts.
+
+
+Run `pytest tests/unit/test_register_output_transfer_contract.py tests/unit/test_register_output_transfer.py`
+for original-source output order, allocation-without-free events, full complex
+spectator states, all measured Add branches, nested live leases and partial
+release/reuse. Outputs contain wire tuples in declared port order. The caller
+owns cleanup and eventual borrowed-state restoration after transfer.

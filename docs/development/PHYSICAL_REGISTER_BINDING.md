@@ -108,9 +108,10 @@ batch. Earlier independent snapshot reproduction at `4d57e638` is retained in
 
 ## Remaining boundaries
 
-The admitted entry has only quantum input/output ports and balanced nonempty
-workspace. Releasing caller inputs or returning nonempty live workspace requires
-caller ownership-transfer semantics and receives an explicit diagnostic here.
+The admitted entry has only quantum input/output ports. Its default requires
+balanced nonempty workspace. Explicit allocated-output transfer is available
+through the policy below. Releasing caller inputs requires separately declared
+pool ownership and receives an explicit diagnostic.
 Internal boolean and scalar calls are supported. General classical boundary
 ports, symbolic widths and physical control-flow blocks remain outside this
 profile. Conditional measurement/reset follow the existing CircuitIR rejection
@@ -120,3 +121,56 @@ Clean-zero and borrowed-joint-state restoration are component obligations.
 Binding does not numerically prove arbitrary emitters. The focused consumers
 supply that evidence for their actual paths. Whole G2 and full source-file
 acceptance remain open.
+
+
+## Allocated output ownership transfer
+
+Proposal 103 prerequisite 1.7 adds keyword-only
+`allow_workspace_outputs: bool = False`. A built-in true value transfers live
+allocated wires through the existing ordered `outputs` result. Allocation events
+retain clean/borrowed origin. The caller owns the subsequent lifetime, cleanup
+and eventual restoration of borrowed state. Returned work remains unavailable to
+later allocations within the same binding. Partial output words may combine
+input wires with allocated wires, or retain part of a lease after other bits
+are freed and reused. Zero-width right ports retain their Core logical identity
+and bind to an empty tuple.
+
+Run `pytest tests/unit/test_register_output_transfer_contract.py
+tests/unit/test_register_output_transfer.py tests/unit/test_register_physical_binding.py`.
+Eight source contract witnesses and 21 native transfer tests join the existing
+33 binding tests. The 62 focused tests pass in 6.23 seconds, with both physical
+binding modules retaining 100% statement/branch coverage. Source witnesses
+confirm allocation without a free event and exact reversed right-port order
+for clean/borrowed widths 0, 1 and 3. Default source managers reject unmanaged
+caller-input release for both Free flags.
+
+Real H/CX/T component bodies return allocated work through actual Program calls.
+An unchanged `fq.Circuit.append` consumer compares complete complex states
+against original source Cirq conversion, including a joint external spectator
+and reversed right-port wires. The path emits one H, one CX and one T. Its source
+model independently reports two Cliffords, one T and zero measurements, with
+three modeled qubits. The four-wire numerical test includes one spectator.
+Borrowed outputs preserve the source's transformed joint state. Final borrowed
+restoration belongs to the enclosing caller lifetime.
+
+A measured Add returns both private work bits and verifies all four exhaustive
+unnormalized branches against original source primitives. Both returned bits
+are zero in every branch. Emitted and modeled resources are the Add row above.
+Nested calls retain live output leases until their outer return. Insufficient
+remaining pool capacity is diagnosed, and a later allocation uses a separate
+wire. Partial output transfer frees/reuses only the released bit. Tests also
+retain default balanced-profile rejection and reject non-boolean policy values.
+
+Contract commit `44c6300b` precedes Compiler implementation `021c0548`. External
+logs use `g2-output-transfer-{contract,native,regression,checks,examples,default}.log`
+and `g2-output-transfer-source.txt`. Caller-input pool adoption and general
+classical boundary ports remain separate acceptance work.
+
+
+The output-transfer batch passes 4890 concentrated tests in 43.59 seconds,
+without skips or warnings. All 15 reference blobs match the inventory, including
+H, CX and T source definitions. Strict checking of 17 production files,
+Black/Ruff, both ownership scopes, architecture, Program/public API gates and
+four existing examples pass. The default smoke/unit tier again stops at the
+same four previously reproduced failures, with 5516 passes, 166 skips and
+30 warnings in 443.03 seconds. Its log is `g2-output-transfer-default.log`.

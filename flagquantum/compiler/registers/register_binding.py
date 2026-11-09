@@ -1,4 +1,4 @@
-"""Bind finite register Programs and balanced work lifetimes to physical IR."""
+"""Bind finite register Programs, work lifetimes and outputs to physical IR."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def bind_register_program(
     entry: str = "main",
     allow_workspace_outputs: bool = False,
 ) -> BoundRegisterProgram:
-    """Bind quantum ports and balanced work to caller-supplied physical wires.
+    """Bind quantum ports and work lifetimes to caller-supplied physical wires.
 
     Local connection order is scheduled before finite call expansion. Quantum
     entry ports and disjoint concrete input/clean/borrowed wires are required.
