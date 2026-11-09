@@ -98,7 +98,7 @@ for the approved migration.
    transport:
 
    ```bash
-   python examples/realtime/device_call.py
+   python -m examples.realtime.device_call
    ```
 
 ## How to exercise the protocol without hardware
@@ -108,15 +108,15 @@ through a `DeviceCallSession`, frames the response, and hands that back. A test
 that needs a channel registers `loopback_channel(name, session)` with a
 `DeviceCallChannelDriver` and opens it by name, exactly as a program would open a
 hardware channel. `examples/realtime/device_call.py` is the ten-minute
-golden path: it builds a majority-vote QEC handler, dispatches one decoding round,
-and prints the request hex next to the response status.
+golden path: it dispatches a majority-vote demonstration handler and prints the
+request hex next to the response status. It does not use the QEC decoder package.
 
 ## Evidence status
 
 The [realtime and QEC integration reservation](../../docs/architecture/REALTIME_QEC_INTEGRATION_BOUNDARY.md)
 maps a proposed decoder adapter onto these existing interfaces and records the
-semantic gates before implementation. It adds no QEC dependency, execution mode,
-hardware claim; ARCH-014 owns placement and retains ARCH-013's protocol boundary.
+semantic gates before implementation. It adds no QEC dependency, execution mode
+or hardware claim; ARCH-014 owns placement and retains ARCH-013's protocol boundary.
 
 No hardware was contacted and no hardware evidence exists. A realtime link has
 never been established by this package, and no latency, throughput, or scalability
