@@ -15,7 +15,8 @@ from dataclasses import dataclass, fields
 from math import prod
 from typing import cast
 
-from ....core.ir.program.registers import Register, RegisterType
+from ....core.ir.program.register_types import unsigned_register_type
+from ....core.ir.program.registers import Register
 from ....core.ir.program.signatures import Signature
 from ..._component_trace.arithmetic_call import ArithmeticCall
 from ..._component_trace.gate_budget import GateCategories
@@ -66,8 +67,8 @@ def source_add_resource_formula(
         )
         signature = Signature(
             (
-                Register("a", RegisterType("uint", left_width)),
-                Register("b", RegisterType("uint", right_width)),
+                Register("a", unsigned_register_type(left_width)),
+                Register("b", unsigned_register_type(right_width)),
             )
         )
         peak = cast(SymbolicInt, smax(3, signature.n_qubits()))

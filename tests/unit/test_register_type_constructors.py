@@ -434,3 +434,19 @@ def test_integer_factories_without_optional_sympy(kind, monkeypatch):
     monkeypatch.setattr(builtins, "__import__", guarded_import)
     dtype = native_factory(kind, 3)
     assert dtype.num_bits == (1 if kind == "classical_bit" else 3)
+
+
+def test_add_symbolic_consumer_replaces_unsigned_factory(construct_type, monkeypatch):
+    from flagquantum.compiler.registers.resources import symbolic_resource_model
+
+    expected = symbolic_resource_model.source_add_resource_formula(N, N + 1)
+    events = []
+
+    def unsigned(width):
+        events.append(width)
+        return construct_type("uint", width)
+
+    monkeypatch.setattr(symbolic_resource_model, "unsigned_register_type", unsigned)
+    actual = symbolic_resource_model.source_add_resource_formula(N, N + 1)
+    assert actual == expected
+    assert events == [N, N + 1]

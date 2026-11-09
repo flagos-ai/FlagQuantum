@@ -76,6 +76,10 @@ magnitude encoding and decoding reuse `integer_encoding.py`. The array methods
 reuse the callable boundary above. Inputs and scalar values are not silently
 normalized to Python integers before source arithmetic.
 
+The source constructor-width guard is shared with native register metadata in
+`core/ir/program/register_types.py`. Numerical codecs and signed truncation use
+that same function at their existing validation sites.
+
 The port preserves these upstream distinctions:
 
 | Method | Source behavior retained |

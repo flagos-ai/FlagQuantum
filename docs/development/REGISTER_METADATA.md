@@ -250,3 +250,35 @@ bring the constructor suite to 642 tests. With Register and Signature regression
 997 cases pass without warnings or skips. The shared-guard relocation separately
 passes 1,678 cases with 64 existing paired source/native NumPy warnings. Its body
 AST is identical to the pre-move implementation.
+
+The symbolic Add resource consumer now also uses the shared unsigned factory.
+Both source-backed and native replacement implementations produce the same
+formula and signature widths. The final constructor suite contains 644 tests.
+The concentrated batch passes 4,298 tests across 51 files in 59.92 seconds,
+with 67 existing numerical warnings and no skips. Coverage includes source gate
+streams, complete complex amplitudes, measured branches, zero workspace and
+separately reported resource models. Nine pinned reference blobs remain unchanged.
+Strict Python 3.12 typing, Ruff, Black, team scope, architecture, public API
+baseline and internal multi-level IR checks pass.
+
+Four existing examples execute. Signed conversion emits four T/Tdag primitives,
+one measurement and one work qubit. Its abstract source model reports one
+Toffoli, zero explicit measurements and four T equivalents. The source root
+conversion has no primitive decomposition, so whole-root gate parity remains
+unavailable. Signed truncation emits three CX with no T or measurements and
+clears two redundant bits. Its source model counts one logical Clifford
+component. Duplication emits four T, one measurement, five reserved work qubits
+and eight declared wires. Its source model reports four T equivalents, one
+measurement and seven peak qubits. QROM emits eight T/Tdag with one work qubit,
+while its model reports two AND, ten Clifford, two measurements and five peak
+qubits. Add emits eight T/Tdag, while its model reports two AND, eleven Clifford,
+two measurements and eight peak qubits. These counting bases remain separate.
+
+Final logs are `g2-integer-type-regression.log`,
+`g2-integer-type-add-consumer.log`, `g2-integer-type-examples.log` and
+`g2-integer-type-default.log` in the reference environment. The default tier
+reports 13,445 passed, 51 skipped, 398 warnings and the same independently
+reproduced rotation-layer baseline failure in 74.01 seconds. The Python 3.10
+fallback-import unused-ignore diagnostic remains open. Other dtype constructors,
+port compatibility, typed binding and component calls/returns/traversal remain
+pending G2 work.
