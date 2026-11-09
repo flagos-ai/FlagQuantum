@@ -34,6 +34,7 @@ Native FlagQuantum programs currently available:
 
 - [overview](arithmetic/bitwise_and/overview/README.md)
 - [bitwise_invert_example](arithmetic/bitwise_invert/bitwise_invert_example/README.md)
+- [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
 - [qft](qft/README.md)
 - [prepare_bell_state](state_preparation/prepare_bell_state/README.md)

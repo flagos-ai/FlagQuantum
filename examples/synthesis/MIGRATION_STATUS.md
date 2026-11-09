@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **15/213**.
+Validated local Notebook workflows: **16/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -335,7 +335,7 @@ Validated local Notebook workflows: **15/213**.
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | Pending | pending |
 | `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | Pending | pending |

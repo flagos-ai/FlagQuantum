@@ -4,7 +4,7 @@ User examples contain native Python programs and independent Circuit comparisons
 Original source files and importer launchers are test/development evidence, not examples.
 
 Validated quantum-program counterparts: **45/216**.
-Validated local Notebook workflows: **15/213**.
+Validated local Notebook workflows: **16/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -75,6 +75,7 @@ Validated local Notebook workflows:
 
 - [overview](functions/arithmetic/bitwise_and/overview/README.md)
 - [bitwise_invert_example](functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md)
+- [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)
 - [qft](functions/qft/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)

@@ -10,8 +10,9 @@ python -m examples.synthesis.functions.qft.comparisons.circuit
 The Circuit comparison checks complete complex amplitudes, absolute phase,
 declared register order and hidden workspace. It does not call a source importer.
 
-The validated scope is the quantum program. A related notebook may also include
-training, data preparation or external execution that requires separate migration.
+The quantum program and complete local Notebook workflow are validated.
+The workflow scope and replacements for external services
+are documented in [the workflow guide](WORKFLOW.md).
 
 Reference identity: `functions/qmod_library_reference/classiq_open_library/qft/qft.qmod` at `2bfd835e73b6882fcc515a725098b04766c238e7`.
 

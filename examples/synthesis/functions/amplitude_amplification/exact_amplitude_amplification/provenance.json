@@ -1,6 +1,25 @@
 {
   "upstream_path": "functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification.qmod",
-  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
   "original_sha256": "d9240f1f7eb8ec93a9cd3a2aa26c561961ac8063b6d118c2a220a5f71f373475",
-  "scope": "Quantum program only; notebook workflow is separate."
+  "scope": "Complete local computational Notebook workflow: exact amplification, executed seeded sampling with all-success assertion, standard and tuned Grover trajectories and saved trajectory plot.",
+  "git_blob_sha1": "376cfe185f5019e40987c41e3d09ad4eb78f2e84",
+  "notebook_path": "functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification.ipynb",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "5dc8854ce7494521390972356f12cdac4051186b0f4bba8113ec49e5dbccbdfb"
+    },
+    {
+      "index": 3,
+      "sha256": "abb25cfab2d9427ea34dd0aa4c8c4bb16058375d27f49f3751b422f4de8d2965"
+    },
+    {
+      "index": 5,
+      "sha256": "5ca71b65a1b2e919212bbb01dd4cbb80f2e1d245a582f8120838c9a13bf5c67e"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.amplitude_amplification.exact_amplitude_amplification.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_exact_amplification_workflow.py",
+  "native_semantic_adaptations": "Reuse the existing native fixed-p=0.07, three-round R/phase composition with explicit clean auxiliary. Local seeded sampling replaces the cloud call, and a saved Matplotlib figure replaces interactive display. Classical trajectory coordinates equal the source rotation products; no native higher-order exact-amplification API or hardware execution claim."
 }
