@@ -1070,3 +1070,49 @@ connections and native lowered zero-primitive cost. The concentrated suite passe
 word handle identity uses real helper bodies with extra logical rebindings that
 erase to zero physical operations. Numerical graph traversal and automatic work
 ownership remain separate. Evidence is recorded in `REGISTER_METADATA.md`.
+
+## Explicit workspace construction prerequisite 1.5
+
+Program contract 0.8 adds `allocate_register` and `free_register` to the existing
+finite packed-word profile. Append `Operation.workspace_dirty: bool | None` with
+its default excluded from the previous hash tuple. Allocation has zero operands,
+one fresh owned register result and an explicit `register_type`. Free has one
+owned register operand, zero results and no destination type. Both require an
+explicit built-in boolean dirty flag and refuse primitive, condition, physical
+or callee metadata. Only allocation/join may carry a register descriptor, and
+only allocation/free may carry the workspace flag. Existing def-use and linear
+checks enforce consumption even for zero-width words. No physical public schema
+or default identity changes.
+
+The pinned source does not match a Free flag back to an Allocate instance.
+Input words can be freed, allocated words can become outputs, and a returned
+successor can be freed after calls or split/join. Preserve those structural
+semantics. Core proves typed ownership only. A clean release imposes a zero-state
+obligation and a dirty release imposes restoration of the original joint state.
+Neither follows from an accepted graph or from a zero numerical callback.
+
+Compiler `layout/component_workspace.py` supplies real immutable Allocate/Free
+function bodies. The existing builder gains `allocate(n=1, dtype=None,
+dirty=False)` and `free(binding, dirty=False)` using its ordinary call traversal.
+An explicit dtype overrides n as in the source. Scalar zero-width allocations
+still reserve a source call and define one owned handle. Reusing a consumed free
+input reserves another failed call and retains the source consumption prefix.
+The initial executable descriptor and built-in boolean restrictions are explicit
+admission checks beyond source construction metadata.
+
+This construction slice must refuse physical gate lowering with an actionable
+workspace scheduling diagnostic. It must not erase lifetimes, reset clean bits,
+initialize borrowed bits, introduce projection or infer a free work register
+from unused gate operands. The next lowering slice must bind lifetimes through
+the existing RegisterWorkspace pool, preserve call-local SSA, expose clean and
+dirty requirements, and verify full complex states and measurement histories
+before claiming automatic workspace execution. Gate-only consumers continue to
+use their existing append path. Default physical JSON keys stay fixed.
+
+Source witnesses cover builder identity, source side/width/dirty signatures,
+zero-width ownership, reuse/failure timing, classical zero/nonzero behavior,
+tensor projections and source resource categories. Native replacement compares
+construction with real function bodies and verifies independent Core rejection.
+Numerical classical callbacks reuse existing Simulation allocation/free kernels.
+Source tensor dirty allocation uses zero while Cirq borrows unknown state. Keep
+those source entry points separately identified throughout acceptance.
