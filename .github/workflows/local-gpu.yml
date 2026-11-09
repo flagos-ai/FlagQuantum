@@ -293,6 +293,8 @@ jobs:
       group: flagquantum-accelerator
       queue: max
     timeout-minutes: 30
+    env:
+      XLA_PYTHON_CLIENT_PREALLOCATE: "false"
     steps:
       - uses: actions/download-artifact@v8.0.2
         with:
