@@ -587,3 +587,43 @@ the next dependency after this predicate.
 
 Before implementation, all 35,643 source-backed decisions pass across 109
 supported descriptor declarations and the three severity settings.
+
+## Indexed binding prerequisite 0.11
+
+Core owns `RegisterBinding(value, register, index=())` in
+`program/register_bindings.py`. It associates an existing `ValueRef` identity
+with one logical register element. The index converter and bounds checks follow
+the pinned Soquet constructor. A Python integer becomes a singleton tuple.
+Rank is checked before upper bounds. Negative indices retain the source
+constructor behavior. Concrete shape and symbolic element width remain separate.
+A scalar zero-width element retains an identity. An empty array has no elements.
+This metadata does not assign register semantics to an existing value kind.
+Admission of register-valued operations still requires the Program contract delta.
+
+Compiler owns `process_register_bindings(registers, bindings, context, visit)`
+in `registers/component_bindings.py`, adapting `_process_soquets` without
+introducing a second graph. Core contains no array conversion. Compiler applies
+the source NumPy conversion, name bookkeeping, row-major indexing and nominal
+binding assertion. The callback runs before the shared LOOSE dtype check, so a
+callback failure precedes a dtype failure and already recorded callback effects
+remain visible. Missing names fail when encountered. Surplus names fail after
+all declared ports. Oversized arrays, scalar-like singleton arrays, zero-element
+arrays and partial failure follow the original indexing behavior. This helper
+does not add an exact-shape check that the source does not perform.
+
+The caller owns quantum single consumption and classical fanout. This traversal
+neither allocates nor consumes resources by itself. The later component builder
+must reuse it for both calls and explicit returns, operating on the existing
+Program records. Split/join, allocation, return completeness and quantum cleanup
+remain separate obligations. This prerequisite adds no opcode, model field,
+serialized schema, public export, numerical execution or physical wire mapping.
+
+The contract fake runs the unchanged source constructor and binding processor.
+The same scenarios then consume the native implementations. Cover indices,
+symbolic shape versus width, scalar/array and empty ports, malformed arrays,
+missing/extra names, dtype compatibility, callback ordering and failure effects.
+Use actual Add and XOR QROM signatures and initial bindings from
+BloqBuilder.from_signature. Check callback traces independently of gate/resource
+regressions. Metadata traversal emits zero physical operations. Existing append
+consumers supply the separate primitive, complex-amplitude, measurement-branch,
+clean-workspace and resource evidence.
