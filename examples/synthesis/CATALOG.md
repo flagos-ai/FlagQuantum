@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **129/216**.
+Validated quantum-program counterparts: **130/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -37,7 +37,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (37 native programs)
+## Applications (38 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -63,6 +63,7 @@ Validated local Notebook workflows:
 - [max_independent_set](applications/optimization/max_independent_set/README.md)
 - [max_induced_k_color_subgraph](applications/optimization/max_induced_k_color_subgraph/README.md)
 - [max_k_vertex_cover](applications/optimization/max_k_vertex_cover/README.md)
+- [min_graph_coloring](applications/optimization/min_graph_coloring/README.md)
 - [minimum_dominating_set](applications/optimization/minimum_dominating_set/README.md)
 - [qaoa_in_qaoa](applications/optimization/qaoa_in_qaoa/README.md)
 - [rectangles_packing_grid](applications/optimization/rectangles_packing/rectangles_packing_grid/README.md)

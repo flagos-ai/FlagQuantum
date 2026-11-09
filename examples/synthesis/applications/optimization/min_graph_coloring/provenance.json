@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/min_graph_coloring/min_graph_coloring.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "eb46aa6be9a0591328d5371e112888c5daa807d405e4e60d52cfe126ce281085",
+  "native_entrypoint": "examples.synthesis.applications.optimization.min_graph_coloring.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_graph_coloring.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Expose three five-vertex color rows as one named colors array with index5*color+vertex. Preserve all six cost/mixer layers, empty-row rewards, squared per-vertex residuals, twice-counted edge sum before squaring and constant -3. Independent classical cost factors map original row order separately. No source importer in user examples."
+}

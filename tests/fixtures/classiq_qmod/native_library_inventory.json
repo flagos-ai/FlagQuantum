@@ -4490,7 +4490,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/applications/optimization/min_graph_coloring/main.py",
+        "scope": "Quantum program only; complete associated Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
