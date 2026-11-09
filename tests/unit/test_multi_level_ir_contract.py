@@ -838,3 +838,38 @@ def test_finite_calls_reject_unreachable_cycles():
         )
     }
     assert "program.call_structure" in codes
+
+
+def test_register_rebindings_preserve_zero_width_ownership():
+    from dataclasses import replace
+
+    from tests.unit.test_program_registers import word_function
+
+    function = word_function(0)
+    assert level_boundary.verify_program_record(ProgramRecord((function,))) == ()
+    block = function.blocks[0]
+    unconsumed = replace(function, blocks=(replace(block, return_values=()),))
+    codes = {
+        d.code
+        for d in level_boundary.verify_program_record(ProgramRecord((unconsumed,)))
+    }
+    assert "value.linear_unconsumed" in codes
+
+
+def test_register_rebindings_reject_declared_width_tampering():
+    from dataclasses import replace
+
+    from flagquantum.core.ir.program.registers import RegisterType
+    from tests.unit.test_program_registers import word_function
+
+    function = word_function(3)
+    block = function.blocks[0]
+    changed_join = replace(block.operations[-1], register_type=RegisterType("uint", 2))
+    changed = replace(
+        function,
+        blocks=(replace(block, operations=(*block.operations[:-1], changed_join)),),
+    )
+    codes = {
+        d.code for d in level_boundary.verify_program_record(ProgramRecord((changed,)))
+    }
+    assert "program.register_type" in codes
