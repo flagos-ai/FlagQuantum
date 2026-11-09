@@ -20,6 +20,7 @@ allowed_top_level_directories = [
     "operators",
     "qec",
     "compute",
+    "realtime",
     "remote",
     "runtime",
     "simulation",
@@ -37,6 +38,10 @@ kernel_forbidden = ["runtime", "compute", "remote", "deployment", "simulation"]
 executor_policy_forbidden = ["audit", "release_policy"]
 default_module_line_ceiling = 1250
 root_init_line_ceiling = 140
+
+[realtime_boundaries]
+approval = "docs/architecture/decisions/ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md"
+forbidden_consumers = ["core", "compiler", "runtime", "simulation", "kernels", "qec", "services"]
 
 [accelerator_boundaries]
 torch_fl_import_allowed = [
