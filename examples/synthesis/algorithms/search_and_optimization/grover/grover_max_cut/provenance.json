@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/grover/grover_max_cut.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "0138bb2f8a6d85c54dd3d7953c818cc856b0c125dafd3201b438eb5d25529e53",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.grover.grover_max_cut.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_grover_models.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Specialize the original fixed MaxCut phase oracle and uniform preparation as named native helpers. Preserve all six edges and original inclusive cut_size<=4 condition. The diffuser includes both the zero-state phase and constant pi phase, retaining2|s><s|-I rather than its negative. All r iterations and complete named state retained. Independent Circuit uses classical marking and dense oracle/reflection matrices. No generic Grover callback API or source importer added; default qubit/workspace tradeoffs measured separately."
+}

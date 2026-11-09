@@ -202,9 +202,9 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py) | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_max_cut/main.py) | pending |
 | `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | Pending | pending |
-| `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | Pending | pending |
+| `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | [Native program](algorithms/search_and_optimization/grover/three_sat_grover/main.py) | pending |
 | `algorithms/search_and_optimization/grover/grover` | notebook_workflow | Pending | pending |
-| `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | Pending | pending |
+| `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/grover/grover_max_cut/main.py) | pending |
 | `algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa` | notebook_workflow | Pending | pending |
 | `algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation` | notebook_workflow | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/banded_be` | python_unclassified | Pending | pending |
