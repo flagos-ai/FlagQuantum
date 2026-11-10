@@ -165,3 +165,12 @@ peak8. Raw logs and resources are under
 from twelve comparisons against unchanged source Add decompositions, not
 suppressed new native warnings. Default-suite results and publication status
 are recorded separately.
+
+GRAPH67 default smoke/unit evidence: 21,507 passed, 300 skipped, seven failures
+in 117.59 s. Every failure ID matches the independent seven-failure baseline;
+none is new. Maxfail stopped the run, so the suite is not certified as fully
+passing. Publication remains blocked: HTTPS push timed out and the official
+SSH-over-443 endpoint rejected available public-key authentication. No host-key
+verification was disabled. GRAPH65 through GRAPH67 remain local; the verified
+remote PR head is `1719c3a2`. Resume with a normal push after checking the remote
+when Git connectivity/authentication is restored.
