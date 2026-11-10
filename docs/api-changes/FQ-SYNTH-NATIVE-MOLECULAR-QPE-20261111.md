@@ -1,7 +1,16 @@
 # Native molecule QPE with exact power-specific Strang schedules
 
-Status: semantic contract; native/frozen-source full-state probe passed,
-independent Circuit acceptance pending. Native coverage starts at 203/216.
+Status: accepted locally. 22 new molecular QPE tests and 23 time-marching
+regressions pass, with 29 catalog/API tests and strict typing of five files.
+Final fresh 216-original hashes, outcomes and resources exactly match prior;
+approved six pass and all 29 production pins are unchanged. Native coverage
+is 204/216; Notebook workflows remain 24/213.
+
+Native default: 13 physical bits, zero work bits, 17,957 operations and depth
+16,199. Original: 13 bits, zero work bits, 16,931 operations and depth 15,488.
+Default complete amplitude errors against independent ungrouped Circuit are
+below 2e-14. Changed signed input/scale and coherent power/inverse trials pass;
+the latter explicitly verify their one preparation scratch bit returns to zero.
 
 Retain the complete frozen LiH model: all 49 ordered Pauli terms including the
 identity coefficient, six zero-initialized state bits, seven phase bits and
