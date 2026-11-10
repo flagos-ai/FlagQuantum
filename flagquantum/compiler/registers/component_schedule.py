@@ -24,17 +24,22 @@ from .._component_trace.width_schedule import (
 
 
 def local_operation_order(
-    function: FunctionRecord, functions: Mapping[str, FunctionRecord]
+    function: FunctionRecord,
+    functions: Mapping[str, FunctionRecord],
+    *,
+    count_classical_bits: bool = False,
 ) -> tuple[int, ...]:
     """Schedule a verified finite function using connection-created node order.
 
     Arguments and returns act as dangling nodes. Edges introduce their source
     before their target, following operand traversal and then returned ports.
+    Named graph traversal counts owned classical bits as source graph edges.
+    Physical scheduling keeps their quantum width zero by default.
     Isolated operations use declaration order because source frozenset ties
     have no portable order. Call bodies retain their own separate schedule.
     """
     block = function.blocks[0]
-    widths = _argument_widths(function)
+    widths = _argument_widths(function, count_classical_bits)
     producers = dict.fromkeys(block.arguments, -1)
     nodes: dict[int, int] = {}
     edges: list[WidthConnection] = []
@@ -54,7 +59,7 @@ def local_operation_order(
         for clause in operation.condition_clauses:
             for condition in clause:
                 connect(condition.value, position)
-        widths.update(_result_widths(operation, functions))
+        widths.update(_result_widths(operation, functions, count_classical_bits))
         producers.update((value, position) for value in operation.results)
     for value in block.return_values or ():
         connect(value, len(block.operations))
@@ -80,7 +85,9 @@ def local_operation_order(
     )
 
 
-def _argument_widths(function: FunctionRecord) -> dict[ValueRef, int]:
+def _argument_widths(
+    function: FunctionRecord, count_classical_bits: bool
+) -> dict[ValueRef, int]:
     values = function.blocks[0].arguments
     if function.registers is None:
         return {value: int(value.kind == "qubit") for value in values}
@@ -88,7 +95,11 @@ def _argument_widths(function: FunctionRecord) -> dict[ValueRef, int]:
         zip(
             values,
             (
-                0 if dtype == classical_bit_type() else executable_register_width(dtype)
+                (
+                    int(count_classical_bits)
+                    if dtype == classical_bit_type()
+                    else executable_register_width(dtype)
+                )
                 for dtype in register_port_types(function, RegisterSide.LEFT)
             ),
             strict=True,
@@ -99,6 +110,7 @@ def _argument_widths(function: FunctionRecord) -> dict[ValueRef, int]:
 def _result_widths(
     operation: Operation,
     functions: Mapping[str, FunctionRecord],
+    count_classical_bits: bool,
 ) -> dict[ValueRef, int]:
     if operation.opcode in {"join_register", "allocate_register"}:
         assert operation.register_type is not None
@@ -114,7 +126,7 @@ def _result_widths(
                     operation.results,
                     (
                         (
-                            0
+                            int(count_classical_bits)
                             if dtype == classical_bit_type()
                             else executable_register_width(dtype)
                         )

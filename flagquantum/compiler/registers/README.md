@@ -276,3 +276,15 @@ Quantum zero-width words retain their distinct dtype and own no classical slot.
 The shortest test path is `tests/unit/test_register_classical_inputs.py`, with
 source row-major assignment, nested identity/Parity/Discard, measurement slot
 isolation and actual `circuit.append(op)` feedback.
+
+`component_graph.iter_component_calls` visits the existing typed entry operations
+in pinned graph order and exposes named predecessor/output binding collections.
+`copy_component_program` replays those calls with fresh SSA bindings through the
+same builder. Callee definitions remain shared immutable records. Both validate
+the entire module first. Logical traversal counts CBit edges at their source
+one-bit width, while physical scheduling retains zero quantum width for CBit.
+Run `tests/unit/test_component_graph.py` for row-major arrays, zero-width words,
+directional lifetimes, original erasure graphs and copied graphs. The Add and
+field-erasure suites exercise copied entries through the unchanged append path
+with complete small measurement histories and separate primitive/model counts.
+Selective single-level and bounded recursive expansion retain separate work.
