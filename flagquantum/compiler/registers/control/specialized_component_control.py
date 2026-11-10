@@ -12,6 +12,7 @@ import numpy as np
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
+from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import Register, RegisterSide
 from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
@@ -59,7 +60,9 @@ def multi_controlled_component_program(
 ) -> ProgramRecord:
     """Pack at least two activations around a stored positive-control body.
 
-    The original leading control is a scalar THRU QBit, preserved by the child.
+    The named original control is a scalar THRU one-qubit port, preserved by
+    the child. It may appear anywhere in the child signature. Admitted one-qubit
+    dtypes use the existing call compatibility rules.
     New control-array order is the activation order. Predicate work starts clean,
     stays live through the child and is measurement-erased before release.
     Child private work retains its existing lifetime. Invalid entries, control
@@ -67,9 +70,17 @@ def multi_controlled_component_program(
     """
     function = _call_entry(record, entry)
     assert function.registers is not None
-    expected = Register(control_name, quantum_bit_type())
-    if not function.registers or function.registers[0] != expected:
-        raise ValueError("specialized control requires a leading scalar THRU QBit")
+    original_control = next(
+        (r for r in function.registers if r.name == control_name), None
+    )
+    if (
+        original_control is None
+        or original_control.shape
+        or original_control.side != RegisterSide.THRU
+        or executable_register_width(original_control.dtype) != 1
+    ):
+        raise ValueError("specialized control requires a named scalar THRU qubit")
+    data_registers = tuple(r for r in function.registers if r.name != control_name)
     if len(values) < 2 or any(
         type(value) is not int or value not in (0, 1) for value in values
     ):
@@ -86,14 +97,14 @@ def multi_controlled_component_program(
         definitions.extend(_array_and_program(values, prefix + suffix, erase).functions)
     control = Register(control_name, quantum_bit_type(), (len(values),))
     builder = ComponentProgramBuilder(
-        Signature((control, *function.registers[1:])), definitions, name=entry
+        Signature((control, *data_registers)), definitions, name=entry
     )
     conjunction = builder.call_dict(
         prefix + "and", {"ctrl": builder.inputs[control_name]}
     )
     data = {
         r.name: builder.inputs[r.name]
-        for r in function.registers[1:]
+        for r in data_registers
         if r.side & RegisterSide.LEFT
     }
     data[control_name] = conjunction.pop("target")

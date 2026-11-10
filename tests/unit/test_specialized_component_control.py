@@ -29,7 +29,7 @@ from flagquantum.compiler.registers.register_binding import bind_register_progra
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
 from flagquantum.core.ir.program.register_types import quantum_bit_type
-from flagquantum.core.ir.program.registers import Register, RegisterSide
+from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (
@@ -291,20 +291,24 @@ def test_original_further_control_callback_defect_is_retained(value: int) -> Non
 
 @pytest.mark.parametrize(
     "failure",
-    ("name", "shape", "side", "few", "bad", "boolean", "unknown", "collision"),
+    ("name", "shape", "side", "few", "bad", "boolean", "unknown", "collision", "width"),
 )
 def test_invalid_helper_rejects_before_modifying_original(failure: str) -> None:
     record, _ = positive_fixture("spectator")
     name = "absent" if failure == "name" else "ctrl"
     values: tuple[int, ...] = (0, 1)
     entry = "absent" if failure == "unknown" else "main"
-    if failure in ("shape", "side"):
+    if failure in ("shape", "side", "width"):
         root = record.functions[0]
         registers = list(root.registers or ())
         registers[0] = (
             Register("ctrl", quantum_bit_type(), (1,))
             if failure == "shape"
-            else Register("ctrl", quantum_bit_type(), side=RegisterSide.LEFT)
+            else (
+                Register("ctrl", RegisterType("opaque", 2))
+                if failure == "width"
+                else Register("ctrl", quantum_bit_type(), side=RegisterSide.LEFT)
+            )
         )
         record = replace(
             record,
