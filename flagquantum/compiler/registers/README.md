@@ -252,3 +252,14 @@ External classical initialization and physical workspace retirement retain their
 separate contracts. The shortest test path is
 `tests/unit/test_register_classical_discard.py`, including measurement, parity,
 discard and subsequent conditional feedback through the existing append path.
+
+`component_measurement.measure_x_word_function` composes H and destructive
+MeasureZ using existing register operations. The physical measured wire retains
+its outcome. `component_feedback.classical_cz_word_function` forwards the owned
+CBit control and applies existing conditional CZ through a bool snapshot.
+`finite_field.product_erasure_program` composes these with shared Parity, Discard
+and typed Split/Join. Resolved binary-field descriptors retain nominal polynomial
+identity and MSB-first physical words. The source polynomial loop reverses bits
+locally. Run `tests/unit/test_field_erasure_program.py` for the source-builder
+replacement and complete branch/spectator scenarios. The existing flat erasure
+emitter retains caller-owned physical clearing and reusable parity-slot behavior.
