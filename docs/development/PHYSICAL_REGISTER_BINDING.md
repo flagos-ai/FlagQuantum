@@ -1319,3 +1319,77 @@ default-parallel.log,default-comparison.json}. Implementation commits are
 e1475449 (direct callback) and 1ce4e42a (actual-adder predicate composition).
 Next is directional allocation/consumption and explicit output ownership;
 complete dtype/shape/symbolic and parent-file audits remain open in G2.
+
+### GRAPH49: bookkeeping controls and directional lifetime ownership
+
+The pinned `_BookkeepingBloq.get_ctrl_system` returns the original operation and
+a callback that passes the supplied controls through unchanged. Allocate, Free,
+Split, Join and Partition therefore execute unconditionally for positive,
+negative, array and multi-register control requests. A false control does not
+suppress allocation or authorize freeing a caller's input.
+
+`control/component_bookkeeping.py` implements this protocol over the existing
+ProgramRecord and ComponentProgramBuilder. The factory verifies the module and
+admits only reachable typed allocate/free/split/join operations and calls.
+Computational, measurement and untyped descendants are refused; unrelated valid
+definitions remain shared. It returns the same module and the callback returns
+the identical control tuple. No predicate, instruction, execution graph, Core
+schema or protected API is added. Core owns finite graph validation, and the
+existing builder owns consumed-binding errors.
+
+The direct matrix covers widths 0/1/3, clean/dirty Allocate and Free, Split,
+Join, Partition and inverse Partition. Actual upstream callbacks, named graph
+connections, control identity, immutable input dictionaries, empty control
+sequences, stale reuse and repeated allocation are verified. Every operation
+has zero emitted gates and zero QEC categories. Ordered outputs, clean/borrowed
+pools and explicit input/output ownership remain the existing binder's concern.
+
+The integration body allocates a word between controlled H and two controlled
+CNOTs, applies controlled phase, uncomputes and frees. One control of either
+polarity and all four two-bit patterns retain source primitive operands,
+parameters, dependencies and feedback. Allocate and Free dirty flags are varied
+independently, without changing the allocation's original pool. Full complex
+branches preserve spectator entanglement and return internal work to its required
+state. Clean Free cases start with zero lifetime work; arbitrary borrowed joint
+states are tested when both allocation and release carry the dirty obligation.
+Free supplies no reset or runtime state proof. Scalar exact adjoints reverse
+Allocate/Free flags and restore all four forward/inverse measurement histories.
+
+A second caller invokes the real specialized callbacks, returns an entangled
+allocated output, or uncomputes and consumes it. Explicit workspace-output
+transfer is required only for the retained live output. Both clean and borrowed
+cases keep the expected physical output wire and run eight append trajectories
+per case. A retained output is intentionally live; only the phase gadget's work
+must be zero. The complete computation owns subsequent borrowed-state restoration.
+Source Allocate/Free tensors assume zero even with dirty flags; they are not used
+to claim arbitrary dirty-state semantics. The source physical gate stream and
+independent complex-state expectations establish that boundary here.
+
+| Path | Actual primitive counts | Separate source model |
+|---|---|---|
+| Bookkeeping callback | No gates, no predicate work | Zero QEC categories; source peak includes the original data and caller controls |
+| Scalar private lifetime | 1 CH, 2 CCX, 3 H, 2 T, 2 Tdag, 6 CX, 1 S/phase/measure/CZ/reset; X=0/2 | t=1, toffoli=2, and=1, clifford=5/7, rotation=2, measurement=1; T-equivalent 35, peak 5 |
+| Two-control private lifetime | 1 CH, 2 CCX, 6 H, 4 T, 4 Tdag, 12 CX, 2 S/measure/CZ/reset, 1 phase; X=0/4/8 | t=1, toffoli=2, and=2, clifford=6, rotation=2, measurement=2; T-equivalent 39, peak 7 |
+| Retained output | Scalar counts with one CCX | T-equivalent 31, peak 5 |
+
+Actual typed-call multiplicities and category-weighted source model totals close
+separately. Native test wrappers retain their zero-width allocation/free events;
+these events own no physical wires and are not extra quantum gates or workspace.
+The resource JSON retains all events and flags rather than hiding them.
+
+There are 169 new tests (101 direct and 68 integration scenarios), 6119
+concentrated passes, 684 focused passes and 64 integration-tier passes. Strict
+mypy covers 72 files; Black checks 98 files. Architecture, scope, Program/API
+checks, four existing examples and 48 pinned original blobs pass. The new
+bookkeeping owner has 31 statements and 18 branches at 100% coverage; seven
+control/layout owners are fully covered. The older component_control owner
+remains 98%, with only existing guards 79 and 215 uncovered. Default smoke/unit
+reports 22387 passed, 300 skipped, 1065 warnings and seven failures in 138.73
+seconds, stopped by maxfail. The seven IDs exactly match the independent
+baseline; whole-suite success is not claimed.
+
+Implementation: 8433fd33; controlled lifetime/adjoint evidence: faca4774.
+Logs and resources are retained at ftqc-reference-env/g2-bookkeeping-control-*.
+Next are shaped/multi-register bookkeeping compositions and mixed directional
+ports. The source nonleading callback permutation, further-control concatenate
+failure, renamed-output zip failure and complete parent-file audits stay open.

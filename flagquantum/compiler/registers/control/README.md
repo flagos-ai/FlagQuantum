@@ -74,3 +74,29 @@ register declarations with callback outputs. Renamed directional outputs can
 therefore fail finalization; native rejects incompatible output-name order
 before invoking the callback. This failure is evidence of an upstream boundary,
 not successful execution or a corrected reference.
+
+`bookkeeping_component_control_system` owns the control-pass-through protocol
+for stored lifetime/rebinding bodies. It follows the pinned
+`_BookkeepingBloq.get_ctrl_system`: invoke the same entry once and return the
+original control tuple. Allocation, borrowing, free, split, join and partition
+are unconditional; do not replace them with predicate-controlled allocation.
+The factory verifies the existing ProgramRecord and admits only reachable
+allocate/free/split/join operations and calls. It rejects computational or
+untyped descendants, including measurement; it adds no IR type or gate.
+Unrelated valid definitions may remain shared in the module.
+
+A caller supplies these definitions to its existing ComponentProgramBuilder.
+Scalar hierarchical controls can wrap the structured callback using the same
+ControlAdder interface as other specialized leaves. Free consumes the binding;
+using it again raises the existing builder ownership error. Allocated outputs
+require explicit binder ownership transfer. Unmanaged caller inputs cannot be
+freed merely because a control is present. The original allocation pool retains
+ownership even when Allocate and Free have different dirty flags. Before clean
+Free the register must be zero; borrowed-state restoration is an obligation on
+the complete computation. Free inserts no numerical reset or state check.
+
+Run `tests/unit/test_bookkeeping_component_control.py` and
+`tests/unit/test_controlled_workspace_lifetimes.py` for actual upstream callbacks,
+all small measured branches, exact adjoints, complex joint states, independent
+source costs and `circuit.append(op)` execution. An output deliberately retained
+for its caller can be entangled; only the internally erased work must be zero.
