@@ -3,9 +3,10 @@
 This PR replaces the chemistry producer with a file reader: callers can load
 real restricted FCIDUMP integrals without PySCF, OpenFermion or Cirq, then pass
 the returned MolecularProblem to existing active-space, encoding and measurement
-consumers. It depends on #1109 and is initially reviewed against
-`feat/native-fermion-migration`, keeping its diff independent from that migration.
-Retarget to main after the dependency merges; do not merge this branch first.
+consumers. Dependency #1109 merged into main on November 10, 2026 as
+`7c2a9de9d05a4f7ae3e17739887372bf4fcf0fa6`. This PR now targets main.
+The branch preserves that main tree and only the FCIDUMP increment; previously
+merged migration work is excluded from the PR diff.
 
 ## User workflow
 
@@ -100,6 +101,9 @@ trigger the main-target PR workflow. These remote results are separate from the
 local sandbox failure recorded above. Later commits need their own applicable
 checks; the run IDs above remain evidence for their recorded revision.
 
-PR #1110 is open and ready for maintainer review, with no merge performed. Merge
-#1109 first, then retarget this PR to main and run target-branch checks before
-merging. Neither workflow success nor review preparation is maintainer approval.
+PR #1110 is open and ready for maintainer review, with no merge performed.
+After #1109 was squash-merged, the branch incorporated the exact merged main
+tree and the independently verified FCIDUMP increment. Target-main checks must
+pass on the updated head before merging. Earlier stacked-run results remain
+bound to their recorded revisions. Neither workflow success nor review
+preparation is maintainer approval.
