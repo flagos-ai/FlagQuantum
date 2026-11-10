@@ -10,6 +10,7 @@ from .. import _phase_factors
 from .._hybrid.model import Operation, Value, ValueId
 from .._phase_factors import Cube
 from .._phase_polynomial import MAX_PHASE_INPUT_BITS, Location, Polynomial, expand_phase
+from .._sparse_predicate import sparse_predicate
 from .frontend_python import _error
 from .numeric_expression import WordExpression
 from .register_profile import register_type, register_width
@@ -150,3 +151,52 @@ def emit_factor(owner: _Body, statement: ast.Call, factor: Cube, value: Value) -
         )
     )
     owner.emit("qreg.compute", statement, (value, *owners), callee=graph.name)
+
+
+def capture_sparse_predicate_phase(
+    owner: _Body,
+    predicate: ast.expr,
+    angle: float,
+    statement: ast.Call,
+    quantum_word: Callable[[ast.expr], tuple[Location, ...] | None],
+    number: Callable[[ast.expr], float],
+    operator: Callable[[ast.expr], str],
+    children: Callable[[ast.expr], tuple[ast.expr, ...]],
+    fail: Callable[[ast.expr, str, str], NoReturn],
+) -> None:
+    """Map exact sparse minterms through existing six-literal clean factors."""
+    truth, reads = sparse_predicate(
+        predicate,
+        quantum_word,
+        number,
+        operator_of=operator,
+        operands_of=children,
+        fail=fail,
+    )
+    for value, bit in reads:
+        owner.emit("qreg.control_phase", statement, (value,), indices=(bit,), angle=0.0)
+    if truth == (-1,):
+        owner.emit("qreg.phase", statement, (), angle=angle)
+        return
+    for assignment in truth:
+        factors: list[Value] = []
+        for start in range(0, len(reads), 6):
+            cube = tuple(
+                (location, bool(assignment >> i & 1))
+                for i, location in enumerate(reads)
+                if start <= i < start + 6
+            )
+            value = Value(ValueId(owner.name, owner.counter), register_type(1))
+            owner.counter += 1
+            emit_factor(owner, statement, cube, value)
+            factors.append(value)
+        owner.emit(
+            "qreg.control_phase",
+            statement,
+            tuple(factors),
+            indices=(0,) * len(factors),
+            angle=angle,
+        )
+        for value in reversed(factors):
+            owner.emit("qreg.uncompute", statement, (value,))
+            owner.emit("qreg.release", statement, (value,))

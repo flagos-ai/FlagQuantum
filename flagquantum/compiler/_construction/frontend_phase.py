@@ -11,7 +11,11 @@ from .._hybrid.verifier import HybridVerificationError
 from .._phase_factors import Cube
 from .._phase_polynomial import Location, expand_phase
 from .frontend_numeric import has_numeric_reads
-from .frontend_phase_factors import emit_factor, expand_factored_phase
+from .frontend_phase_factors import (
+    capture_sparse_predicate_phase,
+    emit_factor,
+    expand_factored_phase,
+)
 from .frontend_python import _error
 from .frontend_views import locations
 
@@ -186,6 +190,36 @@ def capture_polynomial_phase(
             fraction_bits=lambda node: numeric_format(node)[1],
         )
     except HybridVerificationError as error:
+        budget_refusal = all(
+            diagnostic.code == "construction.python.budget.phase"
+            for diagnostic in error.diagnostics
+        )
+        if (
+            condition is not None
+            and budget_refusal
+            and not has_numeric_reads(owner, condition)
+        ):
+            constant = owner.phase_number(expression)
+            if constant is not None:
+                angle = coefficient * constant
+                if not math.isfinite(angle) or abs(angle) > 2**53:
+                    fail(
+                        expression,
+                        "program.phase",
+                        "phase angle exceeds finite ±2**53 range",
+                    )
+                capture_sparse_predicate_phase(
+                    owner,
+                    condition,
+                    float(angle),
+                    statement,
+                    quantum_word,
+                    number,
+                    operator,
+                    children,
+                    fail,
+                )
+                return
         if (
             numeric
             or condition is not None
