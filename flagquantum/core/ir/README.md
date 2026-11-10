@@ -38,8 +38,9 @@ control-flow graph.
   CBit identity calls preserve element ownership, including arrays. Quantum
   split/join and workspace operations reject classical handles. Execution type
   checks additionally require matching classical widths, so the source's loose
-  opaque metadata comparison cannot erase a classical resource. Measurement
-  transitions and classical physical binding remain separate admission steps.
+  opaque metadata comparison cannot erase a classical resource. The internal
+  `measure_register` transition consumes an exact owned QBit and defines a CBit
+  under prerequisite 1.10. Compiler owns physical classical-slot binding.
 
 ## What this package must not own
 

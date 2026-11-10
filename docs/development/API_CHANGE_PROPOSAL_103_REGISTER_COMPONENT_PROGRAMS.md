@@ -1427,3 +1427,27 @@ consumed handle. It is not asserted to be zero. Unmeasured clean workspace must
 still be returned zero. Emitted measurement counts and source QEC model costs
 are recorded separately. The source classical-port Cirq export limitation stays
 open. This prerequisite does not accept native execution by itself.
+
+#### Destructive measurement acceptance
+
+Contract `d4e6786a` precedes Core `2ca953bc` and Compiler `35cd0b68`.
+Twenty-four new source, Core and binding cases join 5,001 concentrated passing
+tests in 22.38 seconds without skips or warnings. A 212-test focused run covers
+all statements and branches of physical binding and local scheduling, with 99%
+aggregate coverage including register verification. Twenty source blobs match
+the locked inventory. Strict typing covers 17 production files and the three
+native conformance test files, alongside Black/Ruff, scope, architecture,
+Program/API gates and four existing append/resource examples. Local integration
+passes 29 tests. Both actual dynamic runtime strategies additionally match 64
+normalized complex conditional states each, observing all four histories and
+zero unmeasured work through `circuit.append(op)`.
+
+The default smoke/unit fail-fast run reports 22,286 passes, 300 skips,
+1,065 warnings and seven failures in 117.28 seconds. Its failure identifiers
+exactly match the prior independently reproduced `45fe5f67` baseline failures.
+The default tier remains open. Original classical-port Cirq export, external
+CBit initialization, owned classical parity/feedback and destructive workspace
+retirement still require their own acceptance. No complete source file closes
+on this slice. Evidence is retained under `ftqc-reference-env/` with prefix
+`g2-owned-measurement-`, including regression, coverage, checks, examples,
+integration, runtime, default-parallel and source-integrity records.

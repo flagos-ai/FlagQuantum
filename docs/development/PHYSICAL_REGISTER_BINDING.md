@@ -223,3 +223,34 @@ examples pass. Logs are stored under `g2-input-pool-{regression,checks,examples}
 and `g2-input-pool-source.txt`. The default smoke/unit tier was not rerun in
 this batch. Its preceding run stopped at the four independently reproduced
 QFT/rotation fusion failures described above.
+
+## Measurement-produced owned classical outputs
+
+Proposal 103 prerequisite 1.10 adds destructive `measure_register` for an exact
+owned QBit. Binding emits one existing measurement instruction and records its
+fresh slot in the owned CBit result. Existing nested calls can forward that
+handle. CBit dependencies retain graph edges with zero quantum width.
+
+Quantum output tuples keep one position per returned element. Classical elements
+have empty quantum tuples. When classical results exist, `classical_outputs`
+contains parallel slot tuples with empty tuples for quantum positions. Pure
+quantum results keep `classical_outputs == ()`. External classical inputs require
+an initialization contract and remain rejected. Pool-owned measured inputs and
+allocated work require a retirement contract and remain rejected, including
+borrowed wires and explicit workspace-output transfer.
+
+Run `tests/unit/test_register_owned_measurement.py` and
+`tests/unit/test_program_owned_measurement.py`. The two-measurement array passes
+through two CBit identity calls per element and reverses returned element order.
+All four unnormalized complex branches match the original MeasureZ copy tensor
+with its DiscardInd leg, including spectator phase and unmeasured work at zero.
+A consumed physical qubit retains its projected outcome and has no returned
+quantum handle. Existing nondestructive measurement and bool feedback remain
+separate operations, sharing the fresh-slot allocator without collisions.
+
+| Witness | Emitted primitives | Original source model | Native physical width |
+| --- | --- | --- | --- |
+| Two destructive MeasureZ operations and four CBit identities | 2 measurements, 0 resets, 0 T | 2 measurements, 0 T-equivalent | 4 wires including one spectator and one untouched clean work wire |
+
+This witness compares the original instrument because classical-port Cirq export
+is unsupported upstream. It does not certify a flat original primitive stream.
