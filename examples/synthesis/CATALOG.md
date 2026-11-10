@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **183/216**.
+Validated quantum-program counterparts: **184/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -201,7 +201,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (39 native programs)
+## Tutorials (40 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -215,6 +215,7 @@ Validated local Notebook workflows:
 - [qmci_pi_estimation](tutorials/basics/qmci_pi_estimation/README.md)
 - [qml](tutorials/basics/qml/README.md)
 - [hadamard_test_tutorial](tutorials/basics/quantum_primitives/hadamard_test_tutorial/README.md)
+- [linear_combination_of_unitaries](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/README.md)
 - [qmod_tutorial_part1](tutorials/basics/quantum_programming/qmod_tutorial_part1/README.md)
 - [controlled_rotation](tutorials/basics/quantum_programming/controlled_rotation/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
