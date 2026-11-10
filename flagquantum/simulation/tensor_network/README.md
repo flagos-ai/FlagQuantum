@@ -99,3 +99,11 @@ PyTorch autograd, and allocates no graph labels. See
 for word bindings, directional/empty ports, source correspondence, measurement
 branches and the append workflow. Open-system grouping and automatic component
 flattening remain separate work.
+
+`register_identity.py` supplies one binary identity node per unused direct-through
+bit, using existing signature bindings and caller dtype/device. Pass only the
+ports the graph owner has identified as direct connections. This preserves
+otherwise absent unused-register axes without a dense word identity or an
+external graph representation. See
+[direct-through register identities](../../../docs/development/REGISTER_IDENTITY_TENSORS.md)
+for alias rules, zero-bit behavior, gradients and measured append verification.
