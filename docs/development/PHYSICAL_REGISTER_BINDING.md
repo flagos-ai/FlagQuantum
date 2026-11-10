@@ -583,3 +583,34 @@ metadata can be rewired, but an executable classical or measured adjoint require
 an independently supplied body. Arbitrary abstract source Adjoint wrappers and
 symbolic structures remain separate inventory. Native declared empty-array
 returns retain their metadata even where the pinned builder omits empty keys.
+
+GRAPH36 acceptance at 70970978 adds 41 scenarios. Original Split/Join and
+clean/dirty Allocate/Free graphs, direction-flipped entries, row-major elements,
+empty returns, output permutations and double adjoints match the pinned source.
+The source empty-array identity adjoint raises a missing-output ValueError;
+native preserves declared empty metadata. H/T/T reverses to Tdag/Tdag/H with
+exact complex spectator amplitudes. Actual a2/b3 Add definitions map to their
+existing exact Add-adjoint bodies. One/two calls cover 20 inverse measurement
+histories and 20 forward restoration histories, with full unnormalized complex
+states, spectator entanglement and zero clean workspace through circuit.append.
+
+Per call, measured primitives are 20 CX, 6 H, 4 T, 4 Tdag, 2 S, 2 measurements,
+2 CZ and 2 resets. The independent source QEC model gives 8 T-equivalent and
+2 measurements, with source peak width 8 including the spectator. The graph
+transformation adds zero primitives and workspace. Concentrated regression
+passed 5360 tests in 26.92 seconds. Focused coverage passed 119 in 5.86 seconds,
+with 97% combined statement/branch coverage of component_adjoint. Integration
+passed 29 in 1.30 seconds. Strict typing covered 44 files. Formatting, scope,
+architecture, Program/API checks and four existing examples passed. Thirty-one
+pinned source blobs retain their inventory hashes.
+
+Default smoke/unit stopped after 22264 passes, 300 skips, 1065 warnings and six
+failures in 173.67 seconds. Each failure identifier matches the existing baseline.
+The seventh baseline ledger case was absent from the stopped run. Two final guard
+cases were added after that run began and passed the final concentrated/focused
+runs. The default layer remains open. Logs are stored under
+ftqc-reference-env/g2-component-adjoint-{source.txt,regression.log,coverage.log,
+checks.log,integration.log,examples.log,default-parallel.log,default-comparison.txt}.
+Generic abstract adjoint wrappers, caller-supplied semantic validation, symbolic
+structures and dynamic decomposition remain separate inventory. The next slice
+is hierarchical adjoint decomposition and resource-call record correspondence.
