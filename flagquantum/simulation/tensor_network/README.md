@@ -155,3 +155,9 @@ feeds the existing register binder and never substitutes for an arbitrary
 phaseful quantum supplier. See
 [classical action tensors](../../../docs/development/CLASSICAL_ACTION_TENSOR.md)
 for memory, original codec failures, numerical phase limits and append checks.
+
+`classical_action_tensor_node` attaches an explicit phase-free action and its
+caller-owned codecs to the same leaf boundary consumed by
+`component_tensor_nodes`. It reuses the existing binder, preserves caller
+integer labels and dtype/device, and refuses classical ports before callbacks.
+No automatic action lookup or quantum-phase substitution is performed.

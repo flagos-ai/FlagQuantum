@@ -108,3 +108,60 @@ committed, while PR #1084 still points to `1719c3a2`. This also leaves the prior
 GRAPH65 commits awaiting push. GitHub API remains available; no code publication
 or merge is claimed. Resume by checking the remote SHA before a normal push;
 do not reimplement or force-push these batches.
+
+## Component leaf attachment (GRAPH67)
+
+`classical_action_tensor_node` implements the numerical attachment responsibility
+of source `my_tensors_from_classical_action`: enumerate the explicit action,
+convert to the caller's dtype/device prototype, and attach output/input binary
+axes through the existing binder. It returns the existing `TensorNetworkNode`.
+The graph consumer still receives its original caller-owned leaf callback; no
+FunctionRecord-name dispatcher, registry, graph type or automatic substitution
+is introduced. Callers pass `Signature(function.registers)` and explicitly
+select known phase-free actions. Action enumeration and codec callbacks remain
+independent of node construction and component traversal.
+
+Bindings are checked before enumeration. Classical ports are refused before
+callbacks because the original leaf supplier counts quantum axes but its dense
+table counts all bits. This finite native refusal is explicit; it is not a
+claim of matching unsupported-source failure timing. The graph adapter's
+existing classical-port rejection also remains. Scalar-only nodes use explicit
+scalar data. Caller dtype/device selection is an explicit conversion; the
+NumPy action is not trainable, while contraction with trainable inputs retains
+PyTorch autograd. No physical instruction, reset, workspace allocation or
+resource estimate is emitted by the supplier.
+
+Nineteen new tests cover three nested executable Add component depths and four
+floating/complex dtypes. The native shared `register_add_classical_values`
+callback replaces reference-backed arithmetic within the supplier. Every leaf's
+binary data and integer operands match original `my_tensors_from_classical_action`;
+complete native matrices match the unchanged original quantum decomposition.
+Replacing the supplier by independently supplied original leaf data leaves the
+consumer unchanged. Directional ket/effect/THRU, scalar, pre-callback connection
+and classical-port refusals, and callback errors are explicit tests. Complex
+input phase gradients, all 16 measured Add branch amplitudes and both clean
+work bits are checked before the retained 256 inverse-history and eight append
+trajectory comparisons.
+
+GRAPH67 checks: 1,148 related tests passed in 14.93 s (41 upstream/existing
+warnings), 449 focused coverage cases passed in 17.74 s (39 warnings), and
+64 integration cases passed in 3.25 s. The attachment adds nine statements and
+two branches; the whole owner now has 45 statements and ten branches, all
+covered. Thirteen related owners total 389 statements/166 branches at 99%,
+retaining the two historical GRAPH60 refusals. Strict mypy passed across
+26 related files, plus the two source-subclass files with untyped imports
+followed; Black/Ruff, scope, architecture, Program IR and public API checks
+passed. Eighteen source blobs match the locked inventory; 22 unchanged source
+tests passed in 0.61 s (five existing warnings). The locked native Kickmix
+Simulator and binary-field example were exercised.
+
+The double-Add example has two action-table leaves (16,384 bytes each after
+complex128 conversion) and one direct-through spectator identity node. Supplier
+attachment emits zero physical instructions and allocates zero physical work
+bits. The existing circuit still emits H12/T8/CX40/Tdag8/S4/measurement4/CZ4/reset4;
+its separate source estimate remains AND4/Clifford22/measurement4/T-equivalent16,
+peak8. Raw logs and resources are under
+`ftqc-reference-env/g2-classical-tensor-supplier-*`. The warning increase is
+from twelve comparisons against unchanged source Add decompositions, not
+suppressed new native warnings. Default-suite results and publication status
+are recorded separately.

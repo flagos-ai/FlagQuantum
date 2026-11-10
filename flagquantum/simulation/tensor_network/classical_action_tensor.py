@@ -5,17 +5,20 @@
 
 """Enumerate a classical register action as an explicit phase-free dense tensor."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from itertools import product
 from typing import Any
 
 import numpy as np
+import torch
 from numpy.typing import NDArray
 
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ..classical_action import ClassicalValueCallback
+from .models import TensorNetworkNode
 from .register_tensor import register_tensor_shape
+from .register_tensor_binding import bind_register_tensor, register_tensor_label_groups
 
 
 def classical_action_tensor(
@@ -86,3 +89,42 @@ def classical_action_tensor(
         else ((1 << max(nleft, nright),) if nleft or nright else ())
     )
     return matrix.reshape(shape)
+
+
+def classical_action_tensor_node(
+    signature: Signature,
+    incoming: Mapping[str, tuple[tuple[int, ...], ...]],
+    outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+    action: ClassicalValueCallback[tuple[object, ...]],
+    decode_input: Callable[[Register, NDArray[Any]], object],
+    encode_output: Callable[[Register, NDArray[Any]], NDArray[np.uint8]],
+    like: torch.Tensor,
+    *,
+    operation_name: str,
+) -> TensorNetworkNode:
+    """Attach a phase-free action table to an existing pure-state leaf boundary.
+
+    This is the native equivalent of source my_tensors_from_classical_action:
+    the existing binder owns output-before-input binary axes and integer edges.
+    The caller supplies known phase-free actions and codecs; nothing discovers
+    or substitutes actions from a FunctionRecord name. Data uses like's dtype
+    and device. The NumPy callback itself is not trainable.
+
+    Classical ports are refused before callbacks, since the original tensor
+    supplier indexes quantum bits while its table counts all bits. Invalid
+    connections also fail before enumeration. These are explicit native refusal
+    boundaries. Scalar quantum nodes are supported with explicit scalar data.
+    """
+    if any(register.dtype.classical_bits for register in signature):
+        raise ValueError("pure-state classical tensor suppliers require quantum ports")
+    register_tensor_label_groups(signature, incoming, outgoing)
+    table = classical_action_tensor(
+        signature, action, decode_input, encode_output, operation_name=operation_name
+    )
+    return bind_register_tensor(
+        torch.as_tensor(table, dtype=like.dtype, device=like.device),
+        signature,
+        incoming,
+        outgoing,
+        name=operation_name,
+    )
