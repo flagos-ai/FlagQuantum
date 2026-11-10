@@ -23,7 +23,7 @@ require zero clean work. The seven-bit example retains nine physical bits,
 bits,26898 operations and depth23711. No gate-count improvement is claimed.
 
 The initial native qpe scope is one static unitary call in a zero-argument
-lambda at the unconditional root, with an allocated and unused whole
+lambda at the unconditional root or in root pure unitary regions, with an allocated and unused whole
 one-to-eight-bit all-fractional counter. Arbitrary callbacks, flexible powers,
-nested or inverse QPE and numeric-to-array helper borrowing remain separate.
+nested helper QPE and numeric-to-array helper borrowing remain separate. Root within/adjoint matrix-QPE is covered by the subsequent HHL admission.
 Only the quantum program is accepted; full Notebook workflows remain pending.

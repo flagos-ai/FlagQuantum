@@ -27,6 +27,7 @@ Native FlagQuantum programs currently available:
 - [discrete_quantum_walk_circle](technology_demonstrations/discrete_quantum_walk_circle/README.md)
 - [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](technology_demonstrations/hardware_aware_mcx/README.md)
+- [hhl_example](technology_demonstrations/hhl/hhl_example/README.md)
 - [qaoa_demonstration](technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [algo_design_qce_tutorial_part_i](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
 - [algo_design_qce_tutorial_part_ii](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)
@@ -34,6 +35,7 @@ Native FlagQuantum programs currently available:
 - [combi_workshop_inequality_constriants_po](workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
 - [grover_workshop](workshops/grover_workshop/README.md)
+- [hhl_workshop](workshops/hhl_workshop/README.md)
 - [oracles_workshop](workshops/oracle_workshop/oracles_workshop/README.md)
 
 ## Validated local Notebook workflows

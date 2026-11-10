@@ -239,10 +239,10 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | Pending | pending |
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | Pending | pending |
 | `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/main.py) | pending |
-| `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | Pending | pending |
+| `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/main.py) | pending |
 | `applications/finance/option_pricing/option_pricing` | notebook_workflow | Pending | pending |
 | `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/main.py) | pending |
-| `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | Pending | pending |
+| `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | Pending | pending |
 | `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | Pending | pending |
 | `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | Pending | pending |
@@ -415,7 +415,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/fault_tolerance_engine_end_to_end/fault_tolerance_engine_end_to_end` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hamiltonian_evolution/main.py) | pending |
 | `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hardware_aware_mcx/main.py) | pending |
-| `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hhl/hhl_example/main.py) | pending |
 | `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/main.py) | pending |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/main.py) | pending |
@@ -426,5 +426,5 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/main.py) | pending |
 | `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | Pending | pending |
 | `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | [Native program](tutorials/workshops/grover_workshop/grover_workshop/main.py) | pending |
-| `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | Pending | pending |
+| `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | [Native program](tutorials/workshops/hhl_workshop/main.py) | pending |
 | `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/main.py) | pending |

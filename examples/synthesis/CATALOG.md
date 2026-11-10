@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **166/216**.
+Validated quantum-program counterparts: **170/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -47,7 +47,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (40 native programs)
+## Applications (42 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -60,7 +60,9 @@ Validated local Notebook workflows:
 - [link_monitoring](applications/cybersecurity/link_monitoring/README.md)
 - [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
 - [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
+- [portfolio_optimization_with_hhl](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
 - [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
+- [hhl_portfolio](applications/finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
 - [facility_location](applications/logistics/facility_location/README.md)
 - [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
 - [traveling_salesman_problem](applications/logistics/traveling_salesman_problem/README.md)
@@ -190,7 +192,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (33 native programs)
+## Tutorials (35 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -217,6 +219,7 @@ Validated local Notebook workflows:
 - [discrete_quantum_walk_circle](tutorials/technology_demonstrations/discrete_quantum_walk_circle/README.md)
 - [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](tutorials/technology_demonstrations/hardware_aware_mcx/README.md)
+- [hhl_example](tutorials/technology_demonstrations/hhl/hhl_example/README.md)
 - [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [algo_design_qce_tutorial_part_i](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
 - [algo_design_qce_tutorial_part_ii](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)
@@ -224,6 +227,7 @@ Validated local Notebook workflows:
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
 - [grover_workshop](tutorials/workshops/grover_workshop/README.md)
+- [hhl_workshop](tutorials/workshops/hhl_workshop/README.md)
 - [oracles_workshop](tutorials/workshops/oracle_workshop/oracles_workshop/README.md)
 
 Validated local Notebook workflows:
