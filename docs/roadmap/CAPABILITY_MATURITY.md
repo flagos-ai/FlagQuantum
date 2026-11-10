@@ -659,3 +659,16 @@ resource limits are covered in
 views, array writes, formatted arithmetic and mutable-helper control/inverse
 remain explicit gaps. No additional native corpus coverage is credited merely
 for this primitive.
+
+## Native modular walk updates
+
+Maturity: `development_evidence`. Native bounded static modular increments and
+decrements reuse verified gate/control-X effects on complete raw unsigned words.
+Single-update helper controls reuse bounded predicate scratch and cleanup.
+`tests/integration/test_synthesis_native_modular_increment.py` verifies complete
+basis domains, coherent controls, absolute phases and refusal boundaries.
+`tests/integration/test_synthesis_native_grid_walk.py` compares the unchanged
+two-dimensional walk, native program and independent Circuit at full original
+widths with retained coin environment and zero compiler work. Resource costs are
+recorded separately; no optimality, complete Notebook or QLBM acceptance follows
+from this slice alone.

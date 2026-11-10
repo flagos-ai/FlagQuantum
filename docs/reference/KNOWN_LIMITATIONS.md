@@ -1072,3 +1072,17 @@ existing all-inout, disjoint-writable-argument boundary. Partial or permuted
 views, array targets, signed/fractional formats, fresh assignment and mutable
 helper control/adjoint remain refused. This primitive alone does not establish
 acceptance of any additional original corpus program.
+
+## Native bounded modular updates
+
+Initialized raw unsigned scalar QNum storage supports static integer `+=`/`-=`
+offsets in -256..256 with modular wraparound at its declared width. Plain
+all-inout helpers and coherent calls to a helper containing exactly one update
+use existing checked indexed-X effects. Zero offsets retain initialization
+checks. Conditions and target storage must be disjoint; predicate controls keep
+their eight-input-bit limit. Numeric formats, arrays, partial/permuted words,
+quantum offsets and arbitrary controlled mutable helpers refuse. The native
+two-dimensional walk retains five-bit position words, the signed original coin
+and its retained quantum environment. Full complex-state acceptance does not
+claim resource parity, complete Notebook coverage or acceptance of QLBM's
+unchanged unnormalized input.
