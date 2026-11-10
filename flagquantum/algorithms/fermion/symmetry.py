@@ -7,7 +7,9 @@ from dataclasses import dataclass
 
 import torch
 
-from ...core.algebra.pauli import PauliOperator, PauliTerm, count, pauli
+from ...core.algebra.pauli import PauliOperator, PauliTerm, count
+from ...core.ir import Instruction
+from .clifford import conjugate_pauli
 from .encoding import EncodedOperator
 
 
@@ -74,19 +76,7 @@ class ReducedOperator:
 
 
 def _conjugate_cx(operator: PauliOperator, control: int, target: int) -> PauliOperator:
-    result = PauliOperator()
-    for term in operator.terms:
-        image = pauli(term.coefficient)
-        for qubit, axis in term.factors:
-            x = pauli(factors=((qubit, "x"),))
-            z = pauli(factors=((qubit, "z"),))
-            if qubit == control:
-                x = x * pauli(factors=((target, "x"),))
-            if qubit == target:
-                z = z * pauli(factors=((control, "z"),))
-            image = image * (x if axis == "x" else z if axis == "z" else 1j * x * z)
-        result = result + image
-    return result
+    return conjugate_pauli(operator, Instruction("cx", (control, target)))
 
 
 def reduce_z_parities(
