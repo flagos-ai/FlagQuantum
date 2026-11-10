@@ -413,3 +413,16 @@ Compiler selection and graph transformations, with no execution or new Core type
 Run `tests/unit/test_component_control_selection.py` and
 `tests/unit/test_component_adjoint_control.py` for the source dispatch, callback,
 complex-state, work-zero and existing append path examples.
+
+`layout/component_auto_partition.py` adds a packed typed entry around an existing
+child entry using the existing AutoPartition layout. External words are concrete
+scalar opaque registers. Child array elements use row-major, MSB-first order.
+Partition and inverse-partition calls reuse builder split/join ownership and add
+no primitive gates or work. Unused segments remain live through the child.
+left_only consumes packed inputs and exposes child right ports, with physical
+input ownership transfer required for frees. The original child entry remains
+available for specialized-control unwrapping. Select the packed callback entry
+explicitly when matching the source's wrapped adder and unwrapped return value.
+See tests/unit/test_component_auto_partition.py and
+tests/unit/test_specialized_control_boundaries.py for complete examples and the
+original shaped-control and directional failure boundaries.
