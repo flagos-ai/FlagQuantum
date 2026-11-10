@@ -321,7 +321,7 @@ require built-in booleans or integers zero/one and empty physical input tuples.
 Each gets one existing constant classical XOR write into a fresh immutable slot.
 Later measurements and Parity outputs allocate slots after this input prefix.
 Nested calls and reordered outputs preserve slot ownership. Discard preserves
-previously shared feedback snapshots. No new Core operations are introduced.
+previously shared feedback snapshots. These use the existing Core operations.
 
 Run tests/unit/test_register_classical_inputs.py for source entry assignment,
 all small classical inputs, measurement branches, both feedback polarities,

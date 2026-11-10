@@ -1787,11 +1787,11 @@ Existing nested component calls, owned successors, reordered outputs, Discard
 and independently live bool snapshots consume these slots unchanged. Output
 quantum/classical tuples retain their existing positional representation.
 
-This specializes concrete classical inputs at binding time. It does not add
-runtime-supplied slots, new Core operations, schemas, public exports or execution
-backends. Existing positive physical wire requirements remain. A purely
+This specializes concrete classical inputs at binding time using existing Core
+operations, schemas and execution backends. Runtime-supplied slots require
+separate acceptance. Physical circuits require a positive wire count. A purely
 classical logical graph requires an explicitly supplied existing carrier wire
-through the current input or workspace contract. No implicit wire is allocated.
+through the current input or workspace contract.
 Source CBit/Parity logical quantum width remains zero and the physical carrier
 width is reported separately.
 
@@ -1803,3 +1803,47 @@ quantum tensors and callbacks, including all small classical inputs, complex
 spectators, both feedback polarities, measurement branches, zero work and actual
 append execution. Resource evidence separates initialization assignments from
 logical Parity assignments, quantum primitives and original model queries.
+
+#### External CBit entry acceptance
+
+Contract 022aa9d9 precedes entry layout f8e36c39 and binding a9958c3d. The new
+entry module owns concrete classical initializer validation and physical widths.
+The existing binder emits the constant assignment prefix and reuses its existing
+fresh-slot allocator, owned successor handling and append-compatible IR.
+
+Fifty-two added tests pass. Concentrated regression passes 5,215 tests in
+51.33 seconds without skips or warnings. Focused coverage passes 460 tests in
+17.99 seconds with 100% statement/branch coverage for all eight measured Compiler
+modules, including entry layout and binding. Combined measured Core/Compiler
+coverage is 99%. Twenty-nine integration tests pass in 2.30 seconds. Strict
+Python 3.12 typing passes 36 production/test files. Black/Ruff, both domain scope
+checks, architecture, Program/API checks and four append/resource examples pass.
+All 28 pinned source blobs remain unchanged, including classical_sim.py.
+Evidence uses ftqc-reference-env/g2-classical-entry-.
+
+Original ClassicalSimState initial assignments match native flattened slot order
+for scalar, vector and matrix CBit ports. All 22 nonempty input assignments also
+match original identity final outputs. The empty-array original identity assigns
+no inputs successfully but call_classically raises KeyError(RightDangle) during
+finalization. That precise exception is asserted. Native empty-array identity
+uses zero initialization writes and remains executable with an explicit carrier.
+This source finalization difference is retained separately from entry agreement.
+
+All 0-3-bit external input combinations pass both feedback polarities and every
+small measurement branch with exact complex spectator amplitudes and zero work.
+These tests evaluate original Cast/Parity callbacks and controlled Z/X tensors.
+Two actual runtime strategies check 128 conditional states, including preserved
+initialized outputs, later measurement slots and discarded parity snapshots.
+For two input CBits plus one measurement, emitted resources are two initialization
+classical XOR writes, one logical Parity XOR, one measurement, one conditional Z
+and one conditional X, with zero resets/T and one untouched clean work wire.
+Original MeasureZ reports one measurement and zero T. Original Parity has no
+complete decomposition/QEC model. Binding initialization is a separate native
+physical adaptation whose cost is reported separately from the source model.
+
+The default smoke/unit tier was not rerun. Previously recorded baseline failures
+retain their independent status. Runtime-injected external slots, zero-wire
+physical circuits and the complete Q-0157.03 source replacement inventory remain
+separate work. Concrete specialization accepts built-in zero/one integers and
+booleans. The wider source numerical callback input domain remains Simulation's
+responsibility. G2 remains open.
