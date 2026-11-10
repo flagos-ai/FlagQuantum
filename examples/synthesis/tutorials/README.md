@@ -72,6 +72,7 @@ Native FlagQuantum programs currently available:
 - [predicate](arithmetic/predicate/main.py)
 - [python_powers](arithmetic/python_powers/main.py)
 - [integer_composition](composition/integer_composition/main.py)
+- [numeric_program](composition/numeric_program/main.py)
 - [python_program](composition/python_program/main.py)
 - [static_loop](composition/static_loop/main.py)
 - [controlled_predicate](control/controlled_predicate/main.py)
