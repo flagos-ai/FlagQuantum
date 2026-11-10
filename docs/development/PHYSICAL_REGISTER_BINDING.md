@@ -933,3 +933,65 @@ and negative specialization selection, AdjointWithSpecializedCtrl, internal And
 node-by-node graphs and complete parent-file acceptance remain open. Core
 admission continues to cover unparameterized bit, opaque and uint registers.
 Evidence is retained under ftqc-reference-env/g2-specialized-control-*.
+
+
+## GRAPH43 specialization selection and controlled adjoints
+
+`446798f2` implements single-control specialization selection. Multi-bit and
+multi-register requests delegate unchanged to the existing fallback owner.
+Single-bit requests query their activation, with unavailable negative control
+falling back and missing positive control rejected. Existing control queries
+only the positive specialization and reuses the packed new/old helper. The
+direct adder inserts the control into the original input dictionary and returns
+control/data successors in declaration order. Missing positive specialization
+raises native ValueError, where the source raises AssertionError. Invalid input
+exception types are an explicit admission difference.
+
+`0d025cb1` implements the admitted AdjointWithSpecializedCtrl protocol. A
+frozenset of activations expresses NONE, ZERO, ONE and BOTH. Selected single-bit
+requests use the actual forward control factory. Other requests delegate to the
+inverse fallback owner. Existing exact adjoints reverse both the selected body
+and the graph built by its real returned adder. Data ports precede the temporary
+control in that graph, matching the original builder. Its inverse remains a
+stored local adapter. One caller expansion reproduces source add_from inlining.
+Nested returned-adder calls preserve generated inverse helpers and retarget them
+to the same selected inverse root. Compiler retains ownership of transforms,
+while the existing Program remains the only graph representation.
+
+Acceptance covers 68 new cases, 5785 concentrated cases in 42.56 seconds,
+350 focused cases in 44.09 seconds and 64 integration cases in 4.74 seconds.
+Strict mypy checks 60 files. Formatting, team scope, architecture, Program/API
+checks and four existing append/resource examples pass. Both new modules have
+100% statement/branch coverage. Shared predicate, extension and packed helpers
+retain 100%. Control remains at 98% with two existing uncovered final guards.
+All 41 original source blobs match the pinned inventory.
+
+Direct positive/negative control, missing negative specialization, all four
+old/new polarities, multi-bit dispatch at widths two, three and five, mixed
+QBit/QUInt groups, all four adjoint masks, control-name collisions, adapter-name
+collisions, nested adders and wrong callback arity pass. All two single-control
+measurement histories, all four forward/inverse history pairs and all eight
+mixed three-bit histories preserve full complex amplitudes, entangled spectators
+and zero work. Positive and negative inverse append paths each pass eight
+dynamic trajectories. The mixed fallback's actual native root calls close
+against seven source QEC categories and source QubitCount.
+
+A positive single-control H/ZPow(0.25) emits 1 CH, 3 H, 2 T, 2 Tdag, 6 CX,
+1 S, 1 phase, 1 measurement, 1 CZ and 1 reset. Negative control adds 2 X.
+The inverse has phase parameter -0.25 and places CH after that operation,
+with the same counts. Clean peak is one and total width four. Independent source
+QEC reports t=1, and_bloq=1, clifford=5 for positive or 7 for negative,
+rotation=2, measurement=1, other categories zero, T-equivalent=27 and peak four.
+Four emitted T/Tdag gates and 27 modeled T-equivalents remain separately listed.
+
+AutoPartition input unwrapping, shaped single-bit specialization, directional
+and custom-entry scenarios, complete internal node graphs and complete parent
+file acceptance remain open. Core admission remains unparameterized bit, opaque
+and uint. The original further-single-control callback TypeError remains open.
+Source algorithms remain unchanged. G2 continues in the same integration PR.
+Detailed evidence is retained under ftqc-reference-env/g2-control-dispatch-*.
+
+The final default smoke/unit run reports 22286 passed, 300 skipped,
+1065 warnings and seven failures in 108.44 seconds. Maxfail stopped that run.
+All seven failure IDs exactly match the independently recorded baseline.
+Those baseline failures remain unresolved by this batch.
