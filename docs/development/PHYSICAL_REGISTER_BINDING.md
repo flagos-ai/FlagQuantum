@@ -1183,3 +1183,82 @@ sandbox socket failures. The baseline is not repaired and whole-suite success
 is not claimed. Equal-width nonleading output permutations, left_only control
 wrappers, broader type/shape admission and complete parent-file audits remain
 open. Evidence is retained under ftqc-reference-env/g2-packed-adjoint-*.
+
+## GRAPH47 equal-width defect audit and paired directional controls
+
+`54232a82` diagnoses an additional original specialized-adjoint defect. Equal
+one-qubit control/data ports let a nonleading existing control pass dtype
+checks. The actual returned-adder callback is the intended inverse preceded by
+an input SWAP of old-control/data; the returned root remains the intended inverse.
+Sixteen scenarios cover leading/nonleading order, one/two packed layers and all
+four polarities. Eight nonleading scenarios are defect evidence rather than
+acceptance of the intended operation. Native reproduces the original graph and
+output-binding permutation. Complete original tensor matrices and all four
+measurement histories agree with an independent formula for the faulty path,
+and differ from the intended inverse. Work still clears. Root and callback
+have the same primitive gate counts, QEC model and peak, demonstrating why
+those metrics alone cannot certify semantics. The matrix Frobenius distance
+from the intended inverse is 2.8284271247461903. With both activations one,
+input |001> in added-control/old-control/data order remains |001> under the
+intended inverse but becomes |010> through the callback. No literal SWAP gate
+is needed: returned register bindings encode the permutation. Source files are
+unchanged; the faulty branch is not certified.
+
+`3ece32ae` fills a separate native admission gap. Original left_only wrappers
+can expose a same-named LEFT opaque one-qubit control and RIGHT QBit control.
+The original multi-control helper removes both declarations by name and prepends
+one THRU QBit array. Native now requires exactly one scalar one-qubit input and
+output for that name, accepting either one THRU declaration or a LEFT/RIGHT pair.
+Missing sides, arrays and wider controls remain rejected through existing
+executable type admission. Other port order, new/old activation order, predicate
+compute/erase and child work ownership are preserved. There is no new Core
+admission, execution graph or numerical kernel.
+
+Fourteen directional scenarios include four polarities with expanded/retained
+calls, four append paths with eight trajectories each, and two source failure
+boundaries. Forward LEFT packed data exposes the child's separate RIGHT
+q/spectator ports; the whole adjoint consumes those ports and returns packed
+data. Existing layout functions supply explicit inverse Partition leaves to the
+existing adjoint owner. Source returned-root signatures/connections, actual
+callback graph after one adapter expansion, dictionary mutation, output order,
+primitive parameters, per-wire order and feedback agree. Returned root and
+callback bind to the same CircuitIR. Every inverse history matches an independent
+complex-amplitude formula; all sixteen forward/inverse history pairs restore
+the entangled input. Two clean work wires clear, and caller control/data wires
+are never freed. This validates shared controlled H/phase components, not a
+complete THC lookup.
+
+Nesting a directional wrapper as an AutoPartition child fails the original
+all-declarations-on-left requirement and native admission. Renaming its external
+control without a same-named child output makes the original multi-control
+helper fail later with KeyError. Native rejects the missing output earlier with
+ValueError; exception type/timing equivalence is not claimed. Neither case is
+counted as successful execution. Freeing unknown inputs and RIGHT-only children
+are not newly supported.
+
+All 30 new tests pass in 5.96 seconds; 5906 concentrated in 62.60 seconds,
+471 focused in 93.44 seconds and 64 integration in 3.17 seconds pass without
+skips or warnings. Strict typing checks 67 files; formatting checks 93. Lint,
+scope, architecture, Program/API checks and four existing examples pass. The
+modified helper's 65 statements and 12 branches have 100% coverage, as do the
+adjoint-control, selector, extension, predicate and typed-partition owners.
+The older component_control owner remains 98% with two existing final guards
+uncovered. All 45 original blobs match the pinned inventory and native reference
+runtime/version assertions run before the suites.
+
+Directional inverse counts are 6 H, 4 T, 4 Tdag, 12 CX, 2 S, 1 phase,
+2 measurements, 2 CZ, 2 resets and 1 CH, plus zero/four/eight X according to
+activation polarity. Phase is negative and CH follows it. Two clean work wires
+and six physical wires have no unused slice. Source QEC separately reports
+t=1, and_bloq=2, clifford=6, rotation=2, measurement=2, other categories zero,
+T-equivalent=31 and peak six for all polarities. Eight emitted T/Tdag and literal
+X counts remain separate. Partitioning adds no primitive gate or work.
+
+Default smoke/unit reports 22264 passed, 300 skipped, 1065 warnings and six
+failures in 122.18 seconds, stopped by maxfail. All six IDs are members of the
+independent seven-failure baseline. The ledger-scanner baseline case was not
+observed. There are no newly observed failure IDs; whole-suite success is not
+claimed. Next are left_only direct single-control callbacks and multi-bit
+CtrlSpec fallback. The nonleading source callback defect, further-control
+concatenate defect and complete parent-file audits remain open. Evidence is
+retained under ftqc-reference-env/g2-directional-control-*.
