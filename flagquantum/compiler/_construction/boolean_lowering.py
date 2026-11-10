@@ -29,6 +29,51 @@ _MAX_OPERATIONS = 64
 _MAX_PRODUCTS = 20_000
 
 
+def _disjoint_cubes(
+    assignments: Sequence[int], width: int
+) -> tuple[tuple[int, int], ...]:
+    """Merge exact adjacent cubes, retaining an independently checked partition."""
+    if not 0 <= width <= 8:
+        raise BooleanCandidateError("budget: predicate cube input width")
+    truth = set(assignments)
+    if any(not 0 <= word < 1 << width for word in truth):
+        raise BooleanCandidateError("mapping: predicate cube assignment")
+    cubes = tuple(((1 << width) - 1, word) for word in sorted(truth))
+    while cubes:
+        pending = set(cubes)
+        following: list[tuple[int, int]] = []
+        merged = False
+        for mask, value in cubes:
+            if (mask, value) not in pending:
+                continue
+            pending.remove((mask, value))
+            for bit in range(width):
+                other = mask, value ^ (1 << bit)
+                if mask >> bit & 1 and other in pending:
+                    pending.remove(other)
+                    following.append((mask ^ (1 << bit), value & ~(1 << bit)))
+                    merged = True
+                    break
+            else:
+                following.append((mask, value))
+        cubes = tuple(sorted(following))
+        if not merged:
+            break
+    if len(cubes) > 32:
+        raise BooleanCandidateError("budget: predicate cube count")
+    covered: set[int] = set()
+    for mask, value in cubes:
+        matches = {word for word in range(1 << width) if word & mask == value}
+        if covered.intersection(matches) or not matches.issubset(truth):
+            raise BooleanCandidateError(
+                "mapping: predicate cubes are not an exact partition"
+            )
+        covered.update(matches)
+    if covered != truth:
+        raise BooleanCandidateError("mapping: predicate cubes omit assignments")
+    return cubes
+
+
 class BooleanCandidateError(ValueError):
     """The optional Boolean family cannot supply a candidate."""
 
@@ -161,6 +206,11 @@ def lower_boolean_value(
     if len(original.operations) > _MAX_OPERATIONS:
         raise BooleanCandidateError("budget: Boolean source operations")
     supported = {"arith.constant", "qint.add", "qint.multiply"}
+    predicate_profile = len(output) == 1 and any(
+        op.name in {"qint.equal", "qint.less"} for op in original.operations[:-1]
+    )
+    if predicate_profile:
+        supported.update({"qint.equal", "qint.less", "qint.bitwise"})
     if any(op.name == "qint.bitwise" for op in original.operations[:-1]):
         supported.update({"qint.bitwise", "qint.equal"})
     if any(op.name == "qint.select" for op in original.operations[:-1]):
@@ -220,7 +270,7 @@ def lower_boolean_value(
     for terms in bits:
         for mask in terms:
             support |= mask
-    if support.bit_count() > _MAX_INPUT_BITS:
+    if support.bit_count() > (8 if predicate_profile else _MAX_INPUT_BITS):
         raise BooleanCandidateError(
             "budget: Boolean input or output width (active inputs)"
         )
@@ -230,6 +280,44 @@ def lower_boolean_value(
         active = sorted(
             {i for mask in terms for i in range(len(wires)) if mask >> i & 1}
         )
+        if predicate_profile and any(mask.bit_count() > 3 for mask in terms):
+            satisfying = []
+            for assignment in range(1 << len(active)):
+                basis = sum(
+                    1 << bit for i, bit in enumerate(active) if assignment >> i & 1
+                )
+                if sum(mask & basis == mask for mask in terms) % 2:
+                    satisfying.append(assignment)
+            for mask, value in _disjoint_cubes(satisfying, len(active)):
+                selected = tuple(i for i in range(len(active)) if mask >> i & 1)
+                controls = tuple(wires[active[i]] for i in selected)
+                required = max(len(controls) - 2, 0)
+                cube_workspace = tuple(workspace[:required])
+                if len(cube_workspace) < required:
+                    raise BooleanCandidateError(
+                        "mapping: cube requires clean workspace"
+                    )
+                flips = tuple(
+                    Instruction("x", (wires[active[i]],))
+                    for i in selected
+                    if not value >> i & 1
+                )
+                core = (
+                    _clean_mcx_instructions(controls, target, cube_workspace)
+                    if controls
+                    else (Instruction("x", (target,)),)
+                )
+                mapped = (*flips, *core, *flips)
+                if len(gates) + len(mapped) > min(max_operations, 256):
+                    raise BooleanCandidateError(
+                        "budget: Boolean mapped operations",
+                        exhausted=max_operations < 256,
+                    )
+                gates.extend(mapped)
+                used_workspace = tuple(
+                    dict.fromkeys((*used_workspace, *cube_workspace))
+                )
+            continue
         # A signed Boolean cube has exactly one satisfying assignment on its
         # support. Recognize it from the bounded ANF, independently of syntax.
         if any(mask.bit_count() > 3 for mask in terms):
