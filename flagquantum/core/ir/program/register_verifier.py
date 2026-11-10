@@ -19,12 +19,36 @@ from .signatures import Signature
 def executable_register_width(dtype: RegisterType) -> int:
     """Return the concrete width admitted for a packed quantum word.
 
-    Metadata constructors have wider support. Execution currently admits only
-    unparameterized bit, opaque and unsigned quantum encodings.
+    Metadata constructors have wider support. Execution admits unparameterized
+    bit, opaque and unsigned quantum encodings and resolved binary fields.
     """
     if not isinstance(dtype, RegisterType):
         raise ValueError("an executable word needs a neutral RegisterType")
     width = dtype.quantum_bits
+    if dtype.encoding == "finite_field":
+        names = tuple(name for name, _ in dtype.parameters)
+        base = ("characteristic", "degree", "order")
+        polynomial = (
+            "polynomial",
+            "polynomial_field_characteristic",
+            "polynomial_field_degree",
+            "polynomial_field_primitive_element",
+            "polynomial_field_modulus",
+        )
+        parameters = dict(dtype.parameters)
+        if (
+            type(width) is int
+            and width > 0
+            and type(dtype.classical_bits) is int
+            and dtype.classical_bits == 0
+            and names in (base, base + polynomial)
+            and all(type(value) is int for _, value in dtype.parameters)
+            and parameters["characteristic"] == 2
+            and parameters["degree"] == width
+            and parameters["order"] == 2**width
+        ):
+            return width
+        raise ValueError(f"unsupported executable register descriptor {dtype!r}")
     if (
         dtype.encoding not in {"bit", "opaque", "uint"}
         or type(width) is not int
