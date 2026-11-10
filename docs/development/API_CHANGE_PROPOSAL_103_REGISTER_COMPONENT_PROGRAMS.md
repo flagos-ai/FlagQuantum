@@ -1525,3 +1525,28 @@ Owned classical discard, the actual GF2MulMBUC owned-component replacement,
 external CBit initialization and destructive workspace retirement remain open.
 Evidence uses prefix `ftqc-reference-env/g2-owned-parity-` with regression,
 coverage, checks, examples, integration, default-parallel and source records.
+
+### Owned classical discard prerequisite 1.12
+
+The internal `discard_classical_register` operation consumes exactly one owned
+CBit and produces no results. Only `classical_bit_type()` is admitted. Existing
+SSA linearity rejects stale owners, duplicate consumption and returning a
+consumed owner. The operation carries no parameters, conditions, literal,
+physical metadata, callee, workspace flag or register descriptor.
+
+Compiler supplies `discard_word_function(name)` with one scalar CBit LEFT `c`,
+following the unchanged Qualtran v0.7.0 `basic_gates/discard.py` Discard signature.
+There is no bit order conversion. Binding removes only the consumed owned
+handle. Previously exposed shareable bool snapshots retain their immutable slot,
+and future assignments use fresh slots. The operation emits zero instructions,
+allocates no slot and releases no physical quantum wire. Quantum-only lowering
+requires physical register binding. External CBit initialization and physical
+workspace retirement retain their separate contracts.
+
+The source classical callback returns an empty mapping for either bit value.
+The source tensor contributes `DiscardInd` on the incoming classical index.
+Acceptance checks this source behavior, complete unnormalized measurement
+branches before tracing out the classical history, spectator phases, clean
+unmeasured work, both feedback polarities and feedback after owned discard.
+Actual primitive counts and available source resource queries are recorded
+separately. The numerical path uses existing `circuit.append(op)` execution.
