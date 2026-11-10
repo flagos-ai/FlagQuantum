@@ -599,7 +599,7 @@ class _Body:
             capture_reset(self, node)
             return
         if function is control:
-            self.scalar_control(node)
+            capture_control(self, node)
         elif function is drop:
             drop_hidden(self, node)
         elif function is allocate:
@@ -1174,9 +1174,6 @@ class _Body:
             self.emit("qreg.release", prepare, (value,))
             del self.ports[name]
             del self.widths[name]
-
-    def scalar_control(self, node: ast.Call) -> None:
-        capture_control(self, node)
 
     def adjoint_scope(self, block: ast.With) -> None:
         capture_adjoint(self, block)
