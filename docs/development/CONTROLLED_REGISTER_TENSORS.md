@@ -103,3 +103,63 @@ hashes, focused coverage, related regression, integration, original tests,
 resource JSON, quality checks and default baseline comparison). G2 remains open;
 the next source audit covers tensor index binding into the existing
 ContractionGraph. No CI wait or automatic integration-PR merge is implied.
+
+## Classical feedback nodes (GRAPH76)
+
+`controlled_register_tensor_node` attaches the existing identity/active-block
+tensor directly to caller-supplied input/output bit labels. It follows unchanged
+`_ControlledBase.my_tensors` used by `ClassicallyControlled`: controls precede
+child registers, outputs precede inputs, and row-major word elements use
+MSB-first binary axes. The supplier supports quantum or classical THRU controls,
+with explicit activation patterns and a caller-supplied phaseful child callback.
+It reuses `controlled_register_tensor` and `bind_register_tensor`; there is no
+classical-action approximation, control registry or function-name dispatcher.
+
+Binding shape and distinct integer labels are checked before the child callback.
+The existing dense helper owns its source callback ordering and failure behavior.
+The NumPy result is converted to the prototype's torch dtype/device. A real
+prototype refuses nonzero imaginary data rather than dropping a relative phase.
+The callback's NumPy data is not differentiable; torch contraction retains
+input-state gradients. Numerical supply allocates no physical control wire,
+classical slot, instruction, measurement or work. Dense inspection still grows
+exponentially. No dephasing of classical axes is inferred.
+
+Twelve original-data scenarios compare both control polarities, X/Z/S children
+and complex64/complex128. Raw data and per-axis bindings match the unchanged
+source `my_tensors` and full tensor contraction exactly. Real prototypes accept
+real data and explicitly reject phase loss. Binding failures precede callbacks;
+child exceptions propagate unchanged.
+
+Eight combined graphs use widths 0/1/2/3 and both control polarities:
+Z measurements produce owned CBits, shared Parity produces the feedback bit,
+and that bit controls Z on one target and X on another. A quantum spectator
+remains untouched. The existing SSA graph wiring selects explicit numerical
+suppliers, with fresh labels for parity carries and the intermediate forwarded
+control. No call-graph traversal is duplicated. The original source has no
+Parity tensor: independent reference supply uses its unchanged classical values
+to build a small dense truth table, and original classical-control tensor data
+for the feedback. This is explicitly a value-derived combined reference,
+not an untouched original full-graph contraction or Parity primitive recipe.
+
+Tests compare the full prepared instrument and density, all measurement branches
+(including zero-probability mismatches), complete complex amplitudes with an
+entangled spectator, and relative-phase gradients. Replacing the native parity
+chain and control suppliers by the value-table/original-tensor suppliers leaves
+the consumer unchanged. Physical binding still uses the existing
+`circuit.append(op)` path; every branch checks the separate clean bit is zero.
+The physical stream has width measurements, one classical XOR and one each
+conditional Z/X. Empty parity still emits the original constant XOR; both control
+polarities are retained. These primitive counts must not be equated with dense
+node counts or a nonexistent source Parity gate decomposition/model.
+
+The affected user workflow remains runnable with:
+
+```bash
+python -m examples.algorithms.binary_field_arithmetic
+python -m pytest tests/unit/test_classical_feedback_tensors.py -q
+```
+
+Automatic numerical supply, arbitrary feedback-call admission, parameterized
+trainable NumPy child tensors, source Parity tensor support and full source-file
+acceptance remain open. This finite `single_device_fast_path` slice does not
+change Core schema, stable exports, the existing physical gate recipe or G3.

@@ -182,3 +182,16 @@ input/environment/result order. Its raw entries match the pinned source exactly;
 H/Z-copy factorization is independent conformance evidence. Environmental basis
 changes do not add a physical gate. See the X-instrument section of the same
 measurement-copy document for branch amplitudes and separate physical/model costs.
+
+`classical_parity.py` factors the original CBit Parity value mapping into binary
+copy/XOR chain nodes. It uses the mixed graph's explicit fresh-label allocator,
+retains forwarded x, and emits no physical instruction. Locked upstream Parity
+has no tensor recipe; see [parity tensors](../../../docs/development/CLASSICAL_PARITY_TENSORS.md)
+for the negative source contract and separate value-derived evidence.
+
+`controlled_register_tensor_node` in `controlled_tensor.py` binds the existing
+identity/active-child tensor for explicit quantum or classical controls. It
+preserves phaseful children and refuses complex-to-real phase loss. See
+[feedback tensors](../../../docs/development/CONTROLLED_REGISTER_TENSORS.md#classical-feedback-nodes-graph76)
+for both control polarities, raw original tensor parity, prepared instruments,
+all small measurement branches and the existing append workflow.

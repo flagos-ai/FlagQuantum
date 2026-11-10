@@ -5,15 +5,18 @@
 
 """Insert a child tensor into the active block of a controlled identity."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 
 import numpy as np
+import torch
 from numpy.typing import NDArray
 
 from ...core.ir.program.signatures import Signature
 from ...core.value_parameters import is_symbolic_value
 from ..value_dimensions import ArrayValue
+from .models import TensorNetworkNode
 from .register_tensor import register_identity_tensor, register_tensor_shape
+from .register_tensor_binding import bind_register_tensor, register_tensor_label_groups
 
 
 def controlled_register_tensor(
@@ -61,3 +64,47 @@ def controlled_register_tensor(
         raise TypeError("scalar controlled identity does not support item assignment")
     data[tuple(indices)] = child
     return data
+
+
+def controlled_register_tensor_node(
+    controls: Signature,
+    child_signature: Signature,
+    patterns: Sequence[ArrayValue],
+    child_tensor: Callable[[], NDArray[np.complex128]],
+    incoming: Mapping[str, tuple[tuple[int, ...], ...]],
+    outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+    like: torch.Tensor,
+) -> TensorNetworkNode:
+    """Attach the existing controlled tensor in source output/input bit order.
+
+    Quantum or classical THRU controls retain their explicit activation patterns.
+    The caller supplies the phaseful child; no classical-action approximation or
+    function-name dispatch occurs. Reuse controlled_register_tensor's source
+    callback order, active-block semantics and refusal boundaries. Bindings and
+    distinct external integer labels are checked before invoking the child.
+
+    Dtype/device follow like. Real prototypes reject nonzero imaginary data
+    instead of dropping phase; NumPy child callbacks themselves are not trainable.
+    Subsequent torch contractions retain input-state gradients. Dense storage
+    grows exponentially as in the existing supplier. No measurement, dephasing,
+    physical control wire, reset, resource model or instruction is emitted.
+    """
+    signature = Signature((*controls, *child_signature))
+    groups = register_tensor_label_groups(signature, incoming, outgoing)
+    labels = tuple(label for group in groups for label in group)
+    if len(set(labels)) != len(labels):
+        raise ValueError("controlled tensor external labels must be distinct")
+    data = controlled_register_tensor(controls, child_signature, patterns, child_tensor)
+    if not like.is_complex() and np.any(data.imag != 0):
+        raise ValueError("complex controlled tensor requires a complex prototype")
+    return bind_register_tensor(
+        torch.as_tensor(
+            data if like.is_complex() else data.real,
+            dtype=like.dtype,
+            device=like.device,
+        ),
+        signature,
+        incoming,
+        outgoing,
+        name="controlled_register",
+    )
