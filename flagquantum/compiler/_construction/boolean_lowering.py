@@ -1,4 +1,4 @@
-"""Bounded algebraic normal forms for exact unsigned value candidates.
+"""Bounded algebraic normal forms for verified raw-word value candidates.
 
 Each polynomial is a set of input-bit masks. Symmetric difference adds terms
 over GF(2), and mask union multiplies square-free monomials (b*b = b).
@@ -128,6 +128,12 @@ class _Expansion:
                 result = self.add_words(result, partial, width)
         return result or (_ZERO,) * width
 
+    def subtract_words(self, left: _Bits, right: _Bits, width: int) -> _Bits:
+        """Subtract modulo the already verified result width."""
+        right = right[:width] + (_ZERO,) * max(0, width - len(right))
+        negative = self.add_words(tuple(bit ^ _ONE for bit in right), (_ONE,), width)
+        return self.add_words(left, negative, width)
+
     def bitwise_words(
         self, operator: str, operands: tuple[_Bits, ...], width: int
     ) -> _Bits:
@@ -205,7 +211,7 @@ def lower_boolean_value(
     original = analysis.program.body.blocks[0]
     if len(original.operations) > _MAX_OPERATIONS:
         raise BooleanCandidateError("budget: Boolean source operations")
-    supported = {"arith.constant", "qint.add", "qint.multiply"}
+    supported = {"arith.constant", "qint.add", "qint.multiply", "qint.subtract_mod"}
     predicate_profile = len(output) == 1 and any(
         op.name in {"qint.equal", "qint.less"} for op in original.operations[:-1]
     )
@@ -215,11 +221,8 @@ def lower_boolean_value(
         supported.update({"qint.bitwise", "qint.equal"})
     if any(op.name == "qint.select" for op in original.operations[:-1]):
         supported.update({"qint.select", "qint.less", "qint.equal"})
-    if any(
-        op.name not in supported or any(op.attributes.get("signed", ()))
-        for op in original.operations[:-1]
-    ):
-        raise BooleanCandidateError("unsupported: expected a pure unsigned expression")
+    if any(op.name not in supported for op in original.operations[:-1]):
+        raise BooleanCandidateError("unsupported: expected a pure word expression")
     normalized = normalize_arithmetic(analysis)
     block = normalized.program.body.blocks[0]
     wires: list[int] = []
@@ -246,6 +249,21 @@ def lower_boolean_value(
         else:
             operands = tuple(values[value.id] for value in op.operands)
             if op.name == "qint.bitwise":
+                signed = op.attributes.get("signed", (False,) * len(operands))
+                extended = []
+                for operand, bits, sign in zip(
+                    op.operands, operands, signed, strict=True
+                ):
+                    declared = (
+                        operand.type.parameters[0]
+                        if operand.type.parameters
+                        else len(bits)
+                    )
+                    bits += (_ZERO,) * max(0, declared - len(bits))
+                    if sign and width > declared:
+                        bits += (bits[declared - 1],) * (width - declared)
+                    extended.append(bits)
+                operands = tuple(extended)
                 values[key] = expand.bitwise_words(
                     op.attributes["operator"], operands, width
                 )
@@ -256,6 +274,8 @@ def lower_boolean_value(
                 a, b = operands
                 if op.name == "qint.add":
                     values[key] = expand.add_words(a, b, width)
+                elif op.name == "qint.subtract_mod":
+                    values[key] = expand.subtract_words(a, b, width)
                 elif op.name == "qint.equal":
                     values[key] = expand.equal_words(a, b)
                 elif op.name == "qint.less":
@@ -356,25 +376,20 @@ def lower_boolean_value(
         for mask in sorted(terms):
             controls = tuple(w for i, w in enumerate(wires) if mask & (1 << i))
             degree = len(controls)
-            if degree > 3 or (degree == 3 and not workspace):
+            required = max(degree - 2, 0)
+            if len(workspace) < required:
                 raise BooleanCandidateError(
                     "mapping: requires more workspace or factoring"
                 )
-            if len(gates) + (3 if degree == 3 else 1) > min(max_operations, 256):
+            mapped_count = 2 * degree - 3 if degree >= 3 else 1
+            if len(gates) + mapped_count > min(max_operations, 256):
                 raise BooleanCandidateError(
                     "budget: Boolean mapped operations", exhausted=max_operations < 256
                 )
-            if degree == 3:
-                scratch = workspace[0]
-                used_workspace = tuple(dict.fromkeys((*used_workspace, scratch)))
-                compute = Instruction("ccx", (*controls[:2], scratch))
-                gates.extend(
-                    (
-                        compute,
-                        Instruction("ccx", (scratch, controls[2], target)),
-                        compute,
-                    )
-                )
+            if degree >= 3:
+                scratch = tuple(workspace[:required])
+                used_workspace = tuple(dict.fromkeys((*used_workspace, *scratch)))
+                gates.extend(_clean_mcx_instructions(controls, target, scratch))
             else:
                 gates.append(
                     Instruction(("x", "cx", "ccx")[degree], (*controls, target))

@@ -64,8 +64,18 @@ def helpers(
     twice(u, z)
 
 
-def test_same_width_different_sign_and_scale_specializations() -> None:
-    program = synth.synthesize(helpers, max_qubits=24, memory_limit_bytes=512 * 1024**2)
+@pytest.mark.parametrize("workspace", [None, 0])
+def test_same_width_different_sign_and_scale_specializations(
+    workspace: int | None,
+) -> None:
+    program = synth.synthesize(
+        helpers,
+        max_qubits=24,
+        max_workspace=workspace,
+        memory_limit_bytes=512 * 1024**2,
+    )
+    if workspace == 0:
+        assert program.report["workspace_qubits"] == 0
     assert program.registers == {
         "a": (0,),
         "b": (1,),
@@ -325,7 +335,7 @@ def test_numeric_ownership_format_and_precision_refusals(
         synth.synthesize(definition(ports, body, helper))
 
 
-@pytest.mark.parametrize("constraint", ["operations", "qubits", "workspace", "memory"])
+@pytest.mark.parametrize("constraint", ["operations", "qubits", "memory"])
 def test_numeric_composition_actual_budgets(constraint: str) -> None:
     from flagquantum.errors import PlanningError
 
@@ -334,8 +344,6 @@ def test_numeric_composition_actual_budgets(constraint: str) -> None:
             synth.synthesize(helpers, max_operations=1)
         elif constraint == "qubits":
             synth.synthesize(helpers, max_qubits=7)
-        elif constraint == "workspace":
-            synth.synthesize(helpers, max_workspace=0)
         else:
             synth.synthesize(helpers, memory_limit_bytes=16)
 

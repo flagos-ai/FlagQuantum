@@ -217,6 +217,24 @@ Python arithmetic product retains its separate preparation/resource semantics.
 The fresh-register circuit assumes all-zero entry storage; this is an allocator
 precondition, not a proof about an externally supplied state.
 
+The bounded Boolean candidate also consumes exact numeric frontend graphs.
+Fraction alignment and signed comparison remain owned by `WordExpression`;
+the candidate implements their verified raw-word subtraction and sign extension.
+It never floors or truncates a fresh numeric assignment. Modular subtraction
+uses the declared SSA result width, and signed bitwise operands extend from their
+declared sign bit rather than from a narrowed constant's effective width.
+ANF products, intermediate widths, active inputs and emitted instructions retain
+their existing safety limits. Higher-degree monomials use the shared clean MCX
+ladder, with its actual gate count charged before emission and all work bits
+restored. An unavailable candidate remains an explicit selection refusal.
+
+For example, `result |= max(x*1.0, x*0.75+y*0.75-1.25)` on two unsigned two-bit
+inputs and `Output[QNum[5, False, 2]]` fits eleven physical bits, including two
+clean work bits. This is a general raw-word optimization, not a payoff-specific
+rule or a completed finance workflow. Full-domain nonzero XOR, coherent phase,
+signed extrema and actual budget checks live in
+`tests/integration/test_synthesis_native_numeric_boolean.py`.
+
 For a small change, edit the corresponding profile/lowering rule and run:
 
 ```bash
