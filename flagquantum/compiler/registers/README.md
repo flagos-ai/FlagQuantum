@@ -434,3 +434,9 @@ continues to own binding/contraction. See
 [component tensor expansion](../../../docs/development/COMPONENT_TENSOR_EXPANSION.md)
 for composite-entry scope, source correspondence, failures and measured append
 verification.
+
+`component_zero_initialization.py` wraps an existing typed entry with source-ordered
+clean word preparations and one child call, preserving RIGHT outputs and explicit
+ownership transfer. It reuses existing allocation definitions and owns no tensor
+execution. See [zero-input initialization](../../../docs/development/COMPONENT_ZERO_INITIALIZATION.md)
+for namespace/metadata rules, original failure boundaries and local tests.

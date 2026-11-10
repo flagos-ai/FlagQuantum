@@ -115,3 +115,10 @@ for untouched returned inputs; it performs no decomposition or backend choice.
 See [component tensor nodes](../../../docs/development/COMPONENT_TENSOR_NODES.md)
 for interface, ownership, source connectivity checks, empty/scalar boundaries,
 replacement suppliers and the measured append consumer.
+
+`register_zero_state.py` emits existing binary zero-ket nodes for caller-identified
+pure-output leaves using current bit labels and caller dtype/device. It connects
+Compiler zero-input wrappers through SSA wiring without constructing dense word
+states or performing physical resets. See
+[zero-state nodes](../../../docs/development/REGISTER_ZERO_STATE.md) for source
+failures, gradients, complex amplitudes and measured append verification.
