@@ -50,7 +50,12 @@ def lower_register_program(record: ProgramRecord, entry: str = "main") -> Progra
         )
     if any(
         operation.opcode
-        in {"measure_register", "parity_register", "read_classical_register"}
+        in {
+            "measure_register",
+            "parity_register",
+            "read_classical_register",
+            "discard_classical_register",
+        }
         for function in record.functions
         for block in function.blocks
         for operation in block.operations

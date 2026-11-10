@@ -243,3 +243,12 @@ bool snapshot of the immutable slot without emitting an instruction. Run
 `pytest tests/unit/test_register_classical_parity.py` for nested components,
 zero-input parity, both feedback polarities, complex measurement branches and
 actual trajectory/batched execution through unchanged `circuit.append(op)`.
+
+`discard_word_function(name)` wraps `discard_classical_register` with one CBit
+LEFT port. Core enforces one consumption. Binding deletes the owned handle,
+emits no instruction, and retains earlier bool snapshots of the immutable slot.
+This is classical Discard from pinned Qualtran `basic_gates/discard.py`.
+External classical initialization and physical workspace retirement retain their
+separate contracts. The shortest test path is
+`tests/unit/test_register_classical_discard.py`, including measurement, parity,
+discard and subsequent conditional feedback through the existing append path.

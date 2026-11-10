@@ -249,6 +249,8 @@ class _PhysicalBinding:
         elif opcode == "constant":
             assert operation.literal is not None
             self.scalars[operation.results[0]] = operation.literal
+        elif opcode == "discard_classical_register":
+            del self.bits[operation.operands[0]]
         elif opcode == "read_classical_register":
             slot = self.bits[operation.operands[0]]
             self.bits.update((value, slot) for value in operation.results)
