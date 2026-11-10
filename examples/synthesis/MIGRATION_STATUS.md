@@ -193,7 +193,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation_helpers` | python_unclassified | Pending | pending |
 | `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/hadamard_test/main.py) | pending |
 | `algorithms/quantum_primitives/quantum_oracle_sketching_boolean/quantum_oracle_sketching_boolean` | notebook_workflow | Pending | pending |
-| `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/swap_test/main.py) | pending |
 | `algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/adapt_vqe/main.py) | pending |
 | `algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation` | notebook_workflow | Pending | pending |

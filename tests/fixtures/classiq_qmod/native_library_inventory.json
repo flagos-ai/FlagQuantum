@@ -3059,7 +3059,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/quantum_primitives/swap_test/main.py",
+        "scope": "Quantum program only; explicit normalization matches approved revision; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

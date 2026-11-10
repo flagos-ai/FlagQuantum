@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/swap_test/swap_test.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "a5ac91c85f0868e14164385710af056a2c0e84b73b4eb1ccd5bc449d421b99f2",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.swap_test.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_swap_environment.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Explicitly normalize both original rounded vectors, preserving relative amplitudes and the existing approved revision. Original source remains refused. Preserve three bits per state and one test bit; hidden states are dropped without reset, uncompute or reuse. Independent Householder/permutation Circuit and analytic overlap vector validate all retained environmental amplitudes, global phase, bit order and marginal probabilities. No swap_test export or new physical kernel."
+}

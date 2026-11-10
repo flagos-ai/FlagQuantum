@@ -19,6 +19,7 @@ Native FlagQuantum programs currently available:
 - [solving_qlsp_with_aqc](quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
 - [vqls_with_lcu](quantum_linear_solvers/vqls/vqls_with_lcu/README.md)
 - [hadamard_test](quantum_primitives/hadamard_test/README.md)
+- [swap_test](quantum_primitives/swap_test/README.md)
 - [adapt_vqe](quantum_state_preparation/adapt_vqe/README.md)
 - [qaoa](search_and_optimization/qaoa/README.md)
 - [qaoa_knapsack](search_and_optimization/qaoa/qaoa_knapsack/README.md)
