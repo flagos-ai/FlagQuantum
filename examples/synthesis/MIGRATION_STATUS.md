@@ -296,7 +296,7 @@ Validated local Notebook workflows: **24/213**.
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE` | quantum_program | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py) | pending |
 | `community/paper_implementation_project/bb84/bb84_implementation` | notebook_workflow | [Native program](community/paper_implementation_project/bb84/bb84_implementation/main.py) | pending |
 | `community/paper_implementation_project/block_encoding/checkerboard_BE_N8` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/checkerboard/main.py) | pending |
-| `community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4` | quantum_program | Pending | pending |
+| `community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/laplacian_4x4/main.py) | pending |
 | `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/block_encoding/toeplitz_BE_N16` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/block_encoding/tridiagonal_BE_size16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/tridiagonal/main.py) | pending |
