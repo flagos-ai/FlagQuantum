@@ -145,12 +145,14 @@ def test_drop_is_capture_only() -> None:
         getattr(synth, "drop")(1)
 
 
-def test_hidden_storage_cannot_escape_through_output_helper() -> None:
+def test_hidden_output_initialization_cannot_escape_through_coherent_control() -> None:
     helper = "@qfunc\ndef init(a:Output[QBit]):\n    allocate(a)\n"
-    with pytest.raises(HybridVerificationError, match="escape"):
+    with pytest.raises(HybridVerificationError, match="Const-only"):
         synth.synthesize(
             definition(
-                "q:Output[QBit]", "allocate(q)\ns:QBit\ninit(s)\ndrop(s)", helper
+                "q:Output[QBit]",
+                "allocate(q)\ns:QBit\ncontrol(q,lambda:init(s))\ndrop(s)",
+                helper,
             )
         )
 

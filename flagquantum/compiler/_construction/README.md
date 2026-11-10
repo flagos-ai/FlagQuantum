@@ -840,6 +840,46 @@ initialization and mutable helper adjoint/control remain refused. See the
 [borrowed XOR contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-BORROWED-XOR-20261110.md)
 and `tests/integration/test_synthesis_native_expression_xor.py`.
 
+### Caller-owned helper outputs
+
+A forward static helper may initialize a fresh caller-owned root local through
+an `Output` formal. `frontend_calls` emits the existing `qreg.call`; the register
+verifier checks freshness, disjoint read/write actuals, Const protection and
+complete formats. The caller retains ownership and must drop the initialized
+local before return. Dropping preserves its physical environment and correlations.
+Already initialized/dropped actuals, duplicate Outputs, Const destinations,
+Output calls under coherent control or inverse, and Output initialization through
+a mutable alias remain refused. No separate ownership proof or opcode is added.
+See `tests/integration/test_synthesis_native_owned_helper_outputs.py` for complete
+Circuit comparisons of bit, array, integer and signed fractional cases.
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import CX, H, Output, QBit, allocate, drop, qfunc
+
+@qfunc
+def prepare(out: Output[QBit]) -> None:
+    allocate(out)
+    H(out)
+
+@qfunc
+def main(q: Output[QBit]) -> None:
+    allocate(q)
+    private: QBit = QBit()
+    prepare(private)
+    CX(private, q)
+    drop(private)
+
+program = synth.synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+The published bit is maximally mixed; its private partner remains physical
+environment. This foundation does not yet admit general mutable numeric helpers,
+numeric coherent predicates or the complete fixed-point finance examples.
+
 ### Bounded modular updates
 
 `frontend_increment` captures initialized raw unsigned scalar `+=`/`-=` with

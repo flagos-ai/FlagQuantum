@@ -286,9 +286,9 @@ def test_local_drop_preserves_entanglement_and_clean_scratch() -> None:
         ),
         (
             "x:Output[QNum[1]],y:Output[QNum]",
-            "allocate(x)\na:QNum[2,True,0]=QNum()\nhelper(x,a)\ny |= 0\ndrop(a)",
+            "allocate(x)\na:QNum[2,True,0]=QNum()\nallocate(a)\nhelper(x,a)\ny |= 0\ndrop(a)",
             "@qfunc\ndef helper(x:Const[QNum],y:Output[QNum]):\n    y |= -x\n",
-            "escape",
+            "fresh Output",
         ),
         (
             "x:Output[QNum[1]],y:Output[QNum]",

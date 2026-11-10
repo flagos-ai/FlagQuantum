@@ -93,13 +93,6 @@ def capture_helper_call(
                 "program.port",
                 "qfunc actuals must be declared quantum ports",
             )
-        if port.role == "output" and argument.id in owner.hidden:
-            _error(
-                owner.source,
-                argument,
-                "program.storage",
-                "hidden storage cannot escape through Output helper ports",
-            )
         if owner.ports[argument.id].kind != port.kind:
             _error(
                 owner.source,
