@@ -170,3 +170,31 @@ def copy_component_program(record: ProgramRecord, entry: str = "main") -> Progra
     if diagnostics:
         raise ValueError(f"invalid rebuilt component graph: {diagnostics}")
     return result
+
+
+def _namespace_helpers(module: ProgramRecord, name: str) -> ProgramRecord:
+    """Keep one entry name and isolate its locally constructed definitions."""
+    names = {
+        f.name: name if f.name == name else name + "_" + f.name
+        for f in module.functions
+    }
+    return replace(
+        module,
+        functions=tuple(
+            replace(
+                f,
+                name=names[f.name],
+                blocks=tuple(
+                    replace(
+                        block,
+                        operations=tuple(
+                            replace(op, callee=names[op.callee]) if op.callee else op
+                            for op in block.operations
+                        ),
+                    )
+                    for block in f.blocks
+                ),
+            )
+            for f in module.functions
+        ),
+    )

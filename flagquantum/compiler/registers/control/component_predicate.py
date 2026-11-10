@@ -19,6 +19,7 @@ from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_graph import _namespace_helpers
 from .control_predicate import ControlRegister
 from .multi_control import multi_and_ir
 
@@ -179,31 +180,3 @@ def control_predicate_program(
             outputs["junk"] = builder.join(prefix)
         outputs["target"] = target
     return _namespace_helpers(builder.finalize(outputs), name)
-
-
-def _namespace_helpers(module: ProgramRecord, name: str) -> ProgramRecord:
-    """Keep one entry name and isolate its locally constructed definitions."""
-    names = {
-        f.name: name if f.name == name else name + "_" + f.name
-        for f in module.functions
-    }
-    return replace(
-        module,
-        functions=tuple(
-            replace(
-                f,
-                name=names[f.name],
-                blocks=tuple(
-                    replace(
-                        block,
-                        operations=tuple(
-                            replace(op, callee=names[op.callee]) if op.callee else op
-                            for op in block.operations
-                        ),
-                    )
-                    for block in f.blocks
-                ),
-            )
-            for f in module.functions
-        ),
-    )

@@ -16,8 +16,8 @@ from ....core.ir.program.registers import Register, RegisterSide
 from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_control import ControlAdder
-from ..component_graph import _call_entry
-from .component_predicate import _namespace_helpers, control_predicate_program
+from ..component_graph import _call_entry, _namespace_helpers
+from .component_predicate import control_predicate_program
 from .control_predicate import ControlRegister
 
 
