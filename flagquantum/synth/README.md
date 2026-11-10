@@ -1296,3 +1296,35 @@ The initial profile accepts a complete writable register and static real vectors
 of power-of-two length 2..256. Slices, reordered views, quantum-controlled
 preparation, complex amplitudes and Const mutation are refused. Existing
 `prepare_amplitudes` and `prepare_state` still initialize fresh output storage.
+
+## Coherent control of a static matrix
+
+Existing `control` and `unitary` compose directly in native Python qfuncs:
+
+```python
+import flagquantum as fq
+from flagquantum.synth import Output, QBit, allocate, control, hadamard_transform, qfunc, synthesize, unitary
+
+@qfunc
+def main(selector: Output[QBit], target: Output[QBit]) -> None:
+    allocate(selector)
+    allocate(target)
+    hadamard_transform(selector)
+    control(~selector, lambda: unitary(((-1, 0), (0, -1)), target))
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("selector", "target"))))
+print(result.statevector())
+```
+
+The zero-selector branch receives minus identity, retaining the relative sign
+that probabilities alone cannot reveal. Positive `control(selector, ...)`
+selects one. A scalar or indexed selector must be initialized and writable;
+selector and target locations must be disjoint. Existing literal/immutable
+matrix and target-view rules apply. Selector plus target occupy at most five
+matrix qubits, with actual decomposition work still subject to synthesis
+budgets. Plain mutable helpers and root inverse/within regions reuse the same
+checked unitary effect. Const selectors, arbitrary computed predicates and
+multi-bit truth tests remain refused; see the
+[semantic admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-MATRIX-20261110.md).
