@@ -40,7 +40,7 @@ def controlled_swap(test: QBit, a: QBit, b: QBit) -> None:
 @qfunc
 def overlap_test(first: QArray[QBit], second: QArray[QBit], test: QBit) -> None:
     H(test)
-    for bit in range(3):
+    for bit in range(len(first)):
         controlled_swap(test, first[bit], second[bit])
     H(test)
 
