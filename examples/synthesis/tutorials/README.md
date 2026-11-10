@@ -19,6 +19,7 @@ Native FlagQuantum programs currently available:
 - [qml](basics/qml/README.md)
 - [hadamard_test_tutorial](basics/quantum_primitives/hadamard_test_tutorial/README.md)
 - [linear_combination_of_unitaries](basics/quantum_primitives/linear_combination_of_unitaries/README.md)
+- [quantumwalk_complex_network](basics/quantumwalk_complex_network/README.md)
 - [qmod_tutorial_part1](basics/quantum_programming/qmod_tutorial_part1/README.md)
 - [controlled_rotation](basics/quantum_programming/controlled_rotation/README.md)
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)

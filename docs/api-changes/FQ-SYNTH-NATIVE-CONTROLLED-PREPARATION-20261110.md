@@ -1,6 +1,6 @@
 # Native controlled preparation and borrowed reversible composition
 
-Status: observed refusal; implementation and independent acceptance pending.
+Status: implemented and locally accepted; release and integration delivery pending.
 
 ## Requirement and shared boundary
 
@@ -60,3 +60,20 @@ and14/19 revision-nine merged scopes. No push, integration PR or full remote CI
 before all216 native quantum programs pass independent acceptance. This contract
 does not claim measured teleportation, flexible10bit QPE, general signed numeric
 callbacks or complete Notebook workflows.
+
+## Local acceptance
+
+The batch passes1,987 Compiler/control tests, including34 new preparation/walk
+acceptance tests,309 related regressions,29 catalog/API tests and strict typing
+for all ten touched Python files. Public API migration validation and architecture
+checks pass. Final fresh216 replay preserves all original source hashes, outcomes
+and resources; all six approved revisions execute. Native coverage is193/216;
+Notebook workflow coverage remains24/213 and revision-nine merged scopes14/19.
+
+The native three-round walk uses five physical qubits: two output, two retained
+environment and one clean work qubit. It has254 operations and depth235; the
+source-adapter path uses four physical qubits,1,718 operations and depth1,527.
+This is an explicit workspace/gate trade-off, not general performance evidence.
+Independent absolute full-state errors are below1.3e-15 for native and2.4e-14
+for the original path. Work leakage is zero. The dropped coin has approximately
+2/3 nonzero probability and is verified as environment rather than erased.

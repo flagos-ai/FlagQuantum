@@ -1164,9 +1164,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or not (ROOT / "docs/api-changes/FQ-SYNTH-UNIFORM-INTERVAL.md").is_file()
     ):
         errors.append("native uniform interval differs from its authorization")
-    control_signature = (
-        "(condition: 'QNum | QArray[QBit] | bool', body: 'Callable[[], None]', /) -> 'None'"
-    )
+    control_signature = "(condition: 'QNum | QArray[QBit] | bool', body: 'Callable[[], None]', /) -> 'None'"
     control_admission = json.loads(
         (ROOT / "contracts/synthesis-native-array-control-candidate.json").read_text()
     )
