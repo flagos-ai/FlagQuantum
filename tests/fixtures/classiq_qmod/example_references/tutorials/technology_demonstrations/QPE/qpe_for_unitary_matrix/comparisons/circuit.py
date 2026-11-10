@@ -1,10 +1,14 @@
 """Test-only untouched matrix-QPE reference validation."""
 
-from tests.integration.test_synthesis_native_matrix_qpe import test_original_native_and_independent_complete_environment
+from tests.integration.test_synthesis_native_matrix_qpe import (
+    test_original_native_and_independent_complete_environment,
+)
 
 
 def run_example() -> None:
-    test_original_native_and_independent_complete_environment('tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix')
+    test_original_native_and_independent_complete_environment(
+        "tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix"
+    )
 
 
 if __name__ == "__main__":
