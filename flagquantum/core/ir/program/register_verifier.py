@@ -93,6 +93,8 @@ def verify_register_block(
             "allocate_register",
             "free_register",
             "measure_register",
+            "parity_register",
+            "read_classical_register",
         }
         or op.register_type is not None
         or op.workspace_dirty is not None
@@ -142,6 +144,30 @@ def verify_register_block(
                     )
                 )
             types.update((value, classical_bit_type()) for value in operation.results)
+        elif operation.opcode in {"parity_register", "read_classical_register"}:
+            parity = operation.opcode == "parity_register"
+            count = len(operation.operands) if parity else 1
+            signatures[position] = OpcodeSignature(
+                operation.opcode,
+                operand_kinds=("register",) * count,
+                result_kinds=(
+                    ("register",) * (count + 1) if parity else ("register", "bool")
+                ),
+            )
+            if any(
+                types.get(value) != classical_bit_type() for value in operation.operands
+            ):
+                diagnostics.append(
+                    _diagnostic(
+                        "program.register_type",
+                        "classical parity and feedback reads require owned CBit registers",
+                    )
+                )
+            types.update(
+                (value, classical_bit_type())
+                for value in operation.results
+                if value.kind == "register"
+            )
         elif operation.opcode == "split_register":
             dtype = types.get(operation.operands[0]) if operation.operands else None
             try:
@@ -210,6 +236,8 @@ def verify_register_block(
             "allocate_register",
             "free_register",
             "measure_register",
+            "parity_register",
+            "read_classical_register",
         }:
             if (
                 operation.parameters
