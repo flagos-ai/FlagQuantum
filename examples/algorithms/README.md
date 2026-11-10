@@ -260,3 +260,7 @@ Cuccaro's ripple rather than the smaller Gidney-Ekera construction, because
 uncomputing by measurement and feedforward needs a mid-circuit measurement path
 this repository does not have in a circuit it can cost. The guide holds the full
 boundary for each.
+
+- [`fermion_hdf5.py`](fermion_hdf5.py): optional MolecularData HDF5 input and
+  three native encoding measurements; install the chemistry-hdf5 extra and run
+  `python -m examples.algorithms.fermion_hdf5`. The reference is not a ground-state claim.

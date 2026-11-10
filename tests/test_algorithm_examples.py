@@ -111,6 +111,7 @@ SCRIPTS = (
     "fermion_energy",
     "fermion_chemistry",
     "fermion_fcidump",
+    "fermion_hdf5",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -135,6 +136,7 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "real closed-shell FCIDUMP integrals",
         "not the correlated ground energy",
     ),
+    "fermion_hdf5": ("real closed-shell file integrals", "not a computed ground state"),
     "fermion_energy": ("exact statevector simulation", "no sampling or hardware noise"),
     "fermion_chemistry": (
         "fixed STO-3G hydrogen integrals",
@@ -1818,3 +1820,13 @@ def test_examples_readme_names_every_example_that_does_not_use_the_root_alias() 
             *missing,
         )
     )
+
+
+def test_fermion_hdf5_example_reports_encoded_reference_energies() -> None:
+    pytest.importorskip("h5py")
+    output = _run("fermion_hdf5")
+    _assert_premise("fermion_hdf5", output)
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        match = re.search(rf"{encoding}: reference energy (-?[0-9.]+) Ha", output)
+        assert match is not None
+        assert float(match.group(1)) == pytest.approx(-0.9, abs=1e-10)
