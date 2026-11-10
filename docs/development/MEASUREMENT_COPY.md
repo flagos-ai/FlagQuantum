@@ -121,3 +121,7 @@ public API checks passed. Twenty-two original blobs match the inventory;
 the original X measurement supertensor test. Qualtran 0.7.0, Kickmix 0.1 Simulator
 and the binary-field example were exercised. Evidence is under
 `ftqc-reference-env/g2-x-measurement-tensor-*`.
+
+GRAPH73 final default smoke/unit: 7 failed, 21507 passed, 300 skipped, 1037 warnings in 120.19s (0:02:00). All 7 observed failure
+IDs belong to the independent seven-failure baseline; 0 were not reached
+before maxfail. This is not a fully passing default suite.
