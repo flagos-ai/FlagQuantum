@@ -10,9 +10,10 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import replace
 
-from ...core.ir.program import ProgramRecord, verify_program_record
+from ...core.ir.program import FunctionRecord, ProgramRecord, verify_program_record
 from ...core.ir.program.signatures import Signature
 from .component_builder import ComponentProgramBuilder
+from .component_expansion import _has_call_decomposition
 from .component_graph import _call_entry, _collections, _elements
 from .component_schedule import local_operation_order
 
@@ -32,14 +33,32 @@ def adjoint_component_program(
     original forward canonical payload is cleared because its semantics change.
     """
     function = _call_entry(record, entry)
+    functions = {f.name: f for f in record.functions}
+    rebuilt = _adjoint_function(function, functions, adjoints, entry)
+    result = replace(
+        record,
+        canonical_payload=None,
+        functions=tuple(rebuilt if f.name == entry else f for f in record.functions),
+    )
+    diagnostics = verify_program_record(result)
+    if diagnostics:
+        raise ValueError(f"invalid adjoint component graph: {diagnostics}")
+    return result
+
+
+def _adjoint_function(
+    function: FunctionRecord,
+    functions: Mapping[str, FunctionRecord],
+    adjoints: Mapping[str, str],
+    name: str,
+) -> FunctionRecord:
     assert function.registers is not None
     signature = Signature(function.registers).adjoint()
-    functions = {f.name: f for f in record.functions}
     block = function.blocks[0]
     for operation in block.operations:
         callee = functions[operation.callee or ""]
         target = adjoints.get(callee.name)
-        if target is None or target == entry or target not in functions:
+        if target is None or target == name or target not in functions:
             raise ValueError(f"missing adjoint definition for {callee.name!r}")
         assert callee.registers is not None
         target_registers = functions[target].registers
@@ -55,7 +74,7 @@ def adjoint_component_program(
             raise ValueError(f"incompatible adjoint signature for {callee.name!r}")
 
     builder = ComponentProgramBuilder(
-        signature, (f for f in record.functions if f.name != entry), name=entry
+        signature, (f for f in functions.values() if f.name != name), name=name
     )
     assert block.return_values is not None
     mapped = dict(
@@ -80,19 +99,71 @@ def adjoint_component_program(
     )
     rebuilt = builder.finalize(outputs).functions[0].blocks[0]
     rebuilt = replace(rebuilt, name=block.name)
+    return replace(function, name=name, blocks=(rebuilt,), registers=tuple(signature))
+
+
+def adjoint_component_hierarchy(
+    record: ProgramRecord,
+    adjoints: Mapping[str, str],
+    entry: str = "main",
+) -> ProgramRecord:
+    """Derive shared stored-body adjoints, stopping at explicit specialized leaves.
+
+    Every unmapped child must supply a typed-call decomposition. Primitive and
+    mixed bodies require a caller-provided exact adjoint. The root is derived
+    and cannot be mapped. Forward child definitions remain shared and intact.
+    Input errors raise ValueError without modifying the immutable input module.
+    """
+    _call_entry(record, entry)
+    if entry in adjoints:
+        raise ValueError(
+            "hierarchical adjoint derives the entry, which cannot be mapped"
+        )
+    functions = {f.name: f for f in record.functions}
+    resolved = dict(adjoints)
+    pending = [(entry, False)]
+    generated: list[FunctionRecord] = []
+    next_name = 0
+    while pending:
+        current, ready = pending.pop()
+        if current in resolved:
+            continue
+        function = functions[current]
+        if not _has_call_decomposition(function, functions):
+            raise ValueError(
+                f"missing specialized adjoint for atomic component {current!r}"
+            )
+        if not ready:
+            pending.append((current, True))
+            pending.extend(
+                (operation.callee or "", False)
+                for operation in reversed(function.blocks[0].operations)
+                if operation.callee not in resolved
+            )
+            continue
+        name = entry
+        if current != entry:
+            name = f"__fq_adjoint_{next_name}"
+            while name in functions:
+                next_name += 1
+                name = f"__fq_adjoint_{next_name}"
+            next_name += 1
+        inverse = _adjoint_function(function, functions, resolved, name)
+        resolved[current] = name
+        if current == entry:
+            functions[entry] = inverse
+        else:
+            generated.append(inverse)
+            functions[name] = inverse
     result = replace(
         record,
         canonical_payload=None,
-        functions=tuple(
-            (
-                replace(f, blocks=(rebuilt,), registers=tuple(signature))
-                if f.name == entry
-                else f
-            )
-            for f in record.functions
+        functions=(
+            *(functions[f.name] for f in record.functions),
+            *generated,
         ),
     )
     diagnostics = verify_program_record(result)
     if diagnostics:
-        raise ValueError(f"invalid adjoint component graph: {diagnostics}")
+        raise ValueError(f"invalid hierarchical adjoint graph: {diagnostics}")
     return result

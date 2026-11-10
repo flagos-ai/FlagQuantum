@@ -34,8 +34,8 @@ def _source(signature: Signature) -> Any:
     return factory(signature)
 
 
-def _native_trace(record: ProgramRecord) -> list[object]:
-    block = record.functions[0].blocks[0]
+def _native_trace(record: ProgramRecord, entry: str = "main") -> list[object]:
+    block = next(f for f in record.functions if f.name == entry).blocks[0]
     producers = dict.fromkeys(block.arguments, "entry")
     producers.update(
         (value, str(i)) for i, op in enumerate(block.operations) for value in op.results
@@ -53,7 +53,7 @@ def _native_trace(record: ProgramRecord) -> list[object]:
             tuple((name, collection(value)) for name, value in inputs.items()),
             tuple(map(collection, outputs)),
         )
-        for position, inputs, outputs in iter_component_calls(record)
+        for position, inputs, outputs in iter_component_calls(record, entry)
     ]
 
 
