@@ -320,3 +320,7 @@ single-CX append counts from GRAPH69 are unchanged. Shared enumeration emits
 zero physical instructions and work bits. Source QEC with DiscardQ remains
 unavailable, not zero; the source peak remains two bits. Evidence is under
 `ftqc-reference-env/g2-classical-tensor-audit-*`.
+
+GRAPH70 default smoke/unit: 5 failed, 21400 passed, 300 skipped, 1037 warnings in 122.28s (0:02:02). All 5 observed
+failure IDs belong to the independent seven-failure baseline; 2 were not
+reached before maxfail. The default suite is not certified as fully passing.
