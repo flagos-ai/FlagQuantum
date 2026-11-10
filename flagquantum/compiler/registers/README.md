@@ -326,3 +326,14 @@ stored calls with the existing resource graph, keep policy and depth semantics.
 Run `tests/unit/test_component_hierarchy_adjoint.py` and
 `tests/unit/test_program_component_call_graph.py` for hierarchical source graphs,
 shared leaves, direct/weighted calls, exact measured Add cleanup and model closure.
+
+`component_control.control_component_program` belongs to Compiler. It takes an
+existing typed-call Program and a child-name to controlled-adder mapping. A
+scalar positive QBit is prepended to the all-THRU entry, with the source's
+collision-free control name. Adders call existing specialized definitions and
+can rename or pack ports, matching the original get_ctrl_system protocol.
+They return data in the original child's output order. Control and data successors
+are threaded through the existing SSA builder in logical visitation order.
+Specialized bodies own gate semantics, private work and measurement cleanup.
+The wrapper owns no numerical execution and adds no gates or work. Other control
+profiles and automatic recursive specialization require separate acceptance.
