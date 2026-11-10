@@ -199,3 +199,30 @@ Run the finite scenarios in the locked reference environment:
 python -m pytest tests/unit/test_component_superoperator_nodes.py -q
 python -m examples.algorithms.binary_field_arithmetic
 ```
+
+GRAPH74 verification (`b70fff27`): 25 new cases, 1266 related cases in 21.10 s
+(41 existing/source warnings), 541 focused cases in 26.58 s (39 warnings), and
+64 integration cases in 5.04 s. The new channel owner has 20 statements and six
+branches at 100%; fifteen related owners have 439 statements / 176 branches at
+99%. The two historical GRAPH60 profile refusals remain uncovered. Strict typing
+passed for 34 related files plus three source-following files; Black/Ruff,
+Simulation scope, architecture, Program IR and public API checks passed.
+Twenty-two source blobs match the locked inventory, and 24 unchanged original
+tests passed in 0.91 s (five existing warnings). Qualtran 0.7.0 and native Kickmix
+0.1 Simulator were checked; the existing binary-field append example passed.
+
+Both retained/discarded scalar-idle scenarios return eight doubled nodes. Their
+unique tensor storage occupies 96/192/192/384 bytes in
+float32/float64/complex64/complex128; logical forward/backward element bytes are
+twice that because conjugate views share storage. Dense retained channels occupy
+262144/524288/524288/1048576 bytes; discarding both results reduces that to
+16384/32768/32768/65536 bytes. These are returned-storage measurements, not peak
+construction or contraction memory. The source QubitCount is four including its
+classical port; the caller's four physical bits separately include a clean bit.
+Equal numerical values do not make these resource categories interchangeable.
+
+Default smoke/unit: seven failed, 21507 passed, 300 skipped and 1037 warnings in
+133.07 s. All seven failure IDs exactly match the independently recorded baseline;
+there is no new observed failure ID. The maxfail run is not a fully passing
+default suite. Raw local logs, source hashes, resources and failure comparison
+are under `ftqc-reference-env/g2-component-superoperator-*`.
