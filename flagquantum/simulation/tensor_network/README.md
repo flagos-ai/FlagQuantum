@@ -142,3 +142,9 @@ Open-system register axes and contraction are owned by
 [register superoperator binding](../../../docs/development/REGISTER_SUPEROPERATOR_BINDING.md).
 It reuses the existing binder and greedy engine for quantum and classical bit
 axes in rf/rb/lf/lb order, with explicit caller-owned discard merges.
+
+`register_tensor_indices.py` describes caller-bound external edges with structured
+or source-compatible friendly names. It keeps a diagnostic side table so display
+name collisions cannot alter integer execution connectivity. See
+[external index diagnostics](../../../docs/development/REGISTER_TENSOR_INDICES.md)
+for pure/doubled naming, native refusal boundaries, and source correspondence.

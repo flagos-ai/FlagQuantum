@@ -28,6 +28,9 @@ from flagquantum.simulation.tensor_network.register_tensor_binding import (
     bind_register_tensor,
     contract_register_tensors,
 )
+from flagquantum.simulation.tensor_network.register_tensor_indices import (
+    register_tensor_outer_indices,
+)
 from tests.unit.test_component_expansion import _hierarchy
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -123,17 +126,7 @@ def test_array_edges_partial_direct_ports_and_original_dense(
         count == (1 if label in externals else 2) for label, count in labels.items()
     )
     assert set(externals) <= labels.keys()
-    external_names = {}
-    for side, registers, bindings in (
-        ("l", sig.lefts(), incoming),
-        ("r", sig.rights(), outgoing),
-    ):
-        for register in registers:
-            for index, word in zip(
-                register.all_idxs(), bindings[register.name], strict=True
-            ):
-                for bit, label in enumerate(word):
-                    external_names[label] = (register.name, index, bit, side)
+    external_names = register_tensor_outer_indices(sig, incoming, outgoing)
 
     def canonical(rows: Any, external: Any) -> Any:
         internal: dict[Any, int] = {}
