@@ -54,3 +54,23 @@ leaves. Caller data wires are not freed; predicate and child work are erased and
 released by their existing owners. A renamed control lacking a same-named output
 and nesting a directional wrapper as an AutoPartition child remain invalid in
 the source. Those failures are diagnosed separately.
+
+`control_component_via_predicate` accepts an explicit positive-control adder at
+`controlled[entry]`. Store its called definitions in the same ProgramRecord;
+the predicate owner invokes that callback once between compute and erase.
+This is the original `ControlledViaAnd` callback path, including directional
+input/output ports. Without an entry adder, the ordinary THRU-only hierarchical
+control rule still applies. No numerical execution belongs here.
+
+`test_left_only_control_selection.py` checks that direct selection's returned
+unwrapped source root differs from its actual wrapped callback entry.
+`test_left_only_control_fallback.py` checks two/three-bit default selection,
+scalar predicate wrapping, primitive operands/feedback, complete complex
+branches, exact adjoint history pairs, clean workspace and append execution.
+Compare call counts against the actual source decomposition; its declared
+resource model may count the unwrapped root instead. These have equal costs in
+this slice because Partition adds no gates. The source fallback zips all data
+register declarations with callback outputs. Renamed directional outputs can
+therefore fail finalization; native rejects incompatible output-name order
+before invoking the callback. This failure is evidence of an upstream boundary,
+not successful execution or a corrected reference.

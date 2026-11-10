@@ -1262,3 +1262,60 @@ claimed. Next are left_only direct single-control callbacks and multi-bit
 CtrlSpec fallback. The nonleading source callback defect, further-control
 concatenate defect and complete parent-file audits remain open. Evidence is
 retained under ftqc-reference-env/g2-directional-control-*.
+
+### GRAPH48: actual left-only control callbacks and predicate fallback
+
+Direct selection keeps its wrapped entry even though the pinned source selector
+returns an unwrapped root. The actual callback consumes packed data and returns
+separate q/spectator outputs. Both activation values match original named
+connections, primitive operands, phase parameters and measurement feedback.
+Expanded/retained calls preserve caller input wires and return clean work.
+
+`control_component_via_predicate` now accepts an explicit positive entry adder
+in its existing mapping. The same predicate owner calls it between compute and
+erase, matching the actual callback in
+[ControlledViaAnd.build_composite_bloq](https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/mcmt/controlled_via_and.py)
+(Copyright 2024 Google LLC, Apache-2.0). Definitions remain in the existing
+ProgramRecord. Directional inputs are read from signature.lefts(); outputs follow
+signature.rights(). Without an explicit entry adder, generic hierarchical control
+still requires THRU ports. No Core, execution graph or protected API changes.
+
+Same-named LEFT/RIGHT packed data passes two/three-bit default selection for all
+four/eight activation patterns. Actual decomposition call counts and independent
+QEC categories close separately. The source model counts the unwrapped root,
+whereas decomposition calls the packed entry; zero-cost partitions explain equal
+cost without identifying those objects. Scalar positive/negative wrapping also
+passes. All small measurement branches preserve full complex amplitudes, data
+entanglement and zero work; two-bit exact adjoints pass all 16 history pairs per
+activation. Direct and two-bit fallback append cases run eight trajectories each.
+
+The source fallback zips all original declarations against callback outputs.
+LEFT data followed by RIGHT q/spectator raises BloqError at finalization because
+spectator is missing. Native rejects that output-name order before invoking its
+adder. This diagnosis does not certify the invalid branch or modify the source.
+The earlier nonleading callback permutation and further-control concatenate
+failure remain open.
+
+| Path | Emitted primitives | Separate original model |
+|---|---|---|
+| Direct | 3 H, 2 T, 2 Tdag, 6 CX, 1 S/CH/phase/measure/CZ/reset; X=0 or 2 | t=1, and=1, clifford=5 or 7, rotation=2, measurement=1; T-equivalent 27, peak 4 |
+| Two-bit fallback | 6 H, 4 T, 4 Tdag, 12 CX, 2 S/measure/CZ/reset, 1 CH/phase; X=0/4/8 | t=1, and=2, clifford=6, rotation=2, measurement=2; T-equivalent 31, peak 6 |
+| Three-bit fallback | 9 H, 6 T, 6 Tdag, 18 CX, 3 S/measure/CZ/reset, 1 CH/phase; X=0/4/8/12 | t=1, and=3, clifford=7/11/15/19, rotation=2, measurement=3; T-equivalent 35, peak 8 |
+
+There are 44 new tests, 5950 concentrated passes, 515 focused coverage passes,
+64 integration passes, strict typing across 69 files, formatting across 95 files,
+and four existing executable examples. Architecture, scope, Program/API checks
+and 45 original source blobs pass. The changed component_control owner has 98%
+coverage (only existing final guards 79 and 215 remain uncovered); all newly
+introduced branches are exercised. Six adjacent control/layout owners have
+100% statement/branch coverage. Default smoke/unit reports 22286 passed,
+300 skipped, 1065 warnings and seven failures in 159.58 seconds, stopped by
+maxfail. All seven IDs exactly match the independent baseline; no newly observed
+failures, and whole-suite success is not claimed.
+
+Evidence: ftqc-reference-env/g2-left-only-control-{source.txt,regression.log,
+coverage.log,integration.log,check-*.log,example-*.log,resources.json,
+default-parallel.log,default-comparison.json}. Implementation commits are
+e1475449 (direct callback) and 1ce4e42a (actual-adder predicate composition).
+Next is directional allocation/consumption and explicit output ownership;
+complete dtype/shape/symbolic and parent-file audits remain open in G2.
