@@ -9,13 +9,11 @@ from fractions import Fraction
 from typing import TYPE_CHECKING
 
 from ...compiler._construction.fixed_point import (
-    BRANCH_ROWS,
     LITERAL_BITS,
-    MAX_BRANCH_BITS,
+    FixedPointBranches,
     FixedPointExpression,
     FixedPointScalar,
     fixed_point_number,
-    fixed_point_scalar,
 )
 from .angles import REAL_LITERAL
 from .masked_selection import emit_truth_xor
@@ -34,22 +32,6 @@ class NumericProgram:
 
 def _number(token: Token, value: Fraction) -> FixedPointScalar:
     return fixed_point_number(lambda code, message: reject(token, code, message), value)
-
-
-def _scalar(
-    token: Token,
-    low: Fraction,
-    high: Fraction,
-    fraction: int,
-    values: tuple[Fraction, ...],
-) -> FixedPointScalar:
-    return fixed_point_scalar(
-        lambda code, message: reject(token, code, message),
-        low,
-        high,
-        fraction,
-        values,
-    )
 
 
 def _literal(node: Expression) -> Fraction | None:
@@ -79,27 +61,12 @@ _ARITHMETIC: FixedPointExpression[Expression] = FixedPointExpression(
 class _Planner:
     def __init__(self, definitions: Mapping[str, Function]) -> None:
         self.definitions = definitions
-        self.bits = 0
+        self.branches = FixedPointBranches()
         self.steps = 0
         self.used: set[str] = set()
-        self.dropped: list[FixedPointScalar] = []
 
     def fresh_uniform(self, token: Token) -> FixedPointScalar:
-        if self.bits == MAX_BRANCH_BITS:
-            reject(
-                token,
-                "budget.precision",
-                "quantized preparation exceeds five independent basis bits",
-            )
-        bit = self.bits
-        self.bits += 1
-        return _scalar(
-            token,
-            Fraction(0),
-            Fraction(1),
-            0,
-            tuple(Fraction(row >> bit & 1) for row in range(BRANCH_ROWS)),
-        )
+        return self.branches.uniform(lambda code, message: reject(token, code, message))
 
     def function(
         self,
@@ -228,7 +195,7 @@ class _Planner:
             elif token.text == "drop" and len(args) == 1:
                 if roles.get(args[0].token.text) != "local":
                     reject(token, "ownership", "quantized drop requires an owned local")
-                self.dropped.append(read(args[0]))
+                self.branches.discard(read(args[0]))
                 retired.add(args[0].token.text)
                 initialized.pop(args[0].token.text)
             elif token.text in self.definitions:
@@ -302,23 +269,16 @@ def try_numeric_program(definitions: Mapping[str, Function]) -> NumericProgram |
         return None
     planner = _Planner(definitions)
     outputs = planner.function(main, {}, ())
-    if planner.used != definitions.keys() or not planner.bits:
+    if planner.used != definitions.keys() or not planner.branches.bits:
         reject(
             main.name,
             "ownership",
             "quantized profile requires one closed reachable program",
         )
-    rows = 1 << planner.bits
-    labels = {
-        tuple(item.values[row] for item in planner.dropped) for row in range(rows)
-    }
-    if len(labels) != rows:
-        reject(
-            main.name,
-            "ownership",
-            "dropped numeric state must distinguish every prepared branch",
-        )
-    return NumericProgram(planner.bits, outputs)
+    planner.branches.verify_discarded(
+        lambda code, message: reject(main.name, code, message)
+    )
+    return NumericProgram(planner.branches.bits, outputs)
 
 
 def emit_numeric_program(owner: _Adapt, program: NumericProgram) -> None:
