@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **143/216**.
+Validated quantum-program counterparts: **144/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -89,11 +89,12 @@ Validated local Notebook workflows:
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 
 
-## Community (3 native programs)
+## Community (4 native programs)
 
 - [bb84_implementation](community/paper_implementation_project/bb84/bb84_implementation/README.md)
 - [bpde](community/paper_implementation_project/bpde/README.md)
 - [classical_shadows](community/paper_implementation_project/classical_shadows/README.md)
+- [quantum_compression_algorithm_for_symmetric_states](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/README.md)
 
 Validated local Notebook workflows:
 
