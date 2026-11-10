@@ -223,7 +223,11 @@ def test_scaled_initialization_and_signed_extension() -> None:
             "allocate(a)\nresult |= a+1",
             "signed operands",
         ),
-        ("a:Output[QNum[3,True,0]]", "allocate(a)\nphase(a,0.5)", "numeric reads"),
+        (
+            "a:Output[QNum[3,True,0]]",
+            "allocate(a)\nphase(a<0,0.5)",
+            "numeric comparisons",
+        ),
         (
             "a:Output[QNum[3,False,1]],result:Output[QNum]",
             "allocate(a)\nresult |= a-1",

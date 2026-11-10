@@ -37,15 +37,19 @@ def needs_numeric(owner: _Body, expression: ast.expr) -> bool:
     )
 
 
-def reject_numeric_reads(
-    owner: _Body, expression: ast.expr | ast.stmt, context: str
-) -> None:
-    if any(
+def has_numeric_reads(owner: _Body, expression: ast.expr | ast.stmt) -> bool:
+    return any(
         isinstance(node, ast.Name)
         and node.id in owner.ports
         and has_numeric(owner.ports[node.id])
         for node in ast.walk(expression)
-    ):
+    )
+
+
+def reject_numeric_reads(
+    owner: _Body, expression: ast.expr | ast.stmt, context: str
+) -> None:
+    if has_numeric_reads(owner, expression):
         _error(
             owner.source,
             expression,

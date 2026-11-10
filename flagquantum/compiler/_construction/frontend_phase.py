@@ -10,6 +10,7 @@ from .._hybrid.model import Value
 from .._hybrid.verifier import HybridVerificationError
 from .._phase_factors import Cube
 from .._phase_polynomial import Location, expand_phase
+from .frontend_numeric import has_numeric_reads
 from .frontend_phase_factors import emit_factor, expand_factored_phase
 from .frontend_python import _error
 from .frontend_views import locations
@@ -30,6 +31,23 @@ def capture_polynomial_phase(
 
     def fail(node: ast.expr, code: str, message: str) -> NoReturn:
         _error(owner.source, node, code, message)
+
+    numeric = has_numeric_reads(owner, expression)
+    if numeric and (
+        condition is not None
+        or any(isinstance(node, ast.Compare) for node in ast.walk(expression))
+    ):
+        fail(
+            expression,
+            "program.numeric",
+            "numeric comparisons and conditions are not admitted in phase expressions",
+        )
+
+    def numeric_format(node: ast.expr) -> tuple[bool, int]:
+        if isinstance(node, ast.Name) and node.id in owner.ports:
+            port = owner.ports[node.id]
+            return port.signed, port.fractional_bits
+        return False, 0
 
     def children(node: ast.expr) -> tuple[ast.expr, ...]:
         if isinstance(node, ast.BinOp):
@@ -164,10 +182,13 @@ def capture_polynomial_phase(
             operands_of=children,
             fail=fail,
             condition=condition,
+            signed_word=lambda node: numeric_format(node)[0],
+            fraction_bits=lambda node: numeric_format(node)[1],
         )
     except HybridVerificationError as error:
         if (
-            condition is not None
+            numeric
+            or condition is not None
             or any(isinstance(node, ast.Compare) for node in ast.walk(expression))
             or not all(
                 diagnostic.code == "construction.python.budget.phase"

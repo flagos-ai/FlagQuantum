@@ -1180,7 +1180,7 @@ The current slice supports mixed-sign integer bitwise operations/equality,
 subtraction/negation, unsigned exact binary multiplication and min/max. Decimal
 operands such as 0.1 refuse instead of rounding. Arithmetic reads of scaled
 inputs, general signed operators, numeric helpers/locals and signed/scaled
-phase/control expressions remain outside this admission. Complete native
+control expressions remain outside this admission. Complete native
 quantum examples and independent Circuit references live under
 [`examples/synthesis/functions/arithmetic`](../../examples/synthesis/functions/arithmetic/).
 Associated Notebook workflows are tracked separately.
@@ -1220,3 +1220,23 @@ composes `slope*x+offset` on three targets without physical wire indices or work
 qubits. Its test-only original and native program both match an independent
 block matrix, including coherent input and absolute phase. See the
 [indexed control contract](../../docs/api-changes/FQ-SYNTH-NATIVE-INDEXED-PAULI-CONTROL-20261110.md).
+
+## Exact numeric phase reads
+
+Root program `phase(expression, angle)` reads signed and binary-scaled QNum
+values with their declared meaning, including negative two's-complement values.
+For example, `phase(a*a - a/2 + 0.17, 0.37)` uses the numeric value of `a`, not
+its raw unsigned word. The finite coefficient is classical; existing phase
+expansion and actual circuit budgets still apply. All encountered reads remain
+checked even after cancellation. Numeric comparisons, control conditions,
+helper ports and Boolean-factor fallback remain outside this admission.
+
+The [native diagonal QPE example](../../examples/synthesis/functions/qpe/README.md)
+combines commuting controlled evolution into a phase expression and then
+applies inverse QFT. It preserves `Output[Annotated[QNum, (2, False, 2)]]` for
+the fractional phase result. `numeric_probabilities` directly reports exact
+phase values 0, 1/2, 1/4 and 3/4, correlated with the four input words at
+probability 1/4 each. This concrete composition and its identical flexible-QPE
+source counterpart do not add a general callback-based QPE operation.
+See the [numeric phase contract](../../docs/api-changes/FQ-SYNTH-NATIVE-NUMERIC-PHASE-20261110.md)
+and `tests/integration/test_synthesis_native_numeric_phase.py` for acceptance.

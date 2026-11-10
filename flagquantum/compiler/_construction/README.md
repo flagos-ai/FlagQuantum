@@ -756,3 +756,13 @@ Bounded comparison conditions use the existing compute/uncompute lifecycle.
 The [indexed scalar contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-INDEXED-PAULI-CONTROL-20261110.md)
 and `tests/integration/test_synthesis_native_indexed_rotations.py` cover the
 contributor path. No source-specific affine-rotation intrinsic is introduced.
+
+Native root arithmetic phases pass declared sign and binary scale through the
+existing `expand_phase` callbacks. `frontend_numeric.has_numeric_reads` selects
+this path; `frontend_phase` owns the source callbacks and rejects numeric
+conditions/comparisons and numeric factor fallback. Never interpret formatted
+words as unsigned raw bits. Initialization witnesses, coefficient/expansion
+limits and ordinary register-phase lowering stay shared. Numeric helper ports
+remain refused. Run `tests/integration/test_synthesis_native_numeric_phase.py`
+and the [typed diagonal QPE example](../../../examples/synthesis/functions/qpe/README.md)
+for the contributor path. This admits no generic quantum callback or new IR.

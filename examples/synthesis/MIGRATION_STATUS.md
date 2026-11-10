@@ -345,8 +345,8 @@ Validated local Notebook workflows: **24/213**.
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2` | quantum_program | [Native program](functions/qct_qst/qct_type2/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qst_type2` | quantum_program | [Native program](functions/qct_qst/qst_type2/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qft/qft` | notebook_workflow | [Native program](functions/qft/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | [Native program](functions/qpe/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | [Native program](functions/qpe/qpe_flexible/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_exponential_state/main.py) | pending |

@@ -240,7 +240,7 @@ def test_preexisting_constant_controls_preserve_resources_and_absolute_phase(
             "allocate(a)\nhelper(a)",
             "a:Output[QBit]",
             "@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:H(a))\n",
-            "phase-only control",
+            "phase or direct Pauli-axis rotation control",
         ),
         (
             "allocate(a)\nwith adjoint():\n    helper(a)",
@@ -252,7 +252,7 @@ def test_preexisting_constant_controls_preserve_resources_and_absolute_phase(
             "allocate(a)\nhelper(a)",
             "a:Output[QBit]",
             "@qfunc\ndef publish(a:Output[QBit]):\n    allocate(a)\n@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:publish(a))\n",
-            "phase-only control",
+            "phase or direct Pauli-axis rotation control",
         ),
         (
             "allocate(9,a)\ncontrol(a<3,lambda:phase(a-0.5,0.2))",

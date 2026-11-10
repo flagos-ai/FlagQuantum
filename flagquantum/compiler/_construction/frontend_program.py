@@ -29,6 +29,7 @@ from .frontend_matrix import capture_unitary
 from .frontend_numeric import (
     assign_numeric,
     has_numeric,
+    has_numeric_reads,
     needs_numeric,
     reject_numeric_reads,
 )
@@ -747,8 +748,6 @@ class _Body:
                 )
             self.emit("qreg.phase", node, (), angle=gamma)
         elif function is phase:
-            for argument in node.args:
-                reject_numeric_reads(self, argument, "phase expressions")
             if len(node.args) != 2:
                 _error(
                     self.source,
@@ -757,6 +756,7 @@ class _Body:
                     "phase takes an expression and coefficient",
                 )
             expr, coefficient = node.args
+            reject_numeric_reads(self, coefficient, "phase coefficients")
             angle = self.phase_number(coefficient)
             if angle is None:
                 _error(
@@ -776,27 +776,31 @@ class _Body:
                         "constant phase angle must be finite",
                     )
                 self.emit("qreg.phase", node, (), angle=radians)
-            elif self.aliases is not None or any(
-                isinstance(
-                    child,
-                    (
-                        ast.Subscript,
-                        ast.Sub,
-                        ast.USub,
-                        ast.Div,
-                        ast.Pow,
-                        ast.BitAnd,
-                        ast.BitOr,
-                        ast.BitXor,
-                        ast.Mod,
-                        ast.Invert,
-                    ),
+            elif (
+                self.aliases is not None
+                or has_numeric_reads(self, expr)
+                or any(
+                    isinstance(
+                        child,
+                        (
+                            ast.Subscript,
+                            ast.Sub,
+                            ast.USub,
+                            ast.Div,
+                            ast.Pow,
+                            ast.BitAnd,
+                            ast.BitOr,
+                            ast.BitXor,
+                            ast.Mod,
+                            ast.Invert,
+                        ),
+                    )
+                    or isinstance(child, ast.Name)
+                    and child.id in self.classical
+                    or isinstance(child, ast.Constant)
+                    and type(child.value) is float
+                    for child in ast.walk(expr)
                 )
-                or isinstance(child, ast.Name)
-                and child.id in self.classical
-                or isinstance(child, ast.Constant)
-                and type(child.value) is float
-                for child in ast.walk(expr)
             ):
                 capture_polynomial_phase(self, expr, angle, node)
             else:
