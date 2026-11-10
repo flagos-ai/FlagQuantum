@@ -259,3 +259,9 @@ refusals. Twenty source blobs match the locked inventory; original tests and
 default-suite results are recorded below. Qualtran 0.7.0 / Kickmix 0.1 Simulator
 and the binary-field example were exercised. Raw evidence is under
 `ftqc-reference-env/g2-classical-tensor-discard-*`.
+
+GRAPH69 original-test evidence: 22 unchanged tests passed in 0.73 s (five
+existing warnings). An additional original cnot_test.py run could not collect
+because PennyLane is absent; it is not counted as passing. No reference source
+was edited. Default smoke/unit: 7 failed, 21507 passed, 300 skipped, 1037 warnings in 124.02s (0:02:04); all observed failure IDs
+match the independent baseline. Maxfail stopped the run; it is not fully green.
