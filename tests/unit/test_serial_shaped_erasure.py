@@ -55,6 +55,8 @@ def serial_fixture(
     builder = ComponentProgramBuilder(signature, definitions, name="serial")
     observer = _source(signature)
     names = ("first", "first") if order[0] == order[1] else ("first", "second")
+    if order[0] == order[1]:
+        source_second = source_first
     data = dict(builder.inputs)
     src_data = dict(observer.inputs)
     for name, source in zip(names, (source_first, source_second), strict=True):
@@ -218,3 +220,111 @@ def test_serial_exact_inverse_restores_every_history_pair(
             upstream = forced_branch(intermediate, original, second)
             torch.testing.assert_close(actual, upstream, atol=4e-12, rtol=0)
             torch.testing.assert_close(actual, initial / 4, atol=4e-12, rtol=0)
+
+
+@pytest.mark.parametrize("values", tuple(product((0, 1), repeat=2)))
+@pytest.mark.parametrize("dirty", (False, True))
+@pytest.mark.parametrize("order", ORDERS)
+@pytest.mark.parametrize("expanded", (False, True))
+def test_two_control_serial_exact_inverse_all_history_pairs(
+    values: tuple[int, ...],
+    dirty: bool,
+    order: tuple[int, ...],
+    expanded: bool,
+) -> None:
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.runtime.dynamic.execution import run_dynamic
+
+    forward, source_forward = serial_fixture(values, dirty, order)
+    inverse, source_inverse = serial_fixture(
+        values, dirty, tuple(reversed(order)), inverse=True
+    )
+    observer = _source(Signature([]))
+    assert normalize_trace(_native_trace(inverse, "serial")) == normalize_trace(
+        _source_trace(observer, source_inverse)
+    )
+    terminals = {
+        op.callee: instance.bloq
+        for op, (instance, _, _) in zip(
+            inverse.functions[0].blocks[0].operations,
+            source_inverse.iter_bloqsoqs(),
+            strict=True,
+        )
+        if op.callee is not None
+    }
+    graph = program_component_call_graph(inverse, "serial", keep=terminals.__contains__)
+    weighted: Counter[Any] = Counter()
+    for name, count in graph.leaf_counts.items():
+        weighted[terminals[name]] += count
+    assert weighted == source_inverse.bloq_counts()
+    if expanded:
+        forward, _ = expand_component_calls(forward, "serial")
+        inverse, _ = expand_component_calls(inverse, "serial")
+    computed = bind_serial(forward, 2, dirty)
+    backwards = bind_serial(inverse, 2, dirty)
+    original_forward, forward_events = reference_serial(source_forward, 2, dirty)
+    original_inverse, inverse_events = reference_serial(source_inverse, 2, dirty)
+    assert_gate_parameters(computed.circuit.instructions, original_forward)
+    assert_gate_parameters(backwards.circuit.instructions, original_inverse)
+    assert (
+        tuple((e.kind, e.wires, e.dirty) for e in computed.events if e.wires)
+        == forward_events
+    )
+    assert (
+        tuple((e.kind, e.wires, e.dirty) for e in backwards.events if e.wires)
+        == inverse_events
+    )
+    assert computed.outputs == backwards.outputs == ((0,), (1,), (2, 3), (4, 5))
+    for gates in (computed.circuit.instructions, backwards.circuit.instructions):
+        measured = [g for g in gates if g.name == "measure"]
+        assert [g.metadata["classical_bit"] for g in measured] == [0, 1, 2, 3]
+        assert [g.wires for g in measured] == [(8,), (6,), (8,), (6,)]
+    initial, _ = initial_and_expected(2, dirty, values, 0)
+    expected = expected_sequence(initial, values, order)
+    for first in product((0, 1), repeat=4):
+        intermediate = forced_branch(initial, computed.circuit.instructions, first)
+        upstream_forward = forced_branch(initial, original_forward, first)
+        torch.testing.assert_close(intermediate, upstream_forward, atol=4e-12, rtol=0)
+        torch.testing.assert_close(intermediate, expected / 4, atol=4e-12, rtol=0)
+        for second in product((0, 1), repeat=4):
+            actual = forced_branch(intermediate, backwards.circuit.instructions, second)
+            upstream = forced_branch(upstream_forward, original_inverse, second)
+            torch.testing.assert_close(actual, upstream, atol=4e-12, rtol=0)
+            torch.testing.assert_close(actual, initial / 16, atol=4e-12, rtol=0)
+            for wire in ((6, 8) if dirty else (6, 7, 8)):
+                assert (
+                    torch.count_nonzero(actual.reshape((2,) * 9).select(wire, 1)) == 0
+                )
+    # Compose both operations into one execution so all eight event slots must
+    # be rebound by the existing user-facing append path.
+    circuit = DynamicCircuit(9, inputs=initial, dtype=torch.complex128)
+    circuit.append(FieldOperation(9, computed.circuit.instructions))
+    circuit.append(FieldOperation(9, backwards.circuit.instructions))
+    result = run_dynamic(circuit, shots=8, seed=71, strategy="trajectory")
+    torch.testing.assert_close(
+        result.final_states.reshape(8, -1), initial.expand(8, -1), atol=4e-12, rtol=0
+    )
+    model = get_cost_value(source_inverse, QECGatesCost())
+    assert (
+        model.total_t_count() == 78
+        and get_cost_value(source_inverse, QubitCount()) == 9
+    )
+    counts = Counter(g.name for g in backwards.circuit.instructions)
+    assert counts["ccx"] == 4 and counts["t"] + counts["tdg"] == 16
+    assert counts["measure"] == counts["reset"] == 4
+    for category in (
+        "t",
+        "toffoli",
+        "cswap",
+        "and_bloq",
+        "clifford",
+        "rotation",
+        "measurement",
+    ):
+        assert getattr(model, category) == sum(
+            count * getattr(get_cost_value(terminals[name], QECGatesCost()), category)
+            for name, count in graph.leaf_counts.items()
+        )

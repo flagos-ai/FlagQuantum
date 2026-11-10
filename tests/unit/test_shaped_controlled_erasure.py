@@ -69,6 +69,14 @@ def shaped_fixture(
         adjoints.update(
             {f.name: f.name for f in child.functions if f.name.endswith("_x")}
         )
+        if len(values) > 1:
+            # Compute and measured erase already have opposite owned ports.
+            # Stop at these exact semantic leaves instead of reversing their
+            # nonunitary primitive measurements as if they were unitary gates.
+            compute = child.functions[0].blocks[0].operations[0].callee
+            erase = child.functions[0].blocks[0].operations[-1].callee
+            assert compute is not None and erase is not None
+            adjoints.update({compute: erase, erase: compute})
         child = adjoint_component_hierarchy(child, adjoints)
         source_child = source_adjoint(source_child.decompose_bloq())
     n = len(values)
