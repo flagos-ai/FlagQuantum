@@ -90,3 +90,12 @@ not the circuit execution backend or a gate-count estimator. See
 [controlled register tensors](../../../docs/development/CONTROLLED_REGISTER_TENSORS.md)
 for layout, callback ownership, source failures and existing append verification.
 Run the two focused test files named there when changing these owners.
+
+`register_tensor_binding.py` attaches dense register tensors to existing
+integer-labeled `TensorNetworkNode` objects and groups pure-state results in
+output/input order. It reuses the current greedy contraction owner, preserves
+PyTorch autograd, and allocates no graph labels. See
+[register tensor binding](../../../docs/development/REGISTER_TENSOR_BINDING.md)
+for word bindings, directional/empty ports, source correspondence, measurement
+branches and the append workflow. Open-system grouping and automatic component
+flattening remain separate work.
