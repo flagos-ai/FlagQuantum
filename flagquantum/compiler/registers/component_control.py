@@ -10,11 +10,12 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 
-from ...core.ir.program import ProgramRecord, verify_program_record
+from ...core.ir.program import FunctionRecord, ProgramRecord, verify_program_record
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from .component_builder import BindingCollection, ComponentProgramBuilder
+from .component_expansion import _has_call_decomposition
 from .component_graph import _call_entry, _collections, _elements
 from .component_schedule import local_operation_order
 
@@ -40,6 +41,28 @@ def control_component_program(
     Adder exceptions propagate. The changed entry clears canonical_payload.
     """
     function = _call_entry(record, entry)
+    functions = {f.name: f for f in record.functions}
+    rebuilt, added = _control_function(function, functions, controlled, entry)
+    result = replace(
+        record,
+        canonical_payload=None,
+        functions=(
+            *(rebuilt if f.name == entry else f for f in record.functions),
+            *added,
+        ),
+    )
+    diagnostics = verify_program_record(result)
+    if diagnostics:
+        raise ValueError(f"invalid controlled component graph: {diagnostics}")
+    return result
+
+
+def _control_function(
+    function: FunctionRecord,
+    functions: Mapping[str, FunctionRecord],
+    controlled: Mapping[str, ControlAdder],
+    name: str,
+) -> tuple[FunctionRecord, tuple[FunctionRecord, ...]]:
     assert function.registers is not None
     if any(register.side != RegisterSide.THRU for register in function.registers):
         raise ValueError("controlled component requires only THRU entry ports")
@@ -51,7 +74,6 @@ def control_component_program(
             index += 1
         control_name = f"ctrl{index}"
     control = Register(control_name, quantum_bit_type())
-    functions = {f.name: f for f in record.functions}
     block = function.blocks[0]
     for operation in block.operations:
         if operation.callee not in controlled:
@@ -59,7 +81,7 @@ def control_component_program(
 
     signature = Signature((control, *function.registers))
     builder = ComponentProgramBuilder(
-        signature, (f for f in record.functions if f.name != entry), name=entry
+        signature, (f for f in functions.values() if f.name != name), name=name
     )
     current_control = builder.inputs[control_name]
     data = {
@@ -83,21 +105,95 @@ def control_component_program(
         signature.rights(),
         (*_elements((current_control,)), *(mapped[v] for v in block.return_values)),
     )
-    rebuilt = builder.finalize(outputs).functions[0].blocks[0]
+    module = builder.finalize(outputs)
+    rebuilt = module.functions[0].blocks[0]
     rebuilt = replace(rebuilt, name=block.name)
+    added = tuple(f for f in module.functions[1:] if f.name not in functions)
+    return (
+        replace(function, name=name, registers=tuple(signature), blocks=(rebuilt,)),
+        added,
+    )
+
+
+def _stored_control_adder(function: FunctionRecord) -> ControlAdder:
+    assert function.registers is not None
+    control_name = function.registers[0].name
+
+    def add(
+        builder: ComponentProgramBuilder,
+        control: BindingCollection,
+        values: dict[str, BindingCollection],
+    ) -> tuple[BindingCollection, tuple[BindingCollection, ...]]:
+        outputs = builder.call_dict(function.name, {**values, control_name: control})
+        control = outputs.pop(control_name)
+        return control, tuple(outputs.values())
+
+    return add
+
+
+def control_component_hierarchy(
+    record: ProgramRecord,
+    controlled: Mapping[str, ControlAdder],
+    entry: str = "main",
+) -> ProgramRecord:
+    """Derive shared stored-body controls, stopping at explicit specialized adders.
+
+    Every unmapped child must have a typed-call decomposition with THRU ports.
+    Primitive and mixed bodies need an explicit controlled adder. The root is
+    derived and cannot be mapped. Original children remain shared and intact.
+    Invalid inputs raise ValueError without modifying the immutable module.
+    Adder exceptions propagate. The forward canonical payload is cleared.
+    """
+    _call_entry(record, entry)
+    if entry in controlled:
+        raise ValueError(
+            "hierarchical control derives the entry, which cannot be mapped"
+        )
+    functions = {f.name: f for f in record.functions}
+    resolved = dict(controlled)
+    pending = [(entry, False)]
+    generated: list[FunctionRecord] = []
+    next_name = 0
+    while pending:
+        current, ready = pending.pop()
+        if current in resolved:
+            continue
+        function = functions[current]
+        if not _has_call_decomposition(function, functions):
+            raise ValueError(
+                f"missing specialized control for atomic component {current!r}"
+            )
+        if not ready:
+            pending.append((current, True))
+            pending.extend(
+                (operation.callee or "", False)
+                for operation in reversed(function.blocks[0].operations)
+                if operation.callee not in resolved
+            )
+            continue
+        name = entry
+        if current != entry:
+            name = f"__fq_controlled_{next_name}"
+            while name in functions:
+                next_name += 1
+                name = f"__fq_controlled_{next_name}"
+            next_name += 1
+        derived, added = _control_function(function, functions, resolved, name)
+        for helper in added:
+            functions[helper.name] = helper
+        generated.extend(added)
+        resolved[current] = _stored_control_adder(derived)
+        if current == entry:
+            functions[entry] = derived
+        else:
+            generated.append(derived)
+            functions[name] = derived
     result = replace(
         record,
         canonical_payload=None,
-        functions=tuple(
-            (
-                replace(f, registers=tuple(signature), blocks=(rebuilt,))
-                if f.name == entry
-                else f
-            )
-            for f in record.functions
-        ),
+        functions=(*(functions[f.name] for f in record.functions), *generated),
     )
     diagnostics = verify_program_record(result)
     if diagnostics:
-        raise ValueError(f"invalid controlled component graph: {diagnostics}")
+        raise ValueError(f"invalid hierarchical controlled graph: {diagnostics}")
     return result

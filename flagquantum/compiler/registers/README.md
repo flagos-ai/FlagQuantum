@@ -336,4 +336,17 @@ They return data in the original child's output order. Control and data successo
 are threaded through the existing SSA builder in logical visitation order.
 Specialized bodies own gate semantics, private work and measurement cleanup.
 The wrapper owns no numerical execution and adds no gates or work. Other control
-profiles and automatic recursive specialization require separate acceptance.
+profiles require separate acceptance.
+
+`component_control.control_component_hierarchy` derives one shared positive-control
+definition per unmapped stored call-only child. Explicit child adders take
+precedence and own their specialized semantics. Generated definitions preserve
+forward definitions, use collision-free internal names and thread control
+through the same one-level implementation. Primitive or mixed children require
+an explicit adder. The derived entry cannot be overridden by an adder mapping.
+Core Program remains the graph authority and final module verification applies
+to retained callers as well as generated definitions. Builder-created split/join
+and lifetime helpers inside explicit adders are retained with each derived body.
+Run `tests/unit/test_component_hierarchy_control.py` for original-source hierarchy
+connections, shared leaves and diamonds, separate modeled/primitive counts,
+exhaustive small measured histories and sampled larger graphs.
