@@ -149,6 +149,45 @@ def test_signed_fractional_coherent_arithmetic(
     }
 
 
+@pytest.mark.parametrize("signed,scale", [(False, 0), (True, 0), (True, 1)])
+@pytest.mark.parametrize(
+    "expression,oracle",
+    [
+        ("a+1.0", lambda a: a + 1),
+        ("a==1.0", lambda a: int(a == 1)),
+        ("1.0<a", lambda a: int(a > 1)),
+        ("a<=-0.5", lambda a: int(a <= Fraction(-1, 2))),
+        ("min(a,1.0)", lambda a: min(a, 1)),
+        ("max(-0.5,a)", lambda a: max(Fraction(-1, 2), a)),
+    ],
+)
+def test_exact_decimal_constants_in_coherent_numeric_program(
+    signed: bool,
+    scale: int,
+    expression: str,
+    oracle: Callable[[Fraction], Fraction | int],
+) -> None:
+    entry = definition(
+        f"a:Output[QNum[2,{signed},{scale}]],result:Output[QNum]",
+        "allocate(a)\nhadamard_transform(a)\nphase(a+0.125,0.37)\n"
+        f"result |= {expression}",
+    )
+    program = synth.synthesize(entry, max_qubits=24, memory_limit_bytes=512 * 1024**2)
+    formats = {
+        name: fractional for name, _, fractional in program._checked.numeric_formats
+    }
+    mask = (1 << len(program.registers["result"])) - 1
+    expected = {}
+    for raw in range(4):
+        value = Fraction(raw - 4 if signed and raw & 2 else raw, 1 << scale)
+        answer = Fraction(oracle(value)) * (1 << formats.get("result", 0))
+        assert answer.denominator == 1
+        expected[(raw, answer.numerator & mask)] = (
+            cmath.exp(0.37j * float(value + Fraction(1, 8))) / 2
+        )
+    check_state(program, fq.run(program), expected)
+
+
 @qfunc
 def retained_local(
     x: Output[Annotated[QNum, (1, False, 0)]], result: Output[QNum]

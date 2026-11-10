@@ -160,7 +160,17 @@ class WordExpression(Generic[_Node]):
             )
             if (
                 self.numeric_inputs is not None
-                and (scale or any(signed))
+                and (
+                    scale
+                    or any(signed)
+                    or (
+                        text in {"+", *_RELATIONS}
+                        and any(
+                            "." in self._text(child) and not self._children(child)
+                            for child in (lhs, rhs)
+                        )
+                    )
+                )
                 and text in {"+", "*", "**", *EXTREMA, *_RELATIONS}
             ):
                 result = self.infer_composed(node)
@@ -443,14 +453,23 @@ class WordExpression(Generic[_Node]):
         compared: tuple[Value, ...] = (a, b)
         if signed_comparison:
             compared = tuple(
-                self.operation(
-                    "qint.bitwise",
-                    (value, constant(1 << (width - 1))),
-                    uint_type(width),
-                    node,
-                    operator="^",
+                (
+                    self.operation(
+                        "qint.bitwise",
+                        (value, constant(1 << (width - 1))),
+                        uint_type(width),
+                        node,
+                        operator="^",
+                    )
+                    if self.facts[child][1]
+                    else constant(
+                        ((self.integer_value(child) << shift) & ((1 << width) - 1))
+                        ^ (1 << (width - 1))
+                    )
                 )
-                for value in compared
+                for child, shift, value in zip(
+                    (left, right), shifts, compared, strict=True
+                )
             )
         opcode, swap, invert = _RELATIONS.get(operator, ("qint.less", False, False))
         x, y = compared

@@ -247,6 +247,14 @@ def test_source_independent_refusal_retains_node_location(
         ("a>b", lambda a, b: int(a > b)),
         ("a>=b", lambda a, b: int(a >= b)),
         ("a + 0.125", lambda a, b: a + Fraction(1, 8)),
+        ("a + 1.0", lambda a, b: a + 1),
+        ("a == 1.0", lambda a, b: int(a == 1)),
+        ("1.0 < a", lambda a, b: int(a > 1)),
+        ("a <= -0.5", lambda a, b: int(a <= Fraction(-1, 2))),
+        ("-0.5 >= a", lambda a, b: int(Fraction(-1, 2) >= a)),
+        ("a != 1.0", lambda a, b: int(a != 1)),
+        ("min(a, 1.0)", lambda a, b: min(a, 1)),
+        ("max(-0.5, a)", lambda a, b: max(Fraction(-1, 2), a)),
         ("0.125*b", lambda a, b: Fraction(1, 8) * b),
         ("a + -1", lambda a, b: a - 1),
         ("a * -0.5", lambda a, b: -a / 2),
@@ -260,6 +268,7 @@ def test_source_independent_refusal_retains_node_location(
         ((True, 0), (False, 0)),
         ((True, 2), (True, 1)),
         ((False, 2), (False, 1)),
+        ((False, 0), (False, 0)),
     ],
 )
 def test_composed_numeric_full_domain_and_nonzero_xor(
