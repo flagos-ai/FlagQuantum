@@ -686,3 +686,14 @@ also pass. This is local exact execution evidence, not application cancellation,
 Notebook completion, accelerator or distributed scalability evidence.
 
 Run `python -m pytest tests/integration/test_synthesis_native_interval_mps.py tests/integration/test_synthesis_native_basis_mps.py tests/integration/test_synthesis_qmod_tensor_zero_walk.py -q`.
+
+## Native scalar reset channel
+
+Local CPU semantic evidence covers Bell-partner mixed states, repeated resets,
+mutable helper use, ownership/reversible-scope/control refusals and density
+memory/operation budgets. Ten new reset tests, four exact-interval MPS tests,
+seven Qmod thermal/reset regressions and twelve public API tests pass. The
+implementation reuses existing channel lowering and density execution; no new
+numerical backend or thermal-algorithm completion is claimed.
+
+Run `python -m pytest tests/integration/test_synthesis_native_reset.py tests/integration/test_synthesis_native_interval_mps.py tests/integration/test_synthesis_qmod_thermal_reset.py tests/unit/test_public_api_candidate.py -q`.

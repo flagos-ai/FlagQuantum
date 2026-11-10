@@ -1121,3 +1121,14 @@ wide-predicate promise. Ordinary helper ownership, definite initialization,
 Const and alias refusal, phase magnitude and actual resource ceilings remain
 in force. Original full-width graph-coloring and whitebox Grover programs have
 independent Circuit acceptance; complete Notebook workflows remain separate.
+
+## Native scalar reset channels
+
+The unreleased native `RESET(target)` reuses the existing Qmod reset effect,
+channel lowering and exact CPU density-matrix planner. Targets must be
+initialized writable scalar bits or static array elements. Whole arrays,
+Const/uninitialized targets, reversible scopes and coherent control are
+refused. Reset keeps physical storage allocated and destroys prior correlations;
+it is not a clean uncompute or postselection. Density memory and operation
+budgets remain enforced. This does not yet admit the original thermal program's
+fifty-cycle compact native channel replay.

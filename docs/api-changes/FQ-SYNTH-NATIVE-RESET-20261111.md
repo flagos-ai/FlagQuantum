@@ -1,7 +1,9 @@
 # Native scalar RESET admission
 
-Status: implementation authorized by the ongoing user-directed native corpus
-migration; acceptance pending. Native coverage remains 207/216. Classification:
+Status: scalar admission implemented and locally verified under the ongoing
+user-directed native migration. Ten new tests plus twenty-three related/API
+tests pass; strict typing covers eight changed Python files, and repository
+quality checks pass. Thermal corpus coverage remains pending at 207/216. Classification:
 `single_device_fast_path`. This is an unreleased domain-extension candidate,
 not a Stable Core signature change or a release approval.
 

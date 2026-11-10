@@ -1402,3 +1402,29 @@ all-fractional bits, signed or unsigned, initialized by allocate and unused.
 General callbacks, flexible powers and nested/inverse QPE remain pending.
 See the [matrix-QPE admission](../../docs/api-changes/FQ-SYNTH-NATIVE-MATRIX-QPE-20261110.md)
 and the [native matrix example](../../examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/main.py).
+
+## Resetting a quantum bit
+
+`RESET(q)` accepts an initialized writable scalar bit or array element. It
+traces the bit's old state and prepares zero, preserving a mixed state on any
+previously entangled partner. This selects checked density-matrix execution and
+charges its memory and channel operations. RESET does not free storage and is
+refused inside adjoint, within/apply or coherent-control regions. Use a bounded
+static loop for multiple bits; a whole array is not a scalar RESET target.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import CX, H, RESET, Output, QArray, QBit, allocate, qfunc, synthesize
+
+@qfunc
+def main(q: Output[QArray[QBit]]) -> None:
+    allocate(2, q)
+    H(q[0])
+    CX(q[0], q[1])
+    RESET(q[0])
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+# {(0,): 0.5, (2,): 0.5}; the remaining bit is mixed.
+```
