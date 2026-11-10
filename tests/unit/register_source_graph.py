@@ -24,12 +24,12 @@ def walk_source_graph(
     pytest.importorskip("qualtran")
     np = pytest.importorskip("numpy")
     from qualtran import CompositeBloq, LeftDangle, Soquet
-    from qualtran.bloqs.bookkeeping import Join, Split
+    from qualtran.bloqs.bookkeeping import Cast, Join, Split
 
     result = leaf(bloq, inputs, desired)
     if result is not None:
         return result
-    if isinstance(bloq, (Split, Join)):
+    if isinstance(bloq, (Cast, Split, Join)):
         assert set(inputs) == {"reg"}
         assert len(inputs["reg"]) == bloq.signature.get_left("reg").total_bits()
         assert len(inputs["reg"]) == bloq.signature.get_right("reg").total_bits()
