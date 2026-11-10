@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **200/216**.
+Validated quantum-program counterparts: **201/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -116,7 +116,7 @@ Validated local Notebook workflows:
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 
 
-## Community (11 native programs)
+## Community (12 native programs)
 
 - [periodic_laplacian_1d](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/README.md)
 - [periodic_laplacian_nd](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/README.md)
@@ -129,6 +129,7 @@ Validated local Notebook workflows:
 - [classical_shadows](community/paper_implementation_project/classical_shadows/README.md)
 - [harmonic_oscillator](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/README.md)
 - [quantum_compression_algorithm_for_symmetric_states](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/README.md)
+- [stateprep_guassian_using_qsvt](community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/README.md)
 
 Validated local Notebook workflows:
 

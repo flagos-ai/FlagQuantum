@@ -5467,7 +5467,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

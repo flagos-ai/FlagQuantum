@@ -13,6 +13,7 @@ Native FlagQuantum programs currently available:
 - [classical_shadows](paper_implementation_project/classical_shadows/README.md)
 - [harmonic_oscillator](paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/README.md)
 - [quantum_compression_algorithm_for_symmetric_states](paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/README.md)
+- [stateprep_guassian_using_qsvt](paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/README.md)
 
 ## Validated local Notebook workflows
 

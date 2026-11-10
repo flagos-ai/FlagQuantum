@@ -1,6 +1,15 @@
 # Native Gaussian QSVT LCU and exact amplification
 
-Status: semantic contract; independent full-state acceptance pending.
+Status: accepted locally. 18 new Gaussian tests and 21 DQI regressions pass;
+29 catalog/API tests and strict typing of five Python files pass. Fresh 216
+originals exactly match prior hashes, outcomes and resources; approved six pass
+and all 29 production pins are unchanged. Native coverage is 201/216; Notebook
+coverage remains 24/213.
+
+Native: 18 physical bits, 5 compiler work bits, two explicit clean ports,
+3,757 operations and depth 3,186. Approved source: 17 physical bits, 6 work
+bits, 3,194 operations and depth 2,873. Independent full complex amplitude
+errors are below 1e-14; clean-port and work leakage are below 1e-22.
 
 Preserve eight fractional data bits, all 29 even and 28 odd LCU phases, the
 source's preparation/adjoint order, branch-relative and absolute phases, and two
