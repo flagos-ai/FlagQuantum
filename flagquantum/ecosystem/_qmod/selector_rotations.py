@@ -8,6 +8,10 @@ from dataclasses import replace
 from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING, NoReturn
 
+from ...compiler._construction.rotation_table import (
+    emit_rotation_table as emit_shared_rotation_table,
+)
+from ...compiler._hybrid.model import Value
 from .angles import REAL_LITERAL
 from .syntax import Expression, Function, Statement, Token, reject
 
@@ -159,47 +163,12 @@ def emit_rotation_table(
     destination: Location,
     angles: tuple[float, ...],
 ) -> None:
-    target, wire = destination
-    if not selector:
-        owner.effect_op(
-            "qreg.gate",
-            token,
-            (target,),
-            gate=f"r{axis.lower()}",
-            index=wire,
-            angle=angles[0],
-        )
-        return
-    size = len(angles)
-    # The Walsh coefficients in cyclic Gray order give one CX transition per
-    # step. Selector bits are controls throughout, including the closing edge.
-    coefficients = [angle / size for angle in angles]
-    stride = 1
-    while stride < size:
-        for start in range(0, size, 2 * stride):
-            for left in range(start, start + stride):
-                right = left + stride
-                a, b = coefficients[left], coefficients[right]
-                coefficients[left], coefficients[right] = a + b, a - b
-        stride *= 2
+    def emit(
+        opcode: str, values: tuple[Value, ...], attributes: dict[str, object]
+    ) -> None:
+        owner.effect_op(opcode, token, values, **attributes)
 
-    def gate(name: str, **attrs: object) -> None:
-        owner.effect_op("qreg.gate", token, (target,), gate=name, index=wire, **attrs)
-
-    if axis == "X":
-        gate("h")
-    rotation = "ry" if axis == "Y" else "rz"
-    for step in range(size):
-        gray = step ^ (step >> 1)
-        gate(rotation, angle=coefficients[gray])
-        following = (step + 1) % size
-        edge = gray ^ following ^ (following >> 1)
-        control, index = selector[edge.bit_length() - 1]
-        owner.effect_op(
-            "qreg.pair_gate", token, (control, target), gate="cx", indices=(index, wire)
-        )
-    if axis == "X":
-        gate("h")
+    emit_shared_rotation_table(axis, selector, destination, angles, emit)
 
 
 def _atom(node: Expression, name: str) -> bool:
