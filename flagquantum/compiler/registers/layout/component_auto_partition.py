@@ -90,10 +90,6 @@ def auto_partition_component_program(
         raise ValueError("child input names and widths must match the layout")
     if set(layout.output_names) != {r.name for r in rights}:
         raise ValueError("child output names must match the layout")
-    if not layout.left_only and any(
-        r.side != RegisterSide.THRU for r in child.registers
-    ):
-        raise ValueError("repacked AutoPartition requires THRU child ports")
     names = {f.name for f in record.functions}
     if name in names:
         raise ValueError("packed entry conflicts with an existing definition")
