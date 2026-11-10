@@ -96,8 +96,10 @@ Run the focused wiring scenarios in the locked reference environment:
 python -m pytest tests/unit/test_component_tensor_nodes.py -q
 ```
 
-Superoperator/discard semantics, friendly index names, root wrapping, automatic
-leaf-supplier discovery, and full `_quimb.py` parent-file acceptance remain open.
+At GRAPH60, superoperator/discard semantics, friendly index names and root
+wrapping remained open. Later finite slices are documented below and in the
+linked helpers; automatic leaf discovery and full parent-file acceptance remain
+open.
 
 ## Final local verification
 
@@ -127,3 +129,73 @@ No new failure ID was observed, but the default suite is not green or complete.
 The exact comparison, source hashes, resource categories and execution logs live
 under `ftqc-reference-env/g2-component-tensor-nodes-*` in the local reference
 workspace. Full source-file acceptance remains open.
+
+## Mixed component channels (GRAPH74)
+
+`component_superoperator_nodes(record, order, supply, like, entry="main")`
+uses the same private SSA wiring loop as the pure-state helper. Its supplier
+receives a fourth argument, `fresh_label()`, sharing the monotonically allocated
+numerical namespace with all external and future SSA edges. Labels obtained
+from local port maxima are unsafe: they can collide with later calls. Request
+hidden environment labels during supply; do not retain the allocator for later
+use. These labels allocate no physical qubit or classical slot.
+
+The supplier yields existing `TensorNetworkNode` objects and original integer
+labels to discard. This adapts unchanged `cbloq_to_superquimb`'s tensor and
+`DiscardInd` protocol. The helper doubles nodes using the existing conjugate
+pair mapping, then joins only explicitly requested trace edges. The existing
+trace validator requires one exposed leg in each direction and rejects missing,
+internal, duplicate and invalid labels. External entry ports cannot be discarded
+without changing their signature. Port maps returned by the helper remain
+undoubled; pass them to `contract_register_superoperator` with the same entry
+signature. Empty graphs still return no nodes and require explicit scalar
+supply before contraction.
+
+The pure-state interface and classical-port refusal are unchanged. Both paths
+share validation, Compiler-provided call order, SSA connectivity and per-bit
+identities for untouched returned ports. No second graph traversal, registry,
+serialized contract, public export or foreign graph representation is added.
+This is a `single_device_fast_path` numerical inspection slice; no distributed
+capacity or accelerator claim is made.
+
+The finite verification graph measures two quantum array elements in Z and X,
+retains or explicitly discards their reversed classical outputs, and carries
+untouched quantum and classical spectator ports. Four dtypes and scalar/empty
+classical layouts compare every tensor's data and canonical per-axis wiring
+with original `cbloq_to_superquimb`, then compare the full channel. A supplier
+using original source leaf data replaces the native measurement leaves without
+modifying the consumer. Repeated graph invocations have independent namespaces;
+environment labels never collide with later call ports. A separate two-element
+classical permutation checks direct-through array wiring.
+
+All four joint measurement branches preserve full complex amplitudes with an
+entangled spectator and a clean work bit. Relative-phase derivatives match
+source tensors. Existing `circuit.append(op)` executes the same bound instructions
+for both classical input values, retained/discarded outputs and all branches.
+The X environment is rotated only for source-amplitude comparison, as documented
+in [measurement copy](MEASUREMENT_COPY.md); this is not an emitted gate.
+
+Resource categories remain separate. Numerical wiring/doubling/tracing emits
+zero physical instructions or workspace. The bound example emits one H, two
+measurements and one classical XOR for external CBit initialization; reset and
+T counts are zero. The source QEC model reports two measurements, zero Clifford
+and zero T-equivalents. Its X tensor has no matching physical decomposition,
+and the initialization is a FlagQuantum adapter cost. The caller has four
+physical bits: two consumed inputs, one spectator and one clean bit. Classical
+ports occupy immutable classical slots rather than quantum wires. Tensor storage
+and dense contraction storage must not be reported as physical resources or
+peak construction memory.
+
+Automatic leaf discovery, feedback/conditional call admission, classical parity
+leaf supply, trace-only inputs without numerical tensor legs, nested numerical
+expansion policy, and full `_quimb.py` parent-file acceptance remain open. Callers
+must select/expand components using the existing Compiler boundary first.
+The supplier is responsible for genuine classical/quantum semantics; merely
+accepting a CBit axis does not infer a stochastic channel or dephase it.
+
+Run the finite scenarios in the locked reference environment:
+
+```bash
+python -m pytest tests/unit/test_component_superoperator_nodes.py -q
+python -m examples.algorithms.binary_field_arithmetic
+```

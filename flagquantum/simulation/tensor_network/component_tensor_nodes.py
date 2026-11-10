@@ -53,6 +53,40 @@ def component_tensor_nodes(
     ValueError before callbacks. Missing suppliers and callback errors propagate.
     Empty networks remain empty; scalar nodes must come from a supplier.
     """
+
+    def attach(
+        function: FunctionRecord,
+        incoming: Mapping[str, tuple[tuple[int, ...], ...]],
+        outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+        fresh_label: Callable[[], int],
+    ) -> Iterable[TensorNetworkNode]:
+        return supply(function, incoming, outgoing)
+
+    return _component_tensor_nodes(record, order, attach, like, entry, classical=False)
+
+
+def _component_tensor_nodes(
+    record: ProgramRecord,
+    order: tuple[int, ...],
+    supply: Callable[
+        [
+            FunctionRecord,
+            Mapping[str, tuple[tuple[int, ...], ...]],
+            Mapping[str, tuple[tuple[int, ...], ...]],
+            Callable[[], int],
+        ],
+        Iterable[TensorNetworkNode],
+    ],
+    like: torch.Tensor,
+    entry: str,
+    *,
+    classical: bool,
+) -> tuple[
+    tuple[TensorNetworkNode, ...],
+    dict[str, tuple[tuple[int, ...], ...]],
+    dict[str, tuple[tuple[int, ...], ...]],
+]:
+    """Share SSA wiring and one label namespace across numerical suppliers."""
     diagnostics = verify_program_record(record)
     if diagnostics:
         raise ValueError(f"invalid component tensor graph: {diagnostics}")
@@ -93,25 +127,31 @@ def component_tensor_nodes(
         *(functions[op.callee or ""].registers for op in block.operations),
     ):
         assert registers is not None
-        if any(register.dtype.classical_bits for register in registers):
+        if not classical and any(
+            register.dtype.classical_bits for register in registers
+        ):
             raise ValueError(
                 "pure-state component tensors do not accept classical ports"
             )
 
     next_label = 0
 
+    def fresh_label() -> int:
+        nonlocal next_label
+        label = next_label
+        next_label += 1
+        return label
+
     def allocate(
         registers: Iterable[Register], values: tuple[ValueRef, ...]
     ) -> dict[ValueRef, tuple[int, ...]]:
-        nonlocal next_label
         labels = {}
         identities = iter(values)
         for register in registers:
             width = register.bitsize
             assert isinstance(width, int)
             for _ in register.all_idxs():
-                labels[next(identities)] = tuple(range(next_label, next_label + width))
-                next_label += width
+                labels[next(identities)] = tuple(fresh_label() for _ in range(width))
         return labels
 
     def ports(
@@ -146,6 +186,7 @@ def component_tensor_nodes(
                 callee,
                 ports(child.lefts(), operation.operands, labels),
                 ports(child.rights(), operation.results, labels),
+                fresh_label,
             )
         )
     for value in block.return_values:

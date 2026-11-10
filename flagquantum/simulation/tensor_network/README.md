@@ -116,6 +116,14 @@ See [component tensor nodes](../../../docs/development/COMPONENT_TENSOR_NODES.md
 for interface, ownership, source connectivity checks, empty/scalar boundaries,
 replacement suppliers and the measured append consumer.
 
+`component_superoperator_nodes.py` reuses that SSA wiring loop for mixed
+quantum/classical channels. Suppliers request fresh hidden environment edges
+from the shared numerical label allocator and explicitly yield discard labels.
+Existing conjugate-pair and trace helpers produce nodes for the existing channel
+contraction boundary; pure-state admission remains unchanged. See the same
+[component tensor notes](../../../docs/development/COMPONENT_TENSOR_NODES.md#mixed-component-channels-graph74)
+for source connectivity, full-channel, branch, gradient and resource checks.
+
 `register_zero_state.py` emits existing binary zero-ket nodes for caller-identified
 pure-output leaves using current bit labels and caller dtype/device. It connects
 Compiler zero-input wrappers through SSA wiring without constructing dense word
