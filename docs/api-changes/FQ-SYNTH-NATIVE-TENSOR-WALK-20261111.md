@@ -1,6 +1,11 @@
 # Native tensor-hypercontraction zero-entry walk
 
-Status: semantic contract; corpus acceptance remains 206/216.
+Status: accepted locally. Native corpus acceptance is 207/216 (95.8%), with
+nine pending. Twenty-nine new and twenty-four admission/regression tests pass,
+alongside strict typing for six files and 29 catalog/API tests. Fresh replay of
+216 originals exactly preserves prior hashes, outcomes and resources; approved
+six execute. All prior 29 production pins remain unchanged; Services' interval
+MPS admission is separately recorded as the thirtieth pin with old/new hashes.
 Classification: `single_device_fast_path`.
 
 Preserve the original four-bit clock, all 71 ELL bits, all eight PSI bits,
@@ -30,6 +35,12 @@ an independent Circuit; test nonzero coherent clock phases and changed spin
 preparation, memory/qubit/work budgets and source proof mutations. Preserve
 original bytes and resource baseline. Native exact interval MPS reuses the
 Runtime bond proof; admission changes must be explicitly pinned in evidence.
+
+Both default programs use 83 logical bits, six active bits, no workspace,
+43 operations and depth 34. Actual exact MPS storage is 3,168 bytes, with a
+42,496-byte planned state buffer and maximum bond four. All 64 occupied-support
+amplitudes agree within 7e-16 and their total probability within 4e-15 of one.
+No truncation or dense full-state conversion is used.
 
 After passing, run fresh 216-original and approved-six replay, compare all
 original outcomes/resources, archive immutable evidence and update catalog and
