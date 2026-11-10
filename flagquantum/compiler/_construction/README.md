@@ -792,3 +792,12 @@ compute inputs, initialization, roles and cleanup. `frontend_regions` freshens
 local SSA identities when emitting the inverse, retaining compute/action/cleanup
 order while reversing adjacent unitary regions. User allocation, publication,
 drop and escaping locals remain outside the native unitary-region contract.
+
+Native predicate-X shares bounded predicate capture with Pauli-axis rotations.
+A comparison or Boolean composite controls one initialized writable scalar X
+location, disjoint from every condition input register. Raw all-ones array/scalar
+controls keep their existing direct-location path. Borrowed helper predicates
+resolve formal names against their active aliases, require complete raw registers
+in logical bit order and derive graph widths from actual values. Partial or
+permuted numeric views, array arithmetic, Output escape and arbitrary helper
+control remain outside this boundary.

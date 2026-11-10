@@ -1047,3 +1047,17 @@ their existing checked paths; mixing arithmetic calls into a pure-unitary region
 is not admitted. Native literal-power phase expressions use existing bounded
 sparse polynomial lowering. This is local CPU correctness, not hardware,
 scalability, optimality or full Notebook-workflow evidence.
+
+## Native bounded predicate-X
+
+The [predicate-X contract](../api-changes/FQ-SYNTH-NATIVE-PREDICATE-X-20261110.md)
+admits comparison and Boolean-composite comparison controls with at most eight
+input bits and one disjoint initialized writable scalar X target. Raw all-ones
+controls keep their existing semantics. Mutable helper predicates require complete
+raw numeric registers in logical bit order; partial/permuted numeric views,
+array arithmetic, arbitrary controlled helper calls and in-place increments are
+not admitted by this change. Generated predicate work is checked and cleaned
+under inverse regions. The native hypercube walk and qfold examples retain source
+coin/shift/oracle semantics and independent complete state checks; resource gaps
+remain explicit, and retained qfold coin/move environment is not clean workspace.
+This is local semantic evidence, not full Notebook workflow or optimization proof.

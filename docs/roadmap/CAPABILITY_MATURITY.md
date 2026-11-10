@@ -633,3 +633,17 @@ in `tests/integration/test_synthesis_native_fourier_lcu.py`; the source and nati
 resource gap remains explicit. User allocation, Output publication, general
 callbacks and ownership changes refuse. This does not
 promote runtime gradients, hardware, scalability or complete Notebook coverage.
+
+## Native predicate-controlled walk slice
+
+Maturity: `development_evidence`. Bounded comparison/composite predicate-X reuses
+Compiler graph capture, indexed control-X and direct compute/uncompute cleanup.
+Borrowed numeric input resolution uses complete raw registers and actual widths;
+root and formal names need not match. Native hypercube and qfold programs have
+unchanged-source and independent Circuit amplitude checks in
+`tests/integration/test_synthesis_native_predicate_walks.py`; branch XOR,
+coherence, borrowed roles, bounds and inverse-region safety are covered by
+`tests/integration/test_synthesis_native_predicate_x.py`. Actual width, work,
+operations, depth and memory constraints remain authoritative. In-place increments,
+free/reset, arbitrary higher-order callbacks, full Notebook workflows, hardware
+and resource-optimality claims remain outside this slice.
