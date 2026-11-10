@@ -26,3 +26,15 @@ borrowing, all refusal boundaries and actual physical/memory budgets. Source
 examples require independent Circuit comparisons and honest source precision
 handling before native coverage increases. Existing original-corpus outcomes
 must be replayed. This is implementation admission, not release authorization.
+
+## Python tooling conformance
+
+An optional matching zero-argument constructor initializer is also admitted:
+`state: QArray[QBit] = QArray()`, `bit: QBit = QBit()` or
+`word: Annotated[QNum, 3] = QNum()`. It declares an uninitialized captured
+handle; it performs no host construction or quantum allocation. This keeps
+ordinary Python lint/type tools useful without ignores for bare annotations.
+The annotation owns the width and kind; mismatching constructors, arguments,
+keywords and arbitrary initializer expressions are refused. Bare declarations
+remain accepted in retained source. Existing constructor host behavior does not
+change. User examples use the tool-compatible declaration form.

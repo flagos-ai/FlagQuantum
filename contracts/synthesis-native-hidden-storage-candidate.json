@@ -18,5 +18,9 @@
   "free_admitted": false,
   "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-HIDDEN-STORAGE-20261110.md",
   "implementation_authorized": true,
-  "release_authorized": false
+  "release_authorized": false,
+  "declaration_initializers": [
+    "none",
+    "matching zero-argument QBit/QNum/QArray constructor"
+  ]
 }
