@@ -374,3 +374,16 @@ Run `tests/unit/test_component_structured_control.py` for pinned signatures,
 named graph connections, primitive operands/feedback, independent resource-model
 closure, complete small measurement histories, complex amplitudes, clean work,
 exact adjoint round trips and the unchanged `circuit.append(op)` consumer.
+
+`control.component_extension.extend_component_control_system` owns the stored
+ControlledViaAnd.get_ctrl_system extension protocol. It takes the original
+forward Program, specialized positive adders, existing named controls and new
+control descriptors with their activation words. New clauses precede existing
+clauses in one combined predicate. Combined names use the source collision rule
+against forward data ports. New descriptor names label their tuple positions.
+The returned module and adder share its definitions through the normal builder.
+The adder pops old controls from the supplied data dictionary, invokes the
+combined wrapper once, and returns new controls separately from old controls
+and data successors. Both sets retain shape and MSB-first ordering. The wrapper
+owns predicate lifetimes and measured erasure. Original forward semantics and
+the exact specialized adjoint bodies retain their existing owners.
