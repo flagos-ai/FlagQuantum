@@ -882,3 +882,54 @@ baseline. The remaining baseline ledger test did not run in this selection.
 Current typed admission remains unparameterized bit, opaque and uint. Other
 Core descriptors, specialized single-control extension protocols and source
 internal predicate-node identity need their separate acceptance slices.
+
+
+## GRAPH42 packed specialized controls
+
+Commits `9c7442b3` and `16adb7a3` reuse local helper-name isolation and implement
+_MultiControlledFromSinglyControlled around an existing positive single-control
+Program. The root replaces its leading scalar THRU QBit with a packed QBit
+array in activation order. Three calls compute the predicate, invoke the positive
+child and erase the predicate. Source junk is a QBit array for more than two
+controls. Existing split/join adapters retain shared opaque-word ownership
+without extra primitive gates. The valid two-control factory packs new then old
+control in the original input dictionary and returns their separate successors.
+Compiler owns binding and transforms. Existing circuit.append(op) execution
+continues through the shared Runtime path.
+
+The 91 new cases compare root and three child signatures, named graph connections,
+primitive operands, exact parameters, per-wire dependencies and measurement
+feedback. All control polarities at widths two and three and two patterns each
+at widths four and five pass. Every measurement history for each tested pattern
+is exhaustive, at most 32 branches. Two patterns each at widths two and three
+also exhaust all forward/inverse history pairs, at most 64 pairs. Full complex
+amplitudes, entangled spectators, zero work, expanded calls and eight dynamic
+trajectories pass. Larger widths and other four/five-bit patterns are untested.
+The existing stored-body source-adjoint adapter retains the original decomposition.
+
+The five-bit 10101 example emits 8 X, 15 H, 10 T, 10 Tdag, 30 CX, 5 S, 1 CH,
+1 phase, 5 measurements, 5 CZ and 5 resets. Five clean work wires yield total
+width twelve. Independent source QEC reports t=1, and_bloq=5, clifford=17,
+rotation=2, measurement=5, other categories zero, T-equivalent=43 and peak twelve.
+Twenty emitted T/Tdag gates remain separately counted. Seven logical categories
+close against actual stored child calls. Literal ZPow phase parameters remain
+at the previously verified primitive boundary.
+
+Acceptance includes 5717 concentrated cases in 39.25 seconds, 282 focused cases
+in 42.84 seconds and 64 integration cases in 4.20 seconds. Strict mypy checks
+56 files. Formatting, team scope, architecture, Program/API checks and four
+append/resource examples pass. The specialized module and shared predicate have
+100% statement/branch coverage. Control retains two uncovered final guards and
+98% coverage. All 41 original source blobs match the pinned inventory.
+Default results are 22179 passed, 300 skipped, 1065 warnings and five failures
+in 106.35 seconds. Maxfail stopped the run. All five IDs are a subset of the
+independent seven-failure baseline. The other two baseline IDs were unobserved.
+
+The previously recorded further-single-control callback TypeError from the
+original np.concatenate call remains reproducible for both added polarities.
+Direct three-control helper execution does not certify that failing callback.
+Source files remain unchanged. Generic multi-register fallback, direct positive
+and negative specialization selection, AdjointWithSpecializedCtrl, internal And
+node-by-node graphs and complete parent-file acceptance remain open. Core
+admission continues to cover unparameterized bit, opaque and uint registers.
+Evidence is retained under ftqc-reference-env/g2-specialized-control-*.
