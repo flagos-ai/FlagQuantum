@@ -79,3 +79,11 @@ existing state-preparation routine and fq.run. Run
 projectors, complete sector identities, signed/random Clifford frames and input
 validation. The stage contract is
 [explicit stabilizer reduction](../../../docs/development/FERMION_STABILIZER_REDUCTION.md).
+Controlled time evolution reuses `low_rank_evolution(...).control(1,
+ctrl_qubits=2*n_modes)`: it is not a separate algorithm or public wrapper. The
+control branch retains the exact energy-offset phase, while both branches use
+the existing product formula. Only its scalar time supports autograd. Run
+`python -m examples.algorithms.fermion_controlled_evolution` for an H2 control
+interferometer and `python -m pytest tests/unit/fermion/test_controlled_evolution.py
+-q` for independent full-branch, phase, convergence and gradient references.
+ That profile is unreduced JW/CPU only and makes no routing or hardware claim.
