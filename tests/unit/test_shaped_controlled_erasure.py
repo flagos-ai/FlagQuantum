@@ -52,12 +52,15 @@ def shaped_fixture(
     shape: tuple[int, ...],
     selected: int,
     inverse: bool = False,
+    free_dirty: bool | None = None,
 ) -> tuple[ProgramRecord, Any, Any]:
     """Store real calls around one existing controlled lifetime computation."""
     from qualtran import QAny, QUInt
     from qualtran.bloqs.bookkeeping import Cast
 
-    child, source_child = controlled_fixture(values, dirty, dirty)
+    child, source_child = controlled_fixture(
+        values, dirty, dirty if free_dirty is None else free_dirty
+    )
     if inverse:
         adjoints = {
             "ch": "ch",

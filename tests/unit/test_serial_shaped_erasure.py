@@ -39,10 +39,18 @@ ORDERS = ((0, 1), (1, 0), (0, 0))
 
 
 def serial_fixture(
-    values: tuple[int, ...], dirty: bool, order: tuple[int, ...], inverse: bool = False
+    values: tuple[int, ...],
+    dirty: bool,
+    order: tuple[int, ...],
+    inverse: bool = False,
+    free_dirty: bool | None = None,
 ) -> tuple[ProgramRecord, Any]:
-    first, source_first, _ = shaped_fixture(values, dirty, (1, 2), order[0], inverse)
-    second, source_second, _ = shaped_fixture(values, dirty, (1, 2), order[1], inverse)
+    first, source_first, _ = shaped_fixture(
+        values, dirty, (1, 2), order[0], inverse, free_dirty
+    )
+    second, source_second, _ = shaped_fixture(
+        values, dirty, (1, 2), order[1], inverse, free_dirty
+    )
     assert first.functions[1:] == second.functions[1:]
     root = first.functions[0]
     assert root.registers is not None
