@@ -7,25 +7,29 @@ from typing import TYPE_CHECKING
 
 from .frontend_numeric import has_numeric
 from .frontend_python import _error
+from .frontend_views import locations
+from .register_profile import register_width
 
 if TYPE_CHECKING:
     from .frontend_program import _Body
 
 
 def capture_expression_xor(owner: _Body, node: ast.AugAssign) -> None:
+    ports = owner.alias_ports if owner.aliases is not None else owner.ports
+    assert ports is not None
     if (
-        owner.aliases is not None
-        or not isinstance(node.target, ast.Name)
-        or node.target.id not in owner.ports
-        or owner.ports[node.target.id].kind not in {"qnum", "qbit"}
-        or owner.ports[node.target.id].role != "output"
-        or has_numeric(owner.ports[node.target.id])
+        not isinstance(node.target, ast.Name)
+        or node.target.id not in ports
+        or ports[node.target.id].kind not in {"qnum", "qbit"}
+        or ports[node.target.id].role
+        not in ({"output"} if owner.aliases is None else {"inout"})
+        or has_numeric(ports[node.target.id])
     ):
         _error(
             owner.source,
             node,
             "program.xor",
-            "expression XOR requires a root-owned unsigned scalar Output",
+            "expression XOR requires an unsigned scalar Output or borrowed inout register",
         )
     name = node.target.id
     if any(
@@ -38,6 +42,19 @@ def capture_expression_xor(owner: _Body, node: ast.AugAssign) -> None:
             "program.xor.alias",
             "expression XOR target cannot alias an input",
         )
-    destination = owner.register(node.target)
+    if owner.aliases is None:
+        destination = owner.register(node.target)
+    else:
+        view = locations(owner, node.target)
+        destination = view[0][0]
+        if view != tuple(
+            (destination, bit) for bit in range(register_width(destination))
+        ):
+            _error(
+                owner.source,
+                node.target,
+                "program.borrow",
+                "expression XOR target must borrow a complete raw register in logical bit order",
+            )
     expression, inputs = owner.capture_expression(node.value, node)
     owner.emit("qreg.xor", node, (destination, *inputs), callee=expression.name)

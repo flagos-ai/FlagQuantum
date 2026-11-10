@@ -230,6 +230,7 @@ class _Body:
         self.region_depth = 0
         self.expressions = 0
         self.aliases: dict[str, tuple[tuple[Value, int], ...]] | None = None
+        self.alias_ports: dict[str, _Port] | None = None
         self.array_names = {p.name for p in ports if p.kind == "qarray"}
         self.loop_variables: dict[str, int] = {}
         self.classical = dict(classical or {})
@@ -308,8 +309,9 @@ class _Body:
         self.effect = following
 
     def assign(self, node: ast.AugAssign) -> None:
+        visible = self.aliases if self.aliases is not None else self.ports
         if isinstance(node.op, ast.BitXor) and any(
-            isinstance(child, ast.Name) and child.id in self.ports
+            isinstance(child, ast.Name) and child.id in visible
             for child in ast.walk(node.value)
         ):
             capture_expression_xor(self, node)

@@ -779,7 +779,8 @@ computation or zero proof. It is its own inverse, so existing root adjoint and
 within/apply composition can reverse it without a separate arithmetic inverse.
 
 Signed/scaled expression reads, signed/scaled destinations, array/subregister
-assignment and borrowed mutable-helper expression XOR remain refused. Literal
+assignment remains refused. Borrowed helper expression XOR follows the bounded
+whole-register contract below. Literal
 raw-mask XOR keeps its existing behavior. Every read witness survives source
 alias checking, including canceled target reads. The register verifier also
 rejects formatted operands rather than trusting native capture alone.
@@ -801,3 +802,16 @@ resolve formal names against their active aliases, require complete raw register
 in logical bit order and derive graph widths from actual values. Partial or
 permuted numeric views, array arithmetic, Output escape and arbitrary helper
 control remain outside this boundary.
+
+### Borrowed expression XOR
+
+Static mutable helpers can apply `target ^= expression` to complete unsigned
+scalar registers. `frontend_views` retains the active formal port metadata while
+inlining and restores it after nested calls. `frontend_xor` checks the writable
+destination and complete logical-bit view; `capture_expression` resolves inputs
+through actual aliases. Existing `qreg.xor` verification and lowering preserve
+nonzero targets, coherent amplitudes and cleaned arithmetic work. Inputs and
+targets cannot overlap. Partial/permuted views, arrays, numeric formats, implicit
+initialization and mutable helper adjoint/control remain refused. See the
+[borrowed XOR contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-BORROWED-XOR-20261110.md)
+and `tests/integration/test_synthesis_native_expression_xor.py`.

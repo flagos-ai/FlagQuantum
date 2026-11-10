@@ -101,7 +101,12 @@ def capture_statements(
         elif isinstance(statement, ast.If):
             capture_conditional(owner, statement)
         elif isinstance(statement, ast.AugAssign):
-            if owner.aliases is not None:
+            visible = owner.aliases if owner.aliases is not None else owner.ports
+            helper_xor = isinstance(statement.op, ast.BitXor) and any(
+                isinstance(child, ast.Name) and child.id in visible
+                for child in ast.walk(statement.value)
+            )
+            if owner.aliases is not None and not helper_xor:
                 _error(
                     owner.source,
                     statement,

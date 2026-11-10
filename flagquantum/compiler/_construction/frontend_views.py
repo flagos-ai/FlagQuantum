@@ -281,7 +281,7 @@ def capture_loop(owner: _Body, node: ast.For) -> None:
 def inline_mutable(
     owner: _Body, node: ast.Call, definition: _QuantumFunction, ports: Sequence[_Port]
 ) -> None:
-    """Expand gate-only borrowed helpers into the caller's checked owned effects."""
+    """Expand checked borrowed helpers into the caller's owned effects."""
     from .frontend_evolution import flush_evolutions
 
     if any(port.role != "inout" for port in ports):
@@ -347,12 +347,14 @@ def inline_mutable(
         owner.definition,
         owner.source,
         owner.aliases,
+        owner.alias_ports,
         owner.array_names,
         owner.loop_variables,
         owner.classical,
     )
     owner.definition, owner.source = definition, definition.source
     owner.aliases = bindings
+    owner.alias_ports = {port.name: port for port in ports}
     owner.array_names = {port.name for port in ports if port.kind == "qarray"}
     owner.loop_variables = {}
     owner.classical = classical
@@ -366,6 +368,7 @@ def inline_mutable(
             owner.definition,
             owner.source,
             owner.aliases,
+            owner.alias_ports,
             owner.array_names,
             owner.loop_variables,
             owner.classical,
