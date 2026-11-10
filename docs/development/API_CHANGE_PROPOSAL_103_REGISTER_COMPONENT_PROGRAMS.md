@@ -1763,3 +1763,43 @@ The default smoke/unit tier was not rerun in this batch. Its previously recorded
 seven independent baseline failures and permission-specific socket recheck remain
 recorded in GRAPH30. External classical initialization, Q-0157.03 full source
 replacement inventory and general borrowed-state restoration remain open.
+
+### External CBit initialization prerequisite 1.17
+
+The internal bind_register_program accepts classical_inputs, an immutable tuple
+aligned with flattened LEFT port elements in declared row-major order. Quantum
+positions contain None. Each owned CBit position contains a built-in boolean
+or a built-in integer zero or one and has an empty physical input tuple. Empty
+quantum words also have empty physical tuples, retaining their distinct quantum
+identity through the declared dtype. An omitted initialization tuple preserves
+quantum-only binding. External CBit values require explicit initialization.
+Validation rejects missing/extra elements, a value at a quantum position, None
+at a classical position and unsupported numerical objects before emission.
+These concrete specialization inputs form a narrower physical boundary than the
+source numerical simulator's dtype callback domain. General numerical codecs
+and their source diagnostics remain Simulation responsibilities.
+
+Each CBit element gets a fresh immutable slot in flattened input order. Emit
+one existing constant classical XOR assignment per input bit, including zero.
+Quantum inputs emit no initialization instruction. Measurement and Parity slots
+start after initialized slots and retain existing single-assignment behavior.
+Existing nested component calls, owned successors, reordered outputs, Discard
+and independently live bool snapshots consume these slots unchanged. Output
+quantum/classical tuples retain their existing positional representation.
+
+This specializes concrete classical inputs at binding time. It does not add
+runtime-supplied slots, new Core operations, schemas, public exports or execution
+backends. Existing positive physical wire requirements remain. A purely
+classical logical graph requires an explicitly supplied existing carrier wire
+through the current input or workspace contract. No implicit wire is allocated.
+Source CBit/Parity logical quantum width remains zero and the physical carrier
+width is reported separately.
+
+Pinned source CompositeBloq classical entry binding validates named arrays,
+then assigns each row-major Soquet value. Native physical initialization follows
+the same valid element ordering. Source classical-port Cirq export remains
+unsupported. Compare unmodified source CBit Cast/Parity/Discard and controlled
+quantum tensors and callbacks, including all small classical inputs, complex
+spectators, both feedback polarities, measurement branches, zero work and actual
+append execution. Resource evidence separates initialization assignments from
+logical Parity assignments, quantum primitives and original model queries.
