@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **164/216**.
+Validated quantum-program counterparts: **166/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (26 native programs)
+## Algorithms (27 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -29,6 +29,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
 - [solving_qlsp_with_aqc](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
 - [vqls_with_lcu](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/README.md)
+- [qpe_for_matrix](algorithms/quantum_phase_estimation/qpe_for_matrix/README.md)
 - [hadamard_test](algorithms/quantum_primitives/hadamard_test/README.md)
 - [swap_test](algorithms/quantum_primitives/swap_test/README.md)
 - [adapt_vqe](algorithms/quantum_state_preparation/adapt_vqe/README.md)
@@ -189,7 +190,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (32 native programs)
+## Tutorials (33 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -208,6 +209,7 @@ Validated local Notebook workflows:
 - [execution_tutorial](tutorials/basics/quantum_programming/execution_tutorial/README.md)
 - [execution_tutorial_part2](tutorials/basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
+- [qpe_for_unitary_matrix](tutorials/technology_demonstrations/qpe/qpe_for_unitary_matrix/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](tutorials/technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
