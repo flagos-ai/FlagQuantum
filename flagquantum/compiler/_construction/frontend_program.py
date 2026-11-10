@@ -46,6 +46,7 @@ from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
 from .frontend_qpe import capture_matrix_qpe
 from .frontend_regions import capture_adjoint, capture_unitary_within
+from .frontend_rotation_table import capture_rotation_table
 from .frontend_statements import capture_statements
 from .frontend_storage import drop_hidden, hidden_declarations
 from .frontend_transforms import capture_modular_exp, capture_transform
@@ -86,6 +87,7 @@ from .program_types import (
     rz,
     rzz,
     s,
+    select_rotation,
     suzuki_trotter,
     swap,
     u,
@@ -537,6 +539,7 @@ class _Body:
                     inplace_prepare_state,
                     modular_exp,
                     suzuki_trotter,
+                    select_rotation,
                     qdrift,
                 )
             )
@@ -599,6 +602,8 @@ class _Body:
                     "allocation and declared width must agree",
                 )
             self.emit("qreg.allocate", node, (destination,))
+        elif function is select_rotation:
+            capture_rotation_table(self, node)
         elif function is qpe:
             capture_matrix_qpe(self, node)
         elif function is unitary:

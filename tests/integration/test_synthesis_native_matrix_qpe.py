@@ -124,10 +124,6 @@ def test_controlled_negative_identity_retains_interfering_global_phase(
         ),
         (
             "QNum[3,False,3]",
-            "with adjoint():\n    qpe(lambda:unitary([[1,0],[0,1]],s),p)",
-        ),
-        (
-            "QNum[3,False,3]",
             "for i in range(1):\n    qpe(lambda:unitary([[1,0],[0,1]],s),p)",
         ),
         ("QNum[3,False,3]", "if True:\n    qpe(lambda:unitary([[1,0],[0,1]],s),p)"),

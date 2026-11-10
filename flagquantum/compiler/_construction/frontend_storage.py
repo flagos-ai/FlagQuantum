@@ -14,11 +14,14 @@ if TYPE_CHECKING:
     from .frontend_program import _Body
 
 
-def require_root_storage(owner: _Body, node: ast.expr | ast.stmt) -> None:
+def require_root_storage(
+    owner: _Body, node: ast.expr | ast.stmt, *, unitary_region: bool = False
+) -> None:
     if (
         owner.name != owner.owner.entry
         or owner.aliases is not None
         or owner.region_depth
+        and not unitary_region
         or owner.branch_depth
         or owner.loop_variables
     ):

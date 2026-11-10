@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 def capture_matrix_qpe(owner: _Body, node: ast.Call) -> None:
     """Keep numerical phase formats separate from raw mutable helper borrowing."""
-    require_root_storage(owner, node)
+    require_root_storage(owner, node, unitary_region=True)
     if len(node.args) != 2:
         _error(
             owner.source, node, "program.qpe", "qpe takes a callback and phase counter"

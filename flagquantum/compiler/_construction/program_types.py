@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Sequence
 from contextlib import AbstractContextManager
 from types import GenericAlias
-from typing import Annotated, Generic, TypeAlias, TypeVar, overload
+from typing import Annotated, Generic, Literal, TypeAlias, TypeVar, overload
 
 from ...observables import Observable
 
@@ -183,6 +183,21 @@ def qpe(callback: Callable[[], None], phase_result: QNum, /) -> None:
     the unconditional root, with one to eight signed or unsigned phase bits.
     """
     raise TypeError("qpe is captured inside qfunc; synthesize the program")
+
+
+def select_rotation(
+    axis: Literal["X", "Y", "Z"],
+    angles: Sequence[float],
+    selector: QNum | QArray[QBit],
+    target: QBit,
+    /,
+) -> None:
+    """Apply the raw selector word's static Pauli rotation to one disjoint qubit.
+
+    Tables contain 2**N angles for one to eight selector bits. Numeric sign and
+    fractional metadata do not reinterpret the selector's stored bit pattern.
+    """
+    raise TypeError("select_rotation is captured inside qfunc")
 
 
 def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
