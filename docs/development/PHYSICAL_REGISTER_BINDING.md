@@ -799,3 +799,45 @@ open. Evidence uses the `g2-hierarchy-control-` prefix under the existing
 ftqc-reference-env directory, with source, regression, coverage, checks,
 integration, examples, helper-baseline, default-parallel and default-comparison
 files. The user append workflow is retained through the existing physical binder.
+
+
+## GRAPH40 structured controls and directional predicates
+
+Commits `34e5d4f4` and `fb2b256d` bind the existing And emitter and positive
+hierarchy through typed Program ownership. Explicit outer control names precede
+THRU data ports. Scalar and shape-(1,) negative QBits receive X before and after
+the positive call. Multi-bit controls call the forward predicate, positive body
+once and measured erasure. Forward allocates n-1 clean logical outputs. Opaque
+junk and QBit target remain live during the child, whose work stays separate.
+Erasure measures in reverse ladder order, applies feedback, resets and frees.
+Control words retain row-major element order and MSB-first bit order.
+
+Core currently admits unparameterized QBit, QAny and QUInt on this path. Other
+integer, symbolic, parameterized and classical descriptors are rejected. Existing
+raw-wire emitters retain their accepted wider profile. Automatic outer naming
+and source Partition/And internal typed-node identity need separate acceptance.
+
+The 63 new scenarios match source upper-level named connections and output
+order, primitive operands, per-wire dependencies, parameters and feedback. The
+existing literal ZPow boundary retains a phase parameter without Cirq's extra
+T canonicalization. Histories through five measurements and forward/inverse
+history pairs through three measurements are exhaustive. Complex amplitudes,
+entangled spectators, clean work, expansion, callback replacement and existing
+circuit.append(op) dynamic execution pass. Seven source QEC categories close
+against actual native component-call multiplicities.
+
+Five activation bits 10110 around H/ZPow(0.25) emit 8 X, 15 H, 10 T, 10 Tdag,
+30 CX, 5 S, 1 CH, 1 phase, 5 measurements, 5 CZ and 5 resets. Private clean peak
+is five and total width twelve. Independently, source QEC gives t=1, and_bloq=5,
+clifford=17, rotation=2, measurement=5, other categories zero, total T-equivalent
+43 and qubit peak twelve. The twenty emitted T/Tdag gates stay a separate count.
+
+Local acceptance includes 5566 concentrated, 131 focused and 64 integration
+cases, plus a 63-case exact-parameter rerun, with no skips or warnings. Strict
+mypy checks 52 files. Formatting, scope, architecture, Program/API checks and
+four append/resource examples pass. Predicate statement/branch coverage is 100%.
+The control module reports 98%, with two final guards after builder verification
+uncovered. 39 pinned source Git blobs match the inventory. All seven default
+failure IDs equal the independent directional-call baseline.
+
+Default raw summary. 7 failed, 22286 passed, 300 skipped, 1065 warnings in 449.87s (0:07:29).

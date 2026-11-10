@@ -198,6 +198,9 @@ def test_source_graph_gates_all_histories_phases_and_private_work(
     ports.update({"q": (n,), spectator: (n + 1,)})
     reference = original_gates(source, ports, work, measurements)
     assert_source(gates, reference)
+    assert [(g.name, g.wires, dict(g.params)) for g in gates if g.params] == [
+        (g.name, g.wires, dict(g.params)) for g in reference if g.params
+    ]
     counts = Counter(g.name for g in gates)
     assert counts["measure"] == n
     assert counts["t"] + counts["tdg"] == 4 * n
