@@ -31,6 +31,7 @@ def test_native_workflow_without_external_science_packages() -> None:
         from flagquantum.algorithms.fermion.low_rank import decompose_two_body
         from flagquantum.algorithms.fermion.evolution import low_rank_evolution
         from flagquantum.algorithms.fermion.preparation import prepare_slater, prepare_gaussian
+        from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
         from flagquantum.ecosystem.chemistry.pyscf import build_molecular_problem
         problem = from_native_molecule(create_molecular_hamiltonian([("H", (0, 0, 0)), ("H", (0, 0, 0.7414))]))
         active = select_active_space(problem, active_orbitals=(0, 1)).problem
@@ -53,6 +54,13 @@ def test_native_workflow_without_external_science_packages() -> None:
         gradient = torch.autograd.grad(state.state().reshape(-1)[12].real, time)[0]
         assert torch.isfinite(gradient)
         assert prepare_gaussian(torch.eye(2), torch.zeros(2, 2)).state().reshape(-1)[0].abs() > 0.999
+        fourier_state = fq.Circuit(4, dtype=torch.complex128)
+        fourier_state.x(1)
+        original = fourier_state.state().clone()
+        fourier_state.compose(fermionic_fourier_transform(4))
+        torch.testing.assert_close(fourier_state.state().abs().square().sum(), torch.tensor(1.0, dtype=torch.float64))
+        fourier_state.compose(fermionic_fourier_transform(4, inverse=True))
+        torch.testing.assert_close(fourier_state.state(), original)
         try:
             build_molecular_problem([("H", (0, 0, 0)), ("H", (0, 0, 0.7414))])
         except ImportError as error:

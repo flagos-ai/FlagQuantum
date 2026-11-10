@@ -33,3 +33,20 @@ Givens convention, first run test_preparation.py: every particle sector is check
 against independent complex minors. For factor conventions, run test_evolution.py:
 Fock matrices include the contraction and exact offset phase. Circuit synthesis
 uses unreduced JW registers only. Density-pair gates may be nonadjacent.
+
+Fourier transforms use fourier.py for radix-2 adjacent orbital factors and
+lowering.fermionic_fourier_transform for the full JW circuit. The mathematical
+plan reuses OrbitalDecomposition and imports no circuit or execution code.
+Forward F[p,q] = exp(-2j*pi*p*q/n)/sqrt(n); inverse uses F dagger. Both retain
+natural mode order, fix the vacuum phase to one, and preserve every fermionic
+determinant sign. Supported widths are positive powers of two, including one.
+This is a fermionic basis change, not the qubit QFT. Static CPU complex128 only;
+parity/BK/tapered registers, trainable Fourier factors and performance claims are
+outside this profile. Radix-2 butterflies need O(n*log(n)) interactions before
+routing; this adjacent implementation stores and emits O(n**2) factors.
+
+Run `python -m examples.algorithms.fermion_fourier`: a particle initially in mode
+one has occupation 0.25 in each of four output modes, and the inverse restores
+its amplitudes below 1e-12. Run `python -m pytest tests/unit/fermion/test_fourier.py
+-q` to check plans against torch.fft and complete small Fock-space matrices
+against independent Fourier minors, without phase alignment.
