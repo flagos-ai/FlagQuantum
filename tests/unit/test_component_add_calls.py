@@ -12,6 +12,7 @@ import torch
 
 from flagquantum.compiler.registers.arithmetic.addition import add_ir
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+from flagquantum.compiler.registers.component_expansion import expand_component_calls
 from flagquantum.compiler.registers.component_graph import copy_component_program
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
@@ -60,8 +61,10 @@ def executable_add() -> tuple[FunctionRecord, ...]:
 
 
 @pytest.mark.parametrize("rebuild", [False, True])
+@pytest.mark.parametrize("expand", [False, True])
 def test_two_actual_add_calls_keep_exact_signature_gates_all_branches_and_resources(
     rebuild: bool,
+    expand: bool,
 ) -> None:
     from qualtran import QUInt
     from qualtran.bloqs.arithmetic.addition import Add
@@ -85,6 +88,8 @@ def test_two_actual_add_calls_keep_exact_signature_gates_all_branches_and_resour
     module = native.finalize({**outputs, "spectator": native.inputs["spectator"]})
     if rebuild:
         module = copy_component_program(module)
+    if expand:
+        module, _ = expand_component_calls(module)
     composite = source.builder.finalize(
         **expected_outputs, spectator=source.inputs["spectator"]
     )

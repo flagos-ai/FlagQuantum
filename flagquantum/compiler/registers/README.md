@@ -287,4 +287,23 @@ Run `tests/unit/test_component_graph.py` for row-major arrays, zero-width words,
 directional lifetimes, original erasure graphs and copied graphs. The Add and
 field-erasure suites exercise copied entries through the unchanged append path
 with complete small measurement histories and separate primitive/model counts.
-Selective single-level and bounded recursive expansion retain separate work.
+Selective single-level and bounded recursive expansion are implemented below.
+
+`component_expansion.expand_component_calls_once` expands selected calls by one
+level of an existing typed call body. Primitive bodies remain leaves. The
+predicate receives an occurrence label and the existing Operation. Returned
+labels align with the new entry operations, preserving retained occurrences and
+assigning inserted labels above the old maximum. These labels record compiler
+provenance, while Core Program SSA remains authoritative for ownership and
+connections. `expand_component_calls` repeats passes until no decomposition is
+accepted, with the source depth bound including the final no-change probe.
+
+Logical traversal inspects only the current component layer when classifying
+Allocate/Free. A composite allocation/free wrapper keeps ordinary component
+priority until expanded. Physical scheduling retains its existing helper
+classification. Run `tests/unit/test_component_expansion.py` for original-source
+predicates, retained/gapped labels, empty identities, arrays, output permutations,
+atomic fallback, failure propagation and depth limits. The same suite exercises
+actual directional field-erasure graphs, full small measurement histories and
+the existing append path. The Add suite also runs recursive expansion before
+its unchanged primitive, branch, workspace and separate model checks.

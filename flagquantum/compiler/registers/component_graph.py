@@ -88,9 +88,7 @@ def _iter_calls(
     block = function.blocks[0]
     inputs = _defined_bindings(Signature(function.registers).lefts(), block.arguments)
     known = {binding.value: binding for binding in _elements(inputs.values())}
-    for position in local_operation_order(
-        function, functions, count_classical_bits=True
-    ):
+    for position in local_operation_order(function, functions, logical_graph=True):
         operation = block.operations[position]
         callee = functions[operation.callee or ""]
         assert callee.registers is not None

@@ -27,19 +27,20 @@ def local_operation_order(
     function: FunctionRecord,
     functions: Mapping[str, FunctionRecord],
     *,
-    count_classical_bits: bool = False,
+    logical_graph: bool = False,
 ) -> tuple[int, ...]:
     """Schedule a verified finite function using connection-created node order.
 
     Arguments and returns act as dangling nodes. Edges introduce their source
     before their target, following operand traversal and then returned ports.
     Named graph traversal counts owned classical bits as source graph edges.
-    Physical scheduling keeps their quantum width zero by default.
+    Logical traversal classifies only the current component layer. Physical
+    scheduling keeps classical quantum width zero and follows nested helpers.
     Isolated operations use declaration order because source frozenset ties
     have no portable order. Call bodies retain their own separate schedule.
     """
     block = function.blocks[0]
-    widths = _argument_widths(function, count_classical_bits)
+    widths = _argument_widths(function, logical_graph)
     producers = dict.fromkeys(block.arguments, -1)
     nodes: dict[int, int] = {}
     edges: list[WidthConnection] = []
@@ -59,7 +60,7 @@ def local_operation_order(
         for clause in operation.condition_clauses:
             for condition in clause:
                 connect(condition.value, position)
-        widths.update(_result_widths(operation, functions, count_classical_bits))
+        widths.update(_result_widths(operation, functions, logical_graph))
         producers.update((value, position) for value in operation.results)
     for value in block.return_values or ():
         connect(value, len(block.operations))
@@ -73,7 +74,9 @@ def local_operation_order(
         elif node == len(block.operations):
             step = WidthStep("output")
         else:
-            step = _operation_step(block.operations[node], functions)
+            step = _operation_step(
+                block.operations[node], functions, logical_graph=logical_graph
+            )
         steps.append(step)
     schedule = schedule_width_steps(steps, edges, group_components=False)
     ordered_nodes = tuple(nodes)
@@ -86,7 +89,7 @@ def local_operation_order(
 
 
 def _argument_widths(
-    function: FunctionRecord, count_classical_bits: bool
+    function: FunctionRecord, logical_graph: bool
 ) -> dict[ValueRef, int]:
     values = function.blocks[0].arguments
     if function.registers is None:
@@ -96,7 +99,7 @@ def _argument_widths(
             values,
             (
                 (
-                    int(count_classical_bits)
+                    int(logical_graph)
                     if dtype == classical_bit_type()
                     else executable_register_width(dtype)
                 )
@@ -110,7 +113,7 @@ def _argument_widths(
 def _result_widths(
     operation: Operation,
     functions: Mapping[str, FunctionRecord],
-    count_classical_bits: bool,
+    logical_graph: bool,
 ) -> dict[ValueRef, int]:
     if operation.opcode in {"join_register", "allocate_register"}:
         assert operation.register_type is not None
@@ -126,7 +129,7 @@ def _result_widths(
                     operation.results,
                     (
                         (
-                            int(count_classical_bits)
+                            int(logical_graph)
                             if dtype == classical_bit_type()
                             else executable_register_width(dtype)
                         )
@@ -139,16 +142,22 @@ def _result_widths(
 
 
 def _operation_step(
-    operation: Operation, functions: Mapping[str, FunctionRecord]
+    operation: Operation,
+    functions: Mapping[str, FunctionRecord],
+    *,
+    logical_graph: bool,
 ) -> WidthStep:
     # Compiler workspace helpers have an actual single atomic body. Classify
-    # those calls as their source leaf instead of adding a neutral wrapper.
+    # those calls as their source leaf. Logical graph traversal inspects one
+    # body only, preserving a composite wrapper as a neutral component.
     while operation.opcode == "call":
         name = operation.callee or ""
         body = functions[name].blocks[0].operations
         if len(body) != 1:
             break
         operation = body[0]
+        if logical_graph:
+            break
     if operation.opcode == "allocate_register":
         return WidthStep("allocate")
     if operation.opcode == "free_register":
