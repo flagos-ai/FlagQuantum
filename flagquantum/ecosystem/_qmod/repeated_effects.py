@@ -2,17 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ...compiler._hybrid.model import (
-    Block,
-    HybridProgram,
-    Operation,
-    Region,
-    Value,
-    ValueId,
-)
+from ...compiler._construction.reset_cycles import reset_cycle_template
 from .callback_arrays import capture_effects
 from .syntax import Expression, Statement, reject
 from .unitary_effects import PURE_EFFECTS
@@ -71,42 +63,11 @@ def lower_repeated_effects(owner: _Adapt, statement: Statement, count: int) -> b
         reject(
             statement.token, "budget", "a reusable reset cycle admits up to 512 effects"
         )
-    owners = tuple(dict.fromkeys(value for op in effects for value in op.operands[1:]))
     token = statement.token
     name = (
         f"{owner.syntax.name.text}.$reset{token.location.line}.{token.location.column}"
     )
-    # Declaration and allocation only establish the callee's checked qubit layout.
-    # A replay call operates on existing initialized storage without allocating it.
-    arguments = {
-        actual: Value(ValueId(name, index + 1), actual.type)
-        for index, actual in enumerate(owners)
-    }
-    entry = Value(ValueId(name, 0), effects[0].operands[0].type)
-    effect = entry
-    next_index = len(owners) + 1
-    body = [
-        Operation("qreg.declare", (), (formal,), {"name": f"port{index}"})
-        for index, formal in enumerate(arguments.values())
-    ]
-    for formal in arguments.values():
-        following = Value(ValueId(name, next_index), effect.type)
-        next_index += 1
-        body.append(Operation("qreg.allocate", (effect, formal), (following,)))
-        effect = following
-    for op in effects:
-        following = Value(ValueId(name, next_index), effect.type)
-        next_index += 1
-        body.append(
-            replace(
-                op,
-                operands=(effect, *(arguments[v] for v in op.operands[1:])),
-                results=(following,),
-            )
-        )
-        effect = following
-    body.append(Operation("qreg.return", (effect, *arguments.values())))
-    template = HybridProgram(name, Region((Block((entry,), tuple(body)),)))
+    template, owners = reset_cycle_template(name, effects)
     if any(function.name == name for function in owner.functions):
         reject(
             token,
