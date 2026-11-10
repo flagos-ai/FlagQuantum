@@ -58,7 +58,7 @@ def test_native_and_original_retain_the_complete_signed_vector() -> None:
         )  # Also satisfies the original 0.3 bound.
 
 
-def test_quantum_program_does_not_certify_notebook_approximation_workflow() -> None:
+def test_notebook_approximation_workflow_requires_separate_acceptance() -> None:
     inventory = json.loads(
         (ROOT / "tests/fixtures/classiq_qmod/native_library_inventory.json").read_text()
     )
@@ -70,4 +70,21 @@ def test_quantum_program_does_not_certify_notebook_approximation_workflow() -> N
         )
     )
     assert group["native_program"]
-    assert group["workflow_status"] == "pending"
+    assert group["workflow_status"] == "validated"
+    evidence = group["workflow_validation"]
+    assert (
+        evidence["acceptance_test"]
+        == "tests/integration/test_synthesis_native_amplitude_sweep.py"
+    )
+    assert evidence["quantum_program_acceptance_test"] == str(
+        Path(__file__).relative_to(ROOT)
+    )
+    assert evidence["acceptance_test"] != evidence["quantum_program_acceptance_test"]
+    assert (ROOT / evidence["acceptance_test"]).is_file()
+    assert evidence["reviewed_code_cells"]
+    provenance = json.loads(
+        (ROOT / group["native_program"]["path"])
+        .with_name("provenance.json")
+        .read_text()
+    )
+    assert evidence == provenance
