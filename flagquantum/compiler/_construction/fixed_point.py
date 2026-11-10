@@ -77,6 +77,50 @@ def fixed_point_scalar(
     return FixedPointScalar(width, signed, fraction, low, high, values)
 
 
+class FixedPointBranches:
+    """Track prepared selectors and prove a retained discard environment.
+
+    Scalar rows always refer to this one joint selector domain, including when
+    values are passed through helpers. Word width never creates independent
+    branches. Adapters own lexical binding and must keep their scalars in the
+    same domain; this object neither allocates qubits nor erases dropped data.
+    """
+
+    def __init__(self) -> None:
+        self.bits = 0
+        self._discarded: list[FixedPointScalar] = []
+
+    def uniform(self, fail: Callable[[str, str], NoReturn]) -> FixedPointScalar:
+        if self.bits == MAX_BRANCH_BITS:
+            fail(
+                "budget.precision",
+                "quantized preparation exceeds five independent basis bits",
+            )
+        value = fixed_point_scalar(
+            fail,
+            Fraction(0),
+            Fraction(1),
+            0,
+            tuple(Fraction(row >> self.bits & 1) for row in range(BRANCH_ROWS)),
+        )
+        self.bits += 1
+        return value
+
+    def discard(self, value: FixedPointScalar) -> None:
+        self._discarded.append(value)
+
+    def verify_discarded(self, fail: Callable[[str, str], NoReturn]) -> None:
+        rows = 1 << self.bits
+        labels = {
+            tuple(value.values[row] for value in self._discarded) for row in range(rows)
+        }
+        if len(labels) != rows:
+            fail(
+                "ownership",
+                "dropped numeric state must distinguish every prepared branch",
+            )
+
+
 class FixedPointExpression(Generic[_Node]):
     """Evaluate admitted expressions without depending on a source AST.
 

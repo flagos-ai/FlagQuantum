@@ -9,6 +9,7 @@ from typing import NoReturn
 import pytest
 
 from flagquantum.compiler._construction.fixed_point import (
+    FixedPointBranches,
     FixedPointExpression,
     FixedPointScalar,
     fixed_point_number,
@@ -110,6 +111,46 @@ def test_signed_interval_and_correlated_branch_values() -> None:
     assert (zero.low, zero.high) == (Fraction(-1), Fraction(1))
 
 
+def test_prepared_selectors_share_one_bounded_joint_domain() -> None:
+    branches = FixedPointBranches()
+    inputs = [branches.uniform(_fail) for _ in range(5)]
+    assert branches.bits == 5
+    assert tuple(zip(*(value.values for value in inputs), strict=True)) == tuple(
+        tuple(Fraction(row >> bit & 1) for bit in range(5)) for row in range(32)
+    )
+    with pytest.raises(ValueError, match="five independent basis bits"):
+        branches.uniform(_fail)
+    assert branches.bits == 5
+
+
+@pytest.mark.parametrize("count", range(1, 6))
+def test_discard_proof_uses_actual_joint_value_labels(count: int) -> None:
+    branches = FixedPointBranches()
+    inputs = [branches.uniform(_fail) for _ in range(count)]
+    # Constants and repeated values cannot stand in for distinct source branches.
+    branches.discard(fixed_point_number(_fail, Fraction(0)))
+    branches.discard(inputs[0])
+    branches.discard(inputs[0])
+    if count > 1:
+        with pytest.raises(ValueError, match="distinguish every prepared branch"):
+            branches.verify_discarded(_fail)
+    for value in inputs[1:]:
+        branches.discard(value)
+    branches.verify_discarded(_fail)
+
+
+def test_cancelled_expression_keeps_preparation_witness() -> None:
+    branches = FixedPointBranches()
+    value = branches.uniform(_fail)
+    cancelled = _evaluate("x-x", x=value)
+    branches.discard(cancelled)
+    assert branches.bits == 1
+    with pytest.raises(ValueError, match="distinguish every prepared branch"):
+        branches.verify_discarded(_fail)
+    branches.discard(value)
+    branches.verify_discarded(_fail)
+
+
 @pytest.mark.parametrize(
     "source", ["x ** 0", "x ** 5", "x ** 1.5", "x ** x", "missing", "f()"]
 )
@@ -141,16 +182,8 @@ def test_domain_and_budget_refusals(
 def test_python_ast_brownian_recurrence_against_integer_oracle(
     coefficient: str,
 ) -> None:
-    domains = {
-        name: fixed_point_scalar(
-            _fail,
-            Fraction(0),
-            Fraction(1),
-            0,
-            tuple(Fraction(row >> bit & 1) for row in range(32)),
-        )
-        for bit, name in enumerate(("t", "a0", "a1", "a2", "a3"))
-    }
+    branches = FixedPointBranches()
+    domains = {name: branches.uniform(_fail) for name in ("t", "a0", "a1", "a2", "a3")}
     domains["u1"] = _evaluate("-6.283185307179586 * (t - 0.5)", **domains)
     domains["u2"] = _evaluate("u1 * u1 - 1", **domains)
     domains["u3"] = _evaluate("u1 * u2 - u1", **domains)
@@ -176,3 +209,7 @@ def test_python_ast_brownian_recurrence_against_integer_oracle(
         expected.append(Fraction(2 * b - t * 256 + 256, 256))
     assert price.values == tuple(expected)
     assert (price.width, price.signed, price.fraction) == (15, True, 8)
+    assert branches.bits == 5
+    for name in ("a0", "a1", "a2", "a3", "u1", "u2", "u3", "b"):
+        branches.discard(domains[name])
+    branches.verify_discarded(_fail)
