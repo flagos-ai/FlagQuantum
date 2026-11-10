@@ -11,10 +11,9 @@ from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import Operation, ProgramRecord, ValueRef, verify_program_record
 from ...core.ir.program.register_verifier import (
     executable_register_width,
-    register_port_types,
 )
-from ...core.ir.program.registers import RegisterSide
 from .component_schedule import local_operation_order
+from .entry_bindings import entry_input_layout
 from .layout.workspace import RegisterWorkspace, WorkspaceLease
 from .program_calls import _expand
 
@@ -53,11 +52,14 @@ def bind_register_program(
     allow_workspace_outputs: bool = False,
     input_ownership: tuple[tuple[int, bool], ...] = (),
     measured_workspace: Literal["reject", "retire", "reset"] = "reject",
+    classical_inputs: tuple[int | None, ...] = (),
 ) -> BoundRegisterProgram:
     """Bind quantum ports and work lifetimes to caller-supplied physical wires.
 
-    Local connection order is scheduled before finite call expansion. Quantum
-    entry ports and disjoint concrete input/clean/borrowed wires are required.
+    Local connection order is scheduled before finite call expansion. Concrete
+    input/clean/borrowed wires are disjoint. External CBit ports use empty input
+    words and explicit bits in classical_inputs, aligned with flattened entries.
+    Quantum positions use None. Each initialized CBit gets a fresh constant slot.
     Explicitly allowing workspace outputs transfers their live physical wires
     to the caller through ordered outputs. The caller owns subsequent cleanup
     and borrowed-state restoration. Input release requires explicit caller pool
@@ -95,14 +97,7 @@ def bind_register_program(
         for value in (*block.arguments, *block.return_values)
     ):
         raise ValueError("physical register binding requires quantum-only entry ports")
-    widths = (
-        tuple(
-            executable_register_width(dtype)
-            for dtype in register_port_types(function, RegisterSide.LEFT)
-        )
-        if function.registers is not None
-        else (1,) * len(block.arguments)
-    )
+    widths, initial_values = entry_input_layout(function, classical_inputs)
     if not isinstance(inputs, tuple) or any(
         not isinstance(word, tuple) for word in inputs
     ):
@@ -155,7 +150,17 @@ def bind_register_program(
     for wire, dirty in input_ownership:
         binder.pool.adopt((wire,), dirty=dirty)
         binder.adopted.add(wire)
-    binder.wires.update(zip(block.arguments, inputs, strict=True))
+    for value, wires, initial in zip(
+        block.arguments, inputs, initial_values, strict=True
+    ):
+        if initial is None:
+            binder.wires[value] = wires
+        else:
+            binder.bits[value] = binder.next_bit
+            binder.instructions.append(
+                ClassicalXor((), binder.next_bit, bool(initial)).instruction()
+            )
+            binder.next_bit += 1
     for position, operation in enumerate(operations):
         binder.emit(position, operation)
     outputs = tuple(

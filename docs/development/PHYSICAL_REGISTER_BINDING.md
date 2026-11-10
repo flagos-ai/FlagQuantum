@@ -234,8 +234,7 @@ handle. CBit dependencies retain graph edges with zero quantum width.
 Quantum output tuples keep one position per returned element. Classical elements
 have empty quantum tuples. When classical results exist, `classical_outputs`
 contains parallel slot tuples with empty tuples for quantum positions. Pure
-quantum results keep `classical_outputs == ()`. External classical inputs require
-an initialization contract and remain rejected. Pool-owned measured inputs and
+quantum results keep `classical_outputs == ()`. External classical inputs use explicit initialization under prerequisite 1.17. Pool-owned measured inputs and
 allocated work require a retirement contract and remain rejected, including
 borrowed wires and explicit workspace-output transfer.
 
@@ -268,8 +267,8 @@ and allocates zero slots. Both operations retain zero-width dependency edges.
 CBit[count] THRU and parity RIGHT signature. Counts must be concrete built-in
 nonnegative integers. Zero inputs emit one constant-zero classical XOR. Two
 nested parity calls emit two classical XOR assignments with distinct targets.
-Classical entry initialization and workspace retirement retain their separate
-contracts.
+Classical entry initialization follows prerequisite 1.17. Workspace retirement
+follows prerequisite 1.16.
 
 The conformance scenario measures zero through three QBits, computes nested
 parity, reads the result and uses one bool for conditional Z and X on distinct
@@ -312,3 +311,28 @@ exhaustion, reuse, invalid policies, source instruments, discarded-owner bool
 snapshots, actual dynamic execution and owned GF2MulMBUC branches. Small fields
 exhaust all measurement histories. The eight-bit witness checks instruction
 stream and resources without a full statevector branch enumeration.
+
+
+## External CBit entry initialization
+
+The internal classical_inputs tuple aligns with flattened LEFT elements in
+declared row-major order. Quantum positions use None. Owned CBit positions
+require built-in booleans or integers zero/one and empty physical input tuples.
+Each gets one existing constant classical XOR write into a fresh immutable slot.
+Later measurements and Parity outputs allocate slots after this input prefix.
+Nested calls and reordered outputs preserve slot ownership. Discard preserves
+previously shared feedback snapshots. No new Core operations are introduced.
+
+Run tests/unit/test_register_classical_inputs.py for source entry assignment,
+all small classical inputs, measurement branches, both feedback polarities,
+complex spectators, untouched work zero and actual append execution. Input
+initialization costs one classical write per CBit. Parity costs remain separate
+from that prefix and source model queries.
+
+This is concrete binding-time specialization. Runtime-injected classical slots
+and a zero-wire physical CircuitIR retain separate acceptance. Purely classical
+logical graphs can use an explicitly supplied existing carrier through the
+current workspace contract. Source logical quantum width remains zero. Original
+empty-array identity entry assignment succeeds, but its call_classically output
+finalization raises KeyError(RightDangle). Native empty arrays execute with zero
+initialization writes. That source failure is asserted and recorded separately.

@@ -251,8 +251,8 @@ actual trajectory/batched execution through unchanged `circuit.append(op)`.
 LEFT port. Core enforces one consumption. Binding deletes the owned handle,
 emits no instruction, and retains earlier bool snapshots of the immutable slot.
 This is classical Discard from pinned Qualtran `basic_gates/discard.py`.
-External classical initialization retains its separate contract. Physical
-workspace retirement follows proposal 103 prerequisite 1.16. The shortest test path is
+External CBit initialization follows proposal 103 prerequisite 1.17. Physical
+workspace retirement follows prerequisite 1.16. The shortest test path is
 `tests/unit/test_register_classical_discard.py`, including measurement, parity,
 discard and subsequent conditional feedback through the existing append path.
 
@@ -266,3 +266,13 @@ identity and MSB-first physical words. The source polynomial loop reverses bits
 locally. Run `tests/unit/test_field_erasure_program.py` for the source-builder
 replacement and complete branch/spectator scenarios. The existing flat erasure
 emitter retains caller-owned physical clearing and reusable parity-slot behavior.
+
+
+`entry_bindings.entry_input_layout` owns finite physical entry widths and
+concrete external CBit validation. `bind_register_program(classical_inputs=...)`
+initializes each CBit with one fresh constant classical XOR slot. The tuple
+aligns with every flattened LEFT element, using None at quantum positions.
+Quantum zero-width words retain their distinct dtype and own no classical slot.
+The shortest test path is `tests/unit/test_register_classical_inputs.py`, with
+source row-major assignment, nested identity/Parity/Discard, measurement slot
+isolation and actual `circuit.append(op)` feedback.
