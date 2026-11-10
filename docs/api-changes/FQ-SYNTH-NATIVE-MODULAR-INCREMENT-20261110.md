@@ -1,6 +1,7 @@
 # Native bounded modular increment contract
 
-Status: implementation planned; no capability or corpus acceptance claimed.
+Status: implemented with local CPU evidence. Complete quantum-program and
+Notebook coverage are tracked separately in the corpus catalog and delivery ledger.
 
 ## User semantics
 
