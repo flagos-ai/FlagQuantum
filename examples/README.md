@@ -191,6 +191,11 @@ These examples do not use that alias:
 - [`remote/realtime_device_call.py`](remote/realtime_device_call.py) forwards to
   `realtime/device_call.py` for compatibility with the previous example path.
   Run `python -m examples.realtime.device_call` for the canonical offline workflow.
+- [`realtime/feedback_loop.py`](realtime/feedback_loop.py) uses the existing
+  realtime handler and loopback channel to restore a classical binary state over
+  three rounds per shot. Run `python -m examples.realtime.feedback_loop`; both
+  shots print `corrected states=(0, 0, 0)`. It models five noisy observations of
+  one state, not a quantum circuit or a QEC decoder.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
 - [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports

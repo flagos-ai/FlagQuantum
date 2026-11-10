@@ -57,8 +57,6 @@ def test_self_hosted_cpu_capacity_groups_do_not_serialize_ready_work() -> None:
                 ):
                     assert "concurrency" not in job, (workflow, name)
                 continue
-            if name in {"coverage-shard", "coverage-plan"}:
-                guard = guard.replace("!= 'pull_request' ||", "== 'pull_request' &&")
             found.append(name)
             selector = (
                 "${{ ("

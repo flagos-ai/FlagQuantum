@@ -110,6 +110,7 @@ SCRIPTS = (
     "arithmetic",
     "fermion_energy",
     "fermion_chemistry",
+    "fermion_fcidump",
     "fermion_hdf5",
 )
 
@@ -131,6 +132,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_fcidump": (
+        "real closed-shell FCIDUMP integrals",
+        "not the correlated ground energy",
+    ),
     "fermion_hdf5": ("real closed-shell file integrals", "not a computed ground state"),
     "fermion_energy": ("exact statevector simulation", "no sampling or hardware noise"),
     "fermion_chemistry": (
@@ -1728,6 +1733,16 @@ def test_fermion_chemistry_example_reports_energy_and_differentiable_evolution()
     assert residual is not None, output
     assert 0 <= float(residual[1]) < 1e-12
     _assert_premise("fermion_chemistry", output)
+
+
+def test_fermion_fcidump_example_measures_the_input_reference() -> None:
+    output = _run("fermion_fcidump")
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        value = _labelled(output, encoding)
+        assert value.startswith("reference energy ") and value.endswith(" Ha")
+        # 2 h_11 + (11|11) + E_core = 2 (-1) + 0.4 + 0.7.
+        assert float(value.split()[2]) == pytest.approx(-0.9, abs=1e-10)
+    _assert_premise("fermion_fcidump", output)
 
 
 def test_the_example_directory_is_covered_and_indexed() -> None:

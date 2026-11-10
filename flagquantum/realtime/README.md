@@ -111,6 +111,31 @@ hardware channel. `examples/realtime/device_call.py` is the ten-minute
 golden path: it dispatches a majority-vote demonstration handler and prints the
 request hex next to the response status. It does not use the QEC decoder package.
 
+### Close a classical feedback loop
+
+```bash
+python -m examples.realtime.feedback_loop
+python -m pytest tests/integration/test_realtime_feedback_loop.py -q
+```
+
+The [feedback example](../../examples/realtime/feedback_loop.py) composes the same
+handler with a binary plant model. Each round applies a disturbance, takes five
+noisy observations of the plant state, sends them through the loopback channel,
+and applies the returned XOR command. Both shots print
+`corrected states=(0, 0, 0)`. The vote tolerates at most two observation errors;
+three wrong observations reverse it, a limit the tests exercise explicitly.
+
+The plant state is local to each shot and the handler is stateless. Channel
+creation does not implement decoder reset. The application commits feedback only
+after a successful, correlated response containing a binary command. A failure
+or stale response raises before that assignment; exception unwinding closes the
+channels, and the service owner separately stops its handler session. Request
+ids correlate calls but do not deduplicate them or provide exactly-once action.
+
+This example adds no package API, clock, timeout, QEC adapter, numerical simulator
+integration or hardware guarantee. It demonstrates application feedback over the
+existing messaging boundary; the QEC integration reservation remains proposed.
+
 ## Evidence status
 
 The [realtime and QEC integration reservation](../../docs/architecture/REALTIME_QEC_INTEGRATION_BOUNDARY.md)
