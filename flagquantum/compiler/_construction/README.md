@@ -783,3 +783,12 @@ assignment and borrowed mutable-helper expression XOR remain refused. Literal
 raw-mask XOR keeps its existing behavior. Every read witness survives source
 alias checking, including canceled target reads. The register verifier also
 rejects formatted operands rather than trusting native capture alone.
+
+Native reversible regions also admit closed compiler-generated predicate scratch:
+local declaration, direct compute, pure action, matching uncompute and release.
+`unitary_effects.unitary_regions` checks this structural boundary without adding
+lifecycle opcodes to `PURE_EFFECTS`. The register verifier still proves unchanged
+compute inputs, initialization, roles and cleanup. `frontend_regions` freshens
+local SSA identities when emitting the inverse, retaining compute/action/cleanup
+order while reversing adjacent unitary regions. User allocation, publication,
+drop and escaping locals remain outside the native unitary-region contract.

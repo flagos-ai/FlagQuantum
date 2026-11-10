@@ -1033,7 +1033,15 @@ admits bounded direct gates and static mutable gate helpers under adjoint, and
 pure-gate within/apply on existing initialized storage. The inverse rules are
 owned once by Compiler and shared with the Qmod adapter. Constant global phases,
 QFT direction, Pauli rotation signs and matrix conjugate transpose are retained.
-Allocation, Output publication, mixed fresh locals and ownership changes are
+Closed compiler-generated predicate scratch is admitted under the
+[clean predicate contract](../api-changes/FQ-SYNTH-NATIVE-CLEAN-PREDICATE-REGIONS-20261110.md):
+compute, pure action, uncompute and release must form one closed region. Inverse
+emission freshens its local identity and preserves compute/cleanup order. The
+register verifier still proves input stability and zero cleanup. Composite
+comparison predicates also control direct QFT within the existing eight-input-bit
+bound. Native Fourier-LCU currently needs eight work bits with composite range
+predicates, versus zero in the original adapter; no resource parity is claimed.
+User allocation, Output publication, mixed fresh locals and ownership changes are
 refused. Atomic Const-only inverse calls and arithmetic-local cleanup retain
 their existing checked paths; mixing arithmetic calls into a pure-unitary region
 is not admitted. Native literal-power phase expressions use existing bounded

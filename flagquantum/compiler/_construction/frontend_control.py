@@ -133,7 +133,7 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         return True
 
     predicate_computed = isinstance(condition, ast.Compare) or (
-        operation is r and is_composite_predicate(condition)
+        operation in (r, qft) and is_composite_predicate(condition)
     )
     scalar_location = operation is r and (
         isinstance(condition, ast.Subscript) or owner.aliases is not None

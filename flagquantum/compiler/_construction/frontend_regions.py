@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Sequence
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from .._hybrid.model import Operation
-from .._hybrid.unitary_effects import PURE_EFFECTS, inverse_effects
+from .._hybrid.model import Operation, Value, ValueId
+from .._hybrid.unitary_effects import inverse_effects, unitary_regions
 from .frontend_evolution import flush_evolutions
 from .frontend_ports import program_ports
 from .frontend_python import _error, _QuantumFunction
@@ -30,14 +31,14 @@ def _checked_effects(
     finally:
         owner.region_depth -= 1
     effects = tuple(owner.operations[start:])
-    if (
-        storage != (owner.registers, owner.ports, owner.widths)
-        or any(op.name not in PURE_EFFECTS for op in effects)
-        or any(
-            isinstance(child, ast.Return)
-            for statement in statements
-            for child in ast.walk(statement)
-        )
+    try:
+        unitary_regions(effects)
+    except ValueError as error:
+        _error(owner.source, node, "program.region", str(error))
+    if storage != (owner.registers, owner.ports, owner.widths) or any(
+        isinstance(child, ast.Return)
+        for statement in statements
+        for child in ast.walk(statement)
     ):
         _error(
             owner.source,
@@ -54,8 +55,27 @@ def _emit_inverse(owner: _Body, node: ast.With, effects: Sequence[Operation]) ->
         backward = inverse_effects(effects)
     except ValueError as error:
         _error(owner.source, node, "program.adjoint", str(error))
+    local_bindings: dict[Value, Value] = {}
     for op in backward:
-        owner.emit(op.name, node, op.operands[1:], **op.attributes)
+        if op.name == "qreg.local":
+            original = op.results[0]
+            fresh = Value(ValueId(owner.name, owner.counter), original.type)
+            owner.counter += 1
+            local_bindings[original] = fresh
+            owner.operations.append(
+                replace(
+                    op,
+                    results=(fresh,),
+                    attributes={"name": f"adjoint.{fresh.id.index}"},
+                )
+            )
+        else:
+            owner.emit(
+                op.name,
+                node,
+                tuple(local_bindings.get(v, v) for v in op.operands[1:]),
+                **op.attributes,
+            )
 
 
 def capture_unitary_within(owner: _Body, prepare: ast.With, action: ast.With) -> None:

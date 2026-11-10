@@ -624,6 +624,12 @@ helpers, QFT, explicit matrices, Pauli rotations and constant global phases.
 Retained QCE, credit-card and randomized-benchmarking programs have independent
 absolute-amplitude Circuit checks in
 `tests/integration/test_synthesis_native_unitary_regions.py`. Existing arithmetic
-cleanup and Const-only inverse regressions remain required. Allocation, Output
-publication, general callbacks and ownership changes refuse. This does not
+cleanup and Const-only inverse regressions remain required. Closed generated
+predicate scratch now composes under inverse and within/apply, with fresh local
+identities and verified zero cleanup; direct QFT also accepts bounded composite
+comparison predicates. The native Fourier-LCU example has independent complete
+state checks, two nonzero weight/data models and actual workspace-budget refusal
+in `tests/integration/test_synthesis_native_fourier_lcu.py`; the source and native
+resource gap remains explicit. User allocation, Output publication, general
+callbacks and ownership changes refuse. This does not
 promote runtime gradients, hardware, scalability or complete Notebook coverage.

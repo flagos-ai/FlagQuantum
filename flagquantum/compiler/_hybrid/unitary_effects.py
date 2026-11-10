@@ -27,6 +27,54 @@ PURE_EFFECTS = frozenset(
 )
 
 
+def unitary_regions(
+    operations: Sequence[Operation],
+) -> tuple[tuple[Operation, ...], ...]:
+    """Partition pure effects and closed directly computed scratch regions.
+
+    Register verification separately proves that the action preserves the
+    predicate and its inputs, so uncompute returns the local to zero.
+    """
+    regions: list[tuple[Operation, ...]] = []
+    index = 0
+    while index < len(operations):
+        op = operations[index]
+        if op.name in PURE_EFFECTS:
+            regions.append((op,))
+            index += 1
+            continue
+        if (
+            op.name != "qreg.local"
+            or len(op.results) != 1
+            or index + 4 >= len(operations)
+        ):
+            raise ValueError(
+                "unitary region requires pure effects or closed predicate scratch"
+            )
+        local = op.results[0]
+        compute = operations[index + 1]
+        if compute.name != "qreg.compute" or compute.operands[1:2] != (local,):
+            raise ValueError("predicate scratch requires an immediate direct compute")
+        end = index + 2
+        while end < len(operations) and operations[end].name in PURE_EFFECTS:
+            end += 1
+        if (
+            end == index + 2
+            or end + 1 >= len(operations)
+            or operations[end].name != "qreg.uncompute"
+            or operations[end].operands[1:] != (local,)
+            or operations[end + 1].name != "qreg.release"
+            or operations[end + 1].operands[1:] != (local,)
+            or any(local in effect.operands for effect in operations[end + 2 :])
+        ):
+            raise ValueError(
+                "predicate scratch must uncompute and release without escape"
+            )
+        regions.append(tuple(operations[index : end + 2]))
+        index = end + 2
+    return tuple(regions)
+
+
 def _inverse_specs(
     operations: Sequence[Operation],
 ) -> list[tuple[str, Operation, dict[str, object]]]:
@@ -77,7 +125,15 @@ def _inverse_specs(
 
 
 def inverse_effects(operations: Sequence[Operation]) -> tuple[Operation, ...]:
-    return tuple(
-        replace(op, name=opcode, attributes=attributes)
-        for opcode, op, attributes in _inverse_specs(operations)
-    )
+    inverted: list[Operation] = []
+    for region in reversed(unitary_regions(operations)):
+        if len(region) == 1:
+            inverted.extend(
+                replace(op, name=opcode, attributes=attributes)
+                for opcode, op, attributes in _inverse_specs(region)
+            )
+        else:
+            inverted.extend(region[:2])
+            inverted.extend(inverse_effects(region[2:-2]))
+            inverted.extend(region[-2:])
+    return tuple(inverted)
