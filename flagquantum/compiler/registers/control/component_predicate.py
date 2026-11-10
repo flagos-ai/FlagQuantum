@@ -178,7 +178,11 @@ def control_predicate_program(
         if junk:
             outputs["junk"] = builder.join(prefix)
         outputs["target"] = target
-    module = builder.finalize(outputs)
+    return _namespace_helpers(builder.finalize(outputs), name)
+
+
+def _namespace_helpers(module: ProgramRecord, name: str) -> ProgramRecord:
+    """Keep one entry name and isolate its locally constructed definitions."""
     names = {
         f.name: name if f.name == name else name + "_" + f.name
         for f in module.functions
