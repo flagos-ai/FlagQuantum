@@ -1252,3 +1252,44 @@ These are allocation/work guards, not an RSS or performance claim. Compiled
 sampling reuses lowered source and RNG, not frame scratch. No detector file
 writer, MemoryCircuit backend replacement, new builder, SDK source integration
 for PyMatching, or broad parity certification is implied.
+
+## Convert a measurement file to detector and logical files
+
+Next-release additive API:
+`CompiledMeasurementsToDetectionEventsConverter.convert_file(...)`. Create the
+existing handle with `circuit.compile_m2d_converter(...)` for explicit records
+or the existing terminal converter factory. Existing `.convert()` is unchanged.
+
+```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.execution.context import MeasurementMap
+
+source = (DynamicCircuit(1).measure(0, classical_bit=0)
+          .measure(0, classical_bit=0).conditional("x", 0, classical_bit=0)
+          .measure(0, classical_bit=0))
+converter = fq.Circuit.from_ir(source.to_ir()).compile_m2d_converter(
+    detector_map=MeasurementMap(3, ((0, 1), (0, 2))),
+    observable_map=MeasurementMap(3, ((1,),)),
+)
+with TemporaryDirectory() as directory:
+    root = Path(directory)
+    source_path, events, logical = root / "input.b8", root / "events.b8", root / "logical.b8"
+    source_path.write_bytes(bytes([2]) * 64)  # External fault records: 010.
+    converter.convert_file(
+        measurements_filepath=source_path, measurements_format="b8",
+        detection_events_filepath=events, detection_events_format="b8",
+        obs_out_filepath=logical, obs_out_format="b8",
+    )
+    assert events.read_bytes() == logical.read_bytes() == bytes([1]) * 64
+```
+
+Inputs: `01`, `b8`, `r8`, `ptb64`, `hits`, `dets` (M occurrence indices).
+Outputs: `01`, `b8`, `r8`, `hits`, `dets` (typed D/L indices).
+`append_observables=True` may be combined with a separate `obs_out_filepath`.
+A selected PTB64 output or non-None sweep path is refused before I/O. All format
+arguments are validated, including unused formats. Empty input publishes empty
+files without numerical conversion. Paths accept strings and path-like objects.
+See [bounds and failure behavior](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md).

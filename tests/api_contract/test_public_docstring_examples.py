@@ -5,6 +5,7 @@ import doctest
 import importlib
 import inspect
 from pathlib import Path
+from types import MethodType
 
 import pytest
 
@@ -113,6 +114,7 @@ from flagquantum.qec.decoders.matching_graph import MatchingGraph
 from flagquantum.qec.execution.detector_sampling import CompiledDetectorSampler
 from flagquantum.qec.execution.experiments import run_memory_experiment
 from flagquantum.qec.execution.measurement_conversion import (
+    CompiledMeasurementsToDetectionEventsConverter,
     compile_m2d_converter,
     convert_measurement_records,
 )
@@ -217,6 +219,7 @@ ENTRIES = (
     run_memory_experiment,
     convert_measurement_records,
     compile_m2d_converter,
+    CompiledMeasurementsToDetectionEventsConverter,
     LatexFigure,
     ClassicalLayer,
     draw_latex,
@@ -371,6 +374,7 @@ def test_every_module_with_examples_is_covered() -> None:
     """
     covered = {entry.__module__ for entry in ENTRIES}
     batch_owner = importlib.import_module("flagquantum.qec.adapters.pymatching")
+    assert batch_owner.__file__ is not None
     assert batch_owner.PyMatchingDecoder.decode_batch is PyMatchingDecoder.decode_batch
     assert (
         Path(PyMatchingDecoder.decode_batch.__code__.co_filename).resolve()
@@ -393,6 +397,7 @@ def test_every_module_with_examples_is_covered() -> None:
     ):
         assert entry in ENTRIES
         owner = importlib.import_module("flagquantum.qec." + owner_name)
+        assert owner.__file__ is not None
         assert getattr(owner, entry.__name__) is entry
         definition = entry.__post_init__ if inspect.isclass(entry) else entry
         assert (
@@ -400,16 +405,17 @@ def test_every_module_with_examples_is_covered() -> None:
             == Path(owner.__file__).resolve()
         )
         covered.add(owner.__name__)
-    entry = BeliefPropagationOsdDecoder.from_detector_error_model
-    assert entry in ENTRIES
+    decoder_entry = BeliefPropagationOsdDecoder.from_detector_error_model
+    assert isinstance(decoder_entry, MethodType)
+    assert decoder_entry in ENTRIES
     owner = importlib.import_module("flagquantum.qec.decoders.bposd")
+    assert owner.__file__ is not None
     assert owner.BeliefPropagationOsdDecoder is BeliefPropagationOsdDecoder
+    owner_entry = owner.BeliefPropagationOsdDecoder.from_detector_error_model
+    assert isinstance(owner_entry, MethodType)
+    assert decoder_entry.__func__ is owner_entry.__func__
     assert (
-        entry.__func__
-        is owner.BeliefPropagationOsdDecoder.from_detector_error_model.__func__
-    )
-    assert (
-        Path(entry.__func__.__code__.co_filename).resolve()
+        Path(decoder_entry.__func__.__code__.co_filename).resolve()
         == Path(owner.__file__).resolve()
     )
     covered.add(owner.__name__)

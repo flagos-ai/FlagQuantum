@@ -41,7 +41,7 @@ def _invalid_file() -> OSError:
     return OSError("invalid or incomplete measurement sample file")
 
 
-def _validate_r8(stream: BinaryIO, shots: int, columns: int) -> None:
+def _validate_r8(stream: BinaryIO, shots: int | None, columns: int) -> int:
     position = 0
     completed = 0
     for byte in _file_bytes(stream):
@@ -51,15 +51,16 @@ def _validate_r8(stream: BinaryIO, shots: int, columns: int) -> None:
             position = 0
         elif position > columns:
             raise _invalid_file()
-        if completed > shots:
+        if shots is not None and completed > shots:
             raise _invalid_file()
-    if position or completed != shots:
+    if position or (shots is not None and completed != shots):
         raise _invalid_file()
+    return completed
 
 
 def _validate_sparse_text(
-    stream: BinaryIO, shots: int, columns: int, *, dets: bool
-) -> None:
+    stream: BinaryIO, shots: int | None, columns: int, *, dets: bool
+) -> int:
     prefix = b"shot" if dets else b""
     prefix_offset = 0
     number = -1
@@ -87,7 +88,7 @@ def _validate_sparse_text(
             if number >= 0 and number <= previous:
                 raise _invalid_file()
             completed += 1
-            if completed > shots:
+            if shots is not None and completed > shots:
                 raise _invalid_file()
             prefix = b"shot" if dets else b""
             prefix_offset = 0
@@ -109,8 +110,9 @@ def _validate_sparse_text(
         needs_number = True
         prefix = b"M" if dets else b""
         prefix_offset = 0
-    if not at_start or completed != shots:
+    if not at_start or (shots is not None and completed != shots):
         raise _invalid_file()
+    return completed
 
 
 def _validate_record_file(
@@ -190,9 +192,43 @@ def _validate_detector_text(
         token.clear()
         if byte == 10:
             completed += 1
-            if completed > shots:
+            if shots is not None and completed > shots:
                 raise _invalid_file()
             first = True
             section = previous = -1
     if token or not first or completed != shots:
         raise _invalid_file()
+
+
+def _inspect_measurement_file(path: Path, columns: int, format: str) -> int:
+    """Count and validate a pinned snapshot with bounded parser memory."""
+    _file_size_bound(64, columns, format)
+    size = path.stat().st_size
+    if format in ("b8", "ptb64"):
+        stride = (columns + 7) // 8 if format == "b8" else columns * 8
+        if not stride or size % stride:
+            raise _invalid_file()
+        shots = size // stride * (64 if format == "ptb64" else 1)
+        _validate_record_file(
+            path, shots, columns, format, size, sections=(("M", columns),)
+        )
+        return shots
+    with path.open("rb") as stream:
+        if format == "r8":
+            return _validate_r8(stream, None, columns)
+        if format in ("hits", "dets"):
+            return _validate_sparse_text(stream, None, columns, dets=format == "dets")
+        position = completed = 0
+        for byte in _file_bytes(stream):
+            if position == columns:
+                if byte != 10:
+                    raise _invalid_file()
+                completed += 1
+                position = 0
+            elif byte in (48, 49):
+                position += 1
+            else:
+                raise _invalid_file()
+        if position:
+            raise _invalid_file()
+        return completed

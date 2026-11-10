@@ -2,6 +2,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+#include <algorithm>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -275,6 +276,59 @@ PyObject *convert_records(PyObject *, PyObject *args) {
 }
 
 
+PyObject *convert_file(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    const char *input_path, *input_format, *output_path, *output_format, *obs_path, *obs_format;
+    int append;
+    if (!PyArg_ParseTuple(args, "Osssspzs", &capsule, &input_path, &input_format,
+                          &output_path, &output_format, &append, &obs_path, &obs_format)) {
+        return nullptr;
+    }
+    auto *converter = static_cast<Converter *>(PyCapsule_GetPointer(capsule, converter_capsule_name));
+    if (converter == nullptr) return nullptr;
+    try {
+        const auto in_format = parse_format(input_format);
+        const auto out_format = parse_format(output_format);
+        const auto logical_format = parse_format(obs_format);
+        const auto &stats = converter->stats;
+        if (out_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64 ||
+            (obs_path && logical_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64) ||
+            stats.num_measurements == 0 || stats.num_measurements > 65536 ||
+            stats.num_qubits > 4096 || stats.num_detectors + stats.num_observables > 65536) {
+            throw std::invalid_argument("Invalid embedded file conversion request.");
+        }
+        auto padded = [](size_t n) { return std::max(size_t(1024), ((n + 1023) / 1024) * 1024); };
+        const size_t rows = padded(stats.num_measurements) +
+            2 * padded(stats.num_detectors + stats.num_observables) + 2 * padded(stats.num_qubits) +
+            2 * padded(2 * stats.num_measurements) + padded(stats.num_observables) + 4 * padded(0) + 8;
+        if (rows * 128 > 64 * 1024 * 1024) {
+            throw std::invalid_argument("Embedded conversion principal tables exceed 64 MiB.");
+        }
+        std::unique_ptr<FILE, decltype(&fclose)> input(fopen(input_path, "rb"), fclose);
+        if (!input) throw std::runtime_error("Could not open the measurement snapshot.");
+        std::unique_ptr<FILE, decltype(&fclose)> output(fopen(output_path, "wb"), fclose);
+        std::unique_ptr<FILE, decltype(&fclose)> obs(obs_path ? fopen(obs_path, "wb") : nullptr, fclose);
+        if (!output || (obs_path && !obs)) throw std::runtime_error("Could not open staged conversion output.");
+        stim::stream_measurements_to_detection_events_helper<width>(
+            input.get(), in_format, nullptr, stim::SampleFormat::SAMPLE_FORMAT_01,
+            output.get(), out_format, converter->circuit.aliased_noiseless_circuit(),
+            stats, append, converter->reference, obs.get(), logical_format);
+        bool failed = ferror(input.get()) != 0 || ferror(output.get()) != 0;
+        if (obs) {
+            failed |= ferror(obs.get()) != 0;
+            failed |= fclose(obs.release()) != 0;
+        }
+        failed |= fclose(input.release()) != 0;
+        failed |= fclose(output.release()) != 0;
+        if (failed) throw std::runtime_error("Could not complete staged conversion files.");
+        Py_RETURN_NONE;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+
 PyObject *prepare_detector(PyObject *self, PyObject *args) {
     const char *text;
     PyObject *seed;
@@ -403,6 +457,7 @@ PyMethodDef methods[] = {
     {"detector_error_model", detector_error_model, METH_VARARGS, nullptr},
     {"prepare_converter", prepare_converter, METH_VARARGS, nullptr},
     {"convert_records", convert_records, METH_VARARGS, nullptr},
+    {"convert_file", convert_file, METH_VARARGS, nullptr},
     {"prepare", prepare, METH_VARARGS, nullptr},
     {"sample", sample, METH_VARARGS, nullptr},
     {"write_b8", write_b8, METH_VARARGS, nullptr},

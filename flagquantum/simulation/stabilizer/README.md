@@ -331,3 +331,25 @@ in `tests/team/simulation/test_native_detector_execution_conformance.py`.
 See `docs/development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md` for capacities,
 publication limits and installed-wheel acceptance. No public file reader,
 research execution, universal Clifford-control support or RSS cap is added.
+
+## Stream supplied measurement files
+
+`_record_conversion.py` extends the existing dense converter boundary with a
+prepared file callback. The original lowered source and reference serve both
+methods; no second circuit representation or backend registry is introduced.
+The SDK callback normalizes paths to strings; the embedded callback uses
+`stream_measurements_to_detection_events_helper` from the unchanged 96-file
+Stim 1.16.0 closure. Both numerical implementations buffer 1024 records.
+
+`_measurement_file_validation.py` inspects regular input snapshots with reads
+of at most 64 KiB, retaining no all-shot table or unbounded token. Snapshot and
+aggregate outputs each have a 1 GiB guard, and padded principal tables have a
+64 MiB guard. These are request bounds, not RSS or filesystem quota guarantees.
+Outputs are staged, checked and linked without replacement; paired visibility
+is sequential. Cleanup reports residue, and a contained I/O error leaves the
+dense converter usable. Selected PTB64 output and sweep files refuse early.
+
+The golden path is `examples/qec/measurement_file_conversion.py`. Start with
+`tests/qec/test_measurement_file_conversion.py` for fake/SDK/embedded consumer
+replacement, malformed files, budgets and publication failures. No sampling,
+noise admission, research run or decoding is implied by file conversion.

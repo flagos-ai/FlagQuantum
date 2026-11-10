@@ -430,3 +430,20 @@ no-replace publication; two-file atomic visibility is not promised. Failures
 invalidate the handle and retain errors. T gates, conditional H, general controls
 and non-Pauli noise remain outside this admitted path. Public file reading and
 streaming decoder composition remain future work.
+
+## Keep the familiar converter file method
+
+Use the existing native Circuit converter, then call
+`converter.convert_file(measurements_filepath=..., measurements_format="b8",
+detection_events_filepath=..., detection_events_format="b8")`.
+`python -m examples.qec.measurement_file_conversion` is a complete runnable
+repeated-classical-slot example: three writes retain three occurrence columns,
+and fixed records 010 produce detectors 10 and observable 1.
+
+Stim users keep the keyword names and defaults. Six input formats are accepted;
+selected PTB64 outputs and sweep files are refused in this bounded native route.
+Unlike detector `sample_write()`, this converter permits appended observables
+and a separate observable file together. `Path` inputs normalize to strings at
+the SDK boundary. No complete file is turned into a Python shot tensor.
+See the [API](../reference/API.md#convert-a-measurement-file-to-detector-and-logical-files)
+and [approved scope](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md).
