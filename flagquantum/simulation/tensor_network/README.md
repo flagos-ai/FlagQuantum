@@ -168,3 +168,9 @@ trace of the environment yield the measurement channel; the leaf alone retains
 coherent environment information. It emits no physical instruction or reset.
 See [measurement copy](../../../docs/development/MEASUREMENT_COPY.md) for the
 source mapping, channel composition, physical branch checks and separate costs.
+
+The same owner supplies `x_measurement_node` from original MeasureX data in
+input/environment/result order. Its raw entries match the pinned source exactly;
+H/Z-copy factorization is independent conformance evidence. Environmental basis
+changes do not add a physical gate. See the X-instrument section of the same
+measurement-copy document for branch amplitudes and separate physical/model costs.

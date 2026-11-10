@@ -71,3 +71,53 @@ binary-field example passed. Evidence is under
 Default smoke/unit: 6 failed, 21485 passed, 300 skipped, 1037 warnings in 167.60s (0:02:47). All 6 observed failure IDs belong
 to the independent seven-failure baseline; 1 were not reached before
 maxfail. The default suite is not certified as fully passing.
+
+## X-basis instrument (GRAPH73)
+
+`x_measurement_node` takes the same explicit input/result/environment labels and
+prototype. Its returned axes are **input/environment/result**, matching unchanged
+`MeasureX.my_tensors` rather than the Z leaf's input/result/environment order.
+The original exactly representable +/-0.5 entries are retained directly and
+compared by array equality in all four dtypes. Both helpers share label validation;
+no extra copy tensor is allocated just to validate the X labels.
+
+The source supplies this tensor directly. It does not declare an H->MeasureZ
+primitive decomposition. H->MeasureZ is the existing FlagQuantum physical
+implementation. Independently contracting H -> shared Z copy -> H on the hidden
+environment reproduces the source raw instrument within floating-point tolerance.
+Dropping that environmental H changes raw environment amplitudes but leaves the
+traced channel unchanged. That environmental basis change is numerical evidence,
+not an additional physical gate. The direct source entries avoid factorization
+roundoff in the returned leaf itself.
+
+Nine new cases compare four dtypes with retained/discarded classical results,
+source axis data, complete source channels and independent supplier replacement.
+The unfused three-node factorization and the unrotated two-node representation
+feed the same existing doubled-label/trace consumer. Every complex outcome
+amplitude and relative-input-phase derivative is compared with the original
+instrument. Existing `circuit.append(op)` emits the bound H+measure instructions
+unchanged. Forced branches retain a Z eigenstate on the consumed physical wire;
+rotating that wire only for amplitude comparison restores the source environment
+basis. Both outcomes preserve the spectator and leave the clean work wire zero.
+
+Resource reporting keeps distinct meanings: the returned X leaf has eight
+entries, occupying 32/64/64/128 bytes in float32/float64/complex64/complex128.
+These are returned storage sizes, not measured construction peaks. Numerical
+supply adds zero physical gates/work. Actual lowering emits H1 + measurement1,
+reset0 and T0. The unchanged source model reports measurement1, Clifford0,
+T-equivalent0 and peak1. There is no source primitive recipe to claim equal to
+this physical lowering. The caller uses three physical bits including spectator
+and one clean bit. Earlier descriptions of an upstream H->MeasureZ decomposition
+are superseded by this audited distinction.
+
+GRAPH73 final verification: 1241 related cases passed in 14.67 s (41 existing/
+source warnings), 516 focused cases in 18.45 s (39 warnings), and 64 integration
+cases in 3.98 s. The measurement owner has 18 statements / four branches at
+100%; fourteen owners total 412 statements / 170 branches at 99%, retaining the
+two historical GRAPH60 refusals. Strict typing passed for 32 related files plus
+three source-following files; Black/Ruff, scope, architecture, Program IR and
+public API checks passed. Twenty-two original blobs match the inventory;
+24 unchanged original tests passed in 1.26 s (five existing warnings), including
+the original X measurement supertensor test. Qualtran 0.7.0, Kickmix 0.1 Simulator
+and the binary-field example were exercised. Evidence is under
+`ftqc-reference-env/g2-x-measurement-tensor-*`.
