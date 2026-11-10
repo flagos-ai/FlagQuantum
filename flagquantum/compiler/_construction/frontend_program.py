@@ -61,6 +61,8 @@ from .program_types import (
     cx,
     h,
     hadamard_transform,
+    inplace_prepare_amplitudes,
+    inplace_prepare_state,
     modular_exp,
     phase,
     phase_gate,
@@ -354,6 +356,20 @@ class _Body:
         self, expr: ast.expr, statement: ast.AST
     ) -> tuple[HybridProgram, tuple[Value, ...]]:
         reject_numeric_reads(self, expr, "unsigned expressions")
+        bindings = {
+            name: value for name, value in self.classical.items() if type(value) is int
+        } | self.loop_variables
+        if bindings:
+
+            class IntegerLiterals(ast.NodeTransformer):
+                def visit_Name(self, node: ast.Name) -> ast.expr:
+                    if isinstance(node.ctx, ast.Load) and node.id in bindings:
+                        return ast.copy_location(ast.Constant(bindings[node.id]), node)
+                    return node
+
+            specialized = IntegerLiterals().visit(deepcopy(expr))
+            assert isinstance(specialized, ast.expr)
+            expr = specialized
         allowed: tuple[type[ast.AST], ...] = (
             ast.BinOp,
             ast.Name,
@@ -498,6 +514,8 @@ class _Body:
                     qct_qst_type2,
                     qct_qst_type1,
                     unitary,
+                    inplace_prepare_amplitudes,
+                    inplace_prepare_state,
                     modular_exp,
                     suzuki_trotter,
                     qdrift,
@@ -646,6 +664,8 @@ class _Body:
                 prepare_ghz_state,
                 prepare_amplitudes,
                 prepare_state,
+                inplace_prepare_amplitudes,
+                inplace_prepare_state,
             )
         ):
             capture_preparation(self, node, function)

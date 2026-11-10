@@ -1238,3 +1238,11 @@ remain excluded. See
 `tests/integration/test_synthesis_native_annotated_locals.py` for the shortest
 phase-and-cleanup example and the admission in
 `docs/api-changes/FQ-SYNTH-NATIVE-ANNOTATED-LOCALS-20261110.md`.
+
+Native `inplace_prepare_amplitudes` and `inplace_prepare_state` reuse the existing
+`qreg.inplace_prepare_amplitudes` verifier, inverse-effect rule and real RY/CX
+lowering. They apply that unitary to a complete initialized writable register;
+there is no allocation or reset. The first native admission accepts static real
+vectors of length 2..256 and whole-register mutable helper calls. Views, quantum
+controls and Const targets remain excluded. Full-column and entangled-input
+conformance is in `tests/integration/test_synthesis_native_inplace_preparation.py`.

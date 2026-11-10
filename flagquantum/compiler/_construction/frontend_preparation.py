@@ -7,7 +7,14 @@ import math
 from typing import TYPE_CHECKING
 
 from .frontend_python import _error
-from .program_types import prepare_amplitudes, prepare_bell_state, prepare_ghz_state
+from .frontend_views import locations
+from .program_types import (
+    inplace_prepare_amplitudes,
+    inplace_prepare_state,
+    prepare_amplitudes,
+    prepare_bell_state,
+    prepare_ghz_state,
+)
 from .register_profile import MAX_PREPARED_AMPLITUDES, register_width
 
 if TYPE_CHECKING:
@@ -125,7 +132,7 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
             "program.prepare",
             "preparation bound must be nonnegative",
         )
-    if function is not prepare_amplitudes:
+    if function not in (prepare_amplitudes, inplace_prepare_amplitudes):
         try:
             normalized = math.isclose(math.fsum(values), 1.0, rel_tol=0, abs_tol=1e-12)
         except OverflowError:
@@ -140,6 +147,38 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
         values = tuple(math.sqrt(value) for value in values)
         bound = 0.0
     width = len(values).bit_length() - 1
+    if function in (inplace_prepare_amplitudes, inplace_prepare_state):
+        if not isinstance(output, ast.Name):
+            _error(
+                owner.source,
+                output,
+                "program.view",
+                "inplace preparation requires a complete register",
+            )
+        targets = locations(owner, output)
+        target = targets[0][0]
+        if targets != tuple((target, bit) for bit in range(register_width(target))):
+            _error(
+                owner.source,
+                output,
+                "program.view",
+                "inplace preparation requires a complete register",
+            )
+        if register_width(target) != width:
+            _error(
+                owner.source,
+                output,
+                "program.width",
+                "vector width must match the target",
+            )
+        owner.emit(
+            "qreg.inplace_prepare_amplitudes",
+            node,
+            (target,),
+            amplitudes=values,
+            bound=bound,
+        )
+        return
     target = owner.register(output, width)
     if register_width(target) != width:
         _error(

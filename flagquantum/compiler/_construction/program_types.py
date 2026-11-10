@@ -362,6 +362,20 @@ def prepare_state(
     raise TypeError("probability preparation is captured inside qfunc")
 
 
+def inplace_prepare_amplitudes(
+    amplitudes: Sequence[float], bound: float, target: QNum | QArray[QBit], /
+) -> None:
+    """Apply the reversible real preparation unitary to initialized storage."""
+    raise TypeError("inplace amplitude preparation is captured inside qfunc")
+
+
+def inplace_prepare_state(
+    probabilities: Sequence[float], bound: float, target: QNum | QArray[QBit], /
+) -> None:
+    """Apply square-root probability preparation without allocating or reset."""
+    raise TypeError("inplace probability preparation is captured inside qfunc")
+
+
 def prepare_uniform_interval_state(
     start: int, stop: int, target: QNum | QArray[QBit], /
 ) -> None:
