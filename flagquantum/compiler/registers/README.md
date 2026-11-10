@@ -387,3 +387,14 @@ combined wrapper once, and returns new controls separately from old controls
 and data successors. Both sets retain shape and MSB-first ordering. The wrapper
 owns predicate lifetimes and measured erasure. Original forward semantics and
 the exact specialized adjoint bodies retain their existing owners.
+
+`control.specialized_component_control` owns packed controls around a stored
+positive single-control implementation. Its input Program declares a leading
+scalar THRU QBit control. The helper replaces that port by a QBit array, computes
+the original And/MultiAnd predicate, calls the positive implementation once and
+measurement-erases the predicate. Prefix junk has the source's QBit-array shape.
+Array/word conversions reuse the directional predicate builder without gates.
+The two-control factory accepts the old and added activation values and returns
+the existing ControlAdder protocol. It packs new then old controls, consumes the
+old named control from its mutable input dictionary and unpacks the successors.
+Predicate outputs stay owned across the child, whose private work is separate.
