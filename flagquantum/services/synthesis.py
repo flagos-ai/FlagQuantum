@@ -106,6 +106,7 @@ prepare_state = program_types.prepare_state
 inplace_prepare_amplitudes = program_types.inplace_prepare_amplitudes
 inplace_prepare_state = program_types.inplace_prepare_state
 drop = program_types.drop
+qpe = program_types.qpe
 min = program_types.minimum
 max = program_types.maximum
 
@@ -145,6 +146,7 @@ __all__ = (
     "inplace_prepare_amplitudes",
     "inplace_prepare_state",
     "drop",
+    "qpe",
     "QArray",
     "H",
     "S",

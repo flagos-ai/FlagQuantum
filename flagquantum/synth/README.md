@@ -1362,3 +1362,35 @@ Output-helper escape and ownership changes in helpers/loops/branches/unitary
 regions refuse. This profile adds no `free` operation. See the
 [admission](../../docs/api-changes/FQ-SYNTH-NATIVE-HIDDEN-STORAGE-20261110.md) and
 [native overlap example](../../examples/synthesis/algorithms/quantum_primitives/swap_test/main.py).
+
+## Static matrix phase estimation
+
+The native `qpe` subset composes an existing static matrix into controlled powers
+and inverse QFT, keeping the numeric counter format explicit:
+
+```python
+from typing import Annotated
+import flagquantum as fq
+from flagquantum.synth import Output, QArray, QBit, QNum, allocate, drop, qfunc, qpe, synthesize, unitary
+
+@qfunc
+def main(phase_result: Output[Annotated[QNum, (3, False, 3)]]) -> None:
+    state: QArray[QBit] = QArray()
+    allocate(1, state)
+    allocate(phase_result)
+    qpe(lambda: unitary([[-1, 0], [0, -1]], state), phase_result)
+    drop(state)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.numeric_probabilities(result, registers=("phase_result",))))
+```
+
+The exact phase value is `Fraction(1, 2)` with probability one; both physical
+registers remain charged to budgets.
+The current callback is exactly one static unitary call in a zero-argument
+lambda, at the unconditional root. The whole numeric counter is one to eight
+all-fractional bits, signed or unsigned, initialized by allocate and unused.
+General callbacks, flexible powers and nested/inverse QPE remain pending.
+See the [matrix-QPE admission](../../docs/api-changes/FQ-SYNTH-NATIVE-MATRIX-QPE-20261110.md)
+and the [native matrix example](../../examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/main.py).
