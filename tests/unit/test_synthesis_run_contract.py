@@ -52,6 +52,11 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "prepare_ghz_state",
         "prepare_amplitudes",
         "prepare_state",
+        "inplace_prepare_amplitudes",
+        "inplace_prepare_state",
+        "drop",
+        "qpe",
+        "select_rotation",
         "QArray",
         "H",
         "S",
@@ -65,6 +70,10 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "modular_exp",
         "suzuki_trotter",
         "qdrift",
+        "min",
+        "max",
+        "RESET",
+        "quantize",
     )
     assert all(
         getattr(synth, name) is getattr(synthesis, name) for name in synth.__all__

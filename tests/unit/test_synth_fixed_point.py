@@ -20,6 +20,8 @@ from flagquantum.compiler._construction.fixed_point_program import (
     emit_fixed_point_tables,
 )
 
+pytestmark = pytest.mark.unit
+
 
 def _fail(code: str, message: str) -> NoReturn:
     raise ValueError(f"{code}: {message}")

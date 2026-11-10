@@ -76,7 +76,7 @@ def test_declared_budget_is_checked_on_the_preparation() -> None:
 def test_complete_local_notebook_preserves_seed_width_and_actual_amplitudes(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    import numpy as np
+    np = pytest.importorskip("numpy")
 
     from examples.synthesis.tutorials.technology_demonstrations.auxiliary_managment.auxiliary_management.workflow import (
         build_workflow,

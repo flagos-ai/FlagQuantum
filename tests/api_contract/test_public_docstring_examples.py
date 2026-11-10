@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from flagquantum import synth
 from flagquantum.algorithms.arithmetic import (
     adder_circuit,
     adder_qubits,
@@ -202,6 +203,8 @@ pytestmark = pytest.mark.unit
 # density matrix and entanglement-entropy reads, whose examples show the two
 # figures a caller takes from one run rather than a second execution.
 ENTRIES = (
+    synth.qdrift,
+    synth.Program.numeric_probabilities,
     fq.save,
     fq.load,
     run_memory_experiment,

@@ -3,7 +3,6 @@
 import json
 from pathlib import Path
 
-import numpy as np
 import pytest
 import torch
 
@@ -17,6 +16,7 @@ from examples.synthesis.tutorials.technology_demonstrations.approximated_state_p
 from flagquantum.compiler import ResourceEstimate
 
 pytestmark = pytest.mark.integration
+np = pytest.importorskip("numpy")
 ROOT = Path(__file__).resolve().parents[2]
 
 

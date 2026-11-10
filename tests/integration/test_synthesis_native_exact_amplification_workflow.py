@@ -55,6 +55,7 @@ def test_full_classical_trajectories_match_independent_rotation_products() -> No
 
 
 def test_notebook_plot_is_written_and_figures_are_closed(tmp_path: Path) -> None:
+    pytest.importorskip("matplotlib")
     from matplotlib import pyplot as plt
 
     output = tmp_path / "trajectories.png"

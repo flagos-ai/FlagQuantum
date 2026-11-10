@@ -8,7 +8,7 @@ import flagquantum as fq
 from examples.synthesis.tutorials.technology_demonstrations.oracle_generation.three_sat_oracles.main import (
     build_program,
 )
-from flagquantum.runtime.mps_result import native_mps
+from flagquantum.simulation.mps.state import MPSState
 
 CLAUSES = (
     (0, 29, 48),
@@ -111,22 +111,20 @@ def product_signature(
 
 def compare() -> None:
     program = build_program()
-    actual = native_mps(fq.run(program))
-    expected = native_mps(
-        fq.run(
-            reference_circuit().to_ir(),
-            options=fq.ExecutionOptions(
-                mode="mps",
-                backend="torch",
-                device="cpu",
-                precision="complex128",
-                allow_approximate=False,
-                allow_backend_fallback=False,
-                memory_limit_bytes=4800,
-            ),
-        )
-    )
-    assert actual is not None and expected is not None
+    actual = fq.run(program).native()
+    expected = fq.run(
+        reference_circuit().to_ir(),
+        options=fq.ExecutionOptions(
+            mode="mps",
+            backend="torch",
+            device="cpu",
+            precision="complex128",
+            allow_approximate=False,
+            allow_backend_fallback=False,
+            memory_limit_bytes=4800,
+        ),
+    ).native()
+    assert isinstance(actual, MPSState) and isinstance(expected, MPSState)
     assert not actual.truncation_records and actual.max_bond == 1
     assert product_signature(actual.tensors) == product_signature(expected.tensors)
     bits, phase = product_signature(actual.tensors)
