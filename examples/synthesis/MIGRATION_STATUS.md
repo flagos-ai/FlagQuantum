@@ -379,7 +379,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/main.py) | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk` | notebook_workflow | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/main.py) | pending |
 | `tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe` | notebook_workflow | Pending | pending |
-| `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | Pending | pending |
+| `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | [Native program](tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh/main.py) | pending |
 | `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | [Native program](tutorials/basics/add_bell_states/main.py) | pending |
 | `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | validated |
 | `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | [Native program](tutorials/basics/exponentiation/example_exponentiation/main.py) | pending |

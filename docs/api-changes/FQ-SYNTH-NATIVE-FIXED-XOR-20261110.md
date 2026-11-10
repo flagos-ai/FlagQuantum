@@ -1,6 +1,6 @@
 # Native bounded fixed-point expression XOR
 
-Status: dependency audit and observed native refusal; implementation pending.
+Status: implemented and locally accepted; release and integration delivery pending.
 
 ## Requirement and reuse
 
@@ -80,3 +80,19 @@ The captured `QNum` annotation methods accept `float` alongside `QNum` and
 `int` for ordered comparisons and in-place XOR. This typing expansion describes
 the checked dyadic expression profile above; it does not enable host execution
 or relax the existing raw integer-mask rules. No exports or call ordering change.
+
+## Local acceptance
+
+The final batch passes 1,758 combined Compiler/numeric/original acceptance tests,
+309 related tests, 71 fixed-arithmetic regressions and 29 catalog/API tests.
+Strict typing covers all twelve touched Python files. A fresh replay of all216
+originals preserves every source hash, semantic outcome and resource count;
+all six approved revisions execute. Original raw resource baselines remain intact.
+
+Native tanh uses ten physical qubits, two clean work qubits, sixty operations
+and depth forty-eight. The original adapter path uses the same qubits with
+forty-three operations and depth thirty-six. Both match the independent exact
+rational Circuit permutation with absolute amplitude error below2e-16 and zero
+nonzero-workspace probability. Native coverage advances to192/216; Notebook
+workflow coverage remains24/213. This is correctness acceptance, not resource
+parity or complete Notebook acceptance.

@@ -7222,7 +7222,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {

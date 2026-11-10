@@ -7,6 +7,7 @@ Native FlagQuantum programs currently available:
 - [quantum_walk_circle_balanced_coin](advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md)
 - [quantum_walk_hypercube](advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/README.md)
 - [discrete_time_quantum_walk](advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/README.md)
+- [tanh](advanced_tutorials/linear_approximation_of_tanh/tanh/README.md)
 - [add_bell_states](basics/add_bell_states/README.md)
 - [entanglement](basics/entanglement/README.md)
 - [example_exponentiation](basics/exponentiation/example_exponentiation/README.md)
