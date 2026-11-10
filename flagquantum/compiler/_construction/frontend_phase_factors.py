@@ -163,8 +163,19 @@ def capture_sparse_predicate_phase(
     operator: Callable[[ast.expr], str],
     children: Callable[[ast.expr], tuple[ast.expr, ...]],
     fail: Callable[[ast.expr, str, str], NoReturn],
-) -> None:
-    """Map exact sparse minterms through existing six-literal clean factors."""
+) -> bool:
+    """Map only the new nine-to-twelve-bit sparse profile; retain smaller paths."""
+    pending = [predicate]
+    locations_read: set[Location] = set()
+    while pending:
+        node = pending.pop()
+        word = quantum_word(node)
+        if word is None:
+            pending.extend(children(node))
+        else:
+            locations_read.update(word)
+    if len(locations_read) <= 8:
+        return False
     truth, reads = sparse_predicate(
         predicate,
         quantum_word,
@@ -177,7 +188,7 @@ def capture_sparse_predicate_phase(
         owner.emit("qreg.control_phase", statement, (value,), indices=(bit,), angle=0.0)
     if truth == (-1,):
         owner.emit("qreg.phase", statement, (), angle=angle)
-        return
+        return True
     for assignment in truth:
         factors: list[Value] = []
         for start in range(0, len(reads), 6):
@@ -200,3 +211,4 @@ def capture_sparse_predicate_phase(
         for value in reversed(factors):
             owner.emit("qreg.uncompute", statement, (value,))
             owner.emit("qreg.release", statement, (value,))
+    return True

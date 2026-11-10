@@ -208,7 +208,7 @@ def capture_polynomial_phase(
                         "program.phase",
                         "phase angle exceeds finite ±2**53 range",
                     )
-                capture_sparse_predicate_phase(
+                if capture_sparse_predicate_phase(
                     owner,
                     condition,
                     float(angle),
@@ -218,8 +218,8 @@ def capture_polynomial_phase(
                     operator,
                     children,
                     fail,
-                )
-                return
+                ):
+                    return
         if (
             numeric
             or condition is not None
