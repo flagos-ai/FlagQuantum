@@ -300,6 +300,26 @@ shapes after circuit validation. Broad text/file conversion still uses the
 optional SDK; native source integration here proves explicit-record conversion,
 not complete Stim coverage or a performance claim.
 
+## Measurement-file conversion boundary
+
+The compiled native-record converter accepts six input formats and writes five
+formats. PTB64 output is refused, as it is by the pinned upstream converter;
+PTB64 input requires complete 64-shot groups. Sweep inputs are not supported by
+the admitted native Circuit domain. Existing source, map and determinism refusals
+remain, including T and conditional H; single-slot conditional X stays admitted.
+
+Input must be a regular non-symlink file and is snapshotted before inspection.
+Changes detected during copying refuse. Input snapshots and aggregate final
+outputs each have a 1 GiB guard, with at most 2 GiB for snapshot plus staged
+outputs. Parser reads are at most 64 KiB and upstream batches are 1024 records.
+The 64 MiB padded principal-table estimate is not a process RSS guarantee.
+Filesystem free space may change after admission, and I/O errors remain visible.
+No existing destination is replaced. Two validated files publish sequentially,
+not atomically together; rollback removes only this call's inodes and reports
+cleanup errors/residue. No automatic I/O retry is performed. A contained file
+failure does not invalidate dense conversion. There is no public record reader,
+batched decoder ingress, performance or scale claim in this package.
+
 ## Native detector sampling and exact DEM
 
 `Circuit.compile_detector_sampler(detector_map=..., observable_map=..., seed=...)`
@@ -1040,23 +1060,3 @@ FFT speedup, hardware gate-set, accelerator, distributed or gradient claim.
 Parity/BK/tapered registers and other mode counts are unsupported. See
 `python -m examples.algorithms.fermion_fourier` and
 `tests/unit/fermion/test_fourier.py` for the supported workflow and references.
-
-## Measurement-file conversion boundary
-
-The compiled native-record converter accepts six input formats and writes five
-formats. PTB64 output is refused, as it is by the pinned upstream converter;
-PTB64 input requires complete 64-shot groups. Sweep inputs are not supported by
-the admitted native Circuit domain. Existing source, map and determinism refusals
-remain, including T and conditional H; single-slot conditional X stays admitted.
-
-Input must be a regular non-symlink file and is snapshotted before inspection.
-Changes detected during copying refuse. Input snapshots and aggregate final
-outputs each have a 1 GiB guard, with at most 2 GiB for snapshot plus staged
-outputs. Parser reads are at most 64 KiB and upstream batches are 1024 records.
-The 64 MiB padded principal-table estimate is not a process RSS guarantee.
-Filesystem free space may change after admission, and I/O errors remain visible.
-No existing destination is replaced. Two validated files publish sequentially,
-not atomically together; rollback removes only this call's inodes and reports
-cleanup errors/residue. No automatic I/O retry is performed. A contained file
-failure does not invalidate dense conversion. There is no public record reader,
-batched decoder ingress, performance or scale claim in this package.
