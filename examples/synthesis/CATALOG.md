@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **180/216**.
+Validated quantum-program counterparts: **182/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -51,7 +51,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (45 native programs)
+## Applications (46 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -68,6 +68,7 @@ Validated local Notebook workflows:
 - [option_pricing](applications/finance/option_pricing/README.md)
 - [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
 - [hhl_portfolio](applications/finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
+- [rainbow_options_bruteforce_method](applications/finance/rainbow_options/rainbow_options_bruteforce_method/README.md)
 - [value_at_risk](applications/finance/value_at_risk/README.md)
 - [facility_location](applications/logistics/facility_location/README.md)
 - [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
@@ -199,7 +200,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (38 native programs)
+## Tutorials (39 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -236,6 +237,7 @@ Validated local Notebook workflows:
 - [option_pricing_workshop](tutorials/workshops/finance_workshops/option_pricing_workshop/README.md)
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
+- [rainbow_options_workshop_bruteforce](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/README.md)
 - [grover_workshop](tutorials/workshops/grover_workshop/README.md)
 - [hhl_workshop](tutorials/workshops/hhl_workshop/README.md)
 - [oracles_workshop](tutorials/workshops/oracle_workshop/oracles_workshop/README.md)

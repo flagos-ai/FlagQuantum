@@ -17,6 +17,7 @@ Native FlagQuantum programs currently available:
 - [option_pricing](finance/option_pricing/README.md)
 - [portfolio_optimization](finance/portfolio_optimization/README.md)
 - [hhl_portfolio](finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
+- [rainbow_options_bruteforce_method](finance/rainbow_options/rainbow_options_bruteforce_method/README.md)
 - [value_at_risk](finance/value_at_risk/README.md)
 - [facility_location](logistics/facility_location/README.md)
 - [task_scheduling_problem](logistics/task_scheduling_problem/README.md)

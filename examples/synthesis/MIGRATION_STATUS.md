@@ -243,7 +243,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/option_pricing/option_pricing` | notebook_workflow | [Native program](applications/finance/option_pricing/main.py) | pending |
 | `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/main.py) | pending |
 | `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/main.py) | pending |
-| `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | Pending | pending |
+| `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_bruteforce_method/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | Pending | pending |
 | `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | Pending | pending |
 | `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | [Native program](applications/finance/value_at_risk/main.py) | pending |
@@ -424,7 +424,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/workshops/finance_workshops/Option_Pricing_Workshop` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/option_pricing_workshop/main.py) | pending |
 | `tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/main.py) | pending |
 | `tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/main.py) | pending |
-| `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | Pending | pending |
+| `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/main.py) | pending |
 | `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | [Native program](tutorials/workshops/grover_workshop/grover_workshop/main.py) | pending |
 | `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | [Native program](tutorials/workshops/hhl_workshop/main.py) | pending |
 | `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/main.py) | pending |
