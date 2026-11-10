@@ -1165,17 +1165,17 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     ):
         errors.append("native uniform interval differs from its authorization")
     control_signature = (
-        "(condition: 'QNum | QArray[QBit]', body: 'Callable[[], None]', /) -> 'None'"
+        "(condition: 'QNum | QArray[QBit] | bool', body: 'Callable[[], None]', /) -> 'None'"
     )
     control_admission = json.loads(
         (ROOT / "contracts/synthesis-native-array-control-candidate.json").read_text()
     )
     if control_admission != {
         "schema": "flagquantum.synthesis_native_array_control_admission",
-        "version": "1.0",
+        "version": "1.1",
         "namespace": "flagquantum.synth",
         "changed_signatures": {"control": control_signature},
-        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-ARRAY-CONTROL-20261110.md",
+        "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-PREPARATION-20261110.md",
         "implementation_authorized": True,
         "release_authorized": False,
     } or (

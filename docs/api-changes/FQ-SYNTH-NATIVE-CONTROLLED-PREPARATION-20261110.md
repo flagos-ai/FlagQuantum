@@ -30,6 +30,15 @@ forms needed by these compositions; unsupported effects must refuse clearly.
 Closed scratch may be reused only with a verified compute/action/uncompute
 lifetime; it must never be controlled by naively repeating its allocation.
 
+Python's `QNum.__eq__` annotation must remain compatible with `object.__eq__`
+and therefore has Boolean type. Extend the `control` annotation to
+`QNum | QArray[QBit] | bool` so ordinary captured equality predicates type-check.
+This describes AST comparisons, not execution of host predicates or acceptance
+of literal `True`/`False`. Literal host conditions continue to refuse. The live
+array-control admission advances to1.1 with this authorization; retain the
+earlier array-control proposal and all SHA-bound evidence unchanged. There are
+no new exports or changes to parameter order, defaults or host-call behavior.
+
 ## Acceptance and delivery split
 
 1. Compiler capture and shared expansion, with independent conditional-unitary
