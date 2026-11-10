@@ -422,3 +422,51 @@ The default tier remains failing. Its evidence is
 in `g2-call-inventory-default-comparison.txt`. Final concentrated, coverage,
 checks, examples and source evidence use `g2-call-inventory-`. Integration
 evidence uses `g2-directional-calls-integration.log`.
+
+## Named component traversal and rebuilding
+
+The finite typed call profile admits a single returned block whose operations
+are calls to declared typed functions. Compiler traversal yields the original
+operation position, named predecessor bindings in LEFT signature order, and
+output collections in RIGHT signature order. Arrays retain row-major indexing,
+including empty arrays. Scalar zero-width words retain ownership. Existing
+`local_operation_order` determines visitation. Positions identify the input
+Program operation, while rebuilding assigns positions in visitation order.
+
+Rebuilding replays calls through `ComponentProgramBuilder`, mapping each old SSA
+value to its fresh binding. Callee definitions remain shared immutable records.
+Entry function/block metadata and module metadata are retained. Returned values
+are remapped explicitly, preserving permutations and directional ports. Core
+verifies all definitions before traversal, including unreachable definitions.
+This slice covers pinned `CompositeBloq.iter_bloqsoqs` and `copy`. Selective
+`flatten_once`, predicate behavior and bounded recursive `flatten` have separate
+acceptance. Isolated source frozenset ties and omitted empty output metadata
+retain the previously documented native policies.
+
+Logical graph visitation counts CBit edges as one bit, matching the original
+source greedy sort. Physical visitation counts them as zero quantum width.
+`local_operation_order(count_classical_bits=True)` selects the former for named
+traversal/rebuilding only. The original GF2MulMBUC graph and its copy at widths
+1, 2, 3 and 8 exercise the ordering distinction, including Join versus Parity.
+
+GRAPH34 acceptance adds 24 traversal/rebuilding cases and four copied execution
+variants. The unchanged source erasure graph and copy match every predecessor,
+port shape, output and visited instance at widths 1/2/3/8. Copied repeated Add
+retains all 16 unnormalized complex histories, clean workspace and exact source
+primitive dependencies. Measured primitives remain 40 CX, 12 H, 8 T, 8 Tdag,
+4 S, 4 measurements, 4 CZ and 4 resets. The independent source model remains
+16 T-equivalent, 4 measurements and peak width 8.
+Copied field erasure retains all 14 histories at widths 1/2/3 and exact bound IR.
+Unmeasured work is zero. Destroyed result wires retain their measured projection.
+At width 8 the existing separate execution witness remains 64 conditional CZ,
+8 H, 8 measurements and 8 classical XOR assignments, while the source model
+reports 64 CZ only. Rebuilding introduces zero primitives or workspace.
+
+Pinned source copy still fails for an empty-shaped output omitted by final_soqs.
+The native copy retains the declared empty collection. Pinned zero-width
+split/join tensor contraction raises ValueError for an empty tensor network,
+while its graph traversal and copy succeed. The tests assert both facts without
+altering reference code. GRAPH34 concentrated regression passed 5263 tests,
+focused coverage passed 56 at 96% combined statement/branch coverage for the two
+compiler modules, and strict typing passed 40 files. Default-tier baseline
+failures remain recorded from GRAPH33. Selective flattening remains open.

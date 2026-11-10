@@ -12,6 +12,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+from flagquantum.compiler.registers.component_graph import copy_component_program
 from flagquantum.compiler.registers.finite_field.product_erasure_program import (
     product_erasure_program,
 )
@@ -101,14 +102,21 @@ def state_with_known_product(width: int) -> tuple[torch.Tensor, torch.Tensor]:
 
 
 @pytest.mark.parametrize("width", [1, 2, 3])
+@pytest.mark.parametrize("rebuild", [False, True])
 def test_every_complex_branch_retains_phase_and_unmeasured_work_zero(
     width: int,
+    rebuild: bool,
 ) -> None:
     dtype = FiniteFieldEncoding(2, width).register_type()
     inputs = tuple(tuple(range(i * width, (i + 1) * width)) for i in range(3))
-    bound = bind_register_program(
-        product_erasure_program(dtype), inputs, clean=(3 * width + 1,)
-    )
+    program = product_erasure_program(dtype)
+    if rebuild:
+        copied = copy_component_program(program)
+        assert bind_register_program(copied, inputs) == bind_register_program(
+            program, inputs
+        )
+        program = copied
+    bound = bind_register_program(program, inputs, clean=(3 * width + 1,))
     gates = (
         Circuit(3 * width + 2)
         .append(FieldOperation(3 * width + 2, bound.circuit.instructions))
