@@ -648,3 +648,37 @@ counts follow stored declaration order. The source counts CompositeBloq instance
 from a frozenset, so cross-depth shared-node cutoff ties remain an explicit
 portability boundary. Full unbounded counts and levelled depth witnesses are
 compared independently to the source below.
+
+GRAPH37 implements hierarchical derivation in 68ea3256 and stored-call counting
+in 3f5bb84a. Seventy-five new scenarios cover one to five hierarchy levels,
+shared definitions, specialized overrides, name collisions, directional clean
+and borrowed lifetime wrappers, zero-width words, shaped returns and custom entry
+names. Arrays preserve source connections and original empty-array failures.
+A raw CompositeBloq wrapped in source Adjoint keeps its original decomposition
+refusal. The source-backed executable stored-component adapter uses the original
+default Adjoint implementation without changing its body.
+
+Two/three-level measured Add graphs are checked before and after expansion.
+All four scenarios preserve each of 16 inverse and 16 forward restoration
+histories, with exact unnormalized complex spectator state and clean work zero.
+For two Add-adjoint calls, measured primitives remain 40 CX, 12 H, 8 T, 8 Tdag,
+4 S, 4 measurements, 4 CZ and 4 resets. The independent source QEC model reports
+16 T-equivalent, four measurements and peak width eight. Actual stored call
+weights independently yield two Add-adjoint leaves. Generation adds zero gates
+or workspace. Direct/weighted source counts, keep, levelled depth bounds and
+many-to-one specialized adjoint aggregation pass.
+
+Concentrated regression passed 5435 tests in 42.89 seconds without skips or
+warnings. Focused coverage passed 116 in 6.69 seconds, with 97% combined statement
+and branch coverage across component_adjoint and program_call_graph. The latter
+adapter has 100% coverage. Integration passed 29 in 1.41 seconds. Strict typing
+covered 47 files, and formatting, scope, architecture, Program/API gates and four
+existing examples passed. Thirty-three pinned source blobs remain unchanged.
+Default smoke/unit stopped with 22286 passes, 300 skips, 1065 warnings and seven
+failures in 135.56 seconds. All seven identifiers match the independently recorded
+baseline exactly. The ledger failure absent from GRAPH35/36 was exercised and
+continues failing. The default layer remains open. Evidence is under
+ftqc-reference-env/g2-hierarchy-adjoint-{source.txt,regression.log,coverage.log,
+checks.log,integration.log,examples.log,default-parallel.log,default-comparison.txt}.
+The next inventory is generic Controlled wrapper control propagation and counts
+at the typed-call boundary. Parent files and G2 remain open.
