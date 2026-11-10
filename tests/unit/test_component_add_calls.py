@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import torch
 
-from flagquantum.compiler.registers.arithmetic.addition import add_ir
+from flagquantum.compiler.registers.arithmetic.addition import add_adjoint_ir, add_ir
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.component_expansion import expand_component_calls
 from flagquantum.compiler.registers.component_graph import copy_component_program
@@ -29,9 +29,10 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def executable_add() -> tuple[FunctionRecord, ...]:
+def executable_add(adjoint: bool = False) -> tuple[FunctionRecord, ...]:
     """Expose exact a/b word ports around the existing measured Add body."""
-    gates = add_ir((0, 1), (2, 3, 4), (5, 6), (0, 1))
+    emitter = add_adjoint_ir if adjoint else add_ir
+    gates = emitter((0, 1), (2, 3, 4), (5, 6), (0, 1))
     private = allocated_circuit(CircuitIR(7, gates), 5)
     definitions = tuple(
         replace(function, name="private_add") if function.name == "main" else function
@@ -57,7 +58,29 @@ def executable_add() -> tuple[FunctionRecord, ...]:
     }
     module = builder.finalize(outputs)
     assert verify_program_record(module) == ()
-    return module.functions
+    if not adjoint:
+        return module.functions
+    return tuple(
+        replace(
+            function,
+            name=function.name + "_adjoint",
+            blocks=tuple(
+                replace(
+                    block,
+                    operations=tuple(
+                        (
+                            replace(op, callee=op.callee + "_adjoint")
+                            if op.callee is not None
+                            else op
+                        )
+                        for op in block.operations
+                    ),
+                )
+                for block in function.blocks
+            ),
+        )
+        for function in module.functions
+    )
 
 
 @pytest.mark.parametrize("rebuild", [False, True])

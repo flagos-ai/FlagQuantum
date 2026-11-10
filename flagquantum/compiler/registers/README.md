@@ -307,3 +307,12 @@ atomic fallback, failure propagation and depth limits. The same suite exercises
 actual directional field-erasure graphs, full small measurement histories and
 the existing append path. The Add suite also runs recursive expansion before
 its unchanged primitive, branch, workspace and separate model checks.
+
+`component_adjoint.adjoint_component_program` reverses a typed call entry using
+an explicit mapping to existing specialized adjoint definitions. It flips entry
+ports and reconnects SSA in reversed logical visitation order. Exact per-side
+signatures are checked before construction. The caller supplies the semantic
+adjoint bodies, including measured arithmetic cleanup. Run
+`tests/unit/test_component_adjoint.py` for original-source Split/Join and
+Allocate/Free graphs, ordered H/T conjugation, all small Add inverse branches,
+complex spectator amplitudes and clean workspace restoration.

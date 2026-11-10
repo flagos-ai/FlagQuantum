@@ -556,3 +556,30 @@ checks.log,integration.log,examples.log,default-parallel.log,default-comparison.
 The next inventory is CompositeBloq.adjoint against existing precise component
 adjoints and their measurement/lifetime boundaries. Full parent-file acceptance
 and G2 remain open.
+
+## Component graph adjoint admission
+
+The compiler-owned `component_adjoint.adjoint_component_program(record,
+adjoints, entry="main")` rebuilds one verified finite typed-call entry using
+pinned `_adjoint_cbloq` ordering. `adjoints` maps each used forward definition
+name to an existing specialized adjoint definition name in the same module.
+Each target must have the exact ordered LEFT and RIGHT ports of
+`Signature.adjoint()`. Specialized Split/Join may group opposite-side
+declarations differently, matching the pinned source. Definitions
+remain immutable and shared. This mapping is an explicit semantic obligation of
+the caller, with source and numerical witnesses required for acceptance.
+
+The new entry flips LEFT/RIGHT ports, retains declaration and row-major element
+order, starts from the original explicit returns, reverses logical call
+visitation, and reconnects original inputs as outputs. Program SSA remains the
+authority. New occurrence positions follow reversed insertion order. A second
+application uses the reverse definition mapping. Entry and block names are retained. The forward canonical CircuitIR payload
+is cleared because it describes different semantics after taking the adjoint. The selected entry cannot also be a target definition.
+
+No automatic reversal of measured primitives is admitted. Exact measured
+component adjoints must be supplied before decomposition. Allocate/Free and
+Split/Join use their actual opposite definitions. Quantum and canonical CBit
+metadata can be rewired, but an executable classical or measured adjoint requires
+an independently supplied body. Arbitrary abstract source Adjoint wrappers and
+symbolic structures remain separate inventory. Native declared empty-array
+returns retain their metadata even where the pinned builder omits empty keys.
