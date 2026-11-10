@@ -1,6 +1,6 @@
 # Native commuting-Hamiltonian HHL composition
 
-Status: independent dependency probe passed; complete native acceptance pending.
+Status: accepted locally with independent complete-state and fresh replay evidence.
 
 The original HHL uses a two-bit solution, a four-bit signed all-fractional phase
 counter, a signal bit, four commuting Pauli terms and a retained approximate
@@ -32,3 +32,24 @@ evidence, catalog and ledger updates are required before credit. Native coverage
 starts at 196/216; Notebook coverage remains 24/213. Classification is
 `single_device_fast_path`. No integration PR or full remote CI before complete
 216-program native acceptance.
+
+## Accepted evidence
+
+The 16 new native cases and related regressions passed together (121 tests).
+Black, Ruff, strict typing of five files, 29 catalog/API tests, source-of-truth,
+architecture, maturity, links and classification pass. Fresh replay preserves
+all 216 original hashes, outcomes and resource records; all six approved
+revisions execute. All 29 pinned production files remain unchanged.
+
+The native program uses seven physical qubits, no work, 581 operations and
+depth 435. The original uses seven qubits, no work, 207 operations and depth
+150. Both retain signed four-fractional-bit decoding. Absolute amplitude errors
+are below 9.9e-15 and 4.4e-15 respectively, with zero work leakage. The native
+repetition overhead is reported and is not claimed as an optimization.
+Zero workspace is accepted and verified; a negative workspace budget is invalid.
+The two additional real RHS vectors are explicitly normalized; unnormalized,
+zero or nonfinite preparation is not silently accepted.
+
+Native accepted coverage is 197/216 (91.2%), with 19 pending. Notebook coverage
+remains 24/213 and revision-nine merged scopes remain 14/19. Immutable evidence
+is recorded under `up06-native-commuting-hhl` in the delivery ledger.
