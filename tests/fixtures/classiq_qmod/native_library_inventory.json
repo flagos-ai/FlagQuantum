@@ -5350,7 +5350,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

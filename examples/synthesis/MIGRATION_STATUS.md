@@ -303,7 +303,7 @@ Validated local Notebook workflows: **24/213**.
 | `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Native program](community/paper_implementation_project/bpde/main.py) | pending |
 | `community/paper_implementation_project/classical_shadows/classical_shadows` | quantum_program | [Native program](community/paper_implementation_project/classical_shadows/main.py) | pending |
 | `community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding` | notebook_workflow | Pending | pending |
-| `community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator` | notebook_workflow | Pending | pending |
+| `community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator` | notebook_workflow | [Native program](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/main.py) | pending |
 | `community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states` | notebook_workflow | [Native program](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/main.py) | pending |
 | `community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression` | quantum_program | [Native program](functions/arithmetic/arithmetic_expression/main.py) | pending |

@@ -11,6 +11,7 @@ Native FlagQuantum programs currently available:
 - [tridiagonal](paper_implementation_project/block_encoding/tridiagonal/README.md)
 - [bpde](paper_implementation_project/bpde/README.md)
 - [classical_shadows](paper_implementation_project/classical_shadows/README.md)
+- [harmonic_oscillator](paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/README.md)
 - [quantum_compression_algorithm_for_symmetric_states](paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/README.md)
 
 ## Validated local Notebook workflows

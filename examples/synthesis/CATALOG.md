@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **162/216**.
+Validated quantum-program counterparts: **163/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -93,7 +93,7 @@ Validated local Notebook workflows:
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 
 
-## Community (10 native programs)
+## Community (11 native programs)
 
 - [periodic_laplacian_1d](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/README.md)
 - [periodic_laplacian_nd](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/README.md)
@@ -104,6 +104,7 @@ Validated local Notebook workflows:
 - [tridiagonal](community/paper_implementation_project/block_encoding/tridiagonal/README.md)
 - [bpde](community/paper_implementation_project/bpde/README.md)
 - [classical_shadows](community/paper_implementation_project/classical_shadows/README.md)
+- [harmonic_oscillator](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/README.md)
 - [quantum_compression_algorithm_for_symmetric_states](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/README.md)
 
 Validated local Notebook workflows:
