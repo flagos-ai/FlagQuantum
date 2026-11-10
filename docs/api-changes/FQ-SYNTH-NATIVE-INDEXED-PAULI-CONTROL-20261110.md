@@ -10,8 +10,14 @@ Exactly one in-bounds location is required. A multi-bit register or slice is
 never implicitly interpreted as its low bit. Reuse `qreg.pauli_rotation` with
 the resolved `control_index`; its initialization, writable-target, disjoint
 register and resource checks remain authoritative. Control storage is read
-only. Mutable helpers remain outside this admission. Arbitrary equatorial
-axes, runtime indices and approximate angle rounding remain unsupported.
+only. The same direct rotation is admitted inside existing gate-only mutable
+helpers: resolve both scalar formals through their checked borrowed locations,
+preserving register-level disjointness. This allows a reusable two-qubit
+rotation helper in a static loop without capturing loop variables in a Python
+lambda. This does not admit controlling a mutable helper call, allocating or
+publishing outputs inside it, or arbitrary callback bodies. Arbitrary
+equatorial axes, runtime indices and approximate angle rounding remain
+unsupported.
 
 The first complete path is a native counterpart of `linear_pauli_rotations`:
 an unsigned six-bit input controls three Y rotations with affine angles.

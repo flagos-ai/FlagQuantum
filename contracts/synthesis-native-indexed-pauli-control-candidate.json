@@ -6,6 +6,7 @@
   "signature_changes": {},
   "operation": "control(array[index], lambda: R(theta, phi, target))",
   "condition": "exactly one checked static bit location",
+  "mutable_helpers": "direct Pauli-axis rotation with checked scalar borrowed locations; controlling helper calls remains excluded",
   "authority": "existing static view resolver and qreg.pauli_rotation verifier/lowering",
   "maximum_predicate_bits": 8,
   "new_ir_or_opcode": false,
