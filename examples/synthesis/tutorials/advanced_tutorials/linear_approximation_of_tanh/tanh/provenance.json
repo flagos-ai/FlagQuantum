@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "dd18b55bd39c68c61326df9f2df98e597a720d5acb0e59f688f05d720840d27a",
+  "native_entrypoint": "examples.synthesis.tutorials.advanced_tutorials.linear_approximation_of_tanh.tanh.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_tanh.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Four dyadic linear segments select coherently by comparisons at 1/4, 1/2 and 3/4, equivalent to the original copied MSB label. Exact rational values floor at destination significance, mask and XOR into initialized output. Independent Circuit uses raw MSB segment selection and a reversible permutation; all absolute amplitudes and clean work are verified."
+}
