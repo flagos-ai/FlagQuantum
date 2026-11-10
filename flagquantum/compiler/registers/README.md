@@ -426,3 +426,11 @@ explicitly when matching the source's wrapped adder and unwrapped return value.
 See tests/unit/test_component_auto_partition.py and
 tests/unit/test_specialized_control_boundaries.py for complete examples and the
 original shaped-control and directional failure boundaries.
+
+`component_tensor_expansion.py` applies the tensor-preserving/full-expansion
+selection rule through the existing component expansion owner. Tensor providers
+supply an explicit callee classifier; full mode never queries it. Simulation
+continues to own binding/contraction. See
+[component tensor expansion](../../../docs/development/COMPONENT_TENSOR_EXPANSION.md)
+for composite-entry scope, source correspondence, failures and measured append
+verification.
