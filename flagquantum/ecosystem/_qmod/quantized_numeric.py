@@ -6,9 +6,17 @@ import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
-from itertools import product
 from typing import TYPE_CHECKING
 
+from ...compiler._construction.fixed_point import (
+    BRANCH_ROWS,
+    LITERAL_BITS,
+    MAX_BRANCH_BITS,
+    FixedPointExpression,
+    FixedPointScalar,
+    fixed_point_number,
+    fixed_point_scalar,
+)
 from .angles import REAL_LITERAL
 from .masked_selection import emit_truth_xor
 from .syntax import Expression, Function, Parameter, Statement, Token, reject
@@ -17,41 +25,15 @@ if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
     from .context import _Adapt
 
-# Qmod's default precision for the pinned native profile. Source numeric
-# literals are represented at up to twenty bits before the profile truncation.
-FRACTION_BITS = 8
-_LITERAL_BITS = 20
-_MAX_BRANCH_BITS = 5
-_ROWS = 1 << _MAX_BRANCH_BITS
-
-
-@dataclass(frozen=True)
-class _Scalar:
-    width: int
-    signed: bool
-    fraction: int
-    low: Fraction
-    high: Fraction
-    values: tuple[Fraction, ...]
-
 
 @dataclass(frozen=True)
 class NumericProgram:
     bits: int
-    outputs: tuple[_Scalar, ...]
+    outputs: tuple[FixedPointScalar, ...]
 
 
-def _truncate(value: Fraction, bits: int) -> Fraction:
-    scale = 1 << bits
-    return Fraction((value * scale).__floor__(), scale)
-
-
-def _number(token: Token, value: Fraction) -> _Scalar:
-    literal_scale = 1 << _LITERAL_BITS
-    native = Fraction(int(value * literal_scale), literal_scale)
-    quantized = _truncate(native, FRACTION_BITS)
-    fraction = quantized.denominator.bit_length() - 1
-    return _scalar(token, quantized, quantized, fraction, (quantized,) * _ROWS)
+def _number(token: Token, value: Fraction) -> FixedPointScalar:
+    return fixed_point_number(lambda code, message: reject(token, code, message), value)
 
 
 def _scalar(
@@ -60,24 +42,14 @@ def _scalar(
     high: Fraction,
     fraction: int,
     values: tuple[Fraction, ...],
-) -> _Scalar:
-    fraction = min(fraction, FRACTION_BITS)
-    scale = 1 << fraction
-    lower, upper = int(low * scale), int(high * scale)
-    signed = lower < 0
-    if signed:
-        width = max((~lower).bit_length(), max(upper, 0).bit_length()) + 1
-    else:
-        width = upper.bit_length()
-    width = max(width, fraction, 1)
-    if width > 20:
-        reject(token, "budget.precision", "quantized output format exceeds twenty bits")
-    if any(
-        value * scale != int(value * scale) or value < low or value > high
-        for value in values
-    ):
-        reject(token, "precision", "quantized result does not fit the inferred format")
-    return _Scalar(width, signed, fraction, low, high, values)
+) -> FixedPointScalar:
+    return fixed_point_scalar(
+        lambda code, message: reject(token, code, message),
+        low,
+        high,
+        fraction,
+        values,
+    )
 
 
 def _literal(node: Expression) -> Fraction | None:
@@ -96,75 +68,12 @@ def _literal(node: Expression) -> Fraction | None:
     return None
 
 
-def _expression(node: Expression, values: Mapping[str, _Scalar]) -> _Scalar:
-    literal = _literal(node)
-    if literal is not None:
-        return _number(node.token, literal)
-    name, args = node.token.text, node.children
-    if not args and name in values:
-        return values[name]
-    if name == "-" and len(args) == 1:
-        operand = _expression(args[0], values)
-        return _scalar(
-            node.token,
-            -operand.high,
-            -operand.low,
-            operand.fraction,
-            tuple(-value for value in operand.values),
-        )
-    if name == "**" and len(args) == 2:
-        base = _expression(args[0], values)
-        degree = _literal(args[1])
-        if degree is None or degree.denominator != 1 or not 1 <= degree <= 4:
-            reject(
-                node.token,
-                "precision",
-                "quantized power requires a literal degree in 1..4",
-            )
-        exponent = int(degree)
-        fraction = min(base.fraction * exponent, FRACTION_BITS)
-        edges = [base.low**exponent, base.high**exponent]
-        if exponent % 2 == 0 and base.low < 0 < base.high:
-            edges.append(Fraction())
-        return _scalar(
-            node.token,
-            _truncate(min(edges), fraction),
-            _truncate(max(edges), fraction),
-            fraction,
-            tuple(_truncate(value**exponent, fraction) for value in base.values),
-        )
-    if name in {"+", "-", "*"} and len(args) == 2:
-        left, right = (_expression(child, values) for child in args)
-        pairs = tuple(zip(left.values, right.values, strict=True))
-        fraction = max(left.fraction, right.fraction)
-        if name == "+":
-            return _scalar(
-                node.token,
-                left.low + right.low,
-                left.high + right.high,
-                fraction,
-                tuple(a + b for a, b in pairs),
-            )
-        if name == "-":
-            return _scalar(
-                node.token,
-                left.low - right.high,
-                left.high - right.low,
-                fraction,
-                tuple(a - b for a, b in pairs),
-            )
-        fraction = min(left.fraction + right.fraction, FRACTION_BITS)
-        bounds = [
-            a * b for a, b in product((left.low, left.high), (right.low, right.high))
-        ]
-        return _scalar(
-            node.token,
-            _truncate(min(bounds), fraction),
-            _truncate(max(bounds), fraction),
-            fraction,
-            tuple(_truncate(a * b, fraction) for a, b in pairs),
-        )
-    reject(node.token, "precision", "unsupported lexical quantized numeric expression")
+_ARITHMETIC: FixedPointExpression[Expression] = FixedPointExpression(
+    text=lambda node: node.token.text,
+    children=lambda node: node.children,
+    literal=_literal,
+    reject=lambda node, code, message: reject(node.token, code, message),
+)
 
 
 class _Planner:
@@ -173,10 +82,10 @@ class _Planner:
         self.bits = 0
         self.steps = 0
         self.used: set[str] = set()
-        self.dropped: list[_Scalar] = []
+        self.dropped: list[FixedPointScalar] = []
 
-    def fresh_uniform(self, token: Token) -> _Scalar:
-        if self.bits == _MAX_BRANCH_BITS:
+    def fresh_uniform(self, token: Token) -> FixedPointScalar:
+        if self.bits == MAX_BRANCH_BITS:
             reject(
                 token,
                 "budget.precision",
@@ -189,15 +98,15 @@ class _Planner:
             Fraction(0),
             Fraction(1),
             0,
-            tuple(Fraction(row >> bit & 1) for row in range(_ROWS)),
+            tuple(Fraction(row >> bit & 1) for row in range(BRANCH_ROWS)),
         )
 
     def function(
         self,
         syntax: Function,
-        inputs: Mapping[str, _Scalar],
+        inputs: Mapping[str, FixedPointScalar],
         active: tuple[str, ...],
-    ) -> tuple[_Scalar, ...]:
+    ) -> tuple[FixedPointScalar, ...]:
         name = syntax.name.text
         if (
             name in active
@@ -241,7 +150,7 @@ class _Planner:
                 )
             return target
 
-        def read(node: Expression) -> _Scalar:
+        def read(node: Expression) -> FixedPointScalar:
             if node.children or node.token.text not in initialized:
                 reject(
                     node.token,
@@ -287,7 +196,7 @@ class _Planner:
                 )
             if token.text == "=" and len(args) == 2:
                 target = reserve(args[0])
-                initialized[target] = _expression(args[1], initialized)
+                initialized[target] = _ARITHMETIC.evaluate(args[1], initialized)
             elif token.text == "allocate" and len(args) == 2 and _literal(args[0]) == 1:
                 target = reserve(args[1])
                 initialized[target] = _number(token, Fraction())
@@ -375,7 +284,7 @@ def try_numeric_program(definitions: Mapping[str, Function]) -> NumericProgram |
     def non_dyadic(node: Expression) -> bool:
         literal = _literal(node)
         if literal is not None:
-            return literal.denominator > 1 << _LITERAL_BITS
+            return literal.denominator > 1 << LITERAL_BITS
         return any(non_dyadic(child) for child in node.children)
 
     if not any(
