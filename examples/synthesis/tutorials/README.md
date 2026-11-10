@@ -31,6 +31,7 @@ Native FlagQuantum programs currently available:
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [classiq_qsvt](technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/README.md)
 - [classiq_discrete_quantum_walk](technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md)
 - [discrete_quantum_walk_circle](technology_demonstrations/discrete_quantum_walk_circle/README.md)
 - [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)

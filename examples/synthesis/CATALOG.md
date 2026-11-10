@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **197/216**.
+Validated quantum-program counterparts: **199/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -57,8 +57,9 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (49 native programs)
+## Applications (50 native programs)
 
+- [heat_eq_qsvt](applications/cfd/heat_eq_qsvt/README.md)
 - [qlbm](applications/cfd/qlbm/README.md)
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -209,7 +210,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (45 native programs)
+## Tutorials (46 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -240,6 +241,7 @@ Validated local Notebook workflows:
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](tutorials/technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [classiq_qsvt](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/README.md)
 - [classiq_discrete_quantum_walk](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md)
 - [discrete_quantum_walk_circle](tutorials/technology_demonstrations/discrete_quantum_walk_circle/README.md)
 - [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)

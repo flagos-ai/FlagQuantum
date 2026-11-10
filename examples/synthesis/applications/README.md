@@ -2,6 +2,7 @@
 
 Native FlagQuantum programs currently available:
 
+- [heat_eq_qsvt](cfd/heat_eq_qsvt/README.md)
 - [qlbm](cfd/qlbm/README.md)
 - [quantum_volume](benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](benchmarking/randomized_benchmarking/README.md)

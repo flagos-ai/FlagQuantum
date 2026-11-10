@@ -216,7 +216,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/CFD/QLS_for_hybrid_solvers/qls_qsvt` | notebook_workflow | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/verify_block_encoding` | notebook_workflow | Pending | pending |
 | `applications/CFD/double_slit_experiment/quantum_double_slit_experiment` | notebook_workflow | Pending | pending |
-| `applications/CFD/heat_eq_qsvt/heat_eq_qsvt` | notebook_workflow | Pending | pending |
+| `applications/CFD/heat_eq_qsvt/heat_eq_qsvt` | notebook_workflow | [Native program](applications/cfd/heat_eq_qsvt/main.py) | pending |
 | `applications/CFD/qlbm/qlbm` | notebook_workflow | [Native program](applications/cfd/qlbm/main.py) | pending |
 | `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | Pending | pending |
 | `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/main.py) | pending |
@@ -403,7 +403,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | validated |
 | `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/main.py) | pending |
 | `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | [Native program](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/main.py) | validated |
-| `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/main.py) | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt_example` | notebook_workflow | Pending | pending |
