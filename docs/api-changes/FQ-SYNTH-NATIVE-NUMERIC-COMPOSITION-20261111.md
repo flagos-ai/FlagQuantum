@@ -1,7 +1,8 @@
 # Native numeric composition before explicit quantization
 
-Status: next implementation contract; not implemented by the fixed-point
-foundation. Native acceptance remains 208/216. Classification:
+Status: implemented locally by the numeric-composition slice, following the
+fixed-point foundation. Corpus evidence is recorded in the delivery ledger;
+this does not certify Brownian. Native acceptance remains 208/216. Classification:
 `single_device_fast_path`.
 
 ## Evidence and scope
@@ -36,8 +37,8 @@ Arithmetic may read admitted signed and fractional scalar values. Addition and
 subtraction align to the larger scale; multiplication adds scales; powers scale
 by their literal degree. Negation, comparisons and admitted extrema interpret
 numeric values rather than raw encodings. Infer signed bounds and widths in the
-shared exact word authority. Preserve current operator admission and existing
-budgets. Never truncate low bits, wrap overflow, round decimals or reinterpret a
+shared exact word authority. Preserve operator admission outside this numeric
+composition extension and preserve existing budgets. Never truncate low bits, wrap overflow, round decimals or reinterpret a
 fractional register as an integer to make a program fit. Unsupported operators
 and non-binary decimals continue to refuse at their source location.
 
@@ -91,3 +92,28 @@ Brownian acceptance still requires the original scope, helper composition,
 quantized intermediate values, complete retained environment, independent
 Circuit full-state/reduced-state checks and fresh corpus replay. The remaining
 three finance programs also require their own complete dependency review.
+
+## Implementation boundary
+
+`frontend_calls.py` owns static helper borrowing and format checks; `_Capture`
+keys specialization on width, sign and scale. Native capture supplies complete
+numeric input formats to the existing `WordExpression`. Source word adapters
+continue using their established closed profile, without that native format
+admission. There is one exact word authority and the separate, explicit bounded
+quantized arithmetic foundation; native exact arithmetic never selects the latter
+implicitly.
+
+Owned root numeric locals reuse `qreg.hidden`, including validated numeric format
+metadata, and keep their environment after `drop`. This does not permit a hidden
+local to escape through an Output helper port or admit mutable, controlled or
+inverse numeric helper calls. The previously admitted fixed-point XOR helper
+profile remains supported independently.
+
+Signed multiplication uses bounded full-width unsigned intermediates followed
+by proved two's-complement projection. Intermediates must also fit the existing
+256-bit construction profile; a small final bound does not waive that budget.
+The current lowering is conservative in work bits and gate count. No efficiency
+parity with a hand-designed Circuit is claimed. The additional
+`examples/synthesis/tutorials/composition/numeric_program` tutorial exercises two
+exact numeric helper calls, complex phase and direct Fraction readout; it does
+not add original-corpus or Notebook workflow acceptance.
