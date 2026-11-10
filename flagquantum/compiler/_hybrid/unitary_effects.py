@@ -13,6 +13,7 @@ PURE_EFFECTS = frozenset(
         "qreg.gate",
         "qreg.pair_gate",
         "qreg.control_x",
+        "qreg.xor",
         "qreg.array_phase_flip",
         "qreg.phase",
         "qreg.control_phase",
@@ -47,7 +48,7 @@ def _inverse_specs(
         }:
             if attributes.pop("inverse", False) is not True:
                 attributes["inverse"] = True
-        elif op.name == "qreg.array_phase_flip" or (
+        elif op.name in {"qreg.array_phase_flip", "qreg.xor"} or (
             op.name == "qreg.control_x"
             and "indices" in attributes
             or op.name == "qreg.pair_gate"

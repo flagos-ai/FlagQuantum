@@ -73,6 +73,7 @@ def _verify_body(
     registers: list[Value] = list(borrowed)
     returned: list[Value] = list(borrowed)
     local_storage: set[Value] = set()
+    formatted: set[Value] = set()
     initialized = {v.id for v in borrowed}
     reversible: dict[ValueId, frozenset[ValueId]] = {}
     labels: set[str] = set()
@@ -141,6 +142,8 @@ def _verify_body(
                 )
             registers.append(value)
             if op.name == "qreg.declare":
+                if op.attributes.get("numeric_format", (False, 0)) != (False, 0):
+                    formatted.add(value)
                 fields = record_fields(op)
                 projected = (
                     tuple(f"{label}.{name}" for name, _ in record_readouts(fields))
@@ -924,6 +927,19 @@ def _verify_body(
                         "invalid uniform interval or width above eight",
                         op,
                     )
+                changed = (destination,)
+            elif op.name == "qreg.xor":
+                if any(value in formatted for value in operands):
+                    _fail(
+                        "register.numeric", "expression XOR requires unsigned words", op
+                    )
+                if destination in borrowed:
+                    _fail("register.const", "Const cannot be an XOR target", op)
+                if destination.id not in initialized:
+                    _fail(
+                        "register.uninitialized", "XOR reads uninitialized storage", op
+                    )
+                check_call(op, arguments, destination)
                 changed = (destination,)
             elif op.name == "qreg.gate":
                 if destination in borrowed:

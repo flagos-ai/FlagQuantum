@@ -47,6 +47,7 @@ from .frontend_regions import capture_adjoint, capture_unitary_within
 from .frontend_statements import capture_statements
 from .frontend_transforms import capture_modular_exp, capture_transform
 from .frontend_views import gate_target, inline_mutable, locations
+from .frontend_xor import capture_expression_xor
 from .profile import _width
 from .program_types import (
     QNum,
@@ -283,6 +284,12 @@ class _Body:
         self.effect = following
 
     def assign(self, node: ast.AugAssign) -> None:
+        if isinstance(node.op, ast.BitXor) and any(
+            isinstance(child, ast.Name) and child.id in self.ports
+            for child in ast.walk(node.value)
+        ):
+            capture_expression_xor(self, node)
+            return
         if (
             isinstance(node.op, ast.BitXor)
             or needs_numeric(self, node.value)

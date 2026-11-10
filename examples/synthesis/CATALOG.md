@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **154/216**.
+Validated quantum-program counterparts: **155/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -104,7 +104,7 @@ Validated local Notebook workflows:
 - [superposition](community/basic_examples/superposition/README.md)
 
 
-## Functions (54 native programs)
+## Functions (55 native programs)
 
 - [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
@@ -139,6 +139,7 @@ Validated local Notebook workflows:
 - [qft](functions/qft/README.md)
 - [qpe](functions/qpe/README.md)
 - [qpe_flexible](functions/qpe/qpe_flexible/README.md)
+- [qsvt](functions/qsvt/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [prepare_exponential_state](functions/state_preparation/prepare_exponential_state/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)

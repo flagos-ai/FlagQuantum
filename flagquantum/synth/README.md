@@ -1240,3 +1240,28 @@ probability 1/4 each. This concrete composition and its identical flexible-QPE
 source counterpart do not add a general callback-based QPE operation.
 See the [numeric phase contract](../../docs/api-changes/FQ-SYNTH-NATIVE-NUMERIC-PHASE-20261110.md)
 and `tests/integration/test_synthesis_native_numeric_phase.py` for acceptance.
+
+### Reversible arithmetic into initialized outputs
+
+An unsigned root qfunc can XOR a computed value into an initialized scalar:
+
+```python
+@qfunc
+def main(a: Output[QNum], b: Output[QNum], marker: Output[QBit]):
+    allocate(4, a)
+    allocate(4, b)
+    allocate(marker)
+    hadamard_transform(a)
+    hadamard_transform(b)
+    marker ^= a <= b
+```
+
+The target may contain a nonzero or coherent quantum value. The operation means
+`target XOR expression`, not replacement. Inputs remain unchanged; actual work
+qubits are restored. Expressions reuse the checked unsigned grammar and must fit
+the target without truncation. Use `|=` for fresh initialization. Literal `^=`
+mask behavior is unchanged. Target/input overlap, uninitialized storage,
+signed/scaled expressions, arrays and borrowed mutable-helper expression XOR
+are currently refused. Existing root `adjoint` and `within`/`apply` can reverse
+expression XOR. The native [QSVT program](../../examples/synthesis/functions/qsvt/main.py)
+uses it for reversible comparison; its complete resource report remains visible.

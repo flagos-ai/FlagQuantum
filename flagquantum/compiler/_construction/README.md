@@ -766,3 +766,20 @@ limits and ordinary register-phase lowering stay shared. Numeric helper ports
 remain refused. Run `tests/integration/test_synthesis_native_numeric_phase.py`
 and the [typed diagonal QPE example](../../../examples/synthesis/functions/qpe/README.md)
 for the contributor path. This admits no generic quantum callback or new IR.
+
+### Initialized expression XOR
+
+Native root `target ^= expression` emits `qreg.xor` with the existing pure
+unsigned expression callee. The destination must already be initialized and be
+an owned unsigned scalar Output, disjoint from every input. The result must fit;
+smaller values XOR only the low destination bits. No zero target is assumed.
+Both arithmetic schedules and the checked Boolean XOR implementation are reused.
+The effect invalidates dependent cleanup proofs and does not establish a fresh
+computation or zero proof. It is its own inverse, so existing root adjoint and
+within/apply composition can reverse it without a separate arithmetic inverse.
+
+Signed/scaled expression reads, signed/scaled destinations, array/subregister
+assignment and borrowed mutable-helper expression XOR remain refused. Literal
+raw-mask XOR keeps its existing behavior. Every read witness survives source
+alias checking, including canceled target reads. The register verifier also
+rejects formatted operands rather than trusting native capture alone.

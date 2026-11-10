@@ -676,7 +676,7 @@ def schedule_register_program(
                 rotation = Instruction("phase", (0,), params={"theta": angle})
                 flip = Instruction("x", (0,))
                 gates = (flip, rotation, flip, rotation)
-        elif op.name in {"qreg.compute", "qreg.phase"}:
+        elif op.name in {"qreg.compute", "qreg.xor", "qreg.phase"}:
             phase = op.name == "qreg.phase"
             actual = op.operands[1:] if phase else op.operands[2:]
             # A wrapper preserves repeated actual aliases while the original
@@ -832,7 +832,7 @@ def schedule_register_program(
                 ),
             )
             segments.append(segment)
-            if not phase:
+            if op.name == "qreg.compute":
                 computed[op.operands[1].id] = segment
             gates = segment.circuit.instructions
         if "control_state" in op.attributes:

@@ -58,6 +58,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.reset": frozenset({"index"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
+        "qreg.xor": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
         "qreg.phase": frozenset({"callee"}),
         "qreg.control_call": frozenset({"callee"}),
