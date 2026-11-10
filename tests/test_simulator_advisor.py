@@ -4,7 +4,6 @@ import hashlib
 import json
 import subprocess
 import sys
-import time
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
@@ -294,9 +293,11 @@ def test_live_calibration_excludes_a_faster_incorrect_backend(
 ) -> None:
     circuit = fq.Circuit(2, dtype=torch.complex128).h(0).cx(0, 1)
 
+    clock = _VirtualClock()
+
     def fake_runner(engine: str):
         def execute(ir):
-            time.sleep(0.001 if engine == "flagquantum_native" else 0.0001)
+            clock.advance(0.001 if engine == "flagquantum_native" else 0.0001)
             state = torch.zeros(ir.shape, dtype=torch.complex128)
             if engine == "flagquantum_native":
                 state[..., 0] = 2**-0.5
@@ -307,6 +308,7 @@ def test_live_calibration_excludes_a_faster_incorrect_backend(
 
         return execute
 
+    monkeypatch.setattr("time.perf_counter", clock)
     monkeypatch.setattr(_calibration, "_runner", fake_runner)
     decision = recommend(
         circuit,

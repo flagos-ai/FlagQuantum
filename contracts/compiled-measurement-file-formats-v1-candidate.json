@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "status": "approved_implementation_candidate",
+  "proposal": "docs/development/COMPILED_MEASUREMENT_FILE_FORMATS_PROPOSAL.md",
+  "approval_sha256": "97b2ea69aa68534a40f68fd55144f1103f3c7c0fa8d2d12b4a4102425596281a",
+  "extends": "contracts/compiled-measurement-sampler-v1.json",
+  "handle": "flagquantum.simulation.stabilizer.measurement_sampler.CompiledMeasurementSampler",
+  "method": "sample_write",
+  "formats": [
+    "01",
+    "b8",
+    "r8",
+    "hits",
+    "dets",
+    "ptb64"
+  ],
+  "default_added": false,
+  "max_file_bytes": 1073741824,
+  "ptb64_shot_alignment": 64,
+  "record_order": "explicit source measurement occurrence order",
+  "dets_prefix": "M",
+  "no_overwrite": true,
+  "failure_invalidates_handle": true,
+  "parser_chunk_bytes": 65536,
+  "parser_working_storage_limit_bytes": 1048576,
+  "process_rss_limit_claimed": false
+}

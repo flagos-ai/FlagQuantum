@@ -185,9 +185,12 @@ These examples do not use that alias:
   circuit the declared device can actually run, so a provider sees the whole path
   end to end without FlagQuantum changing to accept the device.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
-- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) — it imports
+- [`realtime/device_call.py`](realtime/device_call.py) — it imports
   the realtime messaging module directly, because the feedback loop it models is
   a channel between two programs rather than a program to run.
+- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) forwards to
+  `realtime/device_call.py` for compatibility with the previous example path.
+  Run `python -m examples.realtime.device_call` for the canonical offline workflow.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
 - [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports
@@ -230,6 +233,10 @@ These examples do not use that alias:
   compares native matching and PyMatching on the same 35 distance-three Z
   memory shots. It uses the existing Stim and PyMatching extras on CPU and
   reports four paired outcome counts after all three batches complete.
+- [`qec/check_matrix_matching.py`](qec/check_matrix_matching.py) imports a
+  weighted check matrix through canonical QEC modules rather than the root alias.
+  CPU and the PyMatching extra are required. It prints the column mapping,
+  independent edge costs and the unique selected pair edge.
 - [`qec/stim_memory_experiment.py`](qec/stim_memory_experiment.py) runs an
   external Stim circuit through the canonical QEC fixed-shot report entry,
   using domain imports rather than the root-level alias. CPU and the existing

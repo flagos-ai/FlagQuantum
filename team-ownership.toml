@@ -170,6 +170,7 @@ owns = [
 branch = "refactor/vnext-team-execution-providers"
 worktree = "FlagQuantum-vNext-execution"
 owns = [
+    "flagquantum/realtime/**",
     "flagquantum/remote/**",
     "flagquantum/deployment/**",
     "flagquantum/runtime/target_execution.py",

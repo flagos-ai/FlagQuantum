@@ -44,6 +44,7 @@ flagquantum/
 ├── core/                   # backend-neutral IR and shared semantics
 ├── compiler/               # validation, optimization, lowering, and code generation
 ├── runtime/                # planning, execution lifecycle, results, and coordination
+├── realtime/               # device-call framing, handlers, channels, and sessions
 ├── simulation/             # numerical methods
 ├── kernels/                # optional accelerator kernel catalog
 ├── lindblad/               # continuous-time Lindblad evolution plans
@@ -106,6 +107,12 @@ outside the mandatory local PyTorch path.
 `simulation` is a numerical-method domain, not a second public runtime. Runtime
 may call its engines through explicit entry points, while backend choice,
 distributed ownership, recovery, and evidence assembly remain Runtime concerns.
+
+`realtime` is a sibling domain for software messaging and classical handler calls;
+`remote` owns external task systems. The protocol currently runs offline and has
+no execution or QEC integration. It imports only itself and the standard library.
+The old `remote.realtime` path is a frozen compatibility adapter. See
+[ARCH-014](docs/architecture/decisions/ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md).
 
 See the executable
 [dependency policy](docs/architecture/ARCHITECTURE_DEPENDENCIES.md) for enforced

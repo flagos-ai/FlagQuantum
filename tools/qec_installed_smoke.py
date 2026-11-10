@@ -439,7 +439,23 @@ def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | 
         sampler.sample_write(2, filepath=output, format="b8")
         packed = output.read_bytes()
         assert packed == b"\x01\x01"
-    return {"packed_samples": samples.tolist(), "b8_hex": packed.hex()}
+        formats: dict[Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes] = {
+            "01": b"10\n" * 64,
+            "b8": b"\x01" * 64,
+            "r8": b"\x00\x01" * 64,
+            "hits": b"0\n" * 64,
+            "dets": b"shot M0\n" * 64,
+            "ptb64": b"\xff" * 8 + b"\x00" * 8,
+        }
+        for format, reference in formats.items():
+            output = Path(directory) / f"format-{format}"
+            sampler.sample_write(64, filepath=output, format=format)
+            assert output.read_bytes() == reference
+    return {
+        "packed_samples": samples.tolist(),
+        "b8_hex": packed.hex(),
+        "file_format_sizes": {format: len(data) for format, data in formats.items()},
+    }
 
 
 def _exercise_native_detector_execution(profile: str) -> dict[str, object] | None:
@@ -498,6 +514,31 @@ def _exercise_terminal_conversion(profile: str) -> dict[str, object] | None:
     return {"detectors": results, "observables": [[], []]}
 
 
+def _exercise_matching_graph(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec.adapters.pymatching_graph import PyMatchingGraphDecoder
+    from flagquantum.qec.decoders.matching_graph import MatchingGraph
+
+    checks = torch.tensor([[1, 0, 1], [0, 1, 1]], dtype=torch.uint8)
+    faults = torch.tensor([[1, 0, 0], [0, 1, 0]], dtype=torch.uint8)
+    graph, columns = MatchingGraph.from_check_matrix(
+        checks,
+        faults_matrix=faults,
+        weights=torch.tensor([2.0, 3.0, 1.0], dtype=torch.float64),
+    )
+    solution = PyMatchingGraphDecoder(graph).decode((0, 1))
+    assert columns == (0, 1, 2) and solution.edge_indices == (2,)
+    assert solution.fault_ids == () and solution.weight == 1.0
+    return {
+        "column_to_edge": list(columns),
+        "selected_edges": list(solution.edge_indices),
+        "weight": solution.weight,
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -549,6 +590,7 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "matching_graph": _exercise_matching_graph(args.profile),
                 "packed_predictions": _exercise_packed_predictions(args.profile),
                 "sdk_weighted_batches": _exercise_sdk_weights(args.profile),
                 "matched_detectors": _exercise_matched_detectors(args.profile),
