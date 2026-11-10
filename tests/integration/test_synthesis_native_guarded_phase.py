@@ -164,10 +164,11 @@ def test_preexisting_constant_controls_preserve_resources_and_absolute_phase(
     )
     program = synth.synthesize(entry, classical_inputs={"g": 2}, objective=objective)
     resources = estimate_resources(program.circuit)
-    # Measured on the preceding committed capture implementation, cd7d80314.
-    assert (resources.n_qubits, resources.n_operations, resources.depth) == (8, 13, 11)
-    assert resources.operation_counts == {"h": 2, "x": 4, "ccx": 4, "cx": 2, "phase": 1}
-    assert program.report["workspace_qubits"] == 6
+    # Cube selection improves the original cd7d80314 baseline (8,13,11).
+    # Historical capture replay confirms this change predates sparse phases.
+    assert (resources.n_qubits, resources.n_operations, resources.depth) == (3, 7, 5)
+    assert resources.operation_counts == {"h": 2, "x": 2, "cx": 2, "phase": 1}
+    assert program.report["workspace_qubits"] == 1
     constant = {"1+2": 3.0, "math.pi": torch.pi, "g": 2.0}[expression]
     values = torch.tensor([constant, constant, 0.0, 0.0], dtype=torch.float64)
     reference = (
@@ -240,7 +241,7 @@ def test_preexisting_constant_controls_preserve_resources_and_absolute_phase(
             "allocate(a)\nhelper(a)",
             "a:Output[QBit]",
             "@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:H(a))\n",
-            "phase or direct Pauli-axis rotation control",
+            "phase, predicate-X or direct Pauli-axis rotation control",
         ),
         (
             "allocate(a)\nwith adjoint():\n    helper(a)",
@@ -252,7 +253,7 @@ def test_preexisting_constant_controls_preserve_resources_and_absolute_phase(
             "allocate(a)\nhelper(a)",
             "a:Output[QBit]",
             "@qfunc\ndef publish(a:Output[QBit]):\n    allocate(a)\n@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:publish(a))\n",
-            "phase or direct Pauli-axis rotation control",
+            "phase, predicate-X or direct Pauli-axis rotation control",
         ),
         (
             "allocate(9,a)\ncontrol(a<3,lambda:phase(a-0.5,0.2))",
