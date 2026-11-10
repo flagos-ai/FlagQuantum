@@ -12,6 +12,9 @@ from flagquantum.simulation.tensor_network.conjugate_pairs import (
     conjugate_pair_labels,
     tensor_conjugate_pairs,
 )
+from flagquantum.simulation.tensor_network.measurement_copy import (
+    z_measurement_copy_node,
+)
 from flagquantum.simulation.tensor_network.models import TensorNetworkNode
 from flagquantum.simulation.tensor_network.path_search import _contract_nodes_greedy
 from flagquantum.simulation.tensor_network.trace_indices import trace_conjugate_indices
@@ -137,9 +140,8 @@ def test_original_measure_z_channel_then_classical_discard(
         cbloq_to_superquimb,
     )
 
-    copy = torch.zeros(2, 2, 2, dtype=torch.complex128)
-    copy[0, 0, 0] = copy[1, 1, 1] = 1
-    native = TensorNetworkNode(copy, (3, 17, 41))
+    native = z_measurement_copy_node(3, 17, 41, torch.empty((), dtype=torch.complex128))
+    copy = native.tensor
     # Original local tensor and sentinel are read unchanged.
     source_items = MeasureZ().my_tensors({"q": "input"}, {"c": "output"})
     np.testing.assert_array_equal(copy.numpy(), source_items[0].data)

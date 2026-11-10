@@ -161,3 +161,10 @@ caller-owned codecs to the same leaf boundary consumed by
 `component_tensor_nodes`. It reuses the existing binder, preserves caller
 integer labels and dtype/device, and refuses classical ports before callbacks.
 No automatic action lookup or quantum-phase substitution is performed.
+
+`measurement_copy.py` owns the Z-measurement copy leaf with explicit input,
+result and environment integer edges. Conjugate doubling and an explicit
+trace of the environment yield the measurement channel; the leaf alone retains
+coherent environment information. It emits no physical instruction or reset.
+See [measurement copy](../../../docs/development/MEASUREMENT_COPY.md) for the
+source mapping, channel composition, physical branch checks and separate costs.

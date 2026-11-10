@@ -10,6 +10,9 @@ import torch
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.simulation.tensor_network.conjugate_pairs import tensor_conjugate_pairs
+from flagquantum.simulation.tensor_network.measurement_copy import (
+    z_measurement_copy_node,
+)
 from flagquantum.simulation.tensor_network.models import TensorNetworkNode
 from flagquantum.simulation.tensor_network.register_superoperator_binding import (
     contract_register_superoperator,
@@ -97,9 +100,8 @@ def test_measurement_channel_classical_output_and_discard_scalar() -> None:
     bb, inputs = BloqBuilder.from_signature(source_sig)
     c = bb.add(MeasureZ(), q=inputs["q"])
     measured = bb.finalize(c=c)
-    data = torch.zeros((2, 2, 2), dtype=torch.complex128)
-    data[0, 0, 0] = data[1, 1, 1] = 1
-    nodes = tensor_conjugate_pairs((TensorNetworkNode(data, (3, 17, 41)),))
+    node = z_measurement_copy_node(3, 17, 41, torch.empty((), dtype=torch.complex128))
+    nodes = tensor_conjugate_pairs((node,))
     traced = trace_conjugate_indices(nodes, (41,))
     channel = contract_register_superoperator(
         traced, native_signature(source_sig), {"q": ((3,),)}, {"c": ((17,),)}
