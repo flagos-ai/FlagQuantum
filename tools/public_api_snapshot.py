@@ -688,6 +688,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "qdrift",
     "min",
     "max",
+    "RESET",
 )
 
 
@@ -1143,6 +1144,27 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native program cleanup differs from its UP-03 authorization")
+    reset_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-reset-candidate.json").read_text()
+    )
+    reset_record = "docs/api-changes/FQ-SYNTH-NATIVE-RESET-20261111.md"
+    reset_signature = "(target: 'QBit', /) -> 'None'"
+    if (
+        reset_contract != {
+            "schema": "flagquantum.synthesis_native_reset_admission",
+            "version": "1.0",
+            "namespace": "flagquantum.synth",
+            "added_exports": ["RESET"],
+            "signature": reset_signature,
+            "authorization_record": reset_record,
+            "implementation_authorized": True,
+            "release_authorized": False,
+        }
+        or not (ROOT / reset_record).is_file()
+        or not hasattr(synth, "RESET")
+        or str(inspect.signature(synth.RESET)) != reset_signature
+    ):
+        errors.append("native RESET differs from its authorized channel contract")
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
