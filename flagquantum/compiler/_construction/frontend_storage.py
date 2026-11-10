@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from .._hybrid.model import Operation
 from .frontend_ports import _annotation_node, _resolve, quantum_port
 from .frontend_python import _error
+from .frontend_views import gate_target
 from .program_types import QArray, QBit, QNum
 
 if TYPE_CHECKING:
@@ -113,3 +114,11 @@ def hidden_declarations(owner: _Body) -> tuple[Operation, ...]:
         for name in owner.ports
         if name in owner.hidden
     )
+
+
+def capture_reset(owner: _Body, node: ast.Call) -> None:
+    """Retain the existing initialized-storage reset channel without changing ownership."""
+    if len(node.args) != 1:
+        _error(owner.source, node, "program.signature", "RESET takes one scalar bit")
+    value, index = gate_target(owner, node.args[0])
+    owner.emit("qreg.reset", node, (value,), index=index)

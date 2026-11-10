@@ -50,7 +50,7 @@ from .frontend_qpe import capture_qpe
 from .frontend_regions import capture_adjoint, capture_unitary_within
 from .frontend_rotation_table import capture_rotation_table
 from .frontend_statements import capture_statements
-from .frontend_storage import drop_hidden, hidden_declarations
+from .frontend_storage import capture_reset, drop_hidden, hidden_declarations
 from .frontend_transforms import capture_modular_exp, capture_transform
 from .frontend_views import gate_target, inline_mutable, locations
 from .frontend_xor import capture_expression_xor
@@ -596,12 +596,7 @@ class _Body:
                 "adjoint requires a static Const-only qfunc",
             )
         if function is reset:
-            if len(node.args) != 1:
-                _error(
-                    self.source, node, "program.signature", "RESET takes one scalar bit"
-                )
-            value, index = gate_target(self, node.args[0])
-            self.emit("qreg.reset", node, (value,), index=index)
+            capture_reset(self, node)
             return
         if function is control:
             self.scalar_control(node)
