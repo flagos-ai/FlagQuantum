@@ -275,3 +275,7 @@ boundary for each.
   reduced from four qubits to two, with a signed X/Y symmetry, native energy and
   particle-number measurements, and state lifting. Dense diagonalization is a
   small reference step, not a scalable eigensolver.
+- [`fermion_controlled_evolution.py`](fermion_controlled_evolution.py): fixed
+  H2 in unreduced JW order, a controlled low-rank second-order product formula,
+  and a measured control interferometer that retains the constant energy phase.
+  The overlap defect is measured against a small dense reference, not bounded.
