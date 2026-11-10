@@ -18,8 +18,8 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification/qsvt_fixed_point/main.py) | pending |
-| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting` | notebook_workflow | Pending | pending |
-| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae` | quantum_program | Pending | pending |
+| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/main.py) | pending |
+| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae` | quantum_program | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe` | quantum_program | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/main.py) | pending |
 | `algorithms/error_correction/syndrome_extraction_optimization/benchmark_circuits` | python_unclassified | Pending | pending |
 | `algorithms/error_correction/syndrome_extraction_optimization/cluster_benchmark/plot_aggregated_results` | python_unclassified | Pending | pending |
@@ -246,7 +246,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | Pending | pending |
 | `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | Pending | pending |
 | `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | Pending | pending |
-| `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | Pending | pending |
+| `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | [Native program](applications/finance/value_at_risk/main.py) | pending |
 | `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | Pending | pending |
 | `applications/logistics/facility_location/facility_location` | notebook_workflow | [Native program](applications/logistics/facility_location/main.py) | pending |
 | `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | [Native program](applications/logistics/task_scheduling_problem/main.py) | pending |
@@ -387,7 +387,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | [Native program](tutorials/basics/mcx/main.py) | pending |
 | `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | [Native program](tutorials/basics/optimization/learning_optimization/main.py) | pending |
 | `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | [Native program](tutorials/basics/prepare_state/main.py) | validated |
-| `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | Pending | pending |
+| `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | [Native program](tutorials/basics/qmci_pi_estimation/main.py) | pending |
 | `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/main.py) | pending |
 | `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/main.py) | pending |
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | Pending | pending |

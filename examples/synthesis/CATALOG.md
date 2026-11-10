@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **174/216**.
+Validated quantum-program counterparts: **178/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (29 native programs)
+## Algorithms (31 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -19,6 +19,8 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
 - [qmc_user_defined](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/README.md)
 - [qsvt_fixed_point](algorithms/amplitude_amplification/qsvt_fixed_point/README.md)
+- [quantum_counting](algorithms/amplitude_amplification_and_estimation/quantum_counting/README.md)
+- [quantum_counting_iqae](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae/README.md)
 - [quantum_counting_qpe](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/README.md)
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
@@ -49,7 +51,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (43 native programs)
+## Applications (44 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -65,6 +67,7 @@ Validated local Notebook workflows:
 - [portfolio_optimization_with_hhl](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
 - [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
 - [hhl_portfolio](applications/finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
+- [value_at_risk](applications/finance/value_at_risk/README.md)
 - [facility_location](applications/logistics/facility_location/README.md)
 - [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
 - [traveling_salesman_problem](applications/logistics/traveling_salesman_problem/README.md)
@@ -195,7 +198,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (36 native programs)
+## Tutorials (37 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -206,6 +209,7 @@ Validated local Notebook workflows:
 - [mcx](tutorials/basics/mcx/README.md)
 - [learning_optimization](tutorials/basics/optimization/learning_optimization/README.md)
 - [prepare_state](tutorials/basics/prepare_state/README.md)
+- [qmci_pi_estimation](tutorials/basics/qmci_pi_estimation/README.md)
 - [qml](tutorials/basics/qml/README.md)
 - [hadamard_test_tutorial](tutorials/basics/quantum_primitives/hadamard_test_tutorial/README.md)
 - [qmod_tutorial_part1](tutorials/basics/quantum_programming/qmod_tutorial_part1/README.md)

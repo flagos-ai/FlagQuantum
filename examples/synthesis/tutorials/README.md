@@ -11,6 +11,7 @@ Native FlagQuantum programs currently available:
 - [mcx](basics/mcx/README.md)
 - [learning_optimization](basics/optimization/learning_optimization/README.md)
 - [prepare_state](basics/prepare_state/README.md)
+- [qmci_pi_estimation](basics/qmci_pi_estimation/README.md)
 - [qml](basics/qml/README.md)
 - [hadamard_test_tutorial](basics/quantum_primitives/hadamard_test_tutorial/README.md)
 - [qmod_tutorial_part1](basics/quantum_programming/qmod_tutorial_part1/README.md)
