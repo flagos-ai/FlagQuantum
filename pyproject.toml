@@ -23,6 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+chemistry-hdf5 = ["h5py>=3.11,<4"]
 chemistry-pyscf = ["pyscf>=2.8,<3"]
 dev = [
     "pytest>=7.0.0,<10",

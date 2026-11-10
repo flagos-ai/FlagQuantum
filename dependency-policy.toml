@@ -3,6 +3,7 @@ python = ["3.10", "3.11", "3.12"]
 core = ["torch>=2.10,<2.15", "tomli>=2.0,<3; python_version < '3.11'"]
 
 [extras]
+chemistry-hdf5 = ["h5py>=3.11,<4"]
 chemistry-pyscf = ["pyscf>=2.8,<3"]
 # The development extra is the toolchain this repository installs to check
 # itself, so every entry is bounded and its floor is recorded in [tested]. The
@@ -34,7 +35,7 @@ all = ["pytest>=7.0.0,<10", "pytest-cov>=4.0.0,<8", "pytest-xdist>=3.0.0,<4", "r
 interop-all = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'", "cirq-core>=1.6.1,<1.8; python_version >= '3.11'", "pennylane>=0.44.1,<0.46; python_version >= '3.11'", "quafu-sdk>=0.2.7,<0.3", "quarkcircuit>=0.5.13,<0.6; python_version >= '3.12'", "qiskit[qasm3-import]>=2,<3", "qiskit-aer>=0.17,<1", "sympy>=1.13,<2"]
 
 [classes]
-scientific_driver = ["chemistry-pyscf"]
+scientific_driver = ["chemistry-pyscf", "chemistry-hdf5"]
 development = ["dev"]
 accelerator_kernel = ["cuda"]
 optional_runtime = ["jax", "cotengra", "stim", "pymatching"]
@@ -62,7 +63,7 @@ optional_extra_allowed = false
 
 [import_policy]
 core_allowed_distributions = ["torch", "tomli"]
-core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "jax", "jaxlib", "matplotlib", "numpy", "openfermion", "openfermionpyscf", "pennylane", "pymatching", "pyscf", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
+core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "datasets", "h5py", "jax", "jaxlib", "matplotlib", "numpy", "openfermion", "openfermionpyscf", "pennylane", "pymatching", "pyscf", "qdk", "qiskit", "qiskit_aer", "quark", "stim", "torch_fl", "transformers", "triton"]
 
 # A root named here may be referenced in a collected module only behind a guard,
 # and each entry records which other root's guard also covers it. That fact
