@@ -1439,3 +1439,53 @@ ftqc-reference-env/g2-shaped-cast-*.
 Next is composition of shaped bookkeeping with controlled computation and
 measurement-assisted erasure. Other dtype/symbolic execution, source callback
 defects and complete parent-file audits remain open; G2 is ongoing.
+
+## Shaped controlled computation and measured cleanup (GRAPH51)
+
+Implementation evidence fe9758c9 composes the existing Cast, Split, typed
+controlled lifetime body, Join and explicit reverse Cast. It adds no production
+contract, emitter or numerical executor. The reference graph reader now handles
+the original atomic Cast through its actual `as_cirq_op` callback, preserving
+shape and physical wire order. Users retain `circuit.append(op)`.
+
+The finite layouts are a two-element vector selecting element zero, and a
+1-by-2 array selecting element one; each element is a two-bit word. The selected
+MSB undergoes controlled H followed by controlled phase while the other bits
+retain arbitrary joint entanglement. Lifetime CNOTs uncompute the clean or
+borrowed temporary word coherently. The phase and multi-control predicate
+decompositions use their existing measurement-assisted cleanup. These distinct
+restoration obligations are not conflated.
+
+All six scalar/two-bit control patterns, both clean/borrowed lifetimes and both
+retained/expanded call paths pass: 48 forward scenarios cover 160 complete
+measurement histories and 384 append trajectories. Original graph dependencies,
+operands, parameters, feedback and full unnormalized complex branch amplitudes
+match; an independent analytical controlled H-then-T state agrees. Every clean
+work wire returns to zero, and borrowed work retains its original joint state.
+Sixteen scalar inverse scenarios cover all 64 forward/inverse history pairs.
+The inverse uses existing exact child adjoints and explicit same-shape Casts;
+the defective upstream default shaped Cast adjoint remains outside acceptance.
+
+| Control width | Emitted primitive counts | Independent source model |
+| --- | --- | --- |
+| One | 1 CH, 2 CCX, 3 H, 2 T, 2 Tdag, 6 CX, 1 S/phase/measure/CZ/reset; X=0/2 | t=1, toffoli=2, and=1, clifford=5/7, rotation=2, measurement=1; T-equivalent 35, peak 7 |
+| Two | 1 CH, 2 CCX, 6 H, 4 T, 4 Tdag, 12 CX, 2 S/measure/CZ/reset, 1 phase; X=0/4/8 | t=1, toffoli=2, and=2, clifford=6, rotation=2, measurement=2; T-equivalent 39, peak 9 |
+
+Bookkeeping contributes zero quantum gates. Actual call multiplicities and all
+seven category-weighted model totals close independently. The resource JSON
+retains every lifetime event, including zero-width internal wrapper events.
+
+The batch adds 64 tests: 6220 concentrated, 785 focused and 64 integration-tier
+tests pass. Strict mypy covers 76 files and Black checks 102 files. Architecture,
+scope, Program/API checks, four examples and 49 original source blobs pass.
+The eight focused control/layout owners remain fully covered; the older
+component_control owner remains 98%, with guards 79/215 uncovered. Default
+smoke/unit stops at maxfail with 22280 passed, 300 skipped, 1065 warnings and
+five failures in 134.78 seconds. All five are in the independently reproduced
+seven-failure baseline; two baseline failures were not reached. There is no
+whole-suite success claim. Evidence is retained at
+ftqc-reference-env/g2-shaped-erasure-*.
+
+G2 remains open. Next is sequential use of multiple shaped elements, with
+cross-call workspace and measurement-slot reuse; multi-control inverse
+composition and complete dtype/parent-file audits remain open.
