@@ -111,6 +111,7 @@ qpe = program_types.qpe
 select_rotation = program_types.select_rotation
 min = program_types.minimum
 max = program_types.maximum
+quantize = program_types.quantize
 
 __all__ = (
     "ConstructionBudget",
@@ -166,6 +167,7 @@ __all__ = (
     "min",
     "max",
     "RESET",
+    "quantize",
 )
 
 

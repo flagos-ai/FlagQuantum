@@ -53,6 +53,7 @@ from ..services.synthesis import (
     qfunc,
     qpe,
     qst_type2,
+    quantize,
     select_rotation,
     suzuki_trotter,
     synthesize,
@@ -114,4 +115,5 @@ __all__ = (
     "min",
     "max",
     "RESET",
+    "quantize",
 )

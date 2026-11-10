@@ -689,6 +689,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "min",
     "max",
     "RESET",
+    "quantize",
 )
 
 
@@ -1144,6 +1145,34 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native program cleanup differs from its UP-03 authorization")
+    quantized_contract = json.loads(
+        (
+            ROOT / "contracts/synthesis-native-quantized-expressions-candidate.json"
+        ).read_text()
+    )
+    quantized_record = (
+        "docs/api-changes/FQ-SYNTH-EXPLICIT-QUANTIZED-EXPRESSIONS-20261111.md"
+    )
+    quantized_signature = "(expression: 'QNum | float', /, *, fractional_bits: 'int', literal_bits: 'int') -> 'QNum'"
+    if (
+        quantized_contract
+        != {
+            "schema": "flagquantum.synthesis_native_quantized_expressions_admission",
+            "version": "1.0",
+            "namespace": "flagquantum.synth",
+            "added_exports": ["quantize"],
+            "signature": quantized_signature,
+            "authorization_record": quantized_record,
+            "implementation_authorized": True,
+            "release_authorized": False,
+        }
+        or not (ROOT / quantized_record).is_file()
+        or not hasattr(synth, "quantize")
+        or str(inspect.signature(synth.quantize)) != quantized_signature
+    ):
+        errors.append(
+            "native quantize differs from its explicit bounded precision contract"
+        )
     reset_contract = json.loads(
         (ROOT / "contracts/synthesis-native-reset-candidate.json").read_text()
     )
