@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "2330d29aca4c78675ca164737dca041ea4d4b2b0903ad6f1dc4a64ceca02f844",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.controlled_rotation.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_controlled_rotations.py",
+  "scope": "Quantum program only; the complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Publish msb followed by lsb as named registers, preserving the original merged result's physical bit order. The bounded integer condition selects msb == 1. R(pi/3, pi/2, lsb) is the exact controlled Y rotation. The compiler computes and uncomputes its predicate; complete-state comparison includes all hidden-work zeros. No source importer is used by the native program."
+}

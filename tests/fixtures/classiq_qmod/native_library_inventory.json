@@ -7480,7 +7480,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/basics/quantum_programming/controlled_rotation/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

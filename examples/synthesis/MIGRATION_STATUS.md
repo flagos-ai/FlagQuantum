@@ -393,7 +393,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | Pending | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part1/main.py) | pending |
-| `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | Pending | pending |
+| `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/controlled_rotation/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | validated |
 | `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial_part2/main.py) | pending |

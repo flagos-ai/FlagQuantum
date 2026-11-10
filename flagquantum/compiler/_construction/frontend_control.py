@@ -11,7 +11,7 @@ from .frontend_numeric import reject_numeric_reads
 from .frontend_phase import capture_polynomial_phase
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import gate_target, locations
-from .program_types import hadamard_transform, phase, qft, x
+from .program_types import hadamard_transform, phase, qft, r, x
 from .register_profile import register_type, register_width
 
 if TYPE_CHECKING:
@@ -110,7 +110,28 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             )
         capture_polynomial_phase(owner, expression, angle, body, condition=condition)
         return
-    if isinstance(condition, ast.Compare):
+
+    def is_composite_predicate(expression: ast.expr) -> bool:
+        """Recognize comparison leaves without recursively walking user input."""
+        pending = [expression]
+        while pending:
+            current = pending.pop()
+            if isinstance(current, ast.Compare):
+                continue
+            if isinstance(current, ast.UnaryOp) and isinstance(current.op, ast.Invert):
+                pending.append(current.operand)
+            elif isinstance(current, ast.BinOp) and isinstance(
+                current.op, (ast.BitAnd, ast.BitOr, ast.BitXor)
+            ):
+                pending.extend((current.left, current.right))
+            else:
+                return False
+        return True
+
+    predicate_computed = isinstance(condition, ast.Compare) or (
+        operation is r and is_composite_predicate(condition)
+    )
+    if predicate_computed:
         graph, inputs = owner.capture_expression(condition, node)
         if sum(register_width(value) for value in inputs) > 8:
             _error(
@@ -177,6 +198,53 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
                     "controlled phase angle exceeds finite range",
                 )
         owner.emit("qreg.control_phase", node, operands, angle=angle)
+    elif operation is r and len(body.args) == 3:
+        theta = owner.phase_number(body.args[0])
+        phi = owner.phase_number(body.args[1])
+        if theta is None or phi is None:
+            _error(
+                owner.source,
+                body,
+                "program.control",
+                "controlled R requires finite static angles",
+            )
+        angle = math.remainder(phi, 2 * math.pi)
+        if abs(angle) == math.pi / 2:
+            axis = "Y"
+            sign = 1.0 if angle > 0 else -1.0
+        elif angle == 0.0 or abs(angle) == math.pi:
+            axis = "X"
+            sign = 1.0 if math.cos(angle) > 0 else -1.0
+        else:
+            _error(
+                owner.source,
+                body.args[1],
+                "program.control",
+                "controlled R supports only Pauli X or Y axes",
+            )
+        target, index = gate_target(owner, body.args[2])
+        if register_width(predicate) != 1:
+            _error(
+                owner.source,
+                condition,
+                "program.control",
+                "controlled R requires a one-bit condition or a bounded predicate",
+            )
+        if target in inputs:
+            _error(
+                owner.source,
+                node,
+                "program.control",
+                "condition and target must be disjoint",
+            )
+        owner.emit(
+            "qreg.pauli_rotation",
+            node,
+            (target, predicate),
+            support=((index, axis),),
+            angle=sign * theta / 2,
+            control_index=0,
+        )
     elif isinstance(operation, _QuantumFunction) and operation.source.program:
         owner.call(body, control_bit=predicate, condition_inputs=inputs)
     else:
@@ -184,10 +252,10 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             owner.source,
             body,
             "program.control",
-            "expected phase, Hadamard, QFT or a supported qfunc call",
+            "expected phase, Hadamard, QFT, Pauli-axis R or a supported qfunc call",
         )
 
-    if isinstance(condition, ast.Compare):
+    if predicate_computed:
         owner.emit("qreg.uncompute", node, (predicate,))
         owner.emit("qreg.release", node, (predicate,))
 

@@ -1196,3 +1196,15 @@ This admits no new signed/scaled numeric or controlled-region semantics.
 
 See the [internal semantic contract](../../docs/api-changes/FQ-SYNTH-NATIVE-PHASE-FACTORS-20261110.md)
 and [native Facility Location workflow](../../examples/synthesis/applications/logistics/facility_location/WORKFLOW.md).
+
+
+Native root programs may control a Pauli-axis equatorial rotation with
+`control(predicate, lambda: R(theta, phi, target))`. Use `phi=0` for X or
+`phi=pi/2` for Y; negative axes are also exact. Other equatorial axes are
+rejected rather than rounded. The condition is a scalar bit or a bounded
+comparison, including `&`, `|`, `^` and `~` trees of comparisons over at most
+eight input bits. The target must be initialized, writable and disjoint from
+the condition's registers. Predicate workspace is computed, uncomputed and
+included in resource budgets; this does not permit controlled mutable helpers.
+The [native tutorial](../../examples/synthesis/tutorials/basics/quantum_programming/controlled_rotation/README.md)
+and its independent Circuit comparison demonstrate the complete workflow.
