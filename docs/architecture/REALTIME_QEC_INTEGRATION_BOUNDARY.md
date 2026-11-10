@@ -49,6 +49,10 @@ still executes its Remote parent initializer.
 
 ## Contract questions before a QEC adapter
 
+The [bounded repetition adapter proposal](REALTIME_REPETITION_ADAPTER_PROPOSAL.md)
+answers these questions for a candidate three-round offline replay. It remains
+proposed and admits no implementation, execution mode or dependency change.
+
 1. **Input identity:** fix one code and noise scope, syndrome/detector ordering,
    round numbering, shot identity and code configuration. Specify whether the
    decoder receives a full history or an incremental batch. The existing

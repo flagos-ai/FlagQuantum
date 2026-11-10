@@ -28,6 +28,7 @@ tests. An implemented path is not automatically a release-certified capability.
 - [Architecture decisions](decisions/README.md)
 - [QEC and FTQC protocol ownership proposal](QEC_FTQC_PROTOCOL_BOUNDARY.md)
 - [Realtime and QEC integration reservation](REALTIME_QEC_INTEGRATION_BOUNDARY.md)
+- [Offline repetition decoder adapter proposal](REALTIME_REPETITION_ADAPTER_PROPOSAL.md)
 
 These documents retain design rationale, proposed interfaces, and recorded
 approval boundaries. Their original baselines and phase checklists do not
