@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import re
 from collections import Counter
+from collections.abc import Callable
 from itertools import product
 from typing import Any
 
@@ -53,7 +54,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def source_existing_control_system(
-    current: Any, wrapper: Any, old: int, new: int
+    current: Any, wrapper: Any, old: int, new: int, control_name: str = "control"
 ) -> Any:
     """Invoke the unchanged existing-control specialization and adjoint callback."""
     from qualtran import Bloq, CtrlSpec
@@ -68,7 +69,7 @@ def source_existing_control_system(
             component,
             spec,
             current_ctrl_bit=old,
-            get_ctrl_bloq_and_ctrl_reg_name=lambda value: (wrapper, "control"),
+            get_ctrl_bloq_and_ctrl_reg_name=lambda value: (wrapper, control_name),
         )
 
     stored = type(
@@ -86,11 +87,18 @@ def source_existing_control_system(
 
 
 def existing_adjoint_fixture(
-    layers: int, leading: bool, old: int, new: int
+    layers: int,
+    leading: bool,
+    old: int,
+    new: int,
+    factory: Callable[
+        [int, bool, bool, int], tuple[ProgramRecord, Any, Any]
+    ] = packed_fixture,
+    control_name: str = "control",
 ) -> tuple[ProgramRecord, Any, Any, Any, StructuredControlAdder, str, ProgramRecord]:
     """Call the real source factory and reverse the native factory's actual adder."""
-    forward, current, _ = packed_fixture(layers, leading, False, old)
-    positive, wrapper, child = packed_fixture(layers, leading, False)
+    forward, current, _ = factory(layers, leading, False, old)
+    positive, wrapper, child = factory(layers, leading, False, 1)
     entry = f"packed{layers-1}"
     adjoints = {"ch": "ch", "cp": "cp_inverse"}
     selected_forward = []
@@ -101,7 +109,7 @@ def existing_adjoint_fixture(
         selected, adder = select_component_control_system(
             controls,
             patterns,
-            lambda value: (positive, "control"),
+            lambda value: (positive, control_name),
             unexpected_fallback,
             current_value=old,
             entry=entry,
@@ -139,7 +147,9 @@ def existing_adjoint_fixture(
         adjoints,
         entry,
     )
-    source, callback = source_existing_control_system(current, wrapper, old, new)
+    source, callback = source_existing_control_system(
+        current, wrapper, old, new, control_name
+    )
     return module, source, callback, child, adder, entry, selected_forward[0]
 
 
@@ -149,6 +159,7 @@ def inverse_source_gates(
     ports: SourcePorts,
     work: tuple[int, ...],
     bits: dict[int, int],
+    outputs: SourcePorts | None = None,
 ) -> tuple[Instruction, ...]:
     from qualtran.bloqs.mcmt.and_bloq import And
 
@@ -175,8 +186,9 @@ def inverse_source_gates(
             return gates, outputs
         return None
 
-    gates, returned = walk_source_graph(source, ports, ports, leaf)
-    assert returned == ports
+    expected = ports if outputs is None else outputs
+    gates, returned = walk_source_graph(source, ports, expected, leaf)
+    assert returned == expected
     return gates
 
 
