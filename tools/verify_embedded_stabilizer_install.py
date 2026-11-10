@@ -83,6 +83,60 @@ def main() -> None:
         )
         convert.assert_called_once()
         assert dets.tolist() == [[False], [True]] and obs.shape == (2, 0)
+    repeated = (
+        DynamicCircuit(1)
+        .measure(0, classical_bit=0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 0, classical_bit=0)
+        .measure(0, classical_bit=0)
+    )
+    file_converter = repeated.compile_m2d_converter(
+        detector_map=MeasurementMap(3, ((0, 1), (0, 2))),
+        observable_map=MeasurementMap(3, ((1,),)),
+    )
+    file_inputs: dict[Literal["01", "b8", "r8", "ptb64", "hits", "dets"], bytes] = {
+        "01": b"010\n" * 64,
+        "b8": b"\x02" * 64,
+        "r8": b"\x01\x01" * 64,
+        "hits": b"1\n" * 64,
+        "dets": b"shot M1\n" * 64,
+        "ptb64": b"\0" * 8 + b"\xff" * 8 + b"\0" * 8,
+    }
+    file_outputs: dict[Literal["01", "b8", "r8", "hits", "dets"], bytes] = {
+        "01": b"101\n" * 64,
+        "b8": b"\x05" * 64,
+        "r8": b"\x00\x01\x00" * 64,
+        "hits": b"0,2\n" * 64,
+        "dets": b"shot D0 L0\n" * 64,
+    }
+    with (
+        TemporaryDirectory() as directory,
+        patch.object(native, "convert_file", wraps=native.convert_file) as file_convert,
+    ):
+        root = Path(directory)
+        for input_format, raw in file_inputs.items():
+            source_path = root / ("input." + input_format)
+            source_path.write_bytes(raw)
+            for output_format, expected_file_bytes in file_outputs.items():
+                target = root / (input_format + "." + output_format)
+                logical = root / (input_format + "." + output_format + ".obs")
+                file_converter.convert_file(
+                    measurements_filepath=source_path,
+                    measurements_format=input_format,
+                    detection_events_filepath=target,
+                    detection_events_format=output_format,
+                    append_observables=True,
+                    obs_out_filepath=logical,
+                    obs_out_format="b8",
+                )
+                assert (
+                    target.read_bytes() == expected_file_bytes
+                    and logical.read_bytes() == b"\x01" * 64
+                )
+        assert file_convert.call_count == 30
+    print(
+        "embedded file conversion: 30 fixed-byte cases; actual native calls; no Stim SDK"
+    )
     noisy = DynamicCircuit(1).x(0).bit_flip(0, 1.0).measure(0)
     maps = MeasurementMap(1, ((0,),))
     with patch.object(

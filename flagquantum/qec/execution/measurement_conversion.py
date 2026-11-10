@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+import os
+from pathlib import Path
 from typing import Literal, NoReturn, SupportsIndex
 
 import torch
@@ -15,6 +16,7 @@ from ...simulation.stabilizer._record_conversion import (
     _convert_stim_measurements,
     _prepare_explicit_record_conversion,
     _prepare_terminal_record_conversion,
+    _PreparedConversion,
 )
 from ..dem.model import DemSample
 from .context import MeasurementMap
@@ -115,7 +117,7 @@ class CompiledMeasurementsToDetectionEventsConverter:
 
     __slots__ = ("_measurement_qubits", "_convert_records")
     _measurement_qubits: tuple[int, ...]
-    _convert_records: Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]
+    _convert_records: _PreparedConversion
 
     def __init__(self) -> None:
         raise TypeError("create a converter with compile_m2d_converter()")
@@ -143,6 +145,84 @@ class CompiledMeasurementsToDetectionEventsConverter:
         if measurements.shape[1] != len(self._measurement_qubits):
             raise ValueError("measurements have the wrong declared width")
         return self._convert_records(measurements)
+
+    def convert_file(
+        self,
+        *,
+        measurements_filepath: str | os.PathLike[str],
+        measurements_format: Literal["01", "b8", "r8", "ptb64", "hits", "dets"] = "01",
+        sweep_bits_filepath: str | os.PathLike[str] | None = None,
+        sweep_bits_format: Literal["01", "b8", "r8", "ptb64", "hits", "dets"] = "01",
+        detection_events_filepath: str | os.PathLike[str],
+        detection_events_format: Literal[
+            "01", "b8", "r8", "ptb64", "hits", "dets"
+        ] = "01",
+        append_observables: bool = False,
+        obs_out_filepath: str | os.PathLike[str] | None = None,
+        obs_out_format: Literal["01", "b8", "r8", "ptb64", "hits", "dets"] = "01",
+    ) -> None:
+        """Convert an external measurement file into detector and logical flips.
+
+        All six measurement formats are accepted; selected PTB64 outputs and
+        sweep inputs are refused. Appended and separate observables may coexist.
+        Input is snapshotted and validated before bounded 1024-record conversion.
+        Input and aggregate outputs each have a 1 GiB bound; principal tables
+        have a 64 MiB guard, not a process RSS limit. Existing paths are never
+        replaced. Two outputs publish sequentially after validation; a contained
+        I/O error does not invalidate this converter or its dense method.
+
+        Raises:
+            CapabilityError: Sweep inputs, selected PTB64 output or budgets are unsupported.
+            OSError: Input is malformed, a path exists or file I/O fails.
+            ValueError: Input is not a regular file or output locations coincide.
+
+        Examples:
+            >>> from pathlib import Path
+            >>> from tempfile import TemporaryDirectory
+            >>> from importlib.util import find_spec
+            >>> import flagquantum as fq
+            >>> from flagquantum.dynamic import DynamicCircuit
+            >>> if find_spec("stim") is not None:
+            ...     converter = DynamicCircuit(1).measure(0).compile_m2d_converter(
+            ...         detector_map=MeasurementMap(1, ((0,),)),
+            ...         observable_map=MeasurementMap(1, ()),
+            ...     )
+            ...     with TemporaryDirectory() as directory:
+            ...         source, target = Path(directory) / "input", Path(directory) / "events"
+            ...         _ = source.write_bytes(bytes([1, 0]))
+            ...         converter.convert_file(measurements_filepath=source,
+            ...             measurements_format="b8", detection_events_filepath=target,
+            ...             detection_events_format="b8")
+            ...         assert target.read_bytes() == bytes([1, 0])
+        """
+        from ...simulation.stabilizer._measurement_file_validation import (
+            _file_size_bound,
+        )
+
+        if type(append_observables) is not bool:
+            raise TypeError("append_observables must be bool")
+        for encoding in (
+            measurements_format,
+            sweep_bits_format,
+            detection_events_format,
+            obs_out_format,
+        ):
+            _file_size_bound(64, 0, encoding)
+        if sweep_bits_filepath is not None:
+            raise CapabilityError("file conversion does not support sweep inputs")
+        if detection_events_format == "ptb64" or (
+            obs_out_filepath is not None and obs_out_format == "ptb64"
+        ):
+            raise CapabilityError("file conversion does not support ptb64 output")
+        self._convert_records.convert_file(
+            Path(measurements_filepath),
+            measurements_format,
+            Path(detection_events_filepath),
+            detection_events_format,
+            append_observables,
+            Path(obs_out_filepath) if obs_out_filepath is not None else None,
+            obs_out_format,
+        )
 
 
 def _physical_terminal_qubits(

@@ -111,7 +111,7 @@ Do not edit this generated region. Capability boundaries come from
 | Target-directed local emulation | `experimental` | A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. emulate_declared_target reaches the same execution from a provider's own declaration instead of a caller-built profile: the declaration is validated fail-closed first, its own shot limit is the limit enforced while its declared operation limit becomes the emulated target's own declared limit, and a declaration that offers several devices is refused unless the caller names one. The emission dialect stays the caller's request rather than a fact read out of the declaration, because artifacts.profiles is an open collection of the profiles a device publishes and not a syntax claim. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade. |
 | Huawei Ascend 910C native quantum workflows | `development_evidence` | Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification. |
 | Huawei Ascend 910C sharded quantum training | `development_evidence` | Requires pinned Torch-FL and patched pure FlagOS FlagCX builds. The statevector ladder covers 2/4/8 logical NPUs, corresponding to 1/2/4 physical 910C cards. Two-host tests use one logical NPU per host and shared LeoFS checkpoints. FP64 reductions use blocking lossless int64 broadcasts plus device arithmetic. Small correctness workloads and real owner-sharded updates do not establish capacity expansion, speedup, convergence, production support or release certification. DDP evidence is separately labeled data_parallel_replicated. |
-| Native circuit detector sampling and exact DEM | `development_evidence` | Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, detector file writer, performance, threshold or full parity claim. |
+| Native circuit detector sampling and exact DEM | `development_evidence` | Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion is an approved candidate accepting six input and five output formats, with local acceptance pending. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope. |
 
 ## Validated public performance claims
 
@@ -1026,3 +1026,23 @@ nonadjacent density gates, and makes no nearest-neighbor routing, distributed,
 GPU capacity, or performance claim. Existing optional Cirq interoperability
 remains separately selectable; native scientific paths require neither Cirq nor
 OpenFermion.
+
+## Measurement-file conversion boundary
+
+The compiled native-record converter accepts six input formats and writes five
+formats. PTB64 output is refused, as it is by the pinned upstream converter;
+PTB64 input requires complete 64-shot groups. Sweep inputs are not supported by
+the admitted native Circuit domain. Existing source, map and determinism refusals
+remain, including T and conditional H; single-slot conditional X stays admitted.
+
+Input must be a regular non-symlink file and is snapshotted before inspection.
+Changes detected during copying refuse. Input snapshots and aggregate final
+outputs each have a 1 GiB guard, with at most 2 GiB for snapshot plus staged
+outputs. Parser reads are at most 64 KiB and upstream batches are 1024 records.
+The 64 MiB padded principal-table estimate is not a process RSS guarantee.
+Filesystem free space may change after admission, and I/O errors remain visible.
+No existing destination is replaced. Two validated files publish sequentially,
+not atomically together; rollback removes only this call's inodes and reports
+cleanup errors/residue. No automatic I/O retry is performed. A contained file
+failure does not invalidate dense conversion. There is no public record reader,
+batched decoder ingress, performance or scale claim in this package.

@@ -161,3 +161,17 @@ in `tests/team/simulation/test_native_detector_execution_conformance.py`.
 See `docs/development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md` for capacities,
 publication limits and installed-wheel acceptance. No public file reader,
 research execution, universal Clifford-control support or RSS cap is added.
+
+## Convert captured measurement files
+
+The existing compiled converter also exposes `convert_file()`. Both terminal
+and explicit factories reuse their prepared source/reference. QEC owns maps and
+the public request; Simulation owns snapshot validation, numerical conversion
+and file handles. No public file-reader or execution result type is added.
+
+Run `python -m examples.qec.measurement_file_conversion` with the embedded wheel
+or Stim 1.16.0. It prints `shots 64`, `detectors 10; observables 1` and
+`file_bytes 64 64`. Start contributor changes with
+`python -m pytest tests/qec/test_measurement_file_conversion.py -m unit -q`.
+See the approved [file conversion proposal](../../../docs/development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md)
+for snapshot, allocation, no-replace publication and refusal contracts.
