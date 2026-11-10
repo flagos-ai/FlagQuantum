@@ -1061,3 +1061,14 @@ under inverse regions. The native hypercube walk and qfold examples retain sourc
 coin/shift/oracle semantics and independent complete state checks; resource gaps
 remain explicit, and retained qfold coin/move environment is not clean workspace.
 This is local semantic evidence, not full Notebook workflow or optimization proof.
+
+## Native borrowed expression XOR
+
+Static mutable Python helpers admit expression `^=` on complete raw unsigned
+scalar registers, reusing the existing reversible XOR profile. Formal names may
+differ from root names, including across nested calls. Nonzero targets and
+coherent inputs are preserved and compiler work is cleaned. Helpers retain the
+existing all-inout, disjoint-writable-argument boundary. Partial or permuted
+views, array targets, signed/fractional formats, fresh assignment and mutable
+helper control/adjoint remain refused. This primitive alone does not establish
+acceptance of any additional original corpus program.

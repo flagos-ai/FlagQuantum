@@ -647,3 +647,15 @@ coherence, borrowed roles, bounds and inverse-region safety are covered by
 operations, depth and memory constraints remain authoritative. In-place increments,
 free/reset, arbitrary higher-order callbacks, full Notebook workflows, hardware
 and resource-optimality claims remain outside this slice.
+
+## Borrowed native expression XOR
+
+Maturity: `development_evidence`. Static all-inout helpers reuse `qreg.xor`
+for complete raw unsigned scalar destinations and expressions with complete
+register inputs. Active formal roles and aliases survive nested helper capture;
+nonzero XOR targets, phase-weighted coherent inputs, disjointness and actual
+resource limits are covered in
+`tests/integration/test_synthesis_native_expression_xor.py`. Partial/permuted
+views, array writes, formatted arithmetic and mutable-helper control/inverse
+remain explicit gaps. No additional native corpus coverage is credited merely
+for this primitive.
