@@ -1735,3 +1735,31 @@ with reset overhead recorded separately from source measurement and QEC models.
 Acceptance must cover every small complex branch, joint spectator amplitudes,
 physical zero after reset, projected outcomes without reset, stale and partial
 owners, rejected mixed clean/borrowed requests, bool snapshots and exhaustion.
+
+#### Measured workspace retirement acceptance
+
+Contract 69a1383f precedes pool 138d5ad8 and binding 61ec15e6. Forty-seven added
+tests pass. The concentrated suite passes 5,163 tests in 43.90 seconds without
+skips or warnings. Focused coverage passes 408 tests in 17.28 seconds with 100%
+statement and branch coverage for all seven measured Compiler modules, including
+the pool and physical binder. Combined measured Core/Compiler coverage is 99%.
+Twenty-nine integration tests pass in 1.72 seconds. Strict typing passes 34
+production/test files, with Black/Ruff, scope, architecture, Program/API checks
+and four existing append/resource examples passing. All 27 pinned source blobs
+remain unchanged. Evidence uses ftqc-reference-env/g2-workspace-retirement-.
+
+Every small branch of the original MeasureZ instrument with joint complex
+spectators, discarded-owner snapshots and both feedback polarities matches the
+explicit physical policy. Both runtime strategies verify 128 conditional states.
+GF2MulMBUC additionally passes all 14 histories for widths one through three
+under each policy, retaining exact phase and unnormalized amplitude. Reset
+clears every destroyed result wire. Retire retains each projected outcome.
+The eight-bit stream retains 64 conditional CZ, 8 H, 8 measurements and 8
+classical XOR assignments, with exactly 8 additional resets in the reset profile.
+Original GF2MulMBUC QEC reports only 64 CZ. Reset overhead is a native physical
+policy cost and is not attributed to the source decomposition.
+
+The default smoke/unit tier was not rerun in this batch. Its previously recorded
+seven independent baseline failures and permission-specific socket recheck remain
+recorded in GRAPH30. External classical initialization, Q-0157.03 full source
+replacement inventory and general borrowed-state restoration remain open.

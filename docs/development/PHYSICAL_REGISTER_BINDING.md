@@ -307,7 +307,7 @@ condition. Explicit reset overhead is counted separately from the unchanged
 logical component graph and source QEC estimates.
 
 Run tests/unit/test_register_workspace_retirement.py and
- tests/unit/test_workspace_measurement_retirement.py for partial leases, pool
+tests/unit/test_workspace_measurement_retirement.py for partial leases, pool
 exhaustion, reuse, invalid policies, source instruments, discarded-owner bool
 snapshots, actual dynamic execution and owned GF2MulMBUC branches. Small fields
 exhaust all measurement histories. The eight-bit witness checks instruction
