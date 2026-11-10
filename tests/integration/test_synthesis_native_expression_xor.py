@@ -151,16 +151,146 @@ def test_expression_xor_refusals_preserve_format_width_and_storage(
         synth.synthesize(definition(ports, body))
 
 
-def test_borrowed_helper_expression_xor_is_not_admitted() -> None:
-    helper = "@qfunc\ndef xor(a:QNum,result:QNum):\n    result ^= a\n"
-    with pytest.raises(HybridVerificationError, match="mutable helpers"):
-        synth.synthesize(
-            definition(
-                "a:Output[QNum[2]],result:Output[QNum[2]]",
-                "allocate(a)\nallocate(result)\nxor(a,result)",
-                helper,
-            )
+def test_borrowed_helper_expression_xor_covers_every_basis_and_target() -> None:
+    helper = (
+        "@qfunc\ndef xor(source:QNum[2],target:QNum[2]):\n" "    target ^= source\n"
+    )
+    program = synth.synthesize(
+        definition(
+            "source:Output[QNum[2]],target:Output[QNum[2]]",
+            "allocate(source)\nallocate(target)\nxor(source,target)",
+            helper,
         )
+    )
+    wires = tuple(program.registers[name] for name in ("source", "target"))
+    for source, target in product(range(4), range(4)):
+        initial = encode((source, target), wires)
+        expected = encode((source, target ^ source), wires)
+        assert classical_apply(program.circuit, initial) == expected
+
+
+def test_borrowed_helper_expression_xor_preserves_coherence() -> None:
+    helper = (
+        "@qfunc\ndef xor(source:QNum[2],target:QNum[2]):\n" "    target ^= source\n"
+    )
+    program = synth.synthesize(
+        definition(
+            "source:Output[QNum[2]],target:Output[QNum[2]]",
+            "allocate(source)\nallocate(target)\n"
+            "hadamard_transform(source)\nhadamard_transform(target)\n"
+            "phase(0.13*source+0.17*target+0.23,1)\nxor(source,target)",
+            helper,
+        )
+    )
+    reference = fq.Circuit(4, dtype=torch.complex128)
+    for wire in range(4):
+        reference.h(wire)
+    diagonal = [
+        cmath.exp(1j * (0.13 * source + 0.17 * target + 0.23))
+        for source, target in product(range(4), range(4))
+    ]
+    reference.any(
+        *range(4),
+        matrix=torch.diag(torch.tensor(diagonal, dtype=torch.complex128)),
+    )
+    reference.cx(0, 2).cx(1, 3)
+    compare_states(program, reference, ("source", "target"))
+
+
+@pytest.mark.parametrize(
+    "body,diagnostic",
+    [
+        ("target ^= source ^ target", "alias"),
+        ("target ^= source", "complete raw register"),
+    ],
+)
+def test_borrowed_helper_expression_xor_rejects_alias_and_partial_views(
+    body: str, diagnostic: str
+) -> None:
+    helper = f"@qfunc\ndef xor(source:QNum[2],target:QNum[2]):\n    {body}\n"
+    main = "allocate(source)\nallocate(target)\n"
+    if "complete raw register" in diagnostic:
+        main = "allocate(source)\nallocate(3,target)\nxor(source,target[1:3])"
+        ports = "source:Output[QNum[2]],target:Output[QArray[QBit]]"
+    else:
+        main += "xor(source,target)"
+        ports = "source:Output[QNum[2]],target:Output[QNum[2]]"
+    with pytest.raises(
+        (HybridVerificationError, synth.SynthesisError), match=diagnostic
+    ):
+        synth.synthesize(definition(ports, main, helper))
+
+
+@pytest.mark.parametrize("repetitions", [1, 2])
+def test_borrowed_xor_nested_helpers_use_formal_names(repetitions: int) -> None:
+    helper = (
+        "@qfunc\ndef mask(left:QNum,right:QNum):\n    right ^= left+1\n"
+        "@qfunc\ndef nested(first:QNum,second:QNum):\n    mask(first,second)\n"
+    )
+    program = synth.synthesize(
+        definition(
+            "a:Output[QNum[2]],b:Output[QNum[3]]",
+            "allocate(a)\nallocate(b)\n"
+            + "\n".join("nested(a,b)" for _ in range(repetitions)),
+            helper,
+        )
+    )
+    wires = tuple(program.registers[name] for name in ("a", "b"))
+    for a, b in product(range(4), range(8)):
+        expected_b = b ^ (a + 1) if repetitions % 2 else b
+        assert classical_apply(program.circuit, encode((a, b), wires)) == encode(
+            (a, expected_b), wires
+        )
+
+
+@pytest.mark.parametrize(
+    "ports,setup,call,diagnostic",
+    [
+        ("a:Output[QNum[2]]", "allocate(a)", "mask(a,a)", "disjoint"),
+        (
+            "a:Const[QNum[2]],b:Output[QNum[2]]",
+            "allocate(b)",
+            "mask(b,a)",
+            "Output-only",
+        ),
+        (
+            "a:Output[QNum[2]],b:Output[QNum[2]]",
+            "allocate(a)",
+            "mask(a,b)",
+            "uninitialized",
+        ),
+    ],
+)
+def test_borrowed_xor_rejects_ownership_violations(
+    ports: str, setup: str, call: str, diagnostic: str
+) -> None:
+    helper = "@qfunc\ndef mask(left:QNum,right:QNum):\n    right ^= left\n"
+    with pytest.raises(
+        (HybridVerificationError, synth.SynthesisError), match=diagnostic
+    ):
+        synth.synthesize(definition(ports, setup + "\n" + call, helper))
+
+
+@pytest.mark.parametrize("constraint", ["operations", "qubits", "workspace", "memory"])
+def test_borrowed_xor_budgets_use_lowered_resources(constraint: str) -> None:
+    helper = (
+        "@qfunc\ndef mask(left:QNum,right:QNum,target:QNum):\n"
+        "    target ^= left*left+right\n"
+    )
+    entry = definition(
+        "a:Output[QNum[2]],b:Output[QNum[2]],c:Output[QNum[4]]",
+        "allocate(a)\nallocate(b)\nallocate(c)\nmask(a,b,c)",
+        helper,
+    )
+    with pytest.raises((synth.SynthesisError, HybridVerificationError, PlanningError)):
+        if constraint == "operations":
+            synth.synthesize(entry, max_operations=1)
+        elif constraint == "qubits":
+            synth.synthesize(entry, max_qubits=4)
+        elif constraint == "workspace":
+            synth.synthesize(entry, max_workspace=0)
+        else:
+            synth.synthesize(entry, memory_limit_bytes=16)
 
 
 def test_xor_write_invalidates_a_dependent_cleanup_proof() -> None:
