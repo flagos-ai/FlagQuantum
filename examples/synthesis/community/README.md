@@ -7,6 +7,7 @@ Native FlagQuantum programs currently available:
 - [bb84_implementation](paper_implementation_project/bb84/bb84_implementation/README.md)
 - [checkerboard](paper_implementation_project/block_encoding/checkerboard/README.md)
 - [laplacian_4x4](paper_implementation_project/block_encoding/laplacian_4x4/README.md)
+- [toeplitz](paper_implementation_project/block_encoding/toeplitz/README.md)
 - [tridiagonal](paper_implementation_project/block_encoding/tridiagonal/README.md)
 - [bpde](paper_implementation_project/bpde/README.md)
 - [classical_shadows](paper_implementation_project/classical_shadows/README.md)

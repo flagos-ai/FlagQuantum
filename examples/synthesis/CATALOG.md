@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **160/216**.
+Validated quantum-program counterparts: **161/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -92,13 +92,14 @@ Validated local Notebook workflows:
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 
 
-## Community (9 native programs)
+## Community (10 native programs)
 
 - [periodic_laplacian_1d](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/README.md)
 - [periodic_laplacian_nd](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/README.md)
 - [bb84_implementation](community/paper_implementation_project/bb84/bb84_implementation/README.md)
 - [checkerboard](community/paper_implementation_project/block_encoding/checkerboard/README.md)
 - [laplacian_4x4](community/paper_implementation_project/block_encoding/laplacian_4x4/README.md)
+- [toeplitz](community/paper_implementation_project/block_encoding/toeplitz/README.md)
 - [tridiagonal](community/paper_implementation_project/block_encoding/tridiagonal/README.md)
 - [bpde](community/paper_implementation_project/bpde/README.md)
 - [classical_shadows](community/paper_implementation_project/classical_shadows/README.md)
