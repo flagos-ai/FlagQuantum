@@ -1150,7 +1150,8 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     reset_record = "docs/api-changes/FQ-SYNTH-NATIVE-RESET-20261111.md"
     reset_signature = "(target: 'QBit', /) -> 'None'"
     if (
-        reset_contract != {
+        reset_contract
+        != {
             "schema": "flagquantum.synthesis_native_reset_admission",
             "version": "1.0",
             "namespace": "flagquantum.synth",
