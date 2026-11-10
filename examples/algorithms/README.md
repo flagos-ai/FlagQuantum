@@ -33,6 +33,7 @@ python -m examples.algorithms.pauli_lcu_block_encoding
 python -m examples.algorithms.sparse_select
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
+python -m examples.algorithms.fermion_tapering
 python -m examples.algorithms.fermion_fourier
 python -m examples.algorithms.fermion_energy
 python -m examples.algorithms.fermion_chemistry
@@ -269,3 +270,8 @@ boundary for each.
 - [`fermion_fourier.py`](fermion_fourier.py): four-mode JW fermionic Fourier
   transform, uniform single-particle occupations of 0.25 and inverse amplitude
   recovery below 1e-12. Adjacent routing costs O(n_modes**2) gates.
+
+- [`fermion_tapering.py`](fermion_tapering.py): an explicitly selected H2 sector
+  reduced from four qubits to two, with a signed X/Y symmetry, native energy and
+  particle-number measurements, and state lifting. Dense diagonalization is a
+  small reference step, not a scalable eigensolver.

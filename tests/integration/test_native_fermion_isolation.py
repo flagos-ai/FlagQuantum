@@ -31,7 +31,9 @@ def test_native_workflow_without_external_science_packages() -> None:
         from flagquantum.algorithms.fermion.low_rank import decompose_two_body
         from flagquantum.algorithms.fermion.evolution import low_rank_evolution
         from flagquantum.algorithms.fermion.preparation import prepare_slater, prepare_gaussian
-        from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
+        from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform, lift_stabilizer_state
+        from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
+        from flagquantum.core.algebra.pauli import pauli
         from flagquantum.ecosystem.chemistry.pyscf import build_molecular_problem
         problem = from_native_molecule(create_molecular_hamiltonian([("H", (0, 0, 0)), ("H", (0, 0, 0.7414))]))
         active = select_active_space(problem, active_orbitals=(0, 1)).problem
@@ -61,6 +63,14 @@ def test_native_workflow_without_external_science_packages() -> None:
         torch.testing.assert_close(fourier_state.state().abs().square().sum(), torch.tensor(1.0, dtype=torch.float64))
         fourier_state.compose(fermionic_fourier_transform(4, inverse=True))
         torch.testing.assert_close(fourier_state.state(), original)
+        symmetry = pauli(factors=((0, "y"), (1, "x")))
+        reduced = reduce_stabilizers(symmetry, n_qubits=2, generators=[symmetry], eigenvalues=[-1])
+        lifted = lift_stabilizer_state(reduced, torch.tensor([1, 0], dtype=torch.complex128))
+        reduced_circuit = fq.Circuit(reduced.n_qubits, dtype=torch.complex128)
+        energy = fq.run(reduced_circuit, outputs=[fq.expectation(to_observable(reduced.operator))]).expectation()
+        assert abs(float(torch.as_tensor(energy).reshape(-1)[0]) + 1) < 1e-10
+        assert lifted.shape == (4,)
+        assert abs(float(lifted.abs().square().sum()) - 1) < 1e-10
         try:
             build_molecular_problem([("H", (0, 0, 0)), ("H", (0, 0, 0.7414))])
         except ImportError as error:

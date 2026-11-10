@@ -113,6 +113,7 @@ SCRIPTS = (
     "fermion_fcidump",
     "fermion_hdf5",
     "fermion_fourier",
+    "fermion_tapering",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -133,6 +134,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_tapering": (
+        "explicitly supplied symmetry sector",
+        "not a scalable eigensolver",
+    ),
     "fermion_fourier": ("JW occupation order", "quadratic gate cost"),
     "fermion_fcidump": (
         "real closed-shell FCIDUMP integrals",
@@ -1842,3 +1847,14 @@ def test_fermion_fourier_example_measures_uniform_occupation_and_inverse() -> No
         )
     assert float(_labelled(output, "Inverse amplitude residual")) < 1e-12
     _assert_premise("fermion_fourier", output)
+
+
+def test_fermion_tapering_example_measures_selected_h2_sector() -> None:
+    output = _run("fermion_tapering")
+    assert _labelled(output, "Register") == "4 -> 2 qubits"
+    assert float(
+        _labelled(output, "Selected-sector measured energy").split()[0]
+    ) == pytest.approx(-1.1372701747, abs=1e-9)
+    assert float(_labelled(output, "Particle number")) == pytest.approx(2, abs=1e-6)
+    assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
+    _assert_premise("fermion_tapering", output)

@@ -50,3 +50,32 @@ one has occupation 0.25 in each of four output modes, and the inverse restores
 its amplitudes below 1e-12. Run `python -m pytest tests/unit/fermion/test_fourier.py
 -q` to check plans against torch.fft and complete small Fock-space matrices
 against independent Fourier minors, without phase alignment.
+
+Explicit Pauli stabilizer reduction lives in stabilizer.py. It accepts independent
+commuting signed Pauli words and explicit eigenvalues in the operator's supplied
+qubit basis. It does not discover symmetries or infer fermionic mode labels.
+StabilizerReduction combines the reduced operator, existing native Clifford
+Instruction values and the existing ReductionMap in the diagonal frame. Use
+lowering.lift_stabilizer_state for the original-register embedding C dagger J;
+mapping alone is only J. This distinction matters for X/Y symmetry eigenstates.
+reduce_operator reuses that frame for another preserving observable and refuses
+nonpreserving ones. Existing reduce_z_parities retains its interface and affine
+mapping semantics. Both paths use clifford.py's exact CX Pauli conjugation.
+
+Symbolic reduction allocates no dense arrays; state lifting is an explicit CPU
+complex128 inspection operation limited to 20 full qubits. Static state inputs
+must be finite and cannot require autograd. Zero remaining qubits are supported
+as a scalar operator and one-element reduced vector. Clifford construction uses
+ordinary H, S dagger and CX gates and makes no hardware-connectivity claim.
+There is no automatic tapering of an ansatz, accelerator/distributed execution
+claim, optimizer or eigensolver in this feature.
+
+Run `python -m examples.algorithms.fermion_tapering`: a fixed four-qubit H2
+problem is reduced to two qubits, measured at -1.1372701747 Ha with two particles,
+and its state lifted with a residual below 1e-12. The example explicitly supplies
+the sector and obtains the state by small dense diagonalization, then uses the
+existing state-preparation routine and fq.run. Run
+`python -m pytest tests/unit/fermion/test_stabilizer.py -q` for independent dense
+projectors, complete sector identities, signed/random Clifford frames and input
+validation. The stage contract is
+[explicit stabilizer reduction](../../../docs/development/FERMION_STABILIZER_REDUCTION.md).

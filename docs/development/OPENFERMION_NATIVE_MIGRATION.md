@@ -262,3 +262,24 @@ eight-mode particle sectors with Fourier minors, retaining absolute phase.
 The fresh-interpreter dependency isolation test also composes the Fourier and
 inverse circuits with external scientific SDKs blocked. No chemistry input,
 Core, runtime, stable export or dependency manifest changes are needed.
+
+## EXT06: explicit commuting Pauli stabilizer reduction
+
+The next stage extends diagonal Z parity sectors to supplied independent signed
+X/Y/Z Pauli words. Its contract and independent acceptance criteria are in
+[FERMION_STABILIZER_REDUCTION.md](FERMION_STABILIZER_REDUCTION.md).
+`reduce_stabilizers` returns a reduced operator, native Clifford instructions and
+a diagonal-frame ReductionMap. The latter is reused rather than expanded to
+pretend an affine bit map can express X/Y eigenstate superpositions. Original
+state lifting composes the inverse Clifford with that map. Symbolic algebra
+imports no circuit, runtime or simulation implementation; lowering owns native
+circuit construction and the explicitly bounded statevector inspection path.
+
+Exact CX conjugation has one implementation shared with the original Z-parity
+path. New tests check native Clifford matrices, all sectors against independent
+dense projectors, the intertwining identity H E = E H_reduced, complex amplitude
+norm/phase, signed and randomly Clifford-rotated generators, diagonal replacement
+and invalid inputs. The H2 example reduces four qubits to two, measures energy
+and particle number with fq.run, and verifies the lifted eigenvector residual.
+No upstream source is copied, no dependency or Stable Core schema is changed,
+and no full OpenFermion compatibility or automatic symmetry search is claimed.
