@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/hhl/hhl.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "08271b3c67726af0381e77134ff16c1945ce2707dc7f1d53329193e351bd2d2b",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_linear_solvers.hhl.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_commuting_hhl.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Keep signed4fractional counter,2solution bits,indicator,4commuting Pauli coefficients and16approximate rotation coefficients. Existing native QPE repeats commuting Pauli evolution instead of scaling time by powers. Existing raw-word select_rotation composes the exact retained even-parity RY/CX network. No ideal reciprocal substitution,physical wire numbers,source loading or Compiler/API change. Original skip_control is inert at the uncontrolled root;no general outer-control support claimed."
+}
