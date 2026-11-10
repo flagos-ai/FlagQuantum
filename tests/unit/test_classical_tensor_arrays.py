@@ -244,4 +244,4 @@ def test_empty_array_original_codec_failure_remains_visible(
             torch.empty(()),
             operation_name=str(source),
         )
-    assert str(actual.value) == f"cannot compute tensor for {source}: {expected.value}"
+    assert str(actual.value) == str(expected.value)

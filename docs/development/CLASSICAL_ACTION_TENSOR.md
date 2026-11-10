@@ -34,8 +34,9 @@ binding, for tensors applied to a trainable input.
 Storage is `8 * 2**(input_bits + output_bits)` bytes before conversion. The
 source ceiling of 40 total bits is preserved; it is not a practical allocation
 guarantee. Callers must choose small finite inspection problems. Native finite
-metadata validation precedes allocation. ValueError retains operation context
-and cause; other errors propagate. Original zip truncation, output truthiness
+metadata validation precedes allocation. The dense entry point adds operation
+context and cause to ValueError; the leaf entry point preserves the raw error
+(as corrected in GRAPH70). Other errors propagate. Original zip truncation, output truthiness
 and NumPy indexing are preserved rather than hardened into a different action.
 
 The array reshape deliberately uses quantum bits as the source does. This
@@ -191,7 +192,8 @@ native executable X-leaf graph contracts to the same matrix.
 Directional reversal is represented by the existing bound output words; it
 requires no physical SWAP. The action-table input phase derivative is checked
 separately. Empty `(0,)` and `(2, 0)` arrays retain the source codec ValueError;
-the native error adds operation context. This is finite phase-free array
+GRAPH68 added operation context, corrected to raw propagation in GRAPH70.
+This is finite phase-free array
 conformance, not automatic support for arbitrary quantum actions.
 
 Measured resources: one numerical leaf, binary rank two / 64 complex128 bytes
@@ -265,3 +267,56 @@ existing warnings). An additional original cnot_test.py run could not collect
 because PennyLane is absent; it is not counted as passing. No reference source
 was edited. Default smoke/unit: 7 failed, 21507 passed, 300 skipped, 1037 warnings in 124.02s (0:02:04); all observed failure IDs
 match the independent baseline. Maxfail stopped the run; it is not fully green.
+
+
+## Source-function and caller audit (GRAPH70)
+
+The unchanged source file has four functions. An AST inventory and a complete
+source-tree reference scan are recorded in
+`ftqc-reference-env/g2-classical-tensor-audit-callers.json`. Outside the file,
+only `simulation/tensor/__init__.py` re-exports the helpers and the original
+`_tensor_from_classical_test.py` calls them. No production source consumer of
+these helpers was found at the pinned commit.
+
+| Source function | FlagQuantum responsibility | Result |
+| --- | --- | --- |
+| `_bits_to_classical_reg_data` | Caller codec plus scalar/array layout in `_classical_action_tensor_data` | Quantum scalar/array ordering and original codec failures verified; no second codec dispatcher |
+| `_bloq_to_dense_via_classical_action` | `_classical_action_tensor_data` | Shared binary-axis enumeration, raw errors, original 40-bit limit |
+| `bloq_to_dense_via_classical_action` | `classical_action_tensor` | Scalar/vector/matrix grouping and contextual ValueError preserved |
+| `my_tensors_from_classical_action` | `classical_action_tensor_node` plus existing binder | Caller-owned integer axes and dtype/device; raw errors corrected in GRAPH70 |
+
+The audit found a real error-path mismatch: GRAPH67–69 routed the leaf through
+the contextual dense wrapper, whereas the original leaf calls the raw enumerator.
+The loop is now shared by both entry points at its original binary rank. Only
+the dense entry point wraps ValueError and groups dimensions; the node binds raw
+binary data directly. Four exception types check raw error object identity,
+dense message and cause against the unchanged original. A fifth case proves
+both size refusals happen before allocation/action, with different raw/contextual
+messages. The two retained empty-array tests now require raw source messages.
+Operation names still label successful native nodes.
+
+This fixes the verified mismatch without adding a contract, dispatcher or public
+export. Parent-file acceptance remains open: native finite-metadata and
+connection checks happen earlier, and classical ports are rejected before
+callbacks because source leaf axes count quantum bits while dense data counts
+all bits. Exact failure timing for these unsupported paths is not established.
+Caller codecs own value interpretation; arbitrary phaseful actions remain
+ineligible. The original six classical-tensor tests run unchanged as part of
+the 22-test reference group; previous scalar/array, output tuple, complete
+matrix, measured-Add branch, clean-work and append checks are retained.
+
+GRAPH70: 1173 related tests passed in 19.12 s (41 existing/source warnings),
+474 focused coverage cases in 24.83 s (39 warnings), and 64 integration cases
+in 4.70 s. The owner has 50 statements / ten branches at 100%; thirteen related
+owners total 394 statements / 166 branches at 99%, retaining two historical
+GRAPH60 refusals. Strict typing passed for 28 related files plus three
+source-following files; Black/Ruff, scope, architecture, Program IR and public
+API checks passed. Twenty source blobs match the inventory; 22 unchanged
+original tests passed in 0.77 s (five existing warnings). Qualtran 0.7.0,
+Kickmix 0.1 Simulator and the binary-field example were exercised.
+
+Resources were rechecked independently: the leaf/storage/channel sizes and
+single-CX append counts from GRAPH69 are unchanged. Shared enumeration emits
+zero physical instructions and work bits. Source QEC with DiscardQ remains
+unavailable, not zero; the source peak remains two bits. Evidence is under
+`ftqc-reference-env/g2-classical-tensor-audit-*`.
