@@ -85,10 +85,8 @@ def _expression(owner: _Body, expression: ast.expr) -> WordExpression[ast.expr]:
     def text(node: ast.expr) -> str:
         if isinstance(node, ast.Name) and node.id in owner.ports:
             port = owner.ports[node.id]
-            if port.kind == "qarray" or port.fractional_bits:
-                reject(
-                    node, "format", "arithmetic reads require unscaled scalar inputs"
-                )
+            if port.kind == "qarray":
+                reject(node, "format", "arithmetic reads require scalar inputs")
             owner.register(node)
             return node.id
         if isinstance(node, ast.Constant) and type(node.value) in {int, float}:
@@ -148,6 +146,10 @@ def _expression(owner: _Body, expression: ast.expr) -> WordExpression[ast.expr]:
         children=children,
         location=owner.source.location,
         reject=reject,
+        numeric_inputs={
+            name: (port.signed, port.fractional_bits)
+            for name, port in owner.ports.items()
+        },
     )
 
 
@@ -161,12 +163,12 @@ def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:
         )
     name = node.target.id
     port = owner.ports[name]
-    if port.kind == "qarray" or port.role != "output":
+    if port.kind == "qarray" or not (port.role == "output" or name in owner.hidden):
         _error(
             owner.source,
             node,
             "program.numeric",
-            "numeric assignment requires an owned scalar Output",
+            "numeric assignment requires an owned scalar Output or hidden local",
         )
     if isinstance(node.op, ast.BitXor):
         destination = owner.register(node.target)
@@ -196,6 +198,7 @@ def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:
             "program.expression",
             "initialize fresh numeric outputs with |=",
         )
+    explicit_format = name not in owner.inferred_numeric
     expression = _expression(owner, node.value)
     if not expression.quantum:
         value = Fraction(
@@ -204,7 +207,7 @@ def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:
         )
         fraction = (
             port.fractional_bits
-            if port.width is not None
+            if explicit_format
             else expression.fractional_bits.get(node.value, 0)
         )
         scaled = value * (1 << fraction)
@@ -216,7 +219,7 @@ def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:
                 "initialization cannot discard fractional bits",
             )
         raw = scaled.numerator
-        signed = port.signed if port.width is not None else raw < 0
+        signed = port.signed if explicit_format else raw < 0
         width = owner.widths[name]
         if width is None:
             width = max(
@@ -246,7 +249,7 @@ def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:
         return
     signed = node.value in expression.signed_words
     fraction = expression.fractional_bits.get(node.value, 0)
-    if port.width is not None and (port.signed, port.fractional_bits) != (
+    if explicit_format and (port.signed, port.fractional_bits) != (
         signed,
         fraction,
     ):
@@ -260,9 +263,10 @@ def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:
     graph = expression.function()
     block = graph.body.blocks[0]
     returned = block.operations[-1].operands[0]
-    width = returned.type.parameters[0]
+    result_width = returned.type.parameters[0]
+    width = max(result_width, fraction)
     destination = owner.register(node.target, width)
-    if signed and register_width(destination) > width:
+    if signed and register_width(destination) > result_width:
         extension_mask = Value(
             ValueId(
                 graph.name,

@@ -69,7 +69,10 @@ def _fail(node: ast.expr, code: str, message: str) -> NoReturn:
 
 
 def _python(
-    expression: str, widths: dict[str, int], signed: set[str]
+    expression: str,
+    widths: dict[str, int],
+    signed: set[str],
+    numeric_inputs: dict[str, tuple[bool, int]] | None = None,
 ) -> WordExpression[ast.expr]:
     return WordExpression(
         ast.parse(expression, mode="eval").body,
@@ -82,6 +85,7 @@ def _python(
             "numeric", node.lineno, node.col_offset + 1
         ),
         reject=_fail,
+        numeric_inputs=numeric_inputs,
     )
 
 
@@ -223,3 +227,68 @@ def test_source_independent_refusal_retains_node_location(
         _python(expression, widths, signed)
     with pytest.raises(ValueError, match=reason):
         _source(expression, widths, signed)
+
+
+@pytest.mark.parametrize(
+    "expression,oracle",
+    [
+        ("a+b", lambda a, b: a + b),
+        ("a-b", lambda a, b: a - b),
+        ("a*b", lambda a, b: a * b),
+        ("a**2", lambda a, b: a**2),
+        ("a**3", lambda a, b: a**3),
+        ("-a", lambda a, b: -a),
+        ("min(a,b)", min),
+        ("max(a,b)", max),
+        ("a==b", lambda a, b: int(a == b)),
+        ("a!=b", lambda a, b: int(a != b)),
+        ("a<b", lambda a, b: int(a < b)),
+        ("a<=b", lambda a, b: int(a <= b)),
+        ("a>b", lambda a, b: int(a > b)),
+        ("a>=b", lambda a, b: int(a >= b)),
+        ("a + 0.125", lambda a, b: a + Fraction(1, 8)),
+        ("0.125*b", lambda a, b: Fraction(1, 8) * b),
+        ("a + -1", lambda a, b: a - 1),
+        ("a * -0.5", lambda a, b: -a / 2),
+        ("(a+b)*(a-b)", lambda a, b: (a + b) * (a - b)),
+    ],
+)
+def test_composed_numeric_full_domain_and_nonzero_xor(
+    expression: str, oracle: Callable[[Fraction, Fraction], Fraction | int]
+) -> None:
+    formats = {"a": (True, 1), "b": (False, 2)}
+    native = _python(expression, {"a": 2, "b": 2}, {"a"}, formats)
+    graph = native.function()
+    scale = native.fractional_bits.get(native.node, 0)
+    returned = graph.body.blocks[0].operations[-1].operands[0]
+    width = max(returned.type.parameters[0], scale)
+    signed = native.node in native.signed_words
+    views = tuple(tuple(range(2 * i, 2 * i + 2)) for i in range(len(native.names)))
+    start = 2 * len(views)
+    output = tuple(range(start, start + width))
+    candidate = schedule_arithmetic(
+        (graph,),
+        dict(zip((arg.id for arg in native.arguments), views, strict=True)),
+        output,
+        entry=graph.name,
+        n_qubits=192,
+        workspace=tuple(range(start + width, 192)),
+        workspace_state="fresh_zero",
+    )
+    mask = (1 << width) - 1
+    for words in product(range(4), repeat=len(views)):
+        inputs = dict(zip(native.names, words, strict=True))
+        raw_a = inputs.get("a", 0)
+        a = Fraction(raw_a - 4 if raw_a & 2 else raw_a, 2)
+        b = Fraction(inputs.get("b", 0), 4)
+        answer = Fraction(oracle(a, b)) * (1 << scale)
+        assert answer.denominator == 1
+        encoded = answer.numerator & mask
+        decoded = (
+            encoded - (1 << width) if signed and encoded >> (width - 1) else encoded
+        )
+        assert decoded == answer
+        for target in {0, 1, mask}:
+            initial = encode((*words, target), (*views, output))
+            expected = encode((*words, target ^ encoded), (*views, output))
+            assert classical_apply(candidate.circuit, initial) == expected

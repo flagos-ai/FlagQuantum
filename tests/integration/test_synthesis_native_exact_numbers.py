@@ -219,19 +219,9 @@ def test_scaled_initialization_and_signed_extension() -> None:
             "exactly binary",
         ),
         (
-            "a:Output[QNum[3,True,0]],result:Output[QNum]",
-            "allocate(a)\nresult |= a+1",
-            "signed operands",
-        ),
-        (
             "a:Output[QNum[3,True,0]]",
             "allocate(a)\nphase(a<0,0.5)",
             "numeric comparisons",
-        ),
-        (
-            "a:Output[QNum[3,False,1]],result:Output[QNum]",
-            "allocate(a)\nresult |= a-1",
-            "unscaled",
         ),
         (
             "a:Output[QNum[3]],result:Output[QNum[3]]",
@@ -263,13 +253,9 @@ def test_numeric_refusals_have_source_locations(
     assert "<up01-" in str(error.value)
 
 
-def test_helpers_locals_controls_and_shadowed_builtins_refuse() -> None:
+def test_mutable_numeric_regions_and_shadowed_builtins_refuse() -> None:
     for helper, body in [
         ("@qfunc\ndef helper(a:QNum):\n    hadamard_transform(a)\n", "helper(a)"),
-        (
-            "@qfunc\ndef helper(a:Const[QNum],result:Output[QNum]):\n    result |= -a\n",
-            "helper(a,result)",
-        ),
         (
             "",
             "with within():\n    score:QNum[4] = -a\nwith apply():\n    phase(score,0.5)",

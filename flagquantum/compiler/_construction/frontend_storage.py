@@ -70,6 +70,8 @@ def declare_hidden(owner: _Body, node: ast.AnnAssign) -> None:
                 "initialize a local handle with its matching zero-argument quantum constructor only",
             )
     owner.ports[name] = port
+    if port.kind == "qnum" and port.width is None:
+        owner.inferred_numeric.add(name)
     owner.widths[name] = port.width
     owner.hidden.add(name)
     if port.kind == "qarray":
@@ -108,7 +110,19 @@ def hidden_declarations(owner: _Body) -> tuple[Operation, ...]:
         Operation(
             "qreg.hidden",
             results=(owner.registers[name],),
-            attributes={"name": name},
+            attributes={
+                "name": name,
+                **(
+                    {
+                        "numeric_format": (
+                            owner.ports[name].signed,
+                            owner.ports[name].fractional_bits,
+                        )
+                    }
+                    if owner.ports[name].signed or owner.ports[name].fractional_bits
+                    else {}
+                ),
+            },
             location=owner.source.location(owner.source.node),
         )
         for name in owner.ports

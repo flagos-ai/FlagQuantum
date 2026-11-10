@@ -520,7 +520,7 @@ def verify_operation_attributes(op: Operation) -> None:
     ):
         assert attributes is not None
         attributes = attributes | {"fields", "record_type"}
-    if op.name == "qreg.declare" and "numeric_format" in op.attributes:
+    if op.name in {"qreg.declare", "qreg.hidden"} and "numeric_format" in op.attributes:
         numeric = op.attributes["numeric_format"]
         if (
             len(op.results) != 1

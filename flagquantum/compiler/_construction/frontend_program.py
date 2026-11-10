@@ -18,6 +18,7 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .frontend_calls import capture_helper_call
 from .frontend_classical import ClassicalValue, bind_inputs, real_number
 from .frontend_control import capture_control
 from .frontend_evolution import (
@@ -26,7 +27,7 @@ from .frontend_evolution import (
     capture_suzuki_trotter,
     flush_evolutions,
 )
-from .frontend_fixed_xor import capture_fixed_xor, is_fixed_xor_helper
+from .frontend_fixed_xor import capture_fixed_xor
 from .frontend_increment import capture_increment
 from .frontend_matrix import capture_unitary
 from .frontend_numeric import (
@@ -41,7 +42,6 @@ from .frontend_ports import (
     _annotation_node,
     _Port,
     _resolve,
-    classical_parameters,
     program_ports,
 )
 from .frontend_preparation import capture_preparation
@@ -52,7 +52,7 @@ from .frontend_rotation_table import capture_rotation_table
 from .frontend_statements import capture_statements
 from .frontend_storage import capture_reset, drop_hidden, hidden_declarations
 from .frontend_transforms import capture_modular_exp, capture_transform
-from .frontend_views import gate_target, inline_mutable, locations
+from .frontend_views import gate_target, locations
 from .frontend_xor import capture_expression_xor
 from .profile import _width
 from .program_types import (
@@ -122,13 +122,15 @@ class _Capture:
         self.inline_calls = 0
         self.loop_steps = 0
         self.cache: dict[
-            tuple[int, tuple[int | None, ...]], tuple[HybridProgram, tuple[_Port, ...]]
+            tuple[int, tuple[int | None, ...], tuple[tuple[bool, int], ...]],
+            tuple[HybridProgram, tuple[_Port, ...]],
         ] = {}
 
     def build(
         self,
         definition: _QuantumFunction,
         widths: tuple[int | None, ...] = (),
+        formats: tuple[tuple[bool, int], ...] = (),
         *,
         root: bool = False,
     ) -> tuple[HybridProgram, tuple[_Port, ...]]:
@@ -137,7 +139,7 @@ class _Capture:
             _error(
                 source, source.node, "program.recursion", "qfunc calls must be acyclic"
             )
-        key = (id(definition), widths)
+        key = (id(definition), widths, formats)
         if key in self.cache:
             return self.cache[key]
         if self.serial >= 32 or len(self.active) >= 32:
@@ -173,8 +175,15 @@ class _Capture:
                     "program.signature",
                     "qfunc argument count disagrees",
                 )
+            if formats and len(formats) != len(ports):
+                _error(
+                    source,
+                    source.node,
+                    "program.signature",
+                    "numeric format count disagrees",
+                )
             specialized = []
-            for port, width in zip(ports, widths, strict=True):
+            for index, (port, width) in enumerate(zip(ports, widths, strict=True)):
                 if port.width is not None and width is not None and port.width != width:
                     _error(
                         source,
@@ -182,8 +191,29 @@ class _Capture:
                         "program.width",
                         "declared and actual widths must agree",
                     )
+                numeric = (
+                    formats[index] if formats else (port.signed, port.fractional_bits)
+                )
+                if (
+                    port.role == "const"
+                    and port.width is not None
+                    and numeric != (port.signed, port.fractional_bits)
+                ):
+                    _error(
+                        source,
+                        source.node,
+                        "program.numeric.format",
+                        "declared and actual numeric formats must agree",
+                    )
                 specialized.append(
-                    replace(port, width=port.width if port.width is not None else width)
+                    replace(
+                        port,
+                        width=port.width if port.width is not None else width,
+                        signed=numeric[0] if port.role == "const" else port.signed,
+                        fractional_bits=(
+                            numeric[1] if port.role == "const" else port.fractional_bits
+                        ),
+                    )
                 )
             ports = tuple(specialized)
         name = (
@@ -220,6 +250,11 @@ class _Body:
         self.owner, self.definition, self.name = owner, definition, name
         self.source = definition.source
         self.ports = {p.name: p for p in ports}
+        self.inferred_numeric = {
+            p.name
+            for p in program_ports(definition)
+            if p.kind == "qnum" and p.width is None
+        }
         self.widths = {p.name: p.width for p in ports}
         self.registers: dict[str, Value] = {}
         self.hidden: set[str] = set()
@@ -333,7 +368,10 @@ class _Body:
             or (
                 isinstance(node.target, ast.Name)
                 and node.target.id in self.ports
-                and has_numeric(self.ports[node.target.id])
+                and (
+                    has_numeric(self.ports[node.target.id])
+                    or node.target.id in self.hidden
+                )
             )
         ):
             assign_numeric(self, node)
@@ -902,113 +940,14 @@ class _Body:
                 attributes = {"angle": angle} if angle != math.pi or width != 1 else {}
                 self.emit("qreg.phase", node, actuals, callee=graph.name, **attributes)
         elif isinstance(function, _QuantumFunction) and function.source.program:
-            formal = program_ports(function)
-            if any(has_numeric(port) for port in formal):
-                _error(
-                    self.source,
-                    node,
-                    "program.numeric",
-                    "numeric helper ports are not admitted",
-                )
-            if not is_fixed_xor_helper(function):
-                for argument in node.args:
-                    reject_numeric_reads(self, argument, "helper calls")
-            if any(port.role == "inout" for port in formal):
-                if inverse or control_bit is not None:
-                    _error(
-                        self.source,
-                        node,
-                        "program.borrow",
-                        "mutable helpers are not admitted under adjoint/control",
-                    )
-                inline_mutable(self, node, function, formal)
-                return
-            if classical_parameters(function):
-                _error(
-                    self.source,
-                    node,
-                    "program.binding",
-                    "parameterized helpers require plain writable quantum ports",
-                )
-            if self.aliases is not None:
-                _error(
-                    self.source,
-                    node,
-                    "program.borrow",
-                    "mutable helper calls cannot initialize or publish Outputs",
-                )
-            if control_bit is not None and any(port.role != "const" for port in formal):
-                _error(
-                    self.source,
-                    node,
-                    "program.control",
-                    "controlled helpers require Const-only ports",
-                )
-            if len(node.args) != len(formal):
-                _error(
-                    self.source,
-                    node,
-                    "program.signature",
-                    "qfunc argument count disagrees",
-                )
-            widths: list[int | None] = []
-            for argument, port in zip(node.args, formal, strict=True):
-                if not isinstance(argument, ast.Name) or argument.id not in self.ports:
-                    _error(
-                        self.source,
-                        argument,
-                        "program.port",
-                        "qfunc actuals must be declared quantum ports",
-                    )
-                if port.role == "output" and argument.id in self.hidden:
-                    _error(
-                        self.source,
-                        argument,
-                        "program.storage",
-                        "hidden storage cannot escape through Output helper ports",
-                    )
-                if self.ports[argument.id].kind != port.kind:
-                    _error(
-                        self.source,
-                        argument,
-                        "program.kind",
-                        "qfunc actual and formal quantum kinds must agree",
-                    )
-                widths.append(self.widths[argument.id])
-                if port.role == "const":
-                    self.register(argument)
-            program, resolved = self.owner.build(function, tuple(widths))
-            if any(has_numeric(port) for port in resolved):
-                _error(
-                    self.source,
-                    node,
-                    "program.numeric",
-                    "numeric helper results are not admitted",
-                )
-            reads: list[Value] = []
-            writes: list[Value] = []
-            for argument, port in zip(node.args, resolved, strict=True):
-                (reads if port.role == "const" else writes).append(
-                    self.register(argument, port.width)
-                )
-            call_attributes: dict[str, object] = {"callee": program.name}
-            if inverse:
-                call_attributes["inverse"] = True
-            if control_bit is None:
-                self.emit("qreg.call", node, (*reads, *writes), **call_attributes)
-            else:
-                if len(set(reads)) != len(reads) or set(reads).intersection(
-                    condition_inputs
-                ):
-                    _error(
-                        self.source,
-                        node,
-                        "program.control",
-                        "controlled helper arguments must be disjoint",
-                    )
-                self.emit(
-                    "qreg.control_call", node, (control_bit, *reads), **call_attributes
-                )
+            capture_helper_call(
+                self,
+                node,
+                function,
+                inverse=inverse,
+                control_bit=control_bit,
+                condition_inputs=condition_inputs,
+            )
         else:
             _error(
                 self.source,

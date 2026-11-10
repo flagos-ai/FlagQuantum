@@ -141,9 +141,9 @@ def _verify_body(
                     op,
                 )
             registers.append(value)
+            if op.attributes.get("numeric_format", (False, 0)) != (False, 0):
+                formatted.add(value)
             if op.name == "qreg.declare":
-                if op.attributes.get("numeric_format", (False, 0)) != (False, 0):
-                    formatted.add(value)
                 fields = record_fields(op)
                 projected = (
                     tuple(f"{label}.{name}" for name, _ in record_readouts(fields))

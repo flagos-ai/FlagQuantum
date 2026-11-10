@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Hashable, Mapping, Set
 from decimal import Decimal
-from operator import and_, or_, xor
+from operator import add, and_, eq, ge, gt, le, lt, mul, ne, or_, pow, xor
 from types import MappingProxyType
 from typing import Generic, NoReturn, TypeVar
 
@@ -26,6 +26,22 @@ _Node = TypeVar("_Node", bound=Hashable)
 EXTREMA = frozenset({"min", "max"})
 
 _WORD_OPERATORS = {"&": and_, "|": or_, "^": xor}
+
+_NUMERIC_OPERATORS: Mapping[str, Callable[[int, int], int]] = MappingProxyType(
+    {
+        "+": add,
+        "*": mul,
+        "**": pow,
+        "min": min,
+        "max": max,
+        "==": eq,
+        "!=": ne,
+        "<": lt,
+        "<=": le,
+        ">": gt,
+        ">=": ge,
+    }
+)
 
 _RELATIONS = MappingProxyType(
     {
@@ -53,10 +69,13 @@ class WordExpression(Generic[_Node]):
         children: Callable[[_Node], tuple[_Node, ...]],
         location: Callable[[_Node], SourceLocation],
         reject: Callable[[_Node, str, str], NoReturn],
+        numeric_inputs: Mapping[str, tuple[bool, int]] | None = None,
     ) -> None:
         self._text, self._children = text, children
         self._location, self._reject = location, reject
         self.node, self.widths, self.name = (node, widths, name)
+        self.numeric_inputs = numeric_inputs
+        self.composed_nodes: set[_Node] = set()
         self.facts: dict[_Node, tuple[int, bool]] = {}
         self.fractional_bits: dict[_Node, int] = {}
         self.difference_ranges: dict[_Node, tuple[int, int]] = {}
@@ -103,6 +122,16 @@ class WordExpression(Generic[_Node]):
                     self.names.append(text)
                 if text in self.signed_names:
                     self.signed_words.add(node)
+                if self.numeric_inputs is not None:
+                    input_signed, scale = self.numeric_inputs.get(text, (False, 0))
+                    if (
+                        input_signed != (text in self.signed_names)
+                        or not 0 <= scale <= width
+                    ):
+                        self._reject(
+                            node, "format", "inconsistent numeric input format"
+                        )
+                    self.fractional_bits[node] = scale
                 result = ((1 << width) - 1, True)
         elif text == "-":
             result = self.infer_difference(node)
@@ -129,6 +158,14 @@ class WordExpression(Generic[_Node]):
             scale = max(
                 self.fractional_bits.get(lhs, 0), self.fractional_bits.get(rhs, 0)
             )
+            if (
+                self.numeric_inputs is not None
+                and (scale or any(signed))
+                and text in {"+", "*", "**", *EXTREMA, *_RELATIONS}
+            ):
+                result = self.infer_composed(node)
+                self.facts[node] = result
+                return result
             if (
                 text not in EXTREMA
                 and text != "*"
@@ -232,6 +269,208 @@ class WordExpression(Generic[_Node]):
         self.facts[node] = result
         return result
 
+    def interval(self, node: _Node) -> tuple[int, int]:
+        bound, quantum = self.facts[node]
+        if not quantum:
+            value = self.integer_value(node)
+            return value, value
+        if node in self.difference_ranges:
+            return self.difference_ranges[node]
+        if node in self.signed_words:
+            sign = 1 << (self.word_widths[node] - 1)
+            return -sign, sign - 1
+        return 0, bound
+
+    def infer_composed(self, node: _Node) -> tuple[int, bool]:
+        """Infer exact arithmetic on already formatted native scalar values."""
+        left, right = self._children(node)
+        operator = self._text(node)
+        a, b = self.interval(left), self.interval(right)
+        scales = tuple(self.fractional_bits.get(child, 0) for child in (left, right))
+        scale = max(scales)
+        if operator == "*":
+            scale = sum(scales)
+            products = tuple(x * y for x in a for y in b)
+            low, high = min(products), max(products)
+        elif operator == "**":
+            if self.facts[right][1] or b[0] != b[1] or scales[1] or not 1 <= b[0] <= 8:
+                self._reject(
+                    node, "power", "numeric powers require a literal degree in 1..8"
+                )
+            exponent = b[0]
+            scale = scales[0] * exponent
+            edges = [value**exponent for value in a]
+            if exponent % 2 == 0 and a[0] < 0 < a[1]:
+                edges.append(0)
+            low, high = min(edges), max(edges)
+        else:
+            a = a[0] << (scale - scales[0]), a[1] << (scale - scales[0])
+            b = b[0] << (scale - scales[1]), b[1] << (scale - scales[1])
+            if operator == "+":
+                low, high = a[0] + b[0], a[1] + b[1]
+            elif operator in EXTREMA:
+                select = min if operator == "min" else max
+                low, high = select(a[0], b[0]), select(a[1], b[1])
+            else:
+                low, high = 0, 1
+                scale = 0
+        width = (
+            max((~low).bit_length(), max(high, 0).bit_length()) + 1
+            if low < 0
+            else unsigned_width(high)
+        )
+        width = max(width, scale, 1)
+        if width > 256:
+            self._reject(
+                node, "width", "numeric expression exceeds the 256-bit word profile"
+            )
+        self.word_widths[node] = width
+        self.fractional_bits[node] = scale
+        self.difference_ranges[node] = low, high
+        if low < 0:
+            self.signed_words.add(node)
+        self.composed_nodes.add(node)
+        quantum = any(self.facts[child][1] for child in (left, right))
+        if quantum:
+            return (1 << width) - 1, True
+        x, y = (self.integer_value(child) for child in (left, right))
+        if operator not in {"*", "**"}:
+            common = max(scales)
+            x <<= common - scales[0]
+            y <<= common - scales[1]
+        result = int(_NUMERIC_OPERATORS[operator](x, y))
+        return result & ((1 << width) - 1), False
+
+    def emit_composed(self, node: _Node) -> Value:
+        left, right = self._children(node)
+        operator = self._text(node)
+        output_width = self.word_widths[node]
+        scale = max(self.fractional_bits.get(child, 0) for child in (left, right))
+        shifts = tuple(
+            scale - self.fractional_bits.get(child, 0) for child in (left, right)
+        )
+        comparison = operator in {*EXTREMA, *_RELATIONS}
+        signed_comparison = comparison and any(
+            child in self.signed_words for child in (left, right)
+        )
+        width = (
+            max(
+                output_width,
+                *(
+                    self.word_widths[child]
+                    + shift
+                    + int(signed_comparison and child not in self.signed_words)
+                    for child, shift in zip((left, right), shifts, strict=True)
+                ),
+            )
+            if comparison
+            else output_width
+        )
+        if width > 256:
+            self._reject(node, "width", "aligned numeric operands exceed 256 bits")
+
+        def constant(value: int) -> Value:
+            return self.operation("arith.constant", (), INDEX, node, value=value)
+
+        def mask(value: Value, bits: int, signed: bool = False) -> Value:
+            return self.operation(
+                "qint.bitwise",
+                (value, constant((1 << bits) - 1)),
+                uint_type(bits),
+                node,
+                operator="&",
+                **({"signed": (True, False)} if signed else {}),
+            )
+
+        def operand(child: _Node, shift: int = 0) -> Value:
+            if not self.facts[child][1]:
+                return constant(
+                    (self.integer_value(child) << shift) & ((1 << width) - 1)
+                )
+            value = self.emit(child)
+            bits = width - shift
+            if bits < 1:
+                self._reject(
+                    node, "width", "numeric alignment cannot discard a complete operand"
+                )
+            if self.word_widths[child] != bits:
+                value = mask(value, bits, child in self.signed_words)
+            if shift:
+                value = self.operation(
+                    "qint.multiply",
+                    (value, constant(1 << shift)),
+                    uint_type(width),
+                    node,
+                )
+            return value
+
+        def product(a: Value, b: Value) -> Value:
+            if width * 2 > 256:
+                self._reject(
+                    node, "width", "signed product intermediate exceeds 256 bits"
+                )
+            return mask(
+                self.operation("qint.multiply", (a, b), uint_type(width * 2), node),
+                width,
+            )
+
+        if operator in {"*", "**"}:
+            a = operand(left)
+            if operator == "*":
+                return product(a, operand(right))
+            result = a
+            for _ in range(1, self.integer_value(right)):
+                result = product(result, a)
+            return result
+        a, b = (
+            operand(child, shift)
+            for child, shift in zip((left, right), shifts, strict=True)
+        )
+        if operator == "+":
+            # Modular subtraction of -b avoids widening an exact bounded sum.
+            negative = (
+                self.operation(
+                    "qint.subtract_mod", (constant(0), b), uint_type(width), node
+                )
+                if self.facts[right][1]
+                else constant(
+                    (-self.integer_value(right) << shifts[1]) & ((1 << width) - 1)
+                )
+            )
+            return self.operation(
+                "qint.subtract_mod", (a, negative), uint_type(width), node
+            )
+        compared: tuple[Value, ...] = (a, b)
+        if signed_comparison:
+            compared = tuple(
+                self.operation(
+                    "qint.bitwise",
+                    (value, constant(1 << (width - 1))),
+                    uint_type(width),
+                    node,
+                    operator="^",
+                )
+                for value in compared
+            )
+        opcode, swap, invert = _RELATIONS.get(operator, ("qint.less", False, False))
+        x, y = compared
+        predicate = self.operation(
+            opcode, (y, x) if swap else (x, y), uint_type(1), node
+        )
+        if operator in EXTREMA:
+            selected = self.operation(
+                "qint.select",
+                (predicate, *((a, b) if operator == "min" else (b, a))),
+                uint_type(width),
+                node,
+            )
+            return selected if width == output_width else mask(selected, output_width)
+        if invert:
+            predicate = self.operation(
+                "qint.equal", (predicate, constant(0)), uint_type(1), node
+            )
+        return predicate
+
     def equality_width(self, node: _Node) -> int:
         widths = tuple(self.word_widths[child] for child in self._children(node))
         signed = tuple(child in self.signed_words for child in self._children(node))
@@ -253,16 +492,7 @@ class WordExpression(Generic[_Node]):
         self.fractional_bits[node] = scale
         intervals = []
         for child in self._children(node):
-            bound, quantum = self.facts[child]
-            if not quantum:
-                low = high = self.integer_value(child)
-            elif child in self.difference_ranges:
-                low, high = self.difference_ranges[child]
-            elif child in self.signed_words:
-                sign_bit = 1 << self.word_widths[child] - 1
-                low, high = (-sign_bit, sign_bit - 1)
-            else:
-                low, high = (0, bound)
+            low, high = self.interval(child)
             shift = scale - self.fractional_bits.get(child, 0)
             intervals.append((low << shift, high << shift))
         (a_min, a_max), (b_min, b_max) = (
@@ -425,6 +655,8 @@ class WordExpression(Generic[_Node]):
             return self.operation("arith.constant", (), INDEX, node, value=bound)
         if not self._children(node):
             return self.inputs[self._text(node)]
+        if node in self.composed_nodes:
+            return self.emit_composed(node)
         if self._text(node) in EXTREMA:
             return self.emit_extremum(node, bound)
         if self._text(node) == "-":
