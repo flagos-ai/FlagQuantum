@@ -16,7 +16,7 @@ H = -t sum_(i=0..L-2),s (a†_(i,s) a_(i+1,s) + h.c.)
 
 Mode `2*i` is spin up and `2*i+1` is spin down. Each neighboring undirected
 bond appears once. U is unshifted: there is no particle-hole or half-filling
-constant. `n_sites` is a positive integer; keyword-only `t`, `U`, `mu` are
+constant. `n_sites` is a positive integer; keyword-only `t`, `u`, `mu` are
 finite real numbers, defaulting to 1, 0, 0. Booleans, complex numbers and tensors
 (including trainable tensors) are rejected before coercion. Invalid types raise
 TypeError; nonpositive sizes and nonfinite values raise ValueError.
@@ -37,7 +37,7 @@ spin populations and particle sectors. The two-site N=2 ground energy at mu=0 is
 `(U - sqrt(U**2 + 16*t**2))/2`. At U=0, fixed-N energies are sums of the spin
 pairs of open-chain levels `-2*t*cos(k*pi/(L+1)) - mu`.
 
-Run `python -m examples.algorithms.fermion_hubbard`. For two sites, t=1, U=4,
+Run `python -m examples.algorithms.fermion_hubbard`. For two sites, t=1, u=4,
 mu=0 and N=2, each encoding measures energy -0.8284271247 and particle number 2.
 The example uses bounded dense diagonalization to obtain its reference state;
 its exponential inspection cost makes no many-body scalability claim. Execution

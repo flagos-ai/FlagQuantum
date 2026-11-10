@@ -400,6 +400,8 @@ This catalog is generated from the machine-validated
 | Decode a model from the same source | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Pack detector rows without losing parity boundaries | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Convert captured measurement files into detector and logical files | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Build a spinful open chain with explicit hopping, interaction and chemical potential | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 
 ## Build and compile
 
@@ -1483,6 +1485,20 @@ Sample reference-normalized detector flips and derive an exact DEM from one boun
 - **Start:** [quick example](../../examples/qec/native_detector_sampling.py)
 - **Documentation:** [guide](../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md)
 - **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion is an approved candidate accepting six input and five output formats, with local acceptance pending. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
+
+### Spinful Fermi-Hubbard open chain
+
+Construct an open-chain Hamiltonian in the native fermionic algebra and measure its explicitly encoded small-system state.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_chain`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_hubbard.py)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_CHAIN.md)
+- **Known boundary:** Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency.
 
 
 ## Distributed execution
