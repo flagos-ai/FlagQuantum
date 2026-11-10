@@ -8284,7 +8284,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/workshops/grover_workshop/grover_workshop/main.py",
+        "scope": "Native quantum program validated against the frozen original and an independent dense Circuit; notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

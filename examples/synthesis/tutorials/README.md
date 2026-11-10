@@ -26,6 +26,7 @@ Native FlagQuantum programs currently available:
 - [combinatorial_qmod_workshop_for_maxcut](workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
 - [combi_workshop_inequality_constriants_po](workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
+- [grover_workshop](workshops/grover_workshop/README.md)
 - [oracles_workshop](workshops/oracle_workshop/oracles_workshop/README.md)
 
 ## Validated local Notebook workflows
