@@ -112,6 +112,7 @@ SCRIPTS = (
     "fermion_chemistry",
     "fermion_fcidump",
     "fermion_hdf5",
+    "fermion_fourier",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -132,6 +133,7 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_fourier": ("JW occupation order", "quadratic gate cost"),
     "fermion_fcidump": (
         "real closed-shell FCIDUMP integrals",
         "not the correlated ground energy",
@@ -1830,3 +1832,13 @@ def test_fermion_hdf5_example_reports_encoded_reference_energies() -> None:
         match = re.search(rf"{encoding}: reference energy (-?[0-9.]+) Ha", output)
         assert match is not None
         assert float(match.group(1)) == pytest.approx(-0.9, abs=1e-10)
+
+
+def test_fermion_fourier_example_measures_uniform_occupation_and_inverse() -> None:
+    output = _run("fermion_fourier")
+    for mode in range(4):
+        assert float(_labelled(output, f"Mode {mode} occupation")) == pytest.approx(
+            0.25, abs=1e-6
+        )
+    assert float(_labelled(output, "Inverse amplitude residual")) < 1e-12
+    _assert_premise("fermion_fourier", output)

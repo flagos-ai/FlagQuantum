@@ -34,6 +34,7 @@ from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
 )
+from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
 from flagquantum.algorithms.fermion.preparation import prepare_slater
 from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
@@ -291,6 +292,7 @@ ENTRIES = (
     pauli_exponential_circuit,
     pauli_readout,
     prepare_slater,
+    fermionic_fourier_transform,
     PyMatchingDecoder.decode_batch,
     PyMatchingGraphDecoder,
     MatchingGraph,

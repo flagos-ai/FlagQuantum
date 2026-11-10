@@ -33,6 +33,7 @@ python -m examples.algorithms.pauli_lcu_block_encoding
 python -m examples.algorithms.sparse_select
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
+python -m examples.algorithms.fermion_fourier
 python -m examples.algorithms.fermion_energy
 python -m examples.algorithms.fermion_chemistry
 python -m examples.algorithms.fermion_fcidump
@@ -264,3 +265,7 @@ boundary for each.
 - [`fermion_hdf5.py`](fermion_hdf5.py): optional MolecularData HDF5 input and
   three native encoding measurements; install the chemistry-hdf5 extra and run
   `python -m examples.algorithms.fermion_hdf5`. The reference is not a ground-state claim.
+
+- [`fermion_fourier.py`](fermion_fourier.py): four-mode JW fermionic Fourier
+  transform, uniform single-particle occupations of 0.25 and inverse amplitude
+  recovery below 1e-12. Adjacent routing costs O(n_modes**2) gates.
