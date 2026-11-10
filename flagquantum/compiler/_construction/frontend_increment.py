@@ -82,6 +82,13 @@ def _target(owner: _Body, node: ast.expr) -> Value:
             "program.increment",
             "target must cover a complete register",
         )
+    if owner.aliases is not None and any(
+        actual == value and owner.ports[name].kind != "qnum"
+        for name, actual in owner.registers.items()
+    ):
+        _error(
+            owner.source, node, "program.increment", "use a writable raw unsigned QNum"
+        )
     return value
 
 
