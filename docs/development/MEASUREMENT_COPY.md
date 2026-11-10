@@ -67,3 +67,7 @@ blobs match the locked inventory; 23 unchanged original tests passed in 1.14 s
 (five existing warnings). Qualtran 0.7.0, Kickmix 0.1 Simulator and the
 binary-field example passed. Evidence is under
 `ftqc-reference-env/g2-measurement-copy-*`.
+
+Default smoke/unit: 6 failed, 21485 passed, 300 skipped, 1037 warnings in 167.60s (0:02:47). All 6 observed failure IDs belong
+to the independent seven-failure baseline; 1 were not reached before
+maxfail. The default suite is not certified as fully passing.
