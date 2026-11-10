@@ -217,7 +217,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/CFD/QLS_for_hybrid_solvers/verify_block_encoding` | notebook_workflow | Pending | pending |
 | `applications/CFD/double_slit_experiment/quantum_double_slit_experiment` | notebook_workflow | Pending | pending |
 | `applications/CFD/heat_eq_qsvt/heat_eq_qsvt` | notebook_workflow | Pending | pending |
-| `applications/CFD/qlbm/qlbm` | notebook_workflow | Pending | pending |
+| `applications/CFD/qlbm/qlbm` | notebook_workflow | [Native program](applications/cfd/qlbm/main.py) | pending |
 | `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | Pending | pending |
 | `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/main.py) | pending |
 | `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | [Native program](applications/benchmarking/randomized_benchmarking/main.py) | pending |

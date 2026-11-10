@@ -1,6 +1,6 @@
 # Bounded unsigned predicate cube candidate
 
-Status: planned implementation; no additional original-program acceptance.
+Status: implemented and locally verified; QLBM native/Circuit acceptance complete.
 
 ## Observed requirement
 
@@ -52,10 +52,35 @@ refusal must not masquerade as proof that no possible circuit exists.
 - Re-run the QLBM fragment under the original memory ceiling and bounded
   workspace; acceptance requires an actual selected candidate and execution,
   not merely AST admission.
-- Accept the complete twelve-data-bit, ten-step normalized approved QLBM
+- Accept the complete twelve-data-bit, thirteen-step normalized approved QLBM
   program only after independent Circuit full-state checks, two additional
   nonzero models, bit-order/boundary/phase checks and every work amplitude.
   Retain unchanged source bytes and the original normalization refusal.
 - Run all216 original files and approved revisions after final implementation.
   Preserve previous raw resource evidence; any changed measured resources need
   explicit per-case records rather than overwriting the original baseline.
+
+## Validation corrections
+
+The original QLBM main contains thirteen stream/reflection pairs, not ten.
+An independent source comparison exposed the shortened initial prototype;
+the native schedule now preserves all thirteen pairs. Source struct fields are
+allocated in a different physical order, so acceptance aligns logical amplitudes
+using each program's declared register mappings. Original bytes and prior raw
+resource baselines remain unchanged. The final suite also checks the schedule
+against the frozen source, preventing a shared native/reference constant from
+hiding omitted steps.
+
+## Measured acceptance
+
+The final QLBM suite passes twelve tests, including approved-source/native/
+independent full states, two signed coherent boundary models, all clean work,
+named marginals, normalization, exact source schedule and resource refusals.
+Predicate cube tests pass 263 cases; Compiler passes 1,594; related regressions
+pass 309; comparison resource regressions pass 198. Fresh original216 replay
+retains210 execution outcomes and six semantic refusals; all six approved
+revisions execute. Two comparator resource changes are recorded separately from
+unchanged raw baselines. Native QLBM uses19 physical/7work bits,3342operations
+and depth2770 for all13steps, versus approved source15physical15704operations/
+depth9109. This is local correctness evidence, not hardware parity or complete
+Notebook certification.

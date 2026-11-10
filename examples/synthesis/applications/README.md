@@ -2,6 +2,7 @@
 
 Native FlagQuantum programs currently available:
 
+- [qlbm](cfd/qlbm/README.md)
 - [quantum_volume](benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](benchmarking/randomized_benchmarking/README.md)
 - [molecular_energy_curve](chemistry/molecular_energy_curve/README.md)

@@ -1086,3 +1086,15 @@ two-dimensional walk retains five-bit position words, the signed original coin
 and its retained quantum environment. Full complex-state acceptance does not
 claim resource parity, complete Notebook coverage or acceptance of QLBM's
 unchanged unnormalized input.
+
+## Bounded unsigned predicate cubes
+
+The optional Boolean value candidate admits one-bit unsigned comparison
+predicates with at most eight active input bits. Exact truth assignments are
+merged into at most 32 disjoint signed cubes; exhaustive partition checks and
+existing mapped-gate, expression-product and source-operation limits remain
+mandatory. This bounded candidate can reduce clean predicate work for coherent
+lattice reflection. It is neither a general Boolean optimizer nor an optimality
+claim. Existing multi-bit arithmetic retains its six-active-input bound. Signed,
+oversized or insufficient-budget candidates refuse; other legal synthesis
+candidates may still be selected.
