@@ -95,6 +95,7 @@ def verify_register_block(
             "measure_register",
             "parity_register",
             "read_classical_register",
+            "discard_classical_register",
         }
         or op.register_type is not None
         or op.workspace_dirty is not None
@@ -144,6 +145,18 @@ def verify_register_block(
                     )
                 )
             types.update((value, classical_bit_type()) for value in operation.results)
+        elif operation.opcode == "discard_classical_register":
+            signatures[position] = OpcodeSignature(
+                "discard_classical_register", operand_kinds=("register",)
+            )
+            dtype = types.get(operation.operands[0]) if operation.operands else None
+            if dtype != classical_bit_type():
+                diagnostics.append(
+                    _diagnostic(
+                        "program.register_type",
+                        "classical discard requires an owned CBit register",
+                    )
+                )
         elif operation.opcode in {"parity_register", "read_classical_register"}:
             parity = operation.opcode == "parity_register"
             count = len(operation.operands) if parity else 1
@@ -238,6 +251,7 @@ def verify_register_block(
             "measure_register",
             "parity_register",
             "read_classical_register",
+            "discard_classical_register",
         }:
             if (
                 operation.parameters
