@@ -1702,3 +1702,36 @@ come from sandbox denial of local socket binding in multinode preflight tests.
 Both pass in 0.18 seconds when rerun individually with local socket permission.
 The original run, permission-specific rerun and exact failure comparison are
 retained under the same evidence prefix. The full default tier remains open.
+
+### Measured workspace retirement prerequisite 1.16
+
+The internal physical binder accepts measured_workspace with values reject
+(default), retire and reset. This is a physical lifetime policy applied only
+when destructive measure_register consumes pool-owned wires. Ordinary caller
+inputs retain their existing measurement behavior. Validate the policy before
+constructing a binding. Existing logical Program operations remain authoritative.
+
+Retire removes a clean measured wire from its lease without returning it to the
+available pool. Its physical outcome remains projected and its event is retire.
+Reset emits one existing reset primitive after the measurement, returns the
+clean wire to its original pool and records a free event. The fresh measurement
+slot survives either operation, including when an owned CBit is discarded after
+creating a bool snapshot. A reset does not allocate a new logical feedback slot.
+Partial leases retain all other live wires and their original release order.
+Allocated and explicitly adopted clean inputs use the same lifetime rules.
+
+Both explicit policies reject borrowed wires before changing pool state or
+emitting a measurement. Resetting a borrowed wire cannot restore its unknown
+initial joint state. All requested wires must have current owners and the
+complete request is validated before any partial release. Retired wires cannot
+be freed again, returned as quantum outputs or silently reused by an allocation.
+Zero-width bookkeeping continues to use the existing whole-lease contract.
+
+Pinned Allocate and Free emit no quantum instructions and delegate bookkeeping
+to the source qubit manager. Free's clean tensor assumes a zero input and its
+dirty contract requires the original state. Neither supplies destructive
+retirement. The explicit policies above are FlagQuantum physical adaptations,
+with reset overhead recorded separately from source measurement and QEC models.
+Acceptance must cover every small complex branch, joint spectator amplitudes,
+physical zero after reset, projected outcomes without reset, stale and partial
+owners, rejected mixed clean/borrowed requests, bool snapshots and exhaustion.
