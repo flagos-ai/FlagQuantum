@@ -114,6 +114,7 @@ SCRIPTS = (
     "fermion_hdf5",
     "fermion_fourier",
     "fermion_tapering",
+    "fermion_controlled_evolution",
     "fermion_orbital_rotation",
 )
 
@@ -144,6 +145,10 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "not a scalable eigensolver",
     ),
     "fermion_fourier": ("JW occupation order", "quadratic gate cost"),
+    "fermion_controlled_evolution": (
+        "unreduced JW order",
+        "error is measured with a small dense reference, not bounded",
+    ),
     "fermion_fcidump": (
         "real closed-shell FCIDUMP integrals",
         "not the correlated ground energy",
@@ -1863,6 +1868,26 @@ def test_fermion_tapering_example_measures_selected_h2_sector() -> None:
     assert float(_labelled(output, "Particle number")) == pytest.approx(2, abs=1e-6)
     assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
     _assert_premise("fermion_tapering", output)
+
+
+def test_fermion_controlled_evolution_reports_interference_and_convergence() -> None:
+    output = _run("fermion_controlled_evolution")
+    defects = [
+        float(value)
+        for value in re.findall(r"Steps \d+ overlap defect: ([\d.e+-]+)", output)
+    ]
+    assert len(defects) == 3
+    assert defects[0] / defects[1] > 3.8
+    assert defects[1] / defects[2] > 3.8
+    assert float(_labelled(output, "Control X")) == pytest.approx(
+        0.8993719806, abs=1e-9
+    )
+    assert float(_labelled(output, "Control Y")) == pytest.approx(
+        0.4313256428, abs=1e-9
+    )
+    assert "Register: 4 system + 1 control = 5 qubits" in output
+    assert "No phase alignment or energy-offset removal is used." in output
+    _assert_premise("fermion_controlled_evolution", output)
 
 
 def test_fermion_orbital_rotation_example() -> None:

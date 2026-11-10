@@ -55,6 +55,10 @@ def test_native_workflow_without_external_science_packages() -> None:
         state.compose(low_rank_evolution(active.one_body, factors, time, constant=active.energy_offset))
         gradient = torch.autograd.grad(state.state().reshape(-1)[12].real, time)[0]
         assert torch.isfinite(gradient)
+        controlled = fq.Circuit(5, dtype=torch.complex128).x(0).x(1).h(4)
+        controlled.compose(low_rank_evolution(active.one_body, factors, 0.2, constant=active.energy_offset).control(1, ctrl_qubits=4))
+        interferometry = fq.run(controlled, outputs=[fq.expectation(fq.X(4)), fq.expectation(fq.Y(4))])
+        assert all(torch.isfinite(value).all() for value in interferometry.expectations)
         assert prepare_gaussian(torch.eye(2), torch.zeros(2, 2)).state().reshape(-1)[0].abs() > 0.999
         fourier_state = fq.Circuit(4, dtype=torch.complex128)
         fourier_state.x(1)

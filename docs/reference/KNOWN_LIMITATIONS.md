@@ -1062,6 +1062,20 @@ distributed or performance claim. The old Z-parity affine API remains available.
 The H2 example uses a small dense eigensolver to supply a state; its measured
 selected-sector energy is not evidence for a scalable ground-state solver.
 
+## Controlled low-rank fermionic evolution
+
+An existing low-rank JW evolution circuit may be controlled with
+`Circuit.control(1, ctrl_qubits=2*n_modes)`. This adds one most-significant
+control wire and retains the energy-offset phase as a measurable relative phase.
+Static inputs remain non-differentiable; only evolution time is differentiable.
+The supported chemistry profile is real spatial closed-shell data in the full
+spin-interleaved JW register on CPU. This workflow does not support parity, BK,
+tapered spaces, multiple controls, hardware-native synthesis, routing, GPU
+capacity, or distributed execution. Its small dense reference measures product
+formula error and does not provide an error bound. See
+`docs/development/FERMION_CONTROLLED_EVOLUTION.md` and
+`python -m examples.algorithms.fermion_controlled_evolution`.
+
 ## Differentiable orbital rotations
 
 The experimental `algorithms.chemistry_domain.orbital_rotation` workflow uses

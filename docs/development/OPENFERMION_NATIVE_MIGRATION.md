@@ -25,6 +25,10 @@ reference is OpenFermion `34adf3196cd566f4ca53893f868753786797ae2a`.
 | 15 | Low-rank first/second-order evolution | Native differentiable time |
 | 16 | Compatibility, checks and review draft | Local release preparation |
 
+EXT06 and EXT07 are independent extensions tracked after the selected migration
+batch. EXT07 reuses the existing evolution circuit and `Circuit.control`; its
+contract and limits are in `FERMION_CONTROLLED_EVOLUTION.md`.
+
 General non-diagonal stabilizer tapering, FFFT, file formats, complete upstream
 API compatibility, geometry gradients, and distributed training remain outside
 this selected batch. Unit 07 deliberately starts with diagonal parity
@@ -285,6 +289,20 @@ and invalid inputs. The H2 example reduces four qubits to two, measures energy
 and particle number with fq.run, and verifies the lifted eigenvector residual.
 No upstream source is copied, no dependency or Stable Core schema is changed,
 and no full OpenFermion compatibility or automatic symmetry search is claimed.
+
+## Independent extension: controlled low-rank evolution
+
+EXT07 composes the existing `low_rank_evolution` circuit with the existing
+`Circuit.control` operation; it adds no public algorithm wrapper or Core
+contract. The system remains a full, spin-interleaved JW register and gains one
+control wire. The controlled branch retains the energy-offset phase, which is
+observable through X/Y interference. The H2 workflow measures the complete
+overlap defect against a bounded dense reference for one, two and four second-
+order steps. It reports measured error, not an error bound. The feature has no
+new dependency and makes no claims for tapered encodings, multiple controls,
+hardware routing, GPU or distributed execution. See
+`docs/development/FERMION_CONTROLLED_EVOLUTION.md` and
+`tests/unit/fermion/test_controlled_evolution.py`.
 
 ## EXT08: differentiable orbital parameters
 
