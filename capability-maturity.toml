@@ -2278,3 +2278,22 @@ limitations = "Explicit Z records, default-state CPU PyTorch batch1, fixed Cliff
 focused_tests = "tests/qec/test_native_detector_execution.py"
 integration_tests = "tests/team/simulation/test_native_detector_execution_conformance.py"
 development_artifact = "flagquantum/simulation/stabilizer/_detector_sampling.py"
+
+[capabilities.fermion_hubbard_chain]
+title = "Spinful Fermi-Hubbard open chain"
+summary = "Construct an open-chain Hamiltonian in the native fermionic algebra and measure its explicitly encoded small-system state."
+category = "simulation_and_training"
+user_goals = ["Build a spinful open chain with explicit hopping, interaction and chemical potential", "Measure the same fixed-particle state through JW, parity and BK encoding"]
+public_apis = ["flagquantum.algorithms.fermion.hubbard.fermi_hubbard_chain"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/algorithms/fermion_hubbard.py"
+documentation = "docs/development/FERMION_HUBBARD_CHAIN.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency."
+focused_tests = "tests/unit/fermion/test_hubbard.py"
+integration_tests = "tests/test_algorithm_examples.py"
+development_artifact = "flagquantum/algorithms/fermion/README.md"
