@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **199/216**.
+Validated quantum-program counterparts: **200/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (37 native programs)
+## Algorithms (38 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -46,6 +46,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [qaoa](algorithms/search_and_optimization/qaoa/README.md)
 - [qaoa_knapsack](algorithms/search_and_optimization/qaoa/qaoa_knapsack/README.md)
 - [qaoa_max_cut](algorithms/search_and_optimization/qaoa/qaoa_max_cut/README.md)
+- [dqi_max_xorsat](algorithms/search_and_optimization/dqi/dqi_max_xorsat/README.md)
 - [three_sat_grover](algorithms/search_and_optimization/grover/three_sat_grover/README.md)
 - [grover](algorithms/search_and_optimization/grover/grover/README.md)
 - [grover_max_cut](algorithms/search_and_optimization/grover/grover_max_cut/README.md)

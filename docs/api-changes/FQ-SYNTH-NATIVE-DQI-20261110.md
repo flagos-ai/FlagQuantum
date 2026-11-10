@@ -1,6 +1,14 @@
 # Native DQI symmetric-weight preparation and coherent syndrome decoding
 
-Status: independent native/Circuit probe passed; formal acceptance pending.
+Status: accepted locally after 61 acceptance/related tests, 29 catalog/API tests,
+strict typing of five Python files and final fresh 216-original plus approved-six
+replay. All 29 production pins and original resource records are unchanged.
+
+Native default: 15 physical bits / 3 work bits / 403 operations / depth 352;
+original: 14 / 2 / 3,802 / 1,988. Complete default amplitude error is below
+3.6e-16; clean-work probability is zero. All three weight vectors and coherent
+nonzero decoder XOR/inverse cases pass. Native coverage is 200/216; Notebook
+coverage remains 24/213.
 
 The frozen DQI program prepares a superposition of weight-zero, weight-one and
 weight-two Dicke states on six error bits, adds the retained parity phase,

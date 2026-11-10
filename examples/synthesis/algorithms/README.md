@@ -35,6 +35,7 @@ Native FlagQuantum programs currently available:
 - [qaoa](search_and_optimization/qaoa/README.md)
 - [qaoa_knapsack](search_and_optimization/qaoa/qaoa_knapsack/README.md)
 - [qaoa_max_cut](search_and_optimization/qaoa/qaoa_max_cut/README.md)
+- [dqi_max_xorsat](search_and_optimization/dqi/dqi_max_xorsat/README.md)
 - [three_sat_grover](search_and_optimization/grover/three_sat_grover/README.md)
 - [grover](search_and_optimization/grover/grover/README.md)
 - [grover_max_cut](search_and_optimization/grover/grover_max_cut/README.md)

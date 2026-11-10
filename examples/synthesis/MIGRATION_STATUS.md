@@ -201,7 +201,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/search_and_optimization/QAOA/qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/qaoa/main.py) | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py) | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_max_cut/main.py) | pending |
-| `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | Pending | pending |
+| `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | [Native program](algorithms/search_and_optimization/dqi/dqi_max_xorsat/main.py) | pending |
 | `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | [Native program](algorithms/search_and_optimization/grover/three_sat_grover/main.py) | pending |
 | `algorithms/search_and_optimization/grover/grover` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover/grover/main.py) | pending |
 | `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/grover/grover_max_cut/main.py) | pending |
