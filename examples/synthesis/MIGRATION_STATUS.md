@@ -270,7 +270,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/optimization/set_partition/set_partition` | notebook_workflow | [Native program](applications/optimization/set_partition/main.py) | pending |
 | `applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution` | notebook_workflow | [Native program](applications/optimization/variational_quantum_imaginary_time_evolution/main.py) | pending |
 | `applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D` | notebook_workflow | [Native program](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/main.py) | pending |
-| `applications/physical_systems/hhl_lanchester/hhl_lanchester` | notebook_workflow | Pending | pending |
+| `applications/physical_systems/hhl_lanchester/hhl_lanchester` | notebook_workflow | [Native program](applications/physical_systems/hhl_lanchester/main.py) | pending |
 | `applications/physical_systems/ising_model/ising_model` | notebook_workflow | [Native program](applications/physical_systems/ising_model/main.py) | pending |
 | `applications/physical_systems/maxwell_equation/maxwell_2d_simulation` | notebook_workflow | Pending | pending |
 | `applications/physical_systems/maxwell_equation/maxwell_utils` | python_unclassified | Pending | pending |

@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **170/216**.
+Validated quantum-program counterparts: **171/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -47,7 +47,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (42 native programs)
+## Applications (43 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -85,6 +85,7 @@ Validated local Notebook workflows:
 - [set_partition](applications/optimization/set_partition/README.md)
 - [variational_quantum_imaginary_time_evolution](applications/optimization/variational_quantum_imaginary_time_evolution/README.md)
 - [fermi_hubbard_1d](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/README.md)
+- [hhl_lanchester](applications/physical_systems/hhl_lanchester/README.md)
 - [ising_model](applications/physical_systems/ising_model/README.md)
 - [quantum_sawtooth_map](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/README.md)
 - [network_traffic_optimization](applications/telecom/network_traffic_optimization/README.md)
