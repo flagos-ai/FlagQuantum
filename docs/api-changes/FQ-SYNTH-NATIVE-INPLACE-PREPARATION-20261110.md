@@ -5,7 +5,7 @@ The authorized migration of the five-category native library admits the familiar
 `inplace_prepare_state(probabilities, bound, target)` names under
 `flagquantum.synth`, including wildcard imports. Both take positional-only
 arguments, finite static real vectors and an existing initialized writable
-complete quantum register. The vector is power-of-two sized in2..256 and must
+complete quantum register. The vector is power-of-two sized in 2..256 and must
 match the register width. The public bound must be finite and nonnegative.
 
 These apply a specific reversible real preparation unitary, without allocating,
@@ -30,7 +30,7 @@ signatures do not change.
 Acceptance requires independent full-unitary column comparison on nonzero input,
 phase-weighted and entangled inputs, adjoint/within composition, matching fresh
 zero preparation, invalid vectors/widths/initialization/Const/view refusal,
-actual budget refusal and source-driven native examples. Fresh216original replay
+actual budget refusal and source-driven native examples. Fresh 216-original replay
 must preserve source identities, outcomes and measured baseline resources. This
 is an unreleased Compiler/frontend admission with thin Services facade exports;
-no new numerical kernel,physical IR opcode,Stable Core change or release claim.
+no new numerical kernel, physical IR opcode, Stable Core change or release claim.

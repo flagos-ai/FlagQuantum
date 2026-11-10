@@ -1258,7 +1258,9 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
     ):
         errors.append("native catalog operations differ from their authorized scope")
     inplace_contract = json.loads(
-        (ROOT / "contracts/synthesis-native-inplace-preparation-candidate.json").read_text()
+        (
+            ROOT / "contracts/synthesis-native-inplace-preparation-candidate.json"
+        ).read_text()
     )
     inplace_signatures = {
         "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
@@ -1276,7 +1278,8 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
             ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-INPLACE-PREPARATION-20261110.md"
         ).is_file()
         or any(
-            str(inspect.signature(getattr(synth, name, None))) != signature
+            not callable(function := getattr(synth, name, None))
+            or str(inspect.signature(function)) != signature
             for name, signature in inplace_signatures.items()
         )
     ):
