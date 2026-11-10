@@ -48,12 +48,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def packed_fixture(
-    layers: int, leading: bool, inverse: bool
+    layers: int, leading: bool, inverse: bool, activation: int = 1
 ) -> tuple[ProgramRecord, Any, Any]:
-    """Use real source partitions around the original positive body or its adjoint."""
+    """Pack the requested source control specialization or its exact adjoint."""
     _, _, native, originals = fixtures("spectator", True)
-    module, _ = native[1]
-    child = originals[1]
+    module, _ = native[activation]
+    child = originals[activation]
     if inverse:
         module = adjoint_component_hierarchy(module, {"ch": "ch", "cp": "cp_inverse"})
         child = source_adjoint(child.decompose_bloq())

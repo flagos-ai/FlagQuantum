@@ -30,3 +30,14 @@ Run `tests/unit/test_packed_specialized_control.py` for wrapped controls, actual
 specialized-adjoint callbacks, all small measurement histories, and the existing
 `circuit.append(op)` execution path. Primitive counts and source resource models
 are checked separately.
+
+`test_packed_adjoint_control.py` follows the whole existing-control returned
+adder through `AdjointWithSpecializedCtrl`, for all four old/new polarities.
+The packed current entry and selected helper use the same explicit entry name.
+Supply exact inverse pairs for its And compute/erase functions, Partition
+functions and child leaves to the existing adjoint owner. The original callback
+returns the existing control before the data. With the three-qubit packed data
+port tested here, a nonleading control misassigns that returned bit to the data
+port while finalizing the source adjoint graph. Native rejects the same
+connection. Equal-width nonleading ports remain unaudited. The source failure
+is diagnosed separately, without reordering ports or claiming execution parity.
