@@ -1260,6 +1260,29 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native catalog operations differ from their authorized scope")
+    joint_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-joint-storage-candidate.json").read_text()
+    )
+    joint_signatures = {
+        "unitary": "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+        "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+        "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    }
+    if (
+        joint_contract.get("expanded_signatures") != joint_signatures
+        or joint_contract.get("implementation_authorized") is not True
+        or joint_contract.get("release_authorized") is not False
+        or joint_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-JOINT-STORAGE-20261110.md"
+        or not (
+            ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-JOINT-STORAGE-20261110.md"
+        ).is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name))) != signature
+            for name, signature in joint_signatures.items()
+        )
+    ):
+        errors.append("joint native storage differs from its authorized admission")
     inplace_contract = json.loads(
         (
             ROOT / "contracts/synthesis-native-inplace-preparation-candidate.json"
@@ -1282,7 +1305,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         ).is_file()
         or any(
             not callable(function := getattr(synth, name, None))
-            or str(inspect.signature(function)) != signature
+            or str(inspect.signature(function)) != joint_signatures[name]
             for name, signature in inplace_signatures.items()
         )
     ):
@@ -1393,7 +1416,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         type(matrix_admission.get("implementation_authorized")) is not bool
         or type(matrix_admission.get("release_authorized")) is not bool
         or not (ROOT / matrix_admission["authorization_record"]).is_file()
-        or str(inspect.signature(synth.unitary)) != matrix_signature
+        or str(inspect.signature(synth.unitary)) != joint_signatures["unitary"]
     ):
         errors.append("native unitary operation differs from its authorized scope")
     modular_admission = json.loads(
