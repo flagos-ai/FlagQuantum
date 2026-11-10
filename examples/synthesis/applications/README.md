@@ -14,6 +14,7 @@ Native FlagQuantum programs currently available:
 - [patch_min_vertex_cover](cybersecurity/patching_management/patch_min_vertex_cover/README.md)
 - [credit_card_fraud](finance/credit_card_fraud/README.md)
 - [portfolio_optimization_with_hhl](finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
+- [option_pricing](finance/option_pricing/README.md)
 - [portfolio_optimization](finance/portfolio_optimization/README.md)
 - [hhl_portfolio](finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
 - [value_at_risk](finance/value_at_risk/README.md)

@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **178/216**.
+Validated quantum-program counterparts: **180/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -51,7 +51,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (44 native programs)
+## Applications (45 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -65,6 +65,7 @@ Validated local Notebook workflows:
 - [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
 - [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
 - [portfolio_optimization_with_hhl](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
+- [option_pricing](applications/finance/option_pricing/README.md)
 - [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
 - [hhl_portfolio](applications/finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
 - [value_at_risk](applications/finance/value_at_risk/README.md)
@@ -198,7 +199,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (37 native programs)
+## Tutorials (38 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -232,6 +233,7 @@ Validated local Notebook workflows:
 - [algo_design_qce_tutorial_part_i](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
 - [algo_design_qce_tutorial_part_ii](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)
 - [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
+- [option_pricing_workshop](tutorials/workshops/finance_workshops/option_pricing_workshop/README.md)
 - [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
 - [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
 - [grover_workshop](tutorials/workshops/grover_workshop/README.md)

@@ -240,7 +240,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | Pending | pending |
 | `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/main.py) | pending |
 | `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/main.py) | pending |
-| `applications/finance/option_pricing/option_pricing` | notebook_workflow | Pending | pending |
+| `applications/finance/option_pricing/option_pricing` | notebook_workflow | [Native program](applications/finance/option_pricing/main.py) | pending |
 | `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/main.py) | pending |
 | `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | Pending | pending |
@@ -421,7 +421,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/main.py) | pending |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/main.py) | pending |
 | `tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut` | notebook_workflow | [Native program](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/main.py) | pending |
-| `tutorials/workshops/finance_workshops/Option_Pricing_Workshop` | notebook_workflow | Pending | pending |
+| `tutorials/workshops/finance_workshops/Option_Pricing_Workshop` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/option_pricing_workshop/main.py) | pending |
 | `tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/main.py) | pending |
 | `tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/main.py) | pending |
 | `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | Pending | pending |
