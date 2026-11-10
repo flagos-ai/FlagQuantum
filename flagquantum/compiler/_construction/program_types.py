@@ -425,7 +425,7 @@ def prepare_uniform_interval_state(
     raise TypeError("uniform preparation is captured inside qfunc")
 
 
-def control(condition: QNum | QArray[QBit], body: Callable[[], None], /) -> None:
+def control(condition: QNum | QArray[QBit] | bool, body: Callable[[], None], /) -> None:
     """Apply a supported operation coherently; array-controlled X requires all ones."""
     raise TypeError("control is captured inside qfunc")
 

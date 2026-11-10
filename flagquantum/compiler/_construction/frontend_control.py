@@ -7,13 +7,24 @@ import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Operation, Value, ValueId
+from .frontend_controlled_effects import capture_controlled_effects
 from .frontend_increment import capture_increment_call, is_increment_helper
 from .frontend_matrix import capture_controlled_unitary
 from .frontend_numeric import reject_numeric_reads
 from .frontend_phase import capture_polynomial_phase
+from .frontend_ports import program_ports
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import gate_target, locations
-from .program_types import hadamard_transform, phase, qft, r, unitary, x
+from .program_types import (
+    hadamard_transform,
+    inplace_prepare_amplitudes,
+    inplace_prepare_state,
+    phase,
+    qft,
+    r,
+    unitary,
+    x,
+)
 from .register_profile import register_type, register_width
 
 if TYPE_CHECKING:
@@ -79,13 +90,25 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         )
     operation = owner.resolve_callable(body.func)
     increment = is_increment_helper(operation)
+    composable = not increment and (
+        operation in (inplace_prepare_state, inplace_prepare_amplitudes)
+        or isinstance(operation, _QuantumFunction)
+        and operation.source.program
+        and any(port.role == "inout" for port in program_ports(operation))
+        and all(port.role == "inout" for port in program_ports(operation))
+    )
     if operation is unitary:
         capture_controlled_unitary(owner, condition, body)
         return
     if operation is x and not is_composite_predicate(condition):
         capture_controlled_x(owner, condition, body)
         return
-    if owner.aliases is not None and operation not in (phase, r, x) and not increment:
+    if (
+        owner.aliases is not None
+        and operation not in (phase, r, x)
+        and not increment
+        and not composable
+    ):
         _error(
             owner.source,
             body,
@@ -136,9 +159,10 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         return
 
     predicate_computed = isinstance(condition, ast.Compare) or (
-        (operation in (r, qft, x) or increment) and is_composite_predicate(condition)
+        (operation in (r, qft, x) or increment or composable)
+        and is_composite_predicate(condition)
     )
-    scalar_location = (operation is r or increment) and (
+    scalar_location = (operation is r or increment or composable) and (
         isinstance(condition, ast.Subscript) or owner.aliases is not None
     )
     predicate_index = 0
@@ -168,7 +192,16 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     else:
         predicate = owner.register(condition)
         inputs = (predicate,)
-    if increment:
+    if composable:
+        if not scalar_location and register_width(predicate) != 1:
+            _error(
+                owner.source,
+                condition,
+                "program.control",
+                "callback requires a scalar condition or bounded predicate",
+            )
+        capture_controlled_effects(owner, body, predicate, predicate_index, inputs)
+    elif increment:
         assert isinstance(operation, _QuantumFunction)
         if not scalar_location and register_width(predicate) != 1:
             _error(
