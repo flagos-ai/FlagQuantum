@@ -446,7 +446,7 @@ jobs:
         run: python -m pip install --no-build-isolation -e '.[dev]'
       - name: Verify the independent core workflow on Linux
         run: |
-          python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('numpy', 'scipy', 'pyscf', 'openfermion', 'cirq'))"
+          python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('numpy', 'scipy', 'pyscf', 'h5py', 'openfermion', 'cirq'))"
           python -m pytest tests/unit/fermion tests/unit/test_observables_fermion.py tests/integration/test_native_fermion_isolation.py tests/integration/test_molecular_hdf5_isolation.py -q
           python -m examples.algorithms.fermion_chemistry
       - name: Install and validate the independent optional file reader
