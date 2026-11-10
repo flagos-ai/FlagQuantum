@@ -1489,3 +1489,57 @@ ftqc-reference-env/g2-shaped-erasure-*.
 G2 remains open. Next is sequential use of multiple shaped elements, with
 cross-call workspace and measurement-slot reuse; multi-control inverse
 composition and complete dtype/parent-file audits remain open.
+
+## Sequential shaped calls and measurement event ownership (GRAPH52)
+
+The finite composition now covers element orders (0, 1), (1, 0) and (0, 0)
+over the same 1-by-2 array of two-bit words. Repeated selection reuses the same
+stored child definition and counts both invocations. Existing production
+components perform the work; no new IR contract, allocator or executor is added.
+
+`tests/unit/register_source_workspace.py` is an independent reference adapter,
+not a production allocator. Original Allocate, Free and And `as_cirq_op`
+callbacks call its finite qalloc/qborrow/qfree provider. Original graph traversal
+determines allocation order, wire reuse and measurement order. The adapter
+does not read native gates, lifetime events or measurement IDs. A source
+measurement event gets a fresh integer slot; this names the event while
+preserving the source feedback semantics, even when raw Cirq wire-based keys
+repeat. It does not claim the upstream source stores these integer slot IDs.
+
+Native primitive operands, phases, feedback and all nonempty lifetime events
+match this independent flow. Complete native events, including zero-width
+internal wrappers, remain in the resource JSON. The same physical measurement
+wires recur on the second call; classical event slots remain distinct:
+scalar phase wire 6 uses slots 0 then 1, while two-control wires 8/6 use slots
+0/1 then 2/3. Thus later feedback cannot accidentally use the preceding call's
+outcome. Clean work returns to zero and borrowed work retains its original
+joint entanglement with controls and data.
+
+The 72 forward scenarios cover 864 complete measurement histories and 576
+append trajectories. The 24 scalar inverse scenarios cover all 384
+forward/inverse history pairs. Both retained and expanded calls are exercised,
+with an independent analytical H-then-T composition as a third state oracle.
+Exact inverses reverse call order and use explicit same-shape Casts; the
+upstream default shaped Cast adjoint defect remains outside acceptance.
+
+| Control width | Emitted serial counts | Independent source model |
+| --- | --- | --- |
+| One | 2 CH, 4 CCX, 6 H, 4 T, 4 Tdag, 12 CX, 2 S/phase/measure/CZ/reset; X=0/4 | t=2, toffoli=4, and=2, clifford=10/14, rotation=4, measurement=2; T-equivalent 70, peak 7 |
+| Two | 2 CH, 4 CCX, 12 H, 8 T, 8 Tdag, 24 CX, 4 S/measure/CZ/reset, 2 phase; X=0/8/16 | t=2, toffoli=4, and=4, clifford=12, rotation=4, measurement=4; T-equivalent 78, peak 9 |
+
+Actual call multiplicities and all seven source model categories close
+independently. Serial composition doubles the work performed while preserving
+the original peak width through balanced workspace reuse. The resource evidence
+contains 36 forward scenarios. Multi-control serial inverse composition,
+arbitrary mixed clean/dirty transitions and full parent-file audits remain open.
+
+Implementation evidence: d1e036fa. The batch adds 96 tests: 6316 concentrated,
+881 focused and 64 integration-tier tests pass. Strict mypy covers 78 files,
+Black checks 104 files, and scope/architecture/Program/API checks and four
+existing examples pass. Fifty original source blobs are verified, including
+the GateWithRegisters allocation protocol. Eight focused control/layout owners
+remain fully covered; existing component_control guards 79/215 remain uncovered.
+Default smoke/unit stops at maxfail with 22462 passed, 300 skipped, 1065 warnings
+and six failures in 239.95 seconds. All six are in the independent seven-failure
+baseline; one baseline failure was not reached. No whole-suite success is claimed.
+Evidence is retained at ftqc-reference-env/g2-serial-shaped-*.
