@@ -19,6 +19,24 @@ if TYPE_CHECKING:
     from .frontend_program import _Body
 
 
+def is_composite_predicate(expression: ast.expr) -> bool:
+    """Recognize comparison leaves without recursively walking user input."""
+    pending = [expression]
+    while pending:
+        current = pending.pop()
+        if isinstance(current, ast.Compare):
+            continue
+        if isinstance(current, ast.UnaryOp) and isinstance(current.op, ast.Invert):
+            pending.append(current.operand)
+        elif isinstance(current, ast.BinOp) and isinstance(
+            current.op, (ast.BitAnd, ast.BitOr, ast.BitXor)
+        ):
+            pending.extend((current.left, current.right))
+        else:
+            return False
+    return True
+
+
 def capture_control(owner: _Body, node: ast.Call) -> None:
     """Retain scalar/predicate behavior and admit direct all-ones controlled X."""
     if len(node.args) != 2 or not isinstance(node.args[1], ast.Lambda):
@@ -62,15 +80,15 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     if operation is unitary:
         capture_controlled_unitary(owner, condition, body)
         return
-    if operation is x:
+    if operation is x and not is_composite_predicate(condition):
         capture_controlled_x(owner, condition, body)
         return
-    if owner.aliases is not None and operation not in (phase, r):
+    if owner.aliases is not None and operation not in (phase, r, x):
         _error(
             owner.source,
             body,
             "program.borrow",
-            "mutable helpers allow phase or direct Pauli-axis rotation control",
+            "mutable helpers allow phase, predicate-X or direct Pauli-axis rotation control",
         )
     phase_constant = None
     if operation is phase and len(body.args) == 2:
@@ -115,25 +133,8 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         capture_polynomial_phase(owner, expression, angle, body, condition=condition)
         return
 
-    def is_composite_predicate(expression: ast.expr) -> bool:
-        """Recognize comparison leaves without recursively walking user input."""
-        pending = [expression]
-        while pending:
-            current = pending.pop()
-            if isinstance(current, ast.Compare):
-                continue
-            if isinstance(current, ast.UnaryOp) and isinstance(current.op, ast.Invert):
-                pending.append(current.operand)
-            elif isinstance(current, ast.BinOp) and isinstance(
-                current.op, (ast.BitAnd, ast.BitOr, ast.BitXor)
-            ):
-                pending.extend((current.left, current.right))
-            else:
-                return False
-        return True
-
     predicate_computed = isinstance(condition, ast.Compare) or (
-        operation in (r, qft) and is_composite_predicate(condition)
+        operation in (r, qft, x) and is_composite_predicate(condition)
     )
     scalar_location = operation is r and (
         isinstance(condition, ast.Subscript) or owner.aliases is not None
@@ -165,7 +166,17 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     else:
         predicate = owner.register(condition)
         inputs = (predicate,)
-    if (operation is hadamard_transform or operation is qft) and len(body.args) == 1:
+    if operation is x and len(body.args) == 1:
+        target, index = gate_target(owner, body.args[0])
+        if target in inputs:
+            _error(
+                owner.source,
+                node,
+                "program.control",
+                "condition and target must be disjoint",
+            )
+        owner.emit("qreg.control_x", node, (predicate, target), indices=(0, index))
+    elif (operation is hadamard_transform or operation is qft) and len(body.args) == 1:
         target = owner.register(body.args[0])
         if target in inputs:
             _error(

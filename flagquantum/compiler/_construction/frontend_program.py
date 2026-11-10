@@ -376,7 +376,8 @@ class _Body:
     def capture_expression(
         self, expr: ast.expr, statement: ast.AST
     ) -> tuple[HybridProgram, tuple[Value, ...]]:
-        reject_numeric_reads(self, expr, "unsigned expressions")
+        if self.aliases is None:
+            reject_numeric_reads(self, expr, "unsigned expressions")
         bindings = {
             name: value for name, value in self.classical.items() if type(value) is int
         } | self.loop_variables
@@ -422,25 +423,39 @@ class _Body:
                 "use unsigned arithmetic, comparisons, conditional values, bitwise values or an unsigned literal",
             )
         used = {child.id for child in ast.walk(expr) if isinstance(child, ast.Name)}
-        if not used or not used.issubset(self.ports):
+        visible = self.aliases if self.aliases is not None else self.ports
+        if not used or not used.issubset(visible):
             _error(
                 self.source,
                 expr,
                 "program.expression",
                 "arithmetic reads declared quantum ports; basis initialization uses an unsigned literal",
             )
-        if any(self.ports[name].kind == "qarray" for name in used):
+        if used.intersection(self.array_names):
             _error(
                 self.source,
                 expr,
                 "program.expression",
                 "array arithmetic is outside the numeric profile",
             )
-        names = tuple(name for name in self.ports if name in used)
-        actuals = tuple(
-            self.register(ast.copy_location(ast.Name(id=name, ctx=ast.Load()), expr))
-            for name in names
-        )
+        names = tuple(name for name in visible if name in used)
+
+        def numeric_input(name: str) -> Value:
+            node = ast.copy_location(ast.Name(id=name, ctx=ast.Load()), expr)
+            if self.aliases is None:
+                return self.register(node)
+            view = locations(self, node)
+            value = view[0][0]
+            if view != tuple((value, bit) for bit in range(register_width(value))):
+                _error(
+                    self.source,
+                    node,
+                    "program.borrow",
+                    "predicate inputs must borrow complete raw registers in logical bit order",
+                )
+            return value
+
+        actuals = tuple(numeric_input(name) for name in names)
         function = deepcopy(self.source.node)
         function.name = f"{self.name}.expr{self.expressions}"
         self.expressions += 1
@@ -465,7 +480,10 @@ class _Body:
                     self.source.indentation,
                 )
             ),
-            {name: register_width(self.registers[name]) for name in names},
+            {
+                name: register_width(value)
+                for name, value in zip(names, actuals, strict=True)
+            },
         )
         self.owner.functions.append(graph)
         return graph, actuals
