@@ -205,7 +205,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | [Native program](algorithms/search_and_optimization/grover/three_sat_grover/main.py) | pending |
 | `algorithms/search_and_optimization/grover/grover` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover/grover/main.py) | pending |
 | `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/grover/grover_max_cut/main.py) | pending |
-| `algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa` | notebook_workflow | Pending | pending |
+| `algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/main.py) | pending |
 | `algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation` | notebook_workflow | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/banded_be` | python_unclassified | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/cheb_utils` | python_unclassified | Pending | pending |
