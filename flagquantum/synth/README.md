@@ -45,6 +45,14 @@ on the raw IR implicit zero input. The report records the profile and rank bound
 state-buffer, scratch and named-read budgets remain enforced. CX/SWAP and
 unproven coherent programs do not qualify for this storage proof.
 
+Wide native programs can also reuse Runtime's exact independent-interval MPS
+proof when each connected physical gate interval spans at most twelve sites.
+The report records `exact_independent_interval_mps` and the intermediate bond
+bound. Execution remains exact CPU complex128 with no approximation or backend
+fallback. Larger connected intervals retain statevector admission and its
+memory refusal. This does not prove that an application-level subroutine can
+be omitted; such a reduction requires a separate semantic argument.
+
 
 ## Python quantum programs
 

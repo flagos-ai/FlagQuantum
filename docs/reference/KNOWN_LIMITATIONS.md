@@ -996,6 +996,13 @@ uses local sampling/state access; it does not claim cloud or hardware execution.
 
 ## Native synthesis Fourier boundary
 
+Wide native programs above 32 physical bits can use exact CPU MPS when the
+existing Runtime proof bounds every connected gate interval to twelve sites.
+The earlier closed computational-basis proof remains separate. No truncation,
+backend fallback or dense full-state allocation is allowed on this profile.
+Wide connected circuits without either proof retain statevector memory-budget
+refusal. Run `python -m pytest tests/integration/test_synthesis_native_interval_mps.py -q`.
+
 The unreleased native `qft(target)` accepts complete initialized writable QNum
 and QArray[QBit] registers, including whole-register mutable helper aliases.
 Partial views, Const targets and uninitialized storage are refused. This

@@ -672,3 +672,17 @@ two-dimensional walk, native program and independent Circuit at full original
 widths with retained coin environment and zero compiler work. Resource costs are
 recorded separately; no optimality, complete Notebook or QLBM acceptance follows
 from this slice alone.
+
+## Native exact interval MPS admission
+
+Local CPU semantic coverage includes native qfunc programs wider than 32 bits
+whose connected physical gate intervals are each at most twelve sites. Services
+reuses Runtime's existing exact bond proof and shared planning authority. Four
+admission tests verify complete occupied-support complex amplitudes and unit
+support probability on an 83-bit program, no truncation or dense conversion,
+insufficient-memory and unproved-long-interval refusal, and unchanged small
+statevector routing. Sixteen basis-MPS and four original zero-walk regressions
+also pass. This is local exact execution evidence, not application cancellation,
+Notebook completion, accelerator or distributed scalability evidence.
+
+Run `python -m pytest tests/integration/test_synthesis_native_interval_mps.py tests/integration/test_synthesis_native_basis_mps.py tests/integration/test_synthesis_qmod_tensor_zero_walk.py -q`.

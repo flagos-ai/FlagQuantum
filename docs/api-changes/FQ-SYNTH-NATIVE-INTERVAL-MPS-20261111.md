@@ -1,6 +1,9 @@
 # Native exact interval MPS admission
 
-Status: implementation pending. Native corpus acceptance remains 206/216.
+Status: admission implemented and locally verified. Native corpus acceptance
+remains 206/216; tensor hypercontraction itself is not yet accepted. Four new
+admission tests and twenty existing basis-MPS/zero-walk regressions pass;
+strict typing, Black and Ruff pass for the two changed Python files.
 Classification: `single_device_fast_path`.
 
 The native qfunc producer currently requests statevector execution except for
