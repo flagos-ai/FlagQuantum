@@ -1393,3 +1393,49 @@ Logs and resources are retained at ftqc-reference-env/g2-bookkeeping-control-*.
 Next are shaped/multi-register bookkeeping compositions and mixed directional
 ports. The source nonleading callback permutation, further-control concatenate
 failure, renamed-output zip failure and complete parent-file audits stay open.
+
+## Shaped casts and mixed directional bookkeeping (GRAPH50)
+
+Implementation 29b19943 adds `layout.component_cast.cast_word_function` using
+existing typed split/join operations. LEFT words are consumed and RIGHT words
+retain their physical bits, in row-major element and MSB-first bit order.
+Only concrete Core-executable quantum encodings are admitted. No primitive
+gates, predicate workspace or measurement operations are emitted.
+
+The pinned actual Cast control callback preserves the control tuple and calls
+the original atomic Cast. Tests compare its call graph, dependencies and wire
+views for scalar, shaped and empty arrays in both dtype directions. Explicit
+same-shape reverse calls round-trip the stored graph. The original
+`Cast.adjoint()` drops shape and raises AssertionError when its scalar input
+receives a shaped forward output. This source defect remains diagnostic;
+explicit reverse-call parity does not certify the broken default adjoint or
+the source shaped tensor path. Logical empty arrays remain valid, while a
+physical binding with no physical wire remains rejected.
+
+A mixed LEFT/THRU/RIGHT composition combines Cast, Allocate and Free with
+control and spectator ports. The source and native graph order both free an
+independent input before allocation, allowing the newly allocated output to
+reuse wire 1. Input consumption requires explicit ownership; the caller takes
+the live output. Full eight-wire complex states include arbitrary borrowed
+joint entanglement, or zero-constrained clean consumed inputs and pool wires.
+Free is not a reset or a runtime proof of the clean-state obligation.
+
+| Quantity | Emitted execution | Independent source model |
+| --- | --- | --- |
+| Primitive gates, T, measurements, new workspace | All zero | QEC categories all zero |
+| Mixed composition width | Seven participating wires, eight caller-declared wires including unused pool wire 7 | Peak seven |
+| Lifetime order | Free wire 1, then Allocate wire 1 | Original graph visits Free before Allocate |
+
+There are 37 new tests, 6156 concentrated passes, 721 focused passes and 64
+integration-tier passes. Strict mypy covers 74 files; Black checks 100 files.
+Architecture, scope, Program/API checks, four examples and 49 pinned original
+blobs pass. The new Cast owner has 16 statements and two branches at 100%
+coverage. Existing component_control guards 79/215 remain uncovered. Default
+smoke/unit has 22387 passes, 300 skips, 1065 warnings and seven failures in
+150.34 seconds, stopped by maxfail. The seven IDs equal the independent baseline;
+this is not whole-suite success. Evidence is retained at
+ftqc-reference-env/g2-shaped-cast-*.
+
+Next is composition of shaped bookkeeping with controlled computation and
+measurement-assisted erasure. Other dtype/symbolic execution, source callback
+defects and complete parent-file audits remain open; G2 is ongoing.
