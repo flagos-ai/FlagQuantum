@@ -17,7 +17,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | Pending | pending |
-| `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | Pending | pending |
+| `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification/qsvt_fixed_point/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting` | notebook_workflow | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae` | quantum_program | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe` | quantum_program | Pending | pending |

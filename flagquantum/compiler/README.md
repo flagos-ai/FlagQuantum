@@ -1228,3 +1228,13 @@ behind both consumers, Facility's full source/native/Circuit comparison, exact
 classical costs, ordered helper views, positive/negative literals, coherent
 spectators, multi-owner cubes, constant phase and workspace cleanup. Existing
 Qmod phase-factor tests and all frozen-source replays protect the source path.
+
+Root arithmetic locals in `within` may use standard Python
+`Annotated[QNum, literal_width]`, as already supported for ports, or the existing
+`QNum[literal_width]` spelling. Both produce the same checked unsigned local
+storage and automatic uncompute/release. The standard annotation allows strict
+Python type checking; signed/scaled metadata, symbolic widths and extra metadata
+remain excluded. See
+`tests/integration/test_synthesis_native_annotated_locals.py` for the shortest
+phase-and-cleanup example and the admission in
+`docs/api-changes/FQ-SYNTH-NATIVE-ANNOTATED-LOCALS-20261110.md`.

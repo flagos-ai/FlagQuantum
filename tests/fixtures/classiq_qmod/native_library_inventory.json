@@ -166,7 +166,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/amplitude_amplification/qsvt_fixed_point/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

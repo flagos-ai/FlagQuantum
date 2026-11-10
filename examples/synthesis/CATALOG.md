@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **155/216**.
+Validated quantum-program counterparts: **156/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,12 +11,13 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (23 native programs)
+## Algorithms (24 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
 - [qsvm](algorithms/machine_learning/qsvm/README.md)
 - [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
+- [qsvt_fixed_point](algorithms/amplitude_amplification/qsvt_fixed_point/README.md)
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 - [simon](algorithms/foundational/simon/README.md)

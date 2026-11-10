@@ -6,6 +6,7 @@ Native FlagQuantum programs currently available:
 - [qgan_bars_and_strips](machine_learning/qgan/qgan_bars_and_strips/README.md)
 - [qsvm](machine_learning/qsvm/README.md)
 - [quantum_autoencoder](machine_learning/quantum_autoencoder/README.md)
+- [qsvt_fixed_point](amplitude_amplification/qsvt_fixed_point/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
 - [simon](foundational/simon/README.md)

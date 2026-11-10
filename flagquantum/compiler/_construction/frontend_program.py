@@ -7,6 +7,7 @@ import math
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
+from typing import Annotated
 
 from .._hybrid.model import (
     QUANTUM_EFFECT,
@@ -955,6 +956,19 @@ class _Body:
                 "a local cannot shadow a quantum name",
             )
         annotation = _annotation_node(self.source, node.annotation)
+        if (
+            isinstance(annotation, ast.Subscript)
+            and _resolve(self.definition, annotation.value, annotation=True)
+            is Annotated
+            and isinstance(annotation.slice, ast.Tuple)
+            and len(annotation.slice.elts) == 2
+            and isinstance(annotation.slice.elts[0], (ast.Name, ast.Attribute))
+            and _resolve(self.definition, annotation.slice.elts[0], annotation=True)
+            is QNum
+        ):
+            annotation = ast.Subscript(
+                value=annotation.slice.elts[0], slice=annotation.slice.elts[1]
+            )
         if (
             not isinstance(annotation, ast.Subscript)
             or _resolve(self.definition, annotation.value, annotation=True) is not QNum
