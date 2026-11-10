@@ -261,7 +261,11 @@ def test_empty_identity_decomposition_preserves_array_permutation_and_zero_width
 
 def test_invalid_unreachable_definition_is_verified_before_predicate() -> None:
     record, _ = _hierarchy(2)
-    invalid = replace(record, functions=(*record.functions, record.functions[-1]))
+    leaf = record.functions[-1]
+    unreachable = replace(
+        leaf, name="unreachable", blocks=(replace(leaf.blocks[0], return_values=()),)
+    )
+    invalid = replace(record, functions=(*record.functions, unreachable))
     seen = []
 
     def selected(label: int, operation: Operation) -> bool:

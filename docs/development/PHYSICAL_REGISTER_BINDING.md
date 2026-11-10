@@ -445,7 +445,7 @@ retain the previously documented native policies.
 
 Logical graph visitation counts CBit edges as one bit, matching the original
 source greedy sort. Physical visitation counts them as zero quantum width.
-`local_operation_order(count_classical_bits=True)` selects the former for named
+`local_operation_order(logical_graph=True)` selects the former for named
 traversal/rebuilding only. The original GF2MulMBUC graph and its copy at widths
 1, 2, 3 and 8 exercise the ordering distinction, including Join versus Parity.
 
@@ -470,3 +470,89 @@ altering reference code. GRAPH34 concentrated regression passed 5263 tests,
 focused coverage passed 56 at 96% combined statement/branch coverage for the two
 compiler modules, and strict typing passed 40 files. Default-tier baseline
 failures remain recorded from GRAPH33. Selective flattening remains open.
+
+## Selective typed call expansion
+
+`component_expansion.expand_component_calls_once` replaces selected typed call
+occurrences with one level of the callee's existing typed call body. A verified
+single-block callee with explicit returns and exclusively typed calls provides
+that decomposition, including an empty identity body. A callee containing
+primitive/register operations remains an atomic leaf. Other errors, including
+predicate failures and invalid unreachable definitions, propagate.
+
+The input and output pair the existing ProgramRecord with an operation-aligned
+tuple of integer occurrence labels. Initially labels default to declaration
+positions. Labels are compiler transformation provenance for correspondence with
+pinned BloqInstance.i, without becoming another graph or changing Core schemas.
+Retained calls keep their labels and output SSA definitions. New calls receive
+labels above the previous maximum, in source local visitation order. The
+predicate receives the label and the existing Operation. Returned words are
+mapped element by element, including empty shapes, zero-width owned words,
+classical owners, directional ports and permutations. All callee definitions
+and module metadata remain available for independent verification and lowering.
+
+A pass visits only the original entry calls. Inserted calls are considered on
+the next pass. A pass without an accepted decomposition raises
+NoComponentExpansionError.
+`expand_component_calls` repeats passes until that condition, returning the
+last graph and labels. Its depth bound includes the final no-change probe,
+matching pinned flatten's range/else behavior. Reaching the bound raises
+ValueError, including max_depth zero or negative. Immutable input records and
+labels remain intact on every failure. The user execution entry continues
+through the existing binding and circuit.append(op) workflow.
+
+Logical current-layer classification also distinguishes a composite wrapper
+around Allocate/Free from the atomic lifetime helper itself. The wrapper keeps
+ordinary signature-delta priority until expanded. The logical_graph option now
+selects both source classical widths and current-layer classification. Physical
+binding retains its existing nested helper classification. Exact source
+allocation-wrapper and free-wrapper witnesses cover traversal before and after
+expansion.
+
+GRAPH35 implements the finite typed-call form of pinned flatten_once/flatten.
+Occurrence labels remain an operation-aligned compiler provenance tuple. They
+preserve gapped retained IDs and assign fresh IDs above the input maximum across
+repeated passes, without adding Core fields. Primitive bodies provide the native
+atomic fallback. Arbitrary Python decomposition callbacks and their dynamically
+thrown exceptions are outside this immutable-definition profile. Source atomic
+Hadamard and undecomposed classical leaves exercise both source fallback error
+families. Predicate exceptions propagate and invalid unreachable definitions are
+verified before the predicate runs. Empty identity bodies, arrays and return
+permutations exercise element-wise output substitution. The source empty-array
+identity still raises KeyError during add_from; native metadata retains the
+empty return, following its existing declared-empty policy.
+
+The implementation commit is fdcc313f. There are 54 new expansion cases and two
+expanded Add variants. Concentrated regression passed 5319 tests with no skips
+or warnings in 26.25 seconds. Focused coverage passed 112 tests in 12.34 seconds,
+with 97% combined statement/branch coverage across expansion, named graph and
+local schedule modules. Strict typing passed 42 production/test files. Both
+existing integration suites passed 29 tests in 1.25 seconds. Formatting, scope,
+architecture, Program/API checks and four existing append/resource examples
+passed. Twenty-nine pinned source blobs, including the original composite tests,
+retain their inventory hashes.
+
+Expanded repeated Add preserves the exact source wire dependencies and all 16
+unnormalized complex measurement histories, spectator state and zero clean work.
+Measured primitive counts remain 40 CX, 12 H, 8 T, 8 Tdag, 4 S, 4 measurements,
+4 CZ and 4 resets. Source QEC independently reports 16 T-equivalent and four
+measurements, with peak width eight. Expanded field erasure retains all 14
+histories at widths 1/2/3 and exact bound IR. Destroyed result wires retain their
+projections, while unmeasured work is zero. At width eight the same bound IR has
+64 conditional CZ, eight H, eight measurements and eight classical XOR writes.
+The original GF2MulMBUC model reports only 64 CZ, as recorded in GRAPH30.
+Source and native wrapped erasure graphs match every occurrence label, ordered
+predecessor, shaped output and final graph through one and two wrapper levels
+at widths 1/2/3/8. Transformation adds zero physical primitives or workspace.
+
+The default smoke/unit run finished after fail-fast with 22361 passed, 300 skipped,
+1065 warnings and six failures in 280.09 seconds. All six failure identifiers
+match the independently recorded baseline. The seventh baseline ledger case
+was absent from this stopped run and retains its unresolved status. No default
+pass is claimed. The final focused run includes the refined invalid-unreachable
+body fixture, with the same 112 passing tests. Evidence logs are stored under
+ftqc-reference-env/g2-component-expansion-{source.txt,regression.log,coverage.log,
+checks.log,integration.log,examples.log,default-parallel.log,default-comparison.txt}.
+The next inventory is CompositeBloq.adjoint against existing precise component
+adjoints and their measurement/lifetime boundaries. Full parent-file acceptance
+and G2 remain open.
