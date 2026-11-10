@@ -136,3 +136,9 @@ Program ownership and automatic discard discovery remain outside this owner.
 See [conjugate index trace](../../../docs/development/TENSOR_TRACE_INDICES.md)
 for source reindexing, complete channels, existing partial-trace replacement,
 negative topology checks and measured branch verification.
+
+Open-system register axes and contraction are owned by
+`register_superoperator_binding.py`; see
+[register superoperator binding](../../../docs/development/REGISTER_SUPEROPERATOR_BINDING.md).
+It reuses the existing binder and greedy engine for quantum and classical bit
+axes in rf/rb/lf/lb order, with explicit caller-owned discard merges.

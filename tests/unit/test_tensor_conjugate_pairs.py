@@ -16,19 +16,16 @@ from flagquantum.simulation.tensor_network.conjugate_pairs import (
 )
 from flagquantum.simulation.tensor_network.models import TensorNetworkNode
 from flagquantum.simulation.tensor_network.path_search import _contract_nodes_greedy
-from flagquantum.simulation.tensor_network.register_tensor_binding import (
-    register_tensor_label_groups,
+from flagquantum.simulation.tensor_network.register_superoperator_binding import (
+    contract_register_superoperator,
+    register_superoperator_label_groups,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def groups(sig: Signature, inc: Any, out: Any) -> tuple[tuple[int, ...], ...]:
-    return tuple(
-        conjugate_pair_labels(group, backward=backward)
-        for group in register_tensor_label_groups(sig, inc, out)
-        for backward in (False, True)
-    )
+    return register_superoperator_label_groups(sig, inc, out)
 
 
 def dense(nodes: Any, ordered: tuple[tuple[int, ...], ...]) -> torch.Tensor:
@@ -130,7 +127,7 @@ def test_complete_original_superquimb_channel_and_joint_density(
     )
     sig = Signature(record.functions[0].registers or ())
     doubled = tensor_conjugate_pairs(nodes)
-    actual = dense(doubled, groups(sig, inc, out))
+    actual = contract_register_superoperator(doubled, sig, inc, out)
     original = cbloq_to_superquimb(source)
     assert len(doubled) == len(original.tensors) == 2 * len(nodes)
     np.testing.assert_allclose(
@@ -222,7 +219,9 @@ def test_initialized_density_original_source_and_supplier_replacement(
             torch.empty((), dtype=torch.complex128),
             entry="from_zero",
         )
-        return dense(tensor_conjugate_pairs(nodes), groups(sig, inc, out))
+        return contract_register_superoperator(
+            tensor_conjugate_pairs(nodes), sig, inc, out
+        )
 
     actual = consume(supplier)
     original = flatten_for_tensor_contraction(
@@ -284,12 +283,17 @@ def test_measured_branch_density_is_unnormalized_until_branch_sum() -> None:
         nodes = tensor_conjugate_pairs(
             (TensorNetworkNode(branch.reshape((2,) * 8), labels),)
         )
-        density = dense(
-            nodes,
-            (
-                conjugate_pair_labels(labels),
-                conjugate_pair_labels(labels, backward=True),
-            ),
+        from flagquantum.core.ir.program.registers import (
+            Register,
+            RegisterSide,
+            RegisterType,
+        )
+
+        signature = Signature(
+            [Register("state", RegisterType("qubit", 8), side=RegisterSide.RIGHT)]
+        )
+        density = contract_register_superoperator(
+            nodes, signature, {}, {"state": (labels,)}
         )
         torch.testing.assert_close(
             density, (target[:, None] * target.conj()[None, :]) / 16, atol=3e-14, rtol=0
