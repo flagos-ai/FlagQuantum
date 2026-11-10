@@ -682,3 +682,58 @@ ftqc-reference-env/g2-hierarchy-adjoint-{source.txt,regression.log,coverage.log,
 checks.log,integration.log,examples.log,default-parallel.log,default-comparison.txt}.
 The next inventory is generic Controlled wrapper control propagation and counts
 at the typed-call boundary. Parent files and G2 remain open.
+
+## Positive controlled calls over the stored Program
+
+GRAPH38 implements `component_control.control_component_program` in b3fbdd3c.
+The internal Compiler interface accepts an existing typed-call Program and
+explicit per-child controlled adders. It follows the original v0.7.0
+`Controlled.build_composite_bloq` call chain. The all-THRU root gains one positive
+scalar QBit, using the source control-name collision rule. Adders consume the
+current control and child inputs, call already-defined specialized components,
+and return the control plus data successors in the original output order.
+Port renaming for CHadamard and array packing for CZPowGate are verified against
+the original specialized get_ctrl_system callbacks. Core Program SSA remains
+the authority. Forward definitions stay shared and the forward canonical payload
+is cleared. Missing adders, incompatible returns, invalid unused definitions
+and retained callers with obsolete entry arity are rejected. Adder exceptions
+propagate. Specialized bodies retain ownership of work and measured cleanup.
+
+Twenty-five new tests cover mixed H/Z-power sequences, one to three repetitions,
+control-name collisions, empty and shaped ports, custom entries, invalid inputs
+and adder replacement through the existing consumer boundary. Actual connections,
+ports, ordering and stored call multiplicities match the original controlled
+source graph. Every small forward measurement history preserves unnormalized
+complex amplitudes, spectator entanglement and clean work zero. Two repetitions
+also cover all 16 forward/inverse history pairs using existing exact adjoints.
+Expansion preserves the emitted circuit. The original empty-array decomposition
+failure is asserted separately while native declarations remain intact.
+
+For two H/Z-power repetitions, measured primitives are 2 CH, 12 CX, 6 H, 4 T,
+4 Tdag, 2 S, 2 phase, 2 measurements, 2 CZ and 2 resets, using one reusable clean
+work qubit. Actual stored leaves are 2 CHadamard and 2 CZPowGate calls. The
+independent source QEC model reports t=2, and_bloq=2, clifford=10, rotation=4 and
+measurement=2, with peak width four including the spectator. Weighted actual
+call counts close separately against every source QEC category. The wrapper
+adds zero physical gates and workspace. Model categories retain source synthesis
+assumptions and are recorded independently of primitive counts.
+
+Concentrated regression passed 5460 tests in 29.81 seconds without skips or
+warnings. Focused coverage passed 100 in 6.29 seconds, with 97% statement/branch
+coverage for component_control. Its uncovered guard verifies the rebuilt module
+after the existing builder has already verified it. Integration passed 64 in
+5.30 seconds. Strict Python 3.12 typing passed 49 production/test files. Format,
+architecture, team scope, Program/API checks and four append/resource examples
+passed. Thirty-five pinned source blobs match the inventory Git objects.
+
+The default smoke/unit fail-fast run recorded 22264 passed, 300 skipped,
+1065 warnings and six failures in 114.43 seconds. All six identifiers match the
+independent seven-failure baseline. The ledger baseline assertion did not run
+before termination and remains open. Single negative/multiple controls,
+automatic hierarchical specialization and arbitrary dynamic Python decomposition
+remain separate acceptance work. G2 remains open.
+
+Persistent evidence is under
+`/Users/baai/Documents/liuwei/ftqc-reference-env/g2-component-control-` with
+`source.txt`, `regression.log`, `coverage.log`, `checks.log`, `integration.log`,
+`examples.log`, `default-parallel.log` and `default-comparison.txt` suffixes.
