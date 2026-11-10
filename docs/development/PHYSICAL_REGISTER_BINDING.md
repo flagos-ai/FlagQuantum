@@ -737,3 +737,65 @@ Persistent evidence is under
 `/Users/baai/Documents/liuwei/ftqc-reference-env/g2-component-control-` with
 `source.txt`, `regression.log`, `coverage.log`, `checks.log`, `integration.log`,
 `examples.log`, `default-parallel.log` and `default-comparison.txt` suffixes.
+
+## Shared positive controls through stored hierarchies
+
+GRAPH39 implements `control_component_hierarchy` in 99af2d3b. The Compiler walks
+stored call-only definitions bottom-up and derives one shared controlled function
+per unmapped child. Explicit specialized adders take precedence. Primitive and
+mixed bodies require an explicit adder, and each derived body requires THRU
+ports. The root is always derived. Generated names avoid all existing functions.
+Forward child definitions remain shared. Control/data SSA, the source's control
+naming and custom entry/block names use the same one-level implementation.
+The original positive-control factory and generic _make_ctrl_system adder supply
+the source comparison at every derived level.
+
+This batch also fixes the previous one-level implementation dropping helpers
+created inside an explicit adder. The same split/join/allocate/free regression
+fails against the e67edadb implementation with unknown helper callees and passes
+with retained definitions. The helpers are appended with their derived body and
+shared across repeated calls. Existing immutable functions remain unchanged.
+The original failure is retained in g2-hierarchy-control-helper-baseline.log.
+
+Forty-three new scenarios cover one to five levels, repeated/shared definitions,
+a diamond with direct calls across depths, explicit overrides, generated-name
+collisions, zero-width words, scalar/matrix/empty ports, custom entries and
+failure propagation. Original ordered signatures and named operand identities
+are compared separately. The source generic adder inserts control last in its
+input dictionary, while native traversal lists inputs in declaration order.
+Both preserve the same named connections and ordered outputs. Native empty-array
+declarations survive, while the source's empty final-soquet failure is asserted.
+
+Every measurement history is exhausted for graphs with at most four measurements.
+The sixteen-measurement graph checks three explicit histories, its complete
+primitive stream and every component connection. It does not claim exhaustive
+verification of all 65536 histories. Four expanded/unexpanded exact-adjoint
+scenarios exhaust all forward/inverse history pairs. All checked histories retain
+unnormalized complex amplitudes, spectator entanglement and clean workspace zero.
+
+Four H/Z-power leaf pairs emit 4 CH, 24 CX, 12 H, 8 T, 8 Tdag, 4 S, 4 phase,
+4 measurements, 4 CZ and 4 resets, reusing one clean work qubit. Actual stored
+leaves are four CHadamard and four CZPowGate calls. The independent source model
+reports t=4, and_bloq=4, clifford=20, rotation=8 and measurement=4 with peak width
+four including the spectator. Every modeled category closes against weighted
+actual stored calls. Structural hierarchy generation adds zero primitive gates
+or workspace. Adder-created explicit lifetimes remain part of that adder's own
+resource obligations.
+
+Concentrated regression passed 5503 in 69.96 seconds without skips or warnings.
+Focused coverage passed 68 in 9.09 seconds with 97% statement/branch coverage for
+component_control. The two uncovered guards verify completed modules after the
+builder has already validated them. Integration passed 64 in 9.48 seconds.
+Strict Python 3.12 typing passed 50 production/test files. Format, team scope,
+architecture, Program/API checks and four existing append/resource examples pass.
+Thirty-five pinned source blobs remain equal to their inventory Git objects.
+
+The default smoke/unit run recorded 22286 passed, 300 skipped, 1065 warnings and
+seven failures in 242.83 seconds. All seven failure identifiers exactly match
+the independently recorded baseline, including the ledger assertion. Negative
+and multiple controls, their typed activation metadata and predicate cleanup,
+and arbitrary symbolic/dynamic decompositions remain separate work. G2 stays
+open. Evidence uses the `g2-hierarchy-control-` prefix under the existing
+ftqc-reference-env directory, with source, regression, coverage, checks,
+integration, examples, helper-baseline, default-parallel and default-comparison
+files. The user append workflow is retained through the existing physical binder.
