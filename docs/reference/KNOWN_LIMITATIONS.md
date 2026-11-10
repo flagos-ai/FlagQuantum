@@ -1027,6 +1027,20 @@ GPU capacity, or performance claim. Existing optional Cirq interoperability
 remains separately selectable; native scientific paths require neither Cirq nor
 OpenFermion.
 
+## Native fermionic Fourier transform
+
+`algorithms.fermion.lowering.fermionic_fourier_transform` builds a normalized
+radix-2 Fourier transform on full JW occupation registers, for positive
+power-of-two mode counts (including one). The forward orbital convention is
+F[p,q] = exp(-2j*pi*p*q/n)/sqrt(n); inverse is its adjoint. Natural mode order and
+vacuum phase one are retained. This is a fermionic orbital transform, not the
+qubit QFT. Static complex128 CPU factors lower to adjacent two-qubit matrix
+gates, with FSWAP signs preserved. Routing and plan storage cost O(n**2), with no
+FFT speedup, hardware gate-set, accelerator, distributed or gradient claim.
+Parity/BK/tapered registers and other mode counts are unsupported. See
+`python -m examples.algorithms.fermion_fourier` and
+`tests/unit/fermion/test_fourier.py` for the supported workflow and references.
+
 ## Measurement-file conversion boundary
 
 The compiled native-record converter accepts six input formats and writes five
