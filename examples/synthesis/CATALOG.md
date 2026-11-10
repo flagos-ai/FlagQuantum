@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **205/216**.
+Validated quantum-program counterparts: **206/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (40 native programs)
+## Algorithms (41 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -32,6 +32,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [hamiltonian_simulation_guide_trotter](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [discrete_log](algorithms/number_theory_and_cryptography/discrete_log/README.md)
+- [elliptic_curve_discrete_log](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
 - [shor](algorithms/number_theory_and_cryptography/shor/README.md)
 - [discrete_poisson_solver](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/README.md)

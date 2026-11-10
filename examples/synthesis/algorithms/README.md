@@ -21,6 +21,7 @@ Native FlagQuantum programs currently available:
 - [hamiltonian_simulation_guide_trotter](hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](metrology/classical_shadow_tomography/README.md)
 - [discrete_log](number_theory_and_cryptography/discrete_log/README.md)
+- [elliptic_curve_discrete_log](number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/README.md)
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
 - [shor](number_theory_and_cryptography/shor/README.md)
 - [discrete_poisson_solver](quantum_differential_equations_solvers/discrete_poisson_solver/README.md)
