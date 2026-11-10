@@ -115,6 +115,7 @@ SCRIPTS = (
     "fermion_fourier",
     "fermion_tapering",
     "fermion_controlled_evolution",
+    "fermion_hubbard",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -135,6 +136,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_hubbard": (
+        "exponential inspection cost",
+        "not a many-body scalability claim",
+    ),
     "fermion_tapering": (
         "explicitly supplied symmetry sector",
         "not a scalable eigensolver",
@@ -1883,3 +1888,18 @@ def test_fermion_controlled_evolution_reports_interference_and_convergence() -> 
     assert "Register: 4 system + 1 control = 5 qubits" in output
     assert "No phase alignment or energy-offset removal is used." in output
     _assert_premise("fermion_controlled_evolution", output)
+
+
+def test_fermion_hubbard_measures_two_particle_ground_state() -> None:
+    output = _run("fermion_hubbard")
+    for label in ("Analytic N=2 energy", "Dense N=2 energy"):
+        assert float(_labelled(output, label)) == pytest.approx(-0.8284271247, abs=1e-9)
+    rows = re.findall(
+        r"(jordan_wigner|parity|bravyi_kitaev) energy: ([\d.e+-]+); particles: ([\d.e+-]+)",
+        output,
+    )
+    assert {row[0] for row in rows} == {"jordan_wigner", "parity", "bravyi_kitaev"}
+    for _, energy, particles in rows:
+        assert float(energy) == pytest.approx(-0.8284271247, abs=1e-9)
+        assert float(particles) == pytest.approx(2, abs=1e-6)
+    _assert_premise("fermion_hubbard", output)
