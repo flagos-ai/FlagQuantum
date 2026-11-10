@@ -336,3 +336,89 @@ current workspace contract. Source logical quantum width remains zero. Original
 empty-array identity entry assignment succeeds, but its call_classically output
 finalization raises KeyError(RightDangle). Native empty arrays execute with zero
 initialization writes. That source failure is asserted and recorded separately.
+
+## Call and return replacement inventory
+
+GRAPH33 inventories all 39 pinned cases in
+`tests/unit/test_register_component_calls.py`. A source observer runs the
+unmodified BloqBuilder and exposes construction observations. Executable native
+witnesses use actual Program function bodies and Core verification. The table
+records scenario families, including differences in their supported boundaries.
+
+| Original scenario family | Original cases | Executable native witness | Boundary or remaining work |
+| --- | ---: | --- | --- |
+| Through port order and row-major successor identity | 12 | `test_component_program_builder.py`, real identity bodies | Includes zero-width scalar and empty arrays |
+| Dict, tuple and automatic output arity with LEFT consumption | 9 | `test_component_call_boundaries.py`, real Free/Allocate bodies | Each body is independently verified before calling |
+| Opposite sides sharing a name with different widths | 1 | `test_component_call_boundaries.py`, uint2 Free and uint5 Allocate | Input and output retain distinct SSA values |
+| Missing, surplus, dtype, duplicate and short call failures | 5 | `test_component_program_builder.py` | Reserved instance and consumed prefix match |
+| Reusing an old output after another call | 1 | `test_component_program_builder.py` | Failure reserves its call, Core rejects its incomplete body at finalization |
+| Failed return prefix and retry | 5 | `test_component_program_builder.py` | Existing original consumer runs against native return observations |
+| Explicit empty return with empty or consumed inputs | 1 | `test_component_call_boundaries.py`, two native cases | LEFT-only consumption uses a real Free body |
+| Empty shaped right port with no dangle connection | 1 | `test_component_call_boundaries.py` | Native retains its declaration, original final_soqs omits the key |
+| Classical binding single consumption | 1 | `test_component_call_boundaries.py` | Uses canonical CBit descriptor, retains stale-call failure prefix |
+| Actual Add signatures for widths (2, 3) and (0, 2) | 2 | `test_component_add_calls.py`, real repeated Add bodies and source failure witness | Nonempty Add matches source gates and all 16 histories, zero-left original constructs but fails decomposition |
+| Shaped array alias at the second row-major use | 1 | `test_component_call_boundaries.py`, real identity body | First two elements consumed, last two remain available, no successors |
+
+The original classical scenario passes a nominal `classical_bit` descriptor
+through a source adapter that selects CBit by classical width. Native execution
+requires the existing canonical `classical_bit_type()` descriptor. The new
+witness uses that descriptor on both sides and records this admission distinction.
+A stale CBit call keeps an empty reserved operation in both builders. Original
+finalize can retain that incomplete signature-only instance. Core rejects the
+incomplete executable native module. Consumed return prefixes remain observable
+in both cases. These tests preserve the validation boundary.
+
+Directional uint2 input lifetimes also compare actual source Free/Allocate tensor
+contractions for output widths zero, one and five. Both native physical binding
+and original tensors preserve the complex spectator, with all supplied clean
+wires zero. The caller explicitly grants input ownership and accepts allocated
+outputs. This is tested on the legal zero-input subspace required by clean Free.
+Allocate/Free emit zero primitive gates and there are no measurement histories.
+Existing Add/QROM consumer tests independently retain exhaustive measured
+branches, exact complex amplitudes, zero work and separate model counts.
+
+The exact Add witness wraps existing measured addition with its a/b typed ports,
+private clean work and existing split/join functions. Two actual calls retain
+the original operands, measurement feedback and per-wire primitive order. The
+original generator reverses qalloc results before assigning carry significance.
+Its supplied physical allocation order is explicitly reversed to bind the same
+carry roles. No reference code is modified. All 16 unnormalized histories retain
+the full complex spectator state and zero work.
+
+Two Add calls emit 40 CX, 12 H, 8 T, 8 T-dagger, 4 S, 4 measurements, 4 CZ and
+4 resets. The source QEC model independently reports 16 total T-equivalent and
+4 measurements, with modeled peak width 8. Actual declared width is 8 with two
+reused clean work wires. Split/join and lifetime binding add zero primitives.
+
+Original Add(QUInt(0), QUInt(2)) permits two calls to be constructed and finalized
+but decompose_from_registers raises IndexError while reading input_bits[0].
+Native add_ir rejects the empty input with ValueError before emission. The
+zero-width ownership token remains supported by the existing real identity
+body. This case is recorded as an original executable-source limitation.
+
+Q-0157.03 closes the finite call/return replacement inventory with the stated
+descriptor admission, failed-instance verification, empty-array metadata and
+zero-input Add exceptions. The complete composite builder source file and G2
+remain open.
+
+### GRAPH33 acceptance
+
+Directional call witnesses are committed as 82b61d5a. Repeated Add and zero-left
+source witnesses are committed as cb6ee8e8. Twenty added tests pass. The final
+concentrated regression passes 5,235 tests in 67.23 seconds with no skips or
+warnings. Focused coverage passes 154 tests in 15.81 seconds, with 100% statement
+and branch coverage of component_builder and layout.component_workspace.
+Twenty-nine integration tests pass in 2.79 seconds. Strict Python 3.12 typing
+passes 38 production/test files. Black/Ruff, architecture, Program/API checks,
+both ownership scopes and four append/resource examples pass. All 28 pinned
+source blobs match the locked inventory.
+
+The default smoke/unit run reports 22,286 passed, 300 skipped, 1,065 warnings
+and seven failures in 304.86 seconds. The seven failure identifiers match the
+recorded pre-batch baseline. The run preceded the two additional Add witnesses,
+which are included in the final concentrated regression and focused checks.
+The default tier remains failing. Its evidence is
+`ftqc-reference-env/g2-directional-calls-default-parallel.log`, with comparison
+in `g2-call-inventory-default-comparison.txt`. Final concentrated, coverage,
+checks, examples and source evidence use `g2-call-inventory-`. Integration
+evidence uses `g2-directional-calls-integration.log`.
