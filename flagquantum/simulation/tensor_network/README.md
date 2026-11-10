@@ -128,3 +128,11 @@ forward/backward labels and elementwise conjugation, preserving axis order and
 PyTorch autograd. It does not build a measurement channel or implement discard.
 See [conjugate tensor pairs](../../../docs/development/TENSOR_CONJUGATE_PAIRS.md)
 for source correspondence, density/branch tests and separate resource counts.
+
+`trace_indices.py` merges caller-selected exposed forward/backward edges in
+existing doubled nodes. Existing contraction then performs partial trace without
+projecting, resetting or normalizing. It preserves tensor data and gradients;
+Program ownership and automatic discard discovery remain outside this owner.
+See [conjugate index trace](../../../docs/development/TENSOR_TRACE_INDICES.md)
+for source reindexing, complete channels, existing partial-trace replacement,
+negative topology checks and measured branch verification.
