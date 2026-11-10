@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **193/216**.
+Validated quantum-program counterparts: **195/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,7 +11,7 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (33 native programs)
+## Algorithms (35 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
@@ -25,6 +25,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [quantum_counting_qpe](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/README.md)
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+- [quantum_teleportation](algorithms/foundational/quantum_teleportation/README.md)
 - [simon](algorithms/foundational/simon/README.md)
 - [hamiltonian_simulation_guide](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/README.md)
 - [hamiltonian_simulation_guide_qdrift](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md)
@@ -32,6 +33,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 - [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
 - [discrete_log](algorithms/number_theory_and_cryptography/discrete_log/README.md)
 - [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
+- [shor](algorithms/number_theory_and_cryptography/shor/README.md)
 - [solving_qlsp_with_aqc](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
 - [vqls_with_lcu](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/README.md)
 - [qpe_for_matrix](algorithms/quantum_phase_estimation/qpe_for_matrix/README.md)

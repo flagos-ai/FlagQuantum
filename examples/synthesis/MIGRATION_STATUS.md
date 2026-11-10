@@ -164,7 +164,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/error_correction/syndrome_extraction_optimization/ilp_circuit_distance` | python_unclassified | Pending | pending |
 | `algorithms/foundational/bernstein_vazirani/bernstein_vazirani` | notebook_workflow | [Native program](algorithms/foundational/bernstein_vazirani/main.py) | validated |
 | `algorithms/foundational/deutsch_jozsa/deutsch_jozsa` | notebook_workflow | [Native program](algorithms/foundational/deutsch_jozsa/main.py) | validated |
-| `algorithms/foundational/quantum_teleportation/quantum_teleportation` | notebook_workflow | Pending | pending |
+| `algorithms/foundational/quantum_teleportation/quantum_teleportation` | notebook_workflow | [Native program](algorithms/foundational/quantum_teleportation/main.py) | pending |
 | `algorithms/foundational/simon/simon` | notebook_workflow | [Native program](algorithms/foundational/simon/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/main.py) | pending |
@@ -178,7 +178,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/discrete_log/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | Pending | pending |
 | `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/hidden_shift/main.py) | pending |
-| `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | Pending | pending |
+| `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/shor/main.py) | pending |
 | `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/lchs/lchs` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | Pending | pending |

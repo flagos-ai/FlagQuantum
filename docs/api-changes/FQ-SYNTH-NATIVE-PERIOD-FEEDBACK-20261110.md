@@ -1,6 +1,6 @@
 # Native period finding and private-feedback equivalence
 
-Status: successful native probes; independent acceptance pending.
+Status: accepted locally; independent native/Circuit tests and fresh corpus replay passed.
 
 ## Reuse and boundaries
 
@@ -53,3 +53,26 @@ Native examples call only existing public APIs; original Qmod stays test-side.
 Starting coverage is193/216 native quantum programs,24/213 Notebook workflows
 and14/19 revision-nine merged scopes. No integration PR,push or full remote CI
 before all216 native quantum programs pass independent acceptance.
+
+## Accepted local evidence
+
+The 17 new acceptance cases and related regressions passed together (251 tests).
+Black, Ruff, strict typing of seven files, 29 catalog/API tests, architecture,
+source-of-truth, maturity, links and path-classification checks passed. The fresh
+216-source replay preserves every prior hash, semantic outcome and resource
+record; all six approved revisions execute. All 29 pinned production files are
+unchanged. No production capability or protected public API changed.
+
+The period-finding program uses 18 physical qubits, including three clean work
+qubits and five retained residue bits, with 2,116 operations and depth 1,849.
+The original uses 2,108 operations and depth 1,844; native increment-based
+initialization accounts for the difference. Absolute full-state error is below
+1.7e-14 with zero work leakage. Default deferred teleportation uses three
+physical qubits, no clean work, nine operations and depth six, versus seven
+operations and depth five in the source. Its full-state error is below 1.1e-16;
+independent measured branches verify the output channel and external-reference
+entanglement. Retained Alice outcomes are environment, not clean work.
+
+Accepted native coverage is 195/216 (90.3%), with 21 programs pending. Notebook
+coverage remains 24/213 and revision-nine merged scopes remain 14/19. Evidence
+is recorded separately under `up06-native-period-feedback` in the delivery ledger.
