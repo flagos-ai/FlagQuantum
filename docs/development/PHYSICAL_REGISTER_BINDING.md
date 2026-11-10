@@ -1660,3 +1660,56 @@ G2 remains open. Next is serial composition whose individual calls use
 different allocation flags, preserving each wire's original pool and state
 obligations. Other shapes/dtypes, symbolic execution, source defects and
 complete parent-file audits remain open.
+
+## Serial calls with different allocation flags (GRAPH55)
+
+The finite serial composition now performs one clean and one borrowed call,
+in either order, on separate elements of the same shaped array. Exact inverse
+composition reverses both call and element order. Existing component namespacing
+isolates the two bodies because their lifetime declarations differ; no
+production allocator, IR contract or execution engine is introduced.
+
+Original source callbacks independently allocate, borrow and free through the
+source workspace provider. All nonempty lifetime events match native kind,
+wire order and dirty provenance. Only the borrowed call can own the dedicated
+borrowed wire; clean allocations never consume it. Both pools finish balanced.
+The initial borrowed wire has arbitrary joint entanglement with controls and
+data. Complete branch states preserve that joint state while clean work returns
+to zero. This is not a conversion between pool classes.
+
+The 24 new scenarios cover all six scalar/two-control activation patterns,
+both pool orders and retained/expanded paths. Every forward and reverse
+measurement history is paired, totaling 4224 history pairs, with independent
+source gate flow and analytical state comparisons. Sequential forward/reverse
+append execution also restores the input. Measurement event slots remain
+distinct through both calls and both append operations.
+
+Per direction, scalar counts remain 8 T/Tdag, 4 CCX and two measurements;
+two-control counts remain 16 T/Tdag, 4 CCX and four measurements. Actual call
+counts and all seven weighted source model categories close independently.
+The source model reports 70/78 T-equivalents and peak seven/nine. The caller
+declares eight/ten physical wires to supply both clean and borrowed pools:
+the spare clean pool wire can be unused in the borrowed call. Logical peak
+and caller pool capacity are separate quantities, not a gate-count mismatch.
+The resource JSON retains 24 forward/inverse scenarios and every native
+lifetime event, including zero-width internal wrapper events.
+
+Implementation evidence: 9887dc02. All 24 new scenarios pass, including 4224
+forward/inverse history pairs and 192 sequential append trajectories. The
+concentrated regression passes 6414 tests in 228.61 seconds. Focused coverage
+passes 883 tests in 139.11 seconds, excluding 96 exhaustive scenarios already
+executed by the concentrated regression. All 64 integration tests pass in
+3.23 seconds. Strict mypy checks 80 files and Black checks 106; Ruff, scope,
+architecture, Program/API checks, four examples and 50 unchanged source blobs
+pass. Eight focused control/layout owners have full statement/branch coverage;
+existing component_control remains at 98%, with guards 79/215 uncovered.
+Default smoke/unit stops at maxfail with 21507 passed, 300 skipped, 1037 warnings
+and seven failures in 142.30 seconds. Their IDs exactly match the independent
+seven-failure baseline; this is not whole-suite success. Evidence is retained
+at ftqc-reference-env/g2-cross-pool-serial-*.
+
+G2 and complete parent-file acceptance remain open. Next, audit remaining
+call/lifetime coverage against source ownership and identify the next complete
+slice from actual missing call-chain behavior. Other shapes/dtypes, symbolic
+execution, the original shaped Cast.adjoint defect and default baseline failures
+remain open.
