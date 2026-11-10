@@ -12,6 +12,7 @@ declared register order and hidden workspace. It does not call a source importer
 
 The validated scope is the quantum program. A related notebook may also include
 training, data preparation or external execution that requires separate migration.
+See the [quantum-program guide](WORKFLOW.md).
 
 Reference identity: `tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk.qmod` at `2bfd835e73b6882fcc515a725098b04766c238e7`.
 

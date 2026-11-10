@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **187/216**.
+Validated quantum-program counterparts: **188/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -203,12 +203,13 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (41 native programs)
+## Tutorials (42 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
 - [quantum_walk_circle_balanced_coin](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md)
 - [quantum_walk_hypercube](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/README.md)
+- [discrete_time_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/README.md)
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [example_exponentiation](tutorials/basics/exponentiation/example_exponentiation/README.md)
