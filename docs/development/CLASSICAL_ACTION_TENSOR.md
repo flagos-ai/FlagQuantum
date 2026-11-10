@@ -174,3 +174,43 @@ SSH-over-443 endpoint rejected available public-key authentication. No host-key
 verification was disabled. GRAPH65 through GRAPH67 remain local; the verified
 remote PR head is `1719c3a2`. Resume with a normal push after checking the remote
 when Git connectivity/authentication is restored.
+
+
+## Directional array conformance (GRAPH68)
+
+The existing action table, register binder and component graph already support
+LEFT input and RIGHT output arrays. No additional production abstraction is
+needed. Ten conformance cases exercise scalar, `(2,)`, `(1, 2)` and `(2, 1)`
+shapes with float64 and complex128. Bitwise NOT and reversed row-major output
+words match the unchanged source classical leaf data and integer operands,
+then its independently decomposed X-gate dense matrix. Replacing caller codecs
+with shared value-array codecs leaves the consumer unchanged. An independent
+native executable X-leaf graph contracts to the same matrix.
+
+`circuit.append(op)` preserves the full complex state and the clean spectator.
+Directional reversal is represented by the existing bound output words; it
+requires no physical SWAP. The action-table input phase derivative is checked
+separately. Empty `(0,)` and `(2, 0)` arrays retain the source codec ValueError;
+the native error adds operation context. This is finite phase-free array
+conformance, not automatic support for arbitrary quantum actions.
+
+Measured resources: one numerical leaf, binary rank two / 64 complex128 bytes
+for the scalar and rank four / 256 bytes for each two-element array. Supplier
+attachment adds zero instructions and work bits. Executable circuits emit one
+or two X instructions, zero added SWAPs, and retain one clean spectator. Separate
+source estimates are one or two Clifford gates, zero T-equivalent cost and peak
+one or two bits; the caller's spectator is outside that source estimate.
+
+Checks: 1,158 related cases passed in 15.04 s (41 existing/source warnings),
+459 focused coverage cases in 17.45 s (39 warnings), and 64 integration cases in
+3.20 s. The existing owner remains 45 statements / ten branches at 100%; thirteen
+owners total 389 statements / 166 branches at 99%, with the two historical
+GRAPH60 refusals unchanged. Strict typing passed for 26 related files and three
+source-following files; formatting, scope, architecture, Program IR and public
+API checks passed. Eighteen original blobs match the inventory; 22 unchanged
+original tests passed in 0.84 s (five existing warnings). Qualtran 0.7.0,
+Kickmix 0.1 Simulator and the binary-field example were exercised. Evidence:
+`ftqc-reference-env/g2-classical-tensor-arrays-*`.
+
+Publication recovery: the historical GRAPH65–67 Git transport blocker above
+was resolved by a normal push, verified at `8b711696` before GRAPH68 publication.
