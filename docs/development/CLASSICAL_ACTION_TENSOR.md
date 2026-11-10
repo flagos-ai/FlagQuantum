@@ -324,3 +324,50 @@ unavailable, not zero; the source peak remains two bits. Evidence is under
 GRAPH70 default smoke/unit: 5 failed, 21400 passed, 300 skipped, 1037 warnings in 122.28s (0:02:02). All 5 observed
 failure IDs belong to the independent seven-failure baseline; 2 were not
 reached before maxfail. The default suite is not certified as fully passing.
+
+## Selected action leaves and fully expanded gate leaves (GRAPH71)
+
+The `_flattening.py` audit confirms the existing Compiler selection policy:
+full expansion ignores the custom-tensor classifier; partial expansion stops at
+explicitly declared custom leaves. The original Python method-qualname heuristic
+belongs to its object model. Native callers explicitly classify existing typed
+callees; neither Compiler nor Simulation discovers providers by method names.
+The existing implementation needs no production change for this verified path.
+
+Fourteen new tests connect the selected graph to the actual
+`component_tensor_nodes` consumer. Across three nesting depths, two expansion
+modes and float64/complex128, retained source instance labels and leaf order
+match unchanged `flatten_for_tensor_contraction`. Partial expansion consumes
+native classical identity-action leaves; full expansion consumes decomposed H
+gate leaves. Both complete contractions match the original dense path. Replacing
+only the supplier by independent dense leaf data leaves the selected graph,
+consumer and bindings unchanged. Missing selected suppliers propagate their
+original error object on the first requested leaf without mutating the graph.
+
+Complete complex input amplitudes, phase derivatives and an entangled spectator
+are verified. `circuit.append(op)` emits the identical original H decomposition
+in both selection modes and preserves the clean work wire. The numerical custom
+identity never changes physical lowering or removes gates. At nesting depths
+one/two/three, actual gate counts are H4/H8/H16, equal to the separate source
+Clifford estimates; source peak is one bit and T-equivalent cost zero. The caller
+uses three physical bits, including its spectator and clean wire. Numerical
+supplier attachment adds zero gates/work. Partial numerical leaf counts are
+2/4/8; full counts are 4/8/16. Each 2x2 leaf occupies 32 bytes in float64 or
+64 bytes in complex128. These storage counts are distinct from circuit costs.
+
+Verification: 1187 related cases passed in 25.29 s (41 existing/source warnings),
+488 focused cases in 26.65 s (39 warnings), and 64 integration cases in 4.58 s.
+Strict typing passed across 29 related files and three source-following files;
+Black/Ruff, scope, architecture, Program IR and public API checks passed.
+Thirteen covered owners remain 394 statements / 166 branches at 99%, with the
+two historical GRAPH60 refusals retained. Twenty source blobs match the locked
+inventory. Twenty-three unchanged original tests, including the source custom
+classifier test, passed in 1.28 s (five existing warnings). The Qualtran 0.7.0,
+Kickmix 0.1 Simulator and binary-field example checks passed. Evidence is under
+`ftqc-reference-env/g2-tensor-leaf-selection-*`.
+
+This is finite selection-to-supplier composition acceptance. Arbitrary atomic
+root wrapping, automatic provider discovery, mixed classical/quantum graph
+traversal and full superoperator graph supply remain open. The next numerical
+slice should replace manually supplied measurement copy tensors through the
+existing doubled-label and explicit-trace consumers, preserving these boundaries.
