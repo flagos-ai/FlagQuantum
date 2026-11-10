@@ -97,3 +97,25 @@ class _EmbeddedDetectorSampler:
                 else torch.empty((shots, 0), dtype=torch.bool)
             )
         return results[0], results[1]
+
+    def sample_write(
+        self,
+        shots: int,
+        *,
+        filepath: str,
+        format: str,
+        prepend_observables: bool,
+        append_observables: bool,
+        obs_out_filepath: str | None,
+        obs_out_format: str,
+    ) -> None:
+        self._native.write_detectors(
+            self._handle,
+            shots,
+            filepath,
+            format,
+            prepend_observables,
+            append_observables,
+            obs_out_filepath,
+            obs_out_format,
+        )

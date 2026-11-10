@@ -36,3 +36,14 @@ The detector producer rejects gauge parities on the noiseless circuit. Exact DEM
 analysis separately disables decomposition, gauge acceptance, disjoint
 approximation and ignored decomposition failures. Frame scratch is recreated
 on each sample call; no performance advantage is asserted.
+
+
+## Detector-file bridge candidate
+
+The private `write_detectors` entry calls the already vendored
+`sample_batch_detection_events_writing_results_to_disk` with the existing handle's
+circuit and RNG. Six file formats and optional same-shot observable output use
+Stim's writers. All 96 upstream files, their lock and license bytes are unchanged.
+Python owns validation, staging and publication; C++ owns numerical sampling,
+file writes and checked close. No Python dense table or new translation unit is
+introduced. Build and no-SDK installed acceptance remain required before delivery.

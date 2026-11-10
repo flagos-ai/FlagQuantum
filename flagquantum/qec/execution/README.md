@@ -142,3 +142,22 @@ These are allocation/work guards, not an RSS or performance claim. Compiled
 sampling reuses lowered source and RNG, not frame scratch. No detector file
 writer, MemoryCircuit backend replacement, new builder, SDK source integration
 for PyMatching, or broad parity certification is implied.
+
+
+### Detector-file workflow
+
+`Circuit.compile_detector_sampler` owns maps and a reusable execution handle;
+Simulation owns the source lowering, reference normalization and numerical
+writer. The approved `sample_write` candidate streams six formats through the
+same private stream boundary as `sample`, with no new registry or backend.
+QEC validates layout and lifecycle; the shared private file validator checks
+framing before no-replace publication. Same-call observable output preserves
+correlation. Upstream files remain unchanged.
+
+The contributor golden path is `examples/qec/native_detector_sampling.py`;
+its deterministic file witness prints `detector_bytes 64`. Start with
+`tests/qec/test_native_detector_execution.py`, then numerical replacement tests
+in `tests/team/simulation/test_native_detector_execution_conformance.py`.
+See `docs/development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md` for capacities,
+publication limits and installed-wheel acceptance. No public file reader,
+research execution, universal Clifford-control support or RSS cap is added.
