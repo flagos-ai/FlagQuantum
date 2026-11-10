@@ -214,3 +214,7 @@ Kickmix 0.1 Simulator and the binary-field example were exercised. Evidence:
 
 Publication recovery: the historical GRAPH65–67 Git transport blocker above
 was resolved by a normal push, verified at `8b711696` before GRAPH68 publication.
+
+GRAPH68 default smoke/unit: 6 failed, 21485 passed, 300 skipped, 1037 warnings in 143.00s (0:02:22). All 6 observed failure IDs
+match the independent seven-failure baseline; 1 baseline IDs were not
+reached before maxfail. This is not a fully passing default suite.
