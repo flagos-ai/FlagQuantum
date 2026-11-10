@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "75823b088f4e730ff750c3bdb7c8b4a2f1d5a8dfdb22e14a3111e5593555a20d",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification_and_estimation.qmc_user_defined.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qpe_examples.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Original phase width/sign and callback semantics retained. Static pure helper QPE shares Compiler-owned controlled expansion with the source adapter. Numeric fields flatten the source counting record; prime marking uses equivalent bounded unsigned predicates and phase kickback; QMC retains every probability and its prefix-conditioned full loading unitary. Independent dense Grover/loader matrices and Fourier compare absolute-phase complete vectors,including dirty dropped environments and clean work. Two additional nonzero coherent vectors exercise each original operator. No phase alignment or source importer in user examples; no optimization claim."
+}
