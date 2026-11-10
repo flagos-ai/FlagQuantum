@@ -253,11 +253,28 @@ def test_source_independent_refusal_retains_node_location(
         ("(a+b)*(a-b)", lambda a, b: (a + b) * (a - b)),
     ],
 )
+@pytest.mark.parametrize(
+    "a_format,b_format",
+    [
+        ((True, 1), (False, 2)),
+        ((True, 0), (False, 0)),
+        ((True, 2), (True, 1)),
+        ((False, 2), (False, 1)),
+    ],
+)
 def test_composed_numeric_full_domain_and_nonzero_xor(
-    expression: str, oracle: Callable[[Fraction, Fraction], Fraction | int]
+    expression: str,
+    oracle: Callable[[Fraction, Fraction], Fraction | int],
+    a_format: tuple[bool, int],
+    b_format: tuple[bool, int],
 ) -> None:
-    formats = {"a": (True, 1), "b": (False, 2)}
-    native = _python(expression, {"a": 2, "b": 2}, {"a"}, formats)
+    formats = {"a": a_format, "b": b_format}
+    native = _python(
+        expression,
+        {"a": 2, "b": 2},
+        {name for name, (signed, _) in formats.items() if signed},
+        formats,
+    )
     graph = native.function()
     scale = native.fractional_bits.get(native.node, 0)
     returned = graph.body.blocks[0].operations[-1].operands[0]
@@ -279,8 +296,13 @@ def test_composed_numeric_full_domain_and_nonzero_xor(
     for words in product(range(4), repeat=len(views)):
         inputs = dict(zip(native.names, words, strict=True))
         raw_a = inputs.get("a", 0)
-        a = Fraction(raw_a - 4 if raw_a & 2 else raw_a, 2)
-        b = Fraction(inputs.get("b", 0), 4)
+        a = Fraction(
+            raw_a - 4 if a_format[0] and raw_a & 2 else raw_a, 1 << a_format[1]
+        )
+        raw_b = inputs.get("b", 0)
+        b = Fraction(
+            raw_b - 4 if b_format[0] and raw_b & 2 else raw_b, 1 << b_format[1]
+        )
         answer = Fraction(oracle(a, b)) * (1 << scale)
         assert answer.denominator == 1
         encoded = answer.numerator & mask
@@ -292,3 +314,61 @@ def test_composed_numeric_full_domain_and_nonzero_xor(
             initial = encode((*words, target), (*views, output))
             expected = encode((*words, target ^ encoded), (*views, output))
             assert classical_apply(candidate.circuit, initial) == expected
+
+
+@pytest.mark.parametrize(
+    "expression,expected",
+    [
+        ("0.5+0.125", Fraction(5, 8)),
+        ("-0.5+0.125", Fraction(-3, 8)),
+        ("-0.5*0.125", Fraction(-1, 16)),
+        ("(-0.5)**2", Fraction(1, 4)),
+        ("(-0.5)**3", Fraction(-1, 8)),
+        ("min(-0.5,0.125)", Fraction(-1, 2)),
+        ("max(-0.5,0.125)", Fraction(1, 8)),
+        ("0.5<=0.125", Fraction(0)),
+        ("-0.5>=0.125", Fraction(0)),
+        ("0.125==-0.5", Fraction(0)),
+        ("0.125!=-0.5", Fraction(1)),
+    ],
+)
+def test_composed_constant_numeric_values(expression: str, expected: Fraction) -> None:
+    numeric = _python(expression, {}, set(), {})
+    assert not numeric.quantum
+    assert (
+        Fraction(
+            numeric.integer_value(numeric.node),
+            1 << numeric.fractional_bits.get(numeric.node, 0),
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize("format", [(True, 0), (False, 3), (False, -1)])
+def test_inconsistent_native_input_format_refuses(format: tuple[bool, int]) -> None:
+    with pytest.raises(ValueError, match="numeric:1:1:format"):
+        _python("a+1", {"a": 2}, set(), {"a": format})
+
+
+@pytest.mark.parametrize(
+    "expression,widths,signed,formats,diagnostic",
+    [
+        ("a*1", {"a": 129}, {"a"}, {"a": (True, 0)}, "intermediate exceeds"),
+        (
+            "a<b",
+            {"a": 256, "b": 256},
+            {"a"},
+            {"a": (True, 0), "b": (False, 0)},
+            "aligned numeric",
+        ),
+    ],
+)
+def test_numeric_intermediate_width_budget_is_not_waived(
+    expression: str,
+    widths: dict[str, int],
+    signed: set[str],
+    formats: dict[str, tuple[bool, int]],
+    diagnostic: str,
+) -> None:
+    with pytest.raises(ValueError, match=diagnostic):
+        _python(expression, widths, signed, formats).function()
