@@ -290,7 +290,7 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
     for index, statement in enumerate(statements):
         if (
             isinstance(statement, ast.AugAssign)
-            and isinstance(statement.op, (ast.BitOr, ast.BitXor))
+            and isinstance(statement.op, (ast.BitOr, ast.BitXor, ast.Add, ast.Sub))
             and isinstance(statement.target, ast.Name)
         ):
             continue

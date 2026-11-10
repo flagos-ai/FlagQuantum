@@ -309,6 +309,11 @@ class _Body:
         self.effect = following
 
     def assign(self, node: ast.AugAssign) -> None:
+        if isinstance(node.op, (ast.Add, ast.Sub)):
+            from .frontend_increment import capture_increment
+
+            capture_increment(self, node)
+            return
         visible = self.aliases if self.aliases is not None else self.ports
         if isinstance(node.op, ast.BitXor) and any(
             isinstance(child, ast.Name) and child.id in visible

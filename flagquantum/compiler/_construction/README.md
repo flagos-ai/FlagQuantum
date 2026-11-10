@@ -815,3 +815,18 @@ targets cannot overlap. Partial/permuted views, arrays, numeric formats, implici
 initialization and mutable helper adjoint/control remain refused. See the
 [borrowed XOR contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-BORROWED-XOR-20261110.md)
 and `tests/integration/test_synthesis_native_expression_xor.py`.
+
+### Bounded modular updates
+
+`frontend_increment` captures initialized raw unsigned scalar `+=`/`-=` with
+static integer offsets in -256..256. It reduces the offset modulo the complete
+target width and emits the existing indexed X ripple sequence. Borrowed targets
+must cover complete registers in logical bit order. A coherent control may call
+a helper containing exactly one such update; classical parameters are bound
+without executing host Python. Predicate capture and cleanup, alias checks,
+effect/call/AST budgets and gate lowering retain their existing authorities.
+Zero updates still witness initialization and writability, including raw
+controls. General controlled mutable helpers and partial numeric views remain
+outside this extension. Start with
+`tests/integration/test_synthesis_native_modular_increment.py` and the complete
+grid-walk state comparison in `tests/integration/test_synthesis_native_grid_walk.py`.

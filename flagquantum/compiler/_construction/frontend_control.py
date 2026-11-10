@@ -7,6 +7,7 @@ import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Operation, Value, ValueId
+from .frontend_increment import capture_increment_call, is_increment_helper
 from .frontend_matrix import capture_controlled_unitary
 from .frontend_numeric import reject_numeric_reads
 from .frontend_phase import capture_polynomial_phase
@@ -77,13 +78,14 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             "a quantum port cannot shadow a callable",
         )
     operation = owner.resolve_callable(body.func)
+    increment = is_increment_helper(operation)
     if operation is unitary:
         capture_controlled_unitary(owner, condition, body)
         return
     if operation is x and not is_composite_predicate(condition):
         capture_controlled_x(owner, condition, body)
         return
-    if owner.aliases is not None and operation not in (phase, r, x):
+    if owner.aliases is not None and operation not in (phase, r, x) and not increment:
         _error(
             owner.source,
             body,
@@ -134,9 +136,9 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         return
 
     predicate_computed = isinstance(condition, ast.Compare) or (
-        operation in (r, qft, x) and is_composite_predicate(condition)
+        (operation in (r, qft, x) or increment) and is_composite_predicate(condition)
     )
-    scalar_location = operation is r and (
+    scalar_location = (operation is r or increment) and (
         isinstance(condition, ast.Subscript) or owner.aliases is not None
     )
     predicate_index = 0
@@ -166,7 +168,19 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     else:
         predicate = owner.register(condition)
         inputs = (predicate,)
-    if operation is x and len(body.args) == 1:
+    if increment:
+        assert isinstance(operation, _QuantumFunction)
+        if not scalar_location and register_width(predicate) != 1:
+            _error(
+                owner.source,
+                condition,
+                "program.control",
+                "increment requires a scalar condition or bounded predicate",
+            )
+        capture_increment_call(
+            owner, body, operation, (predicate, predicate_index), inputs
+        )
+    elif operation is x and len(body.args) == 1:
         target, index = gate_target(owner, body.args[0])
         if target in inputs:
             _error(

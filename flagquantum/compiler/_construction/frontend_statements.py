@@ -106,7 +106,9 @@ def capture_statements(
                 isinstance(child, ast.Name) and child.id in visible
                 for child in ast.walk(statement.value)
             )
-            if owner.aliases is not None and not helper_xor:
+            if owner.aliases is not None and not (
+                helper_xor or isinstance(statement.op, (ast.Add, ast.Sub))
+            ):
                 _error(
                     owner.source,
                     statement,
