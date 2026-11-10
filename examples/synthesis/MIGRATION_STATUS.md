@@ -16,11 +16,11 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/QML/qsvm/qsvm` | notebook_workflow | [Native program](algorithms/machine_learning/qsvm/main.py) | pending |
 | `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | Pending | pending |
-| `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | Pending | pending |
+| `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification/qsvt_fixed_point/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting` | notebook_workflow | Pending | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae` | quantum_program | Pending | pending |
-| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe` | quantum_program | Pending | pending |
+| `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe` | quantum_program | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/main.py) | pending |
 | `algorithms/error_correction/syndrome_extraction_optimization/benchmark_circuits` | python_unclassified | Pending | pending |
 | `algorithms/error_correction/syndrome_extraction_optimization/cluster_benchmark/plot_aggregated_results` | python_unclassified | Pending | pending |
 | `algorithms/error_correction/syndrome_extraction_optimization/color_code_stim_local/__init__` | python_unclassified | Pending | pending |
@@ -398,7 +398,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/execution_tutorial_part2/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/synthesis_tutorial/main.py) | validated |
-| `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | [Native program](tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/main.py) | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qpe/qpe_for_unitary_matrix/main.py) | pending |
 | `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | validated |
 | `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/main.py) | pending |

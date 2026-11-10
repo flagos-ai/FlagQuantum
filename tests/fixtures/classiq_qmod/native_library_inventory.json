@@ -145,7 +145,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/amplitude_amplification_and_estimation/qmc_user_defined/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {
@@ -220,7 +223,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {
@@ -7748,7 +7754,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

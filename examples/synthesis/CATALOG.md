@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **171/216**.
+Validated quantum-program counterparts: **174/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -11,13 +11,15 @@ does not certify its notebook workflow. Pending entries have no runnable placeho
 
 See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
 
-## Algorithms (27 native programs)
+## Algorithms (29 native programs)
 
 - [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
 - [qsvm](algorithms/machine_learning/qsvm/README.md)
 - [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
+- [qmc_user_defined](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/README.md)
 - [qsvt_fixed_point](algorithms/amplitude_amplification/qsvt_fixed_point/README.md)
+- [quantum_counting_qpe](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/README.md)
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 - [simon](algorithms/foundational/simon/README.md)
@@ -193,7 +195,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (35 native programs)
+## Tutorials (36 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -212,6 +214,7 @@ Validated local Notebook workflows:
 - [execution_tutorial](tutorials/basics/quantum_programming/execution_tutorial/README.md)
 - [execution_tutorial_part2](tutorials/basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
+- [qpe_for_grover_operator](tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/README.md)
 - [qpe_for_unitary_matrix](tutorials/technology_demonstrations/qpe/qpe_for_unitary_matrix/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](tutorials/technology_demonstrations/arithmetic_expressions/README.md)
