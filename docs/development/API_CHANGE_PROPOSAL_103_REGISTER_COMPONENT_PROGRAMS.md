@@ -1451,3 +1451,43 @@ retirement still require their own acceptance. No complete source file closes
 on this slice. Evidence is retained under `ftqc-reference-env/` with prefix
 `g2-owned-measurement-`, including regression, coverage, checks, examples,
 integration, runtime, default-parallel and source-integrity records.
+
+### Owned classical parity and feedback prerequisite 1.11
+
+The internal `parity_register` operation consumes N owned CBit elements in
+operand order and returns N owned successors followed by one new owned parity
+CBit. N is the immutable operand count, including zero. All operands require
+`classical_bit_type()`. Core supplies the variable-arity signature and derives
+all result types. Existing SSA rules reject duplicate inputs and stale owners.
+No operation metadata, parameters, conditions or workspace flags are admitted.
+
+Compiler constructs a finite `parity_word_function(name, count)` with CBit[count]
+THRU `x` and scalar CBit RIGHT `parity`, following locked Parity's signature.
+This executable profile requires a built-in nonnegative count. It binds each
+successor to its predecessor's immutable classical slot and emits exactly one
+existing `ClassicalXor` assignment to a fresh slot, including the zero-input
+constant-zero assignment. Source Parity has no executable decomposition or QEC
+cost implementation. Its original classical callback and nominal signature are
+the comparison authority. A native classical XOR is recorded separately from
+source quantum model availability.
+
+The internal `read_classical_register` bridge consumes one owned CBit and
+produces an owned CBit successor plus a shareable `bool` snapshot. The successor
+and snapshot refer to the same immutable slot. Binding allocates no slot and
+emits no instruction for the bridge. Fresh slots are never overwritten within
+this binder. The bool can feed existing conditional quantum gates and bool XOR,
+while the owned successor remains singly consumed. This bridge is a native
+execution adaptation with no claim of an additional source gate or model cost.
+It carries the same metadata restrictions as parity. It is confined to register
+functions, and its result cannot turn into an external bool boundary port.
+
+Both operations require physical register binding and fail closed in quantum-only
+SSA lowering. External classical initialization and destructive workspace
+retirement retain their separate prerequisites. Numerical execution continues
+through existing CircuitIR and `circuit.append(op)` on the local single-device
+path. Acceptance covers zero/one/many inputs, nested parity calls, fresh slots,
+classical ownership failures, snapshot fanout and both condition polarities.
+For measurement-produced inputs, compare every small unnormalized complex branch
+against the unchanged MeasureZ tensor and original Parity callback, including
+spectator phase and zero unmeasured work. Record emitted measurements, classical
+XORs, conditional quantum primitives and available source models separately.
