@@ -61,12 +61,12 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     if operation is x:
         capture_controlled_x(owner, condition, body)
         return
-    if owner.aliases is not None and operation is not phase:
+    if owner.aliases is not None and operation not in (phase, r):
         _error(
             owner.source,
             body,
             "program.borrow",
-            "mutable helpers allow phase-only control",
+            "mutable helpers allow phase or direct Pauli-axis rotation control",
         )
     phase_constant = None
     if operation is phase and len(body.args) == 2:
@@ -131,6 +131,10 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     predicate_computed = isinstance(condition, ast.Compare) or (
         operation is r and is_composite_predicate(condition)
     )
+    scalar_location = operation is r and (
+        isinstance(condition, ast.Subscript) or owner.aliases is not None
+    )
+    predicate_index = 0
     if predicate_computed:
         graph, inputs = owner.capture_expression(condition, node)
         if sum(register_width(value) for value in inputs) > 8:
@@ -151,6 +155,9 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             )
         )
         owner.emit("qreg.compute", node, (predicate, *inputs), callee=graph.name)
+    elif scalar_location:
+        predicate, predicate_index = gate_target(owner, condition)
+        inputs = (predicate,)
     else:
         predicate = owner.register(condition)
         inputs = (predicate,)
@@ -223,7 +230,7 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
                 "controlled R supports only Pauli X or Y axes",
             )
         target, index = gate_target(owner, body.args[2])
-        if register_width(predicate) != 1:
+        if not scalar_location and register_width(predicate) != 1:
             _error(
                 owner.source,
                 condition,
@@ -243,7 +250,7 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             (target, predicate),
             support=((index, axis),),
             angle=sign * theta / 2,
-            control_index=0,
+            control_index=predicate_index,
         )
     elif isinstance(operation, _QuantumFunction) and operation.source.program:
         owner.call(body, control_bit=predicate, condition_inputs=inputs)

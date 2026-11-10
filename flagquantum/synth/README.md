@@ -1205,6 +1205,18 @@ rejected rather than rounded. The condition is a scalar bit or a bounded
 comparison, including `&`, `|`, `^` and `~` trees of comparisons over at most
 eight input bits. The target must be initialized, writable and disjoint from
 the condition's registers. Predicate workspace is computed, uncomputed and
-included in resource budgets; this does not permit controlled mutable helpers.
+included in resource budgets; controlling mutable helper calls remains excluded.
 The [native tutorial](../../examples/synthesis/tutorials/basics/quantum_programming/controlled_rotation/README.md)
 and its independent Circuit comparison demonstrate the complete workflow.
+
+A Pauli-axis rotation can also use one static array location as its condition:
+`control(x[i], lambda: R(theta, pi/2, target))`. A one-bit slice is accepted;
+multi-bit conditions and out-of-bounds indices are refused. A gate-only mutable
+helper may contain this direct rotation on its checked borrowed scalar ports.
+This allows static loops to call a reusable rotation helper, while keeping its
+control read-only, its target writable and both underlying registers disjoint.
+The [affine rotation example](../../examples/synthesis/functions/linear_pauli_rotations/README.md)
+composes `slope*x+offset` on three targets without physical wire indices or work
+qubits. Its test-only original and native program both match an independent
+block matrix, including coherent input and absolute phase. See the
+[indexed control contract](../../docs/api-changes/FQ-SYNTH-NATIVE-INDEXED-PAULI-CONTROL-20261110.md).

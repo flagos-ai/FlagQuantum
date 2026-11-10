@@ -27,6 +27,7 @@ Native FlagQuantum programs currently available:
 - [exact_amplitude_amplification](amplitude_amplification/exact_amplitude_amplification/README.md)
 - [grover_operator](grover_operator/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
+- [linear_pauli_rotations](linear_pauli_rotations/README.md)
 - [qct_qst_type1](qct_qst/qct_qst_type1/README.md)
 - [qct_qst_type2](qct_qst/qct_qst_type2/README.md)
 - [qct_type2](qct_qst/qct_type2/README.md)
