@@ -218,3 +218,44 @@ was resolved by a normal push, verified at `8b711696` before GRAPH68 publication
 GRAPH68 default smoke/unit: 6 failed, 21485 passed, 300 skipped, 1037 warnings in 143.00s (0:02:22). All 6 observed failure IDs
 match the independent seven-failure baseline; 1 baseline IDs were not
 reached before maxfail. This is not a fully passing default suite.
+
+## Explicit output discard after a classical leaf (GRAPH69)
+
+A phase-free CNOT action leaf composes with the existing conjugate-pair,
+explicit trace and register-superoperator consumers. No production change is
+required. Eight cases cover every subset of its two outputs in complex64 and
+complex128 against the unchanged original CNOT/DiscardQ composite channel.
+The full channel, including all off-diagonal matrix units, is compared exactly;
+trace preservation is checked independently. Mixed inputs retain complex
+coherences. `circuit.append(op)` executes the original single CX, preserves full
+complex amplitudes, and leaves the spectator zero before the caller traces
+outputs. A separate input-angle derivative checks retained coherence.
+
+An empty classical-action output is a coherent sum effect, not quantum discard.
+For a single input bit its doubled table is an all-ones effect; on a plus-state
+density it returns two, whereas the identity trace effect returns one. The
+original DiscardQ refuses classical simulation and action-table enumeration.
+Keep that refusal: never replace quantum discard with a callback returning no
+values, and never normalize a bad map to hide the distinction. Existing explicit
+trace composition is sufficient; automatic graph discard discovery and physical
+reset remain outside this numerical boundary.
+
+Resources are separate: the complex128 action leaf occupies 256 bytes; two
+conjugate nodes share forward storage and a conjugate view. Dense channel
+outputs occupy 4096 bytes (keep both), 1024 bytes (keep one), or 256 bytes (keep
+none). Numerical doubling/trace adds zero physical instructions and work bits.
+The actual append circuit has one CX and one caller-owned clean spectator.
+Source peak is two bits for every subset; its no-discard QEC model has one
+Clifford and zero T-equivalent cost. With DiscardQ the unchanged source QEC
+model raises DecomposeNotImplementedError; that cost is unavailable, not zero.
+
+Ten new cases passed in 1.31 s. Related regression: 1168 passed in 21.12 s
+(41 existing/source warnings); focused coverage: 469 passed in 24.23 s
+(39 warnings); integration: 64 passed in 4.37 s. Strict typing passed across
+27 related files plus three source-following files. Black/Ruff, scope,
+architecture, Program IR and public API checks passed. The 13-owner coverage
+remains 389 statements / 166 branches at 99%, retaining two historical GRAPH60
+refusals. Twenty source blobs match the locked inventory; original tests and
+default-suite results are recorded below. Qualtran 0.7.0 / Kickmix 0.1 Simulator
+and the binary-field example were exercised. Raw evidence is under
+`ftqc-reference-env/g2-classical-tensor-discard-*`.
