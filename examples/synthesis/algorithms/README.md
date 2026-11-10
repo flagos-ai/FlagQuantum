@@ -35,6 +35,7 @@ Native FlagQuantum programs currently available:
 - [hadamard_test](quantum_primitives/hadamard_test/README.md)
 - [swap_test](quantum_primitives/swap_test/README.md)
 - [adapt_vqe](quantum_state_preparation/adapt_vqe/README.md)
+- [quantum_thermal_state_preparation](quantum_state_preparation/gibbs/quantum_thermal_state_preparation/README.md)
 - [qaoa](search_and_optimization/qaoa/README.md)
 - [qaoa_knapsack](search_and_optimization/qaoa/qaoa_knapsack/README.md)
 - [qaoa_max_cut](search_and_optimization/qaoa/qaoa_max_cut/README.md)

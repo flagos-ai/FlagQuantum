@@ -204,6 +204,18 @@ def case_readme(case: Case, catalog: Catalog, *, notebook_validated: bool) -> st
     assert case["native_example"] and case["native_comparison"]
     main_module = ".".join(Path(case["native_example"]).with_suffix("").parts)
     comparison = ".".join(Path(case["native_comparison"]).with_suffix("").parts)
+    comparison_scope = (
+        [
+            "The Circuit comparison checks the complete density matrix, register order",
+            "and reset/hidden environment. Separate unitary-block tests check complex",
+            "amplitudes and absolute phase. Neither comparison calls a source importer.",
+        ]
+        if case["recorded_original"].get("execution_profile") == "exact_density_matrix"
+        else [
+            "The Circuit comparison checks complete complex amplitudes, absolute phase,",
+            "declared register order and hidden workspace. It does not call a source importer.",
+        ]
+    )
     return "\n".join(
         [
             "# " + Path(case["directory"]).name.replace("_", " "),
@@ -215,8 +227,7 @@ def case_readme(case: Case, catalog: Catalog, *, notebook_validated: bool) -> st
             "python -m " + comparison,
             "```",
             "",
-            "The Circuit comparison checks complete complex amplitudes, absolute phase,",
-            "declared register order and hidden workspace. It does not call a source importer.",
+            *comparison_scope,
             "",
             *(
                 [

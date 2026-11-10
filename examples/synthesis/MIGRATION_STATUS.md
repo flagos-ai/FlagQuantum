@@ -196,7 +196,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/swap_test/main.py) | pending |
 | `algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/adapt_vqe/main.py) | pending |
 | `algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian` | notebook_workflow | Pending | pending |
-| `algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/main.py) | pending |
 | `algorithms/quantum_walks/glued_trees/glued_trees` | notebook_workflow | Pending | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/qaoa/main.py) | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py) | pending |
