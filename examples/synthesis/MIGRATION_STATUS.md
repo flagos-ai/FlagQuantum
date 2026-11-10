@@ -181,7 +181,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/shor/main.py) | pending |
 | `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/lchs/lchs` | notebook_workflow | Pending | pending |
-| `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/time_marching/main.py) | pending |
 | `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/main.py) | pending |
 | `algorithms/quantum_linear_solvers/hhl/hhl` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/hhl/main.py) | pending |
 | `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/main.py) | pending |

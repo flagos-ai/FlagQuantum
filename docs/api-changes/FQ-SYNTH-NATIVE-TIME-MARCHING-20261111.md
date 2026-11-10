@@ -1,7 +1,16 @@
 # Native time marching with complete QSVT phases and coherent counter
 
-Status: semantic contract; native full-program probe and independent acceptance
-in progress. Coverage starts at 202/216.
+Status: accepted locally. 23 new time-marching tests and 31 exponential
+regressions pass, along with 29 catalog/API tests and strict typing of five
+Python files. Final fresh 216-original hashes, outcomes and resources exactly
+match prior evidence; approved six pass and all 29 production pins are unchanged.
+Native coverage is 203/216; Notebook workflows remain 24/213.
+
+Native: 13 physical bits, one compiler work bit, one explicit clean marker,
+18,344 operations, depth 15,762. Original: 15 physical bits, four work bits,
+5,118 operations, depth 4,355. Independent-reference errors are below 2.1e-13
+and all clean marker/work leakage is below 1e-22. Native gate overhead is a
+retained optimization gap.
 
 Retain the complete frozen time-marching program: two-bit index and time words,
 block bit, QSVT signal/selector bits, unused amplification bit and three-bit
