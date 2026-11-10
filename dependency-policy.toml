@@ -76,6 +76,8 @@ core_forbidden_imports = ["azure", "azure_quantum", "braket", "cirq", "cudaq", "
 # all: the core lane has no numpy, and every `cpu-core` leg reports `Failed to
 # initialize NumPy` while the suite still passes.
 [import_policy.guard_implications]
+# PySCF declares h5py as a required dependency.
+h5py = ["pyscf"]
 numpy = ["jax", "matplotlib", "pymatching", "qiskit", "stim"]
 
 [tested]

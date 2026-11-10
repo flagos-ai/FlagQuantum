@@ -15,3 +15,16 @@ SciPy and h5py objects stop here. The bounded optional distribution is resolved
 by pip, never downloaded or executed by the library. Replacement/exit path:
 another driver producing MolecularProblem, or the existing native driver.
 Static RHF, real orbitals and fixed geometry only; no geometry-gradient claim.
+
+## MolecularData HDF5 input
+
+Install `flagquantum[chemistry-hdf5]` and call
+`molecular_hdf5.read_molecular_hdf5("molecule.hdf5")`. This independent reader
+requires no PySCF, OpenFermion or Cirq. It returns the same MolecularProblem as
+the direct driver. Real closed-shell spatial integrals only; physicist-order
+file integrals become native chemist order. The nuclear constant enters once.
+Optional HF energy is preserved, and a missing boolean sentinel becomes None.
+The default orbital budget is 32 before dense tensor reads. The reference fills
+the first NELEC/2 orbitals; arbitrary occupations are not inferred from the file.
+No amplitudes, density matrices, complex/open-shell data or writing are supported.
+See the [format contract](../../../docs/development/MOLECULAR_HDF5_INPUT_PR.md).
