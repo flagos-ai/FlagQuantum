@@ -107,3 +107,11 @@ otherwise absent unused-register axes without a dense word identity or an
 external graph representation. See
 [direct-through register identities](../../../docs/development/REGISTER_IDENTITY_TENSORS.md)
 for alias rules, zero-bit behavior, gradients and measured append verification.
+
+`component_tensor_nodes.py` wires an already selected typed Core SSA entry into
+existing nodes using a caller-owned leaf supplier and Compiler-provided call
+order. It allocates numerical edge labels and inserts the existing identities
+for untouched returned inputs; it performs no decomposition or backend choice.
+See [component tensor nodes](../../../docs/development/COMPONENT_TENSOR_NODES.md)
+for interface, ownership, source connectivity checks, empty/scalar boundaries,
+replacement suppliers and the measured append consumer.
