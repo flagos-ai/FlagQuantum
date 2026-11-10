@@ -26,7 +26,7 @@ Existing inverse_effects owns inverse matrix powers and Fourier rules. Nested
 helper ownership and arbitrary/flexible callbacks remain refused.
 
 Acceptance covers every table entry,nonzero target columns,complex/coherent
-inputs,raw signed/fractional indexing,reversed views,conditional global phases,
+inputs,raw signed/fractional indexing,view bit order,conditional global phases,
 all three axes,inverse composition,alias/initialization/width/table failures and
 actual budgets. Matrix HHL originals require complete independent Circuit
 vectors with original matrices,tables,widths and preparations,and two nonzero
