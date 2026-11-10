@@ -105,6 +105,7 @@ prepare_amplitudes = program_types.prepare_amplitudes
 prepare_state = program_types.prepare_state
 inplace_prepare_amplitudes = program_types.inplace_prepare_amplitudes
 inplace_prepare_state = program_types.inplace_prepare_state
+RESET = program_types.reset
 drop = program_types.drop
 qpe = program_types.qpe
 select_rotation = program_types.select_rotation
@@ -164,6 +165,7 @@ __all__ = (
     "qdrift",
     "min",
     "max",
+    "RESET",
 )
 
 

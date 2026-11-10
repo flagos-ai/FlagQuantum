@@ -8,6 +8,7 @@ from ..services.synthesis import (
     CRX,
     CX,
     PHASE,
+    RESET,
     RX,
     RZ,
     RZZ,
@@ -112,4 +113,5 @@ __all__ = (
     "qdrift",
     "min",
     "max",
+    "RESET",
 )

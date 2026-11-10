@@ -108,6 +108,10 @@ def synthesize_registers(
         and selected is not None
         and selected.target is not None
         and selected.target.submitted.n_wires > 32
+        and not any(
+            gate.metadata.get("is_channel")
+            for gate in selected.target.submitted.instructions
+        )
     ):
         submitted = selected.target.submitted
         if exact_basis_mps_bond(submitted) == 1:
