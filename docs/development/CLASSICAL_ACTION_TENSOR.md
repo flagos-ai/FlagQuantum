@@ -97,3 +97,14 @@ Raw local evidence is under `ftqc-reference-env/g2-classical-action-tensor-*`
 environment, example, resources and quality checks). Default-suite baseline
 comparison and publication state are recorded separately in the integration
 ledger. This finite slice does not certify a complete upstream source file.
+
+The default smoke/unit run recorded 21,507 passed, 300 skipped and seven failures
+in 127.10 s. All failure IDs match the independently recorded seven-failure
+baseline; no new failure IDs were observed. Maxfail interrupted the run, so this
+is not a complete passing suite. See the explicit default comparison JSON.
+
+Publication remains blocked by Git HTTPS timeouts: the implementation is locally
+committed, while PR #1084 still points to `1719c3a2`. This also leaves the prior
+GRAPH65 commits awaiting push. GitHub API remains available; no code publication
+or merge is claimed. Resume by checking the remote SHA before a normal push;
+do not reimplement or force-push these batches.
