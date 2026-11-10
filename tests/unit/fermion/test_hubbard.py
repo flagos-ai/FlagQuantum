@@ -57,8 +57,10 @@ def test_full_matrix_and_conserved_populations(
             ]
         )
         assert torch.count_nonzero(actual * (counts[:, None] - counts[None, :])) == 0
-    assert actual[0, 0] == 0
-    assert actual[-1, -1] == pytest.approx(sites * u - width * mu)
+    assert actual[0, 0].item() == 0
+    assert actual[-1, -1].item() == pytest.approx(
+        sites * u - width * mu, rel=1e-12, abs=1e-12
+    )
 
 
 @pytest.mark.parametrize("t,u", [(1, 4), (-1.3, 2.7), (0.6, -3), (0, -2), (0, 2)])
