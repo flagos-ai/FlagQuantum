@@ -31,11 +31,16 @@ class WorkspaceEvent:
 
 @dataclass(frozen=True)
 class BoundRegisterProgram:
-    """Existing circuit IR plus ordered right elements and lifetime evidence."""
+    """Circuit IR, ordered quantum outputs, lifetimes and optional classical slots.
+
+    Classical outputs use empty quantum tuples. When present, classical slot
+    tuples align with every returned element and quantum elements have no slot.
+    """
 
     circuit: CircuitIR
     outputs: tuple[tuple[int, ...], ...]
     events: tuple[WorkspaceEvent, ...]
+    classical_outputs: tuple[tuple[int, ...], ...] = ()
 
 
 def bind_register_program(
@@ -55,7 +60,9 @@ def bind_register_program(
     Explicitly allowing workspace outputs transfers their live physical wires
     to the caller through ordered outputs. The caller owns subsequent cleanup
     and borrowed-state restoration. Input release requires explicit caller pool
-    ownership through ``input_ownership``.
+    ownership through ``input_ownership``. Measurement-produced CBit outputs
+    retain owned classical slots separately. Destructive measurement of pool-owned
+    wires requires a separate retirement contract and is rejected.
     """
     if type(allow_workspace_outputs) is not bool:
         raise ValueError("workspace output policy requires a built-in boolean")
@@ -142,7 +149,16 @@ def bind_register_program(
     binder.wires.update(zip(block.arguments, inputs, strict=True))
     for position, operation in enumerate(operations):
         binder.emit(position, operation)
-    outputs = tuple(binder.wires[value] for value in returned)
+    outputs = tuple(
+        () if value in binder.bits else binder.wires[value] for value in returned
+    )
+    classical_outputs = (
+        tuple(
+            (binder.bits[value],) if value in binder.bits else () for value in returned
+        )
+        if any(value in binder.bits for value in returned)
+        else ()
+    )
     if binder.live and not allow_workspace_outputs:
         raise ValueError(
             "live workspace outputs require explicit caller ownership transfer"
@@ -153,7 +169,9 @@ def bind_register_program(
         binder.pool.free(lease)
     circuit = CircuitIR(max(all_wires, default=-1) + 1, tuple(binder.instructions))
     validate_classical_control(circuit.instructions, n_qubits=circuit.n_wires)
-    return BoundRegisterProgram(circuit, outputs, tuple(binder.events))
+    return BoundRegisterProgram(
+        circuit, outputs, tuple(binder.events), classical_outputs
+    )
 
 
 class _PhysicalBinding:
@@ -212,6 +230,22 @@ class _PhysicalBinding:
             self.wires[operation.results[0]] = tuple(
                 wire for value in operation.operands for wire in self.wires[value]
             )
+        elif opcode == "measure_register":
+            wires = self.wires[operation.operands[0]]
+            if set(wires) & (self.live | self.adopted):
+                raise ValueError(
+                    "destructive measurement of pool-owned workspace requires "
+                    "a retirement ownership contract"
+                )
+            self.instructions.append(
+                Instruction(
+                    "measure",
+                    wires,
+                    metadata={"is_dynamic": True, "classical_bit": self.next_bit},
+                )
+            )
+            self.bits[operation.results[0]] = self.next_bit
+            self.next_bit += 1
         elif opcode == "constant":
             assert operation.literal is not None
             self.scalars[operation.results[0]] = operation.literal

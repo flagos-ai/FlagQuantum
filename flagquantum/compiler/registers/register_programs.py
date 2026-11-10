@@ -48,6 +48,16 @@ def lower_register_program(record: ProgramRecord, entry: str = "main") -> Progra
             "register workspace lifetimes require physical pool scheduling and "
             "clean/dirty restoration evidence before gate lowering"
         )
+    if any(
+        operation.opcode == "measure_register"
+        for function in record.functions
+        for block in function.blocks
+        for operation in block.operations
+    ):
+        raise ValueError(
+            "destructive owned measurement requires physical register binding "
+            "before gate lowering"
+        )
     functions = {function.name: function for function in record.functions}
     lowered = replace(
         record,

@@ -210,8 +210,9 @@ their subsequent lifetime to the caller. The pool retains their ownership during
 binding, including partial and nested output lifetimes. Explicit
 `input_ownership=((wire, dirty), ...)` adopts pre-owned input wires into
 their clean or borrowed origin pools. Releasing and reallocating these wires
-requires output transfer; returning an unreleased input does not. General
-classical boundary ports and isolated source frozenset tie parity remain open.
+requires output transfer; returning an unreleased input does not. Measurement-produced CBit outputs use parallel classical-slot tuples. External
+classical initialization, destructive workspace retirement and isolated source
+frozenset tie parity remain open.
 Binding ignores the optional restoration payload and executes the actual graph.
 See
 [the interface and evidence](../../../docs/development/PHYSICAL_REGISTER_BINDING.md)
@@ -227,3 +228,9 @@ owns cleanup and eventual borrowed-state restoration after transfer.
 Run `pytest tests/unit/test_register_input_pool.py
 tests/unit/test_workspace_adoption.py` for input adoption, source manager
 reuse, measured erasure branches and pool-origin validation.
+
+
+Run `pytest tests/unit/test_register_owned_measurement.py` for destructive QBit
+measurement, nested owned CBit identities, reordered arrays, existing bool slot
+isolation and all complex source-instrument branches. Pool-owned destructive
+measurement is rejected before emission pending its retirement contract.

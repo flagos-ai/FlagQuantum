@@ -10,6 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 
 from ...core.ir.program import FunctionRecord, Operation, ValueRef
+from ...core.ir.program.register_types import classical_bit_type
 from ...core.ir.program.register_verifier import (
     executable_register_width,
     register_port_types,
@@ -87,7 +88,7 @@ def _argument_widths(function: FunctionRecord) -> dict[ValueRef, int]:
         zip(
             values,
             (
-                executable_register_width(dtype)
+                0 if dtype == classical_bit_type() else executable_register_width(dtype)
                 for dtype in register_port_types(function, RegisterSide.LEFT)
             ),
             strict=True,
@@ -112,7 +113,11 @@ def _result_widths(
                 zip(
                     operation.results,
                     (
-                        executable_register_width(dtype)
+                        (
+                            0
+                            if dtype == classical_bit_type()
+                            else executable_register_width(dtype)
+                        )
                         for dtype in register_port_types(callee, RegisterSide.RIGHT)
                     ),
                     strict=True,
