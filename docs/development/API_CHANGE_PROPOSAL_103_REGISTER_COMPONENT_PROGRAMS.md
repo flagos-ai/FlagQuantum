@@ -1623,3 +1623,32 @@ DiscardInd trace marker, so compare its branch density matrix and the native
 unnormalized branch vector using the same H/Z factorization, including joint
 spectators and zero unmeasured work. Model queries and emitted primitives are
 recorded separately.
+
+### Owned binary-field product erasure prerequisite 1.15
+
+product_erasure_program(dtype) composes existing register Programs, accepting a
+resolved binary field with an explicit irreducible polynomial over GF(2).
+The shared Compiler polynomial validator owns concrete irreducibility checks.
+The function preserves original x/y THRU ports and consumes result LEFT.
+It follows GF2MulMBUC's reversed split order, MeasureX calls, low product CZ
+corrections, reduction-matrix column parity calls, high product CZ corrections,
+per-parity discard, final measured-bit discard and reversed joins.
+
+The reusable classical_cz_word_function forwards one owned CBit, exposes a
+shareable snapshot and applies existing conditional CZ to two owned QBits.
+There is no new primitive, public API or resource identity. Each Parity gets a
+fresh slot instead of the flat clearing profile's explicitly reusable slot.
+The graph emits width H, width measurements, width classical XOR assignments
+and width**2 conditional CZ gates. The unchanged original QEC call graph reports
+only width**2 CZ. Its omitted measurement and classical costs remain explicit.
+The source reports no complete executable Cirq decomposition for classical
+ports. Source build_composite_bloq runs unchanged against native owned bindings
+as a replacement test and must yield the same connections and operands as the
+native builder. Actual scheduler order is checked separately from source
+construction order, retaining all data dependencies.
+
+Destructively measured product wires retain projected computational outcomes.
+Their reduced logical input state matches every original erasure branch after
+tracing these consumed wires. Unmeasured private work stays zero. The existing
+flat emitter retains physical clearing behavior. Workspace retirement and
+caller-owned clearing of destroyed graph wires require separate acceptance.
