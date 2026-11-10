@@ -1124,7 +1124,7 @@ class _Body:
         self.statements(self.source.node.body)
         return self.program()
 
-    def program(self) -> HybridProgram:
+    def program(self, *, numeric_formats: bool = False) -> HybridProgram:
         flush_evolutions(self)
         values = {
             name: self.register(
@@ -1148,7 +1148,8 @@ class _Body:
                     "name": p.name,
                     **(
                         {"numeric_format": (p.signed, p.fractional_bits)}
-                        if any(has_numeric(port) for port in self.ports.values())
+                        if numeric_formats
+                        or any(has_numeric(port) for port in self.ports.values())
                         else {}
                     ),
                 },

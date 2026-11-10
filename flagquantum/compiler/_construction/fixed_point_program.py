@@ -83,7 +83,7 @@ def emit_fixed_point_tables(
     flip: Callable[[_Location], None],
     controlled: Callable[[tuple[_Location, ...], int, _Location], None],
 ) -> None:
-    """Write derived output words with shared columns and disjoint truth cubes."""
+    """Write fresh zero outputs with shared columns and disjoint truth cubes."""
     shared: dict[tuple[int, ...], _Location] = {}
     for value, targets in outputs:
         if len(targets) != value.width:

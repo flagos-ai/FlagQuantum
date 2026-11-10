@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **208/216**.
+Validated quantum-program counterparts: **209/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -62,7 +62,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (53 native programs)
+## Applications (54 native programs)
 
 - [heat_eq_qsvt](applications/cfd/heat_eq_qsvt/README.md)
 - [qlbm](applications/cfd/qlbm/README.md)
@@ -81,6 +81,7 @@ Validated local Notebook workflows:
 - [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
 - [whitebox_fuzzing](applications/cybersecurity/whitebox_fuzzing/README.md)
 - [partial_exponential_state_preparation](applications/finance/autocallable_options/partial_exponential_state_preparation/README.md)
+- [brownian_chebyshev_polynomials](applications/finance/brownian_chebyshev_polynomials/README.md)
 - [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
 - [portfolio_optimization_with_hhl](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
 - [option_pricing](applications/finance/option_pricing/README.md)

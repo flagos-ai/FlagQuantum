@@ -499,4 +499,4 @@ def _emit(
     if bits:
         owner.emit("qreg.drop", node, (selector,))
         owner.dropped.add(selector_name)
-    return owner.program()
+    return owner.program(numeric_formats=True)

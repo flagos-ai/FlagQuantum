@@ -10,6 +10,8 @@ selection and lowering to CircuitIR.
 | --- | --- |
 | `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
 | `fixed_point.py` | Bounded quantized scalar arithmetic, shared prepared-selector rows and actual-value discard-environment proofs |
+| `fixed_point_program.py` | Shared fresh bindings, read/drop ownership facts and reversible output-column lowering |
+| `frontend_quantized.py` | Resolve the explicit native quantization marker and closed Python numeric/helper bindings |
 | `frontend_numeric.py` | Exact native numeric assignment, typed extrema and explicit scalar format admission |
 | `frontend_program.py` | Capture source-retaining Python qfunc programs |
 | `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
@@ -51,8 +53,16 @@ Qmod lexical recognition, helper roles and lifetime checks; Compiler owns this
 source-independent arithmetic and proof. The independent Python-AST consumer in
 `tests/unit/test_synth_fixed_point.py` and the complete original-source Circuit
 comparison in `tests/integration/test_synthesis_qmod_brownian_quantized.py` exercise
-the shared implementation. This foundation does not implement the planned native
-`quantize` marker or award native Brownian coverage.
+the shared implementation. `frontend_quantized.py` now captures explicit native
+`quantize` markers with the same scalar, binding, selector and output-table
+authorities. It reuses native annotation/symbol resolution and `_Body` effect
+construction; the existing register verifier checks the emitted HybridProgram.
+Unmarked arithmetic remains exact within the closed twenty-bit/eight-fractional-
+bit domain and refuses rather than rounds when that bound is exceeded. Programs
+without the marker retain their existing exact capture path. Start with the
+complete native/Circuit tests in
+`tests/integration/test_synthesis_native_brownian.py` and the runnable Brownian
+example under `examples/synthesis/applications/finance/`.
 
 ## Profile development notes
 

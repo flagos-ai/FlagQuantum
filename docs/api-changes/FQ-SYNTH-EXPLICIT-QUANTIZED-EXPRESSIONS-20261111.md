@@ -1,7 +1,9 @@
 # Explicit quantized expressions for native qfunc
 
-Status: next UP-06 contract, before implementation. Native corpus coverage remains
-208/216. Classification: `single_device_fast_path`.
+Status: implemented locally on the native-example integration branch; acceptance
+and coverage evidence are tracked in the catalog and delivery ledger. The
+contract was admitted at 208/216 native cases. Classification:
+`single_device_fast_path`.
 
 ## Why a separate explicit marker is required
 
