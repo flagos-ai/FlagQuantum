@@ -14,6 +14,7 @@ Native FlagQuantum programs currently available:
 - [hamiltonian_simulation_guide_qdrift](hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md)
 - [hamiltonian_simulation_guide_trotter](hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
 - [classical_shadow_tomography](metrology/classical_shadow_tomography/README.md)
+- [discrete_log](number_theory_and_cryptography/discrete_log/README.md)
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
 - [solving_qlsp_with_aqc](quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
 - [vqls_with_lcu](quantum_linear_solvers/vqls/vqls_with_lcu/README.md)

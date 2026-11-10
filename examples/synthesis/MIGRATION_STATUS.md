@@ -175,7 +175,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_utils` | python_unclassified | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion` | notebook_workflow | Pending | pending |
 | `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Native program](algorithms/metrology/classical_shadow_tomography/main.py) | pending |
-| `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | Pending | pending |
+| `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/discrete_log/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | Pending | pending |
 | `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/hidden_shift/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | Pending | pending |
