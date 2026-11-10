@@ -259,7 +259,7 @@ def test_conditions_cannot_read_qubits_or_execute_host_code(condition: str) -> N
     "body,diagnostic",
     [
         ("if False:\n    return\nallocate(q)", "branch return"),
-        ("allocate(q)\nif True:\n    q += 1", "fresh outputs"),
+        ("allocate(q)\nif True:\n    q += 1", "writable raw unsigned QNum"),
         ("if False:\n    allocate(q)\nH(q)", "initializ|width"),
         ("allocate(q)\nfor i in range(3):\n    if False:\n        break", "break"),
     ],

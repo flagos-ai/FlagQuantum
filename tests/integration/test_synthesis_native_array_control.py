@@ -162,7 +162,7 @@ def test_const_target_and_cross_call_alias_refuse() -> None:
         ("control(c,lambda i:X(t))", "lambda"),
         ("control(c,lambda:allocate(t))", "supported qfunc"),
         ("control(c,lambda:control(c,lambda:X(t)))", "supported qfunc"),
-        ("control(c==1,lambda:X(t))", "quantum port"),
+        ("control(c==1,lambda:X(t))", "array arithmetic"),
     ],
 )
 def test_invalid_control_views_and_callbacks_refuse(body: str, diagnostic: str) -> None:
