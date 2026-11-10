@@ -7,6 +7,7 @@ import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Operation, Value, ValueId
+from .frontend_cnf import capture_cnf_phase
 from .frontend_controlled_effects import capture_controlled_effects
 from .frontend_increment import capture_increment_call, is_increment_helper
 from .frontend_matrix import capture_controlled_unitary
@@ -118,6 +119,8 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     phase_constant = None
     if operation is phase and len(body.args) == 2:
         phase_constant = owner.phase_number(body.args[0])
+        if capture_cnf_phase(owner, condition, body, phase_constant):
+            return
 
     def needs_predicate_phase_capture(expression: ast.expr) -> bool:
         """Route bounded compound predicates through the shared phase kernel."""

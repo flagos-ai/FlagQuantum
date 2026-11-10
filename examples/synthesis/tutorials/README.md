@@ -37,6 +37,7 @@ Native FlagQuantum programs currently available:
 - [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](technology_demonstrations/hardware_aware_mcx/README.md)
 - [hhl_example](technology_demonstrations/hhl/hhl_example/README.md)
+- [three_sat_oracles](technology_demonstrations/oracle_generation/three_sat_oracles/README.md)
 - [qaoa_demonstration](technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [algo_design_qce_tutorial_part_i](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
 - [algo_design_qce_tutorial_part_ii](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)

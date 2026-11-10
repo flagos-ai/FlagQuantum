@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **209/216**.
+Validated quantum-program counterparts: **210/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -220,7 +220,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (46 native programs)
+## Tutorials (47 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -257,6 +257,7 @@ Validated local Notebook workflows:
 - [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](tutorials/technology_demonstrations/hardware_aware_mcx/README.md)
 - [hhl_example](tutorials/technology_demonstrations/hhl/hhl_example/README.md)
+- [three_sat_oracles](tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/README.md)
 - [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)
 - [algo_design_qce_tutorial_part_i](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
 - [algo_design_qce_tutorial_part_ii](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)

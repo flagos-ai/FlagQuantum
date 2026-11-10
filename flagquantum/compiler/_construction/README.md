@@ -854,3 +854,23 @@ controls. General controlled mutable helpers and partial numeric views remain
 outside this extension. Start with
 `tests/integration/test_synthesis_native_modular_increment.py` and the complete
 grid-walk state comparison in `tests/integration/test_synthesis_native_grid_walk.py`.
+
+### Bounded signed-clause phase oracles
+
+`frontend_cnf` captures `control(predicate, lambda: phase(1, pi))` when the
+predicate is a conjunction of signed indexed-bit disjunctions. Python
+`and`/`or`/`not` and `&`/`|`/`~` are captured as syntax, without evaluating the
+host function. The bound is eighty clauses, each with at most three literals.
+`cnf_phase` owns duplicate/tautology normalization and the reversible
+clause-flag/phase/uncompute algorithm; Qmod delegates to the same implementation.
+All original reads are verified even when normalization removes a tautology.
+Conditions reading at most twelve distinct bits retain the existing sparse
+phase path and its resource choices; the logical spelling is translated to the
+same bitwise AST. Wider CNF uses the shared clause algorithm.
+Existing register effects, indexed control-X decomposition and resource selection
+remain authoritative. Scratch is allocated, computed and restored explicitly;
+there is no truth-table enumeration or simulator substitution. Other angles,
+arithmetic conditions, mutable helper inversion and wider clauses retain their
+existing admission boundaries. The 67-variable original uses exact product MPS
+on its initialized input, while reduced coherent cases compare every complex
+amplitude. Start with `tests/integration/test_synthesis_native_wide_cnf.py`.

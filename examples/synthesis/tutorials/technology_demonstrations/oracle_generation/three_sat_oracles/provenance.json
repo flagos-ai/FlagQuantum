@@ -1,0 +1,7 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/oracle_generation/3sat_oracles.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "9cfcd4a4caedab6f571df30893d52ea3bdf299a5438059726a3e82330f7438d2",
+  "scope": "Complete 67-variable,67-clause phase oracle on original initialized basis input;exact product MPS without dense state materialization. Companion Notebook workflow pending.",
+  "native_semantic_adaptations": "Use control(predicate,lambda:phase(1,pi)) instead of an explicit kickback ancilla. Shared bounded clause compute/phase/uncompute retains every variable and clause and restores all scratch. Native source contains no Qmod loader."
+}
