@@ -614,3 +614,37 @@ checks.log,integration.log,examples.log,default-parallel.log,default-comparison.
 Generic abstract adjoint wrappers, caller-supplied semantic validation, symbolic
 structures and dynamic decomposition remain separate inventory. The next slice
 is hierarchical adjoint decomposition and resource-call record correspondence.
+
+## Hierarchical adjoint and Program call-count admission
+
+The compiler-owned `adjoint_component_hierarchy(record, adjoints, entry="main")`
+replaces one typed-call entry and derives missing adjoints of reachable stored
+call-only component definitions. Existing exact specialized definitions in
+`adjoints` take precedence for child components. The root is always derived and
+must not occur in that mapping. Primitive or mixed bodies require an explicit
+specialized target. Each generated definition is shared by every occurrence of
+its forward component, under a collision-free internal function name. Original
+child definitions stay available to forward callers. The entry and its generated
+hierarchy use the existing graph reversal, per-side signature validation and
+canonical-payload invalidation. Finite traversal uses a work stack.
+
+`_component_trace.program_call_graph.program_component_call_graph` derives direct
+multiplicities from the same verified typed-call Program, then delegates weighted
+terminal counting, keep policy and depth bounds to existing symbolic_call_graph.
+Nodes use existing function names. Primitive/mixed bodies remain terminal at this
+component boundary. These are actual stored component occurrences. Source model
+estimates and emitted primitive instruction counts retain separate accounting.
+Declared symbolic call graphs without stored bodies remain in the existing model
+path. No automatic numerical inversion or new Core graph is introduced.
+
+The source default Adjoint protocol is exercised on a real Bloq whose stored
+body is the original executable CompositeBloq. Directly wrapping CompositeBloq
+in Adjoint retains the original decomposition ValueError, since CompositeBloq
+intentionally forbids decompose_bloq. Source files remain unchanged. Component
+resource node identity uses Program function names. Automatic source structural
+aliasing remains outside this profile. Specialized mappings that collapse two
+forward names onto one target are aggregated normally. Bounded first-visit
+counts follow stored declaration order. The source counts CompositeBloq instances
+from a frozenset, so cross-depth shared-node cutoff ties remain an explicit
+portability boundary. Full unbounded counts and levelled depth witnesses are
+compared independently to the source below.

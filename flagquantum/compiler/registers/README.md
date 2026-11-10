@@ -316,3 +316,13 @@ adjoint bodies, including measured arithmetic cleanup. Run
 `tests/unit/test_component_adjoint.py` for original-source Split/Join and
 Allocate/Free graphs, ordered H/T conjugation, all small Add inverse branches,
 complex spectator amplitudes and clean workspace restoration.
+
+`component_adjoint.adjoint_component_hierarchy` derives shared adjoint definitions
+from stored call-only bodies while preserving explicit specialized child mappings.
+Original child definitions remain available to forward callers. Generated names
+avoid all existing definitions. Primitive/mixed bodies need an explicit target.
+`_component_trace.program_call_graph.program_component_call_graph` counts actual
+stored calls with the existing resource graph, keep policy and depth semantics.
+Run `tests/unit/test_component_hierarchy_adjoint.py` and
+`tests/unit/test_program_component_call_graph.py` for hierarchical source graphs,
+shared leaves, direct/weighted calls, exact measured Add cleanup and model closure.
