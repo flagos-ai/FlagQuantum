@@ -1550,3 +1550,42 @@ branches before tracing out the classical history, spectator phases, clean
 unmeasured work, both feedback polarities and feedback after owned discard.
 Actual primitive counts and available source resource queries are recorded
 separately. The numerical path uses existing `circuit.append(op)` execution.
+
+#### Owned classical discard acceptance
+
+Contract `4d2881d8` precedes Core `6b697df2` and Compiler `409f724d`.
+Thirty-one added tests cover the unchanged Discard callback, signature,
+DiscardInd tensor marker and resource behavior, malformed operations, stale and
+double consumption, and feedback after an owned handle is consumed. Zero through
+three measurements and both feedback polarities compare all 30 unnormalized
+complex branches against unchanged MeasureZ and controlled Z/X tensors and
+Parity callbacks. The reduced target/spectator density matrices also agree after
+summing discarded histories. Unmeasured work remains zero. Both actual dynamic
+runtime strategies check 32 conditional states per polarity, totaling 128.
+
+The concentrated regression passes 5,082 tests in 27.64 seconds without skips or
+warnings. The focused run passes 285 tests in 7.18 seconds, covering every
+statement and branch of component construction, physical binding and scheduling.
+Combined coverage with register verification is 99%. Twenty-seven source blobs
+match the locked inventory. Strict typing passes 18 production and eight native
+test files. Formatting, scope, architecture, Program/API gates, four existing
+append/resource examples and 29 local integration tests pass. The generated
+scope audit changes only the register verifier source digest.
+
+Classical discard emits zero instructions, allocates no classical slot and has
+zero quantum width. Source QECGatesCost also returns zero, while source
+Discard.decompose_bloq() raises DecomposeNotImplementedError. The complete
+measurement/parity/feedback path still has no original Parity QEC model. These
+observations keep emitted resources separate from model availability.
+
+The actual GF2MulMBUC owned-component graph, external classical initialization,
+destructive workspace retirement and prerequisite Q-0157.03 remain open.
+Evidence is retained under `ftqc-reference-env/g2-owned-discard-` with regression,
+coverage, checks, examples, integration and source-integrity records.
+
+The default smoke/unit parallel fail-fast run reports 22,264 passes, 300 skips,
+1,065 warnings and six failures in 117.80 seconds. All six failure identifiers
+are a subset of the seven previously independently reproduced baseline failures.
+The remaining baseline ledger failure was not reached before interruption.
+The full default tier remains open. Exact failure comparison and the default
+log use the same evidence prefix. This run adds no default-tier acceptance claim.
