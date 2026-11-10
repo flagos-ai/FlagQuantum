@@ -1598,3 +1598,65 @@ G2 remains open. Next is composition across differing Allocate/Free dirty
 flags, preserving the explicit clean-zero and borrowed joint-state obligations.
 Other shapes/dtypes, symbolic execution, source defects and complete parent-file
 audits remain open.
+
+## Different Allocate and Free dirty annotations (GRAPH54)
+
+The test composition now accepts independent Allocate and Free annotations;
+production contracts and execution remain unchanged. The finite slice covers
+clean Allocate with dirty Free and borrowed Allocate with clean Free, each
+repeated over two selected array elements, with scalar and two-bit controls,
+retained/expanded calls and explicit exact inverses. The inverse swaps the
+original flags through the existing exact lifetime adjoints.
+
+A Free annotation does not reclassify the wire's original pool. Native events
+retain the declared operation flag. Original source qfree receives no dirty
+argument, so the independent source provider records allocation provenance.
+These are separate evidence tracks: the event kind, physical wires and order
+agree, while the private Free annotation intentionally differs from the pool
+flag. Other events match in full. Both calls reuse the same original pool;
+there is no clean-to-borrowed or borrowed-to-clean transfer implied by Free.
+
+Either a clean Allocate or a clean Free imposes a zero-state precondition for
+the private word in these mismatched cases. Accepted amplitude tests therefore
+start that word at zero, including the borrowed-Allocate/clean-Free case.
+Arbitrary borrowed joint-state restoration remains certified by the earlier
+dirty/dirty scenarios. The accepted mixed cases compare all forward/inverse
+measurement histories with the original source flow and full complex input
+state, including controls, unselected data and spectators.
+
+Two deliberate counterexamples start borrowed work in a nonzero entangled
+state while declaring clean Free. Binding and physical execution preserve
+that nonzero state instead of resetting it; the independent source physical
+flow agrees. Original `Free(..., dirty=False).on_classical_vals(reg=1)` rejects
+the invalid precondition, while dirty Free accepts it. These are diagnostic
+state-obligation tests, not acceptance of clean Free on nonzero work or a claim
+that physical compilation proves clean-state validity.
+
+Mixed annotations add no gates. Per direction, scalar serial counts remain
+8 T/Tdag, 4 CCX and two measurements; two-control counts remain 16 T/Tdag,
+4 CCX and four measurements. Independent source estimates remain 70/78
+T-equivalents with peak seven/nine. Twenty-four forward/inverse resource
+scenarios retain every native declared lifetime event and the independent
+source pool provenance; actual call multiplicities and seven source model
+categories close separately.
+
+Implementation evidence: caf28878. Twenty-four valid scenarios pass all 4224
+forward/inverse history pairs and 192 sequential append trajectories; two
+diagnostic scenarios preserve the invalid clean-Free precondition as a distinct
+failure obligation. There are 26 new tests. The concentrated regression passes
+6390 tests in 199.90 seconds. The coverage run passes 883 tests in 181.24 seconds,
+deselecting 72 exhaustive scenarios already run by the concentrated regression.
+Sixty-four integration tests pass in 4.11 seconds. Strict mypy covers 79 files
+and Black checks 105; scope, architecture, Program/API checks, four examples
+and 50 unchanged source blobs pass. Eight focused control/layout owners remain
+fully covered; existing component_control guards 79/215 remain uncovered.
+Default smoke/unit stops at maxfail with 21400 passed, 300 skipped, 1037 warnings
+and five failures in 137.10 seconds. The five failures belong to the independent
+seven-failure baseline; two baseline failures were not reached. There is no
+whole-suite success claim. Evidence is retained at
+ftqc-reference-env/g2-mixed-lifetime-flags-*.
+
+G2 remains open. Next is serial composition whose individual calls use
+different allocation flags, preserving each wire's original pool and state
+obligations. Other shapes/dtypes, symbolic execution, source defects and
+complete parent-file audits remain open.
