@@ -148,3 +148,10 @@ or source-compatible friendly names. It keeps a diagnostic side table so display
 name collisions cannot alter integer execution connectivity. See
 [external index diagnostics](../../../docs/development/REGISTER_TENSOR_INDICES.md)
 for pure/doubled naming, native refusal boundaries, and source correspondence.
+
+`classical_action_tensor.py` enumerates an explicitly supplied classical action
+through caller-owned codecs, yielding the pinned phase-free dense table. It
+feeds the existing register binder and never substitutes for an arbitrary
+phaseful quantum supplier. See
+[classical action tensors](../../../docs/development/CLASSICAL_ACTION_TENSOR.md)
+for memory, original codec failures, numerical phase limits and append checks.
