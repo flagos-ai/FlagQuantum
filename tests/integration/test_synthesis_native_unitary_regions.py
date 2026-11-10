@@ -208,7 +208,7 @@ def test_conjugate_transpose_of_complex_matrix_and_double_adjoint() -> None:
         (
             "with within():\n    H(q[0])\nwith apply():\n    local: QNum[1] = 1",
             "",
-            "captured operations",
+            "hidden declarations require the unconditional program root",
         ),
         ("with adjoint():\n    return", "", "return|supported"),
     ],

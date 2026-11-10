@@ -7,7 +7,7 @@ import math
 from typing import TYPE_CHECKING
 
 from .frontend_python import _error
-from .frontend_views import locations
+from .frontend_views import locations, packed_locations
 from .program_types import (
     inplace_prepare_amplitudes,
     inplace_prepare_state,
@@ -148,6 +148,24 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
         bound = 0.0
     width = len(values).bit_length() - 1
     if function in (inplace_prepare_amplitudes, inplace_prepare_state):
+        if isinstance(output, (ast.List, ast.Tuple)):
+            targets = tuple(reversed(packed_locations(owner, output)))
+            if len(targets) != width or len(set(targets)) != len(targets):
+                _error(
+                    owner.source,
+                    output,
+                    "program.prepare",
+                    "joint preparation needs distinct bits matching the vector width",
+                )
+            owner.emit(
+                "qreg.inplace_prepare_amplitudes",
+                node,
+                tuple(value for value, _ in targets),
+                amplitudes=values,
+                bound=bound,
+                indices=tuple(index for _, index in targets),
+            )
+            return
         if not isinstance(output, ast.Name):
             _error(
                 owner.source,

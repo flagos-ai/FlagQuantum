@@ -114,6 +114,29 @@ def static_integer(owner: _Body, node: ast.expr, depth: int = 0) -> int:
     return value
 
 
+def packed_locations(owner: _Body, node: ast.expr) -> tuple[tuple[Value, int], ...]:
+    """Flatten an explicit storage sequence in logical least-significant order."""
+    if isinstance(node, (ast.List, ast.Tuple)):
+        if not 1 <= len(node.elts) <= 8:
+            _error(
+                owner.source,
+                node,
+                "program.view",
+                "use one to eight explicit storage elements",
+            )
+        if any(isinstance(item, (ast.List, ast.Tuple)) for item in node.elts):
+            _error(
+                owner.source,
+                node,
+                "program.view",
+                "nested storage sequences are not admitted",
+            )
+        return tuple(
+            location for item in node.elts for location in locations(owner, item)
+        )
+    return locations(owner, node)
+
+
 def locations(
     owner: _Body, node: ast.expr, depth: int = 0
 ) -> tuple[tuple[Value, int], ...]:

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 
 from .frontend_ports import _resolve
 from .frontend_python import _error
-from .frontend_views import gate_target, locations
+from .frontend_views import gate_target, packed_locations
 from .register_profile import MAX_MATRIX_QUBITS
 
 if TYPE_CHECKING:
@@ -127,19 +127,7 @@ def capture_unitary(
                 )
             entries.append((float(number.real), float(number.imag)))
         prepared.append(tuple(entries))
-    if isinstance(target_node, (ast.List, ast.Tuple)):
-        if not 1 <= len(target_node.elts) <= MAX_MATRIX_QUBITS:
-            _error(
-                owner.source,
-                target_node,
-                "program.matrix",
-                "matrix targets require one to five qubits",
-            )
-        targets = tuple(
-            reversed(tuple(gate_target(owner, item) for item in target_node.elts))
-        )
-    else:
-        targets = tuple(reversed(locations(owner, target_node)))
+    targets = tuple(reversed(packed_locations(owner, target_node)))
     if not 1 <= len(targets) <= MAX_MATRIX_QUBITS:
         _error(
             owner.source,

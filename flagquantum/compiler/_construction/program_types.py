@@ -180,7 +180,8 @@ def qpe(callback: Callable[[], None], phase_result: QNum, /) -> None:
     """Estimate a static matrix eigenphase into a fresh all-fractional counter.
 
     The current profile admits one unitary call in a zero-argument lambda at
-    the unconditional root, with one to eight signed or unsigned phase bits.
+    the unconditional root or root pure unitary regions, with one to eight signed
+    or unsigned phase bits.
     """
     raise TypeError("qpe is captured inside qfunc; synthesize the program")
 
@@ -211,12 +212,12 @@ def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
 
 def unitary(
     matrix: Sequence[Sequence[complex | float | int]],
-    target: QNum | QArray[QBit] | Sequence[QBit],
+    target: QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]],
     /,
 ) -> None:
     """Apply a bounded static matrix to writable quantum storage inside qfunc.
 
-    Arrays and explicit scalar lists use logical register order: position zero
+    Whole ports and flat explicit storage sequences use logical order: position zero
     is the least significant matrix bit. Matrices must be unitary.
     """
     raise TypeError("unitary is captured inside qfunc")
@@ -396,14 +397,20 @@ def prepare_state(
 
 
 def inplace_prepare_amplitudes(
-    amplitudes: Sequence[float], bound: float, target: QNum | QArray[QBit], /
+    amplitudes: Sequence[float],
+    bound: float,
+    target: QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]],
+    /,
 ) -> None:
     """Apply the reversible real preparation unitary to initialized storage."""
     raise TypeError("inplace amplitude preparation is captured inside qfunc")
 
 
 def inplace_prepare_state(
-    probabilities: Sequence[float], bound: float, target: QNum | QArray[QBit], /
+    probabilities: Sequence[float],
+    bound: float,
+    target: QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]],
+    /,
 ) -> None:
     """Apply square-root probability preparation without allocating or reset."""
     raise TypeError("inplace probability preparation is captured inside qfunc")
