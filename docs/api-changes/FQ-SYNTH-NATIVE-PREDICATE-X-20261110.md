@@ -10,7 +10,13 @@ Reuse the existing bounded predicate graph, direct compute, indexed
 `qreg.control_x`, uncompute and release. Comparison inputs are bounded by eight
 quantum bits; target is one initialized writable scalar location, disjoint from
 all predicate input registers. Reject uncertain aliases conservatively. Native
-mutable helpers may use the same path on checked borrowed raw registers. Const
+mutable helpers may use the same path on checked borrowed raw registers. For
+predicate graph capture, each numeric formal must borrow exactly one complete
+physical register in ascending logical-bit order. Resolve graph inputs and widths
+from these actual registers, retaining role and initialization verification.
+Partial or permuted numeric views remain rejected rather than being treated as
+whole-register numeric values. This resolver also serves existing predicate-R
+control; it does not make arbitrary helper arithmetic writes legal. Const
 conditions remain read-only; Const targets remain rejected by register checking.
 Unsupported expressions, host callbacks and runtime indices still fail closed.
 
