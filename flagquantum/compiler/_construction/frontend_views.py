@@ -262,6 +262,16 @@ def capture_loop(owner: _Body, node: ast.For) -> None:
         _error(owner.source, node, "program.loop", "one range exceeds 256 iterations")
     if len(owner.loop_variables) >= 8:
         _error(owner.source, node, "program.loop", "loop nesting exceeds eight")
+    from .frontend_repeated_effects import capture_reset_loop
+
+    if capture_reset_loop(owner, node, sequence):
+        return
+    expand_loop(owner, node, sequence)
+
+
+def expand_loop(owner: _Body, node: ast.For, sequence: range) -> None:
+    """Expand checked static iterations and charge their complete construction work."""
+    assert isinstance(node.target, ast.Name)
     try:
         for index in sequence:
             owner.owner.loop_steps += 1
