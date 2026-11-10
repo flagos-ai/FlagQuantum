@@ -62,3 +62,21 @@ view boundaries to make the example pass.
 Starting acceptance is191/216 quantum programs,24/213 Notebook workflows and
 14/19 revision-nine merged scopes. No push, integration PR or remote full CI
 before complete native216 acceptance.
+
+## Native selection spelling
+
+The native fixed-word expression admits a bounded Python conditional expression
+`yes if comparison else no` with exact rational comparisons, inside the existing
+`^=` update. Both branches are captured and validated without host execution;
+the chosen exact value is quantized only at the destination. This expresses a
+piecewise computation directly and avoids manufacturing a copied quantum label.
+For the original four equal-width segments, comparisons against1/4,1/2 and3/4
+are precisely equivalent to reading the two most significant raw input bits.
+No ordinary Python `if` is reinterpreted as quantum control. Conditional helper
+callbacks and mutable numeric helper bodies remain restricted: the admitted
+numeric borrowing profile contains exactly one fixed-word XOR update.
+
+The captured `QNum` annotation methods accept `float` alongside `QNum` and
+`int` for ordered comparisons and in-place XOR. This typing expansion describes
+the checked dyadic expression profile above; it does not enable host execution
+or relax the existing raw integer-mask rules. No exports or call ordering change.
