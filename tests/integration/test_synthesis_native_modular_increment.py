@@ -125,6 +125,12 @@ def test_root_offset_binding_and_inverse(operator: str) -> None:
             "complete register",
         ),
         (
+            "x:Output[QArray[QBit]]",
+            "allocate(3,x)\nstep(x)",
+            "@qfunc\ndef step(q:QNum):\n    q += 1\n",
+            "raw unsigned",
+        ),
+        (
             "x:Output[QNum[3]],c:Output[QBit]",
             "allocate(x)\ncontrol(c,lambda:step(x))",
             "@qfunc\ndef step(q:QNum):\n    q += 0\n",
