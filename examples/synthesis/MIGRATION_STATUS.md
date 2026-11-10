@@ -179,7 +179,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | Pending | pending |
 | `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/hidden_shift/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/shor/main.py) | pending |
-| `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/main.py) | pending |
 | `algorithms/quantum_differential_equations_solvers/lchs/lchs` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/time_marching/main.py) | pending |
 | `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/main.py) | pending |

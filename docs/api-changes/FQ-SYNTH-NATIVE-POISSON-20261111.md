@@ -1,7 +1,10 @@
 # Native discrete Poisson transform and HHL composition
 
-Status: native/frozen-source full-state probe passed; independent Circuit and
-formal acceptance pending. Coverage starts at 204/216.
+Status: accepted locally. Coverage is 205/216, with 11 quantum programs pending.
+All 21 new and 22 related acceptance tests pass, as do 29 catalog/API tests and
+strict typing for five Python files. Fresh 216-original replay exactly matches
+prior hashes, outcomes and resources; all six approved revisions pass and all
+29 production pins remain unchanged.
 
 Preserve the frozen 64-amplitude spatial input, two three-bit spatial axes,
 Type-II sine/cosine transforms, sixteen ordered diagonal Pauli terms including
@@ -34,6 +37,12 @@ additional normalized nonzero signed inputs, primitive transform/inverse tests,
 controlled identity-phase interference, register/phase indexing, alias and
 budget refusals. Preserve original resource records and report native overhead.
 No production export, API, effect cap or ownership rule changes are planned.
+
+Measured native resources are 13 physical bits, zero workspace, 7,728 operations
+and depth 4,770, versus original 13 bits, zero workspace, 5,632 operations and
+depth 2,657. Both default full states match the independent Circuit within
+6e-14. The source's Observable bit significance and axis assignment are retained
+explicitly. The overhead is a measured optimization gap.
 
 After acceptance run fresh 216-original plus approved-six replay, archive
 immutable evidence and update catalog/ledger. Notebook workflows remain separate

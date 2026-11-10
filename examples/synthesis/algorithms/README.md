@@ -23,6 +23,7 @@ Native FlagQuantum programs currently available:
 - [discrete_log](number_theory_and_cryptography/discrete_log/README.md)
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
 - [shor](number_theory_and_cryptography/shor/README.md)
+- [discrete_poisson_solver](quantum_differential_equations_solvers/discrete_poisson_solver/README.md)
 - [time_marching](quantum_differential_equations_solvers/time_marching/README.md)
 - [solving_qlsp_with_aqc](quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
 - [hhl](quantum_linear_solvers/hhl/README.md)
