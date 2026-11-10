@@ -145,6 +145,21 @@ def reduce_stabilizers(
     Raises:
         TypeError: Inputs have the wrong native type or a count is not integer.
         ValueError: A word, width, symmetry or selected sector is invalid.
+
+    Examples:
+        >>> import torch
+        >>> import flagquantum as fq
+        >>> from flagquantum.core.algebra.pauli import pauli
+        >>> from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
+        >>> from flagquantum.algorithms.fermion.lowering import lift_stabilizer_state
+        >>> x = pauli(factors=((0, "x"),))
+        >>> reduced = reduce_stabilizers(x, n_qubits=1, generators=[x], eigenvalues=[1])
+        >>> reduced.n_qubits
+        0
+        >>> state = lift_stabilizer_state(reduced, torch.ones(1))
+        >>> circuit = fq.Circuit(1, dtype=torch.complex128, inputs=state)
+        >>> [round(p, 6) for p in circuit.state().abs().square().reshape(-1).tolist()]
+        [0.5, 0.5]
     """
     width = count(n_qubits, "n_qubits")
     _checked_operator(operator, width)

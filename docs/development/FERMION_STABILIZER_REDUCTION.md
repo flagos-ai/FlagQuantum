@@ -3,9 +3,8 @@
 ## Stage contract
 
 EXT06 extends the native fermionic science domain from diagonal Z parities to
-arbitrary independent commuting signed Pauli words. This document freezes the
-stage scope before implementation; implementation and evidence follow in the
-same feature PR. It does not change a Stable Core export or schema.
+arbitrary independent commuting signed Pauli words. This document was committed before implementation to freeze the
+stage scope. The same feature PR now implements the interfaces below. It does not change a Stable Core export or schema.
 
 `reduce_stabilizers(operator, *, n_qubits, generators, eigenvalues)` accepts a
 native PauliOperator, an explicit register width, single-word native PauliOperator
@@ -65,3 +64,17 @@ The user supplies the sector; minimizing all sectors is not an implicit solver.
 The stage uses independent algebraic references and native execution. No upstream
 source or new dependency is required. Linux full suites and version matrices run
 in CI; each implementation commit includes focused local evidence.
+
+## Executable workflow
+
+Run `python -m examples.algorithms.fermion_tapering`. The fixed H2 example
+uses a signed X/Y symmetry in a rotated qubit representation, reduces four
+qubits to two, measures -1.1372701747 Ha and particle number 2, and lifts the
+state with a full-register eigenvector residual below 1e-12. The two-qubit state
+comes from small dense diagonalization and is explicitly synthesized through
+the existing state-preparation algorithm before fq.run; it is not a scalable
+solver. Example values are asserted by tests/test_algorithm_examples.py.
+
+Run `python -m pytest tests/unit/fermion/test_stabilizer.py -q` for mathematical
+and boundary checks, and tests/integration/test_native_fermion_isolation.py for
+execution with external scientific SDK imports blocked.

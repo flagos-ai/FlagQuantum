@@ -364,3 +364,64 @@ def test_symbolic_conjugation_rejects_matrix_overrides() -> None:
     gate = Instruction("h", (0,), matrix=torch.eye(2, dtype=torch.complex128))
     with pytest.raises(ValueError, match="fixed"):
         conjugate_pauli(word("x"), gate)
+
+
+@pytest.mark.parametrize("encoding", ["jordan_wigner", "parity", "bravyi_kitaev"])
+def test_supplied_symmetry_uses_the_operators_encoded_basis(encoding: str) -> None:
+    hopping = create(0) * annihilate(2)
+    full = encode_fermion(
+        hopping + hopping.dagger() + 0.4 * number(1), n_modes=3, encoding=encoding
+    )
+    identity = annihilate(0) * create(0) + number(0)
+    parity = (
+        (identity - 2 * number(0))
+        * (identity - 2 * number(1))
+        * (identity - 2 * number(2))
+    )
+    symmetry = encode_fermion(parity, n_modes=3, encoding=encoding).operator
+    result = reduce_stabilizers(
+        full.operator, n_qubits=3, generators=[symmetry], eigenvalues=[-1]
+    )
+    embedding = torch.stack(
+        [
+            lift_stabilizer_state(result, v)
+            for v in torch.eye(4, dtype=torch.complex128)
+        ],
+        dim=1,
+    )
+    torch.testing.assert_close(
+        pauli_matrix(full.operator, n_qubits=3) @ embedding,
+        embedding @ pauli_matrix(result.operator, n_qubits=2),
+    )
+    torch.testing.assert_close(
+        pauli_matrix(symmetry, n_qubits=3) @ embedding, -embedding
+    )
+
+
+def test_symbolic_large_register_and_zero_sector_operator(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    generator = pauli(factors=((0, "x"), (99, "y")))
+
+    def forbidden(*args: object, **kwargs: object) -> torch.Tensor:
+        raise AssertionError("symbolic reduction allocated a dense tensor")
+
+    with monkeypatch.context() as patch:
+        patch.setattr(torch, "zeros", forbidden)
+        patch.setattr(torch, "eye", forbidden)
+        result = reduce_stabilizers(
+            pauli(0.4) + 0.2 * generator,
+            n_qubits=100,
+            generators=[generator],
+            eigenvalues=[1],
+        )
+    assert result.n_qubits == 99
+    assert result.operator.terms[0].coefficient == pytest.approx(0.6)
+    x = word("x")
+    zero = reduce_stabilizers(pauli() + x, n_qubits=1, generators=[x], eigenvalues=[-1])
+    assert zero.n_qubits == 0
+    assert not zero.operator.terms
+    complex_result = reduce_stabilizers(
+        (1 + 2j) * x, n_qubits=1, generators=[x], eigenvalues=[-1]
+    )
+    assert complex_result.operator == pauli(-1 - 2j)

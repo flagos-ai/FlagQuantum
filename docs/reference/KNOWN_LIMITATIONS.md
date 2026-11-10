@@ -1040,3 +1040,22 @@ FFT speedup, hardware gate-set, accelerator, distributed or gradient claim.
 Parity/BK/tapered registers and other mode counts are unsupported. See
 `python -m examples.algorithms.fermion_fourier` and
 `tests/unit/fermion/test_fourier.py` for the supported workflow and references.
+
+## Explicit Pauli stabilizer sectors
+
+`algorithms.fermion.stabilizer.reduce_stabilizers` accepts explicitly supplied,
+independent, commuting signed Pauli words and integer sector eigenvalues. It
+constructs a native Clifford C and a diagonal affine map J; the original sector
+embedding is C dagger J. The mapping field alone refers to the diagonal frame,
+not to the original state. Symmetries are interpreted in the input Pauli
+operator's qubit basis; JW, parity or BK occupation labels are not inferred.
+
+The operator must preserve every generator; nonpreserving operators and
+observables are rejected rather than silently projected. Automatic symmetry
+search, sector selection and arbitrary ansatz tapering are absent. Symbolic
+work allocates no dense arrays. Explicit state lifting is static CPU complex128,
+refuses autograd and is capped at 20 full qubits before allocation. Clifford
+circuits use native H, S dagger and CX with no device routing, accelerator,
+distributed or performance claim. The old Z-parity affine API remains available.
+The H2 example uses a small dense eigensolver to supply a state; its measured
+selected-sector energy is not evidence for a scalable ground-state solver.
