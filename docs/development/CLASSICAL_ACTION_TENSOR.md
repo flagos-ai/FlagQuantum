@@ -371,3 +371,7 @@ root wrapping, automatic provider discovery, mixed classical/quantum graph
 traversal and full superoperator graph supply remain open. The next numerical
 slice should replace manually supplied measurement copy tensors through the
 existing doubled-label and explicit-trace consumers, preserving these boundaries.
+
+GRAPH71 default smoke/unit: 5 failed, 21400 passed, 300 skipped, 1037 warnings in 129.86s (0:02:09). All 5 observed
+failure IDs belong to the independent seven-failure baseline; 2 were not
+reached before maxfail. The default suite is not certified as fully passing.
