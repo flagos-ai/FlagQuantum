@@ -1,7 +1,15 @@
 # Native partial exponential preparation and exact amplification
 
-Status: semantic contract; native/approved-source probe passed, independent
-Circuit and formal acceptance pending. Coverage starts at 201/216.
+Status: accepted locally. 31 new exponential tests and 18 Gaussian regressions
+pass, along with 29 catalog/API tests and strict typing of four Python files.
+Fresh 216-original outcomes, hashes and resources exactly match the previous
+batch; approved six pass and all 29 production pins are unchanged. Coverage
+is 202/216; Notebook workflows remain 24/213.
+
+Native default: 8 physical bits, 2 compiler work bits, one explicit clean
+attenuation port, 2,399 operations and depth 2,046. Approved source: 8 physical
+bits, 3 work bits, 2,265 operations. Complete amplitude errors are below
+4.9e-14 and clean leakage below 1.3e-29.
 
 Retain the source's five-bit increasing exponential input distribution, the
 x >= 21 phase oracle, one ancilla-tuned exact amplification round and final
