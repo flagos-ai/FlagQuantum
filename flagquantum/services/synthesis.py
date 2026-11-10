@@ -103,6 +103,8 @@ prepare_bell_state = program_types.prepare_bell_state
 prepare_ghz_state = program_types.prepare_ghz_state
 prepare_amplitudes = program_types.prepare_amplitudes
 prepare_state = program_types.prepare_state
+inplace_prepare_amplitudes = program_types.inplace_prepare_amplitudes
+inplace_prepare_state = program_types.inplace_prepare_state
 min = program_types.minimum
 max = program_types.maximum
 
@@ -139,6 +141,8 @@ __all__ = (
     "prepare_ghz_state",
     "prepare_amplitudes",
     "prepare_state",
+    "inplace_prepare_amplitudes",
+    "inplace_prepare_state",
     "QArray",
     "H",
     "S",

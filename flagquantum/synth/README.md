@@ -1265,3 +1265,34 @@ signed/scaled expressions, arrays and borrowed mutable-helper expression XOR
 are currently refused. Existing root `adjoint` and `within`/`apply` can reverse
 expression XOR. The native [QSVT program](../../examples/synthesis/functions/qsvt/main.py)
 uses it for reversible comparison; its complete resource report remains visible.
+
+### Reversible preparation on existing storage
+
+`inplace_prepare_amplitudes` and `inplace_prepare_state` apply the existing real
+preparation unitary to initialized storage, including nonzero or entangled input.
+They allocate no qubits and do not reset the register. The amplitude vector must
+be normalized; probability vectors must be nonnegative and sum to one. Adjoint
+reverses the complete unitary, rather than just its action on zero input.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import *
+
+@qfunc
+def main(q: Output[QNum]) -> None:
+    allocate(2, q)
+    hadamard_transform(q)
+    with within():
+        inplace_prepare_amplitudes([0.5, -0.5, 0.5, 0.5], 0, q)
+    with apply():
+        phase(0.37 * q, 1)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+The initial profile accepts a complete writable register and static real vectors
+of power-of-two length 2..256. Slices, reordered views, quantum-controlled
+preparation, complex amplitudes and Const mutation are refused. Existing
+`prepare_amplitudes` and `prepare_state` still initialize fresh output storage.
