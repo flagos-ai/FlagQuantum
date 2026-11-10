@@ -6,7 +6,6 @@ from collections import Counter
 from itertools import product
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -33,12 +32,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_unmodified_source_builder_replaces_native_construction(
     width: int, modulus: int
 ) -> None:
+    from galois import Poly
     from qualtran import QGF
     from qualtran.bloqs.basic_gates import CZ, Discard, MeasureX
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import GF2MulMBUC, Parity
     from qualtran.resource_counting import QECGatesCost, get_cost_value
-
-    from galois import Poly
 
     polynomial = Poly.Int(modulus)
     dtype = FiniteFieldEncoding(2, width, polynomial).register_type()

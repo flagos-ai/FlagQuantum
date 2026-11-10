@@ -1652,3 +1652,53 @@ Their reduced logical input state matches every original erasure branch after
 tracing these consumed wires. Unmeasured private work stays zero. The existing
 flat emitter retains physical clearing behavior. Workspace retirement and
 caller-owned clearing of destroyed graph wires require separate acceptance.
+
+#### Owned field erasure acceptance
+
+Contract `0da7d70f`, binary-field Core `6dac1163`, composition contract
+`5877e729`, shared measurement/feedback `d3f309b2` and field graph `fdcd859c`
+are separate commits. Thirty-four added tests verify concrete binary-field
+admission and refusal, unchanged source Split/Join codecs, MeasureX joint
+spectator branch tensors, source graph replacement, exact branch phase and
+resources. The unchanged GF2MulMBUC.build_composite_bloq method directly builds
+with native owned bindings and yields an identical Program for (degree,
+polynomial) pairs (1,3), (2,7), (3,11), (3,13), (5,37), (8,283), (8,285).
+This compares every declared component connection, operand and successor.
+
+All 14 histories for degrees one through three preserve complete complex input
+amplitudes and spectator entanglement, with the exact unnormalized factor
+2**(-degree/2). Destroyed result physical wires retain the recorded Z outcomes.
+Unmeasured work stays zero. Both actual dynamic runtime strategies additionally
+check 32 normalized conditional states each through circuit.append(op).
+Owned workspace retirement continues to fail closed on the original boundary.
+
+The eight-bit graph emits 8 H, 8 measurements, 8 classical XOR assignments and
+64 conditional CZ gates. It emits zero conditional-X clearing gates. Its eight
+parity outputs get distinct fresh immutable slots. Original GF2MulMBUC QEC cost
+reports 64 CZ and omits measurement and classical costs. Original MeasureX
+individually reports one measurement and zero T. Source construction order and
+Compiler's connection-dependent physical schedule are distinct observations.
+The existing flat erasure implementation retains physical clearing and its
+caller-owned reusable parity slot.
+
+The concentrated regression passes 5,116 tests in 114.19 seconds without skips
+or warnings. Focused coverage passes 319 tests in 28.78 seconds, with 100%
+statement/branch coverage for all six Compiler modules measured, including the
+three new constructors and erasure graph. Combined Core/Compiler coverage is
+99%. Strict typing passes 21 production and 11 native test files. Black/Ruff,
+scope, architecture, Program/API gates, four existing append/resource examples
+and 29 integration tests pass. Twenty-seven pinned source blobs are unchanged.
+The generated scope audit updates only the register verifier source digest.
+
+This acceptance covers the concrete binary-field owned graph. Source classical
+port Cirq export, external CBit initialization, physical retirement and the
+broader Q-0157.03 replacement inventory retain independent acceptance. G2 remains
+open. Evidence uses prefix ftqc-reference-env/g2-owned-field-erasure-.
+
+The default parallel smoke/unit fail-fast run reports 22,455 passes, 300 skips,
+1,065 warnings and nine failures in 325.46 seconds. Seven identifiers exactly
+match the previous independently reproduced baseline. Two additional failures
+come from sandbox denial of local socket binding in multinode preflight tests.
+Both pass in 0.18 seconds when rerun individually with local socket permission.
+The original run, permission-specific rerun and exact failure comparison are
+retained under the same evidence prefix. The full default tier remains open.

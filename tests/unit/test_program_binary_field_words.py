@@ -105,6 +105,7 @@ def test_original_binary_field_projection_and_split_join(width: int) -> None:
     import numpy as np
     from qualtran import QGF
     from qualtran.bloqs.bookkeeping import Join, Split
+
     from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
 
     field = FiniteFieldEncoding(2, width)
