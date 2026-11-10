@@ -163,3 +163,23 @@ Automatic numerical supply, arbitrary feedback-call admission, parameterized
 trainable NumPy child tensors, source Parity tensor support and full source-file
 acceptance remain open. This finite `single_device_fast_path` slice does not
 change Core schema, stable exports, the existing physical gate recipe or G3.
+
+GRAPH76 implementation: `bf1dc8e4`. The final 21 feedback tests pass in 2.24 s,
+including exact emitted gate order, quantum operands, measurement slots, XOR
+sources/result and both feedback polarities. The complete batch verification
+and returned parity-storage sizes are recorded in
+[parity evidence](CLASSICAL_PARITY_TENSORS.md). Related/focused/integration counts
+are 1319/594/64; strict typing covers 37+3 related files and all boundary checks
+pass. The control owner has 46 statements / 20 branches at 100%.
+
+Resource reports also bind widths 0/1/2/3/8 for both polarities. A width-n graph
+emits n measurements, one classical XOR and one conditional Z/X each; caller
+physical width is n+4 including one unused clean bit. No T or reset is emitted.
+The original ClassicallyControlled(X/Z) QubitCount is one each, while each
+QECGatesCost query raises `DecomposeNotImplementedError`. The child gate models
+are not substituted for these unsupported controlled models. The source Parity
+model is likewise unsupported. Full-graph source QEC closure is not claimed.
+Numerical tensor supply emits zero physical instructions/work. All unsupported
+source model diagnostics are retained in `g2-classical-feedback-resources.json`.
+The default seven failures remain exactly the preexisting baseline, as recorded
+in `g2-classical-feedback-default-comparison.json`; no new failure ID is observed.

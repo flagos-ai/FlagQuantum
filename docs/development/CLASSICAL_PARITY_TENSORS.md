@@ -63,3 +63,27 @@ Its measured GF(8) product erasure retains the existing physical parity/XOR and
 controlled-CZ stream. Actual instructions and upstream resource-model estimates
 remain distinct. This is a `single_device_fast_path` inspection path; no GPU,
 distributed capacity, full source-file parity or new public API is claimed.
+
+GRAPH75 implementation: `dd2065af`. Thirty-two focused parity cases pass.
+The combined GRAPH75/76 batch has 53 new cases, 1319 related cases in 31.21 s
+(41 existing/source warnings), 594 focused cases in 35.60 s (39 warnings), and
+64 integration cases in 5.68 s. Sixteen owners total 483 statements / 194 branches
+at 99%; parity has 31 statements / 14 branches at 100%, and controlled tensors
+have 46 statements / 20 branches at 100%. Two historical GRAPH60 profile refusals
+remain uncovered. Strict typing passes for 37 related files plus three
+source-following files; Black/Ruff, Simulation scope, architecture, Program IR
+and public API checks pass. Twenty-six locked source blobs match the inventory;
+25 unchanged original tests pass in 1.00 s (five existing warnings). Native
+Kickmix 0.1 Simulator and Qualtran 0.7.0 were checked, and the binary-field
+example passes. After final callback-binding and physical operand/feedback
+assertions, all 21 feedback tests pass again in 2.24 s.
+
+Eight-bit parity returns nine nodes and eight internal integer edges. Logical
+node bytes are 520/1040/1040/2080 for float32/float64/complex64/complex128;
+unique tensor storage is 72/144/144/288 bytes. These values are not physical
+workspace or measured peak memory. The original Parity QubitCount is zero;
+QECGatesCost raises `DecomposeNotImplementedError` and remains unsupported,
+not zero. Default smoke/unit has seven failed, 21507 passed, 300 skipped and
+1037 warnings in 157.51 s; all seven failure IDs match the independent existing
+baseline. The default suite is not green. Evidence is under
+`ftqc-reference-env/g2-classical-feedback-*`.
