@@ -841,3 +841,44 @@ uncovered. 39 pinned source Git blobs match the inventory. All seven default
 failure IDs equal the independent directional-call baseline.
 
 Default raw summary. 7 failed, 22286 passed, 300 skipped, 1065 warnings in 449.87s (0:07:29).
+
+
+## GRAPH41 nested control extension
+
+Commits `390c2422` and `567ad61c` share the original control-name rule and
+implement ControlledViaAnd.get_ctrl_system using the existing forward Program.
+Additional clauses precede existing clauses in one combined predicate. Names
+are regenerated against forward data ports. The returned adder pops old control
+inputs, invokes the combined definition once and separates new controls from
+old controls and data outputs. Tuple positions, array shapes, zip truncation and
+partial-pop failure behavior match the original callback. The existing builder,
+positive hierarchy, predicate ownership and measured erasure retain authority.
+
+The 60 new scenarios compare parent calls and combined upper-level graphs,
+signatures, outputs, primitive operands, exact parameters, per-wire dependencies
+and feedback. Histories through five measurements and forward/inverse history
+pairs through three measurements are exhaustive. Complex amplitudes, entangled
+spectators, clean work, repeated extension and circuit.append(op) dynamic
+execution pass. Seven source QEC categories close against actual stored calls.
+The existing stored-body source-adjoint adapter is reused. The direct raw
+CompositeBloq adjoint decomposition limitation remains open.
+
+For five bits 10010 around H/ZPow(0.25), emitted primitives are 12 X, 15 H,
+10 T, 10 Tdag, 30 CX, 5 S, 1 CH, 1 phase, 5 measurements, 5 CZ and 5 resets.
+Clean peak is five and total width twelve. Source QEC independently reports
+ t=1, and_bloq=5, clifford=21, rotation=2, measurement=5, other categories zero,
+T-equivalent=43 and qubit peak twelve. Twenty emitted T/Tdag gates remain a
+separate count. The existing literal phase boundary retains the ZPow parameter.
+
+Acceptance includes 5626 concentrated, 191 focused and 64 integration cases,
+strict mypy on 54 files, formatting, scope, architecture, Program/API checks
+and four append/resource examples. The extension has 100% statement/branch
+coverage. The control module reports 98%, with two final guards after builder
+validation uncovered. 39 pinned source blobs remain unchanged. Default results
+are 22264 passed, 300 skipped, 1065 warnings and six failures in 115.01 seconds.
+Maxfail stopped that run. All six IDs belong to the independent seven-failure
+baseline. The remaining baseline ledger test did not run in this selection.
+
+Current typed admission remains unparameterized bit, opaque and uint. Other
+Core descriptors, specialized single-control extension protocols and source
+internal predicate-node identity need their separate acceptance slices.
