@@ -672,6 +672,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "inplace_prepare_state",
     "drop",
     "qpe",
+    "select_rotation",
     "QArray",
     "H",
     "S",
@@ -1318,6 +1319,20 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.qpe)) != matrix_qpe_contract["signatures"]["qpe"]
     ):
         errors.append("native matrix qpe differs from its authorized scope")
+    rotation_table_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-rotation-table-candidate.json").read_text()
+    )
+    if (
+        rotation_table_contract.get("added_exports") != ["select_rotation"]
+        or rotation_table_contract.get("implementation_authorized") is not True
+        or rotation_table_contract.get("release_authorized") is not False
+        or rotation_table_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-ROTATION-TABLE-20261110.md"
+        or not (ROOT / rotation_table_contract["authorization_record"]).is_file()
+        or str(inspect.signature(synth.select_rotation))
+        != rotation_table_contract["signatures"]["select_rotation"]
+    ):
+        errors.append("native rotation tables differ from their authorized scope")
     views = json.loads(
         (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
     )
