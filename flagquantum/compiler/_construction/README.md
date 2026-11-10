@@ -9,6 +9,7 @@ selection and lowering to CircuitIR.
 | Module | Responsibility |
 | --- | --- |
 | `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
+| `fixed_point.py` | Bounded quantized scalar arithmetic, shared prepared-selector rows and actual-value discard-environment proofs |
 | `frontend_numeric.py` | Exact native numeric assignment, typed extrema and explicit scalar format admission |
 | `frontend_program.py` | Capture source-retaining Python qfunc programs |
 | `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
@@ -39,6 +40,19 @@ For a small change, start with the relevant accepted and rejected scenarios in
 `tests/team/compiler/test_construction_registers.py` and the end-to-end
 `tests/integration/test_synthesis_python_program.py`. The [synthesis examples](../../../examples/synthesis/README.md)
 provide runnable public programs and independent Circuit comparisons.
+
+For bounded quantized arithmetic, `FixedPointBranches` records at most five
+independent uniform preparations. Derived words retain the same 32 correlated
+rows through helper bindings; their storage widths do not create new independent
+inputs. Environment compression requires that the values actually dropped by the
+source distinguish all prepared branches. Cancellation does not erase a
+preparation witness, and a dropped value is not clean workspace. Ecosystem owns
+Qmod lexical recognition, helper roles and lifetime checks; Compiler owns this
+source-independent arithmetic and proof. The independent Python-AST consumer in
+`tests/unit/test_synth_fixed_point.py` and the complete original-source Circuit
+comparison in `tests/integration/test_synthesis_qmod_brownian_quantized.py` exercise
+the shared implementation. This foundation does not implement the planned native
+`quantize` marker or award native Brownian coverage.
 
 ## Profile development notes
 
