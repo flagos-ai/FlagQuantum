@@ -225,7 +225,10 @@ def control_component_via_predicate(
 ) -> ProgramRecord:
     """Wrap a stored hierarchy using the pinned ControlledViaAnd call chain.
 
-    Control names are caller supplied and precede the original THRU data ports.
+    Control names are caller supplied and precede the original data ports.
+    An explicit entry adder invokes the actual positive-control callback,
+    including directional ports; otherwise a THRU hierarchy is derived.
+    Directional output names must match the source callback zip order.
     Integer words are row-major and MSB-first. A single QBit is scalar or shape
     (1,). Multiple bits produce n-1 owned predicate outputs, call the positive
     body once, then measure-erase and release them. Specialized adders own their
@@ -243,18 +246,29 @@ def control_component_via_predicate(
         or controls[0].shape not in ((), (1,))
     ):
         raise ValueError("single control requires a scalar or shape-(1,) QBit")
-    positive = control_component_hierarchy(record, controlled, entry)
+    adder = controlled.get(entry)
+    if adder is not None:
+        rights = tuple(r.name for r in Signature(function.registers).rights())
+        zipped = tuple(dict.fromkeys(r.name for r in function.registers[: len(rights)]))
+        if zipped != rights:
+            raise ValueError(
+                "source predicate callback cannot pair directional output names"
+            )
+        positive = record
+    else:
+        positive = control_component_hierarchy(record, controlled, entry)
     names = {f.name for f in positive.functions}
     index = 0
     prefix = "__fq_predicate_0_"
     while any(name.startswith(prefix) for name in names):
         index += 1
         prefix = f"__fq_predicate_{index}_"
-    derived = next(f for f in positive.functions if f.name == entry)
-    assert derived.registers is not None
-    control_name = derived.registers[0].name
-    derived = replace(derived, name=prefix + "positive")
-    definitions = [derived, *(f for f in positive.functions if f.name != entry)]
+    definitions = [f for f in positive.functions if f.name != entry]
+    if adder is None:
+        derived = next(f for f in positive.functions if f.name == entry)
+        derived = replace(derived, name=prefix + "positive")
+        definitions.insert(0, derived)
+        adder = _stored_control_adder(derived)
     if count > 1:
         inner_controls = tuple(
             Register(f"ctrl_{i}", r.dtype, r.shape) for i, r in enumerate(controls)
@@ -279,7 +293,9 @@ def control_component_via_predicate(
     builder = ComponentProgramBuilder(
         Signature((*controls, *function.registers)), definitions, name=entry
     )
-    data = {r.name: builder.inputs[r.name] for r in function.registers}
+    data = {
+        r.name: builder.inputs[r.name] for r in Signature(function.registers).lefts()
+    }
     if count == 1:
         q = np.asarray(builder.inputs[controls[0].name]).flat[0]
         negative = patterns[0].bits() == (0,)
@@ -291,8 +307,14 @@ def control_component_via_predicate(
             {f"ctrl_{i}": builder.inputs[r.name] for i, r in enumerate(controls)},
         )
         q = predicate.pop("target")
-    outputs = builder.call_dict(derived.name, {control_name: q, **data})
-    q = outputs.pop(control_name)
+    q, successors = adder(builder, q, data)
+    outputs = dict(
+        zip(
+            (r.name for r in Signature(function.registers).rights()),
+            successors,
+            strict=True,
+        )
+    )
     if count == 1:
         if negative:
             q = builder.call_dict(prefix + "x", {"q": q})["q"]
