@@ -1543,3 +1543,58 @@ Default smoke/unit stops at maxfail with 22462 passed, 300 skipped, 1065 warning
 and six failures in 239.95 seconds. All six are in the independent seven-failure
 baseline; one baseline failure was not reached. No whole-suite success is claimed.
 Evidence is retained at ftqc-reference-env/g2-serial-shaped-*.
+
+## Two-control serial exact inverses (GRAPH53)
+
+The existing predicate compute and measured erase definitions provide the
+opposite owned signatures needed by the hierarchical adjoint builder. The
+test composition supplies their explicit semantic adjoint pairing and reverses
+the positive controlled body through the existing exact leaves. It does not
+invert measurement instructions as unitary gates or add a production inverse
+engine. The pinned default source Adjoint protocol supplies the corresponding
+controlled child reference; same-shape Casts remain explicit around it because
+the upstream default shaped Cast adjoint is still defective.
+
+Both original and native serial graphs reuse one stored child when selecting
+the same element twice. This matters for actual call multiplicities: separate
+dynamic source wrapper objects are not evidence of a shared source definition.
+Distinct elements retain their separate connections. Source and native call
+counts, operands, phases, feedback, input/output ownership and nonempty pool
+events agree through the independent source workspace adapter.
+
+The finite cases cover all four two-control activation patterns, clean and
+borrowed private work, element orders (0, 1), (1, 0), (0, 0), and retained and
+expanded calls. Each direction has four measurements: all 16 forward histories
+are paired with all 16 reverse histories. The full unnormalized final state
+equals the original joint state divided by 16, including its complex phase.
+Clean predicate/phase work returns to zero; borrowed private work retains its
+joint entanglement. Sequential user-facing forward and reverse append calls
+also restore the input through the existing dynamic execution path.
+
+Each inverse emits 2 CH, 4 CCX, 12 H, 8 T, 8 Tdag, 24 CX, 4 S, 2 phase,
+4 measure/CZ/reset, and 0/8/16 X depending on control polarity. The independent
+source model reports t=2, toffoli=4, and=4, clifford=12, rotation=4,
+measurement=4, T-equivalent 78 and peak nine. All seven category-weighted model
+totals and actual call counts close independently. The same physical wires
+8/6 are measured twice with distinct event slots 0/1 and 2/3 in each direction.
+Bookkeeping adds zero quantum gates. Full resource evidence retains 24 inverse
+scenarios and all native events, including zero-width internal wrappers.
+
+Implementation evidence: d146e664. Forty-eight new scenarios pass all 12288
+forward/inverse history pairs and 384 sequential append trajectories. The
+concentrated regression passes 6364 tests in 178.80 seconds. The coverage run
+passes 881 tests in 151.84 seconds, deliberately deselecting the 48 exhaustive
+new scenarios already covered by the concentrated run. Sixty-four integration
+tests pass in 4.14 seconds. Strict mypy covers 78 files and Black checks 104;
+scope, architecture, Program/API checks, four examples and 50 unchanged source
+blobs pass. Eight focused control/layout owners remain fully covered; existing
+component_control guards 79/215 remain uncovered. Default smoke/unit stops at
+maxfail with 21507 passed, 300 skipped, 1037 warnings and seven failures in
+135.08 seconds. All seven failure IDs equal the independent baseline; this is
+not whole-suite success. Evidence is retained at
+ftqc-reference-env/g2-multi-serial-inverse-*.
+
+G2 remains open. Next is composition across differing Allocate/Free dirty
+flags, preserving the explicit clean-zero and borrowed joint-state obligations.
+Other shapes/dtypes, symbolic execution, source defects and complete parent-file
+audits remain open.
