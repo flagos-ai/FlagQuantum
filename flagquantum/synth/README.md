@@ -1328,3 +1328,37 @@ budgets. Plain mutable helpers and root inverse/within regions reuse the same
 checked unitary effect. Const selectors, arbitrary computed predicates and
 multi-bit truth tests remain refused; see the
 [semantic admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-MATRIX-20261110.md).
+
+## Owned private registers
+
+Private storage uses the same quantum types as ports. A constructor initializer
+creates a captured handle, not a quantum state. Allocate or prepare it before
+use and explicitly drop it at the unconditional root:
+
+```python
+import flagquantum as fq
+from flagquantum.synth import CX, H, Output, QBit, allocate, drop, qfunc, synthesize
+
+@qfunc
+def main(test: Output[QBit]) -> None:
+    private: QBit = QBit()
+    allocate(test)
+    allocate(private)
+    H(private)
+    CX(private, test)
+    drop(private)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("test",))))
+```
+
+The test marginal is 50/50. Both physical qubits remain in the Bell state;
+`result.statevector()` retains the environment, while `program.registers` exposes
+only `test`. Drop does not reset, uncompute, measure or recycle storage. Dirty
+private qubits count toward physical width/memory and are distinct from clean
+work bits. Missing/duplicate drops, post-drop access, signature/view drops,
+Output-helper escape and ownership changes in helpers/loops/branches/unitary
+regions refuse. This profile adds no `free` operation. See the
+[admission](../../docs/api-changes/FQ-SYNTH-NATIVE-HIDDEN-STORAGE-20261110.md) and
+[native overlap example](../../examples/synthesis/algorithms/quantum_primitives/swap_test/main.py).
