@@ -167,6 +167,15 @@ def allocate(
     raise TypeError("allocate is captured inside qfunc; synthesize the program")
 
 
+def drop(target: QNum | QArray[QBit], /) -> None:
+    """End access to owned hidden storage while retaining its entangled environment.
+
+    This does not reset, uncompute or reuse the physical qubits. Hidden storage
+    must be dropped exactly once at the unconditional qfunc root before return.
+    """
+    raise TypeError("drop is captured inside qfunc; synthesize the program")
+
+
 def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
     """Prepare uniform amplitudes on an initialized captured quantum port.
 

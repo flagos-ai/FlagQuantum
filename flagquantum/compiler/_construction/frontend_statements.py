@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING
 from .frontend_classical import classical_number
 from .frontend_evolution import flush_evolutions
 from .frontend_python import _error
+from .frontend_storage import declare_hidden
 from .frontend_views import capture_loop
 from .program_types import adjoint
 
@@ -86,7 +87,16 @@ def capture_statements(
     """Dispatch native syntax to domain-owned capture without executing Python."""
     statements = iter(body)
     for statement in statements:
-        if isinstance(statement, ast.For):
+        if isinstance(statement, ast.AnnAssign):
+            if nested:
+                _error(
+                    owner.source,
+                    statement,
+                    "program.storage",
+                    "hidden declarations require the unconditional program root",
+                )
+            declare_hidden(owner, statement)
+        elif isinstance(statement, ast.For):
             capture_loop(owner, statement)
         elif isinstance(statement, ast.If):
             capture_conditional(owner, statement)

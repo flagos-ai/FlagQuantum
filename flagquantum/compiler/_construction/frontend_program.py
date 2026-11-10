@@ -46,6 +46,7 @@ from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
 from .frontend_regions import capture_adjoint, capture_unitary_within
 from .frontend_statements import capture_statements
+from .frontend_storage import drop_hidden, hidden_declarations
 from .frontend_transforms import capture_modular_exp, capture_transform
 from .frontend_views import gate_target, inline_mutable, locations
 from .frontend_xor import capture_expression_xor
@@ -59,6 +60,7 @@ from .program_types import (
     control,
     crx,
     cx,
+    drop,
     h,
     hadamard_transform,
     inplace_prepare_amplitudes,
@@ -213,6 +215,8 @@ class _Body:
         self.ports = {p.name: p for p in ports}
         self.widths = {p.name: p.width for p in ports}
         self.registers: dict[str, Value] = {}
+        self.hidden: set[str] = set()
+        self.dropped: set[str] = set()
         self.entry = Value(ValueId(name, 0), QUANTUM_EFFECT)
         self.effect = self.entry
         self.counter = len(ports) + 1
@@ -237,6 +241,13 @@ class _Body:
         if not isinstance(node, ast.Name) or node.id not in self.ports:
             _error(self.source, node, "program.port", "use one declared quantum port")
         name = node.id
+        if name in self.dropped:
+            _error(
+                self.source,
+                node,
+                "program.drop",
+                "a dropped register cannot be accessed again",
+            )
         width = self.widths[name]
         if width is None:
             self.widths[name] = width = inferred
@@ -255,9 +266,15 @@ class _Body:
                 "output width cannot fit the complete expression domain",
             )
         if name not in self.registers:
+            index = (
+                self.counter
+                if name in self.hidden
+                else tuple(self.ports).index(name) + 1
+            )
+            if name in self.hidden:
+                self.counter += 1
             self.registers[name] = Value(
-                ValueId(self.name, tuple(self.ports).index(name) + 1),
-                register_type(width),
+                ValueId(self.name, index), register_type(width)
             )
         return self.registers[name]
 
@@ -543,6 +560,8 @@ class _Body:
             )
         if function is control:
             self.scalar_control(node)
+        elif function is drop:
+            drop_hidden(self, node)
         elif function is allocate:
             if len(node.args) not in {1, 2}:
                 _error(
@@ -896,6 +915,13 @@ class _Body:
                         "program.port",
                         "qfunc actuals must be declared quantum ports",
                     )
+                if port.role == "output" and argument.id in self.hidden:
+                    _error(
+                        self.source,
+                        argument,
+                        "program.storage",
+                        "hidden storage cannot escape through Output helper ports",
+                    )
                 if self.ports[argument.id].kind != port.kind:
                     _error(
                         self.source,
@@ -1121,7 +1147,9 @@ class _Body:
                 ast.copy_location(ast.Name(id=name, ctx=ast.Load()), self.source.node)
             )
             for name in self.ports
+            if name not in self.hidden
         }
+        hidden = hidden_declarations(self)
         borrowed = tuple(
             values[p.name] for p in self.ports.values() if p.role == "const"
         )
@@ -1153,6 +1181,7 @@ class _Body:
                         (self.entry, *borrowed),
                         (
                             *declarations,
+                            *hidden,
                             *self.operations,
                             Operation(
                                 "qreg.return",
