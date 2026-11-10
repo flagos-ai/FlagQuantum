@@ -1,6 +1,6 @@
 # Bounded sparse native predicate phases
 
-Status: contract and actual-blocker probes; implementation pending.
+Status: implemented; local original/native/independent Circuit acceptance passes.
 
 ## Observed shared blocker
 
@@ -71,3 +71,27 @@ resource parity claim follows from this bounded path.
 Notebook and broader Python workflow completion remain separate from quantum
 program acceptance. The validated starting point is189/216 native quantum
 programs,24/213 Notebook workflows and14/19 revision-nine merged scopes.
+
+## Delivered evidence
+
+The implemented fallback is restricted to nine-to-twelve distinct raw unsigned
+bits, at most512 syntax nodes, depth below128,53-bit integer intermediates and
+at most32 satisfying minterms. Full-domain true/false predicates are explicit.
+Minterms are disjoint cubes without minimization; two groups of at most six
+signed literals reuse existing clean factor compute/uncompute. The original
+small-width phase paths remain unchanged. No public API is added.
+
+The full20scenario acceptance plus alias refusal runs inside353 phase and
+application regression tests. Independent truth evaluation has21 tests and
+Compiler has1615. Related regressions pass309. Fresh216 original outcomes,
+source hashes and resources match the preceding accepted head exactly; all six
+approved revisions execute. Historical capture replay confirms two outdated
+small-width resource assertions reflect the preceding cube optimization; tests
+retain phase checks and strict lower-budget refusal.
+
+Whitebox keeps12data bits and10iterations, using18physical/6work bits,
+2264operations and depth1860. Graph coloring keeps10data bits and1iteration,
+using16physical/6work bits,450operations and depth399. Independent Circuit
+ladders and unchanged original sources match absolute complete logical states,
+with physical layouts aligned through declared register mappings. Workspace
+is checked zero. No complete Notebook or optimality claim is made.

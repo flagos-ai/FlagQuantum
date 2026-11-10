@@ -234,7 +234,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | Pending | pending |
 | `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | [Native program](applications/cybersecurity/link_monitoring/main.py) | pending |
 | `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py) | pending |
-| `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | Pending | pending |
+| `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | [Native program](applications/cybersecurity/whitebox_fuzzing/main.py) | pending |
 | `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | Pending | pending |
 | `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | Pending | pending |
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | Pending | pending |
@@ -383,7 +383,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | [Native program](tutorials/basics/add_bell_states/main.py) | pending |
 | `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | validated |
 | `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | [Native program](tutorials/basics/exponentiation/example_exponentiation/main.py) | pending |
-| `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | Pending | pending |
+| `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | [Native program](tutorials/basics/grover_graph_coloring/main.py) | pending |
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | [Native program](tutorials/basics/mcx/main.py) | pending |
 | `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | [Native program](tutorials/basics/optimization/learning_optimization/main.py) | pending |
 | `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | [Native program](tutorials/basics/prepare_state/main.py) | validated |

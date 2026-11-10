@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **189/216**.
+Validated quantum-program counterparts: **191/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -53,7 +53,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (48 native programs)
+## Applications (49 native programs)
 
 - [qlbm](applications/cfd/qlbm/README.md)
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
@@ -67,6 +67,7 @@ Validated local Notebook workflows:
 - [second_quantized_hamiltonian](applications/chemistry/second_quantized_hamiltonian/README.md)
 - [link_monitoring](applications/cybersecurity/link_monitoring/README.md)
 - [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
+- [whitebox_fuzzing](applications/cybersecurity/whitebox_fuzzing/README.md)
 - [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
 - [portfolio_optimization_with_hhl](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
 - [option_pricing](applications/finance/option_pricing/README.md)
@@ -204,7 +205,7 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (42 native programs)
+## Tutorials (43 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
@@ -214,6 +215,7 @@ Validated local Notebook workflows:
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [example_exponentiation](tutorials/basics/exponentiation/example_exponentiation/README.md)
+- [grover_graph_coloring](tutorials/basics/grover_graph_coloring/README.md)
 - [mcx](tutorials/basics/mcx/README.md)
 - [learning_optimization](tutorials/basics/optimization/learning_optimization/README.md)
 - [prepare_state](tutorials/basics/prepare_state/README.md)

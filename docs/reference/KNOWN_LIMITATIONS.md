@@ -1098,3 +1098,19 @@ lattice reflection. It is neither a general Boolean optimizer nor an optimality
 claim. Existing multi-bit arithmetic retains its six-active-input bound. Signed,
 oversized or insufficient-budget candidates refuse; other legal synthesis
 candidates may still be selected.
+
+## Sparse native predicate phases
+
+A native constant phase controlled by a raw unsigned predicate may use a
+separate exact sparse path for nine-to-twelve distinct input bits. It compiles
+at most512 syntax nodes (depth below128), evaluates at most4096 assignments,
+and admits at most32 satisfying minterms, with all-true/all-false cases explicit.
+Integer intermediates remain within53 bits; supported modulo divisors are
+positive literal powers of two and literal exponents are0..8. Existing eight-bit
+polynomial and multi-bit Boolean arithmetic limits remain unchanged. Each
+minterm uses checked six-literal clean factors, followed by a phase and inverse
+cleanup. This is a bounded fallback, not an optimal minimizer or a general
+wide-predicate promise. Ordinary helper ownership, definite initialization,
+Const and alias refusal, phase magnitude and actual resource ceilings remain
+in force. Original full-width graph-coloring and whitebox Grover programs have
+independent Circuit acceptance; complete Notebook workflows remain separate.
