@@ -2903,7 +2903,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/algorithms/quantum_linear_solvers/qsvt_matrix_inversion/main.py",
+        "scope": "Quantum program only; complete Notebook workflow remains pending."
+      },
       "kind": "notebook_workflow"
     },
     {

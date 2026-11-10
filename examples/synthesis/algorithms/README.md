@@ -24,6 +24,7 @@ Native FlagQuantum programs currently available:
 - [hidden_shift](number_theory_and_cryptography/hidden_shift/README.md)
 - [shor](number_theory_and_cryptography/shor/README.md)
 - [solving_qlsp_with_aqc](quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
+- [qsvt_matrix_inversion](quantum_linear_solvers/qsvt_matrix_inversion/README.md)
 - [vqls_with_lcu](quantum_linear_solvers/vqls/vqls_with_lcu/README.md)
 - [qpe_for_matrix](quantum_phase_estimation/qpe_for_matrix/README.md)
 - [gqsp](quantum_primitives/gqsp/README.md)
