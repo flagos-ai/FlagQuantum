@@ -668,6 +668,8 @@ _SYNTH_ACTIVE_EXPORTS = (
     "prepare_ghz_state",
     "prepare_amplitudes",
     "prepare_state",
+    "inplace_prepare_amplitudes",
+    "inplace_prepare_state",
     "QArray",
     "H",
     "S",
@@ -1255,6 +1257,30 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native catalog operations differ from their authorized scope")
+    inplace_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-inplace-preparation-candidate.json").read_text()
+    )
+    inplace_signatures = {
+        "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+        "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    }
+    if (
+        inplace_contract.get("namespace") != "flagquantum.synth"
+        or inplace_contract.get("added_exports") != list(inplace_signatures)
+        or inplace_contract.get("signatures") != inplace_signatures
+        or inplace_contract.get("implementation_authorized") is not True
+        or inplace_contract.get("release_authorized") is not False
+        or inplace_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-INPLACE-PREPARATION-20261110.md"
+        or not (
+            ROOT / "docs/api-changes/FQ-SYNTH-NATIVE-INPLACE-PREPARATION-20261110.md"
+        ).is_file()
+        or any(
+            str(inspect.signature(getattr(synth, name, None))) != signature
+            for name, signature in inplace_signatures.items()
+        )
+    ):
+        errors.append("native in-place preparation differs from its authorized scope")
     views = json.loads(
         (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
     )
