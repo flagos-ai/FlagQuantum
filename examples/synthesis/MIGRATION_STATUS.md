@@ -274,7 +274,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/physical_systems/ising_model/ising_model` | notebook_workflow | [Native program](applications/physical_systems/ising_model/main.py) | pending |
 | `applications/physical_systems/maxwell_equation/maxwell_2d_simulation` | notebook_workflow | Pending | pending |
 | `applications/physical_systems/maxwell_equation/maxwell_utils` | python_unclassified | Pending | pending |
-| `applications/physical_systems/quantum_chaos/quantum_sawtooth_map` | notebook_workflow | Pending | pending |
+| `applications/physical_systems/quantum_chaos/quantum_sawtooth_map` | notebook_workflow | [Native program](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/main.py) | pending |
 | `applications/plasma/vlasov_ampere/vlasov_ampere` | notebook_workflow | Pending | pending |
 | `applications/plasma/vlasov_ampere/vlasov_ampere_qiskit` | notebook_workflow | Pending | pending |
 | `applications/telecom/network_traffic_optimization/network_traffic_optimization` | notebook_workflow | [Native program](applications/telecom/network_traffic_optimization/main.py) | pending |
@@ -291,7 +291,7 @@ Validated local Notebook workflows: **24/213**.
 | `community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob` | notebook_workflow | Pending | pending |
 | `community/basic_examples/superposition/superposition` | notebook_workflow | [Native program](community/basic_examples/superposition/main.py) | validated |
 | `community/basic_examples/vqe/vqe` | notebook_workflow | Pending | pending |
-| `community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE` | quantum_program | Pending | pending |
+| `community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE` | quantum_program | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/main.py) | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Laplacian_BE` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/bb84/bb84_implementation` | notebook_workflow | [Native program](community/paper_implementation_project/bb84/bb84_implementation/main.py) | pending |

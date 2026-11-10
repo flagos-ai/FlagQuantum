@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **151/216**.
+Validated quantum-program counterparts: **153/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -42,7 +42,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (39 native programs)
+## Applications (40 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
@@ -79,6 +79,7 @@ Validated local Notebook workflows:
 - [variational_quantum_imaginary_time_evolution](applications/optimization/variational_quantum_imaginary_time_evolution/README.md)
 - [fermi_hubbard_1d](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/README.md)
 - [ising_model](applications/physical_systems/ising_model/README.md)
+- [quantum_sawtooth_map](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/README.md)
 - [network_traffic_optimization](applications/telecom/network_traffic_optimization/README.md)
 - [radio_access_network_positioning_antennas](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/README.md)
 - [resiliency_planning](applications/telecom/resiliency_planning/README.md)
@@ -89,8 +90,9 @@ Validated local Notebook workflows:
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 
 
-## Community (4 native programs)
+## Community (5 native programs)
 
+- [periodic_laplacian_1d](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/README.md)
 - [bb84_implementation](community/paper_implementation_project/bb84/bb84_implementation/README.md)
 - [bpde](community/paper_implementation_project/bpde/README.md)
 - [classical_shadows](community/paper_implementation_project/classical_shadows/README.md)
