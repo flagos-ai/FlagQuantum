@@ -76,8 +76,10 @@ present the concrete compatibility options.
 
 All execution evidence here is local CPU complex128. Static decompositions own
 CPU snapshots and reject autograd inputs. Time differentiation is verified with
-finite differences; geometry, integrals, orbital frames, rank selection and
-Gaussian block differentiation are unsupported. Encoding and reduction results
+finite differences; geometry, supplied integrals, decomposition orbital frames, rank selection and
+Gaussian block differentiation are unsupported. EXT08 separately differentiates
+real orbital parameters through integral rotation and a closed-shell determinant
+objective; it does not differentiate the static decomposition path. Encoding and reduction results
 are separate contracts: preparation/evolution circuits do not accept encoded or
 reduced values and always use the unreduced JW occupation register.
 
@@ -283,3 +285,19 @@ and invalid inputs. The H2 example reduces four qubits to two, measures energy
 and particle number with fq.run, and verifies the lifted eigenvector residual.
 No upstream source is copied, no dependency or Stable Core schema is changed,
 and no full OpenFermion compatibility or automatic symmetry search is claimed.
+
+## EXT08: differentiable orbital parameters
+
+[The stage contract](FERMION_ORBITAL_GRADIENTS.md) defines a local CPU tensor
+workflow in `algorithms.chemistry_domain.orbital_rotation`. Static real chemist
+integrals and antisymmetric generators produce differentiable rotated tensors.
+The separate closed-shell contraction provides an orbital-optimization objective.
+Static molecular snapshots, symbolic encodings and circuit lowering remain
+independent and reject attempts to detach a trainable integral input silently.
+
+Run `python -m examples.algorithms.fermion_orbital_rotation`. At angle 0.2 radians,
+the H2 determinant energy is -1.0286951779 Ha and its gradient is 0.8576738812
+Ha/rad, agreeing with central finite differences. One step of size 0.05 lowers
+it to -1.0618547836 Ha. This is a determinant objective, not correlated energy,
+geometry differentiation or a converged SCF calculation. The fresh-interpreter
+isolation test also executes this example with external science SDKs blocked.

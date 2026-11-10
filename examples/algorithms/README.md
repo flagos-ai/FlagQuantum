@@ -37,6 +37,7 @@ python -m examples.algorithms.fermion_tapering
 python -m examples.algorithms.fermion_fourier
 python -m examples.algorithms.fermion_energy
 python -m examples.algorithms.fermion_chemistry
+python -m examples.algorithms.fermion_orbital_rotation
 python -m examples.algorithms.fermion_fcidump
 python -m examples.synthesis.tutorials.getting_started.trial.main
 python -m examples.synthesis.tutorials.getting_started.source_trial.main
@@ -275,3 +276,6 @@ boundary for each.
   reduced from four qubits to two, with a signed X/Y symmetry, native energy and
   particle-number measurements, and state lifting. Dense diagonalization is a
   small reference step, not a scalable eigensolver.
+
+- [`fermion_orbital_rotation.py`](fermion_orbital_rotation.py): fixed H2 real orbital
+  gradients, finite-difference verification and one closed-shell energy descent step.

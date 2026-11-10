@@ -38,6 +38,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`algorithms/fermion_orbital_rotation.py`](algorithms/fermion_orbital_rotation.py)
+  differentiates a real orbital angle through domain tensor functions.
+
 - [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
   converts repeated-slot dynamic records to reference-normalized detector and
   observable flips using explicit measurement ordinals.

@@ -114,6 +114,7 @@ SCRIPTS = (
     "fermion_hdf5",
     "fermion_fourier",
     "fermion_tapering",
+    "fermion_orbital_rotation",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -134,6 +135,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_orbital_rotation": (
+        "real CPU orbital rotations",
+        "not geometry gradients or SCF",
+    ),
     "fermion_tapering": (
         "explicitly supplied symmetry sector",
         "not a scalable eigensolver",
@@ -1858,3 +1863,10 @@ def test_fermion_tapering_example_measures_selected_h2_sector() -> None:
     assert float(_labelled(output, "Particle number")) == pytest.approx(2, abs=1e-6)
     assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
     _assert_premise("fermion_tapering", output)
+
+
+def test_fermion_orbital_rotation_example() -> None:
+    output = _run("fermion_orbital_rotation")
+    _assert_premise("fermion_orbital_rotation", output)
+    assert "Orbital gradient 0.85767388" in output
+    assert "After one gradient step -1.06185478" in output
