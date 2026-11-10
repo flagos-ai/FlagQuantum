@@ -394,8 +394,9 @@ def test_snapshot_without_unix_open_flags(
         assert snapshot.read_bytes() == b"010\n"
 
 
+@pytest.mark.parametrize("change", ["size", "mtime"])
 def test_snapshot_detects_changed_input(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: Literal["size", "mtime"]
 ) -> None:
     source, snapshot = tmp_path / "input", tmp_path / "snapshot"
     source.write_bytes(b"010\n")
@@ -406,7 +407,17 @@ def test_snapshot_detects_changed_input(
         nonlocal calls
         calls += 1
         if calls == 2:
-            source.write_bytes(b"101\n")
+            before = real_fstat(descriptor)
+            source.write_bytes(b"1010\n" if change == "size" else b"101\n")
+            if change == "mtime":
+                # Do not depend on the filesystem clock advancing between writes.
+                os.utime(
+                    source,
+                    ns=(before.st_atime_ns, before.st_mtime_ns + 2_000_000_000),
+                )
+                assert real_fstat(descriptor).st_mtime_ns != before.st_mtime_ns
+            else:
+                assert real_fstat(descriptor).st_size != before.st_size
         return real_fstat(descriptor)
 
     monkeypatch.setattr(os, "fstat", fstat)
