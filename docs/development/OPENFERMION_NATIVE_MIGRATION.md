@@ -241,3 +241,24 @@ FCIDUMP follow-up is reviewed separately in stacked PR #1110. Merge #1109 first,
 then retarget #1110 to main and validate that target. Any later commit, including
 documentation changes, needs its own applicable checks; the runs above remain
 evidence for their recorded revision.
+
+## Independent extension: fermionic Fourier transform
+
+EXT04 adds `algorithms.fermion.fourier.fourier_decomposition` and
+`algorithms.fermion.lowering.fermionic_fourier_transform`. The former returns the
+existing OrbitalDecomposition and never imports circuits; the latter reuses the
+existing determinant-preserving two-mode lift. The radix-2 Cooley-Tukey
+factorization is implemented directly from its mathematical identity; no new
+OpenFermion or Cirq source is copied and no production dependency is added.
+Forward F[p,q] = exp(-2j*pi*p*q/n)/sqrt(n), inverse F dagger, vacuum phase one,
+natural mode order, positive powers of two only. Adjacent fermionic routing
+costs O(n**2) factors and storage. This is a static full-register JW workflow,
+not a qubit QFT or a claim of OpenFermion API compatibility or FFT speedup.
+
+Run `python -m examples.algorithms.fermion_fourier`: every output mode has
+occupation 0.25 and the inverse amplitude residual is below 1e-12. Focused tests
+compare one-particle plans with torch.fft, small full Fock matrices and selected
+eight-mode particle sectors with Fourier minors, retaining absolute phase.
+The fresh-interpreter dependency isolation test also composes the Fourier and
+inverse circuits with external scientific SDKs blocked. No chemistry input,
+Core, runtime, stable export or dependency manifest changes are needed.
