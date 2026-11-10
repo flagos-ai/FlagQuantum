@@ -1246,3 +1246,12 @@ there is no allocation or reset. The first native admission accepts static real
 vectors of length 2..256 and whole-register mutable helper calls. Views, quantum
 controls and Const targets remain excluded. Full-column and entangled-input
 conformance is in `tests/integration/test_synthesis_native_inplace_preparation.py`.
+
+Native coherent control of static matrices reuses `qreg.unitary`: one writable
+scalar or indexed selector plus its target occupy at most five matrix qubits.
+`control(~bit, lambda: unitary(matrix, target))` selects zero; positive control
+selects one. Full block matrices preserve conditional global phase, indexed
+alias checks and the existing unitary/initialization/budget verifier. Const
+selectors, computed predicates and multi-bit truth tests remain refused. See
+`tests/integration/test_synthesis_native_controlled_matrix.py` and
+`docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-MATRIX-20261110.md`.

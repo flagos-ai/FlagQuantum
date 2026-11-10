@@ -7,11 +7,12 @@ import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Operation, Value, ValueId
+from .frontend_matrix import capture_controlled_unitary
 from .frontend_numeric import reject_numeric_reads
 from .frontend_phase import capture_polynomial_phase
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import gate_target, locations
-from .program_types import hadamard_transform, phase, qft, r, x
+from .program_types import hadamard_transform, phase, qft, r, unitary, x
 from .register_profile import register_type, register_width
 
 if TYPE_CHECKING:
@@ -58,6 +59,9 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             "a quantum port cannot shadow a callable",
         )
     operation = owner.resolve_callable(body.func)
+    if operation is unitary:
+        capture_controlled_unitary(owner, condition, body)
+        return
     if operation is x:
         capture_controlled_x(owner, condition, body)
         return

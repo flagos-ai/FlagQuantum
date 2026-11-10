@@ -11,10 +11,34 @@ from .frontend_views import gate_target, locations
 from .register_profile import MAX_MATRIX_QUBITS
 
 if TYPE_CHECKING:
+    from .._hybrid.model import Value
     from .frontend_program import _Body
 
 
-def capture_unitary(owner: _Body, node: ast.Call) -> None:
+def capture_controlled_unitary(
+    owner: _Body, condition: ast.expr, body: ast.Call
+) -> None:
+    """Retain a scalar control as the leading bit of a bounded static matrix."""
+    inverted = isinstance(condition, ast.UnaryOp) and isinstance(
+        condition.op, ast.Invert
+    )
+    selector = (
+        condition.operand
+        if inverted and isinstance(condition, ast.UnaryOp)
+        else condition
+    )
+    capture_unitary(
+        owner, body, control=gate_target(owner, selector), active=int(not inverted)
+    )
+
+
+def capture_unitary(
+    owner: _Body,
+    node: ast.Call,
+    *,
+    control: tuple[Value, int] | None = None,
+    active: int = 1,
+) -> None:
     """Reuse the checked unitary effect and its existing contract for indexed qubits."""
     if len(node.args) != 2:
         _error(
@@ -123,6 +147,41 @@ def capture_unitary(owner: _Body, node: ast.Call) -> None:
             "program.matrix",
             "matrix targets require one to five qubits",
         )
+    if control is not None:
+        if control in targets:
+            _error(
+                owner.source,
+                target_node,
+                "program.alias",
+                "matrix control and target must be disjoint",
+            )
+        if len(targets) + 1 > MAX_MATRIX_QUBITS:
+            _error(
+                owner.source,
+                target_node,
+                "program.matrix",
+                "controlled matrix including selector requires at most five qubits",
+            )
+        size = 1 << len(targets)
+        if len(prepared) != size or any(len(row) != size for row in prepared):
+            _error(
+                owner.source,
+                matrix_node,
+                "program.matrix",
+                "matrix dimensions must match the target width",
+            )
+        prepared = [
+            tuple(
+                (
+                    prepared[row % size][column % size]
+                    if row // size == column // size == active
+                    else (float(row == column and row // size != active), 0.0)
+                )
+                for column in range(2 * size)
+            )
+            for row in range(2 * size)
+        ]
+        targets = (control, *targets)
     owner.emit(
         "qreg.unitary",
         node,
