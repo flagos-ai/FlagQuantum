@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5b57d9d15e640714aa04d95aaa54c46d320dc7b31b0c8e8ea30c17b5f7dcc3ce",
+  "native_entrypoint": "examples.synthesis.tutorials.advanced_tutorials.discrete_quantum_walk_2d.discrete_time_quantum_walk.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_grid_walk.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain two5bit position words,original signed four-coin amplitudes and t2default. Native whole-word modular updates in single-update helpers preserve wraparound and coherent predicate branches. Drop retains the two coin bits as environment,not zero workspace. Original/native/independent fullstates t0/1/2/3 and two nonzero/wrapping models pass;all clean work and named marginals checked. Default native20physical/8work775operations/depth605 versus original15physical198operations/depth186;no resource parity claim."
+}
