@@ -122,3 +122,9 @@ Compiler zero-input wrappers through SSA wiring without constructing dense word
 states or performing physical resets. See
 [zero-state nodes](../../../docs/development/REGISTER_ZERO_STATE.md) for source
 failures, gradients, complex amplitudes and measured append verification.
+
+`conjugate_pairs.py` doubles existing numerical nodes with independent even/odd
+forward/backward labels and elementwise conjugation, preserving axis order and
+PyTorch autograd. It does not build a measurement channel or implement discard.
+See [conjugate tensor pairs](../../../docs/development/TENSOR_CONJUGATE_PAIRS.md)
+for source correspondence, density/branch tests and separate resource counts.
