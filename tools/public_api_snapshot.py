@@ -670,6 +670,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "prepare_state",
     "inplace_prepare_amplitudes",
     "inplace_prepare_state",
+    "drop",
     "QArray",
     "H",
     "S",
@@ -1284,6 +1285,21 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native in-place preparation differs from its authorized scope")
+    hidden_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-hidden-storage-candidate.json").read_text()
+    )
+    if (
+        hidden_contract.get("added_exports") != ["drop"]
+        or hidden_contract.get("signatures")
+        != {"drop": "(target: 'QNum | QArray[QBit]', /) -> 'None'"}
+        or hidden_contract.get("implementation_authorized") is not True
+        or hidden_contract.get("release_authorized") is not False
+        or hidden_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-HIDDEN-STORAGE-20261110.md"
+        or not (ROOT / hidden_contract["authorization_record"]).is_file()
+        or str(inspect.signature(synth.drop)) != hidden_contract["signatures"]["drop"]
+    ):
+        errors.append("native hidden storage differs from its authorized scope")
     views = json.loads(
         (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
     )
