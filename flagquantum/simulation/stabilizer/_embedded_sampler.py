@@ -74,6 +74,27 @@ class _EmbeddedRecordConverter:
                 result.append(torch.empty((len(records), 0), dtype=torch.bool))
         return result[0], result[1]
 
+    def convert_file(
+        self,
+        source: str,
+        input_format: str,
+        target: str,
+        output_format: str,
+        append: bool,
+        observable: str | None,
+        obs_format: str,
+    ) -> None:
+        self._native.convert_file(
+            self._handle,
+            source,
+            input_format,
+            target,
+            output_format,
+            append,
+            observable,
+            obs_format,
+        )
+
 
 class _EmbeddedDetectorSampler:
     def __init__(

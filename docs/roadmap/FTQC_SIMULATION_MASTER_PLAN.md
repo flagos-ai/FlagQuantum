@@ -1044,3 +1044,28 @@ FTS-02/R04/M2 are unchanged. FTS-07 decoder/model evidence is reused, not promot
 Remaining bundles include measurement-to-detector file conversion, bounded
 public record reading/streaming decode, and the remaining pinned API inventory.
 No new performance, threshold, hardware or capacity evidence is inferred.
+
+## Measurement-file conversion package — 2026-11-10
+
+The prerequisite [#1116](https://github.com/flagos-ai/FlagQuantum/pull/1116)
+merged as `0bf869e29c3cad0f5a0cac6d30018d7cb996a7e2`, reviewed head
+`2e30db35378a3e48876c4b0e42c533b9634f137a`. This is a verified merge identity;
+it does not by itself add a dedicated actual-main QEC/GPU receipt.
+
+The [26-path file-conversion proposal](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md)
+was explicitly approved with SHA-256
+`e2ef1156625a8760425f936f1e72c824e5d3fa8200e231f4e589acaf9cf8bc5a`.
+The candidate adds only `CompiledMeasurementsToDetectionEventsConverter.convert_file`,
+using six input/five output formats and the unchanged 96-file Stim 1.16.0
+source closure. Its external 010 records witness three occurrence columns,
+latest-slot X feedback, detectors 10 and logical 1. Local acceptance and PR/main
+publication remain pending until a final-head receipt is recorded.
+
+FTS-04/R03 gain a candidate file-to-detector vertical slice; R08 gains bounded
+file processing without an all-shot table. All three remain **partially complete**.
+FTS-02/R04 and M0–M5 remain unchanged. This does not establish complete Stim or
+PyMatching parity, statistical correctness at scale, performance, threshold,
+hardware qualification or mixed Clifford/non-Clifford execution. Original CI,
+GPU, environment and installation failures remain retained. After acceptance,
+inspect bounded file-to-decoder batch ingestion against the upstream inventory;
+it is a separate, unapproved scope.

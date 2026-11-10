@@ -671,3 +671,39 @@ def test_core_sampler_success_requires_the_explicit_embedded_profile(
     else:
         with pytest.raises(AssertionError, match="ignored missing Stim"):
             _exercise_compiled_measurement_sampler("core")
+
+
+@pytest.mark.parametrize("profile", ("core", "stim", "pymatching", "both"))
+def test_measurement_file_conversion_installed_profile(profile: str) -> None:
+    from tools.qec_installed_smoke import _exercise_measurement_file_conversion
+
+    if _embedded_profile() or profile in ("stim", "both"):
+        if not _embedded_profile():
+            pytest.importorskip("stim")
+        result = _exercise_measurement_file_conversion(profile)
+        assert result == {
+            "shots_per_case": 64,
+            "input_formats": ["01", "b8", "r8", "hits", "dets", "ptb64"],
+            "output_formats": ["01", "b8", "r8", "hits", "dets"],
+            "byte_cases": 30,
+            "occurrence_columns": 3,
+            "appended_and_separate": True,
+        }
+    else:
+        assert _exercise_measurement_file_conversion(profile) is None
+
+
+def test_file_conversion_profile_failure_is_not_silently_skipped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum import Circuit
+    from tools import qec_installed_smoke
+
+    monkeypatch.setattr(qec_installed_smoke, "_embedded_profile", lambda: True)
+
+    def failed(*args: object, **kwargs: object) -> None:
+        raise RuntimeError("injected converter failure")
+
+    monkeypatch.setattr(Circuit, "compile_m2d_converter", failed)
+    with pytest.raises(RuntimeError, match="injected converter failure"):
+        qec_installed_smoke._exercise_measurement_file_conversion("core")

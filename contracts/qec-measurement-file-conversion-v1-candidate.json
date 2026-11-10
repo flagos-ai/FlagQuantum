@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "status": "implemented_pending_acceptance",
+  "approval": {
+    "proposal_sha256": "e2ef1156625a8760425f936f1e72c824e5d3fa8200e231f4e589acaf9cf8bc5a",
+    "authority": "Explicit user approval, 2026-11-10"
+  },
+  "owner": "integration",
+  "path_classification": "single_device_fast_path",
+  "method": "flagquantum.qec.execution.measurement_conversion.CompiledMeasurementsToDetectionEventsConverter.convert_file",
+  "parameters": [
+    "self",
+    "measurements_filepath",
+    "measurements_format",
+    "sweep_bits_filepath",
+    "sweep_bits_format",
+    "detection_events_filepath",
+    "detection_events_format",
+    "append_observables",
+    "obs_out_filepath",
+    "obs_out_format"
+  ],
+  "defaults": {
+    "measurements_format": "01",
+    "sweep_bits_filepath": null,
+    "sweep_bits_format": "01",
+    "detection_events_format": "01",
+    "append_observables": false,
+    "obs_out_filepath": null,
+    "obs_out_format": "01"
+  },
+  "input_formats": [
+    "01",
+    "b8",
+    "r8",
+    "ptb64",
+    "hits",
+    "dets"
+  ],
+  "output_formats": [
+    "01",
+    "b8",
+    "r8",
+    "hits",
+    "dets"
+  ],
+  "limits": {
+    "snapshot_bytes": 1073741824,
+    "aggregate_output_bytes": 1073741824,
+    "snapshot_plus_staged_bytes": 2147483648,
+    "parser_read_bytes": 65536,
+    "principal_table_bytes": 67108864,
+    "batch_shots": 1024
+  },
+  "semantics": [
+    "Occurrence columns survive classical-slot overwrites",
+    "Both existing factories use their prepared source and reference",
+    "Appended and separate observable outputs may coexist",
+    "Empty input publishes empty outputs without numerical conversion",
+    "Regular immutable input snapshot; no input symlinks or destination replacement",
+    "Sequential publication, inode-owned rollback and reported cleanup errors",
+    "Contained file I/O errors do not invalidate dense conversion"
+  ],
+  "refusals": [
+    "Selected ptb64 output",
+    "Non-None sweep input",
+    "Malformed input or nonzero b8 padding",
+    "Incomplete ptb64 groups",
+    "Budget excess",
+    "Existing or aliased destinations"
+  ],
+  "replacement_test": "tests/qec/test_measurement_file_conversion.py"
+}

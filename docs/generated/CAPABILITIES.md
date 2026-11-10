@@ -399,6 +399,7 @@ This catalog is generated from the machine-validated
 | Sample detector and logical flips from a noisy native circuit | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Decode a model from the same source | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Pack detector rows without losing parity boundaries | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Convert captured measurement files into detector and logical files | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Differentiate a determinant energy with respect to orbital angles | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 | Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 
@@ -1476,14 +1477,14 @@ Run native complex PyTorch simulation, gradients, hybrid training, noise, TEBD, 
 Sample reference-normalized detector flips and derive an exact DEM from one bounded native Clifford source and explicit measurement maps.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`
+- **Public API:** `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`, `flagquantum.qec.execution.measurement_conversion.CompiledMeasurementsToDetectionEventsConverter.convert_file`
 - **Runtime modes:** `stabilizer`
 - **Hardware:** `cpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../examples/qec/native_detector_sampling.py)
 - **Documentation:** [guide](../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md)
-- **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, detector file writer, performance, threshold or full parity claim.
+- **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion is an approved candidate accepting six input and five output formats, with local acceptance pending. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
 
 ### Real orbital-parameter gradients
 

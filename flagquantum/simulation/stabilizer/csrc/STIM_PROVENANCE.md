@@ -47,3 +47,19 @@ Stim's writers. All 96 upstream files, their lock and license bytes are unchange
 Python owns validation, staging and publication; C++ owns numerical sampling,
 file writes and checked close. No Python dense table or new translation unit is
 introduced. Build and no-SDK installed acceptance remain required before delivery.
+
+## Measurement-to-detector file conversion
+
+Private `convert_file` reuses the existing prepared Converter circuit, stats and
+reference with `stream_measurements_to_detection_events_helper<width>`. This is
+the pinned 1024-record upstream reader/converter/writer, not a Python dense loop.
+Both output orientations are included in the pre-allocation estimate. Selected
+PTB64 output refuses before opening outputs, matching the upstream single-record
+writer restriction. The native bridge checks read/write/close errors; Python
+owns immutable snapshots, framing checks and no-replace publication.
+
+All 96 upstream files and 37 translation units remain byte-identical to Stim
+1.16.0 archive SHA-256
+`9092a996429dcf616d8d4ca01fec886b7b310caf9425a39fcfe499005636bd52`,
+commit `e2fc1eca7fd21684d433aa5f10f4504ea4860d07`. No source closure,
+compiler flag, dependency, license or setup.py change is made by this package.
