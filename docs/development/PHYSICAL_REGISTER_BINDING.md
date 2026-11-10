@@ -995,3 +995,68 @@ The final default smoke/unit run reports 22286 passed, 300 skipped,
 1065 warnings and seven failures in 108.44 seconds. Maxfail stopped that run.
 All seven failure IDs exactly match the independently recorded baseline.
 Those baseline failures remain unresolved by this batch.
+
+
+## GRAPH44 typed automatic partitions and specialization boundaries
+
+`b8898c01` moves existing local helper isolation into component_graph for its
+predicate, packed-control and layout consumers. `6c670622` appends a typed packed
+entry around an existing child entry, retaining the child as a separate callable.
+The existing AutoPartition layout owns group names, widths, unused slices and
+left_only rules. Calls follow the original Partition, child, inverse-Partition
+sequence. Internal rebindings use existing builder split/join functions. Child
+array elements are row-major and words are MSB-first. Unused portions stay live
+across the child. left_only exposes child right ports and consumes packed inputs.
+Physical frees require explicit input_ownership transfer. No partition adds a
+primitive instruction or workspace.
+
+`58add03c` verifies the distinction between the original specialization factory's
+unwrapped returned child and its wrapped callback target. Native retains the
+child root and selects the explicit packed entry for the actual callback.
+One and two wrapper layers preserve source parent connections, mutation, output
+order and primitive execution. Custom entry names and a nonleading control port
+execute correctly. Scalar opaque packed external ports are the current admission.
+Other external dtypes, shaped outer words, empty axes and symbolic layouts are
+not covered by this slice.
+
+Acceptance includes 25 new cases, 5810 concentrated cases in 40.68 seconds,
+375 focused cases in 54.31 seconds and 64 integration cases in 4.29 seconds.
+Strict mypy checks 63 files and formatting checks 89. Team scope, architecture,
+Program/API checks and four existing append/resource examples pass. All 45
+original source blobs match the pinned inventory. Initial concentrated coverage
+was 98% for the new module. `ad02b6ad` removes a redundant direction guard already
+implied by layout and child-output checks. Final 25-case verification passes in
+5.52 seconds with 100% statement/branch coverage, followed by strict typing and
+format checks on the changed module.
+
+Three packed layouts exhaust both child measurement histories and preserve full
+complex amplitudes, entangled unused/spectator bits and zero child work.
+Two bit-array shapes with repack or left_only preserve the source's complete
+tensor and output-wire permutation. A consuming LEFT port passes source tensor
+comparison with transferred input ownership. Existing circuit.append(op)
+execution preserves eight dynamic trajectories. Source root signatures, named
+connections, primitive parameters, per-wire order and feedback agree. Native
+root call multiplicities close against source bloq_counts, seven QEC categories
+and QubitCount.
+
+A packed ctrl/unused/q/spectator example emits 1 CH, 3 H, 2 T, 2 Tdag, 6 CX,
+1 S, 1 phase, 1 measurement, 1 CZ and 1 reset. Partitions add zero gates and
+zero work. Child clean peak is one and total width five. Independent source QEC
+reports t=1, and_bloq=1, clifford=5, rotation=2, measurement=1, other categories
+zero, T-equivalent=27 and peak five. Four emitted T/Tdag gates remain separately
+reported. The unused bit contributes to the actual peak.
+
+The original shape-(1,) single-control array passed to a scalar specialization
+asserts for both polarities. Native retains that collection and the same
+AssertionError, with no scalar coercion or successful-execution claim. Original
+RIGHT-only children fail construction. LEFT-only children repacked on both sides
+fail decomposition with KeyError. Native rejects those layouts earlier with
+ValueError, an explicit invalid-input timing/type difference. Valid left_only
+consumption is separately accepted. Source files remain unchanged.
+
+Default results are 22179 passed, 300 skipped, 1065 warnings and five failures
+in 114.89 seconds. Maxfail stopped that run. All five IDs belong to the independent
+seven-failure baseline. The other two baseline IDs were unobserved. Packed
+wrapper adjoints and existing-control combinations, broader Core admission,
+complete internal graphs and parent-file audits remain open. G2 continues.
+Evidence is retained under ftqc-reference-env/g2-typed-partition-*.
