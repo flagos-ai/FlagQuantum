@@ -84,8 +84,8 @@ from .program_types import (
     qft,
     qpe,
     qst_type2,
-    reset,
     r,
+    reset,
     rx,
     rz,
     rzz,
@@ -597,7 +597,9 @@ class _Body:
             )
         if function is reset:
             if len(node.args) != 1:
-                _error(self.source, node, "program.signature", "RESET takes one scalar bit")
+                _error(
+                    self.source, node, "program.signature", "RESET takes one scalar bit"
+                )
             value, index = gate_target(self, node.args[0])
             self.emit("qreg.reset", node, (value,), index=index)
             return
