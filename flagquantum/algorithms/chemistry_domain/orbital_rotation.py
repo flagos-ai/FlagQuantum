@@ -96,9 +96,12 @@ def rotate_spatial_integrals(
     h = one_real.to(dtype=torch.float64)
     eri = two_real.to(dtype=torch.float64)
     rotated_one = unitary.T @ h @ unitary
-    rotated_two = torch.einsum(
-        "ap,bq,cr,ds,abcd->pqrs", unitary, unitary, unitary, unitary, eri
-    )
+    # Contract one axis at a time to bound intermediates to O(n^4), even
+    # without an optional einsum contraction-path optimizer.
+    rotated_two = torch.einsum("ap,abcd->pbcd", unitary, eri)
+    rotated_two = torch.einsum("bq,pbcd->pqcd", unitary, rotated_two)
+    rotated_two = torch.einsum("cr,pqcd->pqrd", unitary, rotated_two)
+    rotated_two = torch.einsum("ds,pqrd->pqrs", unitary, rotated_two)
     return rotated_one, rotated_two
 
 
