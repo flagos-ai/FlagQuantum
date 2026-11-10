@@ -2278,3 +2278,22 @@ limitations = "Explicit Z records, default-state CPU PyTorch batch1, fixed Cliff
 focused_tests = "tests/qec/test_native_detector_execution.py"
 integration_tests = "tests/team/simulation/test_native_detector_execution_conformance.py"
 development_artifact = "flagquantum/simulation/stabilizer/_detector_sampling.py"
+
+[capabilities.openfermion_operator_conversion]
+title = "Optional OpenFermion operator conversion"
+summary = "Convert external fermionic and Pauli operators at an explicit optional ecosystem boundary, then use native operator consumers."
+category = "deployment_and_extension"
+user_goals = ["Migrate existing OpenFermion operators into native algebra", "Export native operators without changing their physical action"]
+public_apis = ["flagquantum.ecosystem.openfermion.from_openfermion_fermion", "flagquantum.ecosystem.openfermion.to_openfermion_fermion", "flagquantum.ecosystem.openfermion.from_openfermion_qubit", "flagquantum.ecosystem.openfermion.to_openfermion_qubit"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "not_applicable"
+quick_start = "flagquantum/ecosystem/README.md"
+documentation = "docs/development/OPENFERMION_OBJECT_INTEROP.md"
+level = "experimental"
+owner = "Ecosystem maintainers"
+limitations = "Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence."
+focused_tests = "tests/unit/test_openfermion_conversion.py"
+integration_tests = "tests/integration/test_openfermion_interop.py"
+development_artifact = "flagquantum/ecosystem/README.md"
