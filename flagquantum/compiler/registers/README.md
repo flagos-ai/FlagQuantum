@@ -398,3 +398,18 @@ The two-control factory accepts the old and added activation values and returns
 the existing ControlAdder protocol. It packs new then old controls, consumes the
 old named control from its mutable input dictionary and unpacks the successors.
 Predicate outputs stay owned across the child, whose private work is separate.
+
+`control/component_control_selection.py` selects an existing single-control
+Program by activation, combines an existing scalar control through the shared
+packed helper, or delegates unchanged descriptors to the supplied fallback
+owner. The direct adder preserves source input-dictionary mutation and declared
+output order. Positive specialization is required. `control/component_adjoint_control.py`
+pushes only explicitly selected single-bit polarities through exact adjoints.
+It reverses the actual returned-adder graph, preserving data and appended-control
+order. The source callback's inline graph is retained as a local stored adapter,
+which `expand_component_calls_once` can inline at the caller. Generic inverse
+control remains owned by the supplied inverse fallback. These modules own
+Compiler selection and graph transformations, with no execution or new Core types.
+Run `tests/unit/test_component_control_selection.py` and
+`tests/unit/test_component_adjoint_control.py` for the source dispatch, callback,
+complex-state, work-zero and existing append path examples.
