@@ -1060,3 +1060,62 @@ seven-failure baseline. The other two baseline IDs were unobserved. Packed
 wrapper adjoints and existing-control combinations, broader Core admission,
 complete internal graphs and parent-file audits remain open. G2 continues.
 Evidence is retained under ftqc-reference-env/g2-typed-partition-*.
+
+## GRAPH45 packed existing controls and specialized-adjoint callbacks
+
+`369a6f85` removes an extra native restriction from the stored specialized-control
+helper. The original source selects its scalar control by name, removes that
+port from its child signature and prepends the QBit control array. Native now
+follows that order for nonleading controls and admitted one-qubit dtypes,
+including the opaque port exposed by AutoPartition. Other data ports retain
+their declaration order. Array order is new control, old control. Existing type
+compatibility, partition ownership, predicate cleanup and exact-adjoint owners
+remain authoritative; no Core admission, execution graph or user API is added.
+
+Thirty-two scenarios cover one/two packed layers, leading/nonleading control,
+all four old/new polarities and retained/expanded calls. Each checks the original
+root signature, named connections, callback mutation/output order, complete
+primitive parameters, dependencies and measurement feedback. Actual native root
+call counts close against source bloq_counts, seven QEC categories and peak
+width. Forward and exact-inverse children exhaust four measurement histories
+per direction and all sixteen history pairs. Full complex amplitudes, entangled
+unused/spectator bits and zero workspace agree. Eight dynamic trajectories pass
+through the existing circuit.append(op) path.
+
+Four additional scenarios exercise the original AdjointWithSpecializedCtrl's
+actual packed callback for a positive single-control specialization. The returned
+unwrapped child and callback's packed entry remain distinct. Explicit inverse
+Partition pairs and exact child leaves let the existing adjoint owner reverse
+the actual adder graph. After one adapter expansion, its connections agree with
+the original add_from callback. Primitive streams and all four forward/inverse
+measurement pairs agree. This is separate from taking the adjoint of an entire
+existing-control returned-adder; that latter path for all four old/new polarities
+remains the next slice. An inverse child inside a forward predicate does not
+certify it.
+
+Acceptance: 38 added cases; 5848 concentrated in 63.21 seconds, 413 focused in
+69.97 seconds, and 64 integration in 3.58 seconds. Final 129-case verification in
+26.85 seconds measures all 65 statements and 12 branches of the modified helper
+at 100%. Strict mypy checks 64 files; formatting checks 90. Lint, scope,
+architecture, Program/API checks and four existing append/resource examples
+pass. All 45 pinned source blobs are unchanged.
+
+For old=0/new=1, both child directions emit 4 X, 6 H, 4 T, 4 Tdag, 12 CX,
+2 S, 1 CH, 1 phase, 2 measurements, 2 CZ and 2 resets. Inverse phase sign and
+CH placement follow the original inverse child. Two clean work wires and seven
+physical wires include the unused bit. Partitions add no primitive or work.
+The separate source model reports t=1, and_bloq=2, clifford=6, rotation=2,
+measurement=2, other categories zero, T-equivalent=31 and peak seven. Eight
+emitted T/Tdag gates are not labeled as 31 primitive gates. The single-control
+specialized-adjoint callback emits four T/Tdag and one measurement; its model
+reports T-equivalent=27 and peak five including the unused bit.
+
+Default smoke/unit results: 22434 passed, 300 skipped, 1065 warnings and nine
+failures in 126.32 seconds, stopped by maxfail. Six failure IDs belong to the
+independent seven-failure baseline; one baseline ID was unobserved. The other
+three failures were unchanged multinode tests denied local socket binding by
+the sandbox. Those three pass separately with socket access in 0.10 seconds.
+This does not certify the entire default suite or repair its baseline failures.
+Source further-single-control callback defects, broader layout boundaries,
+complete internal graph audits and whole-file acceptance remain open. Evidence
+is retained under ftqc-reference-env/g2-packed-control-*.
