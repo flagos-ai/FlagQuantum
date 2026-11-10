@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
+from .frontend_fixed_xor import capture_fixed_xor
 from .frontend_numeric import has_numeric
 from .frontend_python import _error
 from .frontend_views import locations
@@ -15,6 +16,8 @@ if TYPE_CHECKING:
 
 
 def capture_expression_xor(owner: _Body, node: ast.AugAssign) -> None:
+    if capture_fixed_xor(owner, node):
+        return
     ports = owner.alias_ports if owner.aliases is not None else owner.ports
     assert ports is not None
     if (

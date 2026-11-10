@@ -108,19 +108,19 @@ class QNum(_QuantumRegister):
     def __ne__(self, other: object) -> bool:
         raise TypeError("quantum comparisons are captured inside qfunc, not executed")
 
-    def __lt__(self, other: QNum | int) -> QBit:
+    def __lt__(self, other: QNum | float) -> QBit:
         raise TypeError("quantum comparisons are captured inside qfunc, not executed")
 
-    def __le__(self, other: QNum | int) -> QBit:
+    def __le__(self, other: QNum | float) -> QBit:
         raise TypeError("quantum comparisons are captured inside qfunc, not executed")
 
-    def __gt__(self, other: QNum | int) -> QBit:
+    def __gt__(self, other: QNum | float) -> QBit:
         raise TypeError("quantum comparisons are captured inside qfunc, not executed")
 
-    def __ge__(self, other: QNum | int) -> QBit:
+    def __ge__(self, other: QNum | float) -> QBit:
         raise TypeError("quantum comparisons are captured inside qfunc, not executed")
 
-    def __ixor__(self: _Num, mask: QNum | int) -> _Num:
+    def __ixor__(self: _Num, mask: QNum | float) -> _Num:
         raise TypeError("raw word XOR is captured inside qfunc")
 
     def __ior__(self: _Num, expression: QNum | float) -> _Num:

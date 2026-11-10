@@ -26,6 +26,8 @@ from .frontend_evolution import (
     capture_suzuki_trotter,
     flush_evolutions,
 )
+from .frontend_fixed_xor import capture_fixed_xor, is_fixed_xor_helper
+from .frontend_increment import capture_increment
 from .frontend_matrix import capture_unitary
 from .frontend_numeric import (
     assign_numeric,
@@ -309,9 +311,12 @@ class _Body:
         self.effect = following
 
     def assign(self, node: ast.AugAssign) -> None:
+        if isinstance(node.op, ast.BitXor) and not (
+            isinstance(node.value, ast.Constant) and type(node.value.value) is int
+        ):
+            if capture_fixed_xor(self, node):
+                return
         if isinstance(node.op, (ast.Add, ast.Sub)):
-            from .frontend_increment import capture_increment
-
             capture_increment(self, node)
             return
         visible = self.aliases if self.aliases is not None else self.ports
@@ -900,8 +905,9 @@ class _Body:
                     "program.numeric",
                     "numeric helper ports are not admitted",
                 )
-            for argument in node.args:
-                reject_numeric_reads(self, argument, "helper calls")
+            if not is_fixed_xor_helper(function):
+                for argument in node.args:
+                    reject_numeric_reads(self, argument, "helper calls")
             if any(port.role == "inout" for port in formal):
                 if inverse or control_bit is not None:
                     _error(
