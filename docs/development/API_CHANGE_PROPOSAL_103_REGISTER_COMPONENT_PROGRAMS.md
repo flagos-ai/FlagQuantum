@@ -1491,3 +1491,37 @@ For measurement-produced inputs, compare every small unnormalized complex branch
 against the unchanged MeasureZ tensor and original Parity callback, including
 spectator phase and zero unmeasured work. Record emitted measurements, classical
 XORs, conditional quantum primitives and available source models separately.
+
+#### Owned parity and feedback acceptance
+
+Contract `b8f3cb8d` precedes Core `2061cf1c` and Compiler `380ea648`.
+Fifty added cases cover the unchanged Parity callback on every zero-through-four
+bit input, Core ownership and shape failures, nested parity slot dependencies,
+both control polarities, bool fanout and quantum-only lowering refusal. The
+measurement-to-feedback scenario compares all 30 unnormalized branches for
+zero through three measured inputs against original MeasureZ tensors, original
+Parity callbacks and the original ClassicallyControlled Z/X tensors. Joint
+spectator phases and zero unmeasured work are retained. The existing append
+path also executes 32 trajectories per polarity and runtime strategy, with
+128 normalized conditional complex states checked in total.
+
+The final concentrated regression passes 5,051 tests in 41.64 seconds without
+skips or warnings. The focused 254-test run covers all statements and branches
+of the classical component constructor, physical binder and local scheduler,
+with 99% combined coverage including register verification. Twenty-six source
+blobs match the locked inventory. Strict typing passes for 18 production files
+and five native test files. Black/Ruff, scope, architecture, Program/API gates,
+four existing append/resource examples and 29 local integration tests pass.
+
+The default smoke/unit fail-fast run reports 22,286 passes, 300 skips,
+1,065 warnings and seven failures in 217.46 seconds. Failure identifiers exactly
+match the prior independently reproduced baseline. The full default tier remains
+open. Source Parity's QEC query and decomposition still raise the original
+DecomposeNotImplementedError. Its zero QubitCount is separate from the native
+one-XOR-per-call classical resource count. The combined source graph has no
+complete QEC model on this evidence.
+
+Owned classical discard, the actual GF2MulMBUC owned-component replacement,
+external CBit initialization and destructive workspace retirement remain open.
+Evidence uses prefix `ftqc-reference-env/g2-owned-parity-` with regression,
+coverage, checks, examples, integration, default-parallel and source records.

@@ -177,7 +177,8 @@ def test_nested_parity_has_fresh_slots_and_preserves_owned_inputs(count: int) ->
 def test_all_branches_match_original_measurement_tensor_and_parity(
     count: int, polarity: bool
 ) -> None:
-    from qualtran.bloqs.basic_gates import MeasureZ
+    from qualtran import CBit, CtrlSpec
+    from qualtran.bloqs.basic_gates import MeasureZ, XGate, ZGate
     from qualtran.bloqs.gf_arithmetic.gf2_multiplication import Parity
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
@@ -213,11 +214,13 @@ def test_all_branches_match_original_measurement_tensor_and_parity(
         returned, parity = Parity(count).call_classically(x=values)
         np.testing.assert_array_equal(returned, values)
         _, nested = Parity(1).call_classically(x=np.array([parity]))
-        if bool(nested) == polarity:
-            selected: list[slice | int] = [slice(None)] * original.ndim
-            selected[count] = 1
-            original[tuple(selected)] *= -1
-            original = np.flip(original, axis=count + 1)
+        controls = CtrlSpec(qdtypes=[CBit()], cvs=[int(polarity)])
+        for gate, wire in ((ZGate(), count), (XGate(), count + 1)):
+            tensor = gate.controlled(controls)._tensor_data()
+            matrix = tensor[int(nested), :, int(nested), :]
+            original = np.moveaxis(
+                np.tensordot(matrix, original, axes=([1], [wire])), 0, wire
+            )
         branch = forced_branch(with_work, gates, history).reshape((2,) * (count + 4))
         np.testing.assert_allclose(branch[..., 0].numpy(), original, rtol=0, atol=3e-15)
         assert torch.count_nonzero(branch[..., 1]) == 0

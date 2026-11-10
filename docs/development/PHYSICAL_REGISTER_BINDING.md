@@ -254,3 +254,38 @@ separate operations, sharing the fresh-slot allocator without collisions.
 
 This witness compares the original instrument because classical-port Cirq export
 is unsupported upstream. It does not certify a flat original primitive stream.
+
+## Owned classical parity and feedback
+
+Proposal 103 prerequisite 1.11 adds `parity_register` and
+`read_classical_register` using the existing Program representation. Parity
+returns an owned successor per input and a fresh owned XOR result. Successors
+retain their predecessor slots. A read returns one owned successor and one
+shareable bool snapshot of the same immutable slot. It emits zero primitives
+and allocates zero slots. Both operations retain zero-width dependency edges.
+
+`component_classical.parity_word_function(name, count)` constructs the original
+CBit[count] THRU and parity RIGHT signature. Counts must be concrete built-in
+nonnegative integers. Zero inputs emit one constant-zero classical XOR. Two
+nested parity calls emit two classical XOR assignments with distinct targets.
+Classical entry initialization and workspace retirement retain their separate
+contracts.
+
+The conformance scenario measures zero through three QBits, computes nested
+parity, reads the result and uses one bool for conditional Z and X on distinct
+targets. Both condition polarities are checked on every small unnormalized
+measurement branch against original MeasureZ tensors, Parity callbacks and ClassicallyControlled
+Z/X tensors, including joint complex spectator states and unmeasured work at zero. Two
+runtime strategies each check 32 normalized conditional states per polarity.
+
+| Three-input nested-parity scenario | Emitted primitives | Original source model |
+| --- | --- | --- |
+| Destructive measurement subpath | 3 measurements, 0 resets | 3 measurements, 0 T-equivalent |
+| Two Parity calls | 2 classical XOR assignments | No QEC implementation or source decomposition |
+| Feedback snapshot | 0 instructions and 0 new slots | Native ownership-to-feedback adaptation |
+| Conditional correction | 1 conditional Z and 1 conditional X | Quantum primitives counted separately |
+
+The original Parity QubitCount query gives zero quantum width. Its QEC query
+raises DecomposeNotImplementedError. Neither fact supplies a complete quantum
+resource model for this combined source graph. Original classical-port Cirq
+export remains unsupported. The reference is retained unchanged.

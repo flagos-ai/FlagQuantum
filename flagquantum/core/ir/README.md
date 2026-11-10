@@ -40,7 +40,9 @@ control-flow graph.
   checks additionally require matching classical widths, so the source's loose
   opaque metadata comparison cannot erase a classical resource. The internal
   `measure_register` transition consumes an exact owned QBit and defines a CBit
-  under prerequisite 1.10. Compiler owns physical classical-slot binding.
+  under prerequisite 1.10. Prerequisite 1.11 types owned classical parity
+  successors and explicit bool snapshots without permitting owned-handle fanout.
+  Compiler owns physical classical-slot binding.
 
 ## What this package must not own
 
