@@ -24,7 +24,7 @@ from flagquantum.observables.fermion import FermionOperator, FermionTerm
 from tests.unit.fermion.oracles import fock_matrix
 
 of = pytest.importorskip("openfermion")
-pytestmark = pytest.mark.unit
+pytestmark = pytest.mark.openfermion
 
 
 def _ordered_matrix(

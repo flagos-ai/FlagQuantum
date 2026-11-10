@@ -25,6 +25,7 @@ dependencies = [
 [project.optional-dependencies]
 chemistry-hdf5 = ["h5py>=3.11,<4"]
 chemistry-pyscf = ["pyscf>=2.8,<3"]
+openfermion = ["openfermion==1.7.1"]
 dev = [
     "pytest>=7.0.0,<10",
     "pytest-cov>=4.0.0,<8",

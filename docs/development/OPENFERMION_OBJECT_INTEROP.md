@@ -13,9 +13,11 @@ The concrete `flagquantum.ecosystem.openfermion` module exposes
 `from_openfermion_qubit` and `to_openfermion_qubit`. Native imports, including
 importing this adapter module, must not import OpenFermion or Cirq. Each explicit
 conversion lazily checks for OpenFermion; absent packages raise ImportError with
-an installation hint. No dependency, optional extra, registry, root export or
-Stable Core change is introduced. Users install upstream OpenFermion separately
-in an interoperability environment; upstream may install Cirq transitively.
+an installation hint. The separate `openfermion` extra pins the verified upstream
+release; it is excluded from core, `all`, and `interop-all`. No registry, root
+export or Stable Core change is introduced. Users may install
+`flagquantum[openfermion]` in an interoperability environment; upstream may install
+Cirq transitively.
 The production native environment requires neither library.
 
 Fermion import composes the ordered ladder products with native create and
@@ -44,8 +46,10 @@ trips with real upstream classes, because upstream and native normal-order
 conventions differ. Check small dense Pauli matrices, all native encodings through
 an unchanged measurement consumer, identity/zero and invalid values. Import and
 execute the native workflow in a fresh interpreter with OpenFermion/Cirq blocked.
-Optional tests skip when upstream is absent; fakes alone are not evidence of
-upstream interoperability. Linux default tests remain CI's responsibility.
+Real-upstream tests carry the dedicated `openfermion` marker and run in the
+isolated optional workflow, rather than being selected and silently skipped by
+the native coverage lane. They skip when upstream is absent; fakes alone are not
+evidence of upstream interoperability. Linux default tests remain CI's responsibility.
 
 ## Ownership and exit
 
@@ -55,4 +59,5 @@ boundary. No native algorithm consumes foreign objects. Replacement uses the
 same native operator consumers; removal is possible while this adapter remains
 experimental, once old-object migration demand ends. No permanent shim, duplicate
 contract or solver is added. The upstream Apache-2.0 dependency is separately
-installed; this implementation copies no upstream source.
+installed; this implementation copies no upstream source. The dependency review
+and supply-chain scope are recorded in the dependency policy guide.

@@ -9,6 +9,8 @@ on:
       - 'tests/unit/test_openfermion_conversion.py'
       - 'tests/integration/test_openfermion_interop.py'
       - '.github/workflows/openfermion-interop.yml'
+      - 'pyproject.toml'
+      - 'dependency-policy.toml'
   workflow_dispatch:
 
 permissions:
@@ -18,6 +20,9 @@ jobs:
   operator-conversion:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: flagquantum-gh-7
+      queue: max
     strategy:
       fail-fast: false
       matrix:
@@ -39,7 +44,7 @@ jobs:
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
       - name: Install the separately owned optional upstream boundary
-        run: python -m pip install --no-build-isolation -e '.[dev]' 'openfermion==1.7.1'
+        run: python -m pip install --no-build-isolation -e '.[dev,openfermion]'
       - name: Verify real objects and native dependency isolation
         run: |
           python -m pip check
