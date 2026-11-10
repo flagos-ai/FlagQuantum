@@ -44,6 +44,7 @@ from .frontend_ports import (
 )
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
+from .frontend_qpe import capture_matrix_qpe
 from .frontend_regions import capture_adjoint, capture_unitary_within
 from .frontend_statements import capture_statements
 from .frontend_storage import drop_hidden, hidden_declarations
@@ -78,6 +79,7 @@ from .program_types import (
     qct_type2,
     qdrift,
     qft,
+    qpe,
     qst_type2,
     r,
     rx,
@@ -597,6 +599,8 @@ class _Body:
                     "allocation and declared width must agree",
                 )
             self.emit("qreg.allocate", node, (destination,))
+        elif function is qpe:
+            capture_matrix_qpe(self, node)
         elif function is unitary:
             capture_unitary(self, node)
         elif function is suzuki_trotter:

@@ -176,6 +176,15 @@ def drop(target: QNum | QArray[QBit], /) -> None:
     raise TypeError("drop is captured inside qfunc; synthesize the program")
 
 
+def qpe(callback: Callable[[], None], phase_result: QNum, /) -> None:
+    """Estimate a static matrix eigenphase into a fresh all-fractional counter.
+
+    The current profile admits one unitary call in a zero-argument lambda at
+    the unconditional root, with one to eight signed or unsigned phase bits.
+    """
+    raise TypeError("qpe is captured inside qfunc; synthesize the program")
+
+
 def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
     """Prepare uniform amplitudes on an initialized captured quantum port.
 
