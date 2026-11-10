@@ -37,6 +37,14 @@ def emit_controlled_effect(
 
     if op.name == "qreg.phase":
         phase((), attrs["angle"])
+    elif op.name in {"qreg.qft", "qreg.inverse_qft"}:
+        if bit != 0 or register_width(control) != 1:
+            raise ValueError("borrowed Fourier composition requires a scalar control")
+        effect(
+            "qreg.control_qft",
+            (control, values[0]),
+            **({"inverse": True} if op.name == "qreg.inverse_qft" else {}),
+        )
     elif op.name == "qreg.gate":
         target = values[0]
         gate, wire = attrs["gate"], attrs["index"]
