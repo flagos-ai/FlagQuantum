@@ -5260,7 +5260,10 @@
         }
       ],
       "workflow_status": "pending",
-      "native_program": null,
+      "native_program": {
+        "path": "examples/synthesis/community/paper_implementation_project/block_encoding/tridiagonal/main.py",
+        "scope": "Quantum program only; original rounded amplitudes explicitly normalized as in the approved revision. Complete Notebook workflow remains pending."
+      },
       "kind": "quantum_program"
     },
     {

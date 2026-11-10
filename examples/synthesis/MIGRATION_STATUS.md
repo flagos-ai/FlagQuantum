@@ -299,7 +299,7 @@ Validated local Notebook workflows: **24/213**.
 | `community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4` | quantum_program | Pending | pending |
 | `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/block_encoding/toeplitz_BE_N16` | quantum_program | Pending | pending |
-| `community/paper_implementation_project/block_encoding/tridiagonal_BE_size16` | quantum_program | Pending | pending |
+| `community/paper_implementation_project/block_encoding/tridiagonal_BE_size16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/tridiagonal/main.py) | pending |
 | `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Native program](community/paper_implementation_project/bpde/main.py) | pending |
 | `community/paper_implementation_project/classical_shadows/classical_shadows` | quantum_program | [Native program](community/paper_implementation_project/classical_shadows/main.py) | pending |
 | `community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding` | notebook_workflow | Pending | pending |

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/block_encoding/tridiagonal_BE_size16.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "0ba8f8e3d2d2bfdb356c8b2b9b53fb57101170b73b6c2a0717a57c1f62603a71",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding.tridiagonal.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_tridiagonal.py",
+  "scope": "Quantum program only; original rounded amplitudes explicitly normalized as in the approved revision. Complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Explicitly normalize retained RAW=(0.5774,0.5774,0,0.5774), matching the approved revision; untouched original remains refused. Preserve32 coefficients and2+4+1 logical bits. The static helper uses (table_index XOR index)<1 for equality and a centered phase between data Hadamards, retaining RX absolute phase without lambda loop capture. Native uses7physical/0work bits,23604operations/depth19568 versus approved10physical,17250operations/depth13899. Independent Circuit enumerates direct RX matrices. Efficient mutable-helper predicate capture remains a gap; no gate-count improvement claimed."
+}
