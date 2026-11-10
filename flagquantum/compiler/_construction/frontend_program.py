@@ -84,6 +84,7 @@ from .program_types import (
     qft,
     qpe,
     qst_type2,
+    reset,
     r,
     rx,
     rz,
@@ -571,6 +572,7 @@ class _Body:
                     suzuki_trotter,
                     select_rotation,
                     qdrift,
+                    reset,
                 )
             )
             or isinstance(function, _QuantumFunction)
@@ -593,6 +595,12 @@ class _Body:
                 "program.adjoint",
                 "adjoint requires a static Const-only qfunc",
             )
+        if function is reset:
+            if len(node.args) != 1:
+                _error(self.source, node, "program.signature", "RESET takes one scalar bit")
+            value, index = gate_target(self, node.args[0])
+            self.emit("qreg.reset", node, (value,), index=index)
+            return
         if function is control:
             self.scalar_control(node)
         elif function is drop:

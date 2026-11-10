@@ -167,6 +167,15 @@ def allocate(
     raise TypeError("allocate is captured inside qfunc; synthesize the program")
 
 
+def reset(target: QBit, /) -> None:
+    """Reset an initialized writable bit to zero, discarding prior correlations.
+
+    This captured channel requires density-matrix execution and cannot occur
+    inside reversible or coherently controlled regions.
+    """
+    raise TypeError("RESET is captured inside a qfunc; it is not a host operation")
+
+
 def drop(target: QNum | QArray[QBit], /) -> None:
     """End access to owned hidden storage while retaining its entangled environment.
 
