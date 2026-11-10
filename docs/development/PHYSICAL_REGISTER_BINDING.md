@@ -1119,3 +1119,67 @@ This does not certify the entire default suite or repair its baseline failures.
 Source further-single-control callback defects, broader layout boundaries,
 complete internal graph audits and whole-file acceptance remain open. Evidence
 is retained under ftqc-reference-env/g2-packed-control-*.
+
+## GRAPH46 whole packed existing-control specialized adjoints
+
+`d084244d` verifies the complete returned-adder path through the original
+AdjointWithSpecializedCtrl, existing-control specialization, multi-control
+helper, AutoPartition and positive child. The existing native adjoint owners
+already express that chain. This batch adds composition acceptance without
+another production adjoint implementation. Both the current packed operation
+and selected helper use the explicit packed entry. Exact mappings pair And
+compute/erase, Partition/inverse-Partition and child leaves. Predicate and child
+workspace retain their separate lifetimes. Controls remain new then old; data
+is MSB-first q/unused/spectator. Users still append the bound operation.
+
+Sixteen valid scenarios cover all four old/new polarities, one/two packed layers
+and expanded/retained calls. Returned root signatures and named connections
+match the original. Expanding one native adapter matches the real source
+add_from callback, including dictionary mutation and output order. Complete
+primitive operands, parameters, per-wire dependencies and feedback agree.
+Native caller leaf counts close against source composite.bloq_counts, seven QEC
+categories and peak width. Every inverse measurement history agrees with an
+independent complex-amplitude formula; all sixteen forward/inverse history pairs
+restore the entangled input and zero workspace. Returned roots and actual
+callbacks bind to the same CircuitIR. Four append scenarios each verify eight
+dynamic trajectories.
+
+Eight diagnostic scenarios separately retain a source failure. For a nonleading
+existing control and a three-qubit packed data port, the existing-control adder
+returns old-control/data while the specialized-adjoint builder zips outputs in
+original data/control declaration order. Its finalize therefore assigns QBit to
+QAny(3), raising original BloqError. Native rejects the same connection with
+RegisterBindingError. Both derive from ValueError, but exact exception classes
+are not claimed equal. Source declarations are not reordered to repair the
+reference, and these cases are not counted as successful execution. Equal-width
+nonleading ports remain unaudited; the dtype failure does not establish their
+behavior. The original further-control concatenate defect also remains open.
+
+All 28 new cases pass in 7.32 seconds; 5876 concentrated in 64.26 seconds,
+441 focused in 81.85 seconds and 64 integration in 3.60 seconds pass without
+skips or warnings. Strict typing checks 65 files; formatting checks 91. Changed
+tests receive a final strict/lint recheck after narrowing the native diagnostic
+exception. Scope, architecture, Program/API checks and four existing examples
+pass. The adjoint-control, selector, extension, predicate, packed-helper and
+typed-partition owners all measure 100% statement/branch coverage. The older
+component_control owner remains 98%, with two existing final guards uncovered.
+All 45 pinned source blobs are unchanged; the native Kickmix Simulator and
+versions are checked before the reference suites run.
+
+All four whole adjoints emit 6 H, 4 T, 4 Tdag, 12 CX, 2 S, 1 phase,
+2 measurements, 2 CZ, 2 resets and 1 CH. Phase is negative and CH follows it.
+Additional X count is zero for old=new=1, four for one zero, and eight for two
+zeros. Clean peak is two and total width seven including the unused bit.
+Packing adds no gates or work. Separately, the original model for each polarity
+reports t=1, and_bloq=2, clifford=6, rotation=2, measurement=2, other categories
+zero, T-equivalent=31 and peak seven. Its clifford=6 is not a count of all literal
+Clifford gates; emitted X and eight T/Tdag remain explicitly reported.
+
+Default smoke/unit results are 22286 passed, 300 skipped, 1065 warnings and
+seven failures in 124.96 seconds, stopped by maxfail. All seven failure IDs
+exactly match the independent baseline. No added or missing failure IDs are
+observed. The run allows local sockets and does not reproduce the previous
+sandbox socket failures. The baseline is not repaired and whole-suite success
+is not claimed. Equal-width nonleading output permutations, left_only control
+wrappers, broader type/shape admission and complete parent-file audits remain
+open. Evidence is retained under ftqc-reference-env/g2-packed-adjoint-*.
