@@ -15,7 +15,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/QML/qgan/qgan_bars_and_strips` | notebook_workflow | [Native program](algorithms/machine_learning/qgan/qgan_bars_and_strips/main.py) | pending |
 | `algorithms/QML/qsvm/qsvm` | notebook_workflow | [Native program](algorithms/machine_learning/qsvm/main.py) | pending |
 | `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
-| `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | Pending | pending |
+| `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification/qsvt_fixed_point/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/main.py) | pending |
