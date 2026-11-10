@@ -17,8 +17,9 @@ python -m pytest tests/unit/test_register_controlled_component.py -q
 The [register package guide](../README.md) provides executable consumer examples,
 source-parity requirements, resource-counting boundaries and the relocation map.
 
-`multi_controlled_component_program` finds the existing scalar THRU control by
-name, including a one-qubit opaque port exposed by `AutoPartition`. The returned
+`multi_controlled_component_program` finds the scalar input/output control by
+name, as one THRU declaration or a same-named LEFT/RIGHT pair. This includes
+one-qubit opaque ports exposed by `AutoPartition`. The returned
 signature puts its QBit array first, with new control before old control; other
 ports retain their declared order. Child work and predicate work keep separate
 lifetimes, and the predicate owner measurement-erases its workspace. Packing
@@ -39,5 +40,17 @@ functions and child leaves to the existing adjoint owner. The original callback
 returns the existing control before the data. With the three-qubit packed data
 port tested here, a nonleading control misassigns that returned bit to the data
 port while finalizing the source adjoint graph. Native rejects the same
-connection. Equal-width nonleading ports remain unaudited. The source failure
-is diagnosed separately, without reordering ports or claiming execution parity.
+connection. `test_equal_width_control_callbacks.py` shows that equal-width
+nonleading ports silently pass type checks but give a callback equivalent to
+the intended inverse after an input SWAP. Its returned root, gate counts and
+resource model do not expose the difference. Native reproduces that graph;
+these cases are defect evidence, not acceptance of the intended operation.
+
+`test_directional_control_callbacks.py` verifies valid `left_only` composition
+with a same-named control input/output pair. Existing-control predicates expose
+one THRU control array, while packed data is consumed into separate child right
+ports. The exact adjoint reverses this flow using supplied inverse Partition
+leaves. Caller data wires are not freed; predicate and child work are erased and
+released by their existing owners. A renamed control lacking a same-named output
+and nesting a directional wrapper as an AutoPartition child remain invalid in
+the source. Those failures are diagnosed separately.

@@ -60,9 +60,9 @@ def multi_controlled_component_program(
 ) -> ProgramRecord:
     """Pack at least two activations around a stored positive-control body.
 
-    The named original control is a scalar THRU one-qubit port, preserved by
-    the child. It may appear anywhere in the child signature. Admitted one-qubit
-    dtypes use the existing call compatibility rules.
+    The named original control has one scalar input and output, either a THRU
+    declaration or a same-named LEFT/RIGHT pair. It may appear anywhere in the
+    child signature. Admitted one-qubit dtypes use existing call compatibility.
     New control-array order is the activation order. Predicate work starts clean,
     stays live through the child and is measurement-erased before release.
     Child private work retains its existing lifetime. Invalid entries, control
@@ -70,16 +70,18 @@ def multi_controlled_component_program(
     """
     function = _call_entry(record, entry)
     assert function.registers is not None
-    original_control = next(
-        (r for r in function.registers if r.name == control_name), None
-    )
+    original_controls = tuple(r for r in function.registers if r.name == control_name)
     if (
-        original_control is None
-        or original_control.shape
-        or original_control.side != RegisterSide.THRU
-        or executable_register_width(original_control.dtype) != 1
+        sum(bool(r.side & RegisterSide.LEFT) for r in original_controls) != 1
+        or sum(bool(r.side & RegisterSide.RIGHT) for r in original_controls) != 1
+        or any(
+            r.shape or executable_register_width(r.dtype) != 1
+            for r in original_controls
+        )
     ):
-        raise ValueError("specialized control requires a named scalar THRU qubit")
+        raise ValueError(
+            "specialized control requires a named scalar input/output qubit"
+        )
     data_registers = tuple(r for r in function.registers if r.name != control_name)
     if len(values) < 2 or any(
         type(value) is not int or value not in (0, 1) for value in values
