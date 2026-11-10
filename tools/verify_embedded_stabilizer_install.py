@@ -99,6 +99,45 @@ def main() -> None:
         assert isinstance(packed, torch.Tensor)
         assert packed.tolist() == [[3], [3]]
         draw.assert_called_once()
+    detector_witnesses: dict[
+        Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes
+    ] = {
+        "01": b"11\n" * 64,
+        "b8": b"\x03" * 64,
+        "r8": b"\x00\x00\x00" * 64,
+        "hits": b"0,1\n" * 64,
+        "dets": b"shot D0 L0\n" * 64,
+        "ptb64": b"\xff" * 16,
+    }
+    with TemporaryDirectory() as directory:
+        for encoding, reference in detector_witnesses.items():
+            with patch.object(
+                native, "write_detectors", wraps=native.write_detectors
+            ) as write:
+                path = Path(directory) / ("detectors." + encoding)
+                detector_sampler.sample_write(
+                    64, filepath=path, format=encoding, append_observables=True
+                )
+                write.assert_called_once()
+                assert path.read_bytes() == reference
+        with patch.object(
+            native, "write_detectors", wraps=native.write_detectors
+        ) as write:
+            detectors = Path(directory) / "separate.dets"
+            observables = Path(directory) / "separate.b8"
+            detector_sampler.sample_write(
+                64,
+                filepath=detectors,
+                format="dets",
+                obs_out_filepath=observables,
+                obs_out_format="b8",
+            )
+            write.assert_called_once()
+            assert detectors.read_bytes() == b"shot D0\n" * 64
+            assert observables.read_bytes() == b"\x01" * 64
+    print(
+        "embedded detector files: six formats, same-call observable output, actual native calls"
+    )
     with patch.object(
         native, "detector_error_model", wraps=native.detector_error_model
     ) as analyze:

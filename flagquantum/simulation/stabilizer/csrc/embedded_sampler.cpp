@@ -106,6 +106,16 @@ PyObject *sample(PyObject *, PyObject *args) {
     }
 }
 
+stim::SampleFormat parse_format(const char *format) {
+    if (strcmp(format, "01") == 0) return stim::SampleFormat::SAMPLE_FORMAT_01;
+    if (strcmp(format, "b8") == 0) return stim::SampleFormat::SAMPLE_FORMAT_B8;
+    if (strcmp(format, "r8") == 0) return stim::SampleFormat::SAMPLE_FORMAT_R8;
+    if (strcmp(format, "hits") == 0) return stim::SampleFormat::SAMPLE_FORMAT_HITS;
+    if (strcmp(format, "dets") == 0) return stim::SampleFormat::SAMPLE_FORMAT_DETS;
+    if (strcmp(format, "ptb64") == 0) return stim::SampleFormat::SAMPLE_FORMAT_PTB64;
+    throw std::invalid_argument("Unknown sample file format.");
+}
+
 PyObject *write_measurements(PyObject *args, bool select_format) {
     PyObject *capsule;
     Py_ssize_t shots;
@@ -125,14 +135,7 @@ PyObject *write_measurements(PyObject *args, bool select_format) {
         if (shots <= 0) {
             throw std::invalid_argument("Invalid embedded sampler shot count.");
         }
-        stim::SampleFormat output_format;
-        if (strcmp(format, "01") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_01;
-        else if (strcmp(format, "b8") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_B8;
-        else if (strcmp(format, "r8") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_R8;
-        else if (strcmp(format, "hits") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_HITS;
-        else if (strcmp(format, "dets") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_DETS;
-        else if (strcmp(format, "ptb64") == 0) output_format = stim::SampleFormat::SAMPLE_FORMAT_PTB64;
-        else throw std::invalid_argument("Unknown measurement file format.");
+        const auto output_format = parse_format(format);
         if (output_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64 && shots % 64) {
             throw std::invalid_argument("ptb64 shots must be a multiple of 64.");
         }
@@ -336,6 +339,43 @@ PyObject *sample_detectors(PyObject *, PyObject *args) {
     }
 }
 
+PyObject *write_detectors(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    Py_ssize_t shots;
+    const char *path, *format, *obs_path, *obs_format;
+    int prepend, append;
+    if (!PyArg_ParseTuple(args, "Onssppzs", &capsule, &shots, &path, &format,
+                          &prepend, &append, &obs_path, &obs_format)) return nullptr;
+    auto *sampler = static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
+    if (sampler == nullptr) return nullptr;
+    try {
+        auto output_format = parse_format(format);
+        auto observable_format = parse_format(obs_format);
+        if (shots <= 0 || prepend + append + (obs_path != nullptr) > 1 ||
+            ((output_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64 ||
+              (obs_path && observable_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64)) && shots % 64)) {
+            throw std::invalid_argument("Invalid embedded detector file request.");
+        }
+        std::unique_ptr<FILE, decltype(&fclose)> file(fopen(path, "wb"), fclose);
+        std::unique_ptr<FILE, decltype(&fclose)> obs(obs_path ? fopen(obs_path, "wb") : nullptr, fclose);
+        if (!file || (obs_path && !obs)) throw std::runtime_error("Could not open staged detector output.");
+        stim::sample_batch_detection_events_writing_results_to_disk<width>(
+            sampler->circuit, size_t(shots), prepend, append, file.get(),
+            output_format, sampler->rng, obs.get(), observable_format);
+        bool failed = ferror(file.get()) != 0;
+        if (obs) {
+            failed |= ferror(obs.get()) != 0;
+            failed |= fclose(obs.release()) != 0;
+        }
+        failed |= fclose(file.release()) != 0;
+        if (failed) throw std::runtime_error("Could not complete staged detector output.");
+        Py_RETURN_NONE;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
 PyObject *detector_error_model(PyObject *, PyObject *args) {
     const char *text;
     if (!PyArg_ParseTuple(args, "s", &text)) {
@@ -359,6 +399,7 @@ PyObject *detector_error_model(PyObject *, PyObject *args) {
 PyMethodDef methods[] = {
     {"prepare_detector", prepare_detector, METH_VARARGS, nullptr},
     {"sample_detectors", sample_detectors, METH_VARARGS, nullptr},
+    {"write_detectors", write_detectors, METH_VARARGS, nullptr},
     {"detector_error_model", detector_error_model, METH_VARARGS, nullptr},
     {"prepare_converter", prepare_converter, METH_VARARGS, nullptr},
     {"convert_records", convert_records, METH_VARARGS, nullptr},

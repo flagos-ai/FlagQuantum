@@ -28,7 +28,7 @@ def _file_size_bound(shots: int, columns: int, format: str) -> int:
         return shots * (columns + 1)
     digits = len(str(columns - 1))
     if format == "hits":
-        return shots * columns * (digits + 1)
+        return shots * max(1, columns * (digits + 1))
     return shots * (5 + columns * (digits + 2))
 
 
@@ -114,7 +114,13 @@ def _validate_sparse_text(
 
 
 def _validate_record_file(
-    path: Path, shots: int, columns: int, format: str, bound: int
+    path: Path,
+    shots: int,
+    columns: int,
+    format: str,
+    bound: int,
+    *,
+    sections: tuple[tuple[str, int], ...] | None = None,
 ) -> None:
     size = path.stat().st_size
     if format in ("01", "b8", "ptb64"):
@@ -122,11 +128,20 @@ def _validate_record_file(
             raise OSError(f"sample file size disagrees with expected {bound} bytes")
     elif size > bound:
         raise OSError(f"sample file exceeds its {bound} byte bound")
+    if format == "b8" and sections is not None and columns % 8:
+        stride = (columns + 7) // 8
+        mask = 255 ^ ((1 << (columns % 8)) - 1)
+        with path.open("rb") as stream:
+            for offset, byte in enumerate(_file_bytes(stream)):
+                if offset % stride == stride - 1 and byte & mask:
+                    raise _invalid_file()
     if format in ("b8", "ptb64"):
         return
     with path.open("rb") as stream:
         if format == "r8":
             _validate_r8(stream, shots, columns)
+        elif format == "dets" and sections is not None:
+            _validate_detector_text(stream, shots, sections)
         elif format in ("hits", "dets"):
             _validate_sparse_text(stream, shots, columns, dets=format == "dets")
         else:
@@ -137,3 +152,47 @@ def _validate_record_file(
                 ):
                     raise _invalid_file()
                 position = (position + 1) % (columns + 1)
+
+
+def _validate_detector_text(
+    stream: BinaryIO, shots: int, sections: tuple[tuple[str, int], ...]
+) -> None:
+    # Tokens are bounded independently of file size and rejected before growth.
+    token = bytearray()
+    completed = 0
+    section = previous = -1
+    first = True
+    for byte in _file_bytes(stream):
+        if byte not in (32, 10):
+            if len(token) >= 24:
+                raise _invalid_file()
+            token.append(byte)
+            continue
+        if first:
+            if token != b"shot":
+                raise _invalid_file()
+            first = False
+        else:
+            if len(token) < 2 or not all(48 <= v <= 57 for v in token[1:]):
+                raise _invalid_file()
+            label = chr(token[0])
+            position = next(
+                (i for i, (name, _) in enumerate(sections) if name == label), -1
+            )
+            if position < section or position < 0:
+                raise _invalid_file()
+            number = int(token[1:])
+            if number >= sections[position][1] or (
+                position == section and number <= previous
+            ):
+                raise _invalid_file()
+            section, previous = position, number
+        token.clear()
+        if byte == 10:
+            completed += 1
+            if completed > shots:
+                raise _invalid_file()
+            first = True
+            section = previous = -1
+    if token or not first or completed != shots:
+        raise _invalid_file()

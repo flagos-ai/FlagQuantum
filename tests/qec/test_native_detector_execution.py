@@ -641,3 +641,226 @@ def test_fault_and_encoded_dem_budgets_precede_backend(
     monkeypatch.setattr(numerical, "_MAX_DEM_BYTES", 128)
     with pytest.raises(CapabilityError, match="text estimate"):
         numerical._source_text(c.to_ir(), ((0,),), (), analysis=True)
+
+
+@pytest.mark.parametrize("encoding", ["01", "b8", "r8", "hits", "dets", "ptb64"])
+@pytest.mark.parametrize("layout", ["detectors", "prepend", "append", "separate"])
+def test_detector_files_fixed_fault_bytes(
+    tmp_path: Path, encoding: str, layout: str
+) -> None:
+    from typing import Any
+
+    pytest.importorskip("stim")
+
+    source = (
+        DynamicCircuit(1)
+        .x(0)
+        .measure(0, classical_bit=0)
+        .reset(0)
+        .measure(0, classical_bit=0)
+        .bit_flip(0, 1.0)
+        .measure(0, classical_bit=0)
+    )
+    sampler = source.compile_detector_sampler(
+        detector_map=MeasurementMap(3, ((0, 1), (1, 2))),
+        observable_map=MeasurementMap(3, ((2,),)),
+        seed=7,
+    )
+    out = tmp_path / "events"
+    options: dict[str, Any] = {"format": encoding}
+    if layout in ("prepend", "append"):
+        options[layout + "_observables"] = True
+    if layout == "separate":
+        options.update(obs_out_filepath=tmp_path / "observables", obs_out_format="b8")
+    sampler.sample_write(64, filepath=out, **options)
+    bits = "101" if layout == "prepend" else "011" if layout == "append" else "01"
+    value = sum((bit == "1") << i for i, bit in enumerate(bits))
+    indices = [i for i, bit in enumerate(bits) if bit == "1"]
+    expected = {
+        "01": (bits + "\n").encode() * 64,
+        "b8": bytes([value]) * 64,
+        "r8": (
+            bytes([0, 1, 0])
+            if layout == "prepend"
+            else bytes([1, 0, 0]) if layout == "append" else bytes([1, 0])
+        )
+        * 64,
+        "hits": (",".join(map(str, indices)) + "\n").encode() * 64,
+        "dets": (
+            b"shot L0 D1\n"
+            if layout == "prepend"
+            else b"shot D1 L0\n" if layout == "append" else b"shot D1\n"
+        )
+        * 64,
+        "ptb64": b"".join((b"\xff" if bit == "1" else b"\x00") * 8 for bit in bits),
+    }
+    assert out.read_bytes() == expected[encoding]
+    if layout == "separate":
+        assert (tmp_path / "observables").read_bytes() == b"\x01" * 64
+
+
+class FileStream(FakeStream):
+    def sample_write(self, shots: int, **options: object) -> None:
+        self.calls += 1
+        Path(str(options["filepath"])).write_bytes(b"\x03" * shots)
+        if options["obs_out_filepath"] is not None:
+            Path(str(options["obs_out_filepath"])).write_bytes(b"\x01" * shots)
+
+
+def test_file_preflight_and_second_publication_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stream = FileStream()
+    monkeypatch.setattr(public, "_prepare_detector_sampler", lambda *a, **k: stream)
+    sampler = program().compile_detector_sampler(
+        detector_map=DETECTORS, observable_map=OBSERVABLES
+    )
+    first, second = tmp_path / "d", tmp_path / "o"
+    with pytest.raises(ValueError, match="mutually exclusive"):
+        sampler.sample_write(
+            64, filepath=first, append_observables=True, obs_out_filepath=second
+        )
+    with pytest.raises(ValueError, match="multiple of 64"):
+        sampler.sample_write(63, filepath=first, format="ptb64")
+    with pytest.raises(ValueError, match="distinct"):
+        sampler.sample_write(64, filepath=first, obs_out_filepath=first)
+    assert stream.calls == 0 and list(tmp_path.iterdir()) == []
+    link = os.link
+
+    def fail_second(source: Path, destination: Path) -> None:
+        if destination == second:
+            second.write_bytes(b"another actor")
+        link(source, destination)
+
+    monkeypatch.setattr(os, "link", fail_second)
+    with pytest.raises(FileExistsError):
+        sampler.sample_write(
+            64,
+            filepath=first,
+            format="b8",
+            obs_out_filepath=second,
+            obs_out_format="b8",
+        )
+    assert not first.exists() and second.read_bytes() == b"another actor"
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["o"]
+    with pytest.raises(RuntimeError, match="invalidated"):
+        sampler.sample(1)
+
+
+def test_malformed_detector_file_poison_and_no_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    class BadStream(FileStream):
+        def sample_write(self, shots: int, **options: object) -> None:
+            Path(str(options["filepath"])).write_bytes(b"shot M0\n" * shots)
+
+    monkeypatch.setattr(
+        public, "_prepare_detector_sampler", lambda *a, **k: BadStream()
+    )
+    sampler = program().compile_detector_sampler(
+        detector_map=DETECTORS, observable_map=OBSERVABLES
+    )
+    with pytest.raises(OSError, match="invalid"):
+        sampler.sample_write(64, filepath=tmp_path / "events", format="dets")
+    assert list(tmp_path.iterdir()) == []
+    with pytest.raises(RuntimeError, match="invalidated"):
+        sampler.sample(1)
+
+
+@pytest.mark.parametrize("encoding", ["01", "b8", "r8", "hits", "dets", "ptb64"])
+def test_zero_observable_file_output(tmp_path: Path, encoding: str) -> None:
+    from typing import Any
+
+    pytest.importorskip("stim")
+    circuit = DynamicCircuit(1).bit_flip(0, 1.0).measure(0)
+    handle = circuit.compile_detector_sampler(
+        detector_map=MeasurementMap(1, ((0,),)),
+        observable_map=MeasurementMap(1, ()),
+        seed=7,
+    )
+    options: dict[str, Any] = {"obs_out_format": encoding}
+    events, observables = tmp_path / "events", tmp_path / "empty"
+    handle.sample_write(
+        64, filepath=events, format="b8", obs_out_filepath=observables, **options
+    )
+    expected = {
+        "01": b"\n",
+        "b8": b"",
+        "r8": b"\x00",
+        "hits": b"\n",
+        "dets": b"shot\n",
+        "ptb64": b"",
+    }
+    assert observables.read_bytes() == expected[encoding] * 64
+    assert events.read_bytes() == b"\x01" * 64
+
+
+@pytest.mark.parametrize("rows", [9, 254, 255, 256])
+def test_wide_zero_detector_rows(tmp_path: Path, rows: int) -> None:
+    pytest.importorskip("stim")
+    circuit = DynamicCircuit(1).measure(0)
+    handle = circuit.compile_detector_sampler(
+        detector_map=MeasurementMap(1, ((0,),) * rows),
+        observable_map=MeasurementMap(1, ()),
+        seed=7,
+    )
+    output = tmp_path / "runs"
+    handle.sample_write(128, filepath=output, format="r8")
+    assert output.read_bytes() == (b"\xff" * (rows // 255) + bytes([rows % 255])) * 128
+
+
+def test_file_capacity_and_frame_limits_precede_draw(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stream = FileStream()
+    monkeypatch.setattr(public, "_prepare_detector_sampler", lambda *a, **k: stream)
+    handle = program().compile_detector_sampler(
+        detector_map=DETECTORS, observable_map=OBSERVABLES
+    )
+    with pytest.raises(CapabilityError, match="file bytes"):
+        handle.sample_write(2**30, filepath=tmp_path / "large", format="01")
+    handle._qubits = 10**9
+    with pytest.raises(CapabilityError, match="frame estimate"):
+        handle.sample_write(64, filepath=tmp_path / "frame", format="b8")
+    assert stream.calls == 0 and list(tmp_path.iterdir()) == []
+
+
+def test_cleanup_failure_retains_paths_and_original_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stream = FileStream()
+    monkeypatch.setattr(public, "_prepare_detector_sampler", lambda *a, **k: stream)
+    handle = program().compile_detector_sampler(
+        detector_map=DETECTORS, observable_map=OBSERVABLES
+    )
+    first, second = tmp_path / "first", tmp_path / "second"
+    original_link, original_unlink = os.link, Path.unlink
+
+    def link(source: Path, destination: Path) -> None:
+        if destination == second:
+            raise OSError("second publication failed")
+        original_link(source, destination)
+
+    def unlink(path: Path, missing_ok: bool = False) -> None:
+        if path == first:
+            raise PermissionError("retained cleanup failure")
+        original_unlink(path, missing_ok=missing_ok)
+
+    monkeypatch.setattr(os, "link", link)
+    monkeypatch.setattr(Path, "unlink", unlink)
+    with pytest.raises(OSError, match="cleanup failed") as failure:
+        handle.sample_write(
+            64,
+            filepath=first,
+            format="b8",
+            obs_out_filepath=second,
+            obs_out_format="b8",
+        )
+    assert str(first) in str(failure.value)
+    assert isinstance(failure.value.__cause__, OSError)
+    assert "second publication failed" in str(failure.value.__cause__)
+    assert first.exists() and not second.exists()
+    assert not list(tmp_path.glob(".fq-detectors-*"))
+    with pytest.raises(RuntimeError, match="invalidated"):
+        handle.sample(1)

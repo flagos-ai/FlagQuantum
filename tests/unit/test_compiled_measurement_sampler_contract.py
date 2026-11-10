@@ -568,3 +568,25 @@ def test_integer_and_unknown_format_preflight() -> None:
         _file_size_bound(sys.maxsize + 1, 1, "01")
     with pytest.raises(ValueError, match="format"):
         _file_size_bound(1, 1, "unknown")
+
+
+@pytest.mark.parametrize("encoding", ["01", "b8", "r8", "hits", "dets", "ptb64"])
+def test_zero_width_file_framing(tmp_path: Path, encoding: str) -> None:
+    from flagquantum.simulation.stabilizer._measurement_file_validation import (
+        _file_size_bound,
+        _validate_record_file,
+    )
+
+    content = {
+        "01": b"\n",
+        "b8": b"",
+        "r8": b"\x00",
+        "hits": b"\n",
+        "dets": b"shot\n",
+        "ptb64": b"",
+    }[encoding] * 64
+    path = tmp_path / encoding
+    path.write_bytes(content)
+    _validate_record_file(
+        path, 64, 0, encoding, _file_size_bound(64, 0, encoding), sections=(("L", 0),)
+    )

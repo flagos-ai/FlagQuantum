@@ -955,12 +955,42 @@ source-overlay environment correctly failed its provenance guard; it is not
 installation evidence and was not retried. Valid installation evidence is the
 five CI profiles and actual-main installed-wheel smoke described above.
 
-The approved next slice completes the six measurement file output formats
-through the existing compiled sampler. Implementation/acceptance is in progress;
-no PR number or new-head/main acceptance is claimed yet. It reuses the 96-file
+The previously approved six measurement-file output slice is delivered through
+PR1112; the dated acceptance below supersedes its original pending status. It reuses the 96-file
 Stim 1.16.0 closure, preserves source occurrence columns and the single-slot X
 feedback path, and adds no detector file output or public file reader.
 FTS-04/R03/R08 remain partial, gaining this slice only after its own acceptance.
 FTS-02/R04/M2 are unchanged. No performance, threshold or scalability evidence
 is inferred. Next gaps are detector-file output, measurement-to-detector file
 conversion/streaming decode, and remaining inventoried upstream APIs.
+
+
+## Measurement-file delivery and detector-file follow-up — 2026-11-10
+
+[#1112](https://github.com/flagos-ai/FlagQuantum/pull/1112) merged as
+`c46d8580109cf6c11de588a39aab6a6260ffe9a5`, reviewed head
+`293ed910ff9120eaa0aa6a5aa870cb095475e987`. All 231 CI jobs passed run
+`42596124252` attempt 2. The authorized recovery executed only cpu-core (3.10)
+and CI complete; 229 successes were reused. Its original report-upload failure
+remains retained. Exact-main installed-wheel smoke `42638677612`, job
+`129233581560`, passed wheel build, install and checks outside source. This
+accepts six measurement-file formats, not complete Stim parity or new GPU evidence.
+
+The [detector-file proposal](../development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md)
+is API-owner approved under SHA-256
+`88a3f48afcd6bb919672172cd89285bf56c8aa57cdab6a9934a2fadb88cf38cb`.
+The local candidate reuses all 96 pinned upstream files and adds bounded native
+and SDK detector writing with optional same-shot observable files. Candidate
+local acceptance passed: 229 focused tests (3 skipped), 18,992 smoke/unit tests
+(295 skipped), 7,025 integration tests (227 skipped), static checks and an offline
+macOS arm64 installed-wheel profile without the Stim Python package. Complete
+node accounting reuses prior passes and bounded continuations; original failures
+and timeouts remain retained. PR/main delivery remains pending, so no actual-main
+completion is claimed for this candidate. The first profile run retained a missing TemporaryDirectory
+import failure; its two cases passed after the approved import correction.
+
+FTS-04/R03/R08 gain the accepted measurement-file slice and remain partial.
+FTS-02/R04/M2 are unchanged. FTS-07 decoder/model evidence is reused, not promoted.
+Remaining bundles include measurement-to-detector file conversion, bounded
+public record reading/streaming decode, and the remaining pinned API inventory.
+No new performance, threshold, hardware or capacity evidence is inferred.

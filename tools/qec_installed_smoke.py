@@ -8,6 +8,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Literal, TypedDict
 
 PROFILES = {
@@ -474,12 +475,30 @@ def _exercise_native_detector_execution(profile: str) -> dict[str, object] | Non
 
     assert isinstance(packed, torch.Tensor)
     assert packed.tolist() == [[3], [3]]
+    witnesses: dict[Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes] = {
+        "01": b"11\n" * 64,
+        "b8": b"\x03" * 64,
+        "r8": b"\x00\x00\x00" * 64,
+        "hits": b"0,1\n" * 64,
+        "dets": b"shot D0 L0\n" * 64,
+        "ptb64": b"\xff" * 16,
+    }
+    with TemporaryDirectory() as directory:
+        for encoding, witness in witnesses.items():
+            path = Path(directory) / encoding
+            sampler.sample_write(
+                64, filepath=path, format=encoding, append_observables=True
+            )
+            assert path.read_bytes() == witness
     model = circuit.detector_error_model(detector_map=maps, observable_map=maps)
     assert model.num_detectors == model.num_observables == 1
     assert len(model.errors) == 1 and model.errors[0].probability == 1.0
     return {
         "packed_detector_observable": packed.tolist(),
         "mechanisms": len(model.errors),
+        "detector_file_sizes": {
+            encoding: len(data) for encoding, data in witnesses.items()
+        },
     }
 
 

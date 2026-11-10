@@ -19,6 +19,18 @@ _MAX_DEM_BYTES = 16 * 1024**2
 class _DetectorStream(Protocol):
     def sample(self, shots: int) -> tuple[torch.Tensor, torch.Tensor]: ...
 
+    def sample_write(
+        self,
+        shots: int,
+        *,
+        filepath: str,
+        format: str,
+        prepend_observables: bool,
+        append_observables: bool,
+        obs_out_filepath: str | None,
+        obs_out_format: str,
+    ) -> None: ...
+
 
 def _source_text(
     ir: CircuitIR,
@@ -78,6 +90,27 @@ class _SdkDetectorSampler:
         if not isinstance(pair, tuple) or len(pair) != 2:
             raise CapabilityError("detector engine returned an invalid pair")
         return _as_torch_sample(pair[0]).clone(), _as_torch_sample(pair[1]).clone()
+
+    def sample_write(
+        self,
+        shots: int,
+        *,
+        filepath: str,
+        format: str,
+        prepend_observables: bool,
+        append_observables: bool,
+        obs_out_filepath: str | None,
+        obs_out_format: str,
+    ) -> None:
+        self._sampler.sample_write(
+            shots,
+            filepath=filepath,
+            format=format,
+            prepend_observables=prepend_observables,
+            append_observables=append_observables,
+            obs_out_filepath=obs_out_filepath,
+            obs_out_format=obs_out_format,
+        )
 
 
 def _prepare_detector_sampler(

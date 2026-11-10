@@ -612,7 +612,18 @@ def test_native_detector_installed_profile(profile: str) -> None:
         if not _embedded_profile():
             pytest.importorskip("stim")
         result = _exercise_native_detector_execution(profile)
-        assert result == {"packed_detector_observable": [[3], [3]], "mechanisms": 1}
+        assert result == {
+            "packed_detector_observable": [[3], [3]],
+            "mechanisms": 1,
+            "detector_file_sizes": {
+                "01": 192,
+                "b8": 64,
+                "r8": 192,
+                "hits": 256,
+                "dets": 704,
+                "ptb64": 16,
+            },
+        }
     else:
         assert _exercise_native_detector_execution(profile) is None
 
