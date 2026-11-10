@@ -212,6 +212,18 @@ def select_rotation(
     raise TypeError("select_rotation is captured inside qfunc")
 
 
+def quantize(
+    expression: QNum | float, /, *, fractional_bits: int, literal_bits: int
+) -> QNum:
+    """Mark explicit bounded fixed-point arithmetic inside a captured qfunc.
+
+    Use only as the complete RHS of fresh ``|=`` initialization. The initial
+    closed program profile accepts eight fractional and twenty literal bits.
+    Ordinary unmarked arithmetic remains exact.
+    """
+    raise TypeError("quantize is captured inside qfunc, not executed on the host")
+
+
 def hadamard_transform(out: QNum | QArray[QBit], /) -> None:
     """Prepare uniform amplitudes on an initialized captured quantum port.
 

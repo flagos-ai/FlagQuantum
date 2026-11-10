@@ -1122,6 +1122,9 @@ class _Body:
 
     def finish(self) -> HybridProgram:
         self.statements(self.source.node.body)
+        return self.program()
+
+    def program(self) -> HybridProgram:
         flush_evolutions(self)
         values = {
             name: self.register(
@@ -1182,6 +1185,19 @@ def capture_program(
     classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
 ) -> tuple[HybridProgram, tuple[HybridProgram, ...]]:
     """Capture the reachable typed graph; existing Compiler verifies all effects."""
+    from .frontend_quantized import try_capture_quantized
+
+    quantized = try_capture_quantized(definition)
+    if quantized is not None:
+        if classical_inputs:
+            _error(
+                definition.source,
+                definition.source.node,
+                "program.quantized.binding",
+                "closed quantized programs do not take classical bindings",
+            )
+        verify_register_program(quantized, ())
+        return quantized, ()
     owner = _Capture(definition, bind_inputs(definition, classical_inputs))
     program, _ = owner.build(definition, root=True)
     functions = tuple(owner.functions)

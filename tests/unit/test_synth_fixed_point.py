@@ -15,6 +15,10 @@ from flagquantum.compiler._construction.fixed_point import (
     fixed_point_number,
     fixed_point_scalar,
 )
+from flagquantum.compiler._construction.fixed_point_program import (
+    FixedPointScope,
+    emit_fixed_point_tables,
+)
 
 
 def _fail(code: str, message: str) -> NoReturn:
@@ -149,6 +153,101 @@ def test_cancelled_expression_keeps_preparation_witness() -> None:
         branches.verify_discarded(_fail)
     branches.discard(value)
     branches.verify_discarded(_fail)
+
+
+def test_shared_scope_preserves_borrowing_initialization_and_retirement() -> None:
+    branches = FixedPointBranches()
+    borrowed = fixed_point_number(_fail, Fraction(1, 2))
+    scope = FixedPointScope(branches, {"x": "const", "out": "output"}, {"x": borrowed})
+    assert scope.read("x", _fail) is borrowed
+    with pytest.raises(ValueError, match="fresh local or Output"):
+        scope.reserve("x", _fail)
+    scope.declare("coin", _fail)
+    with pytest.raises(ValueError, match="fresh name"):
+        scope.declare("coin", _fail)
+    with pytest.raises(ValueError, match="live numeric variable"):
+        scope.read("coin", _fail)
+    scope.allocate("coin", _fail)
+    with pytest.raises(ValueError, match="fresh local or Output"):
+        scope.allocate("coin", _fail)
+    scope.hadamard("coin", _fail)
+    with pytest.raises(ValueError, match="fresh one-bit allocation"):
+        scope.hadamard("coin", _fail)
+    with pytest.raises(ValueError, match="owned local"):
+        scope.drop("x", _fail)
+    scope.drop("coin", _fail)
+    for action in (scope.read, scope.reserve, scope.drop):
+        with pytest.raises(
+            ValueError, match="live numeric variable|fresh local or Output"
+        ):
+            action("coin", _fail)
+    branches.verify_discarded(_fail)
+
+
+def test_shared_scope_uniform_output_is_fresh_and_not_droppable() -> None:
+    branches = FixedPointBranches()
+    scope = FixedPointScope(branches, {"out": "output"}, {})
+    scope.prepare_uniform("out", _fail)
+    assert branches.bits == 1
+    with pytest.raises(ValueError, match="fresh local or Output"):
+        scope.prepare_uniform("out", _fail)
+    with pytest.raises(ValueError, match="owned local"):
+        scope.drop("out", _fail)
+
+
+@pytest.mark.parametrize("source", ["0.1", "0.5**9", "0.125**3"])
+def test_exact_bounded_evaluation_never_silently_quantizes(source: str) -> None:
+    with pytest.raises(ValueError, match="precision"):
+        _EVALUATOR.evaluate(ast.parse(source, mode="eval").body, {}, quantized=False)
+
+
+def test_exact_and_explicit_rounded_arithmetic_share_the_same_domain() -> None:
+    node = ast.parse("0.5**8+0.125*0.5", mode="eval").body
+    result = _EVALUATOR.evaluate(node, {}, quantized=False)
+    assert result.values == (Fraction(17, 256),) * 32
+    rounded = _evaluate("0.1")
+    assert rounded.values == (Fraction(25, 256),) * 32
+
+
+def test_shared_table_emitter_fresh_targets_and_reversible_full_domain() -> None:
+    branches = FixedPointBranches()
+    a, b = (branches.uniform(_fail) for _ in range(2))
+    values = [_evaluate("x+y", x=a, y=b), _evaluate("1-x", x=a), a]
+    gates: list[tuple[tuple[int, ...], int, int]] = []
+    emit_fixed_point_tables(
+        (0, 1),
+        tuple(
+            (value, tuple(range(start, start + value.width)))
+            for value, start in zip(values, (2, 4, 5), strict=True)
+        ),
+        flip=lambda target: gates.append(((), 0, target)),
+        controlled=lambda controls, pattern, target: gates.append(
+            (controls, pattern, target)
+        ),
+    )
+    for initial in range(64):
+        word = initial
+        for controls, pattern, target in gates:
+            if (
+                sum((word >> bit & 1) << index for index, bit in enumerate(controls))
+                == pattern
+            ):
+                word ^= 1 << target
+        x, y = initial & 1, initial >> 1 & 1
+        expected = initial ^ ((x + y) << 2) ^ ((1 - x) << 4) ^ (x << 5)
+        if initial < 4:
+            assert word == expected
+        for controls, pattern, target in reversed(gates):
+            if (
+                sum((word >> bit & 1) << index for index, bit in enumerate(controls))
+                == pattern
+            ):
+                word ^= 1 << target
+        assert word == initial
+    with pytest.raises(ValueError, match="inferred width"):
+        emit_fixed_point_tables(
+            (0, 1), ((a, ()),), flip=lambda _: None, controlled=lambda _c, _p, _t: None
+        )
 
 
 @pytest.mark.parametrize(

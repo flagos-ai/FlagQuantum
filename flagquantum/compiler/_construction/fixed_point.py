@@ -141,10 +141,39 @@ class FixedPointExpression(Generic[_Node]):
         self._literal, self._reject = literal, reject
 
     def evaluate(
-        self, node: _Node, values: Mapping[str, FixedPointScalar]
+        self,
+        node: _Node,
+        values: Mapping[str, FixedPointScalar],
+        *,
+        quantized: bool = True,
     ) -> FixedPointScalar:
+        def rounded(value: Fraction, bits: int) -> Fraction:
+            if not quantized and bits > FRACTION_BITS:
+                self._reject(
+                    node,
+                    "budget.precision",
+                    "exact bounded arithmetic exceeds eight fractional bits",
+                )
+            return truncate_fixed_point(value, bits) if quantized else value
+
         literal = self._literal(node)
         if literal is not None:
+            if not quantized:
+                if literal.denominator & (literal.denominator - 1):
+                    self._reject(
+                        node,
+                        "precision",
+                        "unmarked literals must be exactly binary representable",
+                    )
+                bits = literal.denominator.bit_length() - 1
+                rounded(literal, bits)
+                return fixed_point_scalar(
+                    lambda c, m: self._reject(node, c, m),
+                    literal,
+                    literal,
+                    bits,
+                    (literal,) * BRANCH_ROWS,
+                )
             return fixed_point_number(
                 lambda code, message: self._reject(node, code, message), literal
             )
@@ -152,7 +181,7 @@ class FixedPointExpression(Generic[_Node]):
         if not args and name in values:
             return values[name]
         if name == "-" and len(args) == 1:
-            operand = self.evaluate(args[0], values)
+            operand = self.evaluate(args[0], values, quantized=quantized)
             return fixed_point_scalar(
                 lambda code, message: self._reject(node, code, message),
                 -operand.high,
@@ -161,31 +190,33 @@ class FixedPointExpression(Generic[_Node]):
                 tuple(-value for value in operand.values),
             )
         if name == "**" and len(args) == 2:
-            base = self.evaluate(args[0], values)
+            base = self.evaluate(args[0], values, quantized=quantized)
             degree = self._literal(args[1])
-            if degree is None or degree.denominator != 1 or not 1 <= degree <= 4:
+            maximum = 4 if quantized else 8
+            if degree is None or degree.denominator != 1 or not 1 <= degree <= maximum:
                 self._reject(
                     node,
                     "precision",
-                    "quantized power requires a literal degree in 1..4",
+                    f"{'quantized' if quantized else 'exact'} power requires a literal degree in 1..{maximum}",
                 )
             exponent = int(degree)
-            fraction = min(base.fraction * exponent, FRACTION_BITS)
+            fraction = base.fraction * exponent
+            if quantized:
+                fraction = min(fraction, FRACTION_BITS)
             edges = [base.low**exponent, base.high**exponent]
             if exponent % 2 == 0 and base.low < 0 < base.high:
                 edges.append(Fraction())
             return fixed_point_scalar(
                 lambda code, message: self._reject(node, code, message),
-                truncate_fixed_point(min(edges), fraction),
-                truncate_fixed_point(max(edges), fraction),
+                rounded(min(edges), fraction),
+                rounded(max(edges), fraction),
                 fraction,
-                tuple(
-                    truncate_fixed_point(value**exponent, fraction)
-                    for value in base.values
-                ),
+                tuple(rounded(value**exponent, fraction) for value in base.values),
             )
         if name in {"+", "-", "*"} and len(args) == 2:
-            left, right = (self.evaluate(child, values) for child in args)
+            left, right = (
+                self.evaluate(child, values, quantized=quantized) for child in args
+            )
             pairs = tuple(zip(left.values, right.values, strict=True))
             fraction = max(left.fraction, right.fraction)
             if name == "+":
@@ -204,17 +235,19 @@ class FixedPointExpression(Generic[_Node]):
                     fraction,
                     tuple(a - b for a, b in pairs),
                 )
-            fraction = min(left.fraction + right.fraction, FRACTION_BITS)
+            fraction = left.fraction + right.fraction
+            if quantized:
+                fraction = min(fraction, FRACTION_BITS)
             bounds = [
                 a * b
                 for a, b in product((left.low, left.high), (right.low, right.high))
             ]
             return fixed_point_scalar(
                 lambda code, message: self._reject(node, code, message),
-                truncate_fixed_point(min(bounds), fraction),
-                truncate_fixed_point(max(bounds), fraction),
+                rounded(min(bounds), fraction),
+                rounded(max(bounds), fraction),
                 fraction,
-                tuple(truncate_fixed_point(a * b, fraction) for a, b in pairs),
+                tuple(rounded(a * b, fraction) for a, b in pairs),
             )
         self._reject(
             node, "precision", "unsupported lexical quantized numeric expression"
