@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **146/216**.
+Validated quantum-program counterparts: **151/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -176,8 +176,11 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (27 native programs)
+## Tutorials (32 native programs)
 
+- [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
+- [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
+- [quantum_walk_circle_balanced_coin](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md)
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [example_exponentiation](tutorials/basics/exponentiation/example_exponentiation/README.md)
@@ -195,6 +198,8 @@ Validated local Notebook workflows:
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](tutorials/technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [classiq_discrete_quantum_walk](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md)
+- [discrete_quantum_walk_circle](tutorials/technology_demonstrations/discrete_quantum_walk_circle/README.md)
 - [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](tutorials/technology_demonstrations/hardware_aware_mcx/README.md)
 - [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)

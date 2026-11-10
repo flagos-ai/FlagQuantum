@@ -2,6 +2,9 @@
 
 Native FlagQuantum programs currently available:
 
+- [discrete_quantum_walk](advanced_tutorials/discrete_quantum_walk/README.md)
+- [quantum_walk_circle](advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
+- [quantum_walk_circle_balanced_coin](advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md)
 - [add_bell_states](basics/add_bell_states/README.md)
 - [entanglement](basics/entanglement/README.md)
 - [example_exponentiation](basics/exponentiation/example_exponentiation/README.md)
@@ -19,6 +22,8 @@ Native FlagQuantum programs currently available:
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [classiq_discrete_quantum_walk](technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md)
+- [discrete_quantum_walk_circle](technology_demonstrations/discrete_quantum_walk_circle/README.md)
 - [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)
 - [hardware_aware_mcx](technology_demonstrations/hardware_aware_mcx/README.md)
 - [qaoa_demonstration](technology_demonstrations/qaoa/qaoa_demonstration/README.md)
