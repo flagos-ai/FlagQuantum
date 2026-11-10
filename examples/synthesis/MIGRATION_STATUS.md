@@ -226,7 +226,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/chemistry/molecule_eigensolver/molecule_eigensolver` | notebook_workflow | [Native program](applications/chemistry/molecule_eigensolver/main.py) | pending |
 | `applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial` | notebook_workflow | Pending | pending |
 | `applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/main.py) | pending |
-| `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | Pending | pending |
+| `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/main.py) | pending |
 | `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | Pending | pending |
 | `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/main.py) | pending |
 | `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | [Native program](applications/chemistry/quantum_walk_fmo/main.py) | validated |
@@ -376,7 +376,7 @@ Validated local Notebook workflows: **24/213**.
 | `tutorials/advanced_tutorials/discrete_quantum_walk/discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/main.py) | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/main.py) | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/main.py) | pending |
-| `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube` | quantum_program | Pending | pending |
+| `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/main.py) | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk` | notebook_workflow | Pending | pending |
 | `tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe` | notebook_workflow | Pending | pending |
 | `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | Pending | pending |

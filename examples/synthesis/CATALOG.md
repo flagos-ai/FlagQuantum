@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **185/216**.
+Validated quantum-program counterparts: **187/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -53,13 +53,14 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (46 native programs)
+## Applications (47 native programs)
 
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)
 - [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
 - [molecular_energy_curve](applications/chemistry/molecular_energy_curve/README.md)
 - [molecule_eigensolver](applications/chemistry/molecule_eigensolver/README.md)
 - [protein_folding](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/README.md)
+- [qfold](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/README.md)
 - [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 - [second_quantized_hamiltonian](applications/chemistry/second_quantized_hamiltonian/README.md)
@@ -202,11 +203,12 @@ Validated local Notebook workflows:
 - [unitary](functions/unitary/README.md)
 
 
-## Tutorials (40 native programs)
+## Tutorials (41 native programs)
 
 - [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
 - [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
 - [quantum_walk_circle_balanced_coin](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md)
+- [quantum_walk_hypercube](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/README.md)
 - [add_bell_states](tutorials/basics/add_bell_states/README.md)
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [example_exponentiation](tutorials/basics/exponentiation/example_exponentiation/README.md)
