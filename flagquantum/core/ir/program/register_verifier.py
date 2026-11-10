@@ -11,7 +11,7 @@ from collections.abc import Mapping
 from ..diagnostics import LevelDiagnostic, _diagnostic
 from .model import BlockRecord, FunctionRecord, OpcodeSignature, ValueRef
 from .register_compatibility import check_register_types_consistent
-from .register_types import classical_bit_type
+from .register_types import classical_bit_type, quantum_bit_type
 from .registers import Register, RegisterSide, RegisterType
 from .signatures import Signature
 
@@ -87,7 +87,13 @@ def verify_register_block(
     )
     rebindings = any(
         op.opcode
-        in {"split_register", "join_register", "allocate_register", "free_register"}
+        in {
+            "split_register",
+            "join_register",
+            "allocate_register",
+            "free_register",
+            "measure_register",
+        }
         or op.register_type is not None
         or op.workspace_dirty is not None
         for op in block.operations
@@ -121,6 +127,21 @@ def verify_register_block(
                     continue
                 _check_port_types(operation.operands, left, types, diagnostics)
                 types.update(zip(operation.results, right, strict=False))
+        elif operation.opcode == "measure_register":
+            signatures[position] = OpcodeSignature(
+                "measure_register",
+                operand_kinds=("register",),
+                result_kinds=("register",),
+            )
+            dtype = types.get(operation.operands[0]) if operation.operands else None
+            if dtype != quantum_bit_type():
+                diagnostics.append(
+                    _diagnostic(
+                        "program.register_type",
+                        "destructive measurement requires an owned QBit register",
+                    )
+                )
+            types.update((value, classical_bit_type()) for value in operation.results)
         elif operation.opcode == "split_register":
             dtype = types.get(operation.operands[0]) if operation.operands else None
             try:
@@ -188,6 +209,7 @@ def verify_register_block(
             "join_register",
             "allocate_register",
             "free_register",
+            "measure_register",
         }:
             if (
                 operation.parameters
