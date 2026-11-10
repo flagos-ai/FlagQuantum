@@ -73,3 +73,9 @@ Raw local evidence resides in `ftqc-reference-env/g2-superoperator-binding-*`
 environment, example, resources, format/type/architecture checks and default
 baseline comparison). Default-suite results are recorded separately in the
 integration ledger, including existing failures and any tests not reached.
+
+The default smoke/unit run recorded 21,507 passed, 300 skipped and seven failures
+in 179.89 s. All seven failure IDs match the independent recorded baseline;
+there are no new failure IDs. The maxfail stop means this is not a complete
+passing suite. See `g2-superoperator-binding-default-comparison.json` for the
+explicit baseline comparison.
