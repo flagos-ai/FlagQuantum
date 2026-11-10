@@ -98,6 +98,21 @@ class RegisterWorkspace:
         before releasing any prefix. Empty words retain their separate lease
         identity and must be released with ``free(lease)``.
         """
+        self._release_wires(wires, reuse=True, require_clean=False)
+
+    def retire_measured_wires(self, wires: tuple[int, ...], *, reset: bool) -> None:
+        """Consume clean measured owners, reusing wires only after physical reset.
+
+        The emitter must perform the reset before any subsequent allocation.
+        Borrowed wires require original-state restoration and cannot retire.
+        """
+        if type(reset) is not bool:
+            raise ValueError("Measured workspace reset requires a boolean")
+        self._release_wires(wires, reuse=reset, require_clean=True)
+
+    def _release_wires(
+        self, wires: tuple[int, ...], *, reuse: bool, require_clean: bool
+    ) -> None:
         if any(type(wire) is not int for wire in wires) or len(set(wires)) != len(
             wires
         ):
@@ -111,6 +126,8 @@ class RegisterWorkspace:
             raise ValueError(
                 "Partial workspace release requires live wires from this pool"
             )
+        if require_clean and any(owners[wire].dirty for wire in wires):
+            raise ValueError("Destructive measurement cannot retire borrowed workspace")
         released = set(wires)
         for lease in {owners[wire] for wire in wires}:
             remaining = tuple(
@@ -120,9 +137,10 @@ class RegisterWorkspace:
                 self._live[lease] = remaining
             else:
                 del self._live[lease]
-        for dirty in (False, True):
-            ordered = tuple(wire for wire in wires if owners[wire].dirty is dirty)
-            self._available[dirty].extend(reversed(ordered))
+        if reuse:
+            for dirty in (False, True):
+                ordered = tuple(wire for wire in wires if owners[wire].dirty is dirty)
+                self._available[dirty].extend(reversed(ordered))
 
     @property
     def used_wires(self) -> tuple[int, ...]:
