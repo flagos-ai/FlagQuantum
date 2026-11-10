@@ -34,6 +34,20 @@ ControlAdder = Callable[
 ]
 
 
+def _control_names(registers: tuple[Register, ...], count: int) -> tuple[str, ...]:
+    """Choose source control names using only the underlying data signature."""
+    names = {register.name for register in registers}
+    if count == 1 and "ctrl" not in names:
+        return ("ctrl",)
+    index = 1 if "ctrl" in names else 0
+    result: list[str] = []
+    while len(result) < count:
+        index += 1
+        if f"ctrl{index}" not in names:
+            result.append(f"ctrl{index}")
+    return tuple(result)
+
+
 def control_component_program(
     record: ProgramRecord,
     controlled: Mapping[str, ControlAdder],
@@ -75,13 +89,7 @@ def _control_function(
     assert function.registers is not None
     if any(register.side != RegisterSide.THRU for register in function.registers):
         raise ValueError("controlled component requires only THRU entry ports")
-    names = {register.name for register in function.registers}
-    control_name = "ctrl"
-    if control_name in names:
-        index = 2
-        while f"ctrl{index}" in names:
-            index += 1
-        control_name = f"ctrl{index}"
+    (control_name,) = _control_names(function.registers, 1)
     control = Register(control_name, quantum_bit_type())
     block = function.blocks[0]
     for operation in block.operations:
