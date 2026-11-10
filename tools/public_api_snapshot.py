@@ -671,6 +671,7 @@ _SYNTH_ACTIVE_EXPORTS = (
     "inplace_prepare_amplitudes",
     "inplace_prepare_state",
     "drop",
+    "qpe",
     "QArray",
     "H",
     "S",
@@ -1300,6 +1301,23 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.drop)) != hidden_contract["signatures"]["drop"]
     ):
         errors.append("native hidden storage differs from its authorized scope")
+    matrix_qpe_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-matrix-qpe-candidate.json").read_text()
+    )
+    if (
+        matrix_qpe_contract.get("added_exports") != ["qpe"]
+        or matrix_qpe_contract.get("signatures")
+        != {
+            "qpe": "(callback: 'Callable[[], None]', phase_result: 'QNum', /) -> 'None'"
+        }
+        or matrix_qpe_contract.get("implementation_authorized") is not True
+        or matrix_qpe_contract.get("release_authorized") is not False
+        or matrix_qpe_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-MATRIX-QPE-20261110.md"
+        or not (ROOT / matrix_qpe_contract["authorization_record"]).is_file()
+        or str(inspect.signature(synth.qpe)) != matrix_qpe_contract["signatures"]["qpe"]
+    ):
+        errors.append("native matrix qpe differs from its authorized scope")
     views = json.loads(
         (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
     )
