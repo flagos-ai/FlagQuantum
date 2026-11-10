@@ -177,11 +177,13 @@ def drop(target: QNum | QArray[QBit], /) -> None:
 
 
 def qpe(callback: Callable[[], None], phase_result: QNum, /) -> None:
-    """Estimate a static matrix eigenphase into a fresh all-fractional counter.
+    """Estimate a pure quantum callback's eigenphase into a fresh counter.
 
-    The current profile admits one unitary call in a zero-argument lambda at
-    the unconditional root or root pure unitary regions, with one to eight signed
-    or unsigned phase bits.
+    Use one positional captured operation or qfunc call in a zero-argument
+    lambda, at the root or in root pure unitary regions. The allocated unused
+    counter has one to eight signed or unsigned all-fractional bits. Callback
+    storage must be initialized, writable and disjoint from the counter;
+    allocation, publication and unsupported nested controls are rejected.
     """
     raise TypeError("qpe is captured inside qfunc; synthesize the program")
 

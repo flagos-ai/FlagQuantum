@@ -113,7 +113,6 @@ def test_controlled_negative_identity_retains_interfering_global_phase(
         ("QNum[3,False,2]", "qpe(lambda:unitary([[1,0],[0,1]],s),p)"),
         ("QNum[9,False,9]", "qpe(lambda:unitary([[1,0],[0,1]],s),p)"),
         ("QNum[3,False,3]", "H(p)\nqpe(lambda:unitary([[1,0],[0,1]],s),p)"),
-        ("QNum[3,False,3]", "qpe(lambda:H(s),p)"),
         ("QNum[3,False,3]", "qpe(lambda:drop(s),p)"),
         ("QNum[3,False,3]", "qpe(lambda:allocate(s),p)"),
         ("QNum[3,False,3]", "qpe(lambda a:unitary([[1,0],[0,1]],s),p)"),
