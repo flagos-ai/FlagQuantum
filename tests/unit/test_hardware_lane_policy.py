@@ -54,7 +54,7 @@ MC550_CPU_ROUTE = A800_CPU_ROUTE.replace(
 
 COVERAGE_CPU_ROUTE = (
     "${{ fromJSON(\n"
-    "  (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)\n"
+    "  (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)\n"
     '  && \'["self-hosted","linux","x64","flagquantum-cpu"]\' || \'["ubuntu-latest"]\'\n'
     ") }}"
 )
@@ -424,7 +424,13 @@ def test_trigger_parsing_reads_both_ways_a_workflow_can_spell_on(
 
 
 @pytest.mark.parametrize(
-    "route", [TRUSTED_CPU_ROUTE, MC550_CPU_ROUTE, PREINSTALLED_A800_CPU_ROUTE]
+    "route",
+    [
+        TRUSTED_CPU_ROUTE,
+        MC550_CPU_ROUTE,
+        PREINSTALLED_A800_CPU_ROUTE,
+        COVERAGE_CPU_ROUTE,
+    ],
 )
 def test_cpu_route_rejects_missing_guards_and_other_untrusted_events(
     route: str,

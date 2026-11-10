@@ -447,7 +447,7 @@ jobs:
       - name: Verify the independent core workflow on Linux
         run: |
           python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('numpy', 'scipy', 'pyscf', 'openfermion', 'cirq'))"
-          python -m pytest tests/unit/fermion tests/unit/test_observables_fermion.py tests/integration/test_native_fermion_isolation.py -q
+          python -m pytest tests/unit/fermion tests/unit/test_observables_fermion.py tests/integration/test_native_fermion_isolation.py tests/integration/test_fcidump_isolation.py -q
           python -m examples.algorithms.fermion_chemistry
       - name: Install the direct chemistry driver
         run: python -m pip install --no-build-isolation -e '.[chemistry-pyscf]' 'pyscf==${{ matrix.pyscf }}'
@@ -455,7 +455,7 @@ jobs:
         run: |
           python -c "from pyscf import ao2mo, gto, scf"
           python -m pip check
-          python -m pytest tests/integration/test_native_chemistry_driver.py -q
+          python -m pytest tests/integration/test_native_chemistry_driver.py tests/integration/test_fcidump_pyscf.py -q
 
   cpu-core:
     needs: prepare-source
@@ -2161,7 +2161,7 @@ jobs:
       count: ${{ steps.plan.outputs.count }}
     runs-on: >-
       ${{ fromJSON(
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]'
       ) }}
     permissions:
@@ -2174,9 +2174,9 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
-      FQ_COVERAGE_SHARDS: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '192' || '16' }}
+      FQ_COVERAGE_SHARDS: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '192' || '16' }}
     concurrency:
-      group: flagquantum-${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-plan-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-plan-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-0
       queue: max
     steps:
       # Reuse the runner's verified Git objects before transferring a full tree.
@@ -2276,7 +2276,7 @@ jobs:
     needs: [prepare-source, coverage-plan]
     runs-on: >-
       ${{ fromJSON(
-        (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
+        (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         && '["self-hosted","linux","x64","flagquantum-cpu"]' || '["ubuntu-latest"]'
       ) }}
     permissions:
@@ -2290,7 +2290,7 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       JAX_PLATFORMS: cpu
     concurrency:
-      group: flagquantum-${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ matrix.hosted-bucket }}
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-coverage-shard-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-${{ matrix.hosted-bucket }}
       queue: max
     strategy:
       fail-fast: false
