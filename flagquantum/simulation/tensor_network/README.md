@@ -78,3 +78,15 @@ objective is exact only up to the node ceiling `_contract_nodes_optimal` accepts
 search, so an `optimal` cost must not be presented as exact for a larger network.
 No strategy here may be described as a cuTensorNet-class or cotengra-class
 planner.
+
+## Explicit dense register inspection
+
+`register_tensor.py` owns output/input word-axis layout and missing-port zero
+projection over existing Core signatures. `controlled_tensor.py` inserts a child
+supplier's tensor into the active control block of an identity tensor. It uses
+raw stored word indices and adds no compiler graph or contraction engine. This
+explicit exponential-memory inspection path can feed `ContractionGraph`; it is
+not the circuit execution backend or a gate-count estimator. See
+[controlled register tensors](../../../docs/development/CONTROLLED_REGISTER_TENSORS.md)
+for layout, callback ownership, source failures and existing append verification.
+Run the two focused test files named there when changing these owners.
