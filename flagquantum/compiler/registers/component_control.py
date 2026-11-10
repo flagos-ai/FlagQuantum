@@ -10,6 +10,9 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from dataclasses import replace
 
+import numpy as np
+
+from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import FunctionRecord, ProgramRecord, verify_program_record
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide
@@ -18,6 +21,12 @@ from .component_builder import BindingCollection, ComponentProgramBuilder
 from .component_expansion import _has_call_decomposition
 from .component_graph import _call_entry, _collections, _elements
 from .component_schedule import local_operation_order
+from .control.component_predicate import (
+    _bit_function,
+    control_predicate_program,
+    validate_control_ports,
+)
+from .control.control_predicate import ControlRegister
 
 ControlAdder = Callable[
     [ComponentProgramBuilder, BindingCollection, dict[str, BindingCollection]],
@@ -197,3 +206,95 @@ def control_component_hierarchy(
     if diagnostics:
         raise ValueError(f"invalid hierarchical controlled graph: {diagnostics}")
     return result
+
+
+def control_component_via_predicate(
+    record: ProgramRecord,
+    controlled: Mapping[str, ControlAdder],
+    controls: tuple[Register, ...],
+    patterns: tuple[ControlRegister, ...],
+    entry: str = "main",
+) -> ProgramRecord:
+    """Wrap a stored hierarchy using the pinned ControlledViaAnd call chain.
+
+    Control names are caller supplied and precede the original THRU data ports.
+    Integer words are row-major and MSB-first. A single QBit is scalar or shape
+    (1,). Multiple bits produce n-1 owned predicate outputs, call the positive
+    body once, then measure-erase and release them. Specialized adders own their
+    private workspace and must preserve the predicate. Invalid controls, name
+    collisions and incompatible data signatures raise ValueError.
+    """
+    function = _call_entry(record, entry)
+    count = validate_control_ports(controls, patterns)
+    assert function.registers is not None
+    if {r.name for r in controls} & {r.name for r in function.registers}:
+        raise ValueError("control names conflict with component data ports")
+    if count == 1 and (
+        len(controls) != 1
+        or controls[0].dtype != quantum_bit_type()
+        or controls[0].shape not in ((), (1,))
+    ):
+        raise ValueError("single control requires a scalar or shape-(1,) QBit")
+    positive = control_component_hierarchy(record, controlled, entry)
+    names = {f.name for f in positive.functions}
+    index = 0
+    prefix = "__fq_predicate_0_"
+    while any(name.startswith(prefix) for name in names):
+        index += 1
+        prefix = f"__fq_predicate_{index}_"
+    derived = next(f for f in positive.functions if f.name == entry)
+    assert derived.registers is not None
+    control_name = derived.registers[0].name
+    derived = replace(derived, name=prefix + "positive")
+    definitions = [derived, *(f for f in positive.functions if f.name != entry)]
+    if count > 1:
+        inner_controls = tuple(
+            Register(f"ctrl_{i}", r.dtype, r.shape) for i, r in enumerate(controls)
+        )
+        for uncompute, suffix in ((False, "compute"), (True, "erase")):
+            definitions.extend(
+                control_predicate_program(
+                    inner_controls,
+                    patterns,
+                    name=prefix + suffix,
+                    uncompute=uncompute,
+                ).functions
+            )
+    elif patterns[0].bits() == (0,):
+        definitions.append(
+            _bit_function(
+                prefix + "x",
+                (Register("q", quantum_bit_type()),),
+                CircuitIR(1, (Instruction("x", (0,)),)),
+            )
+        )
+    builder = ComponentProgramBuilder(
+        Signature((*controls, *function.registers)), definitions, name=entry
+    )
+    data = {r.name: builder.inputs[r.name] for r in function.registers}
+    if count == 1:
+        q = np.asarray(builder.inputs[controls[0].name]).flat[0]
+        negative = patterns[0].bits() == (0,)
+        if negative:
+            q = builder.call_dict(prefix + "x", {"q": q})["q"]
+    else:
+        predicate = builder.call_dict(
+            prefix + "compute",
+            {f"ctrl_{i}": builder.inputs[r.name] for i, r in enumerate(controls)},
+        )
+        q = predicate.pop("target")
+    outputs = builder.call_dict(derived.name, {control_name: q, **data})
+    q = outputs.pop(control_name)
+    if count == 1:
+        if negative:
+            q = builder.call_dict(prefix + "x", {"q": q})["q"]
+        outputs[controls[0].name] = (
+            np.array([q], dtype=object) if controls[0].shape else q
+        )
+    else:
+        predicate["target"] = q
+        restored = builder.call_dict(prefix + "erase", predicate)
+        outputs.update((r.name, restored[f"ctrl_{i}"]) for i, r in enumerate(controls))
+    return replace(
+        record, canonical_payload=None, functions=builder.finalize(outputs).functions
+    )

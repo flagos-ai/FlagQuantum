@@ -350,3 +350,27 @@ and lifetime helpers inside explicit adders are retained with each derived body.
 Run `tests/unit/test_component_hierarchy_control.py` for original-source hierarchy
 connections, shared leaves and diamonds, separate modeled/primitive counts,
 exhaustive small measured histories and sampled larger graphs.
+
+`component_control.control_component_via_predicate` follows ControlledViaAnd
+around that shared positive hierarchy. Callers supply existing Register ports
+and ControlRegister activation words. Control ports precede the data ports and
+must have distinct names. Single-bit control admits scalar or shape-(1,) QBit,
+with X before and after a negative activation. The multi-bit path calls the
+directional predicate, the positive body and the measured predicate erase once
+each. Specialized adders preserve the predicate and own their separate work.
+
+`control.component_predicate.control_predicate_program` owns those directional
+ports. Controls retain row-major element order and MSB-first word order. Forward
+allocates n-1 clean qubits and returns the first n-2 as opaque `junk` plus a QBit
+`target`. Both are live logical outputs. Erasure consumes their correct computed
+values, applies the shared And emitter in reverse stage order, resets and frees
+the outputs, and returns the original controls. Split/join remains gate-free.
+Core currently admits unparameterized bit, opaque and unsigned quantum words
+on this path. Signed, ones-complement, bounded, Montgomery, symbolic and
+classical descriptors need separate Core admission before typed execution.
+Explicit outer control names are supplied by the caller on this internal API.
+
+Run `tests/unit/test_component_structured_control.py` for pinned signatures,
+named graph connections, primitive operands/feedback, independent resource-model
+closure, complete small measurement histories, complex amplitudes, clean work,
+exact adjoint round trips and the unchanged `circuit.append(op)` consumer.
