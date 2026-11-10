@@ -1,4 +1,4 @@
 {
   "core": ["dev"],
-  "coverage": ["dev", "jax", "viz", "braket", "cirq", "pennylane", "cotengra", "stim", "pymatching", "kaiwu"]
+  "coverage": ["dev", "jax", "viz", "braket", "cirq", "pennylane", "cotengra", "stim", "pymatching", "kaiwu", "chemistry-pyscf"]
 }

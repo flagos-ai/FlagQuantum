@@ -215,6 +215,8 @@ def test_build_backend_supports_spdx_license_metadata() -> None:
     assert project["project"]["license-files"] == [
         "LICENSE",
         "flagquantum/drawer/tex/licenses/*.txt",
+        "third_party/openfermion/LICENSE",
+        "third_party/openfermion/NOTICE",
     ]
     assert "setuptools>=77.0.3" in project["build-system"]["requires"]
 

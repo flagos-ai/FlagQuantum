@@ -74,6 +74,8 @@ protected_paths = [
     "evidence-revision-origins.toml",
     "pytest.ini",
     "setup.py",
+    # Attribution and source provenance for the native fermionic migration.
+    "third_party/openfermion/**",
     # Released version metadata, in the same class as `pyproject.toml`: a change
     # is a release decision rather than a development-team change.
     "flagquantum/version.py",

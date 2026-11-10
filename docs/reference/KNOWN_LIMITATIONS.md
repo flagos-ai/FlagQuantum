@@ -1005,3 +1005,24 @@ source = Path("tests/fixtures/classiq_qmod/gqsp.qmod")
 program = synth.synthesize(source, max_qubits=8, max_workspace=0)
 print(dict(program.probabilities(fq.run(program), registers=("ind",))))
 ```
+
+## Native fermionic science migration
+
+The selected migration is documented in
+`docs/development/OPENFERMION_NATIVE_MIGRATION.md`. General JW/parity/BK operator
+encodings and explicit diagonal encoded Z-parity sectors are implemented in
+concrete submodules. No complete OpenFermion API compatibility or general
+stabilizer tapering is claimed. Existing stable fermionic APIs retain their
+original behavior.
+
+Slater and Gaussian vacuum preparation and low-rank evolution produce full JW
+occupation-register circuits. They do not directly consume parity/BK or tapered
+registers. Chemistry supports real spatial chemist integrals and even-electron
+closed shells. The optional direct PySCF driver provides RHF only. Static data,
+rank selection, orbital decompositions and geometry do not support gradients;
+only evolution time is verified as differentiable in the added workflow.
+Low-rank truncation and product-formula errors are distinct. Evolution uses
+nonadjacent density gates, and makes no nearest-neighbor routing, distributed,
+GPU capacity, or performance claim. Existing optional Cirq interoperability
+remains separately selectable; native scientific paths require neither Cirq nor
+OpenFermion.

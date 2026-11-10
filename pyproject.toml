@@ -14,7 +14,7 @@ authors = [
     {name = "FlagQuantum Team", email = "flagquantum@gmail.com"}
 ]
 license = "Apache-2.0 AND MIT AND LPPL-1.3c"
-license-files = ["LICENSE", "flagquantum/drawer/tex/licenses/*.txt"]
+license-files = ["LICENSE", "flagquantum/drawer/tex/licenses/*.txt", "third_party/openfermion/LICENSE", "third_party/openfermion/NOTICE"]
 readme = "README.md"
 requires-python = ">=3.10,<3.13"
 dependencies = [
@@ -23,6 +23,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+chemistry-pyscf = ["pyscf>=2.8,<3"]
 dev = [
     "pytest>=7.0.0,<10",
     "pytest-cov>=4.0.0,<8",

@@ -838,6 +838,7 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
             "stim",
             "pymatching",
             "kaiwu",
+            "chemistry-pyscf",
         }
     )
     assert coverage.expressions == (
@@ -853,6 +854,14 @@ def test_the_lane_audit_reads_the_workflows_it_claims_to() -> None:
     # The coverage lane does select a device-marked test, and cannot run it.
     assert coverage.selects({"gpu", "integration"}, "tests/unrelated.py")
     assert not coverage.runs({"gpu", "integration"}, "tests/unrelated.py")
+
+    chemistry_path = "tests/integration/test_native_chemistry_driver.py"
+    chemistry_rows = [row for row in _audit() if row.path == chemistry_path]
+    assert chemistry_rows
+    assert all("pyscf" in row.probes for row in chemistry_rows)
+    native_fermion = by_name["native-fermion"]
+    assert "chemistry-pyscf" in native_fermion.extras
+    assert native_fermion.runs({"integration"}, chemistry_path)
 
     triton = by_name["triton-optional"]
     assert "cuda" in triton.extras

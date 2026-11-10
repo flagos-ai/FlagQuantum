@@ -2,7 +2,7 @@
 
 Runnable demonstrations of the Phase 2 algorithm units in
 `flagquantum.algorithms`, one per unit of that phase, plus a private constrained
-arithmetic synthesis workflow trial.
+arithmetic synthesis workflow trial and native fermion workflows.
 [`docs/guides/ALGORITHMS.md`](../../docs/guides/ALGORITHMS.md) is the per-unit
 reference they follow, and the place each unit's advantage premise is recorded in
 full.
@@ -33,6 +33,8 @@ python -m examples.algorithms.pauli_lcu_block_encoding
 python -m examples.algorithms.sparse_select
 python -m examples.algorithms.logical_resources
 python -m examples.algorithms.arithmetic
+python -m examples.algorithms.fermion_energy
+python -m examples.algorithms.fermion_chemistry
 python -m examples.synthesis.tutorials.getting_started.trial.main
 python -m examples.synthesis.tutorials.getting_started.source_trial.main
 ```
@@ -43,6 +45,10 @@ a script that stops working fails the test lane instead of going stale.
 
 What they show:
 
+- [`fermion_energy.py`](fermion_energy.py): the same occupation-state energy
+  through Jordan-Wigner, parity and Bravyi-Kitaev encodings using exact simulation.
+- [`fermion_chemistry.py`](fermion_chemistry.py): fixed STO-3G hydrogen reference
+  energies, low-rank integral reconstruction and differentiable approximate evolution.
 - [`pca.py`](pca.py): the eigenvalue readout of a 2x2 data matrix's density
   matrix, by phase estimation over its exponential.
 - [`kmedians.py`](kmedians.py): one k-medians assignment step, each point's

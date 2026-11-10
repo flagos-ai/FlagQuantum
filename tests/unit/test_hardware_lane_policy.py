@@ -14,6 +14,7 @@ Other self-hosted hardware remains available only through its existing triggers.
 from __future__ import annotations
 
 import ast
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -478,3 +479,49 @@ def test_cpu_image_qualification_rejects_forks_and_unprovisioned_hardware() -> N
     other_hardware = dict(job)
     other_hardware["runs-on"] = ["self-hosted", "gpu", "a800-171"]
     assert _allows_untrusted_code(other_hardware, frozenset({"pull_request"}))
+
+
+@pytest.mark.parametrize(
+    ("occupancy", "expected"),
+    [
+        ("0, 22000, 70\n1, 22000, 0\n2, 0, 0\n3, 4, 0\n", "2,3"),
+        ("0, 0, 10\n1, 0, 0\n", None),
+    ],
+)
+def test_two_gpu_gate_selects_idle_devices_or_refuses_contention(
+    occupancy: str,
+    expected: str | None,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    document = yaml.safe_load((WORKFLOWS / "local-gpu.yml").read_text())
+    steps = document["jobs"]["two-gpu-distributed-required"]["steps"]
+    selector = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Select two idle physical GPUs"
+    )
+    code = selector.split("python - <<'PYTHON'\n", 1)[1].rsplit("PYTHON", 1)[0]
+    environment = tmp_path / "environment"
+    monkeypatch.setenv("GITHUB_ENV", str(environment))
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *args, **kwargs: subprocess.CompletedProcess(
+            args[0], 0, stdout=occupancy
+        ),
+    )
+    if expected is None:
+        with pytest.raises(SystemExit, match="Two idle GPUs are required"):
+            exec(compile(code, "<gpu-selection>", "exec"), {})
+        assert not environment.exists()
+    else:
+        exec(compile(code, "<gpu-selection>", "exec"), {})
+        assert environment.read_text() == f"CUDA_VISIBLE_DEVICES={expected}\n"
+    gate = next(
+        step["run"]
+        for step in steps
+        if step.get("name") == "Required two-GPU correctness and lifecycle gate"
+    )
+    assert "CUDA_VISIBLE_DEVICES=" not in gate
+    assert "evaluate_performance_artifact.py --write" in gate

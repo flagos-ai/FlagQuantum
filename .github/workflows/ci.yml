@@ -409,6 +409,54 @@ jobs:
           path: ${{ env.FQ_CI_REPORT_DIR }}
           retention-days: 7
 
+  native-fermion:
+    needs: prepare-source
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    concurrency:
+      group: flagquantum-gh-6
+      queue: max
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {python: "3.10", torch: "2.10.0", pyscf: "2.8.0"}
+          - {python: "3.12", torch: "2.14.1", pyscf: "2.15.0"}
+    env:
+      OMP_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      CUDA_VISIBLE_DEVICES: ""
+      MAX_JOBS: "2"
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+        with:
+          torch-spec: torch==${{ matrix.torch }}
+      - name: Install the native package without optional science dependencies
+        run: python -m pip install --no-build-isolation -e '.[dev]'
+      - name: Verify the independent core workflow on Linux
+        run: |
+          python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('numpy', 'scipy', 'pyscf', 'openfermion', 'cirq'))"
+          python -m pytest tests/unit/fermion tests/unit/test_observables_fermion.py tests/integration/test_native_fermion_isolation.py -q
+          python -m examples.algorithms.fermion_chemistry
+      - name: Install the direct chemistry driver
+        run: python -m pip install --no-build-isolation -e '.[chemistry-pyscf]' 'pyscf==${{ matrix.pyscf }}'
+      - name: Require a working driver and run real RHF cases
+        run: |
+          python -c "from pyscf import ao2mo, gto, scf"
+          python -m pip check
+          python -m pytest tests/integration/test_native_chemistry_driver.py -q
+
   cpu-core:
     needs: prepare-source
     runs-on: ${{ fromJSON((github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && '["self-hosted","linux","x64","flagquantum-cpu","flagquantum-a800-cpu"]' || '["ubuntu-latest"]') }}
@@ -2206,6 +2254,7 @@ jobs:
           python -m pip check
           python -c "import torch; assert torch.version.cuda is None"
           python -c "import jax; assert jax.default_backend() == 'cpu'"
+          python -c "from pyscf import ao2mo, gto, scf"
       - name: Collect the complete coverage selection and publish a balanced plan
         id: plan
         run: |
@@ -2322,6 +2371,7 @@ jobs:
           python -m pip check
           python -c "import torch; assert torch.version.cuda is None"
           python -c "import jax; assert jax.default_backend() == 'cpu'"
+          python -c "from pyscf import ao2mo, gto, scf"
       - uses: ./.github/actions/download-artifact
         id: coverage-plan-download
         timeout-minutes: 6
@@ -2618,6 +2668,7 @@ jobs:
       - pre-commit
       - prepare-source
       - quality
+      - native-fermion
       - cpu-core
       - cpu-core-3-12-tests
       - cpu-runtime
