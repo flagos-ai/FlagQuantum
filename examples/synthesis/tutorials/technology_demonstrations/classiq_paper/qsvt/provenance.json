@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "db9e50097a11725bcc6a6cb4ffcaaf0ab0dcc62739d6c759721aa169303afe8e",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.qsvt.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_packed_qsvt.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Six source data bits plus deletion bit form the explicit seven-bit data_and_deletion output;select and projection bits remain separate. Four phases and all unitary effects retained. Root compute/clean deletion marker plus exact phase polynomials preserve projectedRZ including constant phase;existing mutable increment/inverse and reflection effects reused. No public API,Compiler capability,ownership rule or construction cap changed. Explicit source/native axis permutation and all clean work are verified."
+}
