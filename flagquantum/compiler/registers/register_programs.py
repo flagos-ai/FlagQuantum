@@ -49,13 +49,14 @@ def lower_register_program(record: ProgramRecord, entry: str = "main") -> Progra
             "clean/dirty restoration evidence before gate lowering"
         )
     if any(
-        operation.opcode == "measure_register"
+        operation.opcode
+        in {"measure_register", "parity_register", "read_classical_register"}
         for function in record.functions
         for block in function.blocks
         for operation in block.operations
     ):
         raise ValueError(
-            "destructive owned measurement requires physical register binding "
+            "owned classical operation requires physical register binding "
             "before gate lowering"
         )
     functions = {function.name: function for function in record.functions}

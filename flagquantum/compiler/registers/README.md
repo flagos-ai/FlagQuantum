@@ -234,3 +234,12 @@ Run `pytest tests/unit/test_register_owned_measurement.py` for destructive QBit
 measurement, nested owned CBit identities, reordered arrays, existing bool slot
 isolation and all complex source-instrument branches. Pool-owned destructive
 measurement is rejected before emission pending its retirement contract.
+
+`component_classical.parity_word_function` builds the source CBit-array THRU and
+parity RIGHT signature over the existing owned Program operations. Binding uses
+the shared classical XOR assignment, retaining predecessor slots for owned
+successors. `read_classical_register` forwards ownership and exposes a shareable
+bool snapshot of the immutable slot without emitting an instruction. Run
+`pytest tests/unit/test_register_classical_parity.py` for nested components,
+zero-input parity, both feedback polarities, complex measurement branches and
+actual trajectory/batched execution through unchanged `circuit.append(op)`.

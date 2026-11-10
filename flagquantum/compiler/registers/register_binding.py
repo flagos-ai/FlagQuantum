@@ -249,14 +249,19 @@ class _PhysicalBinding:
         elif opcode == "constant":
             assert operation.literal is not None
             self.scalars[operation.results[0]] = operation.literal
-        elif opcode in {"bool_zero", "bool_one", "bool_xor"}:
+        elif opcode == "read_classical_register":
+            slot = self.bits[operation.operands[0]]
+            self.bits.update((value, slot) for value in operation.results)
+        elif opcode in {"bool_zero", "bool_one", "bool_xor", "parity_register"}:
             target = self.next_bit
             self.next_bit += 1
             sources = tuple(self.bits[value] for value in operation.operands)
             self.instructions.append(
                 ClassicalXor(sources, target, opcode == "bool_one").instruction()
             )
-            self.bits[operation.results[0]] = target
+            if opcode == "parity_register":
+                self.bits.update(zip(operation.results[:-1], sources, strict=True))
+            self.bits[operation.results[-1]] = target
         else:
             self._primitive(operation)
 
