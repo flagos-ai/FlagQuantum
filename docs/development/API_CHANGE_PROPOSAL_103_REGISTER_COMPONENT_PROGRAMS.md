@@ -1387,3 +1387,43 @@ four qubit-vocabulary ledger assertions. The full default tier remains open.
 Logs are `ftqc-reference-env/g2-classical-port-default-parallel.log` and
 `g2-classical-port-baseline-failures.log` in the external evidence directory.
 The scope audit refresh changes only this implementation's fingerprint.
+
+### Destructive owned measurement prerequisite 1.10
+
+The internal `measure_register` operation consumes one owned register with the
+exact QBit descriptor `RegisterType("bit", 1, 0)` and produces one owned register
+with `classical_bit_type()`. It carries no parameters, condition, literal,
+physical payload, callee, register descriptor or workspace flag. Core derives
+its result type and applies existing SSA single-consumption verification.
+This operation is confined to declared register functions.
+
+Compiler binds it to one existing dynamic `measure` instruction with one fresh
+classical slot. The input quantum handle has no successor. Finite nested calls
+carry the output slot by the existing SSA remapping. Scheduling uses zero quantum
+width for CBit edges while retaining their dependency edges. The separate gate
+SSA lowering continues to reject classical ports.
+
+`BoundRegisterProgram.outputs` retains one quantum-wire tuple per returned
+logical element. A classical element occupies an empty quantum tuple. A trailing
+internal field `classical_outputs`, defaulting to `()`, contains parallel
+per-element slot tuples whenever any classical element is returned. Quantum
+positions have empty slot tuples. Pure quantum callers retain their current
+three-argument construction and empty classical metadata. External CBit entry
+initialization remains outside this profile and is rejected before scheduling.
+
+This first binding admits destructive measurement only on caller quantum inputs
+without pool adoption. A wire in a live or adopted workspace lease is rejected
+before emitting its measurement. Neither output-transfer policy nor a dirty flag
+authorizes destructive consumption of borrowed state. The pool receives no free,
+reset or fabricated restored successor. A separate ownership contract is needed
+for destructive workspace retirement.
+
+Source conformance uses the unchanged MeasureZ copy tensor and its DiscardInd
+leg. For each recorded outcome the tensor gives the unnormalized complex
+instrument on the retained spectator. Native branch checks project the measured
+physical wire, then compare its fixed-outcome sector with the source instrument.
+The measured wire remains physically projected and unavailable through the
+consumed handle. It is not asserted to be zero. Unmeasured clean workspace must
+still be returned zero. Emitted measurement counts and source QEC model costs
+are recorded separately. The source classical-port Cirq export limitation stays
+open. This prerequisite does not accept native execution by itself.
