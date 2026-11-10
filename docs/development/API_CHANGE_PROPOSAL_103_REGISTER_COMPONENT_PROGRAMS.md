@@ -1589,3 +1589,37 @@ are a subset of the seven previously independently reproduced baseline failures.
 The remaining baseline ledger failure was not reached before interruption.
 The full default tier remains open. Exact failure comparison and the default
 log use the same evidence prefix. This run adds no default-tier acceptance claim.
+
+### Binary-field execution prerequisite 1.13
+
+Existing finite_field descriptors may enter the finite register executor when
+quantum width is a positive built-in integer, classical width is built-in zero,
+and ordered neutral parameters retain characteristic 2, degree equal to width
+and order 2**width. These three fields are followed either by no polynomial
+identity or by the existing complete five-field polynomial identity. Every
+parameter value is a built-in integer. Core checks this structural profile.
+Numerical polynomial construction and irreducibility remain at their existing
+owners. No external library object enters Core.
+
+Split and Join preserve the exact descriptor, port identity and MSB-first bit
+order. Equal-width fields with distinct nominal polynomial metadata remain
+subject to the existing source-compatible dtype checker. Other field profiles
+remain outside finite execution. The existing physical binder and quantum-only
+word lowering reuse executable_register_width without a second field codec.
+Acceptance compares unchanged source Split/Join and the existing native codec,
+then verifies physical permutation, complex spectator state, workspace cleanup
+and zero emitted-gate/model counts for pure rebindings.
+
+### Owned X measurement prerequisite 1.14
+
+A finite measure_x_word_function composes existing split, H, join and destructive
+measure_register operations, with QBit LEFT q and CBit RIGHT c. It adds no Core
+opcode. The logical input is consumed once. Physical binding emits H followed by
+one Z measurement into a fresh immutable slot. The physical measured bit retains
+its projected outcome. Existing clearing emitters retain their distinct
+conditional-X behavior. Pool-owned destructive measurement keeps its existing
+retirement refusal. Source MeasureX's tensor is a density instrument with a
+DiscardInd trace marker, so compare its branch density matrix and the native
+unnormalized branch vector using the same H/Z factorization, including joint
+spectators and zero unmeasured work. Model queries and emitted primitives are
+recorded separately.
