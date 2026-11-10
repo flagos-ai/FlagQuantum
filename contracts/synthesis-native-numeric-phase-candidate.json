@@ -1,0 +1,17 @@
+{
+  "schema": "flagquantum.synthesis_native_numeric_phase_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "operation": "phase(numeric_arithmetic_expression, finite_classical_angle)",
+  "numeric_meaning": "two's-complement signed weights and exact power-of-two fractional scaling",
+  "authority": "existing expand_phase signed_word/fraction_bits callbacks and checked register effects",
+  "numeric_predicates": false,
+  "numeric_helpers": false,
+  "numeric_factor_fallback": false,
+  "new_ir_or_opcode": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-NUMERIC-PHASE-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}
