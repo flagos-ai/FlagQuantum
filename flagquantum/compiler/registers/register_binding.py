@@ -24,7 +24,7 @@ class WorkspaceEvent:
     """One physical lifetime event, retaining the declared source dirty flag."""
 
     position: int
-    kind: Literal["allocate", "free"]
+    kind: Literal["allocate", "free", "retire"]
     wires: tuple[int, ...]
     dirty: bool
 
@@ -52,6 +52,7 @@ def bind_register_program(
     entry: str = "main",
     allow_workspace_outputs: bool = False,
     input_ownership: tuple[tuple[int, bool], ...] = (),
+    measured_workspace: Literal["reject", "retire", "reset"] = "reject",
 ) -> BoundRegisterProgram:
     """Bind quantum ports and work lifetimes to caller-supplied physical wires.
 
@@ -61,9 +62,15 @@ def bind_register_program(
     to the caller through ordered outputs. The caller owns subsequent cleanup
     and borrowed-state restoration. Input release requires explicit caller pool
     ownership through ``input_ownership``. Measurement-produced CBit outputs
-    retain owned classical slots separately. Destructive measurement of pool-owned
-    wires requires a separate retirement contract and is rejected.
+    retain owned classical slots separately. Pool-owned clean measured wires may
+    explicitly retire or reset before reuse. Borrowed wires cannot retire.
     """
+    if type(measured_workspace) is not str or measured_workspace not in {
+        "reject",
+        "retire",
+        "reset",
+    }:
+        raise ValueError("measured workspace policy must be reject, retire or reset")
     if type(allow_workspace_outputs) is not bool:
         raise ValueError("workspace output policy requires a built-in boolean")
     diagnostics = verify_program_record(record)
@@ -142,7 +149,9 @@ def bind_register_program(
             ),
         )
     operations, returned = _expand(scheduled[entry].blocks[0], scheduled)
-    binder = _PhysicalBinding(RegisterWorkspace(clean, borrowed=borrowed))
+    binder = _PhysicalBinding(
+        RegisterWorkspace(clean, borrowed=borrowed), measured_workspace
+    )
     for wire, dirty in input_ownership:
         binder.pool.adopt((wire,), dirty=dirty)
         binder.adopted.add(wire)
@@ -175,8 +184,13 @@ def bind_register_program(
 
 
 class _PhysicalBinding:
-    def __init__(self, pool: RegisterWorkspace) -> None:
+    def __init__(
+        self,
+        pool: RegisterWorkspace,
+        measured_workspace: Literal["reject", "retire", "reset"],
+    ) -> None:
         self.pool = pool
+        self.measured_workspace = measured_workspace
         self.wires: dict[ValueRef, tuple[int, ...]] = {}
         self.scalars: dict[ValueRef, float] = {}
         self.bits: dict[ValueRef, int] = {}
@@ -232,11 +246,18 @@ class _PhysicalBinding:
             )
         elif opcode == "measure_register":
             wires = self.wires[operation.operands[0]]
-            if set(wires) & (self.live | self.adopted):
-                raise ValueError(
-                    "destructive measurement of pool-owned workspace requires "
-                    "a retirement ownership contract"
+            owned = bool(set(wires) & (self.live | self.adopted))
+            if owned:
+                if self.measured_workspace == "reject":
+                    raise ValueError(
+                        "destructive measurement of pool-owned workspace requires "
+                        "a retirement ownership contract"
+                    )
+                self.pool.retire_measured_wires(
+                    wires, reset=self.measured_workspace == "reset"
                 )
+                self.live.difference_update(wires)
+                self.adopted.difference_update(wires)
             self.instructions.append(
                 Instruction(
                     "measure",
@@ -246,6 +267,19 @@ class _PhysicalBinding:
             )
             self.bits[operation.results[0]] = self.next_bit
             self.next_bit += 1
+            if owned:
+                if self.measured_workspace == "reset":
+                    self.instructions.append(
+                        Instruction("reset", wires, metadata={"is_dynamic": True})
+                    )
+                self.events.append(
+                    WorkspaceEvent(
+                        position,
+                        "free" if self.measured_workspace == "reset" else "retire",
+                        wires,
+                        False,
+                    )
+                )
         elif opcode == "constant":
             assert operation.literal is not None
             self.scalars[operation.results[0]] = operation.literal

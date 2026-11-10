@@ -233,7 +233,10 @@ reuse, measured erasure branches and pool-origin validation.
 Run `pytest tests/unit/test_register_owned_measurement.py` for destructive QBit
 measurement, nested owned CBit identities, reordered arrays, existing bool slot
 isolation and all complex source-instrument branches. Pool-owned destructive
-measurement is rejected before emission pending its retirement contract.
+measurement defaults to rejection. The explicit measured_workspace policy can
+retire clean wires permanently or reset them before pool reuse. Borrowed wires
+require original-state restoration and refuse both policies. See
+`tests/unit/test_register_workspace_retirement.py` for the shortest execution path.
 
 `component_classical.parity_word_function` builds the source CBit-array THRU and
 parity RIGHT signature over the existing owned Program operations. Binding uses
@@ -248,8 +251,8 @@ actual trajectory/batched execution through unchanged `circuit.append(op)`.
 LEFT port. Core enforces one consumption. Binding deletes the owned handle,
 emits no instruction, and retains earlier bool snapshots of the immutable slot.
 This is classical Discard from pinned Qualtran `basic_gates/discard.py`.
-External classical initialization and physical workspace retirement retain their
-separate contracts. The shortest test path is
+External classical initialization retains its separate contract. Physical
+workspace retirement follows proposal 103 prerequisite 1.16. The shortest test path is
 `tests/unit/test_register_classical_discard.py`, including measurement, parity,
 discard and subsequent conditional feedback through the existing append path.
 

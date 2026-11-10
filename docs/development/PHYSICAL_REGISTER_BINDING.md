@@ -289,3 +289,26 @@ The original Parity QubitCount query gives zero quantum width. Its QEC query
 raises DecomposeNotImplementedError. Neither fact supplies a complete quantum
 resource model for this combined source graph. Original classical-port Cirq
 export remains unsupported. The reference is retained unchanged.
+
+## Explicit measured workspace retirement
+
+Proposal 103 prerequisite 1.16 adds the internal measured_workspace policy.
+Its default reject retains the existing refusal for pool-owned destructive
+measurement. With retire, clean measured owners leave their leases permanently
+and retain their projected physical outcomes. With reset, each measurement is
+followed by an existing reset instruction and its clean wire returns to the
+pool for later allocations. Events distinguish retire from free. Adopted clean
+inputs follow the same rules. Both policies refuse borrowed owners atomically.
+
+This is a FlagQuantum physical adaptation. Original Allocate/Free delegate to
+the source qubit manager and emit zero primitives. Original Free assumes clean
+zero or original borrowed-state restoration. Measurement alone supplies neither
+condition. Explicit reset overhead is counted separately from the unchanged
+logical component graph and source QEC estimates.
+
+Run tests/unit/test_register_workspace_retirement.py and
+ tests/unit/test_workspace_measurement_retirement.py for partial leases, pool
+exhaustion, reuse, invalid policies, source instruments, discarded-owner bool
+snapshots, actual dynamic execution and owned GF2MulMBUC branches. Small fields
+exhaust all measurement histories. The eight-bit witness checks instruction
+stream and resources without a full statevector branch enumeration.
