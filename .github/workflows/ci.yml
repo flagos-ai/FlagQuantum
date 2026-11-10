@@ -454,7 +454,7 @@ jobs:
           python -m pip install --no-build-isolation -e '.[chemistry-hdf5]' 'h5py==${{ matrix.h5py }}'
           python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('pyscf', 'scipy', 'openfermion', 'cirq'))"
           python -m pip check
-          python -m pytest tests/unit/fermion/test_molecular_hdf5.py tests/integration/test_molecular_hdf5_isolation.py tests/test_algorithm_examples.py -k "hdf5 or inventory" -q
+          python -m pytest tests/unit/fermion/test_molecular_hdf5.py tests/integration/test_molecular_hdf5_isolation.py tests/test_algorithm_examples.py -k "hdf5 or covered_and_indexed" -q
           python -m examples.algorithms.fermion_hdf5
       - name: Install the direct chemistry driver
         run: python -m pip install --no-build-isolation -e '.[chemistry-pyscf]' 'pyscf==${{ matrix.pyscf }}'
