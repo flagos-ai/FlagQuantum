@@ -81,3 +81,9 @@ source inventory, regression, coverage JSON, integration, original tests,
 environment, example, resources and quality-check logs. Default-suite results
 and the independent baseline comparison are recorded separately; this focused
 acceptance does not certify a complete upstream file or the entire G2 phase.
+
+The default smoke/unit run recorded 21,485 passed, 300 skipped and six failures
+in 115.24 s. All six failure IDs belong to the independent seven-failure
+baseline; the seventh baseline case was not reached before the maxfail stop.
+There are no new failure IDs, but this is not a complete passing suite. The
+explicit comparison is `g2-tensor-indices-default-comparison.json`.
