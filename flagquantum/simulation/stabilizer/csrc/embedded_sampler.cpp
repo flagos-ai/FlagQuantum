@@ -4,11 +4,14 @@
 
 #include <algorithm>
 #include <cstring>
+#include <cerrno>
+#include <system_error>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 
 #include "stim/circuit/circuit.h"
+#include "stim/io/measure_record_reader.h"
 #include "stim/simulators/frame_simulator_util.h"
 #include "stim/simulators/error_analyzer.h"
 #include "stim/simulators/measurements_to_detection_events.h"
@@ -450,7 +453,150 @@ PyObject *detector_error_model(PyObject *, PyObject *args) {
     }
 }
 
+constexpr char reader_capsule_name[] = "flagquantum.embedded_shot_reader";
+
+struct ShotReader {
+    FILE *file;
+    std::unique_ptr<stim::MeasureRecordReader<width>> reader;
+    size_t columns;
+    bool check_padding;
+
+    ShotReader(const char *path, const char *format, size_t nm, size_t nd, size_t no)
+        : file(std::fopen(path, "rb")), columns(nm + nd + no),
+          check_padding(std::strcmp(format, "b8") == 0) {
+        if (!file) throw std::system_error(errno, std::generic_category(), "Cannot open shot snapshot");
+        try {
+            reader = stim::MeasureRecordReader<width>::make(file, parse_format(format), nm, nd, no);
+        } catch (...) {
+            std::fclose(file);
+            file = nullptr;
+            throw;
+        }
+    }
+    ~ShotReader() { if (file) std::fclose(file); }
+    void close() {
+        reader.reset();
+        FILE *owned = file;
+        file = nullptr;
+        if (owned && std::fclose(owned)) throw std::runtime_error("Cannot close shot snapshot.");
+    }
+    bool next(stim::simd_bits<width> &row) {
+        if (!file || !reader) throw std::invalid_argument("Shot reader is closed.");
+        row.clear();
+        bool more = reader->start_and_read_entire_record(row);
+        if (std::ferror(file)) throw std::system_error(errno, std::generic_category(), "Cannot read shot snapshot");
+        if (more && check_padding && columns % 8 && (row.u8[columns / 8] >> (columns % 8)))
+            throw std::invalid_argument("Nonzero b8 shot padding.");
+        return more;
+    }
+};
+
+void destroy_shot_reader(PyObject *capsule) {
+    delete static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+}
+
+PyObject *open_shot_reader(PyObject *, PyObject *args) {
+    const char *path, *format;
+    Py_ssize_t nm, nd, no;
+    if (!PyArg_ParseTuple(args, "ssnnn", &path, &format, &nm, &nd, &no)) return nullptr;
+    try {
+        if (nm < 0 || nd < 0 || no < 0 || nm > PY_SSIZE_T_MAX - nd || nm + nd > PY_SSIZE_T_MAX - no || nm + nd + no == 0)
+            throw std::invalid_argument("Invalid shot columns.");
+        // Bound codec scratch before construction and subsequent size arithmetic.
+        constexpr size_t max_columns = ((64 * 1024 * 1024 - 65536) / 16384) * 1024;
+        if (size_t(nm + nd + no) > max_columns)
+            throw std::invalid_argument("Shot codec scratch exceeds byte limit.");
+        auto owned = std::make_unique<ShotReader>(path, format, size_t(nm), size_t(nd), size_t(no));
+        PyObject *capsule = PyCapsule_New(owned.get(), reader_capsule_name, destroy_shot_reader);
+        if (capsule) owned.release();
+        return capsule;
+    } catch (const std::system_error &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_ValueError, error.what()); return nullptr;
+    }
+}
+
+PyObject *close_shot_reader(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    if (!PyArg_ParseTuple(args, "O", &capsule)) return nullptr;
+    auto *cursor = static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+    if (!cursor) return nullptr;
+    try { cursor->close(); Py_RETURN_NONE; }
+    catch (const std::exception &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; }
+}
+
+PyObject *scan_shot_reader(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    if (!PyArg_ParseTuple(args, "O", &capsule)) return nullptr;
+    auto *cursor = static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+    if (!cursor) return nullptr;
+    try {
+        stim::simd_bits<width> row(cursor->columns);
+        size_t count = 0;
+        while (cursor->next(row)) {
+            if (count == size_t(PY_SSIZE_T_MAX)) throw std::invalid_argument("Shot count overflow.");
+            ++count;
+        }
+        return PyLong_FromSize_t(count);
+    } catch (const std::system_error &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; } catch (const std::exception &error) { PyErr_SetString(PyExc_ValueError, error.what()); return nullptr; }
+}
+
+PyObject *read_shot_reader(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    Py_ssize_t requested, first_columns;
+    int packed, separate;
+    if (!PyArg_ParseTuple(args, "Onppn", &capsule, &requested, &packed, &separate, &first_columns)) return nullptr;
+    auto *cursor = static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+    if (!cursor) return nullptr;
+    try {
+        if (requested < 0 || first_columns < 0 || size_t(first_columns) > cursor->columns)
+            throw std::invalid_argument("Invalid shot read dimensions.");
+        size_t a = separate ? size_t(first_columns) : cursor->columns;
+        size_t b = separate ? cursor->columns - a : 0;
+        size_t astride = packed ? (a + 7) / 8 : a;
+        size_t bstride = packed ? (b + 7) / 8 : b;
+        // Independently enforce the reviewed payload estimate at the native boundary.
+        size_t p = (cursor->columns + 7) / 8;
+        size_t scratch = 128 * ((cursor->columns + 1023) / 1024) * 128 + 65536;
+        constexpr size_t limit = 64 * 1024 * 1024;
+        if (scratch > limit || p + astride + bstride > (limit - scratch) / 4 ||
+            size_t(requested) > (limit - scratch) / (4 * (p + astride + bstride)))
+            throw std::invalid_argument("Shot payload exceeds byte limit.");
+        PyObject *first = PyByteArray_FromStringAndSize(nullptr, requested * astride);
+        if (!first) return nullptr;
+        PyObject *second = PyByteArray_FromStringAndSize(nullptr, requested * bstride);
+        if (!second) { Py_DECREF(first); return nullptr; }
+        auto *outa = reinterpret_cast<uint8_t *>(PyByteArray_AsString(first));
+        auto *outb = reinterpret_cast<uint8_t *>(PyByteArray_AsString(second));
+        std::memset(outa, 0, requested * astride);
+        std::memset(outb, 0, requested * bstride);
+        size_t count = 0;
+        try {
+            stim::simd_bits<width> row(cursor->columns);
+            while (count < size_t(requested) && cursor->next(row)) {
+                for (size_t c = 0; c < cursor->columns; ++c) {
+                    if (!row[c]) continue;
+                    size_t bit = c < a ? c : c - a;
+                    size_t stride = c < a ? astride : bstride;
+                    uint8_t *out = c < a ? outa : outb;
+                    if (packed) out[count * stride + bit / 8] |= uint8_t(1 << (bit % 8));
+                    else out[count * stride + bit] = 1;
+                }
+                ++count;
+            }
+        } catch (...) { Py_DECREF(first); Py_DECREF(second); throw; }
+        PyObject *result = PyTuple_New(3);
+        PyObject *rows = PyLong_FromSize_t(count);
+        if (!result || !rows) { Py_XDECREF(result); Py_XDECREF(rows); Py_DECREF(first); Py_DECREF(second); return nullptr; }
+        PyTuple_SetItem(result, 0, first); PyTuple_SetItem(result, 1, second); PyTuple_SetItem(result, 2, rows);
+        return result;
+    } catch (const std::system_error &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; } catch (const std::exception &error) { PyErr_SetString(PyExc_ValueError, error.what()); return nullptr; }
+}
+
 PyMethodDef methods[] = {
+    {"open_shot_reader", open_shot_reader, METH_VARARGS, nullptr},
+    {"scan_shot_reader", scan_shot_reader, METH_VARARGS, nullptr},
+    {"read_shot_reader", read_shot_reader, METH_VARARGS, nullptr},
+    {"close_shot_reader", close_shot_reader, METH_VARARGS, nullptr},
     {"prepare_detector", prepare_detector, METH_VARARGS, nullptr},
     {"sample_detectors", sample_detectors, METH_VARARGS, nullptr},
     {"write_detectors", write_detectors, METH_VARARGS, nullptr},

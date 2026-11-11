@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import os
+import shutil
+import stat
 import sys
 from collections.abc import Iterator
 from pathlib import Path
@@ -232,3 +235,53 @@ def _inspect_measurement_file(path: Path, columns: int, format: str) -> int:
         if position:
             raise _invalid_file()
         return completed
+
+
+def _identity(metadata: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    )
+
+
+def _snapshot(source: Path, target: Path, *, max_bytes: int = 1024**3) -> int:
+    # O_NONBLOCK prevents an input replaced by a FIFO from blocking admission.
+    source_metadata = source.lstat()
+    if not stat.S_ISREG(source_metadata.st_mode):
+        raise ValueError("measurement input must be a regular file, without symlinks")
+    flags = (
+        os.O_RDONLY
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_NONBLOCK", 0)
+        | getattr(os, "O_BINARY", 0)
+    )
+    descriptor = os.open(source, flags)
+    with os.fdopen(descriptor, "rb") as stream:
+        before = os.fstat(stream.fileno())
+        if not stat.S_ISREG(before.st_mode):
+            raise ValueError("measurement input must be a regular file")
+        if _identity(before) != _identity(source_metadata) or _identity(
+            source.lstat()
+        ) != _identity(before):
+            raise OSError("measurement input changed before snapshot admission")
+        if before.st_size > max_bytes:
+            raise CapabilityError("measurement snapshot exceeds the 1 GiB byte limit")
+        if shutil.disk_usage(target.parent).free < before.st_size:
+            raise OSError("insufficient free space for the measurement snapshot")
+        copied = 0
+        with target.open("xb") as output:
+            while block := stream.read(_READ_CHUNK_BYTES):
+                copied += len(block)
+                if copied > before.st_size or copied > max_bytes:
+                    raise OSError("measurement input changed while copying")
+                output.write(block)
+        if (
+            copied != before.st_size
+            or _identity(os.fstat(stream.fileno())) != _identity(before)
+            or _identity(source.lstat()) != _identity(before)
+        ):
+            raise OSError("measurement input changed while copying")
+    return copied

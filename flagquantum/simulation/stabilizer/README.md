@@ -353,3 +353,16 @@ The golden path is `examples/qec/measurement_file_conversion.py`. Start with
 `tests/qec/test_measurement_file_conversion.py` for fake/SDK/embedded consumer
 replacement, malformed files, budgets and publication failures. No sampling,
 noise admission, research run or decoding is implied by file conversion.
+
+## Shot-file reading
+
+The public record I/O composition lives in
+`flagquantum.qec.execution.shot_data`; Simulation's private `_shot_data.py` owns
+snapshot admission, count/allocation checks and codec access. The embedded
+CPython cursor reuses the locked Stim reader; it introduces no numerical
+algorithm, decoder, scheduler or public SDK object. The standard build supports
+eager reading through pinned Stim; iteration requires the embedded build.
+Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
+checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
+for byte and numerical conformance. The ten-minute user path is
+`python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.

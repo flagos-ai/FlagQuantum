@@ -63,3 +63,13 @@ All 96 upstream files and 37 translation units remain byte-identical to Stim
 `9092a996429dcf616d8d4ca01fec886b7b310caf9425a39fcfe499005636bd52`,
 commit `e2fc1eca7fd21684d433aa5f10f4504ea4860d07`. No source closure,
 compiler flag, dependency, license or setup.py change is made by this package.
+
+## Shot-file reader candidate
+
+The private reader cursor calls MeasureRecordReader<width>::make and
+start_and_read_entire_record from the current 96-file source closure. Counts and
+validation use one complete pass before a fresh cursor delivers owned batches.
+PTB64 retains the upstream 64-shot buffer across consumer batches. No pybind11,
+NumPy, upstream source edits, dependency changes or extra translation units are
+introduced. read_write.pybind.cc is a semantic reference, not a compiled input.
+Native and installed acceptance remain required before delivery.

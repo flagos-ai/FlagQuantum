@@ -622,6 +622,32 @@ def _exercise_matching_graph(profile: str) -> dict[str, object] | None:
     }
 
 
+def _exercise_shot_file_reading(profile: str) -> list[list[int]] | None:
+    """Exercise file reading in real installed SDK and embedded profiles."""
+    import torch
+
+    from flagquantum.errors import CapabilityError
+    from flagquantum.qec.execution.shot_data import read_shot_data_file
+
+    try:
+        read_shot_data_file(path="unused", format="b8", num_detectors=0)
+    except CapabilityError:
+        pass
+    else:
+        raise AssertionError("zero stored columns were admitted")
+    if not PROFILES[profile][0] and not _embedded_profile():
+        return None
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "events.b8"
+        path.write_bytes(b"\x00\x01")
+        result = read_shot_data_file(
+            path=path, format="b8", num_detectors=1, bit_packed=True
+        )
+        assert isinstance(result, torch.Tensor)
+        assert result.tolist() == [[0], [1]]
+        return [[0], [1]]
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -658,6 +684,7 @@ def main() -> int:
     print(
         json.dumps(
             {
+                "shot_file_reading": _exercise_shot_file_reading(args.profile),
                 "profile": args.profile,
                 "package": flagquantum.__file__,
                 "python": sys.version.split()[0],
