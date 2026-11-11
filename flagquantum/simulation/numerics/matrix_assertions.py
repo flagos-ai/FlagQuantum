@@ -5,12 +5,14 @@
 
 """Distinct phase-sensitive and phase-insensitive dense comparison assertions."""
 
+from typing import Any
+
 import numpy as np
 from numpy.typing import NDArray
 
 from .unitary_distance import unitary_distance_ignoring_global_phase
 
-_Matrix = NDArray[np.float32 | np.float64 | np.complex64 | np.complex128]
+_Matrix = NDArray[Any]
 
 
 def assert_matrices_almost_equal(

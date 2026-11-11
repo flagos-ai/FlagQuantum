@@ -1,6 +1,8 @@
 """Source assertion semantics preserve phase and norm distinctions."""
 
+import warnings
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pytest
@@ -157,3 +159,106 @@ def test_phaseful_append_consumer_and_checker_replacement() -> None:
     for check in (source_unitary, assert_unitaries_equivalent_upto_global_phase):
         with pytest.raises(AssertionError):
             check(np.eye(4), controlled)
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.bool_,
+        np.int8,
+        np.uint8,
+        np.int64,
+        np.float16,
+        np.float32,
+        np.float64,
+        np.longdouble,
+        np.complex64,
+        np.complex128,
+        np.clongdouble,
+        object,
+    ],
+)
+@pytest.mark.parametrize("equivalent", [False, True])
+def test_dtype_and_native_numpy_failures_match_source(
+    dtype: Any, equivalent: bool
+) -> None:
+    from qualtran.linalg import testing as source
+
+    original = (
+        source.assert_unitaries_equivalent_upto_global_phase
+        if equivalent
+        else source.assert_matrices_almost_equal
+    )
+    native = (
+        assert_unitaries_equivalent_upto_global_phase
+        if equivalent
+        else assert_matrices_almost_equal
+    )
+    left = np.eye(2, dtype=dtype)
+    right = left.copy()
+    right[0, 0] = 0
+    outcome: tuple[type[Exception] | type[None], str]
+    outcomes = []
+    for evaluator in (original, native):
+        with warnings.catch_warnings(record=True) as seen:
+            warnings.simplefilter("always")
+            try:
+                evaluator(left, right, atol=0)
+            except (AssertionError, TypeError, ValueError) as error:
+                outcome = type(error), str(error)
+            else:
+                outcome = type(None), ""
+        outcomes.append((outcome, [(w.category, str(w.message)) for w in seen]))
+    assert outcomes[0] == outcomes[1]
+
+
+@pytest.mark.parametrize("kind", ["subclass", "masked", "symbolic"])
+def test_subclass_and_symbolic_object_dispatch_match_source(kind: str) -> None:
+    import sympy
+    from qualtran.linalg import testing as source
+
+    class Matrix(np.ndarray[tuple[int, ...], np.dtype[np.complex128]]):
+        pass
+
+    raw = np.eye(2, dtype=np.complex128)
+    masked: Callable[[NDArray[np.complex128]], NDArray[Any]] = np.ma.array
+    factories: dict[str, Callable[[], NDArray[Any]]] = {
+        "subclass": lambda: raw.view(Matrix),
+        "masked": lambda: masked(raw),
+        "symbolic": lambda: np.array([[sympy.Symbol("x"), 0], [0, 1]], dtype=object),
+    }
+    left = factories[kind]()
+    outcome: tuple[type[Exception] | type[None], str]
+    for original, native in (
+        (source.assert_matrices_almost_equal, assert_matrices_almost_equal),
+        (
+            source.assert_unitaries_equivalent_upto_global_phase,
+            assert_unitaries_equivalent_upto_global_phase,
+        ),
+    ):
+        outcomes = []
+        for evaluator in (original, native):
+            with warnings.catch_warnings(record=True) as seen:
+                warnings.simplefilter("always")
+                try:
+                    evaluator(left, left.copy())
+                except (AssertionError, TypeError, ValueError) as error:
+                    outcome = type(error), str(error)
+                else:
+                    outcome = type(None), ""
+            outcomes.append((outcome, [(w.category, str(w.message)) for w in seen]))
+        assert outcomes[0] == outcomes[1]
+
+
+def test_global_phase_error_preserves_extended_precision_distance() -> None:
+    from qualtran.linalg.testing import (
+        assert_unitaries_equivalent_upto_global_phase as source,
+    )
+
+    left = np.eye(2, dtype=np.longdouble)
+    right = np.diag(np.array([1, 0], dtype=np.longdouble))
+    with pytest.raises(AssertionError) as expected:
+        source(left, right, atol=0)
+    with pytest.raises(AssertionError) as actual:
+        assert_unitaries_equivalent_upto_global_phase(left, right, atol=0)
+    assert str(actual.value) == str(expected.value)
