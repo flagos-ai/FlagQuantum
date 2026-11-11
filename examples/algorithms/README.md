@@ -284,6 +284,18 @@ boundary for each.
 - [`fermion_orbital_rotation.py`](fermion_orbital_rotation.py): fixed H2 real orbital
   gradients, finite-difference verification and one closed-shell energy descent step.
 
+[`fermion_hubbard_training.py`](fermion_hubbard_training.py), run with
+`python -m examples.algorithms.fermion_hubbard_training`, composes native Hubbard
+assembly, JW measurement, `fq.Circuit`, `fq.run` and PyTorch Adam. Three real
+angles prepare exactly one up and one down particle on two sites. The example
+checks autograd against central differences and lowers the energy toward the
+analytic N=2 value -0.8284271247 without preparing a dense eigenvector. This is
+CPU sector preparation, not gatewise particle conservation or a scalable solver;
+it does not establish a general molecular ansatz or hardware training support.
+No OpenFermion, Cirq, PySCF, SciPy or HDF5 import is needed. PyTorch optimizer
+initialization may import NumPy through Dynamo; the training example does not
+claim NumPy-free execution.
+
 [`fermion_hubbard.py`](fermion_hubbard.py), run with
 `python -m examples.algorithms.fermion_hubbard`, constructs a spinful two-site
 open chain with `fermi_hubbard_chain`, prepares a fixed-N=2 dense reference and

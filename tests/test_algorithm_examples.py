@@ -117,6 +117,7 @@ SCRIPTS = (
     "fermion_controlled_evolution",
     "fermion_orbital_rotation",
     "fermion_hubbard",
+    "fermion_hubbard_training",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -137,6 +138,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_hubbard_training": (
+        "unreduced JW order",
+        "not gatewise number conservation or a scalable many-body solver",
+    ),
     "fermion_orbital_rotation": (
         "real CPU orbital rotations",
         "not geometry gradients or SCF",
@@ -1915,3 +1920,15 @@ def test_fermion_hubbard_measures_two_particle_ground_state() -> None:
         assert float(energy) == pytest.approx(-0.8284271247, abs=1e-9)
         assert float(particles) == pytest.approx(2, abs=1e-6)
     _assert_premise("fermion_hubbard", output)
+
+
+def test_fermion_hubbard_training_lowers_energy_with_valid_gradients() -> None:
+    output = _run("fermion_hubbard_training")
+    assert float(_labelled(output, "Initial energy")) > 3
+    assert float(_labelled(output, "Gradient norm")) > 1
+    assert float(_labelled(output, "Gradient residual")) < 1e-8
+    reference = float(_labelled(output, "Analytic N=2 energy"))
+    final = float(_labelled(output, "Final energy"))
+    assert -1e-9 <= final - reference < 1e-5
+    assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
+    _assert_premise("fermion_hubbard_training", output)

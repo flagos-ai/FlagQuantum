@@ -110,3 +110,13 @@ occupation-bit and analytic sector references before changing assembly. The
 [EXT01 contract](../../../docs/development/FERMION_HUBBARD_CHAIN.md) records
 validation and unsupported boundaries. Always encode with explicit
 `n_modes=2*n_sites`, including the zero Hamiltonian.
+
+For a training composition, run
+`python -m examples.algorithms.fermion_hubbard_training`. It uses the same static
+Hamiltonian with ordinary circuit angles, native CPU expectations and PyTorch
+Adam; it adds no domain solver or trainable Hamiltonian coefficients. Its
+four-mode JW preparation keeps one particle of each spin after each completed
+preparation, rather than after every gate. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_hubbard_training.py -q` to check
+sector support, finite-difference gradients and an optimizer update. The analytic
+two-site energy is an inspection reference, not a many-body performance claim.
