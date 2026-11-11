@@ -19,10 +19,13 @@ from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import CircuitIR, Instruction
 from ...errors import CapabilityError
 from ._measurement_file_validation import (
-    _READ_CHUNK_BYTES,
     _file_size_bound,
+    _identity,
     _inspect_measurement_file,
     _validate_record_file,
+)
+from ._measurement_file_validation import (
+    _snapshot as _snapshot_file,
 )
 from .engine import (
     CLIFFORD_GATE_NAMES,
@@ -77,54 +80,8 @@ class _PreparedConversion:
         )
 
 
-def _identity(metadata: os.stat_result) -> tuple[int, int, int, int, int]:
-    return (
-        metadata.st_dev,
-        metadata.st_ino,
-        metadata.st_size,
-        metadata.st_mtime_ns,
-        metadata.st_ctime_ns,
-    )
-
-
 def _snapshot(source: Path, target: Path) -> int:
-    # O_NONBLOCK prevents an input replaced by a FIFO from blocking admission.
-    source_metadata = source.lstat()
-    if not stat.S_ISREG(source_metadata.st_mode):
-        raise ValueError("measurement input must be a regular file, without symlinks")
-    flags = (
-        os.O_RDONLY
-        | getattr(os, "O_NOFOLLOW", 0)
-        | getattr(os, "O_NONBLOCK", 0)
-        | getattr(os, "O_BINARY", 0)
-    )
-    descriptor = os.open(source, flags)
-    with os.fdopen(descriptor, "rb") as stream:
-        before = os.fstat(stream.fileno())
-        if not stat.S_ISREG(before.st_mode):
-            raise ValueError("measurement input must be a regular file")
-        if _identity(before) != _identity(source_metadata) or _identity(
-            source.lstat()
-        ) != _identity(before):
-            raise OSError("measurement input changed before snapshot admission")
-        if before.st_size > _MAX_SNAPSHOT_BYTES:
-            raise CapabilityError("measurement snapshot exceeds the 1 GiB byte limit")
-        if shutil.disk_usage(target.parent).free < before.st_size:
-            raise OSError("insufficient free space for the measurement snapshot")
-        copied = 0
-        with target.open("xb") as output:
-            while block := stream.read(_READ_CHUNK_BYTES):
-                copied += len(block)
-                if copied > before.st_size or copied > _MAX_SNAPSHOT_BYTES:
-                    raise OSError("measurement input changed while copying")
-                output.write(block)
-        if (
-            copied != before.st_size
-            or _identity(os.fstat(stream.fileno())) != _identity(before)
-            or _identity(source.lstat()) != _identity(before)
-        ):
-            raise OSError("measurement input changed while copying")
-    return copied
+    return _snapshot_file(source, target, max_bytes=_MAX_SNAPSHOT_BYTES)
 
 
 def _file_principal_bytes(widths: tuple[int, int, int], qubits: int) -> int:
