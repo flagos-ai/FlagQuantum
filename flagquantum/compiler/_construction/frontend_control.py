@@ -160,7 +160,6 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         and len(body.args) == 2
         and view_width is None
         and not numeric_condition
-        and not (numeric_predicate and phase_constant is not None)
         and (
             owner.aliases is not None
             or owner.borrowed_unitary

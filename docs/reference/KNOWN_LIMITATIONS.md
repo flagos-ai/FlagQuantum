@@ -1257,11 +1257,32 @@ Whole-register mutable helper borrows also use the checked exact phase path.
 Equivalent whole and partial bindings retain absolute phase, including nested
 helpers, adjoint and within/apply. This prevents an incidental whole-register
 binding from introducing numerical scratch for a phase-only calculation.
-The helper context does not expand root capture or fixed-point comparison
-semantics, and closed helper templates still require the existing effect proof.
+The helper context does not expand fixed-point comparison semantics, and
+closed helper templates still require the existing effect proof.
 
 Run `python -m pytest tests/integration/test_synthesis_native_whole_borrow_phase.py
 tests/integration/test_synthesis_native_amplification.py -q`.
+
+## Raw integer differences in native predicate phases
+
+Raw unsigned integer comparisons such as
+`control((a - b) == -1, lambda: phase(1.0, 0.37))` use the existing bounded
+exact phase capture. Differences are mathematical integers, including negative
+values; subtraction alone does not require a numeric scratch register. Root,
+whole-register and partial helper bindings retain the same absolute phase.
+Static unsigned slices and packed helper arguments keep their established
+little-endian order. Actual signed/fractional input metadata still selects the
+checked numeric path.
+
+Bitwise and modulo operands must be nonnegative over their complete bounded
+domain, even when the surrounding predicate cancels. Boolean literals do not
+become integers. Initialization, borrowing, eight-input, phase-degree and actual
+operation budgets remain unchanged. This does not add general numeric array
+arithmetic or relax the unsupported signed/fixed-point slice boundary.
+
+Run `python -m pytest tests/integration/test_synthesis_native_raw_predicate_phase.py
+tests/integration/test_synthesis_native_phase_predicates.py
+tests/integration/test_synthesis_native_grover_models.py -q`.
 
 ## Native phase expressions inside pure callbacks
 
