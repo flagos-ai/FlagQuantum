@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import sys
 from contextlib import closing
 from pathlib import Path
 from types import ModuleType
+from typing import NoReturn
 
 import pytest
 import torch
@@ -12,6 +14,8 @@ import torch
 from flagquantum.errors import CapabilityError
 from flagquantum.qec.execution.shot_data import iter_shot_data_file, read_shot_data_file
 from flagquantum.simulation.stabilizer import _shot_data as owner
+from flagquantum.simulation.stabilizer import engine
+from flagquantum.simulation.stabilizer.engine import StabilizerDependencyError
 
 pytestmark = pytest.mark.unit
 
@@ -181,6 +185,95 @@ def test_sdk_iterator_refuses_before_snapshot(monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(Path, "is_file", lambda self: False)
     with pytest.raises(CapabilityError, match="embedded"):
         iter_shot_data_file(path="missing", format="b8", num_detectors=1)
+
+
+def test_missing_sdk_refuses_before_snapshot(monkeypatch: pytest.MonkeyPatch) -> None:
+    def missing(name: str) -> NoReturn:
+        assert name == "stim"
+        raise ModuleNotFoundError("No module named 'stim'", name="stim")
+
+    monkeypatch.setattr(Path, "is_file", lambda self: False)
+    monkeypatch.setattr(engine, "import_module", missing)
+    with pytest.raises(StabilizerDependencyError, match="optional dependency") as error:
+        read_shot_data_file(path="missing", format="b8", num_detectors=1)
+    assert isinstance(error.value.__cause__, ModuleNotFoundError)
+
+
+@pytest.mark.parametrize("streaming", [False, True])
+def test_broken_embedded_reader_refuses_without_sdk_fallback(
+    monkeypatch: pytest.MonkeyPatch, streaming: bool
+) -> None:
+    def missing(name: str) -> NoReturn:
+        assert name == "flagquantum.simulation.stabilizer._embedded_stim"
+        raise ImportError("controlled missing embedded extension")
+
+    monkeypatch.setattr(Path, "is_file", lambda self: True)
+    monkeypatch.setattr(owner, "import_module", missing)
+    with pytest.raises(CapabilityError, match="embedded shot reader extension"):
+        if streaming:
+            iter_shot_data_file(path="missing", format="b8", num_detectors=1)
+        else:
+            read_shot_data_file(path="missing", format="b8", num_detectors=1)
+
+
+def test_wrong_sdk_version_refuses_before_snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class UnsupportedVersionSDK(ModuleType):
+        __version__: str = "1.15.0"
+
+    sdk = UnsupportedVersionSDK("stim")
+    monkeypatch.setattr(Path, "is_file", lambda self: False)
+    monkeypatch.setattr(engine, "_stim", lambda: sdk)
+    with pytest.raises(CapabilityError, match="requires Stim 1.16.0"):
+        read_shot_data_file(path="missing", format="b8", num_detectors=1)
+
+
+def test_native_integer_overflow_refuses_before_backend() -> None:
+    with pytest.raises(CapabilityError, match="native integer range"):
+        read_shot_data_file(path="missing", format="b8", num_detectors=sys.maxsize + 1)
+
+
+def test_negative_scan_count_releases_snapshot(
+    captured: tuple[Path, FakeReader], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path, backend = captured
+    monkeypatch.setattr(backend, "scan_shot_reader", lambda cursor: -1)
+    with pytest.raises(CapabilityError, match="invalid shot count"):
+        read_shot_data_file(path=path, format="b8", num_detectors=2)
+    assert not backend.draws and backend.closed == 1
+    assert all(not snapshot.exists() for snapshot in backend.snapshots)
+
+
+@pytest.mark.parametrize(
+    "packed,payload,count,message",
+    [
+        (True, bytes(4), 3, "shot count changed"),
+        (True, bytes(3), 4, "invalid buffer"),
+        (True, b"\x80" * 4, 4, "nonzero packed padding"),
+        (False, b"\x00\x02" * 4, 4, "nonbinary values"),
+    ],
+)
+def test_corrupt_codec_output_releases_cursor_and_snapshot(
+    captured: tuple[Path, FakeReader],
+    monkeypatch: pytest.MonkeyPatch,
+    packed: bool,
+    payload: bytes,
+    count: int,
+    message: str,
+) -> None:
+    path, backend = captured
+
+    def corrupt(
+        cursor: object, rows: int, packed: bool, separate: bool, first: int
+    ) -> tuple[bytearray, bytearray, int]:
+        return bytearray(payload), bytearray(), count
+
+    monkeypatch.setattr(backend, "read_shot_reader", corrupt)
+    with pytest.raises(CapabilityError, match=message):
+        read_shot_data_file(path=path, format="b8", num_detectors=2, bit_packed=packed)
+    assert backend.closed == 2
+    assert all(not snapshot.exists() for snapshot in backend.snapshots)
 
 
 def test_alias_and_owned_dense(captured: tuple[Path, FakeReader]) -> None:

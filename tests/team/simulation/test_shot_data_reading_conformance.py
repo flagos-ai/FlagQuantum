@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from contextlib import closing
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Literal
 
@@ -13,6 +14,15 @@ from flagquantum.qec.execution.shot_data import iter_shot_data_file, read_shot_d
 from flagquantum.simulation.stabilizer import _shot_data as owner
 
 pytestmark = pytest.mark.integration
+
+
+@pytest.fixture(autouse=True)
+def _require_record_codec() -> None:
+    if (
+        not Path(owner.__file__).with_name("_embedded_stim_profile.txt").is_file()
+        and find_spec("stim") is None
+    ):
+        pytest.skip("requires Stim SDK or an embedded FlagQuantum installation")
 
 
 @pytest.mark.parametrize("encoding", ["01", "b8", "r8", "ptb64", "hits", "dets"])
