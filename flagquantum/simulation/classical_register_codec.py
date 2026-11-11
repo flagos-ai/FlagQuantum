@@ -11,6 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ..core.ir.program.registers import Register
+from .binary_field_encoding import resolve_binary_field_encoding
 from .bit_encoding import bit_array_from_bits, bit_array_to_bits, bit_from_bits
 from .bounded_integer_encoding import (
     bounded_integer_array_from_bits,
@@ -64,6 +65,13 @@ def decode_register_bits(register: Register, bits: NDArray[Any]) -> object:
     are flattened, while arrays use the existing dtype-specific array codec.
     Metadata support here does not admit that type into executable Program IR.
     """
+    if register.dtype.encoding == "finite_field":
+        field = resolve_binary_field_encoding(register.dtype)
+        return (
+            field.from_bits_array(bits)
+            if register.shape
+            else field.from_bits(list(bits.flat))
+        )
     width, parameters = _metadata(register)
     kind = register.dtype.encoding
     scalar = list(bits.flat)
@@ -107,6 +115,8 @@ def encode_register_bits(register: Register, values: NDArray[Any]) -> NDArray[np
     that behavior, NumPy result inference, empty-array failures and dtype errors.
     Montgomery values remain stored raw words; no residue conversion occurs.
     """
+    if register.dtype.encoding == "finite_field":
+        return resolve_binary_field_encoding(register.dtype).to_bits_array(values)
     width, parameters = _metadata(register)
     kind = register.dtype.encoding
     if kind == "bit":
