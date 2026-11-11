@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     concurrency:
-      group: flagquantum-gh-7
+      group: flagquantum-gh-2
       queue: max
     strategy:
       fail-fast: false

@@ -540,6 +540,14 @@ def test_container_builds_cannot_hold_a_trusted_pull_request_ci_capacity_lock() 
         ), f"CI job {name} waits behind a development container build"
 
 
+def test_openfermion_validation_does_not_wait_for_container_builds() -> None:
+    build_groups = _groups(_document("publish-dev-container.yml")["jobs"]["publish"])
+    jobs = _github_hosted_jobs("openfermion-interop.yml")
+    assert jobs
+    for name, job in jobs.items():
+        assert not (_groups(job) & build_groups), name
+
+
 def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
     job = _document("ci.yml")["jobs"]["native-fermion"]
     assert job["runs-on"] == TRUSTED_CPU_ROUTE
