@@ -335,6 +335,7 @@ def simulate_phased_component_calls(
     ) = None,
     *,
     entry: str = "main",
+    instance_ids: Mapping[str, tuple[int, ...]] | None = None,
     field_encodings: Mapping[RegisterType, FiniteFieldEncoding] | None = None,
     rng: np.random.Generator | None = None,
     fixed_values: Mapping[int, object] | None = None,
@@ -344,8 +345,10 @@ def simulate_phased_component_calls(
     Compiler supplies a call order for each body reached after a numerical
     action returns NotImplemented with no phase. Direct numerical leaves need
     no order. Each nested state starts at phase one, inherits the same RNG or
-    fixed-value mapping and returns its accumulated phase to the parent. Fixed
-    IDs remain local operation positions, matching source nested instances.
+    fixed-value mapping and returns its accumulated phase to the parent.
+    Optional instance IDs align with each function's stored operation positions;
+    Compiler's persistent expansion labels may differ from visitation positions.
+    Omitted functions use their local positions. IDs are not global call paths.
 
     This composes the existing state, binder and phase owners; it performs no
     decomposition discovery or graph transformation. Missing body schedules
@@ -354,6 +357,7 @@ def simulate_phased_component_calls(
     Pure source recursion's separate default RNG is outside this phased entry.
     """
     orders = dict(call_orders)
+    ids = dict(instance_ids or {})
 
     def recurse(
         function: FunctionRecord, inputs: dict[str, object]
@@ -378,6 +382,7 @@ def simulate_phased_component_calls(
             entry=name,
             field_encodings=field_encodings,
             phased=True,
+            instance_ids=ids.get(name),
             rng=rng,
             fixed_values=fixed_values,
             recurse=recurse,
