@@ -1,5 +1,9 @@
 """Unmodified-source parity for dense Laurent polynomial inspection."""
 
+import warnings
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 import pytest
 import torch
@@ -123,3 +127,115 @@ def test_append_workflow_remains_phaseful_and_clean() -> None:
     )
     # Numerical postprocessing leaves the two emitted gates and idle clean wire alone.
     assert len(recipe.instructions) == 2
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        np.bool_,
+        np.int8,
+        np.uint8,
+        np.int64,
+        np.float16,
+        np.float32,
+        np.float64,
+        np.longdouble,
+        np.complex64,
+        np.complex128,
+        np.clongdouble,
+        object,
+    ],
+)
+@pytest.mark.parametrize("offset", [-2, 2])
+def test_numpy_dtype_results_failures_and_warnings_match_source(
+    dtype: Any, offset: int
+) -> None:
+    from qualtran.linalg.polynomial.basic import (
+        evaluate_polynomial_of_unitary_matrix as source,
+    )
+
+    matrix = np.array([[0, 1], [1, 0]], dtype=dtype)
+    before = matrix.copy()
+    outcomes: list[tuple[type[Exception] | type[None], str, NDArray[Any] | None]] = []
+    for evaluator in (source, evaluate_polynomial_of_unitary_matrix):
+        with warnings.catch_warnings(record=True) as seen:
+            warnings.simplefilter("always")
+            try:
+                result = evaluator((1, 2, -3), matrix, offset=offset)
+            except (TypeError, ValueError, OverflowError) as error:
+                outcomes.append((type(error), str(error), None))
+            else:
+                outcomes.append((type(None), "", result))
+        assert not seen
+        np.testing.assert_array_equal(matrix, before)
+    expected, actual = outcomes
+    assert actual[:2] == expected[:2]
+    if expected[2] is not None:
+        assert actual[2] is not None
+        np.testing.assert_array_equal(actual[2], expected[2])
+        assert actual[2].dtype == expected[2].dtype
+        assert type(actual[2]) is type(expected[2])
+
+
+@pytest.mark.parametrize("kind", ["subclass", "masked", "matrix"])
+def test_numpy_subclass_dispatch_and_return_type_match_source(kind: str) -> None:
+    from qualtran.linalg.polynomial.basic import (
+        evaluate_polynomial_of_unitary_matrix as source,
+    )
+
+    class Matrix(np.ndarray[tuple[int, ...], np.dtype[np.complex128]]):
+        pass
+
+    raw = np.array([[1j, 0], [0, -1j]], dtype=np.complex128)
+    # NumPy masked-array construction is an untyped external boundary.
+    masked: Callable[[NDArray[np.complex128]], NDArray[Any]] = np.ma.array
+    factories: dict[str, Callable[[], NDArray[Any]]] = {
+        "subclass": lambda: raw.view(Matrix),
+        "masked": lambda: masked(raw),
+        "matrix": lambda: np.matrix(raw),
+    }
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", PendingDeprecationWarning)
+        matrix = factories[kind]()
+    outcomes = []
+    for evaluator in (source, evaluate_polynomial_of_unitary_matrix):
+        with warnings.catch_warnings(record=True) as seen:
+            warnings.simplefilter("always")
+            result = evaluator((1, 2j, 3), matrix, offset=-1)
+        outcomes.append((result, [(w.category, str(w.message)) for w in seen]))
+    expected, actual = outcomes
+    assert actual[1] == expected[1] and type(actual[0]) is type(expected[0])
+    np.testing.assert_array_equal(actual[0], expected[0])
+
+
+@pytest.mark.parametrize("offset", [-1, 0, 1.5])
+def test_empty_matrix_and_invalid_power_match_source(offset: Any) -> None:
+    from qualtran.linalg.polynomial.basic import (
+        evaluate_polynomial_of_unitary_matrix as source,
+    )
+
+    empty = np.empty((0, 0), dtype=np.complex128)
+    if isinstance(offset, int):
+        np.testing.assert_array_equal(
+            evaluate_polynomial_of_unitary_matrix((1, 2), empty, offset=offset),
+            source((1, 2), empty, offset=offset),
+        )
+    else:
+        with pytest.raises(TypeError) as expected:
+            source((), empty, offset=offset)
+        with pytest.raises(TypeError) as actual:
+            evaluate_polynomial_of_unitary_matrix((), empty, offset=offset)
+        assert str(actual.value) == str(expected.value)
+
+
+def test_original_basic_test_with_native_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from qualtran.linalg.polynomial import basic_test
+
+    monkeypatch.setattr(
+        basic_test,
+        "evaluate_polynomial_of_unitary_matrix",
+        evaluate_polynomial_of_unitary_matrix,
+    )
+    basic_test.test_evaluate_polynomial_of_unitary_matrix()

@@ -6,16 +6,12 @@
 """Dense polynomial inspection of a supplied unitary, without circuit synthesis."""
 
 from collections.abc import Sequence
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
 
-_Matrix = (
-    NDArray[np.float32]
-    | NDArray[np.float64]
-    | NDArray[np.complex64]
-    | NDArray[np.complex128]
-)
+_Matrix = NDArray[Any]
 
 
 def evaluate_polynomial_of_unitary_matrix(
@@ -30,7 +26,8 @@ def evaluate_polynomial_of_unitary_matrix(
     the conjugate transpose, relying on caller-supplied unitarity, not an inverse
     or a numerical unitarity check. Square shape is asserted as in the source.
     Output retains U's dtype; incompatible coefficient casts retain NumPy errors.
-    Inputs are not mutated. Empty coefficients return a zero matrix.
+    Inputs are not mutated. Empty coefficients return a zero matrix. NumPy
+    owns dtype and subclass dispatch; no array conversion or promotion is added.
 
     This NumPy inspection routine stores O(N**2) dense data and performs one
     matrix product per coefficient, in addition to the initial matrix power.
@@ -44,6 +41,6 @@ def evaluate_polynomial_of_unitary_matrix(
         power = np.linalg.matrix_power(unitary, offset)
     result = np.zeros(unitary.shape, dtype=unitary.dtype)
     for coefficient in coefficients:
-        np.add(result, power * coefficient, out=result)
+        result += power * coefficient
         power = power @ unitary
     return result
