@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 from copy import deepcopy
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from .._phase_polynomial import Location
 from .frontend_python import _error
@@ -48,7 +48,7 @@ def predicate_views(owner: _Body, expression: ast.expr) -> tuple[ast.expr, int]:
     ports = dict(visible)
 
     class Views(ast.NodeTransformer):
-        def visit_Subscript(self, node: ast.Subscript) -> ast.expr:
+        def view(self, node: ast.Subscript) -> tuple[ast.Name, tuple[Location, ...]]:
             base = node.value
             while isinstance(base, ast.Subscript):
                 base = base.value
@@ -72,6 +72,46 @@ def predicate_views(owner: _Body, expression: ast.expr) -> tuple[ast.expr, int]:
                 )
             selected = locations(owner, node)
             reads.update(selected)
+            return base, selected
+
+        def visit_Compare(self, node: ast.Compare) -> ast.expr:
+            if len(node.ops) != 1 or len(node.comparators) != 1:
+                return cast(ast.expr, self.generic_visit(node))
+            left, right = node.left, node.comparators[0]
+            reverse = isinstance(left, ast.Constant) and isinstance(
+                right, ast.Subscript
+            )
+            word, literal = (right, left) if reverse else (left, right)
+            if (
+                isinstance(word, ast.Subscript)
+                and isinstance(literal, ast.Constant)
+                and type(literal.value) is int
+                and isinstance(
+                    node.ops[0], (ast.Eq, ast.NotEq, ast.Lt, ast.LtE, ast.Gt, ast.GtE)
+                )
+            ):
+                base, selected = self.view(word)
+                # Only shift representable literals. Other comparisons retain
+                # ordinary expression validation, including integer width limits.
+                if 0 <= literal.value < 1 << len(selected):
+                    mask = sum(1 << bit for _, bit in selected)
+                    extracted = ast.BinOp(
+                        left=deepcopy(base), op=ast.BitAnd(), right=ast.Constant(mask)
+                    )
+                    shifted = ast.Constant(literal.value << selected[0][1])
+                    compared = ast.Compare(
+                        left=shifted if reverse else extracted,
+                        ops=deepcopy(node.ops),
+                        comparators=[extracted if reverse else shifted],
+                    )
+                    return cast(
+                        ast.expr,
+                        ast.copy_location(ast.fix_missing_locations(compared), node),
+                    )
+            return cast(ast.expr, self.generic_visit(node))
+
+        def visit_Subscript(self, node: ast.Subscript) -> ast.expr:
+            base, selected = self.view(node)
             result: ast.expr = ast.Constant(value=0)
             for output_bit, (_, input_bit) in enumerate(selected):
                 mask = 1 << input_bit

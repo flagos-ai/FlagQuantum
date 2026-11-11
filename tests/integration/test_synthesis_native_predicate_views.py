@@ -1,6 +1,7 @@
 """Unsigned numeric bit views retain coherent control and checked borrowing."""
 
 import math
+from collections.abc import Callable
 
 import pytest
 import torch
@@ -64,6 +65,58 @@ def test_disjoint_and_shared_slices_use_little_endian_numeric_values() -> None:
             expected[16 * x + 2 * y + flag] = 1 / math.sqrt(128)
     torch.testing.assert_close(actual[:, 0], expected, atol=1e-12, rtol=0)
     assert torch.count_nonzero(actual[:, 1:]) == 0
+
+
+@pytest.mark.parametrize(
+    ("operator", "literal", "predicate"),
+    [
+        ("==", 2, lambda value: value == 2),
+        ("!=", 2, lambda value: value != 2),
+        ("<", 2, lambda value: value < 2),
+        ("<=", 2, lambda value: value <= 2),
+        (">", 1, lambda value: value > 1),
+        (">=", 2, lambda value: value >= 2),
+    ],
+)
+@pytest.mark.parametrize("reverse", [False, True])
+def test_slice_comparison_matches_all_unsigned_values(
+    operator: str, literal: int, predicate: Callable[[int], bool], reverse: bool
+) -> None:
+    reversed_operator = {"<": ">", "<=": ">=", ">": "<", ">=": "<="}.get(
+        operator, operator
+    )
+    expression = (
+        f"{literal} {reversed_operator} x[1:4]"
+        if reverse
+        else f"x[1:4] {operator} {literal}"
+    )
+    program = synth.synthesize(
+        definition(
+            "x:Output[QNum[4]], flag:Output[QBit]",
+            "allocate(x)\nallocate(flag)\nhadamard_transform(x)\n"
+            f"control({expression}, lambda: X(flag))",
+        )
+    )
+    actual = fq.run(program).statevector().reshape(16, 2, -1)
+    expected = torch.zeros((16, 2), dtype=torch.complex128)
+    for value in range(16):
+        flag = int(predicate(value >> 1))
+        expected[value, flag] = 0.25
+    torch.testing.assert_close(actual[:, :, 0], expected, atol=1e-12, rtol=0)
+    assert torch.count_nonzero(actual[:, :, 1:]) == 0
+
+
+def test_out_of_range_slice_literal_retains_checked_expression_path() -> None:
+    program = synth.synthesize(
+        definition(
+            "x:Output[QNum[4]], flag:Output[QBit]",
+            "allocate(x)\nallocate(flag)\nhadamard_transform(x)\n"
+            "control(x[1:3] == 8, lambda: X(flag))",
+        )
+    )
+    actual = fq.run(program).statevector().reshape(16, 2, -1)
+    assert torch.count_nonzero(actual[:, 1:, 0]) == 0
+    assert torch.count_nonzero(actual[:, :, 1:]) == 0
 
 
 def test_wide_parent_counts_only_selected_bits_and_retains_branch_phase() -> None:
