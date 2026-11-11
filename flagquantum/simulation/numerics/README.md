@@ -52,7 +52,8 @@ with the pinned reference environment for source comparisons.
 
 `qsp_sampling` owns explicit-RNG QSP coefficient draws and sampled GQSP pair
 consistency. `qsp_grid` owns FFT-grid maxima, scaling, and assertions through a
-caller-owned FFT provider. Neither a random check nor a finite grid certifies
+caller-owned FFT provider or, when omitted, a lazy optional SciPy FFT import.
+Neither a random check nor a finite grid certifies
 the entire unit circle; a source counterexample is retained. See
 [the executable example, source failures, and resource boundaries](../../../docs/development/QSP_POLYNOMIAL_CHECKS.md).
 Run `python -m pytest tests/unit/test_qsp_sampling.py tests/unit/test_qsp_grid.py -q`

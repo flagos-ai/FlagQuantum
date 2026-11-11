@@ -8,8 +8,10 @@ execution engine. No protected API, public export, or dependency manifest change
 
 ## Short local path
 
-Numerical grid checks require an explicit FFT provider. The example uses the
-reference environment's SciPy, which production modules do not import or install.
+Numerical grid checks accept an explicit FFT provider. Without one, the native
+helper lazily imports SciPy FFT at the original call site. SciPy is an optional
+caller-supplied dependency, not installed or selected implicitly. The example
+uses an explicit provider to demonstrate replacement.
 
 ```python
 import numpy as np
@@ -57,26 +59,32 @@ polynomial operation and need not preserve state normalization.
 - The source annotation admits a NumPy `Polynomial` object, but reconstructing
   it with `Polynomial(P)` produces a nested object and the source fails during
   absolute-value evaluation after drawing angles. This direct source
-  counterexample is recorded separately; native typed pair inputs are finite
-  coefficient sequences, not Polynomial objects or symbolic `Shaped` values.
+  counterexample is now checked on both implementations, including identical
+  RNG advancement. Shape-only inputs preserve failure at the same source stage;
+  a native descriptor retains its native class name in diagnostics.
 - Grid maximum keeps source `asarray`, dtype-preserving zero padding, one FFT
-  call and max-absolute reduction. The native float return retains the numeric
-  value of the source NumPy scalar. Oversized coefficients and invalid grids
+  call and max-absolute reduction. The native return retains the source NumPy
+  scalar type and precision, including float32 and longdouble. Oversized coefficients and invalid grids
   retain assignment/FFT/reduction failures; they are not silently truncated.
 - Scaling keeps source `asarray` then `list` conversion before the shared grid
   helper. Only a sampled maximum strictly greater than one causes division.
-  `np.divide` is the same ufunc as source `/`. An unscaled input ndarray is
+  Division retains the literal source `/` expression. An unscaled input ndarray is
   returned unchanged by identity; scaling allocates and does not mutate it.
   Actual float/complex/integer dtypes are checked, not forced to complex128.
 - NaN sampled maxima retain source comparison behavior: scaling leaves them
   unchanged, while the <=1 assertion fails. Provider errors propagate.
 
-The native grid boundary is typed for float64, complex128 and int64 coefficient
-arrays or finite complex coefficient sequences. Its FFT provider accepts the
-padded array and returns complex128 data. Source comparisons use `scipy.fft.fft`;
-a finite cached transform replaces it without changing consumers. There is no
-implicit SciPy dependency, FFT implementation, or claim of upstream signature
-compatibility. Other dtypes and symbolic/foreign objects remain unaccepted.
+The native grid boundary now accepts NumPy array-like values, Polynomial and
+the existing native shape descriptor. NumPy owns dtype, conversion and errors;
+these annotations do not make symbolic or Polynomial values numerically valid.
+The optional FFT provider accepts a padded ndarray and returns an ndarray,
+retaining its scalar precision. With no provider, the helper lazily imports
+`scipy.fft.fft` before conversion, matching the source. Scaling still performs
+its outer `asarray` before this import. Missing SciPy raises at that call site;
+there is no NumPy FFT fallback or dtype downgrade. Source comparisons use
+SciPy 1.17.1. A cached transform replaces the provider without consumer changes.
+See [whole-source call-chain audit and optional dependency review](QSP_INSPECTION_CLOSURE.md).
+
 
 ## Finite-grid counterexample
 
@@ -109,4 +117,7 @@ polynomial algorithms are newly ported in this batch.
 The append consumer's two existing H/Rz gates are unchanged. Coefficient count,
 RNG calls, FFT size and sampled maxima are separate from quantum primitive gate
 counts. No rigorous whole-circle guarantee, synthesis, hardware performance,
-PyTorch gradient, scalability, or full-parent/G2 acceptance is claimed.
+PyTorch gradient or scalability is claimed. The source's full-circle-bound
+defect remains open, so the Q-0766 parent and full G2 acceptance remain open
+under the frozen closure rules; the interface gaps listed in NUM06/NUM07 are
+now filled.

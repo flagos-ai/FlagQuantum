@@ -54,3 +54,13 @@ now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTI
 (Q-0762, Q-0763, Q-0767), for **5 closed files and 1,275 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
+
+
+## Audited source with an inherited open defect
+
+The [QSP inspection audit](QSP_INSPECTION_CLOSURE.md) covers all five functions
+in Q-0766, including default FFT, NumPy scalar precision and failure-domain
+inputs. Its finite-grid assertion still misses a source counterexample with
+between-grid magnitude 1.06. Per the frozen criteria, the parent stays open
+rather than treating interface completion as repair of that upstream defect.
+No additional scenario or parent ID was added to the completion denominator.
