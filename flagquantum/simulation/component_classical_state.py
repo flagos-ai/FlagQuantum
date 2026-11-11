@@ -29,6 +29,7 @@ from .classical_measurement import MeasurementOutcomePhase, assert_unit_classica
 from .classical_registers import (
     bind_classical_register_values,
     bind_integer_register_values,
+    bind_opaque_register_values,
     collect_integer_register_value,
 )
 from .classical_updates import commit_classical_outputs, commit_phased_classical_outputs
@@ -44,7 +45,8 @@ class ComponentClassicalState:
     is an explicit callback, not Python method discovery or graph transformation.
 
     Integer/bit and resolved binary-field ports use existing native
-    validators and storage codecs. Other encodings, physical graphs, control flow
+    validators and storage codecs; opaque ports retain unrestricted values.
+    Other encodings, physical graphs, control flow
     and primitive entry operations are refused before actions. Caller values are not
     rewritten. Assignments and last_position remain inspectable after failures;
     outputs are committed before phase rejection, as in the pinned simulator.
@@ -200,6 +202,13 @@ class ComponentClassicalState:
                     register.name,
                     values,
                     self._fields[register.dtype],
+                    shape=register.shape,
+                    resolve_distribution=resolve,
+                )
+            elif register.dtype.encoding == "opaque":
+                bound = bind_opaque_register_values(
+                    register.name,
+                    values,
                     shape=register.shape,
                     resolve_distribution=resolve,
                 )

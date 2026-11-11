@@ -21,6 +21,30 @@ if TYPE_CHECKING:
     from sympy import Expr
 
 
+def bind_opaque_register_values(
+    name: str,
+    values: Mapping[str, object],
+    *,
+    shape: tuple[int, ...] = (),
+    resolve_distribution: Callable[[ClassicalDistribution], object] | None = None,
+) -> dict[tuple[int, ...], object]:
+    """Bind opaque values without imposing an integer or bit domain.
+
+    Pinned QAny validators are no-ops. Shared shape traversal, scalar symbolic
+    bypass and distribution resolution still apply. Collection retains the
+    separate width-dependent NumPy storage policy, including conversion errors;
+    accepting a numerical value does not authorize physical encoding of it.
+    """
+    return bind_classical_register_values(
+        name,
+        values,
+        lambda value: None,
+        lambda array: None,
+        shape=shape,
+        resolve_distribution=resolve_distribution,
+    )
+
+
 def bind_integer_register_values(
     name: str,
     values: Mapping[str, object],
