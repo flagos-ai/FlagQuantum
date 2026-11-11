@@ -1399,3 +1399,32 @@ unproved gate or dirty work map uses the ordinary execution path. The hint is no
 a clean-workspace attestation. CRZ retains its control-dependent scalar phase.
 
 Run `python -m pytest tests/integration/test_synthesis_native_predicate_truth.py tests/unit/test_basis_workspace_controlled.py -q`.
+
+## Low-work borrowed comparisons
+
+The unsigned arithmetic scheduler uses one clean carry for less-than comparisons
+of equally wide, physically disjoint words. A reversible majority sweep borrows
+the operand storage, XORs the comparison into an arbitrary target, and restores
+both operands and the carry. X, CX and CCX gates preserve absolute phase. Retain
+and recompute schedules charge the actual carry allocation and gate sequence;
+the existing operation, width, workspace and memory limits still apply.
+
+Constants, unequal widths, equality and overlapping operand maps retain the
+prefix-equality implementation. Signed and fixed-point expressions keep their
+existing checked alignment before unsigned lowering. This optimization does
+not admit signed slices, dynamic views or new borrowing syntax.
+
+The whitebox and graph-coloring comparison modules now execute their independent
+Circuit checks when run with `python -m`. They compare complete logical complex
+amplitudes in declared register order, without phase alignment, and check the
+complete workspace tail of each producer separately. Whitebox includes its
+original ten iterations as well as zero, one and two; graph coloring includes
+its original one iteration as well as zero and two. Different proven-zero
+scratch widths are handled by zero embeddings, never by ignoring dirty states.
+
+The prior pinned module audit retains the Rainbow timeout and two empty module
+entries as incomplete acceptance. Full native-corpus acceptance requires a new
+complete audit after these changes; source replay and named model/refusal tests
+remain separate gates.
+
+Run `python -m pytest tests/team/compiler/test_borrowed_comparison_kernel.py -q`.

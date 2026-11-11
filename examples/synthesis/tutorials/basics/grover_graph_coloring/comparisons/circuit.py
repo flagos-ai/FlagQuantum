@@ -5,6 +5,7 @@ from itertools import product
 import torch
 
 import flagquantum as fq
+from examples.synthesis.tutorials.basics.grover_graph_coloring.main import build_program
 
 WIDTHS = (2, 2, 2, 2, 2)
 
@@ -64,3 +65,32 @@ def reference_circuit(r: int) -> fq.Circuit:
         for bit in range(size):
             circuit.h(bit)
     return circuit
+
+
+def run_example() -> None:
+    """Compare absolute amplitudes and independently verify both clean work tails."""
+    registers = ("a", "b", "c", "d", "e")
+    for r in (0, 1, 2):
+        program = build_program(r)
+        assert tuple(program.registers) == registers
+        expected = (
+            fq.run(reference_circuit(r)).statevector().reshape(1 << sum(WIDTHS), -1)
+        )
+        assert float(expected[:, 1:].abs().square().sum()) < 1e-24
+        state = fq.run(program).statevector().flatten()
+        width = state.numel().bit_length() - 1
+        logical = tuple(wire for name in registers for wire in program.registers[name])
+        hidden = tuple(wire for wire in range(width) if wire not in logical)
+        ordered = (
+            state.reshape((2,) * width)
+            .permute((*logical, *hidden))
+            .reshape(expected.shape[0], -1)
+        )
+        assert float(ordered[:, 1:].abs().square().sum()) < 1e-24
+        torch.testing.assert_close(ordered[:, 0], expected[:, 0], atol=1e-12, rtol=0)
+        print(f"r={r}: native and independent Circuit amplitudes agree.")
+        print(program.report["resources"])
+
+
+if __name__ == "__main__":
+    run_example()

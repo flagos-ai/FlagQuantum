@@ -14,6 +14,7 @@ from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
 from .._arithmetic_kernels import (
+    borrowed_less_xor,
     comparison_xor,
     constant_multiply_accumulate,
     multiply_accumulate,
@@ -440,6 +441,11 @@ def _emit_arithmetic(
             variable, shift = shifted
             return _copy(variable, allocation.result[:-shift])
         if op.name in {"qint.equal", "qint.less"}:
+            borrowed = borrowed_comparison(op)
+            if borrowed is not None:
+                return borrowed_less_xor(
+                    *borrowed, target=allocation.result[0], carry=scratch[0]
+                )
             return comparison_xor(
                 left,
                 right,
@@ -468,6 +474,20 @@ def _emit_arithmetic(
         carry, carry_out = allocation.owned[-2:]
         return (*_copy(right, b), *ripple_add((*padding, *left), b, carry, carry_out))
 
+    def borrowed_comparison(
+        op: Operation,
+    ) -> tuple[tuple[int, ...], tuple[int, ...]] | None:
+        if op.name == "qint.less":
+            left, right = operands(op)
+            if (
+                isinstance(left, tuple)
+                and isinstance(right, tuple)
+                and len(left) == len(right)
+                and len(set((*left, *right))) == len(left) + len(right)
+            ):
+                return left, right
+        return None
+
     def apply(key: ValueId, *, inverse: bool) -> None:
         op = definitions[key]
         allocation = active[key]
@@ -485,7 +505,11 @@ def _emit_arithmetic(
         elif op.name == "qint.subtract_mod":
             scratch_count = len(allocation.result) + 1
         elif op.name in {"qint.equal", "qint.less"}:
-            scratch_count = max(unsigned_width(bound(v.id)) for v in op.operands) + 2
+            scratch_count = (
+                1
+                if borrowed_comparison(op) is not None
+                else max(unsigned_width(bound(v.id)) for v in op.operands) + 2
+            )
         scratch = allocate(scratch_count, op) if scratch_count else ()
         # Scratch is always zero and local to this invocation. A restored operand
         # may now occupy different physical qubits; regenerate the kernel using

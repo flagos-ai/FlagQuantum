@@ -118,9 +118,11 @@ def test_original_native_and_independent_complete_environment(k: int) -> None:
     torch.testing.assert_close(ordered[:, 0], expected, atol=1e-10, rtol=0)
     assert float(ordered[:, 1:].abs().square().sum()) < 1e-20
     with pytest.raises(ValueError, match="readout budget exceeded"):
-        program.probabilities(result, registers=("indicator",))
+        program.probabilities(
+            result, registers=("indicator",), max_amplitudes=actual.numel() - 1
+        )
     assert dict(
-        program.probabilities(result, registers=("indicator",), max_amplitudes=2**26)
+        program.probabilities(result, registers=("indicator",))
     ) == pytest.approx(
         {(q,): float(expected.reshape(2, -1)[q].abs().square().sum()) for q in range(2)}
     )

@@ -87,16 +87,16 @@ def test_complete_native_source_and_circuit(k: int, shift: float) -> None:
         density @ density.mH, independent @ independent.mH, atol=1e-10, rtol=0
     )
     with pytest.raises(ValueError, match="readout budget exceeded"):
-        program.probabilities(result, registers=("indicator",))
-    probabilities = dict(
-        program.probabilities(result, registers=("indicator",), max_amplitudes=2**24)
-    )
+        program.probabilities(
+            result, registers=("indicator",), max_amplitudes=actual.numel() - 1
+        )
+    probabilities = dict(program.probabilities(result, registers=("indicator",)))
     assert probabilities[(1,)] == pytest.approx(
         float(independent[1].abs().square().sum()), abs=1e-10
     )
     resources = program.report["resources"]
     assert isinstance(resources, ResourceEstimate)
-    assert resources.n_qubits == 24
+    assert resources.n_qubits == 22
     assert resources.n_operations <= 5000
 
 
