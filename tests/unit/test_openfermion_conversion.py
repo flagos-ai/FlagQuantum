@@ -16,6 +16,7 @@ from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.core.algebra.pauli import PauliOperator, PauliTerm
 from flagquantum.ecosystem.openfermion import (
     from_openfermion_fermion,
+    from_openfermion_interaction,
     from_openfermion_qubit,
     to_openfermion_fermion,
     to_openfermion_qubit,
@@ -24,6 +25,7 @@ from flagquantum.observables.fermion import FermionOperator, FermionTerm
 from tests.unit.fermion.oracles import fock_matrix
 
 of = pytest.importorskip("openfermion")
+np = pytest.importorskip("numpy")
 pytestmark = pytest.mark.openfermion
 
 
@@ -198,3 +200,130 @@ def test_corrupted_mapping_and_wrong_upstream_operator_kind() -> None:
         from_openfermion_fermion(of.QubitOperator())
     with pytest.raises(TypeError):
         from_openfermion_qubit(of.FermionOperator())
+
+
+def test_interaction_complex_coefficients_against_two_matrix_oracles() -> None:
+    rng = np.random.default_rng(427)
+    width = 3
+    one = rng.normal(size=(width, width)) + 1j * rng.normal(size=(width, width))
+    two = rng.normal(size=(width,) * 4) + 1j * rng.normal(size=(width,) * 4)
+    source = of.InteractionOperator(0.3 - 0.2j, one, two)
+    words: dict[tuple[tuple[int, int], ...], complex] = {(): complex(source.constant)}
+    for p, q in itertools.product(range(width), repeat=2):
+        words[((p, 1), (q, 0))] = one[p, q]
+    for p, q, r, s in itertools.product(range(width), repeat=4):
+        words[((p, 1), (q, 1), (r, 0), (s, 0))] = two[p, q, r, s]
+    native = from_openfermion_interaction(source)
+    matrix = fock_matrix(native, width)
+    torch.testing.assert_close(matrix, _ordered_matrix(words, width))
+    torch.testing.assert_close(
+        matrix, torch.tensor(of.get_sparse_operator(source).toarray())
+    )
+    assert native == from_openfermion_fermion(of.get_fermion_operator(source))
+    one[:] = 0
+    two[:] = 0
+    source.constant = 0
+    torch.testing.assert_close(fock_matrix(native, width), matrix)
+
+
+@pytest.mark.parametrize("dtype", ["int64", "uint32", "float32", "complex128"])
+def test_interaction_numeric_dtypes_and_quartic_order(dtype: str) -> None:
+    one = np.zeros((2, 2), dtype=dtype)
+    two = np.zeros((2,) * 4, dtype=dtype)
+    two[1, 0, 0, 1] = 3
+    native = from_openfermion_interaction(of.InteractionOperator(2, one, two))
+    assert native == FermionOperator((FermionTerm(2), FermionTerm(-3, (0, 1), (0, 1))))
+
+
+def test_interaction_zero_width_and_unpruned_coefficients() -> None:
+    source = of.InteractionOperator(0, np.zeros((0, 0)), np.zeros((0,) * 4))
+    assert from_openfermion_interaction(source) == FermionOperator()
+    source.constant = 0.5j
+    assert from_openfermion_interaction(source) == FermionOperator((FermionTerm(0.5j),))
+    one = np.diag([1e-30, 0.0])
+    two = np.zeros((2,) * 4)
+    two[0, 1, 0, 1] = 2e-30
+    source = of.InteractionOperator(3e-30, one, two)
+    assert from_openfermion_interaction(source) == FermionOperator(
+        (
+            FermionTerm(3e-30),
+            FermionTerm(1e-30, (0,), (0,)),
+            FermionTerm(2e-30, (0, 1), (0, 1)),
+        )
+    )
+
+
+@pytest.mark.parametrize("encoding", ["jordan_wigner", "parity", "bravyi_kitaev"])
+def test_interaction_uses_existing_encoding_and_measurement(encoding: Encoding) -> None:
+    source = of.InteractionOperator(0.25, np.diag([1.0, 2.0]), np.zeros((2,) * 4))
+    encoded = encode_fermion(
+        from_openfermion_interaction(source), n_modes=2, encoding=encoding
+    )
+    circuit = fq.Circuit(2, dtype=torch.complex128)
+    for q, bit in enumerate(encoded.reference_bits((1, 0))):
+        if bit:
+            circuit.x(q)
+    value = fq.run(circuit, outputs=[fq.expectation(to_observable(encoded.operator))])
+    assert float(torch.as_tensor(value.expectation()).reshape(-1)[0]) == pytest.approx(
+        1.25
+    )
+
+
+@pytest.mark.parametrize("location", ["constant", "one", "two"])
+@pytest.mark.parametrize(
+    "value", [float("nan"), float("inf"), complex(0, float("inf"))]
+)
+def test_interaction_nonfinite_values_even_in_zero_products(
+    location: str, value: complex
+) -> None:
+    source = of.InteractionOperator(
+        0, np.zeros((2, 2), dtype=complex), np.zeros((2,) * 4, dtype=complex)
+    )
+    if location == "constant":
+        source.constant = value
+    elif location == "one":
+        source.one_body_tensor[0, 0] = value
+    else:
+        source.two_body_tensor[0, 0, 0, 0] = value
+    with pytest.raises(ValueError):
+        from_openfermion_interaction(source)
+
+
+@pytest.mark.parametrize(
+    "one,two",
+    [
+        (np.zeros((2, 3)), np.zeros((2,) * 4)),
+        (np.zeros(2), np.zeros((2,) * 4)),
+        (np.zeros((2, 2)), np.zeros((3,) * 4)),
+        (np.zeros((2, 2), dtype=bool), np.zeros((2,) * 4)),
+        (np.zeros((2, 2)), np.zeros((2,) * 4, dtype=object)),
+        ([[0, 0], [0, 0]], np.zeros((2,) * 4)),
+    ],
+)
+def test_interaction_corrupted_arrays_fail(one: object, two: object) -> None:
+    source = of.InteractionOperator(0, np.zeros((2, 2)), np.zeros((2,) * 4))
+    source.n_body_tensors[(1, 0)] = one
+    source.n_body_tensors[(1, 1, 0, 0)] = two
+    with pytest.raises((TypeError, ValueError)):
+        from_openfermion_interaction(source)
+
+
+@pytest.mark.parametrize(
+    "constant", [True, sympy.Symbol("x"), torch.tensor(1.0), np.array(1.0)]
+)
+def test_interaction_invalid_constant(constant: object) -> None:
+    source = of.InteractionOperator(constant, np.zeros((2, 2)), np.zeros((2,) * 4))
+    with pytest.raises(TypeError):
+        from_openfermion_interaction(source)
+
+
+def test_interaction_rejects_wrong_type_and_corrupted_keys() -> None:
+    with pytest.raises(TypeError):
+        from_openfermion_interaction(of.FermionOperator())
+    source = of.InteractionOperator(0, np.zeros((2, 2)), np.zeros((2,) * 4))
+    source.n_body_tensors[(1,)] = np.zeros(2)
+    with pytest.raises(ValueError):
+        from_openfermion_interaction(source)
+    source.n_body_tensors = []
+    with pytest.raises(TypeError):
+        from_openfermion_interaction(source)
