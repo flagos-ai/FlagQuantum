@@ -9,7 +9,7 @@ from collections.abc import Mapping
 
 from ...core.ir.program.signatures import Signature
 from .conjugate_pairs import conjugate_pair_labels
-from .register_tensor_binding import register_tensor_label_groups
+from .register_axis_groups import register_tensor_label_groups
 
 
 def register_tensor_outer_indices(
