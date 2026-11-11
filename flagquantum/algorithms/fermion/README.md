@@ -88,6 +88,17 @@ interferometer and `python -m pytest tests/unit/fermion/test_controlled_evolutio
 -q` for independent full-branch, phase, convergence and gradient references.
  That profile is unreduced JW/CPU only and makes no routing or hardware claim.
 
+For file-to-training composition, run
+`python -m examples.algorithms.fermion_fcidump_training`. The example composes
+the existing FCIDUMP adapter, fermionic Hamiltonian assembly, full JW encoding,
+UCCSD circuit and native runtime with PyTorch Adam. It accepts only two orbitals
+and two electrons and uses a small dense N=2 energy as an inspection reference.
+It owns no parser, ansatz or solver implementation. UCCSD angles remain float32;
+geometry/SCF gradients and scalable optimization are not implied. Run
+`python -m pytest tests/integration/test_fermion_fcidump_training.py -q` to check
+file/native producer replacement, gradients, particle-sector support, invalid
+inputs and execution without external quantum or chemistry SDKs.
+
 For the delivered stages, file-input workflows and planned extension boundaries,
 see the [migration status](../../../docs/development/OPENFERMION_NATIVE_MIGRATION.md#current-delivery-status).
 The initial PR description and its CI counts are historical records; the status
