@@ -53,7 +53,9 @@ phase totals are generated from parent decisions, not test count.
 now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTION_CLOSURE.md)
 (Q-0762, Q-0763, Q-0767), and the [Jacobi-Anger original test file](JACOBI_ANGER_SOURCE_AUDIT.md)
 (Q-0765), and the [permutation original test file](PERMUTATION_SOURCE_AUDIT.md)
-(Q-0760), for **7 closed files and 1,273 open files**. These file
+(Q-0760). The [alias preprocessing audit](ALIAS_DISCRETIZATION_SOURCE_AUDIT.md)
+closes Q-0754, Q-0755, Q-0756 and Q-0761, including two explicitly inspected
+namespace-only assets, for **11 closed files and 1,269 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
 
@@ -79,3 +81,10 @@ discovery and ordered partial traversal, reusing the existing append emitter.
 Q-0760 closes after both original tests run unchanged and with native bindings.
 Q-0759 remains open for inherited partial-map prefix loss and its invalid
 keyword example; source behavior is preserved rather than silently repaired.
+
+The [alias preprocessing audit](ALIAS_DISCRETIZATION_SOURCE_AUDIT.md) assigns all
+six source functions and width overloads to one Algorithms owner. Existing
+validated concrete/symbolic factories replace duplicate algorithms with shared
+calls. All original tests run unchanged and with native bindings. Namespace
+assets close by explicit AST/blob disposition, without recreating upstream
+package names or claiming new algorithm functionality.

@@ -113,3 +113,11 @@ calls retain source precision budgets. `generalized_qsp_model.py` independently
 composes caller-priced source call counts through shared ComponentCost; it does
 not infer physical or synthesized prices. The [factory/model guide](../../../docs/development/GENERALIZED_QSP_FACTORY_MODEL.md)
 provides the native append example and precise acceptance boundaries.
+
+`alias_discretization.py` owns raw source-ordered probability rounding, integer
+alias donors and precision widths. Validated concrete/symbolic alias factories
+reuse it; they retain their stricter input contracts. It owns no register
+allocation, numerical circuit execution or sampling state. See the
+[whole-source audit](../../../docs/development/ALIAS_DISCRETIZATION_SOURCE_AUDIT.md)
+for original-test replacement, append consumers, bit/work ownership and separate
+primitive/model counts; the register guide remains the shortest workflow.
