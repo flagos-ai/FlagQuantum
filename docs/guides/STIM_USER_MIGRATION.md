@@ -447,3 +447,15 @@ and a separate observable file together. `Path` inputs normalize to strings at
 the SDK boundary. No complete file is turned into a Python shot tensor.
 See the [API](../reference/API.md#convert-a-measurement-file-to-detector-and-logical-files)
 and [approved scope](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md).
+
+## Captured records and batch decoding candidate
+
+Use the familiar `read_shot_data_file` name from
+`flagquantum.qec.execution.shot_data`. Results are owned Torch bool/uint8 tensors
+instead of NumPy arrays. The new `iter_shot_data_file` is a FlagQuantum extension
+for the embedded build, not an upstream Stim API. Its independently packed
+detectors can feed the existing `PyMatchingDecoder.decode_packed_batch`.
+See [shot-file decoding](../../examples/qec/shot_file_decoding.py) and the
+[approved contract](../development/QEC_SHOT_DATA_READING_PROPOSAL.md). Standard
+SDK builds support eager reads only. Zero-column records and arbitrary-data
+write_shot_data_file remain explicit gaps. This candidate is not full parity.
