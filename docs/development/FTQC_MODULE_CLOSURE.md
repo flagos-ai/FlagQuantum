@@ -164,3 +164,11 @@ sampling and source NumPy storage conversion. Scalar identity, array conversion
 failures/warnings, RNG state and complex physical identity append consumers are
 compared to unchanged source. Source fixed-input handler failure is retained as
 an explicit difference. Q-0882/Q-0883 and fixed acceptance counts remain open.
+
+The [recursive phased evaluator](COMPONENT_PHASED_EVALUATION.md) removes
+caller-written state reconstruction for stored typed bodies. Compiler-supplied
+call orders feed the existing state; nested states inherit the same random
+handler and return phase to their parent. Original composed phasing, nested
+measurement branches and complete Add input tables agree with source. Pure
+recursive random-policy and foreign decomposition boundaries remain open;
+no whole-file completion or larger denominator is inferred.

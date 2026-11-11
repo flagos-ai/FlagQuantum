@@ -884,3 +884,7 @@ and output-commit errors keep their original boundary.
 [Opaque classical graph values](../../docs/development/COMPONENT_OPAQUE_VALUES.md)
 retain QAny's unrestricted numerical domain while shared binding still validates
 shapes and collection preserves source NumPy storage conversions.
+
+[Recursive phased component evaluation](../../docs/development/COMPONENT_PHASED_EVALUATION.md)
+composes the existing classical state across stored bodies using supplied call
+orders and shared measurement policy. Step inspection remains with the state.
