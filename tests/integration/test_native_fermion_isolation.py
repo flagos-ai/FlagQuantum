@@ -83,6 +83,8 @@ def test_native_workflow_without_external_science_packages() -> None:
             raise AssertionError("optional driver import was not blocked")
         from examples.algorithms.fermion_orbital_rotation import main as orbital_example
         orbital_example()
+        from examples.algorithms.fermion_hubbard import main as hubbard_example
+        hubbard_example()
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
     """
     script = textwrap.dedent(script)
