@@ -86,6 +86,7 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
     storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
     start, effect = len(owner.operations), owner.effect
     owner.region_depth += 1
+    owner.owner.expanded_callbacks += 1
     try:
         if (
             owner.resolve_callable(body.func) is phase
@@ -98,6 +99,7 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
             owner.call(body)
         flush_evolutions(owner)
     finally:
+        owner.owner.expanded_callbacks -= 1
         owner.region_depth -= 1
     effects = tuple(owner.operations[start:])
     del owner.operations[start:]

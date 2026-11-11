@@ -329,11 +329,6 @@ def inline_mutable(
             "program.recursion",
             "helper calls must be acyclic with depth at most 32",
         )
-    owner.owner.inline_calls += 1
-    if owner.owner.inline_calls > 256:
-        _error(
-            owner.source, node, "budget", "mutable helper expansion exceeds 256 calls"
-        )
     if id(definition) not in owner.owner.seen:
         owner.owner.seen.add(id(definition))
         owner.owner.nodes += sum(1 for _ in ast.walk(definition.source.node))
@@ -449,10 +444,32 @@ def inline_mutable(
             "program.borrow",
             "Const and writable helper views must use separate registers",
         )
-    if all(
+    whole_registers = all(
         view == tuple((view[0][0], bit) for bit in range(register_width(view[0][0])))
         for view in bindings.values()
-    ):
+    )
+    cache_key = (id(definition), tuple(ports), tuple(sorted(classical.items())))
+    compact = (
+        whole_registers
+        and bool(writable_values)
+        and not owner.owner.expanded_callbacks
+        and not any(port.signed or port.fractional_bits for port in ports)
+    )
+    if compact and cache_key in owner.owner.unitary_templates:
+        template = owner.owner.unitary_templates[cache_key]
+        owner.emit(
+            "qreg.unitary_call",
+            node,
+            (*const_values, *writable_values),
+            callee=template.name,
+        )
+        return
+    owner.owner.inline_calls += 1
+    if owner.owner.inline_calls > 256:
+        _error(
+            owner.source, node, "budget", "mutable helper expansion exceeds 256 calls"
+        )
+    if whole_registers:
         # Whole-register functions can use the ordinary capture context, including
         # fresh lexical scratch, without leaking formal names into caller state.
         from .frontend_program import _Body
@@ -490,6 +507,29 @@ def inline_mutable(
         _verify_borrowed_effects(
             child.operations, owner.owner.functions, const_values, writable_values
         )
+        if (
+            compact
+            and 32 <= len(child.operations) <= 512
+            and len(owner.owner.unitary_templates) < 32
+        ):
+            from .._hybrid.unitary_effects import unitary_regions
+            from .register_profile import _borrowed_program
+
+            # Channel/ownership effects stay on the existing expanded path.
+            # Only a successful closed-unitary proof permits sharing the body.
+            try:
+                unitary_regions(child.operations)
+            except ValueError:
+                pass
+            else:
+                name = (
+                    f"{owner.owner.entry}.$unitary{len(owner.owner.unitary_templates)}"
+                )
+                template = _borrowed_program(
+                    child.operations, const_values, writable_values, name=name
+                )
+                owner.owner.unitary_templates[cache_key] = template
+                owner.owner.functions.append(template)
         owner.operations.extend(child.operations)
         owner.effect, owner.counter = child.effect, child.counter
         return

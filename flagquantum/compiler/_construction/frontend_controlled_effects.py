@@ -56,10 +56,12 @@ def capture_controlled_effects(
     storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
     start, incoming = len(owner.operations), owner.effect
     owner.region_depth += 1
+    owner.owner.expanded_callbacks += 1
     try:
         owner.call(callback)
         flush_evolutions(owner)
     finally:
+        owner.owner.expanded_callbacks -= 1
         owner.region_depth -= 1
     effects = tuple(owner.operations[start:])
     del owner.operations[start:]

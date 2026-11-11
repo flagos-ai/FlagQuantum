@@ -325,12 +325,25 @@ def select_register_program(
     # diagnostic rather than mistaking a resource budget for invalid semantics.
     verify_register_program(program, functions)
     expanded = expand_register_calls(program, functions)
-    if any(
-        op.name
-        in {"qreg.phase", "qreg.unitary", "qreg.inverse_qft", "qreg.control_qft"}
-        or (op.name == "qreg.control_phase" and "indices" in op.attributes)
-        for op in expanded.body.blocks[0].operations
-    ):
+    pending = [expanded]
+    symbols = {function.name: function for function in functions}
+    visited: set[str] = set()
+    phase_sensitive = False
+    while pending:
+        current = pending.pop()
+        if current.name in visited:
+            continue
+        visited.add(current.name)
+        for op in current.body.blocks[0].operations:
+            phase_sensitive |= op.name in {
+                "qreg.phase",
+                "qreg.unitary",
+                "qreg.inverse_qft",
+                "qreg.control_qft",
+            } or (op.name == "qreg.control_phase" and "indices" in op.attributes)
+            if op.name == "qreg.unitary_call":
+                pending.append(symbols[op.attributes["callee"]])
+    if phase_sensitive:
         _check_phase_target(target)
     mapping, _, position = register_ports(program)
     position += semantic_hidden_width(expanded)

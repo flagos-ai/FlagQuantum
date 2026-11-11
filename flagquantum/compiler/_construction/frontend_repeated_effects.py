@@ -66,10 +66,12 @@ def capture_reset_loop(owner: _Body, node: ast.For, sequence: range) -> bool:
     steps, calls = owner.owner.loop_steps, owner.owner.inline_calls
     owner.loop_variables[node.target.id] = sequence[0]
     owner.region_depth += 1
+    owner.owner.expanded_callbacks += 1
     try:
         owner.statements(node.body, nested=True)
         flush_evolutions(owner)
     finally:
+        owner.owner.expanded_callbacks -= 1
         owner.region_depth -= 1
         owner.loop_variables.pop(node.target.id, None)
     effects = tuple(owner.operations[start:])

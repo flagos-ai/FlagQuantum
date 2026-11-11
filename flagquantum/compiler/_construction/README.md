@@ -1119,3 +1119,26 @@ Independent matrix acceptance includes private data after drop and clean scratch
 See `tests/integration/test_synthesis_native_molecular_walk.py`,
 `tests/integration/test_synthesis_native_expression_sharing.py` and
 `tests/integration/test_synthesis_native_nested_scalar_phase.py`.
+
+### Shared borrowed unitary helpers
+
+Native whole-register unsigned helpers with 32..512 checked effects can retain
+one capture-local template for repeated identical classical bindings and formal
+widths. At most 32 templates are retained. Small helpers and controlled, QPE and
+reset-loop callbacks continue through the existing expanded paths. This is an
+internal representation choice; users continue calling ordinary `@qfunc`
+functions. Const permissions, disjoint actuals, definite initialization, closed
+scratch and an acyclic call graph are checked before sharing and again at the
+register IR boundary. Channel and ownership effects are not shareable.
+
+`borrowed_unitary.py` supplies a layout for incoming storage to the existing
+scheduler; it never allocates or reinitializes caller data at execution time.
+Lowering remaps actual registers and scratch, reuses released lexical storage,
+preserves absolute phase under adjoint, and charges every emitted gate. Shared
+source does not enlarge the 100000-operation construction budget or permit
+selection from an incomplete portfolio. Target phase checks inspect reachable
+bodies rather than assuming every compact call contains a phase operation.
+
+Run `python -m pytest tests/integration/test_synthesis_native_unitary_calls.py -q`
+for complete amplitudes, nonzero bindings, remapping, inverse interference,
+workspace cleanup, Const laundering, malformed IR and actual resource limits.

@@ -1155,3 +1155,20 @@ before lowering. This addition does not promise general sliced numeric
 assignment, mutable subword arithmetic or signed/fixed-point reinterpretation.
 
 Run `python -m pytest tests/integration/test_synthesis_native_predicate_views.py -q`.
+
+## Shared native borrowed helpers
+
+Repeated whole-register raw unsigned qfunc calls may share a checked internal
+unitary template for identical bindings and widths. Scalar and numeric gates,
+closed arithmetic scratch and adjoint reuse the existing scheduler. Sharing
+reduces source expansion; all physical gates, work bits and target phase
+requirements are still charged and checked. Signed/fractional or sliced helper
+actuals, controlled/QPE callbacks and reset-loop bodies retain their existing
+expanded paths and limits. This does not expand the supported apply-block
+language or allow channels and ownership effects in a unitary template.
+
+A large program can still exceed the 100000-operation intermediate construction
+ceiling even when its optimized executable might fit the final resource limit.
+An incomplete portfolio still refuses; a fitting best-so-far circuit is not
+accepted. The complete native double-slit draft remains unaccepted for this
+reason; the original-source acceptance and native-example coverage are separate.

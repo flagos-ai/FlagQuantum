@@ -219,17 +219,17 @@ def test_view_and_loop_refusals(tmp_path: Path, body: str, diagnostic: str) -> N
         (
             "@qfunc\ndef init(a: QArray[QBit]):\n    allocate(1,a)\n",
             "allocate(1,q)\ninit(q)",
-            "program.borrow",
+            "register.initialized",
         ),
         (
             "@qfunc\ndef init(a: QArray[QBit]):\n    prepare_state([1,0],0,a)\n",
             "allocate(1,q)\ninit(q)",
-            "program.borrow",
+            "register.initialized",
         ),
         (
             "@qfunc\ndef fresh(a: Output[QArray[QBit]]):\n    allocate(1,a)\n@qfunc\ndef escape(a: QArray[QBit]):\n    fresh(a)\n",
             "allocate(1,q)\nescape(q)",
-            "program.borrow",
+            "register.initialized",
         ),
         (
             "@qfunc\ndef recursive(a: QArray[QBit]):\n    recursive(a)\n",

@@ -13,6 +13,7 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .borrowed_unitary import unitary_template_parts
 from .gate_tape import check_gate_tape
 from .pauli_rotation import checked_support
 from .profile import _fail, _width
@@ -235,6 +236,37 @@ def _verify_body(
                     registers.remove(source)
                     initialized.remove(source.id)
                 initialized.update(v.id for v in outputs)
+            elif op.name == "qreg.unitary_call":
+                callee = op.attributes["callee"]
+                if not isinstance(callee, str) or callee not in helpers:
+                    _fail("register.callee", "unitary call requires a known helper", op)
+                const, writable, _ = unitary_template_parts(helpers[callee])
+                formal = (*const, *writable)
+                if len(operands) != len(formal) or any(
+                    actual.type != expected.type
+                    for actual, expected in zip(operands, formal, strict=True)
+                ):
+                    _fail(
+                        "register.signature",
+                        "unitary call roles or widths disagree",
+                        op,
+                    )
+                if len(set(operands)) != len(operands):
+                    _fail("register.alias", "unitary call actuals must be disjoint", op)
+                if any(value.id not in initialized for value in operands):
+                    _fail(
+                        "register.uninitialized",
+                        "unitary call requires initialized storage",
+                        op,
+                    )
+                writes = operands[len(const) :]
+                if any(value in borrowed for value in writes):
+                    _fail(
+                        "register.const",
+                        "Const cannot be passed as writable storage",
+                        op,
+                    )
+                changed = writes
             elif op.name in {"qreg.call", "qreg.control_call"}:
                 controlled = op.name == "qreg.control_call"
                 if controlled:

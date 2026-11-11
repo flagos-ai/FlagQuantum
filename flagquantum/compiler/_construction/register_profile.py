@@ -58,6 +58,7 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.array_phase_flip": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
         "qreg.replay": frozenset({"callee", "count"}),
+        "qreg.unitary_call": frozenset({"callee"}),
         "qreg.gate_tape": frozenset({"workspace", "templates", "schedule"}),
         "qreg.reset": frozenset({"index"}),
         "qreg.gate": frozenset({"gate", "index"}),
@@ -359,22 +360,21 @@ def register_ports(
     return names, values, position
 
 
-def _verify_borrowed_effects(
+def _borrowed_program(
     operations: Sequence[Operation],
-    functions: Sequence[HybridProgram],
     readonly: Sequence[Value],
     writable: Sequence[Value],
-) -> None:
-    """Check borrowed effects with the existing Const and lifecycle verifier.
+    *,
+    name: str = "$borrow",
+) -> HybridProgram:
+    """Model initialized borrowed storage without assuming actual zero entry.
 
-    This verification-only envelope models incoming writable storage as already
-    initialized. It is never emitted or lowered. Its allocation operations prove
+    This envelope models incoming writable storage as already initialized.
+    Its allocation operations prove
     initialization structurally; they make no zero-state assumption about the
     actual caller storage or the captured unitary effects.
     """
-    from .register_verifier import _verify_body
-
-    scope = "$borrow"
+    scope = name
     occupied = {value.id.scope for value in (*readonly, *writable)}
     occupied.update(
         value.id.scope
@@ -412,9 +412,19 @@ def _verify_borrowed_effects(
         )
         effect = following
     checked.append(Operation("qreg.return", (effect, *readonly, *writable)))
-    envelope = HybridProgram(
-        scope, Region((Block((entry, *readonly), tuple(checked)),))
-    )
+    return HybridProgram(name, Region((Block((entry, *readonly), tuple(checked)),)))
+
+
+def _verify_borrowed_effects(
+    operations: Sequence[Operation],
+    functions: Sequence[HybridProgram],
+    readonly: Sequence[Value],
+    writable: Sequence[Value],
+) -> None:
+    """Check borrowed effects with the existing Const and lifecycle verifier."""
+    from .register_verifier import _verify_body
+
+    envelope = _borrowed_program(operations, readonly, writable)
     arithmetic = tuple(f for f in functions if not is_register_function(f))
     helpers = {f.name: f for f in functions if is_register_function(f)}
     _verify_body(envelope, arithmetic, helpers, 256, const_entry=True)
@@ -477,7 +487,12 @@ def verify_register_program(
             active.add(name)
             depth = 1
             for op in helpers[name].body.blocks[0].operations:
-                if op.name in {"qreg.call", "qreg.control_call", "qreg.replay"}:
+                if op.name in {
+                    "qreg.call",
+                    "qreg.control_call",
+                    "qreg.replay",
+                    "qreg.unitary_call",
+                }:
                     callee = op.attributes.get("callee")
                     if not isinstance(callee, str) or callee not in helpers:
                         _fail(
@@ -627,7 +642,7 @@ def verify_operation_attributes(op: Operation) -> None:
             if len(op.operands) > 1
             else frozenset({"angle"})
         )
-    if op.name == "qreg.call" and "inverse" in op.attributes:
+    if op.name in {"qreg.call", "qreg.unitary_call"} and "inverse" in op.attributes:
         if op.attributes["inverse"] is not True:
             _fail("register.adjoint", "inverse call marker must be true", op)
         attributes = frozenset({"callee", "inverse"})

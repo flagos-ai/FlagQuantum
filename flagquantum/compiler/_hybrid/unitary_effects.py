@@ -23,6 +23,7 @@ PURE_EFFECTS = frozenset(
         "qreg.control_qft",
         "qreg.inplace_prepare_amplitudes",
         "qreg.unitary",
+        "qreg.unitary_call",
     }
 )
 
@@ -97,6 +98,7 @@ def _inverse_specs(
             "qreg.gate",
             "qreg.control_qft",
             "qreg.inplace_prepare_amplitudes",
+            "qreg.unitary_call",
         }:
             if attributes.pop("inverse", False) is not True:
                 attributes["inverse"] = True

@@ -24,6 +24,7 @@ from .._hybrid.verifier import Diagnostic
 from ..noise import _encode_channel_instruction
 from ..optimization.state_preparation_synthesis import _synthesize_real_state
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
+from .borrowed_unitary import owned_unitary_layout
 from .gate_tape import expand_gate_tape
 from .lowering import (
     ArithmeticCandidate,
@@ -338,6 +339,7 @@ def schedule_register_program(
     max_operations: int = 100_000,
     scheduling: Schedule = "retain",
     boolean_values: bool = False,
+    _allow_empty_boolean: bool = False,
 ) -> RegisterCandidate:
     """Lower verified fresh outputs without executing or inspecting any state."""
     _positive_integer(max_operations, "max_operations")
@@ -359,12 +361,22 @@ def schedule_register_program(
     used_boolean = False
     boolean_refusal: BooleanCandidateError | None = None
     control_workspace = 0
+    arithmetic_workspace = 0
+    unitary_candidates: dict[tuple[str, int], RegisterCandidate] = {}
     symbols = {f.name: f for f in functions}
     operations = program.body.blocks[0].operations
+    local_ids = {op.results[0].id for op in operations if op.name == "qreg.local"}
+    permanent_position = max(
+        (max(wires) + 1 for value, wires in bindings.items() if value not in local_ids),
+        default=output_width,
+    )
+    live_locals: set[ValueId] = set()
     skip_until = 0
     for ordinal, op in enumerate(operations):
         if ordinal < skip_until:
             continue
+        if op.name == "qreg.local":
+            live_locals.add(op.results[0].id)
         gates: tuple[Instruction, ...] = ()
         if op.name == "qreg.gate_tape":
             work = op.attributes["workspace"]
@@ -376,6 +388,79 @@ def schedule_register_program(
             tape_wires = (*logical, *range(position, position + work))
             gates = expand_gate_tape(op, tape_wires)
             control_workspace = max(control_workspace, work)
+        elif op.name == "qreg.unitary_call":
+            name = op.attributes["callee"]
+            call_position = max(
+                permanent_position,
+                max((max(bindings[value]) + 1 for value in live_locals), default=0),
+            )
+            cache_key = (name, call_position)
+            if cache_key not in unitary_candidates:
+                layout = owned_unitary_layout(register_templates[name])
+                _, _, width = register_ports(layout)
+                unitary_candidates[cache_key] = schedule_register_program(
+                    layout,
+                    (*functions, *register_templates.values()),
+                    n_qubits=width + n_qubits - call_position,
+                    max_operations=max_operations,
+                    scheduling=scheduling,
+                    boolean_values=boolean_values,
+                    _allow_empty_boolean=True,
+                )
+            nested = unitary_candidates[cache_key]
+            if len(nested.circuit.instructions) > max_operations - len(instructions):
+                _fail(
+                    "lowering.operations", "unitary call exceeds operation budget", op
+                )
+            width = sum(len(ports) for ports in nested.registers.values())
+            physical = {
+                wire: target
+                for relative, actual in zip(
+                    nested.registers.values(), op.operands[1:], strict=True
+                )
+                for wire, target in zip(relative, bindings[actual.id], strict=True)
+            }
+            physical.update(
+                (wire, call_position + wire - width)
+                for wire in range(width, nested.circuit.n_wires)
+            )
+            gates = tuple(
+                replace(gate, wires=tuple(physical[wire] for wire in gate.wires))
+                for gate in nested.circuit.instructions
+            )
+            if op.attributes.get("inverse"):
+                gates = tuple(inverted_instruction(gate) for gate in reversed(gates))
+            control_workspace = max(
+                control_workspace, call_position + nested.peak_workspace - position
+            )
+            for segment in nested.segments:
+                used_boolean |= segment.implementation == "boolean"
+                segments.append(
+                    replace(
+                        segment,
+                        circuit=replace(
+                            segment.circuit,
+                            n_wires=n_qubits,
+                            instructions=tuple(
+                                replace(
+                                    gate,
+                                    wires=tuple(physical[wire] for wire in gate.wires),
+                                )
+                                for gate in segment.circuit.instructions
+                            ),
+                        ),
+                        events=tuple(
+                            replace(
+                                event,
+                                allocation=tuple(
+                                    physical[wire] for wire in event.allocation
+                                ),
+                                scratch=tuple(physical[wire] for wire in event.scratch),
+                            )
+                            for event in segment.events
+                        ),
+                    )
+                )
         elif op.name == "qreg.replay":
             template = register_templates[op.attributes["callee"]]
             names, _, width = register_ports(template)
@@ -670,6 +755,7 @@ def schedule_register_program(
         elif op.name == "qreg.uncompute":
             segment = adjoint_value_candidate(computed.pop(op.operands[1].id))
             segments.append(segment)
+            arithmetic_workspace = max(arithmetic_workspace, segment.peak_workspace)
             gates = segment.circuit.instructions
         elif op.name == "qreg.phase" and "callee" not in op.attributes:
             angle = op.attributes["angle"]
@@ -858,6 +944,7 @@ def schedule_register_program(
                 ),
             )
             segments.append(segment)
+            arithmetic_workspace = max(arithmetic_workspace, segment.peak_workspace)
             if op.name == "qreg.compute":
                 computed[op.operands[1].id] = segment
             gates = segment.circuit.instructions
@@ -884,7 +971,9 @@ def schedule_register_program(
         if len(instructions) + len(gates) > max_operations:
             _fail("lowering.operations", "whole program exceeds operation budget", op)
         instructions.extend(gates)
-    if boolean_values and not used_boolean:
+        if op.name == "qreg.release":
+            live_locals.remove(op.operands[1].id)
+    if boolean_values and not used_boolean and not _allow_empty_boolean:
         if boolean_refusal is not None:
             raise boolean_refusal
         raise BooleanCandidateError("unsupported: no unsigned value segment")
@@ -916,7 +1005,6 @@ def schedule_register_program(
         scheduling,
         MappingProxyType(labels),
         tuple(segments),
-        local_width
-        + max(control_workspace, max((s.peak_workspace for s in segments), default=0)),
+        local_width + max(control_workspace, arithmetic_workspace),
         sum(s.recomputations for s in segments),
     )

@@ -121,6 +121,11 @@ class _Capture:
         self.serial = 0
         self.inline_calls = 0
         self.loop_steps = 0
+        self.expanded_callbacks = 0
+        self.unitary_templates: dict[
+            tuple[int, tuple[_Port, ...], tuple[tuple[str, ClassicalValue], ...]],
+            HybridProgram,
+        ] = {}
         self.cache: dict[
             tuple[int, tuple[int | None, ...], tuple[tuple[bool, int], ...]],
             tuple[HybridProgram, tuple[_Port, ...]],
