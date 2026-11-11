@@ -97,3 +97,11 @@ python -m pytest tests/unit/test_algorithms_qft.py \
   tests/unit/test_algorithms_package.py -q
 python tools/check_architecture.py
 ```
+
+`generalized_qsp.py` is the internal finite explicit-P/Q operation over the
+existing numerical phase recursion and Compiler signal sequence. It binds
+ordered named U ports and caller-owned clean workspace through
+`circuit.append(operation.make_on(...))`. It has no tensor-coefficient gradient
+or distribution claim. The [binding guide](../../../docs/development/GENERALIZED_QSP_OPERATION.md)
+contains an executable native example, workspace obligations and source-parity
+boundaries. Polynomial factories, symbolic signatures and synthesis remain open.
