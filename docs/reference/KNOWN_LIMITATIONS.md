@@ -1122,3 +1122,15 @@ integral storage and is not a scalability claim. Differentiable tensors must
 remain outside the static `MolecularProblem` snapshot path. See
 [the stage contract](../development/FERMION_ORBITAL_GRADIENTS.md) and run
 `python -m examples.algorithms.fermion_orbital_rotation`.
+
+## Resource-constrained fault-tolerant execution preview
+
+The [internal estimate](../guides/FAULT_TOLERANT_EXECUTION.md) adds caller-declared
+factory production, finite inventory, operation timing and provisioned physical
+footprints to existing compiler facts. It accepts static, explicitly decomposed
+unitary Clifford+T only. Every result declares all-to-all connectivity. It
+provides a feasible greedy schedule and separate lower bounds, with no placement,
+routing, communication, measurement, classical feed-forward or calibrated error
+model. Failure budgets and success probabilities are unavailable. The existing
+logical-resource estimator and its limitations remain unchanged. Public API
+promotion is pending the separate proposal.

@@ -372,3 +372,11 @@ Keep defaults deterministic, preserve requested precision and autograd, and
 avoid embedding device selection or performance assertions in an algorithm.
 Changes to root exports or protected result types require the public API change
 process rather than an algorithms-local compatibility wrapper.
+
+## Resource-constrained execution analysis
+
+The internal preview in `_fault_tolerant_execution.py` composes the compiler's
+dependency records with explicit factory, storage and code assumptions. It
+preserves the existing logical-resource report and exposes no stable API. See
+[the guide](../../docs/guides/FAULT_TOLERANT_EXECUTION.md) for the runnable JSON
+replay, hand-solvable checks and all-to-all limitations.
