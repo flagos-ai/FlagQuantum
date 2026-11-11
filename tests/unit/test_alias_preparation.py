@@ -13,6 +13,7 @@ from flagquantum.algorithms.primitives.alias_preparation import (
     alias_preparation_requirements,
 )
 from flagquantum.algorithms.primitives.alias_sampling import (
+    AliasSamplingTable,
     alias_sampling_table,
     sparse_alias_sampling_table,
 )
@@ -31,13 +32,24 @@ from tests.unit.test_source_qrom import source_qrom_gates
 pytestmark = pytest.mark.unit
 
 
-def layout(table):
+AliasBinding = tuple[
+    tuple[int, ...],
+    tuple[int, ...],
+    tuple[int, ...],
+    tuple[int, ...],
+    int,
+    tuple[int, ...],
+    tuple[int, ...],
+]
+
+
+def layout(table: AliasSamplingTable) -> tuple[AliasBinding, tuple[int, ...]]:
     width = (table.selection_size - 1).bit_length()
     address = (len(table.keep) - 1).bit_length() if table.indices is not None else 0
     work, slots = alias_preparation_requirements(table)
     cursor = iter(range(2 * width + 2 * table.mu + address + 1 + work))
 
-    def take(n):
+    def take(n: int) -> tuple[int, ...]:
         return tuple(next(cursor) for _ in range(n))
 
     selection, sigma, sparse, alt, keep = (
@@ -47,7 +59,9 @@ def layout(table):
     return (selection, sigma, alt, keep, flag, take(work), tuple(range(slots))), sparse
 
 
-def expected_state(table, bound, sparse):
+def expected_state(
+    table: AliasSamplingTable, bound: AliasBinding, sparse: tuple[int, ...]
+) -> torch.Tensor:
     sel, sigma, alt, keep, flag, work, _ = bound
     logical_size = flag + 1
     out = torch.zeros(1 << (logical_size + len(work)), dtype=torch.complex128)

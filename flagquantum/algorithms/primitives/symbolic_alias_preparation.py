@@ -15,8 +15,6 @@ from ...compiler._component_trace.symbolic_math import (
     SymbolicInt,
     SymbolicReal,
     bit_length,
-    ceil,
-    log2,
     smax,
 )
 from ...compiler.registers.comparison.comparison_resource_model import (
@@ -29,6 +27,7 @@ from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_qrom_resource_formula,
 )
+from .alias_discretization import alias_precision_bits
 
 
 def alias_probability_bits(rows: SymbolicInt, precision: SymbolicReal) -> SymbolicInt:
@@ -37,8 +36,7 @@ def alias_probability_bits(rows: SymbolicInt, precision: SymbolicReal) -> Symbol
         raise ValueError("Alias preparation requires a positive row count")
     if isinstance(precision, (int, float)) and not 0 < precision < float("inf"):
         raise ValueError("Alias precision must be positive and finite")
-    bits = ceil(log2(1 / (precision * rows)))
-    return max(1, bits) if isinstance(bits, int) else bits
+    return alias_precision_bits(rows, precision)
 
 
 @dataclass(frozen=True)

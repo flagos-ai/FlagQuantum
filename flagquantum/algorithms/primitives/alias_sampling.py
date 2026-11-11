@@ -7,8 +7,9 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from itertools import accumulate, pairwise
-from math import ceil, floor, isfinite, log2
+from math import isfinite
+
+from .alias_discretization import alias_precision_bits, reversible_sampling_rows
 
 
 @dataclass(frozen=True)
@@ -67,7 +68,7 @@ def _normalization(weights: Sequence[float], precision: float) -> float:
 def _table(
     weights: Sequence[float], epsilon: float
 ) -> tuple[tuple[int, ...], tuple[int, ...], int]:
-    mu = max(1, ceil(log2(1 / (epsilon * len(weights)))))
+    mu = alias_precision_bits(len(weights), epsilon)
     alternate, keep = alias_numerators(weights, mu=mu)
     return alternate, keep, mu
 
@@ -79,28 +80,7 @@ def alias_numerators(
     _normalization(weights, 1.0)
     if type(mu) is not int or mu < 1:
         raise ValueError("Alias bit precision must be a positive integer")
-    size = len(weights)
-    per_row = 1 << mu
-    cumulative = tuple(accumulate(weights, initial=0))
-    rounded = (
-        floor(value / cumulative[-1] * (per_row * size) + 0.5) for value in cumulative
-    )
-    bins = [right - left for left, right in pairwise(rounded)]
-
-    alternate = list(range(size))
-    keep = [0] * size
-    donor = 0
-    # Preserve the source two passes and donor order, including self-alias rows.
-    for _ in range(2):
-        for i in range(size):
-            if bins[i] >= per_row:
-                continue
-            while bins[donor] <= per_row:
-                donor += 1
-            bins[donor] -= per_row - bins[i]
-            alternate[i] = donor
-            keep[i] = bins[i]
-            bins[i] = per_row
+    alternate, keep, _ = reversible_sampling_rows(weights, sub_bit_precision=mu)
     return tuple(alternate), tuple(keep)
 
 
