@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 import torch
 
+from flagquantum.compiler.registers.component_graph import iter_component_calls
 from flagquantum.compiler.registers.component_tensor_expansion import (
     expand_components_for_tensor,
 )
@@ -43,12 +44,15 @@ def test_one_explicit_binding_selects_and_supplies_the_same_leaf() -> None:
     assert providers.has_custom_tensor("h")
     assert not providers.has_custom_tensor("missing")
 
-    selected, selected_order = expand_components_for_tensor(
+    selected, _instance_ids = expand_components_for_tensor(
         record, providers.has_custom_tensor, full_flatten=False
     )
     like = torch.empty((), dtype=torch.complex128)
     actual = contract_component_tensors(
-        selected, selected_order, providers.supply, like
+        selected,
+        tuple(i for i, _, _ in iter_component_calls(selected)),
+        providers.supply,
+        like,
     )
     np.testing.assert_allclose(
         actual.numpy(), source.tensor_contract(), atol=2e-14, rtol=0
@@ -83,12 +87,12 @@ def test_provider_replacement_preserves_consumer_and_tensor_gradient() -> None:
         yield TensorNetworkNode(1 / scale, ())
 
     def consume(provider: ComponentTensorProviders[[Ports, Ports]]) -> torch.Tensor:
-        selected, positions = expand_components_for_tensor(
+        selected, _instance_ids = expand_components_for_tensor(
             record, provider.has_custom_tensor, full_flatten=False
         )
         return contract_component_tensors(
             selected,
-            positions,
+            tuple(i for i, _, _ in iter_component_calls(selected)),
             provider.supply,
             torch.empty((), dtype=torch.complex128),
         )
@@ -141,7 +145,7 @@ def test_mixed_provider_receives_shared_fresh_label_callback() -> None:
     )
     actual = contract_component_superoperator(
         selected[0],
-        selected[1],
+        tuple(i for i, _, _ in iter_component_calls(selected[0])),
         providers.supply,
         torch.empty((), dtype=torch.complex128),
     )

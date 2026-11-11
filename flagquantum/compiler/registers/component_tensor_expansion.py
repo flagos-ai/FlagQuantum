@@ -31,7 +31,9 @@ def expand_components_for_tensor(
     in the existing source traversal order, including atomic calls. Classifier
     errors propagate; atomic/mixed bodies remain leaves under the existing
     expansion rules. Retained instance labels, exact outputs, workspace and the
-    depth bound are owned by expand_component_calls. The input stays immutable.
+    depth bound are owned by expand_component_calls. The input stays immutable. Returned labels are persistent occurrence IDs,
+    not operation positions; derive Simulation visitation positions afterward
+    using iter_component_calls on the selected entry.
 
     This transforms a graph only: it does not execute tensor callbacks, resolve
     missing decompositions, construct a root wrapper, or select a simulator.
