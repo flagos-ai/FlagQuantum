@@ -1132,3 +1132,26 @@ refused. Reset keeps physical storage allocated and destroys prior correlations;
 it is not a clean uncompute or postselection. Density memory and operation
 budgets remain enforced. This does not yet admit the original thermal program's
 fifty-cycle compact native channel replay.
+
+## Native unsigned numeric predicate views
+
+Native `control` accepts static bit indices and nonempty, unit-step slices of
+unsigned integer `QNum` parents in bounded comparisons. For example,
+`control(x[1:4] == 2, lambda: X(flag))` reads bits 1, 2 and 3, with bit 1 as
+the least-significant bit of the three-bit value. Views share their parent's
+physical storage; they do not allocate or copy a data register. Predicate
+computation and cleanup still use the ordinary checked workspace scheduler.
+The existing eight-input-bit predicate budget counts unique selected physical
+bits, including repeated and algebraically cancelled reads. Predicate-X,
+supported rotations, constant branch phases, checked callbacks and inverse
+composition reuse the same word compiler and lowering.
+
+Parent borrowing remains conservative at register granularity: a controlled
+action cannot modify any part of a register read by its predicate, even when
+the bit ranges are disjoint. A sliced helper actual cannot itself be used as a
+numeric predicate parent. Negative, empty, strided, dynamic or out-of-range
+views, signed/fractional parents and read sets exceeding eight bits refuse
+before lowering. This addition does not promise general sliced numeric
+assignment, mutable subword arithmetic or signed/fixed-point reinterpretation.
+
+Run `python -m pytest tests/integration/test_synthesis_native_predicate_views.py -q`.

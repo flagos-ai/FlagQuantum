@@ -14,6 +14,7 @@ from .frontend_matrix import capture_controlled_unitary
 from .frontend_numeric import has_numeric_reads, needs_numeric, reject_numeric_reads
 from .frontend_phase import capture_polynomial_phase
 from .frontend_ports import program_ports
+from .frontend_predicate_views import has_predicate_views, predicate_views
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import gate_target, locations
 from .program_types import (
@@ -61,6 +62,9 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         )
     condition, callback = node.args
     assert isinstance(callback, ast.Lambda)
+    view_width = None
+    if is_composite_predicate(condition) and has_predicate_views(owner, condition):
+        condition, view_width = predicate_views(owner, condition)
     numeric_condition = has_numeric_reads(owner, condition)
     numeric_predicate = needs_numeric(owner, condition) and is_composite_predicate(
         condition
@@ -150,6 +154,7 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     if (
         operation is phase
         and len(body.args) == 2
+        and view_width is None
         and not numeric_condition
         and not (numeric_predicate and phase_constant is not None)
         and (
@@ -193,7 +198,12 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     predicate_index = 0
     if predicate_computed:
         graph, inputs = owner.capture_expression(condition, node)
-        if sum(register_width(value) for value in inputs) > 8:
+        input_width = (
+            sum(register_width(value) for value in inputs)
+            if view_width is None
+            else view_width
+        )
+        if input_width > 8:
             _error(
                 owner.source,
                 condition,

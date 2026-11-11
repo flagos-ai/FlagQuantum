@@ -167,12 +167,31 @@ def locations(
                     "a scalar element cannot be indexed again",
                 )
             base = base.value
-        if not isinstance(base, ast.Name) or base.id not in owner.array_names:
+        ports = owner.alias_ports if owner.aliases is not None else owner.ports
+        assert ports is not None
+        numeric = (
+            isinstance(base, ast.Name)
+            and base.id in ports
+            and ports[base.id].kind == "qnum"
+        )
+        if numeric:
+            assert isinstance(base, ast.Name)
+            port = ports[base.id]
+            if port.signed or port.fractional_bits:
+                _error(
+                    owner.source,
+                    node,
+                    "program.view",
+                    "numeric bit views require an unsigned integer register",
+                )
+        if not isinstance(base, ast.Name) or (
+            base.id not in owner.array_names and not numeric
+        ):
             _error(
                 owner.source,
                 node,
                 "program.view",
-                "index or slice a declared QArray[QBit]",
+                "index or slice a declared QArray[QBit] or unsigned integer QNum",
             )
         view = locations(owner, node.value, depth + 1)
         if isinstance(node.slice, ast.Slice):

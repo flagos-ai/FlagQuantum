@@ -56,6 +56,15 @@ class QNum(_QuantumRegister):
         _width_spec(spec)
         return GenericAlias(cls, spec)
 
+    @overload
+    def __getitem__(self, index: int) -> QBit: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> QNum: ...
+
+    def __getitem__(self, index: int | slice) -> QNum:
+        raise TypeError("quantum numeric views are captured inside qfunc")
+
     def __add__(self, other: QNum | float) -> QNum:
         raise TypeError("quantum expressions are captured inside qfunc, not executed")
 
