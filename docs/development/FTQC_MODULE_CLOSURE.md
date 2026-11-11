@@ -52,7 +52,8 @@ phase totals are generated from parent decisions, not test count.
 [Matrix numerics](MATRIX_NUMERICS.md) closes Q-0757 and Q-0758. The parent ledger
 now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTION_CLOSURE.md)
 (Q-0762, Q-0763, Q-0767), and the [Jacobi-Anger original test file](JACOBI_ANGER_SOURCE_AUDIT.md)
-(Q-0765), for **6 closed files and 1,274 open files**. These file
+(Q-0765), and the [permutation original test file](PERMUTATION_SOURCE_AUDIT.md)
+(Q-0760), for **7 closed files and 1,273 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
 
@@ -72,3 +73,9 @@ Bessel interface and observes eight exceptional search inputs in bounded
 processes. Q-0765 closes after all 24 original tests also pass with native
 bindings. The source implementation parent Q-0764 stays open for the inherited
 search/heuristic limitation under the same frozen closure rules.
+
+The [permutation source audit](PERMUTATION_SOURCE_AUDIT.md) covers dense graph
+discovery and ordered partial traversal, reusing the existing append emitter.
+Q-0760 closes after both original tests run unchanged and with native bindings.
+Q-0759 remains open for inherited partial-map prefix loss and its invalid
+keyword example; source behavior is preserved rather than silently repaired.

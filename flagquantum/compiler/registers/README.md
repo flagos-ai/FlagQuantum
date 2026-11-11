@@ -460,3 +460,10 @@ The [packed/shaped-unitary GQSP guide](../../../docs/development/GQSP_SHAPED_UNI
 keeps typed scalar and row-major array ports behind that same callback, with
 source Split/Join control and adjoint behavior, full branch amplitudes and
 independent gate-model accounting.
+
+`sorting/cycle_decomposition.py` owns source-ordered classical dense and partial
+cycle discovery; `sorting/permutation.py` retains validation and physical register
+emission. Dense discovery lazily uses the optional NetworkX provider; partial
+traversal has no graph dependency. See [the complete source audit](../../../docs/development/PERMUTATION_SOURCE_AUDIT.md)
+for provider ownership, inherited partial-map defects, original-test replacement,
+append consumers and separate primitive/model resource counts.
