@@ -455,3 +455,8 @@ The [entangling-unitary GQSP guide](../../../docs/development/GQSP_ENTANGLING_UN
 extends that same consumer to two named QBit ports and CNOT-to-Toffoli control
 dispatch, with full source Instructions, branch amplitudes, clean work and
 independent resource-model evidence.
+
+The [packed/shaped-unitary GQSP guide](../../../docs/development/GQSP_SHAPED_UNITARY.md)
+keeps typed scalar and row-major array ports behind that same callback, with
+source Split/Join control and adjoint behavior, full branch amplitudes and
+independent gate-model accounting.
