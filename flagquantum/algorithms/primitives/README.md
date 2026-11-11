@@ -104,4 +104,12 @@ ordered named U ports and caller-owned clean workspace through
 `circuit.append(operation.make_on(...))`. It has no tensor-coefficient gradient
 or distribution claim. The [binding guide](../../../docs/development/GENERALIZED_QSP_OPERATION.md)
 contains an executable native example, workspace obligations and source-parity
-boundaries. Polynomial factories, symbolic signatures and synthesis remain open.
+boundaries. Symbolic factories/signatures and synthesis remain open; the finite factory
+and declared model are documented below.
+
+The finite GQSP factory now composes existing grid verification, root complement
+and lazy phases, with an explicit FFT provider for verification. Signal resource
+calls retain source precision budgets. `generalized_qsp_model.py` independently
+composes caller-priced source call counts through shared ComponentCost; it does
+not infer physical or synthesized prices. The [factory/model guide](../../../docs/development/GENERALIZED_QSP_FACTORY_MODEL.md)
+provides the native append example and precise acceptance boundaries.

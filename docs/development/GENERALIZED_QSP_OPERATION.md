@@ -28,9 +28,9 @@ adapter validates the circuit width, preserves its batch size and composes the
 same emitted IR. A failing emitter does not partially append its gate prefix.
 
 This slice handles explicit finite coefficient pairs, concrete layouts and the
-Compiler's nonnegative Python-integer Laurent offset. Polynomial factories,
-symbolic metadata, shaped/dtype signatures, precision propagation, synthesis
-and resource-model interfaces remain open. Continuous rotations have no
+Compiler's nonnegative Python-integer Laurent offset. The finite polynomial factory, precision declarations and resource model are
+now covered by [GENERALIZED_QSP_FACTORY_MODEL.md](GENERALIZED_QSP_FACTORY_MODEL.md).
+Symbolic metadata, shaped/dtype signatures and physical synthesis remain open. Continuous rotations have no
 Clifford+T synthesis-error claim. Numerical input coefficients are classical
 values, not trainable tensors. There is no gradient or scalability claim.
 
