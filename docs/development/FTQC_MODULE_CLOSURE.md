@@ -129,3 +129,11 @@ domains and bound evaluators. The complete Add table reconstructs the source
 matrix and matches every measured forward branch with clean work. Q-0882 and
 Q-0883 remain open for source-wide graph and original test replacement gaps.
 The frozen 1,280 parents and 1,172 checked child records remain unchanged.
+
+The [field graph value slice](CLASSICAL_FIELD_REGISTERS.md) connects explicit
+Simulation field encoders to already admitted binary-field Core ports. Integer
+and field consumers replace separate traversal with shared binding/collection;
+field storage and validators stay with the existing numerical codec. Complete
+field-add tables/matrices, original gate operands and complex append roundtrips
+pass. Q-0882 and Q-0883 remain open for source-wide resolution and original test
+replacement. No additional parent or child acceptance count is inferred.

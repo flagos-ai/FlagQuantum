@@ -838,6 +838,13 @@ still owns graph ordering and transformations. See [classical graph execution](.
 for exhaustive call-by-call comparisons, complex measurement branches and the
 remaining finite-field and source-wide boundaries.
 
+`classical_field_registers.py` supplies finite-field validation and field-array
+storage to the shared binding/collection traversal in `classical_registers.py`.
+The SSA state accepts explicit matching `field_encodings`; Core admission stays
+unchanged. See [field graph values](../../docs/development/CLASSICAL_FIELD_REGISTERS.md)
+for source dtype/error comparisons, complete field-add matrices and append
+roundtrips, including the retained empty-array finalization difference.
+
 `classical_truth_table.py` enumerates explicit scalar domain providers and bound
 numerical actions, including the existing SSA classical evaluator. It preserves
 source product order, output identity and text formatting; input arrays remain

@@ -92,8 +92,8 @@ No hardware, GPU or distributed performance claim is made.
 
 ## Explicit remaining boundaries
 
-Q-0882 and Q-0883 remain open. The complete source includes finite-field/dtype
-traversal, truth-table/formatting helpers and foreign lazy decomposition exception
+Q-0882 and Q-0883 remain open. The complete source includes source-wide dtype
+traversal and foreign lazy decomposition exception
 semantics beyond this slice. Underlying numerical codecs support signed values,
 but Core executable graph admission still excludes signed metadata, so this is
 not full signed graph support. Non-call primitive entries, conditional calls and
@@ -105,3 +105,12 @@ can collect that value. Tests retain the original failure and document the
 representation difference rather than modifying the reference. No whole-file
 closure, new child ID or larger completion denominator follows from this batch;
 G3 remains unstarted.
+
+## Subsequent field support
+
+[Field binding and collection](CLASSICAL_FIELD_REGISTERS.md) now supplies explicit
+matching `field_encodings` for binary-field graph ports. The original integer-only
+admission described above is historical. Shared traversal replaces the former
+integer-only loops; wider Core admission and automatic dtype resolution remain
+open. [Truth-table inspection](CLASSICAL_TRUTH_TABLE.md) also supplies the two
+source table utilities without changing graph ownership.
