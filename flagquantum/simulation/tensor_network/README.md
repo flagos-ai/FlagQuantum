@@ -202,3 +202,12 @@ input axes. Internal traces still use the existing helper. See
 [input discard effects](../../../docs/development/COMPONENT_TENSOR_NODES.md#direct-input-discard-effects-graph77)
 for the locked source's missing-input failure, the executable Cast-wrapped
 reference, full partial-trace channels and separate physical adaptation costs.
+
+`component_dense.contract_component_tensors` and
+`component_dense.contract_component_superoperator` compose existing SSA numerical
+wiring and register grouping/contraction for an explicitly selected graph.
+Compiler supplies root selection and visitation positions; Simulation imports
+no Compiler transform. Existing pure/mixed supplier signatures, autograd and
+empty-network refusals are preserved. See
+[selected component dense contraction](../../../docs/development/COMPONENT_DENSE.md)
+for complete source channels, all measured branches and separate cost evidence.
