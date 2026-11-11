@@ -551,6 +551,12 @@ def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None
     )
     assert isolated["with"]["torch-spec"] == "torch==${{ matrix.torch }}"
     commands = "\n".join(str(step.get("run", "")) for step in job["steps"])
+    assert not any(
+        step.get("uses", "").startswith("actions/checkout@") for step in job["steps"]
+    )
+    assert 'test "$sha" = "$GITHUB_SHA"' in commands
+    assert 'git checkout --force --detach "$sha"' in commands
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in commands
     assert "importlib.util.find_spec(name) is None" in commands
     assert "tests/integration/test_native_chemistry_driver.py" in commands
     assert _document("ci.yml")["jobs"]["package"]["runs-on"] == "ubuntu-22.04"
