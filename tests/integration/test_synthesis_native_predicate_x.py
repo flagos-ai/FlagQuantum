@@ -118,14 +118,19 @@ def test_alias_initialization_width_const_and_output_refusal(
         synth.synthesize(definition(ports, body, extra))
 
 
-def test_partial_borrowed_predicate_cannot_be_read_as_a_whole_register() -> None:
+def test_partial_borrowed_scalar_predicate_reads_only_its_selected_bit() -> None:
     extra = (
         "@qfunc\ndef shift(c:QBit,target:QBit):\n    control(c>=1,lambda:X(target))\n"
     )
     entry = definition(
         "c:Output[QArray[QBit]],target:Output[QBit]",
-        "allocate(2,c)\nallocate(target)\nshift(c[0],target)",
+        "allocate(2,c)\nallocate(target)\nhadamard_transform(c)\nshift(c[0],target)",
         extra,
     )
-    with pytest.raises(ValueError, match="complete raw registers"):
-        synth.synthesize(entry)
+    program = synth.synthesize(entry)
+    reference = fq.Circuit(3, dtype=torch.complex128).h(0).h(1).cx(1, 2)
+    actual = fq.run(program).statevector().reshape(8, -1)
+    torch.testing.assert_close(
+        actual[:, 0], reference.state().flatten(), atol=1e-12, rtol=0
+    )
+    assert torch.count_nonzero(actual[:, 1:]) == 0

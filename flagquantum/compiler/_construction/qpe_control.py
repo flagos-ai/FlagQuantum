@@ -153,7 +153,7 @@ def emit_controlled_effect(
         and "control_index" not in attrs
     ):
         effect(op.name, (*values, control), **dict(attrs), control_index=bit)
-    elif op.name == "qreg.inplace_prepare_amplitudes" and "control_count" not in attrs:
+    elif op.name == "qreg.inplace_prepare_amplitudes":
         locations = (
             tuple(zip(values, attrs["indices"], strict=True))
             if "indices" in attrs
@@ -161,11 +161,18 @@ def emit_controlled_effect(
                 (values[0], i) for i in reversed(range(register_width(values[0])))
             )
         )
+        count = attrs.get("control_count", 0) + 1
+        if count > 7 or len(locations) >= 8:
+            raise ValueError("controlled preparation exceeds eight indexed locations")
         selected = ((control, bit), *locations)
         effect(
             op.name,
             tuple(value for value, _ in selected),
-            **{**attrs, "control_count": 1, "indices": tuple(i for _, i in selected)},
+            **{
+                **attrs,
+                "control_count": count,
+                "indices": tuple(i for _, i in selected),
+            },
         )
     elif op.name == "qreg.pair_gate" and attrs["gate"] == "cry":
         control_wire, target_wire = attrs.get("indices", (0, 0))

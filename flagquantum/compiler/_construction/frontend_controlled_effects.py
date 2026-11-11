@@ -11,7 +11,7 @@ from .frontend_classical import bind_helper
 from .frontend_evolution import flush_evolutions
 from .frontend_ports import program_ports
 from .frontend_python import _error, _QuantumFunction
-from .frontend_views import locations
+from .frontend_views import locations, packed_locations
 from .register_profile import _verify_borrowed_effects
 
 if TYPE_CHECKING:
@@ -40,7 +40,14 @@ def capture_controlled_effects(
             )
         arguments = (callback.args[-1],)
         formal = ()
-    views = tuple(locations(owner, argument) for argument in arguments)
+    views = tuple(
+        (
+            packed_locations(owner, argument)
+            if not formal or formal[position].kind == "qnum"
+            else locations(owner, argument)
+        )
+        for position, argument in enumerate(arguments)
+    )
     if any(
         any(value in inputs for value, _ in view)
         and (not formal or formal[position].role != "const")

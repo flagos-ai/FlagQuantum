@@ -148,40 +148,31 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
         bound = 0.0
     width = len(values).bit_length() - 1
     if function in (inplace_prepare_amplitudes, inplace_prepare_state):
-        if isinstance(output, (ast.List, ast.Tuple)):
-            targets = tuple(reversed(packed_locations(owner, output)))
-            if len(targets) != width or len(set(targets)) != len(targets):
-                _error(
-                    owner.source,
-                    output,
-                    "program.prepare",
-                    "joint preparation needs distinct bits matching the vector width",
-                )
+        targets = (
+            packed_locations(owner, output)
+            if isinstance(output, (ast.List, ast.Tuple))
+            else locations(owner, output)
+        )
+        if len(targets) != width or len(set(targets)) != len(targets):
+            _error(
+                owner.source,
+                output,
+                "program.prepare",
+                "inplace preparation needs distinct bits matching the vector width",
+            )
+        target = targets[0][0]
+        whole = targets == tuple((target, bit) for bit in range(register_width(target)))
+        if not whole or isinstance(output, (ast.List, ast.Tuple)):
+            ordered = tuple(reversed(targets))
             owner.emit(
                 "qreg.inplace_prepare_amplitudes",
                 node,
-                tuple(value for value, _ in targets),
+                tuple(value for value, _ in ordered),
                 amplitudes=values,
                 bound=bound,
-                indices=tuple(index for _, index in targets),
+                indices=tuple(index for _, index in ordered),
             )
             return
-        if not isinstance(output, ast.Name):
-            _error(
-                owner.source,
-                output,
-                "program.view",
-                "inplace preparation requires a complete register",
-            )
-        targets = locations(owner, output)
-        target = targets[0][0]
-        if targets != tuple((target, bit) for bit in range(register_width(target))):
-            _error(
-                owner.source,
-                output,
-                "program.view",
-                "inplace preparation requires a complete register",
-            )
         if register_width(target) != width:
             _error(
                 owner.source,

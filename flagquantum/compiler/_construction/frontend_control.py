@@ -203,6 +203,15 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             if view_width is None
             else view_width
         )
+        if view_width is None and owner.aliases is not None:
+            input_width = len(
+                {
+                    location
+                    for child in ast.walk(condition)
+                    if isinstance(child, ast.Name) and child.id in owner.aliases
+                    for location in locations(owner, child)
+                }
+            )
         if input_width > 8:
             _error(
                 owner.source,

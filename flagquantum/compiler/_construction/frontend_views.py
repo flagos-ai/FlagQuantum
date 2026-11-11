@@ -341,13 +341,29 @@ def inline_mutable(
             )
     classical, arguments = bind_helper(owner, node, definition)
     bindings = {
-        port.name: locations(owner, argument)
+        port.name: (
+            packed_locations(owner, argument)
+            if port.kind == "qnum"
+            else locations(owner, argument)
+        )
         for port, argument in zip(ports, arguments, strict=True)
+    }
+    explicit_numeric = {
+        port.name
+        for port, argument in zip(ports, arguments, strict=True)
+        if port.kind == "qnum" and isinstance(argument, (ast.List, ast.Tuple))
     }
     increment_helper = is_increment_helper(definition)
     specialized = []
-    for port in ports:
+    for port, argument in zip(ports, arguments, strict=True):
         view = bindings[port.name]
+        if len(set(view)) != len(view):
+            _error(
+                owner.source,
+                node,
+                "program.borrow",
+                "helper views require distinct physical locations",
+            )
         actual = next(
             owner.ports[name]
             for name, value in owner.registers.items()
@@ -356,7 +372,20 @@ def inline_mutable(
         whole = view == tuple(
             (view[0][0], bit) for bit in range(register_width(view[0][0]))
         )
-        if whole and increment_helper and port.kind == "qnum" and actual.kind != "qnum":
+        base = argument
+        while isinstance(base, ast.Subscript):
+            base = base.value
+        visible = owner.alias_ports if owner.aliases is not None else owner.ports
+        assert visible is not None
+        actual_kind = (
+            visible[base.id].kind if isinstance(base, ast.Name) else actual.kind
+        )
+        if (
+            increment_helper
+            and port.kind == "qnum"
+            and actual_kind != "qnum"
+            and port.name not in explicit_numeric
+        ):
             _error(
                 owner.source,
                 node,
@@ -387,6 +416,23 @@ def inline_mutable(
                 signed=actual.signed,
                 fractional_bits=actual.fractional_bits,
             )
+        if port.kind == "qnum" and not whole:
+            if (
+                port.signed
+                or port.fractional_bits
+                or any(
+                    candidate.signed or candidate.fractional_bits
+                    for name, candidate in owner.ports.items()
+                    if owner.registers.get(name) in {value for value, _ in view}
+                )
+            ):
+                _error(
+                    owner.source,
+                    node,
+                    "program.numeric.format",
+                    "partial or composed numeric views require raw unsigned storage",
+                )
+            port = replace(port, width=len(view))
         specialized.append(port)
     ports = tuple(specialized)
     occupied: set[tuple[Value, int]] = set()

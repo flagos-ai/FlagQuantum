@@ -714,3 +714,17 @@ These are local CPU correctness results, not accelerator or distributed claims.
 The complete native double-slit program has separate independent mathematical
 and Circuit acceptance tests; the related application Notebook remains a
 separate workflow.
+
+## Native unsigned numeric borrows
+
+Maturity: `development_evidence`. Raw unsigned QNum helpers borrow static
+subwords and explicitly ordered storage without a data copy or allocation.
+Predicates resolve formal-relative slices; bounded modular increments preserve
+nonselected bits, wraparound and cross-component carry. Independent Circuit
+permutations check complete basis domains and complex coherent inputs, including
+controlled updates, adjoint, within/apply and clean workspace. Indexed in-place
+preparation composes on partial storage and through nested controls with its
+existing eight-location bound. Const, initialization, format, overlap, Output
+escape and actual resource refusals remain checked. Signed/fractional sliced
+arithmetic and dynamic views remain unsupported. These local CPU tests do not
+establish native Vlasov acceptance or release readiness.

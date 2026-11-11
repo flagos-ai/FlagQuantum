@@ -1148,13 +1148,59 @@ composition reuse the same word compiler and lowering.
 
 Parent borrowing remains conservative at register granularity: a controlled
 action cannot modify any part of a register read by its predicate, even when
-the bit ranges are disjoint. A sliced helper actual cannot itself be used as a
-numeric predicate parent. Negative, empty, strided, dynamic or out-of-range
-views, signed/fractional parents and read sets exceeding eight bits refuse
-before lowering. This addition does not promise general sliced numeric
-assignment, mutable subword arithmetic or signed/fixed-point reinterpretation.
+the bit ranges are disjoint. A raw unsigned sliced or explicitly composed
+numeric helper actual can itself be used as a predicate parent; nested slices
+are relative to the formal word. Negative, empty, strided, dynamic or
+out-of-range views, signed/fractional parents and read sets exceeding eight bits
+refuse before lowering. This does not promise general sliced numeric assignment
+or signed/fixed-point reinterpretation.
 
 Run `python -m pytest tests/integration/test_synthesis_native_predicate_views.py -q`.
+
+## Native unsigned borrowed words
+
+Plain `QNum` helper ports borrow static unsigned slices and explicit lists or
+tuples of up to eight storage components in least-significant-first order.
+No data register is copied or allocated. Raw `+=`/`-=` updates wrap modulo the
+selected width, including cross-component carry; nonselected bits are preserved.
+Formal widths, distinct initialized writable locations, Const, alias and Output
+escape checks still apply. Signed/fractional and dynamic views are unsupported.
+This bounded extension supersedes the earlier whole-register-only restrictions
+for raw numeric helpers; it does not introduce general mutable slice assignment.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import (
+    Output, QBit, QNum, X, allocate, control, hadamard_transform, qfunc, synthesize,
+)
+
+@qfunc
+def mark(word: QNum, flag: QBit) -> None:
+    control(word == 2, lambda: X(flag))
+
+@qfunc
+def main(x: Output[QNum[4]], flag: Output[QBit]) -> None:
+    allocate(x)
+    allocate(flag)
+    hadamard_transform(x)
+    mark(x[1:3], flag)
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "flag"))))
+```
+
+The flag is one exactly for `x` in `{4, 5, 12, 13}`. All sixteen inputs have
+probability `1/16`, with clean predicate workspace. The example uses a borrowed
+word rather than requiring a copied low-bit register or physical wire numbers.
+
+In-place real preparation can also act on checked partial or composed storage.
+It applies the same full unitary on every input column, including entangled and
+nonzero storage. Adjoint and within/apply preserve this unitary. Nested scalar
+controls reuse the existing indexed preparation effect, with at most eight
+combined control/target locations; actual gate and workspace limits still apply.
+
+Run `python -m pytest tests/integration/test_synthesis_native_numeric_borrows.py -q`.
 
 ## Shared native borrowed helpers
 

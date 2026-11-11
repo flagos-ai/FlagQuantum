@@ -160,9 +160,9 @@ def test_uninitialized_and_const_storage_refuse() -> None:
         synth.synthesize(definition("q:Output[QNum[2]]", "allocate(q)\nbad(q)", helper))
 
 
-@pytest.mark.parametrize("view", ["q[0]", "q[0:2]", "q[1:3]"])
-def test_views_are_not_silently_treated_as_complete_registers(view: str) -> None:
-    with pytest.raises(HybridVerificationError, match="complete register"):
+@pytest.mark.parametrize("view", ["q[0]", "q[0:1]", "q[1:3:2]"])
+def test_wrong_width_or_strided_views_refuse(view: str) -> None:
+    with pytest.raises(HybridVerificationError):
         synth.synthesize(
             definition(
                 "q:Output[QArray[QBit]]",
@@ -214,13 +214,19 @@ def test_complete_array_uses_same_big_endian_unitary() -> None:
 @pytest.mark.parametrize(
     "operation", ["inplace_prepare_amplitudes([0.5,-0.5,0.5,0.5],0,q)", "prepare(q)"]
 )
-def test_quantum_control_cannot_bypass_initial_admission(operation: str) -> None:
+def test_quantum_control_of_preparation_matches_independent_unitary(
+    operation: str,
+) -> None:
     helper = "@qfunc\ndef prepare(q:QNum):\n    inplace_prepare_amplitudes([0.5,-0.5,0.5,0.5],0,q)\n"
-    with pytest.raises(HybridVerificationError):
-        synth.synthesize(
-            definition(
-                "q:Output[QNum[2]],c:Output[QBit]",
-                f"allocate(q)\nallocate(c)\nH(c)\ncontrol(c,lambda:{operation})",
-                helper,
-            )
+    program = synth.synthesize(
+        definition(
+            "q:Output[QNum[2]],c:Output[QBit]",
+            f"allocate(q)\nallocate(c)\nH(c)\nX(q[0])\ncontrol(c,lambda:{operation})",
+            helper,
         )
+    )
+    controlled = torch.eye(8, dtype=torch.complex128)
+    controlled[4:, 4:] = independent_unitary(VECTORS[0])
+    reference = fq.Circuit(3, dtype=torch.complex128).h(2).x(1)
+    reference.any(2, 0, 1, matrix=controlled)
+    compare_states(program, reference, ("q", "c"))

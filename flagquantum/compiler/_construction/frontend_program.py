@@ -17,6 +17,7 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .frontend_borrowed_expression import borrowed_expression
 from .frontend_calls import capture_helper_call
 from .frontend_classical import ClassicalValue, bind_inputs, real_number
 from .frontend_control import capture_control
@@ -501,22 +502,15 @@ class _Body:
             )
         names = tuple(name for name in visible if name in used)
 
-        def numeric_input(name: str) -> Value:
-            node = ast.copy_location(ast.Name(id=name, ctx=ast.Load()), expr)
-            if self.aliases is None:
-                return self.register(node)
-            view = locations(self, node)
-            value = view[0][0]
-            if view != tuple((value, bit) for bit in range(register_width(value))):
-                _error(
-                    self.source,
-                    node,
-                    "program.borrow",
-                    "predicate inputs must borrow complete raw registers in logical bit order",
+        if self.aliases is None:
+            actuals = tuple(
+                self.register(
+                    ast.copy_location(ast.Name(id=name, ctx=ast.Load()), expr)
                 )
-            return value
-
-        actuals = tuple(numeric_input(name) for name in names)
+                for name in names
+            )
+        else:
+            expr, names, actuals = borrowed_expression(self, expr, names)
         expression_key = (
             self.source.filename,
             self.source.location(expr).line,

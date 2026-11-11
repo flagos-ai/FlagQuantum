@@ -9,7 +9,6 @@ from typing import TYPE_CHECKING, cast
 from .._phase_polynomial import Location
 from .frontend_python import _error
 from .frontend_views import locations
-from .register_profile import register_width
 
 if TYPE_CHECKING:
     from .frontend_program import _Body
@@ -48,7 +47,7 @@ def predicate_views(owner: _Body, expression: ast.expr) -> tuple[ast.expr, int]:
     ports = dict(visible)
 
     class Views(ast.NodeTransformer):
-        def view(self, node: ast.Subscript) -> tuple[ast.Name, tuple[Location, ...]]:
+        def view(self, node: ast.Subscript) -> tuple[ast.Name, tuple[int, ...]]:
             base = node.value
             while isinstance(base, ast.Subscript):
                 base = base.value
@@ -62,17 +61,9 @@ def predicate_views(owner: _Body, expression: ast.expr) -> tuple[ast.expr, int]:
                     "numeric predicate slices require an unsigned integer QNum",
                 )
             whole = locations(owner, base)
-            value = whole[0][0]
-            if whole != tuple((value, bit) for bit in range(register_width(value))):
-                _error(
-                    owner.source,
-                    node,
-                    "program.borrow",
-                    "predicate views must borrow a complete raw parent register",
-                )
             selected = locations(owner, node)
             reads.update(selected)
-            return base, selected
+            return base, tuple(whole.index(location) for location in selected)
 
         def visit_Compare(self, node: ast.Compare) -> ast.expr:
             if len(node.ops) != 1 or len(node.comparators) != 1:
@@ -94,11 +85,11 @@ def predicate_views(owner: _Body, expression: ast.expr) -> tuple[ast.expr, int]:
                 # Only shift representable literals. Other comparisons retain
                 # ordinary expression validation, including integer width limits.
                 if 0 <= literal.value < 1 << len(selected):
-                    mask = sum(1 << bit for _, bit in selected)
+                    mask = sum(1 << bit for bit in selected)
                     extracted = ast.BinOp(
                         left=deepcopy(base), op=ast.BitAnd(), right=ast.Constant(mask)
                     )
-                    shifted = ast.Constant(literal.value << selected[0][1])
+                    shifted = ast.Constant(literal.value << selected[0])
                     compared = ast.Compare(
                         left=shifted if reverse else extracted,
                         ops=deepcopy(node.ops),
@@ -113,7 +104,7 @@ def predicate_views(owner: _Body, expression: ast.expr) -> tuple[ast.expr, int]:
         def visit_Subscript(self, node: ast.Subscript) -> ast.expr:
             base, selected = self.view(node)
             result: ast.expr = ast.Constant(value=0)
-            for output_bit, (_, input_bit) in enumerate(selected):
+            for output_bit, input_bit in enumerate(selected):
                 mask = 1 << input_bit
                 bit = ast.Compare(
                     left=ast.BinOp(

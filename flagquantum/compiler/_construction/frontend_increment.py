@@ -10,8 +10,7 @@ from .frontend_classical import bind_helper
 from .frontend_numeric import has_numeric, reject_numeric_reads
 from .frontend_ports import program_ports
 from .frontend_python import _error, _QuantumFunction
-from .frontend_views import locations, static_integer
-from .register_profile import register_width
+from .frontend_views import locations, packed_locations, static_integer
 
 if TYPE_CHECKING:
     from .frontend_program import _Body
@@ -20,36 +19,36 @@ if TYPE_CHECKING:
 def _emit(
     owner: _Body,
     node: ast.expr | ast.stmt,
-    target: Value,
+    target: tuple[tuple[Value, int], ...],
     amount: int,
     control: tuple[Value, int] | None = None,
 ) -> None:
     if abs(amount) > 256:
         _error(owner.source, node, "program.increment", "offset must fit -256..256")
     assert isinstance(node, (ast.expr, ast.stmt))
-    width = register_width(target)
+    width = len(target)
     offset = amount % (1 << width)
     if offset > (1 << width) // 2:
         offset -= 1 << width
     # A zero update still witnesses initialized writable storage in the verifier.
     if offset == 0:
         if control is None:
-            owner.emit("qreg.gate", node, (target,), gate="i", index=0)
+            owner.emit("qreg.gate", node, (target[0][0],), gate="i", index=target[0][1])
         else:
             for _ in range(2):
                 owner.emit(
                     "qreg.control_x",
                     node,
-                    (control[0], target),
-                    indices=(control[1], 0),
+                    (control[0], target[0][0]),
+                    indices=(control[1], target[0][1]),
                 )
     for _ in range(abs(offset)):
         for bit in (range(width) if offset < 0 else reversed(range(width))):
             selected = (() if control is None else (control,)) + tuple(
-                (target, lower) for lower in range(bit)
+                target[lower] for lower in range(bit)
             )
             if selected:
-                selected += ((target, bit),)
+                selected += (target[bit],)
                 owner.emit(
                     "qreg.control_x",
                     node,
@@ -57,39 +56,58 @@ def _emit(
                     indices=tuple(index for _, index in selected),
                 )
             else:
-                owner.emit("qreg.gate", node, (target,), gate="x", index=bit)
+                owner.emit(
+                    "qreg.gate", node, (target[bit][0],), gate="x", index=target[bit][1]
+                )
 
 
-def _target(owner: _Body, node: ast.expr) -> Value:
+def _target(owner: _Body, node: ast.expr) -> tuple[tuple[Value, int], ...]:
     ports = owner.alias_ports if owner.aliases is not None else owner.ports
     assert ports is not None
-    if (
-        not isinstance(node, ast.Name)
-        or node.id not in ports
-        or ports[node.id].kind != "qnum"
-        or has_numeric(ports[node.id])
-        or ports[node.id].role not in {"output", "inout"}
+    explicit = isinstance(node, (ast.List, ast.Tuple))
+    base = node
+    while isinstance(base, ast.Subscript):
+        base = base.value
+    if not explicit and (
+        not isinstance(base, ast.Name)
+        or base.id not in ports
+        or ports[base.id].kind != "qnum"
     ):
         _error(
             owner.source, node, "program.increment", "use a writable raw unsigned QNum"
         )
-    view = locations(owner, node)
-    value = view[0][0]
-    if view != tuple((value, bit) for bit in range(register_width(value))):
+    for child in ast.walk(node):
+        if isinstance(child, ast.Name) and child.id in ports:
+            port = ports[child.id]
+            if has_numeric(port) or port.role not in {"output", "inout"}:
+                _error(
+                    owner.source,
+                    child,
+                    "program.increment",
+                    "use a writable raw unsigned QNum",
+                )
+    view = packed_locations(owner, node) if explicit else locations(owner, node)
+    if not 1 <= len(view) <= 256 or len(set(view)) != len(view):
         _error(
             owner.source,
             node,
             "program.increment",
-            "target must cover a complete register",
+            "numeric views require 1..256 distinct locations",
         )
-    if owner.aliases is not None and any(
-        actual == value and owner.ports[name].kind != "qnum"
-        for name, actual in owner.registers.items()
-    ):
-        _error(
-            owner.source, node, "program.increment", "use a writable raw unsigned QNum"
+    for value, _ in view:
+        actual = next(
+            port
+            for name, port in owner.ports.items()
+            if owner.registers.get(name) == value
         )
-    return value
+        if has_numeric(actual) or actual.role not in {"output", "inout"}:
+            _error(
+                owner.source,
+                node,
+                "program.increment",
+                "use a writable raw unsigned QNum",
+            )
+    return view
 
 
 def capture_increment(owner: _Body, node: ast.AugAssign) -> None:
@@ -150,7 +168,7 @@ def capture_increment_call(
     classical, actuals = bind_helper(owner, call, function)
     reject_numeric_reads(owner, actuals[0], "controlled increment")
     target = _target(owner, actuals[0])
-    if ports[0].width is not None and ports[0].width != register_width(target):
+    if ports[0].width is not None and ports[0].width != len(target):
         _error(
             owner.source,
             call,
@@ -161,7 +179,9 @@ def capture_increment_call(
     assert isinstance(statement, ast.AugAssign) and isinstance(
         statement.target, ast.Name
     )
-    if statement.target.id != ports[0].name or target in condition_inputs:
+    if statement.target.id != ports[0].name or any(
+        value in condition_inputs for value, _ in target
+    ):
         _error(
             owner.source,
             call,
