@@ -21,8 +21,9 @@ by the state owner.
 Each recursive state starts with unit phase and returns its accumulated phase
 to its parent. The same RNG or fixed-outcome mapping is inherited at every
 level, with RNG precedence unchanged. Fixed measurement identities are local
-operation positions, just like source BloqInstance IDs; this is not a global
-path-to-instance remapping. The existing field encoders, value validators,
+operation positions. Optional per-function persistent IDs now connect Compiler
+expansion labels through this entry; see [instance binding](COMPONENT_PHASED_INSTANCE_IDS.md).
+This is not a global path-to-instance remapping. The existing field encoders, value validators,
 assignment order and measurement feedback owner are reused. The order mapping
 is snapshotted without modifying caller metadata.
 

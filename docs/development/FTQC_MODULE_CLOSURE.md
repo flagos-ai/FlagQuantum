@@ -172,3 +172,11 @@ handler and return phase to their parent. Original composed phasing, nested
 measurement branches and complete Add input tables agree with source. Pure
 recursive random-policy and foreign decomposition boundaries remain open;
 no whole-file completion or larger denominator is inferred.
+
+The [recursive instance-ID binding](COMPONENT_PHASED_INSTANCE_IDS.md) connects
+Compiler's existing persistent expansion labels to the state owner's fixed
+measurement lookup at each function. Root and nested graphs agree with original
+source instance IDs, including reversed storage versus visitation and local-ID
+reuse. Full complex two-measurement branches retain their projection factors
+and clean spectator. Raw source CompositeBloq pure dispatch remains a separate
+negative; parent closure counts remain unchanged.

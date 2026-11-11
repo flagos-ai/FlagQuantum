@@ -888,3 +888,7 @@ shapes and collection preserves source NumPy storage conversions.
 [Recursive phased component evaluation](../../docs/development/COMPONENT_PHASED_EVALUATION.md)
 composes the existing classical state across stored bodies using supplied call
 orders and shared measurement policy. Step inspection remains with the state.
+
+[Persistent phased instance IDs](../../docs/development/COMPONENT_PHASED_INSTANCE_IDS.md)
+pass Compiler expansion labels through that recursive entry independently of
+stored operation positions and visitation order.
