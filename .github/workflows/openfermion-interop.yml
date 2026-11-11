@@ -49,4 +49,4 @@ jobs:
         run: |
           python -m pip check
           python -c "import openfermion; assert openfermion.__version__ == '1.7.1'"
-          python -m pytest tests/unit/test_openfermion_conversion.py tests/integration/test_openfermion_interop.py -q
+          python -m pytest tests/unit/test_openfermion_conversion.py tests/integration/test_openfermion_interop.py -m "openfermion or integration" -q
