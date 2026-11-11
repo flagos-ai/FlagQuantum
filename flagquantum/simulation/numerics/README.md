@@ -66,3 +66,12 @@ and must not replace full-amplitude conformance. See
 [the executable example and source assumptions](../../../docs/development/MATRIX_ASSERTIONS.md).
 Run `python -m pytest tests/unit/test_matrix_assertions.py -q` in the reference
 environment to compare both assertions with unchanged upstream functions.
+
+## QSP complements and phases
+
+`qsp_complement` owns root-based complementary coefficients; `qsp_phases` owns
+numerical phase recursion. Neither emits a GeneralizedQSP circuit. The phase
+recursion uses the source rotation definition without importing Compiler.
+See [the runnable numerical chain and retained source failures](../../../docs/development/QSP_COMPLEMENT_PHASES.md).
+Run `python -m pytest tests/unit/test_qsp_complement.py tests/unit/test_qsp_phases.py -q`
+with the pinned reference environment for coefficient, matrix and rotation checks.
