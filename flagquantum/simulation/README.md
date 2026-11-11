@@ -831,6 +831,13 @@ Both action-dispatch and measurement examples consume this update boundary.
 See [ordered output updates](../../docs/development/CLASSICAL_OUTPUT_UPDATES.md)
 for original state-after-failure comparisons and separate graph responsibilities.
 
+`component_classical_state.py` connects these numerical owners to explicit
+Core SSA call positions through `step`, `finalize` and `simulate`. It retains
+ordered assignment, stochastic occurrence identity and phased updates; Compiler
+still owns graph ordering and transformations. See [classical graph execution](../../docs/development/COMPONENT_CLASSICAL_STATE.md)
+for exhaustive call-by-call comparisons, complex measurement branches and the
+remaining finite-field and source-wide boundaries.
+
 `classical_power.py` repeats a complete bound child numerical evaluator in source
 order, preserving constructor versus build count guards. It reuses phased output
 commit rather than implementing another phase accumulator. Run

@@ -114,3 +114,11 @@ remain open for their explicit source/native boundaries. Five numerical
 consumers now import the authoritative shared axis owner directly; non-import
 production ASTs are unchanged. No new child ID or completion denominator is
 introduced.
+
+The [classical graph execution slice](COMPONENT_CLASSICAL_STATE.md) connects the
+existing numerical binding, action, distribution and phase owners to Core SSA
+call stepping. Exhaustive Add assignment traces and X-measurement/coherent phase
+consumers agree with unchanged source. Q-0882 and Q-0883 remain open for
+finite-field/dtype traversal, source-wide utilities, native admission boundaries
+and original test replacement. The 28 original tests are source-only regression.
+No new child ID is added; the totals remain 17 closed and 1,263 open files.
