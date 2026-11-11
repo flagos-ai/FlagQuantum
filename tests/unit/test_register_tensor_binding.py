@@ -13,10 +13,12 @@ from numpy.typing import NDArray
 from flagquantum.core.ir import Instruction
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.simulation.tensor_network.models import TensorNetworkNode
+from flagquantum.simulation.tensor_network.register_axis_groups import (
+    register_tensor_label_groups,
+)
 from flagquantum.simulation.tensor_network.register_tensor_binding import (
     bind_register_tensor,
     contract_register_tensors,
-    register_tensor_label_groups,
 )
 from tests.unit.test_register_tensor import native_signature
 

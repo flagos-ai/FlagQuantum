@@ -13,7 +13,7 @@ from ...core.ir.program.register_types import classical_bit_type
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from .models import TensorNetworkNode
-from .register_tensor_binding import register_tensor_label_groups
+from .register_axis_groups import register_tensor_label_groups
 
 
 def classical_parity_nodes(

@@ -11,7 +11,7 @@ import torch
 
 from ...core.ir.program.signatures import Signature
 from .models import TensorNetworkNode
-from .register_tensor_binding import register_tensor_label_groups
+from .register_axis_groups import register_tensor_label_groups
 
 
 def register_zero_state_nodes(

@@ -17,8 +17,9 @@ from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ..classical_action import ClassicalValueCallback
 from .models import TensorNetworkNode
+from .register_axis_groups import register_tensor_label_groups
 from .register_tensor import register_tensor_shape
-from .register_tensor_binding import bind_register_tensor, register_tensor_label_groups
+from .register_tensor_binding import bind_register_tensor
 
 
 def _classical_action_tensor_data(

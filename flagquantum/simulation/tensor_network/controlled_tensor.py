@@ -15,8 +15,9 @@ from ...core.ir.program.signatures import Signature
 from ...core.value_parameters import is_symbolic_value
 from ..value_dimensions import ArrayValue
 from .models import TensorNetworkNode
+from .register_axis_groups import register_tensor_label_groups
 from .register_tensor import register_identity_tensor, register_tensor_shape
-from .register_tensor_binding import bind_register_tensor, register_tensor_label_groups
+from .register_tensor_binding import bind_register_tensor
 from .register_tensor_data import register_active_indices
 
 
