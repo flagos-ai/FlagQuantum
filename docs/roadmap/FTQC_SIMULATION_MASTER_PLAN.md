@@ -1159,3 +1159,70 @@ FTS-02/R04/M0-M5 remain unchanged. No research, performance, threshold or comple
 parity claim is added. Next: publish this qualified candidate, complete its
 actual-main acceptance, then propose arbitrary-data file writing and review the
 remaining pinned upstream inventory.
+
+## Post-1126 actual-main shot-file acceptance — 2026-11-11
+
+[PR #1126](https://github.com/flagos-ai/FlagQuantum/pull/1126) merged reviewed
+head `9e02754c2cb2cd2c6583decc1ecf86636be48290` as actual main
+`1afa810819bef16491375e65dabe2c25f371ce17`. The complete main tree is
+`f394d895f0b497d3729ff46b0319774ac432b232`, identical to the qualified PR tree.
+This acceptance supersedes the pending publication gates in the candidate entry
+above; the original qualification and failure evidence remain retained.
+
+The final-head [CI attempt 1](https://github.com/flagos-ai/FlagQuantum/actions/runs/42960700311)
+passed all 233 jobs, including required `CI complete` (job `130340448261`).
+The [GPU gate](https://github.com/flagos-ai/FlagQuantum/actions/runs/42960700435)
+passed three jobs with three conditional skips. The core runtime passed 6,244
+tests with 568 skips; the unchanged coverage policy passed at 88.2% globally.
+The test-only repair guards real-codec conformance only when both supported
+backends are absent and exercises missing, wrong-version and broken backends,
+corrupt codec output and cleanup. The 192 original coverage inputs reproduce
+94.67% stabilizer coverage; their offline union with the measured repair tests
+yields 95.33%, above the unchanged 95% floor. This local union is separate from
+the successful formal CI policy check. No old check was rerun.
+
+Actual-main acceptance used the installed embedded package without the Stim
+Python package: 62 tests passed and one SDK-reference test skipped. The native
+verifier passed six codecs, seven batch sizes, split padding, actual native
+calls and malformed-tail refusal, plus the existing sampler/converter checks.
+All 96 locked upstream files retain their exact digests. The 1,257 package
+source/data files bind to actual main; 1,170 common members match Git/source,
+wheel, sdist and installation. Reusing these byte-matched artifacts required
+no rebuild or dependency installation.
+
+The actual-main user workflow remains:
+
+```bash
+python examples/qec/shot_file_decoding.py
+# shots 64 batches 4 logical_failures 0
+```
+
+The example ran from the actual-main checkout against the matching installed
+PyMatching profile without Stim Python. It observed four native opens, two
+complete scans, five batch reads and four closes. Automatic
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/42965731635)
+also passed its `installed-wheel-smoke` job `130342392065`. Development-container
+publication remains a separate run; its completion is not claimed here.
+
+Retained evidence directory:
+`/private/tmp/fq-shot-file-reading-20261111/ci-repair-30c6/postmerge-1126/`.
+The structured receipt is `MAIN_ACCEPTANCE.json`; raw installed-test log SHA-256
+is `5f1ce6a6d2a30388f1db49ff705917100e4022ca3b99e713ddc73e1d7746b33d`,
+native-verifier log SHA-256 is
+`a3cebae96cfeac6a7e8c40ba99039c335f2e820ecb3d5d6a1d61cb67506e0791`,
+and user-example log SHA-256 is
+`e2056bd7f1124b01c217d996e8cf6ec7177b5d9c63bdd32b9f6055604a73acc1`.
+Original failed CI, Mypy and environment logs remain in the parent evidence
+directory; failures have not been overwritten or reclassified.
+
+| Requirement | Accepted increment | Remaining status |
+| --- | --- | --- |
+| FTS-04 / R03 | Actual-main eager reading of six shot-file formats through the embedded boundary | Partially complete |
+| FTS-07 / R08 | Actual-main bounded record iteration feeding existing packed-batch decoding | Partially complete; no new RSS, throughput or scalability claim |
+| FTS-02 / R04 / M0-M5 | No new research or workload-budget evidence | Unchanged |
+
+Next: prepare the complete arbitrary-data file-writing capability proposal,
+reusing the pinned source and current snapshot/format boundaries, then reconcile
+remaining Stim/PyMatching inventory gaps. Zero-column records, SDK-only
+streaming and unimplemented upstream domains remain explicit gaps. No full
+parity, performance or threshold claim is added.
