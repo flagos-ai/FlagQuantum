@@ -276,7 +276,6 @@ def test_molecular_data_rejects_wrong_external_type() -> None:
         from_openfermion_molecular_data(of.FermionOperator())
 
 
-@pytest.mark.integration
 def test_molecular_data_replacement_preserves_native_uccsd_training(
     molecular_data_source: OpenMolecularData,
 ) -> None:
