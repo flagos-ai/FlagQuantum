@@ -126,3 +126,31 @@ The new internal entries are not stable public exports. G2 and whole parent-file
 acceptance remain open. Automatic provider discovery, lazy foreign decomposition
 error translation, pure supplier trace-token admission and source simplification
 policy equivalence require separate audit. G3 is not entered.
+
+
+## Verification evidence
+
+Implementation: `442f8f39`. All 46 new source-backed cases pass. Related regression
+passes 1459 tests in 17.98 s (41 existing/source warnings). Focused verification
+passes 734 tests in 21.53 s (39 warnings); all 64 local integration tests pass
+in 3.88 s. The new numerical owner covers all 19 statements; it has no separately
+instrumented branch. Pure/mixed callback and failure behavior are verified by
+scenarios rather than treating zero branch count as semantic evidence. Seventeen
+related owners cover 530 statements and 206 branches at 99%, retaining the two
+historical GRAPH60 profile-refusal misses.
+
+Strict mypy passes 41 related files plus three source-following files. Black,
+Ruff, Simulation scope, architecture, Program IR and public API checks pass.
+Thirty-two locked source blobs match the source inventory, including the
+GlobalPhase source and test file; the latter is hash-checked, not included in the
+25 unchanged original tests run here. Those 25 tests pass in 1.13 s with five
+existing/source warnings. Qualtran 0.7.0 and native Kickmix 0.1 Simulator were
+checked; the existing binary-field append example passes. Resources and the
+original empty-network failures are retained in the resource evidence.
+
+Default smoke/unit stops at maxfail: six failed, 21485 passed, 300 skipped and
+1037 warnings in 161.45 s. All six observed failure IDs belong to the independent
+seven-failure baseline. The seventh baseline case was not reached; no new failure
+ID was observed. This is not a green default suite or a claim that the unobserved
+case passed. Logs, source hashes, resources and failure comparison are retained
+under `ftqc-reference-env/g2-component-dense-*`.
