@@ -347,6 +347,29 @@ def select_register_program(
         _check_phase_target(target)
     mapping, _, position = register_ports(program)
     position += semantic_hidden_width(expanded)
+    # An unconstrained construction capacity preserves compact default masks.
+    # A tighter width/work ceiling bounds the faster clean decomposition.
+    clean_qubits = (
+        None
+        if (
+            constraints.limits.max_qubits is None
+            or constraints.limits.max_qubits >= budget.qubits
+        )
+        and constraints.max_workspace is None
+        else min(
+            budget.qubits,
+            (
+                constraints.limits.max_qubits
+                if constraints.limits.max_qubits is not None
+                else budget.qubits
+            ),
+            (
+                position + constraints.max_workspace
+                if constraints.max_workspace is not None
+                else budget.qubits
+            ),
+        )
+    )
     identities = (
         program.semantic_identity,
         *(f.semantic_identity for f in sorted(functions, key=lambda f: f.name)),
@@ -359,6 +382,7 @@ def select_register_program(
             n_qubits=budget.qubits,
             max_operations=budget.operations,
             scheduling=strategy,
+            _clean_qubits=clean_qubits,
         )
 
     def build_boolean() -> RegisterCandidate:
@@ -368,6 +392,7 @@ def select_register_program(
             n_qubits=budget.qubits,
             max_operations=budget.operations,
             boolean_values=True,
+            _clean_qubits=clean_qubits,
         )
 
     return _select_candidates(

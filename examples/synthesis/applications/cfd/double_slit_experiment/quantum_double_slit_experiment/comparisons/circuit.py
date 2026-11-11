@@ -201,12 +201,15 @@ def compare(*, cycles: int = 95) -> None:
     from ..main import build_program
 
     reference = (
-        fq.run(build_reference(cycles=cycles)).statevector().reshape(1 << 15, 1 << 9)
+        fq.run(build_reference(cycles=cycles)).statevector().reshape(1 << 15, -1)
     )
-    actual = fq.run(build_program(cycles=cycles)).statevector().reshape(1 << 15, 1 << 9)
-    torch.testing.assert_close(actual, reference, atol=1e-10, rtol=0)
+    actual = fq.run(build_program(cycles=cycles)).statevector().reshape(1 << 15, -1)
+    # Clean work makes this the full-state comparison under zero embedding,
+    # even when the two independent constructions use different work widths.
+    torch.testing.assert_close(actual[:, 0], reference[:, 0], atol=1e-10, rtol=0)
+    assert torch.count_nonzero(actual[:, 1:]) == 0
     assert torch.count_nonzero(reference[:, 1:]) == 0
-    print("Complete state, absolute phase and nine clean work bits match.")
+    print("Complete state, absolute phase and all clean work bits match.")
 
 
 if __name__ == "__main__":

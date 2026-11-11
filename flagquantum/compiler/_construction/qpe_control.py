@@ -23,9 +23,19 @@ def emit_controlled_effect(
 
     values, attrs = op.operands[1:], op.attributes
     if "control_state" in attrs:
-        raise ValueError(
-            "explicit nested control states are unsupported in QPE callbacks"
+        if op.name != "qreg.control_x":
+            raise ValueError(
+                "explicit nested control states are unsupported in QPE callbacks"
+            )
+        if len(values) - 1 >= 8:
+            raise ValueError("nested indexed control exceeds eight bits")
+        effect(
+            op.name,
+            (control, *values),
+            indices=(bit, *attrs["indices"]),
+            control_state=(attrs["control_state"] << 1) | 1,
         )
+        return
 
     def phase(locations: tuple[tuple[Value, int], ...], angle: float) -> None:
         all_locations = ((control, bit), *locations)

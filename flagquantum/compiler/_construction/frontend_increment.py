@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 import ast
-import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Value
-from .._phase_polynomial import MAX_PHASE_DEGREE
 from .frontend_classical import bind_helper
 from .frontend_numeric import has_numeric, reject_numeric_reads
 from .frontend_ports import program_ports
@@ -51,22 +49,6 @@ def _emit(
             )
             if selected:
                 selected += (target[bit],)
-                if (
-                    owner.owner.expanded_callbacks
-                    and len(selected) + owner.owner.expanded_callbacks
-                    <= MAX_PHASE_DEGREE
-                ):
-                    value, index = target[bit]
-                    owner.emit("qreg.gate", node, (value,), gate="h", index=index)
-                    owner.emit(
-                        "qreg.control_phase",
-                        node,
-                        tuple(value for value, _ in selected),
-                        indices=tuple(index for _, index in selected),
-                        angle=math.pi,
-                    )
-                    owner.emit("qreg.gate", node, (value,), gate="h", index=index)
-                    continue
                 owner.emit(
                     "qreg.control_x",
                     node,

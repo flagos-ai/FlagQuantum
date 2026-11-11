@@ -321,7 +321,11 @@ def test_predicate_degree_boundary_preserves_xor_and_computed_fallback(
     torch.testing.assert_close(actual[:, 0], expected, atol=1e-11, rtol=0)
     assert float(actual[:, 1:].abs().square().sum()) < 1e-22
     if width == 6:
-        assert program.report["workspace_qubits"] == 0
+        narrow = synth.synthesize(entry, max_workspace=0)
+        assert narrow.report["workspace_qubits"] == 0
+        narrow_state = fq.run(narrow).statevector().reshape(size, -1)
+        torch.testing.assert_close(narrow_state[:, 0], expected, atol=1e-11, rtol=0)
+        assert torch.count_nonzero(narrow_state[:, 1:]) == 0
     else:
         assert program.report["workspace_qubits"] != 0
         with pytest.raises(synth.SynthesisError):

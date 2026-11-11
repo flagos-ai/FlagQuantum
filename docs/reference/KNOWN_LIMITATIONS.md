@@ -1211,8 +1211,23 @@ predicates retain their computed path when the target and controls would exceed
 that bound. The separate eight-input condition bound remains. Signed whole words
 retain two's-complement semantics; unsigned borrowed
 words use their explicit component order. This is XOR, including a target
-initially equal to one or entangled with another register. The compiler uses
-exact phase decomposition, so scratch savings may increase gate count and depth.
+initially equal to one or entangled with another register. Bounded predicate XOR
+and raw modular carries use checked indexed X effects directly, including mixed
+negative control masks under another coherent control. Existing exact Boolean
+analysis supplies disjoint cubes or XOR-parity monomials; canceled reads and a
+writable marker remain checked even for an always-false predicate.
+
+The lowerer uses proven-zero clean ladders when the declared width and workspace
+ceilings permit them. An internal capacity hint is translated through nested
+unitary layouts; it never changes verifier capacity or final resource checks.
+Without a width ceiling below construction capacity or an explicit workspace
+ceiling, masked controls preserve their established compact grouped
+decomposition and default physical width. Tighter ceilings allow the faster
+clean decomposition within the declared capacity.
+With `max_workspace=0`, bounded controls retain an exact no-extra-scratch
+decomposition, which may cost more gates and depth. Wider controls retain their
+existing workspace refusals outside that bounded decomposition. All candidate,
+source and operation caps remain unchanged.
 
 ```python
 import flagquantum as fq
@@ -1252,6 +1267,10 @@ registers with small static slices keep their existing bounded-view path.
 
 Run `python -m pytest tests/integration/test_synthesis_native_callback_phase_controls.py
 tests/integration/test_synthesis_native_numeric_borrows.py -q`.
+
+Run `python -m pytest tests/integration/test_synthesis_native_indexed_x_composition.py -q`
+for independent full states, arbitrary markers, branch phases and the measured
+clean-ladder versus scratch-free trade-off.
 
 Whole-register mutable helper borrows also use the checked exact phase path.
 Equivalent whole and partial bindings retain absolute phase, including nested

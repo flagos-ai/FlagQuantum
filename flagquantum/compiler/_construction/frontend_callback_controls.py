@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import ast
-import math
 from typing import TYPE_CHECKING
 
 from .._phase_polynomial import MAX_PHASE_DEGREE, Location
-from .frontend_phase import capture_polynomial_phase
+from .boolean_lowering import BooleanCandidateError, _disjoint_cubes
+from .frontend_phase import expand_native_phase
 from .frontend_python import _error
 from .frontend_views import gate_target, locations
 
@@ -58,7 +58,7 @@ def scalar_comparison(owner: _Body, condition: ast.expr) -> tuple[ast.expr, bool
 def capture_predicate_x(
     owner: _Body, condition: ast.expr, callback: ast.Call, statement: ast.Call
 ) -> bool:
-    """Use H Z H on arbitrary markers; retain the previous path outside bounds."""
+    """Emit checked Boolean XOR on arbitrary markers within existing bounds."""
     if not owner.owner.expanded_callbacks or len(callback.args) != 1:
         return False
     ports = owner.alias_ports if owner.aliases is not None else owner.ports
@@ -108,9 +108,68 @@ def capture_predicate_x(
             "program.control",
             "condition and target must be disjoint",
         )
-    owner.emit("qreg.gate", statement, (target,), gate="h", index=bit)
-    capture_polynomial_phase(
-        owner, callback.args[0], math.pi, statement, condition=condition
+    expanded = expand_native_phase(
+        owner, ast.Constant(value=1), 1.0, statement, condition=condition
     )
-    owner.emit("qreg.gate", statement, (target,), gate="h", index=bit)
+    if expanded is None:
+        _error(owner.source, statement, "program.control", "expected bounded predicate")
+    polynomial, ordered_reads, factors = expanded
+    if factors:
+        _error(owner.source, statement, "program.control", "expected bounded predicate")
+    table = [polynomial.get(mask, 0.0) for mask in range(1 << len(ordered_reads))]
+    for shift in range(len(ordered_reads)):
+        for mask in range(len(table)):
+            if mask & (1 << shift):
+                table[mask] += table[mask ^ (1 << shift)]
+    if any(value not in (0.0, 1.0) for value in table):
+        _error(owner.source, statement, "program.control", "expected Boolean predicate")
+    try:
+        cubes = _disjoint_cubes(
+            tuple(index for index, value in enumerate(table) if value),
+            len(ordered_reads),
+        )
+    except BooleanCandidateError:
+        # Integer ANF coefficients determine XOR parity exactly.
+        cubes = tuple(
+            (mask, mask)
+            for mask, weight in sorted(polynomial.items())
+            if int(weight) % 2
+        )
+    covered = 0
+    for mask, _ in cubes:
+        covered |= mask
+    # A false predicate must still check a writable, initialized marker.
+    owner.emit("qreg.gate", statement, (target,), gate="i", index=bit)
+    for index, (read_value, read_bit) in enumerate(ordered_reads):
+        if not covered & (1 << index):
+            owner.emit(
+                "qreg.control_phase",
+                statement,
+                (read_value,),
+                indices=(read_bit,),
+                angle=0.0,
+            )
+    for mask, pattern in cubes:
+        selected = tuple(
+            (index, location)
+            for index, location in enumerate(ordered_reads)
+            if mask & (1 << index)
+        )
+        if not selected:
+            owner.emit("qreg.gate", statement, (target,), gate="x", index=bit)
+            continue
+        state = sum(
+            int(bool(pattern & (1 << index))) << ordinal
+            for ordinal, (index, _) in enumerate(selected)
+        )
+        attributes: dict[str, object] = {}
+        if state != (1 << len(selected)) - 1:
+            attributes["control_state"] = state
+        owner.emit(
+            "qreg.control_x",
+            statement,
+            (*(value for _, (value, _) in selected), target),
+            indices=(*(wire for _, (_, wire) in selected), bit),
+            **attributes,
+        )
     return True

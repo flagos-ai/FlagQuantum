@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING, NoReturn
 from .._hybrid.model import Value
 from .._hybrid.verifier import HybridVerificationError
 from .._phase_factors import Cube
-from .._phase_polynomial import Location, expand_phase
+from .._phase_polynomial import Location, Polynomial, expand_phase
 from .frontend_numeric import has_numeric_reads
 from .frontend_phase_factors import (
     capture_sparse_predicate_phase,
@@ -23,15 +23,15 @@ if TYPE_CHECKING:
     from .frontend_program import _Body
 
 
-def capture_polynomial_phase(
+def expand_native_phase(
     owner: _Body,
     expression: ast.expr,
     coefficient: float,
     statement: ast.Call,
     *,
     condition: ast.expr | None = None,
-) -> None:
-    """Read checked physical views, expand sparsely and emit existing phase effects."""
+) -> tuple[Polynomial, tuple[Location, ...], tuple[tuple[Cube, Value], ...]] | None:
+    """Share checked native reads and bounded expansion across phase and XOR."""
 
     def fail(node: ast.expr, code: str, message: str) -> NoReturn:
         _error(owner.source, node, code, message)
@@ -221,7 +221,7 @@ def capture_polynomial_phase(
                     children,
                     fail,
                 ):
-                    return
+                    return None
         if (
             numeric
             or condition is not None
@@ -238,6 +238,24 @@ def capture_polynomial_phase(
         if expanded is None:
             raise
         polynomial, reads, factors = expanded
+    return polynomial, reads, factors
+
+
+def capture_polynomial_phase(
+    owner: _Body,
+    expression: ast.expr,
+    coefficient: float,
+    statement: ast.Call,
+    *,
+    condition: ast.expr | None = None,
+) -> None:
+    """Read checked physical views, expand sparsely and emit existing phase effects."""
+    expanded = expand_native_phase(
+        owner, expression, coefficient, statement, condition=condition
+    )
+    if expanded is None:
+        return
+    polynomial, reads, factors = expanded
     for factor, value in factors:
         emit_factor(owner, statement, factor, value)
     # Emitted monomials witness their reads; canceled reads still need a check.
@@ -252,7 +270,12 @@ def capture_polynomial_phase(
     for mask, weight in sorted(polynomial.items()):
         angle = coefficient * weight
         if not math.isfinite(angle) or abs(angle) > 2**53:
-            fail(expression, "program.phase", "phase angle exceeds finite ±2**53 range")
+            _error(
+                owner.source,
+                expression,
+                "program.phase",
+                "phase angle exceeds finite ±2**53 range",
+            )
         selected = tuple(
             location for i, location in enumerate(reads) if mask & (1 << i)
         )

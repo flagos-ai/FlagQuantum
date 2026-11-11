@@ -21,6 +21,7 @@ from ...noise import amplitude_damping_channel
 from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from .._hybrid.verifier import Diagnostic
+from .._phase_polynomial import MAX_PHASE_DEGREE
 from ..noise import _encode_channel_instruction
 from ..optimization.commutation_cancellation import cancel_commuting_self_inverse
 from ..optimization.state_preparation_synthesis import _synthesize_real_state
@@ -115,6 +116,14 @@ def _array_controlled_x(
 
     workspace_width = flags_width + scratch_width
     if workspace_start + workspace_width > n_qubits:
+        # Keep the existing smaller grouped implementation under tighter caps.
+        grouped_width = count // 3
+        if grouped_width and workspace_start + grouped_width <= n_qubits:
+            return _bounded_control_group(
+                Instruction("x", (target,)), controls, workspace_start, n_qubits
+            )
+        if count <= MAX_PHASE_DEGREE:
+            return controlled_instruction(Instruction("x", (target,)), controls), 0
         _fail("lowering.workspace", "array control exceeds clean workspace", op)
     flags = tuple(range(workspace_start, workspace_start + flags_width))
     scratch_wires = tuple(
@@ -342,12 +351,18 @@ def schedule_register_program(
     scheduling: Schedule = "retain",
     boolean_values: bool = False,
     _allow_empty_boolean: bool = False,
+    _clean_qubits: int | None = None,
 ) -> RegisterCandidate:
     """Lower verified fresh outputs without executing or inspecting any state."""
     _positive_integer(max_operations, "max_operations")
     if max_operations > 100_000 or scheduling not in {"retain", "recompute"}:
         _fail("register.budget", "use a known schedule and at most 100000 operations")
     verify_register_program(program, functions, max_qubits=n_qubits)
+    if _clean_qubits is not None and (
+        type(_clean_qubits) is not int or _clean_qubits < 0
+    ):
+        raise ValueError("clean decomposition capacity requires a nonnegative integer")
+    clean_qubits = n_qubits if _clean_qubits is None else min(n_qubits, _clean_qubits)
     program = expand_register_calls(program, functions)
     register_templates = {f.name: f for f in functions if is_register_function(f)}
     functions = tuple(f for f in functions if not is_register_function(f))
@@ -425,6 +440,11 @@ def schedule_register_program(
                     scheduling=scheduling,
                     boolean_values=boolean_values,
                     _allow_empty_boolean=True,
+                    _clean_qubits=(
+                        None
+                        if _clean_qubits is None
+                        else max(width, width + clean_qubits - call_position)
+                    ),
                 )
             nested = unitary_candidates[cache_key]
             if len(nested.circuit.instructions) > max_operations - len(instructions):
@@ -488,6 +508,11 @@ def schedule_register_program(
                 n_qubits=width + n_qubits - position,
                 max_operations=max_operations,
                 scheduling=scheduling,
+                _clean_qubits=(
+                    None
+                    if _clean_qubits is None
+                    else max(width, width + clean_qubits - position)
+                ),
             )
             repeat = op.attributes["count"]
             if len(nested.circuit.instructions) * repeat > max_operations - len(
@@ -668,22 +693,26 @@ def schedule_register_program(
                     bindings[value.id] for value in op.operands[1:]
                 )
                 target_wire = target_ports[0]
-            if "control_state" in op.attributes and len(controls) >= 5:
+            if (
+                _clean_qubits is None
+                and "control_state" in op.attributes
+                and len(controls) >= 5
+            ):
+                # Unhinted direct lowering retains its existing grouped masks.
                 gates, used_workspace = _bounded_control_group(
-                    Instruction("x", (target_wire,)), controls, position, n_qubits
+                    Instruction("x", (target_wire,)), controls, position, clean_qubits
                 )
-                control_workspace = max(control_workspace, used_workspace)
             else:
                 gates, used_workspace = _array_controlled_x(
-                    controls, target_wire, position, n_qubits, op
+                    controls, target_wire, position, clean_qubits, op
                 )
-                control_workspace = max(control_workspace, used_workspace)
+            control_workspace = max(control_workspace, used_workspace)
         elif op.name == "qreg.array_phase_flip":
             ports = bindings[op.operands[1].id]
             controls, target = ports[:-1], ports[-1]
             if controls:
                 middle, used_workspace = _array_controlled_x(
-                    controls, target, position, n_qubits, op
+                    controls, target, position, clean_qubits, op
                 )
                 flip = Instruction("h", (target,))
                 gates = (flip, *middle, flip)
