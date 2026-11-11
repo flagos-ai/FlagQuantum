@@ -403,6 +403,8 @@ This catalog is generated from the machine-validated
 | Read captured records and decode bounded batches | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Differentiate a determinant energy with respect to orbital angles | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 | Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
+| Build a spinful open chain with explicit hopping, interaction and chemical potential | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 
 ## Build and compile
 
@@ -1500,6 +1502,20 @@ Rotate static real spatial integrals with trainable orbital parameters and diffe
 - **Start:** [quick example](../../examples/algorithms/fermion_orbital_rotation.py)
 - **Documentation:** [guide](../../docs/development/FERMION_ORBITAL_GRADIENTS.md)
 - **Known boundary:** Static real spatial integrals and antisymmetric generators; only real CPU orbital parameters are trainable. Dense O(n^4) integral storage. Explicit closed-shell occupations only. No geometry, supplied-integral, SCF, complex-orbital, open-shell or decomposition gradients; no correlated-ground-state or scalability claim.
+
+### Spinful Fermi-Hubbard open chain
+
+Construct an open-chain Hamiltonian in the native fermionic algebra and measure its explicitly encoded small-system state.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_chain`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_hubbard.py)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_CHAIN.md)
+- **Known boundary:** Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency.
 
 
 ## Distributed execution

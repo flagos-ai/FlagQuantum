@@ -283,3 +283,10 @@ boundary for each.
 
 - [`fermion_orbital_rotation.py`](fermion_orbital_rotation.py): fixed H2 real orbital
   gradients, finite-difference verification and one closed-shell energy descent step.
+
+[`fermion_hubbard.py`](fermion_hubbard.py), run with
+`python -m examples.algorithms.fermion_hubbard`, constructs a spinful two-site
+open chain with `fermi_hubbard_chain`, prepares a fixed-N=2 dense reference and
+measures energy -0.8284271247 and particle number 2 through JW, parity and BK.
+The dense inspection and state preparation have exponential cost; this example
+makes no many-body scalability claim.
