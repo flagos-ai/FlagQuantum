@@ -36,3 +36,13 @@ symmetrization sequence. It does not sample an arbitrary complex ensemble.
 See [source conditions, runnable example, and refusal behavior](../../../docs/development/RANDOM_HERMITIAN.md).
 Run `python -m pytest tests/unit/test_random_hermitian.py -q` with the reference
 environment. This adds no production Cirq dependency or new execution engine.
+
+## Jacobi-Anger approximation
+
+`jacobi_anger_coefficients` owns cosine/sine Laurent coefficients;
+`jacobi_anger_degree` owns the source threshold search and its symbolic formula.
+Both accept explicit Bessel evaluators instead of importing an undeclared SciPy
+production dependency. The symbolic path reuses Core's parameter classifier.
+See [the executable composition and exact adaptation boundaries](../../../docs/development/JACOBI_ANGER.md).
+Run `python -m pytest tests/unit/test_jacobi_anger_coefficients.py tests/unit/test_jacobi_anger_degree.py -q`
+with the pinned reference environment for source comparisons.
