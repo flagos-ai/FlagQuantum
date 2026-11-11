@@ -27,6 +27,13 @@ fq.run(program) → plan → execute accepted plan → Simulation → ExecutionR
 `fq.run(plan)` must execute the supplied plan without planning or compiling it
 again. The result retains that plan and reports the observed execution route.
 
+ExecutionPlan v1 serializes CircuitIR, not a live tensor supplied through
+`Circuit(inputs=...)`. `fq.plan(circuit)` and `fq.run(circuit)` therefore reject
+custom initial states before execution instead of substituting the zero state.
+For local statevector execution with a custom initial state, use `circuit.state()`.
+Plan serialization and backend-specific initial-state support need a versioned
+contract before they can use this path.
+
 The experimental IsingBraidProgram uses this same path for the reviewed
 four-sigma vacuum sector. `_ising_plan.py` is native admission behind the existing
 plan codec, not another plan class or execution manager. Native plans alone use
