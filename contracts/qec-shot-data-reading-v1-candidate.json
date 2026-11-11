@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "status": "approved_pending_implementation",
+  "approval": {
+    "authority": "Explicit user approval, 2026-11-11",
+    "proposal_sha256": "dd34a168261cdc11b3e0f4da8dbf75c20f8129b3908b449c98b94f382994e225"
+  },
+  "owner": "integration",
+  "classification": "single_device_fast_path",
+  "exports": [
+    "read_shot_data_file",
+    "iter_shot_data_file"
+  ],
+  "namespace": "flagquantum.qec.execution.shot_data",
+  "formats": [
+    "01",
+    "b8",
+    "r8",
+    "ptb64",
+    "hits",
+    "dets"
+  ],
+  "limits": {
+    "snapshot_bytes": 1073741824,
+    "principal_payload_bytes": 67108864,
+    "copy_chunk_bytes": 65536,
+    "batch_size_default": 1024,
+    "batch_size_max": 65536
+  },
+  "estimator": "4 * rows * (ceil(C/8) + Q) + 128 * ceil(C/1024) * 128 + 65536",
+  "semantics": [
+    "Column order M,D,L",
+    "Separate logical buffers have independent bit packing",
+    "Owned CPU bool or uint8 tensors",
+    "Zero-shot files allowed; zero columns refused",
+    "Full snapshot validation before iterator first yield",
+    "Close and exhaustion release owned snapshot/cursor",
+    "SDK-only iterator refuses before snapshot",
+    "Eager bit_pack alias ORs with bit_packed",
+    "No implicit SDK fallback from broken embedded profile"
+  ],
+  "replacement": "Same eager consumer with fake/native/SDK; unchanged iterator consumer with fake/native",
+  "upstream_files": 96
+}

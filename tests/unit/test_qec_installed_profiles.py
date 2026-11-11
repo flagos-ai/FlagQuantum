@@ -29,6 +29,7 @@ from tools.qec_installed_smoke import (
     _exercise_matching_graph,
     _exercise_packed_predictions,
     _exercise_sdk_weights,
+    _exercise_shot_file_reading,
     _exercise_stim_conversion,
     _exercise_stim_experiment,
     _exercise_terminal_conversion,
@@ -54,6 +55,9 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     assert (_exercise_stim_conversion(profile) is not None) == available[0]
     assert (_exercise_terminal_conversion(profile) is not None) == available[0]
     assert (_exercise_compiled_measurement_sampler(profile) is not None) == (
+        available[0] or _embedded_profile()
+    )
+    assert (_exercise_shot_file_reading(profile) is not None) == (
         available[0] or _embedded_profile()
     )
     records = _exercise(profile)
@@ -707,3 +711,9 @@ def test_file_conversion_profile_failure_is_not_silently_skipped(
     monkeypatch.setattr(Circuit, "compile_m2d_converter", failed)
     with pytest.raises(RuntimeError, match="injected converter failure"):
         qec_installed_smoke._exercise_measurement_file_conversion("core")
+
+
+def test_new_shot_reader_keeps_dependency_free_import() -> None:
+    from flagquantum.qec.execution import shot_data
+
+    assert shot_data.__all__ == ("read_shot_data_file", "iter_shot_data_file")

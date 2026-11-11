@@ -18,6 +18,77 @@ from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.execution.context import MeasurementMap
 
 
+def _verify_shot_file_reading(native: object) -> None:
+    from contextlib import closing
+
+    from flagquantum.qec.execution.shot_data import (
+        iter_shot_data_file,
+        read_shot_data_file,
+    )
+
+    formats: dict[Literal["01", "b8", "r8", "ptb64", "hits", "dets"], bytes] = {
+        "01": b"101\n" * 128,
+        "b8": b"\x05" * 128,
+        "r8": b"\x00\x01\x00" * 128,
+        "hits": b"0,2\n" * 128,
+        "dets": b"shot D0 L0\n" * 128,
+        "ptb64": (b"\xff" * 8 + b"\x00" * 8 + b"\xff" * 8) * 2,
+    }
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "records"
+        for encoding, data in formats.items():
+            path.write_bytes(data)
+            with patch.object(
+                native, "read_shot_reader", wraps=getattr(native, "read_shot_reader")
+            ) as observed:
+                result = read_shot_data_file(
+                    path=path,
+                    format=encoding,
+                    num_detectors=2,
+                    num_observables=1,
+                    separate_observables=True,
+                    bit_packed=True,
+                )
+                observed.assert_called_once()
+            assert isinstance(result, tuple)
+            assert result[0].tolist() == result[1].tolist() == [[1]] * 128
+            for size in (1, 17, 63, 64, 65, 1024, 65536):
+                total = 0
+                with closing(
+                    iter_shot_data_file(
+                        path=path,
+                        format=encoding,
+                        num_detectors=2,
+                        num_observables=1,
+                        separate_observables=True,
+                        bit_packed=True,
+                        batch_size=size,
+                    )
+                ) as batches:
+                    for batch in batches:
+                        assert isinstance(batch, tuple)
+                        assert (
+                            batch[0].tolist()
+                            == batch[1].tolist()
+                            == [[1]] * len(batch[0])
+                        )
+                        total += len(batch[0])
+                assert total == 128
+        path.write_bytes(b"\x01\x80")
+        with closing(
+            iter_shot_data_file(path=path, format="b8", num_detectors=1)
+        ) as batches:
+            try:
+                next(batches)
+            except ValueError:
+                pass
+            else:
+                raise AssertionError("bad tail was delivered")
+    print(
+        "embedded shot files: six codecs, seven batch sizes, split padding, actual calls, bad-tail refusal"
+    )
+
+
 def main() -> None:
     assert importlib.util.find_spec("stim") is None
     try:
@@ -32,6 +103,7 @@ def main() -> None:
     native_path = Path(native.__file__).resolve()
     assert native_path.is_relative_to(Path(sys.prefix).resolve())
     assert native.upstream_commit == "e2fc1eca7fd21684d433aa5f10f4504ea4860d07"
+    _verify_shot_file_reading(native)
     circuit = DynamicCircuit(1).x(0).measure(0)
     with patch.object(native, "prepare", wraps=native.prepare) as prepare:
         sampler = circuit.compile_sampler(seed=7)
