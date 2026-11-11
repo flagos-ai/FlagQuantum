@@ -17,6 +17,7 @@ from ..core.ir.program import (
 )
 from ..core.ir.program.registers import Register, RegisterType
 from ..core.ir.program.signatures import Signature
+from .binary_field_encoding import resolve_binary_field_encoding
 from .classical_action import evaluate_classical_action
 from .classical_distributions import ClassicalDistribution, draw_classical_value
 from .classical_field_registers import (
@@ -40,7 +41,7 @@ class ComponentClassicalState:
     visitation order. Value and phase callbacks run in that order; decomposition
     is an explicit callback, not Python method discovery or graph transformation.
 
-    Integer/bit and explicitly supplied binary-field ports use existing native
+    Integer/bit and resolved binary-field ports use existing native
     validators and storage codecs. Other encodings, physical graphs, control flow
     and primitive entry operations are refused before actions. Caller values are not
     rewritten. Assignments and last_position remain inspectable after failures;
@@ -125,7 +126,9 @@ class ComponentClassicalState:
             assert registers is not None
             for register in registers:
                 dtype = register.dtype
-                if dtype.encoding == "finite_field" and dtype in self._fields:
+                if dtype.encoding == "finite_field":
+                    if dtype not in self._fields:
+                        self._fields[dtype] = resolve_binary_field_encoding(dtype)
                     if self._fields[dtype].register_type() != dtype:
                         raise ValueError(
                             "finite-field encoding differs from declared metadata"
@@ -133,7 +136,7 @@ class ComponentClassicalState:
                 elif dtype.encoding not in {"bit", "opaque", "uint", "signed"}:
                     raise ValueError(
                         "classical component ports require integer or bit encodings "
-                        "or an explicit matching finite-field encoding"
+                        "or a resolved binary-field encoding"
                     )
         ids = (
             tuple(range(len(block.operations)))

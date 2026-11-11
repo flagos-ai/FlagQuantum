@@ -526,5 +526,5 @@ def test_resolved_field_metadata_is_not_treated_as_integer_values() -> None:
     leaf = leaf_builder.finalize(leaf_builder.inputs).functions[0]
     builder = ComponentProgramBuilder(signature, (leaf,))
     record = builder.finalize(builder.call_dict("identity", builder.inputs))
-    with pytest.raises(ValueError, match="integer or bit"):
-        ComponentClassicalState(record, (0,), {}, lambda f, v: v)
+    with pytest.raises(ValueError, match="should be a"):
+        ComponentClassicalState(record, (0,), {"x": 1}, lambda f, v: v)
