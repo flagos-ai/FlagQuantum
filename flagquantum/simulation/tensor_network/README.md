@@ -239,3 +239,10 @@ edges; `register_tensor_indices.py` remains the existing diagnostic side table.
 The owner creates no graph, wires or quantum operations. Source width-triggered
 Quimb simplification remains an explicit gap. See the [dense axis source audit](../../../docs/development/DENSE_AXIS_SOURCE_AUDIT.md)
 for the complete original-test numerical replacement and contributor check.
+
+The [tensor protocol source audit](../../../docs/development/TENSOR_PROTOCOL_SOURCE_AUDIT.md)
+maps the complete flattening/classical-action original tests and all source
+namespace exports to their native owners. Numerical grouping consumers import
+`register_axis_groups` directly. Explicit provider declarations stay separate
+from Compiler expansion and numerical execution; namespace asset closure does
+not certify open source implementation boundaries.

@@ -57,7 +57,8 @@ now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTI
 closes Q-0754, Q-0755, Q-0756 and Q-0761, including two explicitly inspected
 namespace-only assets. The [register tensor original test file](REGISTER_TENSOR_SOURCE_AUDIT.md)
 (Q-0894) and the [dense original test numerical replacement](DENSE_AXIS_SOURCE_AUDIT.md)
-(Q-0888) bring the total to **13 closed files and 1,267 open files**. These file
+(Q-0888), plus the [tensor protocol original tests and namespace assets](TENSOR_PROTOCOL_SOURCE_AUDIT.md)
+(Q-0880, Q-0886, Q-0890, Q-0896), bring the total to **17 closed files and 1,263 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
 
@@ -104,3 +105,12 @@ source graph and flattening remain in the test adapter; native graph consumers
 are checked separately. Q-0887 stays open for width-triggered simplification,
 and Q-0889 remains open for its independent flattening gaps. All phase and
 section totals are synchronized without adding scenario IDs.
+
+The [tensor protocol audit](TENSOR_PROTOCOL_SOURCE_AUDIT.md) executes the complete
+flattening/classical-action original tests with native boundary replacements.
+Two namespace files close by complete AST and export responsibility disposition,
+not by treating their referenced implementations as complete. Q-0889 and Q-0895
+remain open for their explicit source/native boundaries. Five numerical
+consumers now import the authoritative shared axis owner directly; non-import
+production ASTs are unchanged. No new child ID or completion denominator is
+introduced.
