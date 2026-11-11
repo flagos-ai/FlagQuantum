@@ -22,7 +22,9 @@ from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from .._hybrid.verifier import Diagnostic
 from ..noise import _encode_channel_instruction
+from ..optimization.commutation_cancellation import cancel_commuting_self_inverse
 from ..optimization.state_preparation_synthesis import _synthesize_real_state
+from ..pipeline import merge_self_inverse
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .borrowed_unitary import owned_unitary_layout
 from .gate_tape import expand_gate_tape
@@ -371,6 +373,23 @@ def schedule_register_program(
         default=output_width,
     )
     live_locals: set[ValueId] = set()
+    normalization_cursor = 0
+
+    def normalize_closed_tail() -> None:
+        nonlocal normalization_cursor
+        # Normalize only a bounded suffix at closed helper/scratch boundaries.
+        # These existing passes remove proven inverse pairs, preserve absolute
+        # phase, and never infer a fresh-zero precondition for borrowed data.
+        start = max(normalization_cursor - 128, len(instructions) - 4096, 0)
+        tail = CircuitIR(n_qubits, tuple(instructions[start:]), dtype="complex128")
+        for _ in range(2):
+            reduced = merge_self_inverse(cancel_commuting_self_inverse(tail))
+            if len(reduced.instructions) == len(tail.instructions):
+                break
+            tail = reduced
+        instructions[start:] = tail.instructions
+        normalization_cursor = len(instructions)
+
     skip_until = 0
     for ordinal, op in enumerate(operations):
         if ordinal < skip_until:
@@ -863,7 +882,8 @@ def schedule_register_program(
             else:
                 boolean = None
                 segment_refusal = None
-                if boolean_values and not phase:
+                canonical_predicate = len(output) == 1
+                if (boolean_values or canonical_predicate) and not phase:
                     try:
                         boolean = lower_boolean_value(
                             segment_functions,
@@ -874,6 +894,7 @@ def schedule_register_program(
                             workspace=workspace,
                             workspace_state="fresh_zero",
                             max_operations=remaining,
+                            predicate_only=not boolean_values,
                         )
                     except BooleanCandidateError as error:
                         if error.exhausted:
@@ -973,6 +994,8 @@ def schedule_register_program(
         instructions.extend(gates)
         if op.name == "qreg.release":
             live_locals.remove(op.operands[1].id)
+        if op.name in {"qreg.release", "qreg.unitary_call"}:
+            normalize_closed_tail()
     if boolean_values and not used_boolean and not _allow_empty_boolean:
         if boolean_refusal is not None:
             raise boolean_refusal
@@ -989,17 +1012,19 @@ def schedule_register_program(
             "qreg.return",
         }
     )
-    metadata = (
-        {"construction_reset_repetitions": epochs[0].attributes["count"]}
-        if len(epochs) == 1 and epochs[0].name == "qreg.replay"
-        else (
-            {"construction_basis_workspace_prefix": output_width}
-            if len(epochs) == 1
-            and epochs[0].name == "qreg.gate_tape"
-            and epochs[0].attributes["workspace"]
-            else {}
-        )
-    )
+    metadata: dict[str, int] = {}
+    if len(epochs) == 1 and epochs[0].name == "qreg.replay":
+        metadata["construction_reset_repetitions"] = epochs[0].attributes["count"]
+    elif (
+        len(epochs) == 1
+        and epochs[0].name == "qreg.gate_tape"
+        and epochs[0].attributes["workspace"]
+    ):
+        metadata["construction_basis_workspace_prefix"] = output_width
+    elif any(op.name == "qreg.unitary_call" for op in epochs):
+        # This is a layout hint, not a zero-workspace attestation. Simulation
+        # independently proves its supported gate-by-gate workspace map.
+        metadata["construction_basis_workspace_prefix"] = output_width + hidden_width
     return RegisterCandidate(
         CircuitIR(n_qubits, tuple(instructions), dtype="complex128", metadata=metadata),
         scheduling,

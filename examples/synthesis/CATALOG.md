@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **214/216**.
+Validated quantum-program counterparts: **215/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -63,8 +63,9 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (57 native programs)
+## Applications (58 native programs)
 
+- [quantum_double_slit_experiment](applications/cfd/double_slit_experiment/quantum_double_slit_experiment/README.md)
 - [heat_eq_qsvt](applications/cfd/heat_eq_qsvt/README.md)
 - [qlbm](applications/cfd/qlbm/README.md)
 - [quantum_volume](applications/benchmarking/quantum_volume/README.md)

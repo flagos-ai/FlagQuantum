@@ -29,6 +29,39 @@ _MAX_OPERATIONS = 64
 _MAX_PRODUCTS = 20_000
 
 
+def _ordered_cubes(
+    truth: frozenset[int], width: int, order: tuple[int, ...]
+) -> tuple[tuple[int, int], ...]:
+    memo: dict[tuple[int, frozenset[int]], tuple[tuple[int, int], ...]] = {}
+
+    def cover(depth: int, points: frozenset[int]) -> tuple[tuple[int, int], ...]:
+        key = depth, points
+        if key in memo:
+            return memo[key]
+        if not points:
+            result: tuple[tuple[int, int], ...] = ()
+        elif len(points) == 1 << (width - depth):
+            result = ((0, 0),)
+        else:
+            bit = 1 << order[depth]
+            low = frozenset(point for point in points if not point & bit)
+            high = frozenset(point ^ bit for point in points if point & bit)
+            if low == high:
+                result = cover(depth + 1, low)
+            else:
+                result = (
+                    *((mask | bit, value) for mask, value in cover(depth + 1, low)),
+                    *(
+                        (mask | bit, value | bit)
+                        for mask, value in cover(depth + 1, high)
+                    ),
+                )
+        memo[key] = result
+        return result
+
+    return tuple(sorted(cover(0, truth)))
+
+
 def _disjoint_cubes(
     assignments: Sequence[int], width: int
 ) -> tuple[tuple[int, int], ...]:
@@ -59,8 +92,39 @@ def _disjoint_cubes(
         cubes = tuple(sorted(following))
         if not merged:
             break
-    if len(cubes) > 32:
+    candidates = [cubes]
+    # Reduced ordered decision diagrams preserve disjoint branches. Try a
+    # fixed, bounded set of variable orders rather than relying on a single
+    # minterm-merging order, which can fragment a simple union badly.
+    natural = tuple(range(width))
+    orders = {
+        sequence[offset:] + sequence[:offset]
+        for sequence in (natural, tuple(reversed(natural)))
+        for offset in range(max(width, 1))
+    }
+    for order in sorted(orders):
+        candidates.append(_ordered_cubes(frozenset(truth), width, order))
+
+    def cost(
+        parts: tuple[tuple[int, int], ...],
+    ) -> tuple[int, int, tuple[tuple[int, int], ...]]:
+        polarity = count = 0
+        for mask, value in parts:
+            flips = (polarity ^ (mask ^ value)) & mask
+            polarity ^= flips
+            count += flips.bit_count() + (
+                2 * mask.bit_count() - 3 if mask.bit_count() >= 3 else 1
+            )
+        return (
+            count + polarity.bit_count(),
+            max((max(mask.bit_count() - 2, 0) for mask, _ in parts), default=0),
+            parts,
+        )
+
+    admissible = [parts for parts in candidates if len(parts) <= 32]
+    if not admissible:
         raise BooleanCandidateError("budget: predicate cube count")
+    cubes = min(admissible, key=cost)
     covered: set[int] = set()
     for mask, value in cubes:
         matches = {word for word in range(1 << width) if word & mask == value}
@@ -93,10 +157,20 @@ class BooleanValueCandidate:
 
 
 class _Expansion:
-    def __init__(self) -> None:
+    def __init__(self, truth_width: int | None = None) -> None:
         self.products_left = _MAX_PRODUCTS
+        self.truth_width = truth_width
+        self.one = _ONE if truth_width is None else frozenset(range(1 << truth_width))
 
     def multiply(self, left: _Poly, right: _Poly) -> _Poly:
+        if self.truth_width is not None:
+            # Point sets use intersection for Boolean multiplication. The
+            # domain is at most 256 assignments; no monomial cross-product
+            # is constructed. Ripple operations below keep the same semantics.
+            self.products_left -= 1
+            if self.products_left < 0:
+                raise BooleanCandidateError("budget: Boolean truth operations")
+            return left & right
         self.products_left -= len(left) * len(right)
         if self.products_left < 0:
             raise BooleanCandidateError("budget: Boolean term products")
@@ -131,7 +205,9 @@ class _Expansion:
     def subtract_words(self, left: _Bits, right: _Bits, width: int) -> _Bits:
         """Subtract modulo the already verified result width."""
         right = right[:width] + (_ZERO,) * max(0, width - len(right))
-        negative = self.add_words(tuple(bit ^ _ONE for bit in right), (_ONE,), width)
+        negative = self.add_words(
+            tuple(bit ^ self.one for bit in right), (self.one,), width
+        )
         return self.add_words(left, negative, width)
 
     def bitwise_words(
@@ -141,7 +217,7 @@ class _Expansion:
             word[:width] + (_ZERO,) * max(0, width - len(word)) for word in operands
         )
         if operator == "~":
-            return tuple(bit ^ _ONE for bit in words[0])
+            return tuple(bit ^ self.one for bit in words[0])
         left, right = words
         if operator == "^":
             return tuple(a ^ b for a, b in zip(left, right, strict=True))
@@ -154,9 +230,9 @@ class _Expansion:
 
     def equal_words(self, left: _Bits, right: _Bits) -> _Bits:
         width = max(len(left), len(right))
-        equal = _ONE
+        equal = self.one
         for mismatch in self.bitwise_words("^", (left, right), width):
-            equal = self.multiply(equal, mismatch ^ _ONE)
+            equal = self.multiply(equal, mismatch ^ self.one)
         return (equal,)
 
     def less_words(self, left: _Bits, right: _Bits) -> _Bits:
@@ -192,6 +268,7 @@ def lower_boolean_value(
         "fresh_zero", "caller_asserted_zero", "unknown"
     ] = "unknown",
     max_operations: int = 256,
+    predicate_only: bool = False,
 ) -> BooleanValueCandidate:
     """Produce an optional XOR candidate for AO-04, without selecting it."""
     _positive_integer(max_operations, "max_operations")
@@ -215,6 +292,8 @@ def lower_boolean_value(
     predicate_profile = len(output) == 1 and any(
         op.name in {"qint.equal", "qint.less"} for op in original.operations[:-1]
     )
+    if predicate_only and not predicate_profile:
+        raise BooleanCandidateError("unsupported: expected a one-bit predicate")
     if predicate_profile:
         supported.update({"qint.equal", "qint.less", "qint.bitwise"})
     if any(op.name == "qint.bitwise" for op in original.operations[:-1]):
@@ -225,16 +304,26 @@ def lower_boolean_value(
         raise BooleanCandidateError("unsupported: expected a pure word expression")
     normalized = normalize_arithmetic(analysis)
     block = normalized.program.body.blocks[0]
+    input_width = sum(len(inputs[arg.id]) for arg in block.arguments)
+    truth_width = input_width if predicate_profile and input_width <= 8 else None
+    expand = _Expansion(truth_width)
     wires: list[int] = []
     values: dict[ValueId, _Bits] = {}
     for arg in block.arguments:
         argument_bits = []
         for wire in reversed(inputs[arg.id]):
-            argument_bits.append(frozenset({1 << len(wires)}))
+            argument_bits.append(
+                frozenset({1 << len(wires)})
+                if truth_width is None
+                else frozenset(
+                    basis
+                    for basis in range(1 << truth_width)
+                    if basis & (1 << len(wires))
+                )
+            )
             wires.append(wire)
         values[arg.id] = tuple(argument_bits)
 
-    expand = _Expansion()
     for op in block.operations[:-1]:
         key = op.results[0].id
         evidence = normalized.facts[key]
@@ -244,7 +333,7 @@ def lower_boolean_value(
         constant = evidence.constant
         if constant is not None:
             values[key] = tuple(
-                _ONE if constant & (1 << bit) else _ZERO for bit in range(width)
+                expand.one if constant & (1 << bit) else _ZERO for bit in range(width)
             )
         else:
             operands = tuple(values[value.id] for value in op.operands)
@@ -286,6 +375,20 @@ def lower_boolean_value(
     result = block.operations[-1].operands[0].id
     bits = values[result]
     bits += (_ZERO,) * (len(output) - len(bits))
+    if truth_width is not None:
+        polynomials = []
+        for truth in bits:
+            coefficients = [basis in truth for basis in range(1 << truth_width)]
+            for bit in range(truth_width):
+                for basis in range(len(coefficients)):
+                    if basis & (1 << bit):
+                        coefficients[basis] ^= coefficients[basis ^ (1 << bit)]
+            polynomials.append(
+                frozenset(
+                    mask for mask, coefficient in enumerate(coefficients) if coefficient
+                )
+            )
+        bits = tuple(polynomials)
     support = 0
     for terms in bits:
         for mask in terms:
@@ -308,6 +411,7 @@ def lower_boolean_value(
                 )
                 if sum(mask & basis == mask for mask in terms) % 2:
                     satisfying.append(assignment)
+            polarity = 0
             for mask, value in _disjoint_cubes(satisfying, len(active)):
                 selected = tuple(i for i in range(len(active)) if mask >> i & 1)
                 controls = tuple(wires[active[i]] for i in selected)
@@ -317,18 +421,22 @@ def lower_boolean_value(
                     raise BooleanCandidateError(
                         "mapping: cube requires clean workspace"
                     )
+                changed = (polarity ^ (mask ^ value)) & mask
+                polarity ^= changed
                 flips = tuple(
                     Instruction("x", (wires[active[i]],))
-                    for i in selected
-                    if not value >> i & 1
+                    for i in range(len(active))
+                    if changed >> i & 1
                 )
                 core = (
                     _clean_mcx_instructions(controls, target, cube_workspace)
                     if controls
                     else (Instruction("x", (target,)),)
                 )
-                mapped = (*flips, *core, *flips)
-                if len(gates) + len(mapped) > min(max_operations, 256):
+                mapped = (*flips, *core)
+                if len(gates) + len(mapped) + polarity.bit_count() > min(
+                    max_operations, 256
+                ):
                     raise BooleanCandidateError(
                         "budget: Boolean mapped operations",
                         exhausted=max_operations < 256,
@@ -337,6 +445,11 @@ def lower_boolean_value(
                 used_workspace = tuple(
                     dict.fromkeys((*used_workspace, *cube_workspace))
                 )
+            gates.extend(
+                Instruction("x", (wires[active[i]],))
+                for i in range(len(active))
+                if polarity >> i & 1
+            )
             continue
         # A signed Boolean cube has exactly one satisfying assignment on its
         # support. Recognize it from the bounded ANF, independently of syntax.

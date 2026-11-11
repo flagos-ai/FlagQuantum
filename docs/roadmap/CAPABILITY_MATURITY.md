@@ -697,3 +697,20 @@ implementation reuses existing channel lowering and density execution; no new
 numerical backend or thermal-algorithm completion is claimed.
 
 Run `python -m pytest tests/integration/test_synthesis_native_reset.py tests/integration/test_synthesis_native_interval_mps.py tests/integration/test_synthesis_qmod_thermal_reset.py tests/unit/test_public_api_candidate.py -q`.
+
+
+## Native bounded truth predicates and coherent workspace execution
+
+Maturity: `development_evidence`. Eight-bit exact predicate evaluation reuses
+Boolean word arithmetic and bounded disjoint covers. Independent basis-XOR and
+complex Circuit tests check all 256 assignments, arbitrary target values,
+absolute phase, clean work and actual gate/width refusals. All three register
+schedules retain the same limits. Closed-boundary normalization reuses existing
+exact cancellation rather than changing the source budget or optimality claim.
+
+Simulation's computational-fiber checker covers CH and CRZ with full dense
+Circuit comparisons, control interference and unsafe/dirty-fiber refusals.
+These are local CPU correctness results, not accelerator or distributed claims.
+The complete native double-slit program has separate independent mathematical
+and Circuit acceptance tests; the related application Notebook remains a
+separate workflow.

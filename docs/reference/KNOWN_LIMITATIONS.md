@@ -1170,5 +1170,26 @@ language or allow channels and ownership effects in a unitary template.
 A large program can still exceed the 100000-operation intermediate construction
 ceiling even when its optimized executable might fit the final resource limit.
 An incomplete portfolio still refuses; a fitting best-so-far circuit is not
-accepted. The complete native double-slit draft remains unaccepted for this
-reason; the original-source acceptance and native-example coverage are separate.
+accepted. Bounded suffix normalization at closed helper and scratch boundaries can reduce
+intermediate growth, but does not relax this ceiling. Original-source acceptance
+and native-example coverage remain separate.
+
+
+## Bounded native predicate truth lowering
+
+One-bit predicates with at most eight argument bits can reuse the existing
+Boolean word evaluator over at most 256 exact truth assignments. A bounded
+collection of ordered decision-diagram covers competes with the existing cube
+cover; selection charges actual gates and restores every input polarity. The
+64 source-operation, 12 intermediate-bit, 20000 work, 32 cube and 256 mapped-gate
+ceilings remain. All register schedules can use this checked predicate lowering;
+non-predicate word expressions retain their existing schedule paths.
+
+Closed helper/scratch boundaries reuse exact inverse-cancellation passes on at
+most 4096 trailing gates with a 128-gate overlap. The pre-append 100000-operation
+ceiling and incomplete-portfolio refusal remain. A workspace layout hint enables
+Simulation's independent computational-fiber proof, including CH and CRZ; an
+unproved gate or dirty work map uses the ordinary execution path. The hint is not
+a clean-workspace attestation. CRZ retains its control-dependent scalar phase.
+
+Run `python -m pytest tests/integration/test_synthesis_native_predicate_truth.py tests/unit/test_basis_workspace_controlled.py -q`.

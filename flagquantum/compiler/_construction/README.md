@@ -1142,3 +1142,27 @@ bodies rather than assuming every compact call contains a phase operation.
 Run `python -m pytest tests/integration/test_synthesis_native_unitary_calls.py -q`
 for complete amplitudes, nonzero bindings, remapping, inverse interference,
 workspace cleanup, Const laundering, malformed IR and actual resource limits.
+
+
+### Bounded predicate evaluation and closed-boundary normalization
+
+One-bit predicates with at most eight argument bits evaluate the existing
+Boolean word operations over at most 256 exact truth assignments. A bounded
+set of ordered decision diagrams supplies disjoint covers alongside the original
+cover; actual gate count, work and a deterministic tie break choose the mapping.
+The mapper shares signed-control input polarities between cubes and restores
+all inputs at the end. Existing source, intermediate-width, work, cube and gate
+ceilings remain. Every register schedule can reuse this predicate mapping;
+non-predicate word values keep their existing paths.
+
+At closed helper and scratch boundaries, the scheduler reuses existing exact
+inverse-cancellation passes over at most 4096 trailing instructions with a
+128-instruction overlap. It checks the operation cap before appending each
+source region and never accepts an incomplete portfolio. Programs with shared
+helpers may retain the existing computational-workspace layout hint. Simulation
+independently verifies the actual gates and clean return; Compiler does not
+certify numerical execution or suppress unsupported gates.
+
+Run `python -m pytest tests/integration/test_synthesis_native_predicate_truth.py -q`.
+The full double-slit native/Circuit/mathematical acceptance is in
+`tests/integration/test_synthesis_native_double_slit.py`.
