@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import json
 import os
@@ -165,7 +166,28 @@ def verify_catalog(catalog: Catalog) -> None:
                     f"native example is not tied to this original: {case['id']}"
                 )
             native.read_bytes()
-            example_path(cast(str, case["native_comparison"])).read_bytes()
+            comparison = example_path(cast(str, case["native_comparison"]))
+            tree = ast.parse(comparison.read_text(), filename=str(comparison))
+            if not any(
+                isinstance(node, ast.If)
+                and isinstance(node.test, ast.Compare)
+                and isinstance(node.test.left, ast.Name)
+                and node.test.left.id == "__name__"
+                and len(node.test.ops) == 1
+                and isinstance(node.test.ops[0], ast.Eq)
+                and len(node.test.comparators) == 1
+                and isinstance(node.test.comparators[0], ast.Constant)
+                and node.test.comparators[0].value == "__main__"
+                and any(
+                    isinstance(statement, ast.Expr)
+                    and isinstance(statement.value, ast.Call)
+                    for statement in node.body
+                )
+                for node in tree.body
+            ):
+                raise ValueError(
+                    f"missing executable comparison entry point: {case['id']}"
+                )
         for reference in (
             *case["validation_sources"],
             *case["circuit_validation_sources"],

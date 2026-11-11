@@ -105,6 +105,30 @@ def test_complete_catalog_preserves_sources_and_generated_navigation() -> None:
 
 
 @pytest.mark.parametrize(
+    "source",
+    [
+        "def reference_circuit() -> None:\n    return None\n",
+        'if __name__ == "__main__":\n    pass\n',
+    ],
+)
+def test_catalog_rejects_reference_only_comparison(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: str
+) -> None:
+    catalog = load_catalog()
+    comparison = catalog["cases"][0]["native_comparison"]
+    assert comparison is not None
+    reference_only = tmp_path / "circuit.py"
+    reference_only.write_text(source)
+
+    def comparison_path(path: str) -> Path:
+        return reference_only if path == comparison else example_path(path)
+
+    monkeypatch.setattr("tools.synthesis_catalog.example_path", comparison_path)
+    with pytest.raises(ValueError, match="executable comparison"):
+        verify_catalog(catalog)
+
+
+@pytest.mark.parametrize(
     "change", ["missing", "duplicate", "source_digest", "bindings", "revision"]
 )
 def test_catalog_rejects_incomplete_or_mislabelled_examples(change: str) -> None:
