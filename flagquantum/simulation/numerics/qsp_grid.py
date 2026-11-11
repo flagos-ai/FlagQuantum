@@ -5,39 +5,51 @@
 
 """Finite FFT-grid QSP inspection, without a whole-circle bound guarantee."""
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
+from typing import Any
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy.polynomial import Polynomial
+from numpy.typing import ArrayLike, NDArray
 
-_NumericArray = NDArray[np.float64 | np.complex128 | np.int64]
-_Coefficients = Sequence[complex] | _NumericArray
+from ..value_dimensions import SymbolicArrayShape
+
+_NumericArray = NDArray[Any]
+_Coefficients = ArrayLike | Polynomial | SymbolicArrayShape
+_Maximum = np.float16 | np.float32 | np.float64 | np.longdouble
 
 
 def polynomial_max_abs_value_on_unit_circle(
     coefficients: _Coefficients,
     *,
-    fft: Callable[[_NumericArray], NDArray[np.complex128]],
+    fft: Callable[[_NumericArray], NDArray[Any]] | None = None,
     n_points: int = 2**17,
-) -> float:
+) -> _Maximum:
     """Return the source maximum on n_points uniform FFT-grid points.
 
-    Zero-pad coefficients without changing dtype and call the supplied FFT once.
-    The explicit provider replaces the source's SciPy import. Retain assignment,
+    Zero-pad coefficients without changing dtype and call the FFT once. With no
+    provider, load SciPy's FFT lazily, before array conversion, as in the source.
+    An explicit provider bypasses that optional dependency. Retain assignment,
     FFT and reduction failures rather than truncating or resizing invalid input.
     Numeric storage is O(n_points); no gates or quantum resources are generated.
     """
+    transform = fft
+    if transform is None:
+        from scipy.fft import fft as scipy_fft
+
+        transform = scipy_fft
     data: _NumericArray = np.asarray(coefficients)
     padded: _NumericArray = np.zeros(n_points, dtype=data.dtype)
     padded[: len(data)] = data
-    values = fft(padded)
-    return float(np.max(np.abs(values)))
+    values = transform(padded)
+    maximum: _Maximum = np.max(np.abs(values))
+    return maximum
 
 
 def scale_down_to_qsp_polynomial(
     coefficients: _Coefficients,
     *,
-    fft: Callable[[_NumericArray], NDArray[np.complex128]],
+    fft: Callable[[_NumericArray], NDArray[Any]] | None = None,
     n_points: int = 2**17,
 ) -> _NumericArray:
     """Divide by the sampled maximum only when it exceeds one.
@@ -52,14 +64,14 @@ def scale_down_to_qsp_polynomial(
         list(data), fft=fft, n_points=n_points
     )
     if maximum > 1:
-        data = np.divide(data, maximum)
+        data = data / maximum
     return data
 
 
 def assert_is_qsp_polynomial(
     coefficients: _Coefficients,
     *,
-    fft: Callable[[_NumericArray], NDArray[np.complex128]],
+    fft: Callable[[_NumericArray], NDArray[Any]] | None = None,
     n_points: int = 2**17,
 ) -> None:
     """Retain the source <=1 assertion for its finite-grid maximum only."""
