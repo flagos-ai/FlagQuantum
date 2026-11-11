@@ -895,8 +895,34 @@ print(dict(program.probabilities(result, registers=("q",))))
 ```
 
 The published bit is maximally mixed; its private partner remains physical
-environment. This foundation does not yet admit general mutable numeric helpers,
-numeric coherent predicates or the complete fixed-point finance examples.
+environment. This foundation does not yet admit general mutable numeric helpers
+or the complete fixed-point finance examples.
+
+### Exact numeric predicates in coherent control
+
+Root scalar predicates may compare signed and binary-scaled `QNum` values using
+`==`, `!=`, `<`, `<=`, `>` and `>=`, including exact dyadic constants and bounded
+bitwise combinations of comparisons. An explicit comparison is required; a
+formatted number is never implicitly converted to a Boolean. Root predicate
+capture reuses `WordExpression` for exact scale alignment, sign extension and
+comparison, then the existing `qreg.compute`, controlled effect, uncompute and
+release sequence. No evaluator, opcode or Runtime path is added.
+
+For example, after allocating `x: Output[QNum[3, True, 1]]` and a disjoint
+`q: Output[QBit]`, `control(x > 0.5, lambda: R(0.73, math.pi / 2, q))`
+rotates only the strictly greater numeric values. A constant action such as
+`control(x > 0.5, lambda: phase(1, 0.73))` retains its branch-relative phase,
+including under `adjoint`. Negative encodings and exact threshold equality must
+not be interpreted through unsigned raw words.
+
+The existing eight-input-bit predicate bound and actual work, gate, qubit and
+execution-memory limits apply. Numeric callback expressions, numeric borrowed
+helper predicates and arbitrary conditional numeric phases remain outside this
+slice. Unsupported reads fail early; no format is discarded to enter an unsigned
+fallback. Const targets, dropped or uninitialized reads, callback overlap and
+Output ownership changes retain their existing checks. Complete amplitudes,
+nonzero target XOR, absolute phase, scratch cleanup and budget refusals are
+covered by `tests/integration/test_synthesis_native_numeric_control.py`.
 
 ### Bounded modular updates
 

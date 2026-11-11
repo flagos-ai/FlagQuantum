@@ -32,6 +32,7 @@ from .frontend_increment import capture_increment
 from .frontend_matrix import capture_unitary
 from .frontend_numeric import (
     assign_numeric,
+    capture_numeric_expression,
     has_numeric,
     has_numeric_reads,
     needs_numeric,
@@ -428,6 +429,8 @@ class _Body:
         self, expr: ast.expr, statement: ast.AST
     ) -> tuple[HybridProgram, tuple[Value, ...]]:
         if self.aliases is None:
+            if needs_numeric(self, expr):
+                return capture_numeric_expression(self, expr)
             reject_numeric_reads(self, expr, "unsigned expressions")
         bindings = {
             name: value for name, value in self.classical.items() if type(value) is int

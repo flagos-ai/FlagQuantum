@@ -260,7 +260,7 @@ def test_mutable_numeric_regions_and_shadowed_builtins_refuse() -> None:
             "",
             "with within():\n    score:QNum[4] = -a\nwith apply():\n    phase(score,0.5)",
         ),
-        ("", "control(a==0,lambda:phase(1,0.5))"),
+        ("", "control(a,lambda:phase(1,0.5))"),
     ]:
         with pytest.raises(HybridVerificationError, match="numeric"):
             synth.synthesize(

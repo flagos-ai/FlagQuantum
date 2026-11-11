@@ -11,7 +11,7 @@ from .frontend_cnf import capture_cnf_phase
 from .frontend_controlled_effects import capture_controlled_effects
 from .frontend_increment import capture_increment_call, is_increment_helper
 from .frontend_matrix import capture_controlled_unitary
-from .frontend_numeric import reject_numeric_reads
+from .frontend_numeric import has_numeric_reads, needs_numeric, reject_numeric_reads
 from .frontend_phase import capture_polynomial_phase
 from .frontend_ports import program_ports
 from .frontend_python import _error, _QuantumFunction
@@ -59,10 +59,20 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             "program.control",
             "expected control(bit, lambda: operation)",
         )
-    for argument in node.args:
-        reject_numeric_reads(owner, argument, "coherent control")
     condition, callback = node.args
     assert isinstance(callback, ast.Lambda)
+    numeric_condition = has_numeric_reads(owner, condition)
+    numeric_predicate = needs_numeric(owner, condition) and is_composite_predicate(
+        condition
+    )
+    if numeric_condition and not is_composite_predicate(condition):
+        _error(
+            owner.source,
+            condition,
+            "program.numeric",
+            "numeric reads in controls require an explicit bounded comparison",
+        )
+    reject_numeric_reads(owner, callback, "coherent callback")
     args = callback.args
     body = callback.body
     if (
@@ -134,6 +144,8 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     if (
         operation is phase
         and len(body.args) == 2
+        and not numeric_condition
+        and not (numeric_predicate and phase_constant is not None)
         and (
             owner.aliases is not None
             or isinstance(condition, ast.Subscript)
@@ -161,9 +173,13 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         capture_polynomial_phase(owner, expression, angle, body, condition=condition)
         return
 
-    predicate_computed = isinstance(condition, ast.Compare) or (
-        (operation in (r, qft, x) or increment or composable)
-        and is_composite_predicate(condition)
+    predicate_computed = (
+        numeric_predicate
+        or isinstance(condition, ast.Compare)
+        or (
+            (operation in (r, qft, x) or increment or composable)
+            and is_composite_predicate(condition)
+        )
     )
     scalar_location = (operation is r or increment or composable) and (
         isinstance(condition, ast.Subscript) or owner.aliases is not None

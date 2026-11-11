@@ -8,7 +8,7 @@ from dataclasses import replace
 from fractions import Fraction
 from typing import TYPE_CHECKING, NoReturn
 
-from .._hybrid.model import INDEX, Operation, Value, ValueId
+from .._hybrid.model import INDEX, HybridProgram, Operation, Value, ValueId
 from .frontend_ports import _Port
 from .frontend_python import _error
 from .frontend_views import _require_builtin
@@ -151,6 +151,16 @@ def _expression(owner: _Body, expression: ast.expr) -> WordExpression[ast.expr]:
             for name, port in owner.ports.items()
         },
     )
+
+
+def capture_numeric_expression(
+    owner: _Body, node: ast.expr
+) -> tuple[HybridProgram, tuple[Value, ...]]:
+    """Bind exact owned scalar reads to the existing verified word graph."""
+    expression = _expression(owner, node)
+    graph = expression.function()
+    owner.owner.functions.append(graph)
+    return graph, tuple(owner.registers[name] for name in expression.names)
 
 
 def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:
