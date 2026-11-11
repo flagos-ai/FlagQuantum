@@ -319,3 +319,69 @@ class ComponentClassicalState:
                 self.step()
         except StopIteration:
             return self.finalize()
+
+
+def simulate_phased_component_calls(
+    record: ProgramRecord,
+    call_orders: Mapping[str, tuple[int, ...]],
+    values: Mapping[str, object],
+    value_action: Callable[[FunctionRecord, dict[str, object]], object],
+    phase_action: (
+        Callable[
+            [FunctionRecord, dict[str, object]],
+            complex | MeasurementOutcomePhase | None,
+        ]
+        | None
+    ) = None,
+    *,
+    entry: str = "main",
+    field_encodings: Mapping[RegisterType, FiniteFieldEncoding] | None = None,
+    rng: np.random.Generator | None = None,
+    fixed_values: Mapping[int, object] | None = None,
+) -> tuple[dict[str, object], complex]:
+    """Evaluate stored typed-call bodies recursively with source phased policy.
+
+    Compiler supplies a call order for each body reached after a numerical
+    action returns NotImplemented with no phase. Direct numerical leaves need
+    no order. Each nested state starts at phase one, inherits the same RNG or
+    fixed-value mapping and returns its accumulated phase to the parent. Fixed
+    IDs remain local operation positions, matching source nested instances.
+
+    This composes the existing state, binder and phase owners; it performs no
+    decomposition discovery or graph transformation. Missing body schedules
+    raise NotImplementedError with the existing recursive cause context. Other
+    admission, action and output failures retain ComponentClassicalState rules.
+    Pure source recursion's separate default RNG is outside this phased entry.
+    """
+    orders = dict(call_orders)
+
+    def recurse(
+        function: FunctionRecord, inputs: dict[str, object]
+    ) -> tuple[dict[str, object], complex]:
+        return evaluate(function.name, inputs)
+
+    def evaluate(
+        name: str, inputs: Mapping[str, object]
+    ) -> tuple[dict[str, object], complex]:
+        try:
+            order = orders[name]
+        except KeyError as exc:
+            raise NotImplementedError(
+                f"no classical call order supplied for {name}"
+            ) from exc
+        state = ComponentClassicalState(
+            record,
+            order,
+            inputs,
+            value_action,
+            phase_action,
+            entry=name,
+            field_encodings=field_encodings,
+            phased=True,
+            rng=rng,
+            fixed_values=fixed_values,
+            recurse=recurse,
+        )
+        return state.simulate(), state.phase
+
+    return evaluate(entry, values)
