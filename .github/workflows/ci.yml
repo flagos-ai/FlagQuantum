@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 # Hosted jobs share eight repository-wide concurrency groups across workflows.
+# Development image builds use slots 6 and 7; trusted PR CI avoids those slots.
 # Trusted coverage uses prewarmed locked images on the CPU pool.
 # Core suites use qualified A800 caches; SDK downloads stay hosted.
 # Source preparation uses the generic CPU pool with independent concurrency.
@@ -411,12 +412,12 @@ jobs:
 
   native-fermion:
     needs: prepare-source
-    runs-on: ubuntu-latest
+    runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
     timeout-minutes: 25
     permissions:
       contents: read
     concurrency:
-      group: flagquantum-gh-6
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('a100-cpu-{0}-native-fermion-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
       queue: max
     strategy:
       fail-fast: false
@@ -431,6 +432,14 @@ jobs:
       CUDA_VISIBLE_DEVICES: ""
       MAX_JOBS: "2"
     steps:
+      - name: Clear sparse checkout state from a previous job
+        run: |
+          if [ -d .git ]; then
+            git sparse-checkout disable
+            rm -f .git/info/sparse-checkout
+            git config --local --unset core.sparseCheckout || true
+            git config --local remote.origin.url "https://github.com/${{ github.repository }}"
+          fi
       - uses: actions/checkout@v5
         with:
           persist-credentials: false
@@ -438,6 +447,8 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - uses: ./.github/actions/isolated-python
+        with:
+          torch-spec: torch==${{ matrix.torch }}
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         with:
@@ -477,7 +488,7 @@ jobs:
       OPENBLAS_NUM_THREADS: "1"
       CUDA_VISIBLE_DEVICES: ""
     concurrency:
-      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-6
+      group: flagquantum-${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && format('self-hosted-{0}-cpu-core-{1}', github.run_id, strategy.job-index || 0) || 'gh' }}-4
       queue: max
     strategy:
       fail-fast: false
@@ -1174,7 +1185,7 @@ jobs:
       contents: read
       packages: read
     concurrency:
-      group: flagquantum-gh-7
+      group: flagquantum-gh-1
       queue: max
     strategy:
       fail-fast: false
@@ -1652,7 +1663,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: flagquantum-gh-7
+      group: flagquantum-gh-2
       queue: max
     env:
       OPTIONAL_VERSIONS: "0.44.1 0.45.1"
@@ -1885,9 +1896,9 @@ jobs:
     # which is still the default compiler on a maintained Linux LTS release.
     runs-on: ubuntu-22.04
     timeout-minutes: 30
-    # Packaging uses a slot freed by the preinstalled CPU suites.
+    # Packaging stays independent of the long development image builds.
     concurrency:
-      group: flagquantum-gh-6
+      group: flagquantum-gh-4
       queue: max
     steps:
       - uses: actions/checkout@v4
