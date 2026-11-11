@@ -55,7 +55,8 @@ now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTI
 (Q-0765), and the [permutation original test file](PERMUTATION_SOURCE_AUDIT.md)
 (Q-0760). The [alias preprocessing audit](ALIAS_DISCRETIZATION_SOURCE_AUDIT.md)
 closes Q-0754, Q-0755, Q-0756 and Q-0761, including two explicitly inspected
-namespace-only assets, for **11 closed files and 1,269 open files**. These file
+namespace-only assets. The [register tensor original test file](REGISTER_TENSOR_SOURCE_AUDIT.md)
+(Q-0894) brings the total to **12 closed files and 1,268 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
 
@@ -88,3 +89,10 @@ validated concrete/symbolic factories replace duplicate algorithms with shared
 calls. All original tests run unchanged and with native bindings. Namespace
 assets close by explicit AST/blob disposition, without recreating upstream
 package names or claiming new algorithm functionality.
+
+The [register tensor data audit](REGISTER_TENSOR_SOURCE_AUDIT.md) maps all six
+functions to a shared numerical owner, replacing duplicate projection and control
+slice loops. Q-0894 closes after all original tests pass unchanged and with native
+bindings. Q-0893 stays open for inherited paired-directional-name reconstruction
+and scalar object-array failures. Native validated paired-name support remains
+explicitly separate from raw source behavior.

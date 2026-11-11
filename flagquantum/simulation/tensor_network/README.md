@@ -224,3 +224,11 @@ no Compiler transform. Existing pure/mixed supplier signatures, autograd and
 empty-network refusals are preserved. See
 [selected component dense contraction](../../../docs/development/COMPONENT_DENSE.md)
 for complete source channels, all measured branches and separate cost evidence.
+
+`register_tensor_data.py` owns raw word shape groups, control-active slices and
+source-ordered directional projection. Validated `register_tensor.py` and
+`controlled_tensor.py` reuse it, preserving their native checks and caller-owned
+work. The raw layer has no foreign graph objects, circuit execution or provider
+selection. See [the full source audit](../../../docs/development/REGISTER_TENSOR_SOURCE_AUDIT.md)
+for dtype/view behavior, original-test replacement, native paired-name support,
+inherited raw failures and separate primitive/model accounts.
