@@ -7,29 +7,29 @@ the source's threshold search and symbolic asymptotic expression. Both adapt
 Qualtran v0.7.0 `linalg/polynomial/jacobi_anger_approximations.py` at
 `bcb17bb25360ed68ce3bc084645db3e929799389`, preserving its copyright notice.
 
-## Explicit dependency boundary
+## Optional dependency boundary
 
-FlagQuantum does not declare SciPy as a production dependency. The native
-functions therefore require caller-owned Bessel evaluation for numerical work;
-they do not silently import a transitive library or add a new package dependency.
-The existing NumPy numerical inspection environment is still required. A vector
-provider takes `(orders: ndarray[int64], t: float)` and returns real float64
-Bessel values; a scalar provider takes `(order: int, t: float)` and returns a real
-scalar. The reference tests and example supply `scipy.special.jv`, exactly as
-used by the unchanged source. Tests also replace it with finite cached values
-without changing coefficient, degree, matrix, or circuit consumers.
+Both numerical owners now accept an optional Bessel provider. When omitted,
+they lazily import `scipy.special.jv`, the same evaluator called by the original
+source. This is a caller-installed optional dependency, not an automatic install
+or a core dependency manifest change. Missing SciPy and provider errors
+propagate; there is no substitute implementation or precision fallback.
 
-This is a deliberate native signature adaptation. It does not claim drop-in
-upstream API compatibility or a built-in Bessel implementation. Provider errors
-propagate. Providers own their dtype, shape, numerical accuracy and evaluation
-cost; these are typed inputs rather than a new registry or implicit fallback.
-The symbolic degree path needs no Bessel provider and lazily uses existing
-SymPy support and Core's `is_symbolic_value` classifier.
+An explicit vector provider takes `(orders: ndarray[int64], t: float)`; a scalar
+provider takes `(order: int, t: float)`. Tests retain cached-provider replacement
+without changing coefficient, degree, matrix or circuit consumers. The symbolic
+degree path bypasses Bessel import and reuses existing SymPy support and Core's
+`is_symbolic_value` classifier. Default calls now work without the native-only
+required-provider adaptation. Native keyword names and the optional injection
+argument remain FlagQuantum-owned; this is not an upstream alias package.
+
+See [the complete source audit and optional dependency review](JACOBI_ANGER_SOURCE_AUDIT.md).
 
 ## Executable numerical composition
 
 The example requires a caller environment containing SciPy. SciPy is supplied by
-the comparison environment, not installed or imported by these production modules.
+the comparison environment; the production default now imports it lazily when
+needed. The example keeps an explicit provider to demonstrate replacement.
 
 ```python
 import numpy as np
@@ -65,10 +65,12 @@ slice; all-branch physical erasure claims are outside its scope.
 ## Retained source semantics and exceptions
 
 - Cosine coefficients are `i**n * J_n(t)` with complex128 output. The typed native
-  implementation spells the same multiplication ufunc as `np.multiply`.
+  implementation retains the literal original `1j**orders * values` expression.
 - Sine coefficients are `J_n(t)`: their actual source dtype is float64 even
   though the source annotation says complex128. Native typing follows the data.
   Both use one full-array Bessel call; degree -1 retains the source empty array.
+  Complex t follows the original SciPy output dtype rather than the real-input
+  return annotation; no runtime cast is added.
 - Degree search doubles from 1, uses NumPy `isclose` with the original defaults,
   then `bisect_left` and the original final assertion. Tests compare every
   scalar Bessel argument in visitation order, including final assertion calls.
@@ -77,12 +79,17 @@ slice; all-branch physical erasure claims are outside its scope.
 - Any SymPy parameter selects the original expression with positive unspecified
   `C_{JA}`. The expression is equal to the unchanged source, including a SymPy
   integer/rational input. It is not a concrete certified degree or gate count.
-- A concrete search with no evaluator raises a native ValueError; this extra
-  boundary is separate from source parity. Finite supported inputs are tested.
-  Nonfinite search inputs and arbitrary invalid precision have no source
-  iteration guard; they remain unaccepted rather than being run without a bound.
-  The doubling/bisect predicate is the source heuristic, not a new proof of a
-  globally minimal truncation degree or a uniform tail-error bound.
+- Concrete search with no evaluator now calls the same SciPy jv by default.
+  The prior native-only ValueError has been removed. With the locked SciPy,
+  NaN/infinite t produces 1,025 doubling visits and then OverflowError; some
+  invalid precisions underflow to an exact zero Bessel value and return 162.
+  All eight audited boundary cases exit naturally within a 15-second process
+  budget, with identical source/native call sequence, warnings and outcomes.
+  These finite observations are not a termination guarantee for arbitrary
+  inputs, providers or dependency versions. No production guard is added to
+  the unchanged source search. Its coarse-precision assertion and heuristic
+  limitations remain open and are not an error certificate.
+
 
 ## Verification and resource interpretation
 

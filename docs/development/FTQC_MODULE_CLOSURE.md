@@ -51,7 +51,8 @@ phase totals are generated from parent decisions, not test count.
 
 [Matrix numerics](MATRIX_NUMERICS.md) closes Q-0757 and Q-0758. The parent ledger
 now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTION_CLOSURE.md)
-(Q-0762, Q-0763, Q-0767), for **5 closed files and 1,275 open files**. These file
+(Q-0762, Q-0763, Q-0767), and the [Jacobi-Anger original test file](JACOBI_ANGER_SOURCE_AUDIT.md)
+(Q-0765), for **6 closed files and 1,274 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
 
@@ -64,3 +65,10 @@ inputs. Its finite-grid assertion still misses a source counterexample with
 between-grid magnitude 1.06. Per the frozen criteria, the parent stays open
 rather than treating interface completion as repair of that upstream defect.
 No additional scenario or parent ID was added to the completion denominator.
+
+
+The [Jacobi-Anger source audit](JACOBI_ANGER_SOURCE_AUDIT.md) fills its default
+Bessel interface and observes eight exceptional search inputs in bounded
+processes. Q-0765 closes after all 24 original tests also pass with native
+bindings. The source implementation parent Q-0764 stays open for the inherited
+search/heuristic limitation under the same frozen closure rules.
