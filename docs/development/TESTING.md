@@ -132,6 +132,7 @@ so the check is per test rather than per file.
 | Marker | Runtime Environment | Proves | Does Not Prove |
 | --- | --- | --- | --- |
 | `smoke` | Fast local CPU; no subprocess, GPU, or benchmark run. | Importability, minimal `fq.Circuit`, expectation, and autograd health. | Planner completeness, distributed semantics, performance, or release readiness. |
+| `openfermion` | Isolated optional workflow with real OpenFermion 1.7.1 on Python 3.10/3.12. | Ordered operator conversion, matrix agreement and round trips at the explicit migration boundary. | Native dependency requirements, upstream execution support, or full OpenFermion compatibility. |
 | `unit` | Fast local CPU pure logic. | IR, planner, audit, metadata, helper, and schema logic in isolation. | Runtime integration, process-group behavior, accelerator execution, or benchmark truth. |
 | `integration` | Local single-process developer environment. | Cross-module API/runtime behavior without cluster setup. | Multi-process transport, GPU execution, or scalability claims. |
 | `distributed_cpu` | CPU/local distributed simulators, planner/audit checks, or torch distributed semantics that do not require real accelerator capacity. | Rank ownership metadata, sharding intent, fail-closed gates, and development-production semantic parity where applicable. | Real multi-GPU capacity expansion, production transport performance, or release-grade scalability evidence. |

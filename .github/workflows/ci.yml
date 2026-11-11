@@ -500,12 +500,13 @@ jobs:
       - uses: ./.github/actions/isolated-python
         with:
           torch-spec: torch==${{ matrix.torch }}
+          self-hosted-pypi-index: https://mirrors.aliyun.com/pypi/simple
       - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
       - uses: ./.github/actions/install-cpu-torch
         with:
           torch-spec: torch==${{ matrix.torch }}
       - name: Install the native package without optional science dependencies
-        run: python -m pip install --no-build-isolation -e '.[dev]'
+        run: python -m pip install --no-build-isolation -e . 'pytest>=7,<10'
       - name: Verify the independent core workflow on Linux
         run: |
           python -c "import importlib.util; assert all(importlib.util.find_spec(name) is None for name in ('numpy', 'scipy', 'pyscf', 'h5py', 'openfermion', 'cirq'))"

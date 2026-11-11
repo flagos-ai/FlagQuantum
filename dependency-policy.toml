@@ -5,6 +5,7 @@ core = ["torch>=2.10,<2.15", "tomli>=2.0,<3; python_version < '3.11'"]
 [extras]
 chemistry-hdf5 = ["h5py>=3.11,<4"]
 chemistry-pyscf = ["pyscf>=2.8,<3"]
+openfermion = ["openfermion==1.7.1"]
 # The development extra is the toolchain this repository installs to check
 # itself, so every entry is bounded and its floor is recorded in [tested]. The
 # `dependency-bounds` lane installs exactly those floor pins and re-runs the
@@ -36,6 +37,7 @@ interop-all = ["amazon-braket-sdk>=1.117,<2; python_version >= '3.11'", "cirq-co
 
 [classes]
 scientific_driver = ["chemistry-pyscf", "chemistry-hdf5"]
+scientific_interop = ["openfermion"]
 development = ["dev"]
 accelerator_kernel = ["cuda"]
 optional_runtime = ["jax", "cotengra", "stim", "pymatching"]
@@ -81,6 +83,7 @@ h5py = ["pyscf"]
 numpy = ["jax", "matplotlib", "pymatching", "qiskit", "stim"]
 
 [tested]
+openfermion = ["1.7.1"]
 torch = ["2.10", "2.11", "2.12", "2.13", "2.14"]
 jax = ["0.10"]
 stim = ["1.16"]

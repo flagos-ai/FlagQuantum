@@ -405,6 +405,8 @@ This catalog is generated from the machine-validated
 | Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 | Build a spinful open chain with explicit hopping, interaction and chemical potential | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
+| Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 
 ## Build and compile
 
@@ -1928,6 +1930,20 @@ Compile a program for a declared third-party target and execute the compiled pro
 - **Start:** [quick example](../../examples/remote/emulate_local_target.py)
 - **Documentation:** [guide](../../flagquantum/remote/README.md)
 - **Known boundary:** A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. emulate_declared_target reaches the same execution from a provider's own declaration instead of a caller-built profile: the declaration is validated fail-closed first, its own shot limit is the limit enforced while its declared operation limit becomes the emulated target's own declared limit, and a declaration that offers several devices is refused unless the caller names one. The emission dialect stays the caller's request rather than a fact read out of the declaration, because artifacts.profiles is an open collection of the profiles a device publishes and not a syntax claim. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade.
+
+### Optional OpenFermion operator conversion
+
+Convert external fermionic and Pauli operators at an explicit optional ecosystem boundary, then use native operator consumers.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.openfermion.from_openfermion_fermion`, `flagquantum.ecosystem.openfermion.to_openfermion_fermion`, `flagquantum.ecosystem.openfermion.from_openfermion_qubit`, `flagquantum.ecosystem.openfermion.to_openfermion_qubit`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick-start guide](../../flagquantum/ecosystem/README.md)
+- **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
 
 
 ## Validated public performance claims

@@ -540,6 +540,14 @@ def test_container_builds_cannot_hold_a_trusted_pull_request_ci_capacity_lock() 
         ), f"CI job {name} waits behind a development container build"
 
 
+def test_openfermion_validation_does_not_wait_for_container_builds() -> None:
+    build_groups = _groups(_document("publish-dev-container.yml")["jobs"]["publish"])
+    jobs = _github_hosted_jobs("openfermion-interop.yml")
+    assert jobs
+    for name, job in jobs.items():
+        assert not (_groups(job) & build_groups), name
+
+
 def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
     job = _document("ci.yml")["jobs"]["native-fermion"]
     assert job["runs-on"] == TRUSTED_CPU_ROUTE
@@ -550,6 +558,18 @@ def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None
         if step.get("uses") == "./.github/actions/isolated-python"
     )
     assert isolated["with"]["torch-spec"] == "torch==${{ matrix.torch }}"
+    assert isolated["with"]["self-hosted-pypi-index"] == (
+        "https://mirrors.aliyun.com/pypi/simple"
+    )
+    native_install = next(
+        step
+        for step in job["steps"]
+        if step.get("name")
+        == "Install the native package without optional science dependencies"
+    )
+    assert native_install["run"] == (
+        "python -m pip install --no-build-isolation -e . 'pytest>=7,<10'"
+    )
     commands = "\n".join(str(step.get("run", "")) for step in job["steps"])
     assert not any(
         step.get("uses", "").startswith("actions/checkout@") for step in job["steps"]
