@@ -187,7 +187,7 @@ Validated local Notebook workflows: **24/213**.
 | `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/main.py) | pending |
 | `algorithms/quantum_linear_solvers/vqls/vqls_with_lcu` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/main.py) | pending |
 | `algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_for_matrix/main.py) | pending |
-| `algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization` | notebook_workflow | Pending | pending |
+| `algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/main.py) | pending |
 | `algorithms/quantum_primitives/gqsp/gqsp` | notebook_workflow | [Native program](algorithms/quantum_primitives/gqsp/main.py) | pending |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation_helpers` | python_unclassified | Pending | pending |

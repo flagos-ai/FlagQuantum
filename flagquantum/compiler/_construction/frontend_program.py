@@ -125,6 +125,9 @@ class _Capture:
             tuple[int, tuple[int | None, ...], tuple[tuple[bool, int], ...]],
             tuple[HybridProgram, tuple[_Port, ...]],
         ] = {}
+        self.expression_cache: dict[
+            tuple[str, int, str, tuple[tuple[str, int], ...]], HybridProgram
+        ] = {}
 
     def build(
         self,
@@ -509,6 +512,17 @@ class _Body:
             return value
 
         actuals = tuple(numeric_input(name) for name in names)
+        expression_key = (
+            self.source.filename,
+            self.source.location(expr).line,
+            ast.dump(expr, include_attributes=False),
+            tuple(
+                (name, register_width(value))
+                for name, value in zip(names, actuals, strict=True)
+            ),
+        )
+        if expression_key in self.owner.expression_cache:
+            return self.owner.expression_cache[expression_key], actuals
         function = deepcopy(self.source.node)
         function.name = f"{self.name}.expr{self.expressions}"
         self.expressions += 1
@@ -539,6 +553,7 @@ class _Body:
             },
         )
         self.owner.functions.append(graph)
+        self.owner.expression_cache[expression_key] = graph
         return graph, actuals
 
     def phase_number(self, node: ast.expr) -> float | None:

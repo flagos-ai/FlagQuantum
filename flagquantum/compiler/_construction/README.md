@@ -1097,3 +1097,25 @@ Exact numeric region boundary tests are in
 `tests/integration/test_synthesis_native_numeric_regions.py`; complete original,
 native and Circuit acceptance is in
 `tests/integration/test_synthesis_native_rainbow_direct.py`.
+
+### Repeated unsigned definitions and nested scalar phases
+
+One capture reuses an unsigned expression definition when its specialized AST,
+ordered input names and widths, and source location agree. This cache is local
+to that capture. Classical constants and input widths remain part of identity;
+different bindings cannot borrow an incompatible definition. Every compute,
+effect and cleanup call remains in the program, with its own storage and call
+location. The existing 4096-node verifier charges the resulting unique definitions
+and all dynamic operations; no source or construction ceiling is enlarged.
+
+The shared controlled-effect expander also preserves a predicate-only phase's
+implicit scalar coordinate when adding an outer control. That phase becomes a
+joint conditional phase, including its absolute scalar factor. Existing register
+verification still checks initialization, disjointness, borrowing and budgets.
+
+The complete molecular walk example groups selector leaves by their per-data-bit
+Pauli axis while retaining all sixteen leaves and the original power sequence.
+Independent matrix acceptance includes private data after drop and clean scratch.
+See `tests/integration/test_synthesis_native_molecular_walk.py`,
+`tests/integration/test_synthesis_native_expression_sharing.py` and
+`tests/integration/test_synthesis_native_nested_scalar_phase.py`.

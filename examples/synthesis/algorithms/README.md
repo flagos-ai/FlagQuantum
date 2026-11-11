@@ -31,6 +31,7 @@ Native FlagQuantum programs currently available:
 - [qsvt_matrix_inversion](quantum_linear_solvers/qsvt_matrix_inversion/README.md)
 - [vqls_with_lcu](quantum_linear_solvers/vqls/vqls_with_lcu/README.md)
 - [qpe_for_matrix](quantum_phase_estimation/qpe_for_matrix/README.md)
+- [qpe_for_molecule_with_qubitization](quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/README.md)
 - [gqsp](quantum_primitives/gqsp/README.md)
 - [hadamard_test](quantum_primitives/hadamard_test/README.md)
 - [swap_test](quantum_primitives/swap_test/README.md)

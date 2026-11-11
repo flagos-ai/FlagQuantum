@@ -128,6 +128,14 @@ def emit_controlled_effect(
             )
         else:
             raise ValueError("unsupported gate in QPE callback")
+    elif (
+        op.name == "qreg.control_phase" and "indices" not in attrs and len(values) == 1
+    ):
+        # A predicate-only phase has one implicit scalar coordinate. Preserve it
+        # when adding an outer control, rather than treating it as global phase.
+        if register_width(values[0]) != 1:
+            raise ValueError("implicit controlled phase requires a scalar predicate")
+        phase(((values[0], 0),), attrs["angle"])
     elif op.name in {"qreg.control_phase", "qreg.control_x"} and "indices" in attrs:
         indices = (bit, *attrs["indices"])
         effect(
