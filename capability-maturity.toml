@@ -2333,3 +2333,22 @@ limitations = "Explicitly optional conversion of FermionOperator and QubitOperat
 focused_tests = "tests/unit/test_openfermion_conversion.py"
 integration_tests = "tests/integration/test_openfermion_interop.py"
 development_artifact = "flagquantum/ecosystem/README.md"
+
+[capabilities.openfermion_molecular_data_import]
+title = "Populated OpenFermion molecular data input"
+summary = "Import cached real spatial integrals from an existing OpenFermion MolecularData object into the native MolecularProblem consumed by active-space and encoded measurement workflows."
+category = "deployment_and_extension"
+user_goals = ["Reuse populated molecular integrals without implicit file access", "Replace external molecular input while preserving native Hamiltonian and measurement consumers"]
+public_apis = ["flagquantum.ecosystem.chemistry.molecular_data.from_openfermion_molecular_data"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "not_applicable"
+quick_start = "flagquantum/ecosystem/chemistry/README.md"
+documentation = "flagquantum/ecosystem/chemistry/README.md"
+level = "experimental"
+owner = "Ecosystem maintainers"
+limitations = "One-way import of already populated OpenFermion 1.7.1 MolecularData objects only. Real dense closed-shell spatial integrals, multiplicity one and lowest-orbital reference occupations only. The adapter reads cached integral fields without implicit loading, runs no electronic-structure calculation and retains no upstream arrays. The default budget is 32 spatial orbitals before integral copies; dense O(n^4) storage remains required. No file discovery, writing, complex/open-shell or spin-orbital input, geometry/integral gradients, amplitudes, density matrices or full upstream compatibility. OpenFermion and its transitive dependencies are separately installed only for this optional boundary; native chemistry does not require OpenFermion or Cirq. No production or scalability claim."
+focused_tests = "tests/unit/test_molecular_data_boundary.py"
+integration_tests = "tests/integration/test_molecular_data_isolation.py"
+development_artifact = "flagquantum/ecosystem/chemistry/README.md"
