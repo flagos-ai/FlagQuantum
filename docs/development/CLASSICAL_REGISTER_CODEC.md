@@ -33,7 +33,7 @@ classical ports still encounter the original zero-quantum-width reshape boundary
 The node entry continues to refuse classical ports before enumeration.
 
 This boundary supports concrete widths and concrete numerical parameters from
-the existing constructors. Symbolic metadata, non-admitted field types and unknown encodings
+the existing constructors. Symbolic metadata and unknown encodings
 require an explicit codec; they do not silently fall back to unsigned integers.
 Broader numerical metadata support does not admit new types into executable
 Program IR. Core verification, physical lowering, call graphs and protected APIs
@@ -93,3 +93,11 @@ quantum binary descriptors to the existing resolver and FiniteFieldEncoding.
 Complete polynomial identity and typed array behavior are retained. The original
 dense field-output type-loss and multidimensional array failures remain explicit;
 this does not certify successful dense field identity or wider Core admission.
+
+## Shared numerical field metadata
+
+[Finite-field metadata reconstruction](FINITE_FIELD_METADATA.md) now supports
+concrete odd-characteristic and classical field declarations in numerical codecs.
+The executable binary entry still enforces the original Core admission. Earlier
+refusals of these numerical domains have been replaced by complete source
+comparisons; source dense type-loss and invalid binary words remain failures.

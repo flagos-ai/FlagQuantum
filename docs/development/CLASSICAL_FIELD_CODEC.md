@@ -76,3 +76,12 @@ metadata. Evidence is retained in
 `ftqc-reference-env/g2-classical-field-codec-source.json` and verification logs.
 
 Default smoke/unit result: `6 failed, 22103 passed, 300 skipped, 1037 warnings in 130.20s (0:02:10)`. All observed failure IDs belong to the seven known baseline IDs; 1 baseline IDs were not observed before the max-failure stop. This is not a green full-suite result. The comparison is retained in `ftqc-reference-env/g2-classical-field-codec-default-comparison.json`.
+
+## Numerical domain extension
+
+[Shared field metadata reconstruction](FINITE_FIELD_METADATA.md) now restores
+odd-characteristic and classical descriptors for numerical codec use. The earlier
+restriction in this batch applied to the former binary-only adapter. Its two
+domain refusal tests are replaced by successful codec parity and independent
+Core execution refusal tests. Malformed projections still reject. All recorded
+source dense type-loss and array failures remain unchanged.

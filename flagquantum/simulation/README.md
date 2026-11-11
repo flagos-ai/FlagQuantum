@@ -904,3 +904,7 @@ tables now have native default codecs while explicit overrides retain precedence
 [Binary field register codec composition](../../docs/development/CLASSICAL_FIELD_CODEC.md)
 connects admitted descriptors through the existing field resolver, preserving
 source numerical classes and its dense-output type-loss failure boundary.
+
+[Shared finite-field metadata](../../docs/development/FINITE_FIELD_METADATA.md)
+restores quantum/classical numerical declarations, including odd characteristic.
+Executable binary admission stays separate and unchanged.

@@ -201,3 +201,10 @@ effects and exact Add matrices/primitive streams match the frozen source.
 Default dense identity output still loses its field class at the original
 NumPy conversion and fails; multidimensional array limitations are retained.
 Q-0895/source-wide closure remains open and the inventory counts do not change.
+
+[Shared field metadata reconstruction](FINITE_FIELD_METADATA.md) replaces the
+binary-only numerical inverse with one quantum/classical field owner. The
+executable binary entry still calls Core admission first. Odd-field/classical
+codecs now match source domains, full multiplication tables, types and failures;
+this adds no executable gate family. Original dense and source-wide boundaries
+remain open and fixed inventory counts do not increase.
