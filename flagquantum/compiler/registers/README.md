@@ -450,3 +450,8 @@ connects these existing hierarchy, control, exact-adjoint and physical-binding
 paths to the same dynamic append consumer. It records full source leaf equality,
 all small measurement histories and separate emitted/model counts for a
 noncommuting shared H/phase component.
+
+The [entangling-unitary GQSP guide](../../../docs/development/GQSP_ENTANGLING_UNITARY.md)
+extends that same consumer to two named QBit ports and CNOT-to-Toffoli control
+dispatch, with full source Instructions, branch amplitudes, clean work and
+independent resource-model evidence.
