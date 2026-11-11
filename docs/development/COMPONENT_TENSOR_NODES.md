@@ -304,3 +304,42 @@ python -m pytest tests/unit/test_component_trace_only.py -q
 This is a finite `single_device_fast_path` slice. Source direct-discard failure,
 unsupported source costs, conditional call admission, automatic leaf supply and
 full parent-file acceptance remain explicitly open; G3 is not entered.
+
+### GRAPH77 acceptance evidence
+
+Implementation commit: `8d86da2f`. Fifty-three new cases include four coexistence
+cases where a direct input effect shares the graph with an internal measurement
+environment and discarded classical result. Complete channels match unchanged
+Cast-wrapped source graphs for both input kinds and complex64/complex128.
+
+Final concentrated verification: 1372 related tests passed in 16.42 s, 647 focused
+tests passed in 22.34 s, and 64 integration tests passed in 3.53 s. The changed
+owner has 31 statements and 12 branches, all covered. Sixteen related owners have
+494 statements and 200 branches, 99% coverage, retaining two historical GRAPH60
+profile-refusal misses. Strict mypy passed for 38 related files plus three
+source-following files. Black/Ruff, Simulation scope, architecture, Program IR and
+public API checks passed. All 28 locked source blobs match the inventory; 25
+unchanged original tests passed in 0.94 s. Qualtran 0.7.0 and native Kickmix 0.1
+Simulator were checked, and the existing binary-field append example passed.
+
+Actual numerical supply emits zero physical instructions and allocates zero work
+bits. Existing quantum measure-and-forget emits n measurements and uses caller
+n+2 physical bits, including the spectator and an unused clean bit. Classical
+entry initialization emits n classical XOR assignments and uses two physical
+bits, including the spectator and unused clean bit. Source Discard has zero
+QEC measurement/Clifford/T-equivalent and QubitCount zero. Source DiscardQ has
+QubitCount one, but QEC raises DecomposeNotImplementedError; this unsupported
+model is not replaced by zero or by native measure-and-forget costs.
+
+For float32/float64/complex64/complex128, shared effect storage occupies
+16/32/32/64 bytes. Eight trace-effect nodes have logical tensor bytes
+128/256/256/512; their dense trace functional occupies
+262144/524288/524288/1048576 bytes. These measure returned storage, not peak
+construction or contraction memory. They do not imply a scalability release.
+
+Default smoke/unit: seven failed, 21507 passed, 300 skipped and 1037 warnings in
+148.54 s. All seven failure IDs match the independent baseline, with no new
+observed failure ID; this maxfail run is not a green default suite. It ran before
+the final four coexistence tests were added, with unchanged production code.
+Raw logs, source hashes, original failures, resources and baseline comparison
+are under `ftqc-reference-env/g2-component-trace-only-*`.
