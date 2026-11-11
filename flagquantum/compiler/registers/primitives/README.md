@@ -16,3 +16,10 @@ python -m pytest tests/unit/test_register_addition.py -q
 
 The [register package guide](../README.md) provides executable consumer examples,
 source-parity requirements, resource-counting boundaries and the relocation map.
+
+`controlled_rotation.z_power_with_control_ir` follows original ZPow control
+selection through measured CZPow, with zero-control X wrapping and an exact
+exponent adjoint. Its clean work and reusable result slot are explicit. The
+[measured GQSP guide](../../../../docs/development/GQSP_MEASURED_CONTROL.md)
+contains the dynamic append example and distinguishes original Bloq leaf parity,
+direct Cirq semantics and modeled costs.
