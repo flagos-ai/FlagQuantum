@@ -124,8 +124,11 @@ python -m pytest tests/unit/test_component_dense.py -q
 
 The new internal entries are not stable public exports. G2 and whole parent-file
 acceptance remain open. Automatic provider discovery, lazy foreign decomposition
-error translation, pure supplier trace-token admission and source simplification
-policy equivalence require separate audit. G3 is not entered.
+error translation and source simplification policy equivalence require separate
+audit. Pure supplier trace-token admission is now a finite explicit refusal:
+GRAPH80 rejects the first trace token before contraction while retaining mixed
+channel tracing; see [component tensor nodes](COMPONENT_TENSOR_NODES.md#pure-supplier-discard-refusal-graph80).
+G3 is not entered.
 
 
 ## Verification evidence
@@ -154,3 +157,11 @@ seven-failure baseline. The seventh baseline case was not reached; no new failur
 ID was observed. This is not a green default suite or a claim that the unobserved
 case passed. Logs, source hashes, resources and failure comparison are retained
 under `ftqc-reference-env/g2-component-dense-*`.
+
+## GRAPH80 pure trace-token boundary
+
+`contract_component_tensors` shares pure supplier refusal behavior with
+`component_tensor_nodes`: the first integer trace token raises before any dense
+contraction. The unchanged original pure source also raises on its first
+`DiscardInd`; the mixed source/native channel behavior remains unchanged. See
+[the GRAPH80 contract and tests](COMPONENT_TENSOR_NODES.md#pure-supplier-discard-refusal-graph80).

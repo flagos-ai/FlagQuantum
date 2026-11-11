@@ -116,6 +116,12 @@ See [component tensor nodes](../../../docs/development/COMPONENT_TENSOR_NODES.md
 for interface, ownership, source connectivity checks, empty/scalar boundaries,
 replacement suppliers and the measured append consumer.
 
+Pure suppliers that yield an integer discard token are refused at the first
+token, before returning a partial graph or starting contraction. Use the
+explicit mixed-channel entry when the supplied numerical graph implements a
+trace; this is not a projection or reset. The source-token and mixed-path
+boundary is documented with its tests in the component tensor notes.
+
 `component_superoperator_nodes.py` reuses that SSA wiring loop for mixed
 quantum/classical channels. Suppliers request fresh hidden environment edges
 from the shared numerical label allocator and explicitly yield discard labels.

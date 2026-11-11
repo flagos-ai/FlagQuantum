@@ -343,3 +343,46 @@ observed failure ID; this maxfail run is not a green default suite. It ran befor
 the final four coexistence tests were added, with unchanged production code.
 Raw logs, source hashes, original failures, resources and baseline comparison
 are under `ftqc-reference-env/g2-component-trace-only-*`.
+
+## Pure supplier discard refusal (GRAPH80)
+
+The pure supplier shares the mixed supplier's integer item type because the
+upstream tensor callback can yield a `DiscardInd` token. In the pure path, the
+first integer token now raises immediately with guidance to use the explicit
+mixed channel entry. No later item is requested, no partial graph is returned,
+and dense contraction is never called. The integer is not treated as a tensor,
+projection, reset, or implicit trace. The mixed path retains its existing
+explicit environment-label trace protocol unchanged.
+
+This follows the relevant behavior in the unchanged Qualtran v0.7.0
+`cbloq_to_quimb`: it raises `ValueError` upon the first `DiscardInd`. Tests
+compare the error category, information-discard meaning, and stop point; native
+guidance names FlagQuantum APIs, so the error message is not byte-identical.
+Pure classical-port validation still occurs before supplier invocation, and no
+claim is made that its ordering matches every source sentinel path.
+
+The finite tests cover both pure wiring and dense entries, scalar and shaped
+discard inputs, all four supported tensor dtypes, and a tensor followed by a
+trace token. The latter checks that both unchanged source and native suppliers
+stop before their generator tail; a spy proves no contraction occurs. Four
+mixed-channel dtypes consume the same node/trace/tail protocol and compare the
+entire source channel, a complex spectator density, and a relative-phase
+gradient. Existing `circuit.append(op)` measure-and-forget instructions remain
+unchanged: widths 1/2/3 execute all 14 branches with full complex amplitudes,
+branch-density sum, and an unused clean bit returned to zero. Consumed measured
+bits are not claimed reset.
+
+The numerical refusal itself adds zero physical gates and work bits and
+performs no contraction. The mixed numerical result is a 4x4x4x4 complex128
+array (256 elements, 4096 bytes of returned dense storage), not a peak-memory
+measurement. The actual physical measure-and-forget path emits `n` measurements
+and uses caller `n+2` bits including spectator and unused clean storage; the
+source `DiscardQ` QEC decomposition remains unsupported and is not replaced by
+that adapter cost. Source direct superoperator failure remains a separate
+negative case from the Cast-wrapped equivalent-channel comparison.
+
+GRAPH80 does not add an automatic provider, graph traversal, tensor recipe,
+physical discard decomposition, or public API. The dephasing-shaped supplier
+fixture is only a numerical leaf descriptor; its body is not claimed as a
+physical lowering. Exact source and local resource records are under
+`ftqc-reference-env/g2-pure-tensor-discard-*`.
