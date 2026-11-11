@@ -1045,7 +1045,7 @@ Remaining bundles include measurement-to-detector file conversion, bounded
 public record reading/streaming decode, and the remaining pinned API inventory.
 No new performance, threshold, hardware or capacity evidence is inferred.
 
-## Measurement-file conversion package — 2026-11-10
+## Measurement-file conversion package — accepted slice, 2026-11-11
 
 The prerequisite [#1116](https://github.com/flagos-ai/FlagQuantum/pull/1116)
 merged as `0bf869e29c3cad0f5a0cac6d30018d7cb996a7e2`, reviewed head
@@ -1055,17 +1055,107 @@ it does not by itself add a dedicated actual-main QEC/GPU receipt.
 The [26-path file-conversion proposal](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md)
 was explicitly approved with SHA-256
 `e2ef1156625a8760425f936f1e72c824e5d3fa8200e231f4e589acaf9cf8bc5a`.
-The candidate adds only `CompiledMeasurementsToDetectionEventsConverter.convert_file`,
-using six input/five output formats and the unchanged 96-file Stim 1.16.0
-source closure. Its external 010 records witness three occurrence columns,
-latest-slot X feedback, detectors 10 and logical 1. Local acceptance and PR/main
-publication remain pending until a final-head receipt is recorded.
+[#1120](https://github.com/flagos-ai/FlagQuantum/pull/1120) delivered
+`CompiledMeasurementsToDetectionEventsConverter.convert_file` and merged as
+`504dc460f34f745db67566597cd69a94e345c298`, reviewed head
+`bdb9d470cfeded5199642dd39fc43bfd08b2c6e1`. The actual-main tree is
+`f55b8a1f42ac8fab3c10466943729e5556f421f0`.
 
-FTS-04/R03 gain a candidate file-to-detector vertical slice; R08 gains bounded
-file processing without an all-shot table. All three remain **partially complete**.
-FTS-02/R04 and M0–M5 remain unchanged. This does not establish complete Stim or
-PyMatching parity, statistical correctness at scale, performance, threshold,
-hardware qualification or mixed Clifford/non-Clifford execution. Original CI,
-GPU, environment and installation failures remain retained. After acceptance,
-inspect bounded file-to-decoder batch ingestion against the upstream inventory;
-it is a separate, unapproved scope.
+The accepted implementation uses six input/five output formats and the unchanged
+96-file Stim 1.16.0 source closure. External fixed records `010` witness three
+occurrence columns, latest-slot X feedback, detectors `10` and logical `1`.
+This is a fixed-record conversion check, not a new circuit-sampling statistic.
+Input and aggregate output retain their 1 GiB limits; combined staging retains
+its 2 GiB limit. Parsing uses 64 KiB reads and native batches of 1,024 records.
+The 64 MiB principal-table guard is not a process RSS limit.
+
+### PR checks and actual-main acceptance
+
+- [PR CI run 42820197535](https://github.com/flagos-ai/FlagQuantum/actions/runs/42820197535),
+  attempt 2: all 233 jobs successful. The bounded recovery reused 224 successes.
+- [PR GPU run 42820197316](https://github.com/flagos-ai/FlagQuantum/actions/runs/42820197316),
+  attempt 3: one-GPU-local and two-GPU-distributed-required both passed after
+  actual numerical execution. These checks used the PR merge-preview commit,
+  not the actual squash merge, and are not actual-main GPU evidence.
+- [Actual-main installed-wheel smoke 42850330342](https://github.com/flagos-ai/FlagQuantum/actions/runs/42850330342),
+  job `129948918656`, passed. The current workflows do not automatically run full
+  CI or GPU on a main push; no manual dispatch was used for this acceptance.
+- An offline macOS arm64 build and independent CPython 3.12.14 installation from
+  the exact actual-main checkout passed with Torch 2.14.1. All 1,168 packaged
+  source/data members match Git, wheel, sdist and installation; all 1,033 tracked
+  Python modules are packaged. All 96 frozen upstream hashes are unchanged.
+- Without the Stim or PyMatching Python package, the installed public example
+  made exactly one embedded `convert_file` call. The existing installed verifier
+  passed 30 fixed-byte file-conversion cases, repeated-slot X feedback and early
+  refusal of T and conditional H before engine preparation. No source overlay or
+  dynamic-library override was used.
+
+The installed-acceptance receipt has SHA-256
+`87302424a110f56481dcc3917f7cf8f68c7542258fd09348b013aab3efd2c3a5`.
+The actual-main wheel has SHA-256
+`8e495b4b32eccaff2c80973aebcb849a186d0ed21e60d09a0c7666b731e45ecc`;
+the sdist has SHA-256
+`dca673be6db60f076dce1772247f283a2f50f1453152b8e7c93cb8ce1df71d20`.
+Original CI/GPU, environment and installation failure logs remain retained.
+Accepted broad tests and CI/GPU were not rerun for this local-main acceptance.
+
+Run the existing user workflow from the checkout after installation:
+
+```bash
+python examples/qec/measurement_file_conversion.py
+```
+
+Expected and observed output:
+
+```text
+shots 64
+detectors 10; observables 1
+file_bytes 64 64
+```
+
+[Actual-main container publication 42850330277](https://github.com/flagos-ai/FlagQuantum/actions/runs/42850330277)
+completed successfully on the exact merge SHA: CPU `129948918884`, CUDA
+`129948919078`, CPU-no-JAX `129954343222` and CUDA-no-JAX `129965376117` all
+succeeded. `publish-ci-cpu` was intentionally skipped. This completes the
+observed automatic main publication gate; no manual rerun was submitted.
+
+### Requirement progress and next step
+
+| Item | Accepted increment | Overall state |
+| --- | --- | --- |
+| FTS-04 / R03 | Actual-main embedded measurement-file to detector/logical-file conversion, with independent fixed-byte and no-SDK installed evidence | Partially complete |
+| R08 | Bounded file conversion without an all-shot table; source and publication limits preserved | Partially complete; no new throughput, capacity or sampling-statistics claim |
+| P0 / FTS-02 / R04 | No additional W1-W8 measurement campaign or baseline freeze | Unchanged |
+| M0-M5 | No milestone-wide acceptance added | Unchanged |
+| Complete Stim/PyMatching parity | This file-conversion slice only | Incomplete |
+
+Next, finish observing the existing container publication. A separate 28-path
+native shot-file reading and packed-batch decoding proposal has been prepared
+against Stim 1.16.0 and the existing 96-file source closure. Proposed functions
+read_shot_data_file and iter_shot_data_file are not implemented or approved by
+this progress entry. The proposal preserves the existing decoder and keeps
+arbitrary-data file writing and other upstream domains as explicit gaps. No research task, threshold claim, hardware
+qualification, mixed Clifford/non-Clifford acceptance or performance promotion
+is added here.
+
+## Native shot-file reading candidate — 2026-11-11
+
+The user approved the 28-path record-reading package under SHA-256
+`dd34a168261cdc11b3e0f4da8dbf75c20f8129b3908b449c98b94f382994e225`.
+Its prerequisite actual-main container publication has passed. The candidate
+adds familiar eager reading and an embedded-only iterator feeding the existing
+packed decoder. The initial contract/fake and SDK observations remain retained.
+Local qualification passed: 356 focused source tests (10 skipped), 52 installed
+native tests without the Stim Python package (one SDK-reference skip), the
+standalone native verifier, and all five wheel/sdist installation profiles.
+Ruff, Black and strict Mypy passed for 11 Python files. Broad smoke/unit passed
+19,382 tests (378 skipped); integration passed 6,910 (310 skipped), within the
+approved 2,400/3,600-second budgets. The owned temporary CPU extension was removed
+by inode and SHA-256 after testing. All 96 upstream files remain byte-identical;
+1,170 package members match source, wheel, sdist and installed artifacts.
+Final-head example, PR checks/review and actual-main acceptance remain separate
+publication gates. FTS-04/R03 and FTS-07/R08 remain partial;
+FTS-02/R04/M0-M5 remain unchanged. No research, performance, threshold or complete
+parity claim is added. Next: publish this qualified candidate, complete its
+actual-main acceptance, then propose arbitrary-data file writing and review the
+remaining pinned upstream inventory.
