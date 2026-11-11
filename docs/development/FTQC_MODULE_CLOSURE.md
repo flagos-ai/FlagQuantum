@@ -56,7 +56,8 @@ now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTI
 (Q-0760). The [alias preprocessing audit](ALIAS_DISCRETIZATION_SOURCE_AUDIT.md)
 closes Q-0754, Q-0755, Q-0756 and Q-0761, including two explicitly inspected
 namespace-only assets. The [register tensor original test file](REGISTER_TENSOR_SOURCE_AUDIT.md)
-(Q-0894) brings the total to **12 closed files and 1,268 open files**. These file
+(Q-0894) and the [dense original test numerical replacement](DENSE_AXIS_SOURCE_AUDIT.md)
+(Q-0888) bring the total to **13 closed files and 1,267 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
 
@@ -96,3 +97,10 @@ slice loops. Q-0894 closes after all original tests pass unchanged and with nati
 bindings. Q-0893 stays open for inherited paired-directional-name reconstruction
 and scalar object-array failures. Native validated paired-name support remains
 explicitly separate from raw source behavior.
+
+The [dense axis audit](DENSE_AXIS_SOURCE_AUDIT.md) closes the complete original
+test-file mapping through native numerical-boundary replacement. The unchanged
+source graph and flattening remain in the test adapter; native graph consumers
+are checked separately. Q-0887 stays open for width-triggered simplification,
+and Q-0889 remains open for its independent flattening gaps. All phase and
+section totals are synchronized without adding scenario IDs.

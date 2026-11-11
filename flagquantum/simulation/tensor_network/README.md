@@ -232,3 +232,10 @@ work. The raw layer has no foreign graph objects, circuit execution or provider
 selection. See [the full source audit](../../../docs/development/REGISTER_TENSOR_SOURCE_AUDIT.md)
 for dtype/view behavior, original-test replacement, native paired-name support,
 inherited raw failures and separate primitive/model accounts.
+
+`register_axis_groups.py` owns declared port order and grouping of actual external
+register edges. Pure and mixed contraction reuse it after selecting exposed node
+edges; `register_tensor_indices.py` remains the existing diagnostic side table.
+The owner creates no graph, wires or quantum operations. Source width-triggered
+Quimb simplification remains an explicit gap. See the [dense axis source audit](../../../docs/development/DENSE_AXIS_SOURCE_AUDIT.md)
+for the complete original-test numerical replacement and contributor check.
