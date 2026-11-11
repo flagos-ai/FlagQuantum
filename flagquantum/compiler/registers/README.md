@@ -433,7 +433,11 @@ supply an explicit callee classifier; full mode never queries it. Simulation
 continues to own binding/contraction. See
 [component tensor expansion](../../../docs/development/COMPONENT_TENSOR_EXPANSION.md)
 for composite-entry scope, source correspondence, failures and measured append
-verification.
+verification. Its `expand_component_root_for_tensor` entry explicitly wraps a
+typed root in one existing builder call before applying the same policy; partial
+mode may retain the root itself. Already-composite callers keep the original
+entry. Original signatures and definitions survive, with no numerical execution
+or new resource ownership.
 
 `component_zero_initialization.py` wraps an existing typed entry with source-ordered
 clean word preparations and one child call, preserving RIGHT outputs and explicit

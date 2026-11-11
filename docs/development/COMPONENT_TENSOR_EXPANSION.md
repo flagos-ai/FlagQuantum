@@ -32,7 +32,8 @@ without a typed-call decomposition remain atomic; this does not emulate lazy
 foreign decomposition callbacks or their exception categories. This interface
 does not wrap an arbitrary atomic root, infer a tensor provider from reflection,
 flatten primitive instructions, contract tensors or silently fall back to a
-simulator. Source root wrapping and general provider dispatch remain open.
+simulator. At GRAPH58, source root wrapping and general provider dispatch
+remained open; GRAPH78 below adds explicit typed-root wrapping.
 
 ## Real consumers
 
@@ -99,5 +100,79 @@ are retained at ftqc-reference-env/g2-tensor-expansion-*.
 
 G2 remains open. Next is source direct-through unused-wire identity handling,
 reusing existing nodes and register-axis binding. Automatic provider execution,
-root wrapping, lazy foreign decomposition failures and open-system traversal
-remain separate obligations. No CI wait or automatic merge is implied.
+At that batch, root wrapping, lazy foreign decomposition failures and open-system
+traversal remained separate obligations; subsequent evidence records each slice. No CI wait or automatic merge is implied.
+
+
+## Explicit root entry (GRAPH78)
+
+`expand_component_root_for_tensor(record, has_custom_tensor, entry="main",
+name="tensor_root", full_flatten=True, max_depth=1000)` translates the original
+`Bloq.as_composite_bloq()` single-call wrapper followed by the existing flatten
+policy. It belongs to Compiler and reuses `ComponentProgramBuilder` and
+`expand_components_for_tensor`. It creates one typed call to the selected root,
+retains the root signature, then expands that call according to the existing
+policy. No new Core record, numerical supplier, registry or public API is added.
+
+Callers explicitly distinguish a component root from an already-composite entry.
+The latter continues to use `expand_components_for_tensor`; it corresponds to
+`CompositeBloq.as_composite_bloq()` returning itself. No body-length or operation
+name heuristic decides which path to take. A partial-mode classifier can retain
+the root's own custom tensor at occurrence zero. Full mode never queries that
+classifier. Atomic primitive bodies remain typed leaf calls, even in full mode.
+The inserted call counts toward the existing expansion depth budget. Original
+definitions remain shared; a transformed record invalidates canonical_payload.
+
+Inputs, outputs and ownership use the existing builder: LEFT inputs are consumed,
+RIGHT outputs are defined, THRU successors are returned, arrays keep row-major
+element order and words retain MSB-first bit order. Quantum and classical ports,
+zero-width words and empty layouts keep their declared metadata. The wrapper
+adds zero physical instructions and zero work bits. The selected child still
+owns measurement, cleanup, classical initialization and actual resource costs.
+Invalid modules, unknown roots, untyped/physical entries and wrapper-name
+collisions are refused; classifier exceptions preserve their original identity.
+No lazy foreign decomposition exception translation is claimed.
+
+### Reference and execution acceptance
+
+Forty-one new cases compare the locked, unchanged root-wrapping/flatten chain.
+Custom H-H identity roots exercise both retaining the root and full expansion;
+atomic H and phaseful S roots retain the source occurrence IDs. Complete tensors,
+relative-phase derivatives, entangled spectator amplitudes and unused clean-bit
+zero are checked through existing tensor binders and `circuit.append(op)`.
+Sixteen shaped/zero-width phaseful graphs compare every source connection and
+full dense operator, including scalar, (2,), (1,2) and (0,) idle layouts.
+
+Mixed quantum/classical roots with retained or discarded measurement results
+compare the complete source superoperator in complex64 and complex128. The
+numerical leaf implementation is replaced by the unchanged source tensors while
+keeping graph, consumer and bindings fixed. An atomic MeasureZ root also feeds
+the same superoperator consumer. All two-outcome atomic and four-outcome mixed
+measurement histories are checked as full complex amplitudes, including the
+source X-measurement basis frame, both classical idle inputs and unused clean
+storage. Across the two modes and configurations there are 36 measured branch
+executions. Consumed measured inputs are not claimed zero or reset.
+
+Actual bound instructions, operand order, measurement slots and feedback are
+identical before and after wrapping/selection. For the phaseful shaped example,
+actual H3/S2 matches source Clifford5/T0. Atomic MeasureZ emits one measurement,
+matching its source model. Mixed MeasureZ/MeasureX emits H1/measurement2 and one
+classical entry XOR; the source QEC model reports measurement2/Clifford0/T0.
+These categories remain separate: the source measurement abstraction does not
+charge that basis H, and external classical initialization is a native entry
+cost. Source QubitCount is 3 for the phase example, 1 for MeasureZ and 4 for the
+mixed graph, whose count includes a classical port. It is not interchangeable
+with caller storage including spectator and unused clean bits. Wrapping has no
+independent tensor-storage allocation or resource model.
+
+The existing user workflow remains:
+
+```bash
+python -m examples.algorithms.binary_field_arithmetic
+python -m pytest tests/unit/test_tensor_root_entry.py -q
+```
+
+This is a finite `single_device_fast_path` slice. Automatic provider discovery,
+lazy foreign decomposition error translation, empty numerical graph scalar
+semantics and full parent-file acceptance remain open. G2 continues; G3 is not
+entered. Evidence is retained under `ftqc-reference-env/g2-tensor-root-*`.
