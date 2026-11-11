@@ -6,12 +6,13 @@ import ast
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Value
-from .._hybrid.unitary_effects import PURE_EFFECTS
+from .frontend_callback_effects import emit_callback_effects
 from .frontend_classical import bind_helper
 from .frontend_evolution import flush_evolutions
+from .frontend_ports import program_ports
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import locations
-from .qpe_control import emit_controlled_effect
+from .register_profile import _verify_borrowed_effects
 
 if TYPE_CHECKING:
     from .frontend_program import _Body
@@ -28,6 +29,7 @@ def capture_controlled_effects(
     function = owner.resolve_callable(callback.func)
     if isinstance(function, _QuantumFunction):
         _, arguments = bind_helper(owner, callback, function)
+        formal = program_ports(function)
     else:
         if len(callback.args) != 3:
             _error(
@@ -37,16 +39,18 @@ def capture_controlled_effects(
                 "inplace preparation requires a vector, bound and target",
             )
         arguments = (callback.args[-1],)
+        formal = ()
+    views = tuple(locations(owner, argument) for argument in arguments)
     if any(
-        value in inputs
-        for argument in arguments
-        for value, _ in locations(owner, argument)
+        any(value in inputs for value, _ in view)
+        and (not formal or formal[position].role != "const")
+        for position, view in enumerate(views)
     ):
         _error(
             owner.source,
             callback,
             "program.control",
-            "condition inputs and callback actual storage must be disjoint",
+            "condition inputs and writable callback actual storage must be disjoint",
         )
     flush_evolutions(owner)
     storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
@@ -60,32 +64,24 @@ def capture_controlled_effects(
     effects = tuple(owner.operations[start:])
     del owner.operations[start:]
     owner.effect = incoming
-    if (
-        not effects
-        or storage != (owner.registers, owner.ports, owner.widths)
-        or any(operation.name not in PURE_EFFECTS for operation in effects)
-    ):
+    if not effects or storage != (owner.registers, owner.ports, owner.widths):
         _error(
             owner.source,
             callback,
             "program.control",
             "controlled callbacks require pure effects on existing storage without ownership changes or escaping scratch",
         )
-    if any(set(operation.operands[1:]).intersection(inputs) for operation in effects):
-        _error(
-            owner.source,
-            callback,
-            "program.control",
-            "condition inputs and callback storage must be disjoint",
+    writable = tuple(
+        dict.fromkeys(
+            value for view in views for value, _ in view if value not in inputs
         )
-
-    def emit(
-        name: str, values: tuple[Value, ...], attributes: dict[str, object]
-    ) -> None:
-        owner.emit(name, callback, values, **attributes)
-
+    )
+    # The shared verifier proves that controls and their dependency registers
+    # cannot be written, including through nested arithmetic and helper calls.
+    _verify_borrowed_effects(
+        effects, owner.owner.functions, tuple(dict.fromkeys(inputs)), writable
+    )
     try:
-        for operation in effects:
-            emit_controlled_effect(predicate, index, operation, emit)
+        emit_callback_effects(owner, callback, effects, predicate, index)
     except ValueError as error:
         _error(owner.source, callback, "program.control", str(error))

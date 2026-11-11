@@ -35,33 +35,31 @@ def unitary_regions(
     Register verification separately proves that the action preserves the
     predicate and its inputs, so uncompute returns the local to zero.
     """
-    regions: list[tuple[Operation, ...]] = []
-    index = 0
-    while index < len(operations):
-        op = operations[index]
+
+    def region_end(start: int, depth: int) -> int:
+        if depth > 32:
+            raise ValueError("unitary scratch nesting exceeds 32")
+        op = operations[start]
         if op.name in PURE_EFFECTS:
-            regions.append((op,))
-            index += 1
-            continue
+            return start + 1
         if (
             op.name != "qreg.local"
             or len(op.results) != 1
-            or index + 4 >= len(operations)
+            or start + 4 >= len(operations)
         ):
             raise ValueError(
                 "unitary region requires pure effects or closed predicate scratch"
             )
         local = op.results[0]
-        compute = operations[index + 1]
+        compute = operations[start + 1]
         if compute.name != "qreg.compute" or compute.operands[1:2] != (local,):
             raise ValueError("predicate scratch requires an immediate direct compute")
-        end = index + 2
-        while end < len(operations) and operations[end].name in PURE_EFFECTS:
-            end += 1
+        end = start + 2
+        while end < len(operations) and operations[end].name != "qreg.uncompute":
+            end = region_end(end, depth + 1)
         if (
-            end == index + 2
+            end == start + 2
             or end + 1 >= len(operations)
-            or operations[end].name != "qreg.uncompute"
             or operations[end].operands[1:] != (local,)
             or operations[end + 1].name != "qreg.release"
             or operations[end + 1].operands[1:] != (local,)
@@ -70,8 +68,14 @@ def unitary_regions(
             raise ValueError(
                 "predicate scratch must uncompute and release without escape"
             )
-        regions.append(tuple(operations[index : end + 2]))
-        index = end + 2
+        return end + 2
+
+    regions: list[tuple[Operation, ...]] = []
+    index = 0
+    while index < len(operations):
+        end = region_end(index, 0)
+        regions.append(tuple(operations[index:end]))
+        index = end
     return tuple(regions)
 
 

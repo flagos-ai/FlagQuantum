@@ -6,6 +6,7 @@ import math
 from collections.abc import Callable
 
 from .._hybrid.model import Operation, Value
+from .pauli_rotation import pauli_rotation_instructions
 from .register_profile import register_width
 
 
@@ -34,6 +35,55 @@ def emit_controlled_effect(
             indices=tuple(index for _, index in all_locations),
             angle=angle,
         )
+
+    if op.name == "qreg.pauli_rotation" and "control_index" in attrs:
+        target, inner = values
+        controls = ((control, bit), (inner, attrs["control_index"]))
+
+        def joint_phase(angle: float, target_bit: int | None = None) -> None:
+            coordinates = controls + (
+                () if target_bit is None else ((target, target_bit),)
+            )
+            effect(
+                "qreg.control_phase",
+                tuple(value for value, _ in coordinates),
+                indices=tuple(index for _, index in coordinates),
+                angle=angle,
+            )
+
+        if not attrs["support"]:
+            joint_phase(-attrs["angle"])
+            return
+        # Use the existing Pauli basis/parity network with a zero-angle marker.
+        # CRZ(theta) = phase(-theta/2) on controls followed by phase(theta)
+        # on controls plus the parity bit. Keep the first term for interference.
+        tape = pauli_rotation_instructions(
+            tuple(reversed(range(register_width(target)))), attrs["support"], 0.0
+        )
+        for instruction in tape:
+            if instruction.name == "rz":
+                joint_phase(-attrs["angle"])
+                joint_phase(2 * attrs["angle"], instruction.wires[0])
+            elif instruction.name == "cx":
+                effect(
+                    "qreg.pair_gate",
+                    (target, target),
+                    gate="cx",
+                    indices=instruction.wires,
+                )
+            else:
+                effect(
+                    "qreg.gate",
+                    (target,),
+                    gate=instruction.name,
+                    index=instruction.wires[0],
+                    **(
+                        {"angle": instruction.params["theta"]}
+                        if instruction.params
+                        else {}
+                    ),
+                )
+        return
 
     if op.name == "qreg.phase":
         phase((), attrs["angle"])

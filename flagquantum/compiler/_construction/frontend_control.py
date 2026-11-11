@@ -72,7 +72,13 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
             "program.numeric",
             "numeric reads in controls require an explicit bounded comparison",
         )
-    reject_numeric_reads(owner, callback, "coherent callback")
+    callback_function = (
+        owner.resolve_callable(callback.body.func)
+        if isinstance(callback.body, ast.Call)
+        else None
+    )
+    if not isinstance(callback_function, _QuantumFunction):
+        reject_numeric_reads(owner, callback, "coherent callback")
     args = callback.args
     body = callback.body
     if (
@@ -106,7 +112,7 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         or isinstance(operation, _QuantumFunction)
         and operation.source.program
         and any(port.role == "inout" for port in program_ports(operation))
-        and all(port.role == "inout" for port in program_ports(operation))
+        and all(port.role in {"const", "inout"} for port in program_ports(operation))
     )
     if operation is unitary:
         capture_controlled_unitary(owner, condition, body)

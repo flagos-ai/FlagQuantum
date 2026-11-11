@@ -915,8 +915,8 @@ including under `adjoint`. Negative encodings and exact threshold equality must
 not be interpreted through unsigned raw words.
 
 The existing eight-input-bit predicate bound and actual work, gate, qubit and
-execution-memory limits apply. Numeric callback expressions and arbitrary conditional numeric phases remain
-outside this slice. Unsupported reads fail early; no format is discarded to enter an unsigned
+execution-memory limits apply. Direct numeric callback expressions and arbitrary conditional numeric phases
+remain outside this slice. Unsupported reads fail early; no format is discarded to enter an unsigned
 fallback. Const targets, dropped or uninitialized reads, callback overlap and
 Output ownership changes retain their existing checks. Complete amplitudes,
 nonzero target XOR, absolute phase, scratch cleanup and budget refusals are
@@ -973,7 +973,7 @@ interpreter or emitting synthetic allocations into the caller's circuit.
 Mutation of Const through nested helpers is also rejected. Full coherent state,
 absolute phase, nonzero writable targets, scratch cleanup and refusals are
 covered by `tests/integration/test_synthesis_native_numeric_borrowing.py`.
-Numeric callback arguments and numeric within/apply locals remain unsupported;
+Numeric within/apply locals remain unsupported;
 this foundation does not certify any complete finance original.
 
 ```python
@@ -1006,3 +1006,56 @@ print(dict(program.probabilities(result, registers=("q",))))
 Here the unsized helper reads the caller's signed three-bit word with one
 fractional bit. It compares numeric values, so encodings of negative values do
 not accidentally trigger the positive threshold. The caller owns all storage.
+
+### Read-only numeric inputs in controlled callbacks
+
+A controlled borrowed helper may read the same numeric input used by its outer
+predicate when that formal is `Const`. Writable callback storage remains disjoint
+from the predicate dependencies. Before expansion, the existing register verifier
+checks the captured effects with those dependencies marked Const. An actual
+argument does not gain writable permission merely by crossing a callback.
+
+Callbacks may compose exact comparison XOR, constant phase and nested controlled
+Pauli-axis rotations. Expression XOR computes a disjoint temporary, controls the
+XOR into the arbitrary target, then uncomputes and releases the temporary. Closed
+scratch regions can nest at most 32 levels, with matching compute/uncompute and
+no escaping references. The existing inverse path inverts each action while
+retaining the compute/uncompute envelope. Nested controlled Pauli rotations reuse
+the existing basis and parity network and keep the conditional scalar phase.
+All emitted storage and operations charge the ordinary synthesis budgets.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum.synth import (
+    Const, Output, QBit, QNum, R, allocate, control,
+    hadamard_transform, phase, qfunc, synthesize,
+)
+
+
+@qfunc
+def payoff(value: Const[QNum], target: QBit) -> None:
+    target ^= value > 1.5
+    control(value > 0.5, lambda: R(0.73, math.pi / 2, target))
+    phase(1, 0.37)
+
+
+@qfunc
+def main(x: Output[QNum[3, True, 1]], q: Output[QBit]) -> None:
+    allocate(x)
+    allocate(q)
+    hadamard_transform(x)
+    control(x > 0.5, lambda: payoff(x, q))
+
+
+program = synthesize(main, memory_limit_bytes=16 * 1024**2)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+Complete complex amplitudes, absolute phase, inverse action, arbitrary nonzero
+word targets, scratch cleanup, Const/alias/escape refusals and resource budgets
+are covered in `tests/integration/test_synthesis_native_numeric_callbacks.py`.
+This does not yet admit the fresh numeric locals and complete preparation/inverse
+composition required by the finance originals. No complete-original coverage
+is credited from these helper foundations.
