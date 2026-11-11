@@ -3,15 +3,16 @@
 # Adapted from Qualtran v0.7.0 ClassicalSimState._update_assign_from_vals and _get_in_vals.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/simulation/classical_sim.py
 
-"""Bind integer-register values without graph objects or compiler dependencies."""
+"""Share classical binding traversal while numerical owners supply validation."""
 
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from itertools import product
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from numpy.typing import NDArray
 
 from .classical_distributions import ClassicalDistribution
 from .integer_values import validate_integer_word_array, validate_integer_word_value
@@ -39,6 +40,30 @@ def bind_integer_register_values(
     stochastic values are rejected. Shaped values never invoke the resolver.
     No graph traversal or quantum allocation occurs.
     """
+    return bind_classical_register_values(
+        name,
+        values,
+        lambda value: validate_integer_word_value(value, width, signed=signed),
+        lambda array: validate_integer_word_array(array, width, signed=signed),
+        shape=shape,
+        resolve_distribution=resolve_distribution,
+    )
+
+
+def bind_classical_register_values(
+    name: str,
+    values: Mapping[str, object],
+    validate_scalar: Callable[[object], None],
+    validate_array: Callable[[NDArray[Any]], None],
+    *,
+    shape: tuple[int, ...] = (),
+    resolve_distribution: Callable[[ClassicalDistribution], object] | None = None,
+) -> dict[tuple[int, ...], object]:
+    """Bind once in source order, delegating only dtype-specific validation.
+
+    Scalar Expr bypasses and post-resolution validation are shared by integer
+    and finite-field consumers. Shaped values never resolve distributions.
+    """
     try:
         value = values[name]
     except KeyError as exc:
@@ -48,7 +73,7 @@ def bind_integer_register_values(
         array = np.asanyarray(value)
         if array.shape != shape:
             raise ValueError(f"Classical register {name!r} shape differs from {shape}")
-        validate_integer_word_array(array, width, signed=signed)
+        validate_array(array)
         return {idx: array[idx] for idx in product(*(range(n) for n in shape))}
     if not isinstance(value, (int, np.integer)):
         try:
@@ -67,7 +92,7 @@ def bind_integer_register_values(
                 "Cannot simulate with classical values."
             )
         value = resolve_distribution(value)
-    validate_integer_word_value(value, width, signed=signed)
+    validate_scalar(value)
     return {(): value}
 
 
@@ -95,15 +120,28 @@ def collect_integer_register_value(
     is added at collection: source validation belongs to assignment time.
     This is value assembly, not graph traversal or quantum execution.
     """
+
+    def allocate(dimensions: tuple[int, ...]) -> NDArray[Any]:
+        storage: np.dtype[np.generic] = np.dtype(object)
+        for limit in (8, 16, 32, 64):
+            if width <= limit:
+                storage = np.dtype(f"{'int' if signed else 'uint'}{limit}")
+                break
+        return np.empty(dimensions, dtype=storage)
+
+    return collect_classical_register_value(assignments, shape, allocate)
+
+
+def collect_classical_register_value(
+    assignments: Mapping[tuple[int, ...], object],
+    shape: tuple[int, ...],
+    allocate: Callable[[tuple[int, ...]], NDArray[Any]],
+) -> object:
+    """Collect unchanged scalars or row-major values in dtype-owned storage."""
     _validate_shape(shape)
     if not shape:
         return assignments[()]
-    storage: np.dtype[np.generic] = np.dtype(object)
-    for limit in (8, 16, 32, 64):
-        if width <= limit:
-            storage = np.dtype(f"{'int' if signed else 'uint'}{limit}")
-            break
-    array = np.empty(shape, dtype=storage)
+    array = allocate(shape)
     for idx in product(*(range(n) for n in shape)):
         array[idx] = assignments[idx]
     return array

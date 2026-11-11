@@ -15,16 +15,21 @@ from ..core.ir.program import (
     ValueRef,
     verify_program_record,
 )
-from ..core.ir.program.registers import Register
+from ..core.ir.program.registers import Register, RegisterType
 from ..core.ir.program.signatures import Signature
 from .classical_action import evaluate_classical_action
-from .classical_distributions import draw_classical_value
+from .classical_distributions import ClassicalDistribution, draw_classical_value
+from .classical_field_registers import (
+    bind_field_register_values,
+    collect_field_register_value,
+)
 from .classical_measurement import MeasurementOutcomePhase, assert_unit_classical_phase
 from .classical_registers import (
     bind_integer_register_values,
     collect_integer_register_value,
 )
 from .classical_updates import commit_classical_outputs, commit_phased_classical_outputs
+from .finite_field_encoding import FiniteFieldEncoding
 
 
 class ComponentClassicalState:
@@ -35,9 +40,9 @@ class ComponentClassicalState:
     visitation order. Value and phase callbacks run in that order; decomposition
     is an explicit callback, not Python method discovery or graph transformation.
 
-    Integer/bit scalar and array ports use existing native validators and storage
-    codecs. Other encodings, physical graphs, control flow and primitive entry
-    operations are refused before actions. Definitions and caller values are not
+    Integer/bit and explicitly supplied binary-field ports use existing native
+    validators and storage codecs. Other encodings, physical graphs, control flow
+    and primitive entry operations are refused before actions. Caller values are not
     rewritten. Assignments and last_position remain inspectable after failures;
     outputs are committed before phase rejection, as in the pinned simulator.
     """
@@ -57,6 +62,7 @@ class ComponentClassicalState:
         ) = None,
         *,
         entry: str = "main",
+        field_encodings: Mapping[RegisterType, FiniteFieldEncoding] | None = None,
         phased: bool = False,
         phase: complex = 1.0,
         instance_ids: tuple[int, ...] | None = None,
@@ -111,18 +117,24 @@ class ComponentClassicalState:
             if not set(operation.operands) <= known:
                 raise ValueError("classical call order must respect SSA dependencies")
             known.update(operation.results)
+        self._fields = dict(field_encodings or {})
         for registers in (
             function.registers,
             *(functions[op.callee or ""].registers for op in block.operations),
         ):
             assert registers is not None
-            if any(
-                register.dtype.encoding not in {"bit", "opaque", "uint", "signed"}
-                for register in registers
-            ):
-                raise ValueError(
-                    "classical component ports require integer or bit encodings"
-                )
+            for register in registers:
+                dtype = register.dtype
+                if dtype.encoding == "finite_field" and dtype in self._fields:
+                    if self._fields[dtype].register_type() != dtype:
+                        raise ValueError(
+                            "finite-field encoding differs from declared metadata"
+                        )
+                elif dtype.encoding not in {"bit", "opaque", "uint", "signed"}:
+                    raise ValueError(
+                        "classical component ports require integer or bit encodings "
+                        "or an explicit matching finite-field encoding"
+                    )
         ids = (
             tuple(range(len(block.operations)))
             if instance_ids is None
@@ -166,20 +178,33 @@ class ComponentClassicalState:
     ) -> None:
         refs = iter(identities)
         instance = -1 if self.last_position is None else self._ids[self.last_position]
-        for register in registers:
-            bound = bind_integer_register_values(
-                register.name,
-                values,
-                register.bitsize,
-                shape=register.shape,
-                signed=register.dtype.encoding == "signed",
-                resolve_distribution=lambda distribution: draw_classical_value(
-                    distribution,
-                    instance_id=instance,
-                    rng=self._rng,
-                    fixed_values=self._fixed,
-                ),
+
+        def resolve(distribution: ClassicalDistribution) -> object:
+            return draw_classical_value(
+                distribution,
+                instance_id=instance,
+                rng=self._rng,
+                fixed_values=self._fixed,
             )
+
+        for register in registers:
+            if register.dtype.encoding == "finite_field":
+                bound = bind_field_register_values(
+                    register.name,
+                    values,
+                    self._fields[register.dtype],
+                    shape=register.shape,
+                    resolve_distribution=resolve,
+                )
+            else:
+                bound = bind_integer_register_values(
+                    register.name,
+                    values,
+                    register.bitsize,
+                    shape=register.shape,
+                    signed=register.dtype.encoding == "signed",
+                    resolve_distribution=resolve,
+                )
             for index, value in bound.items():
                 self.assignments[next(refs)] = value
                 self._outcomes[register.name, index] = value
@@ -188,15 +213,26 @@ class ComponentClassicalState:
         self, registers: Iterable[Register], identities: tuple[ValueRef, ...]
     ) -> dict[str, object]:
         refs = iter(identities)
-        return {
-            register.name: collect_integer_register_value(
-                {index: self.assignments[next(refs)] for index in register.all_idxs()},
-                register.bitsize,
-                shape=register.shape,
-                signed=register.dtype.encoding == "signed",
-            )
-            for register in registers
-        }
+        outputs: dict[str, object] = {}
+        for register in registers:
+            assignments = {
+                index: self.assignments[next(refs)] for index in register.all_idxs()
+            }
+            if register.dtype.encoding == "finite_field":
+                value = collect_field_register_value(
+                    assignments,
+                    self._fields[register.dtype],
+                    shape=register.shape,
+                )
+            else:
+                value = collect_integer_register_value(
+                    assignments,
+                    register.bitsize,
+                    shape=register.shape,
+                    signed=register.dtype.encoding == "signed",
+                )
+            outputs[register.name] = value
+        return outputs
 
     def step(self) -> "ComponentClassicalState":
         """Advance one call; propagate errors with its visible assignment prefix."""
