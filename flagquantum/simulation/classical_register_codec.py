@@ -17,6 +17,7 @@ from .bounded_integer_encoding import (
     bounded_integer_array_to_bits,
     bounded_integer_from_bits,
 )
+from .classical_register_metadata import concrete_register_metadata
 from .finite_field_metadata import resolve_finite_field_encoding
 from .fixed_point_encoding import (
     fixed_point_array_from_bits,
@@ -37,27 +38,6 @@ from .ones_complement_encoding import (
 )
 
 
-def _metadata(register: Register) -> tuple[int, dict[str, int | bool]]:
-    width = register.bitsize
-    if type(width) is not int or width < 0:
-        raise ValueError("register codecs require a concrete nonnegative bit width")
-    parameters: dict[str, int | bool] = {}
-    for name, value in register.dtype.parameters:
-        if name == "storage" and value == "classical":
-            continue
-        if name not in {
-            "bound",
-            "modulus",
-            "fractional_width",
-            "signed",
-        } or not isinstance(value, int):
-            raise ValueError(
-                "register codec parameters must be concrete native metadata"
-            )
-        parameters[name] = value
-    return width, parameters
-
-
 def decode_register_bits(register: Register, bits: NDArray[Any]) -> object:
     """Decode a scalar or shaped register without adding validation or bit repair.
 
@@ -72,7 +52,7 @@ def decode_register_bits(register: Register, bits: NDArray[Any]) -> object:
             if register.shape
             else field.from_bits(list(bits.flat))
         )
-    width, parameters = _metadata(register)
+    width, parameters = concrete_register_metadata(register)
     kind = register.dtype.encoding
     scalar = list(bits.flat)
     if kind == "bit":
@@ -117,7 +97,7 @@ def encode_register_bits(register: Register, values: NDArray[Any]) -> NDArray[np
     """
     if register.dtype.encoding == "finite_field":
         return resolve_finite_field_encoding(register.dtype).to_bits_array(values)
-    width, parameters = _metadata(register)
+    width, parameters = concrete_register_metadata(register)
     kind = register.dtype.encoding
     if kind == "bit":
         return bit_array_to_bits(values)

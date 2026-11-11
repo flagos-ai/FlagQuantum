@@ -11,6 +11,7 @@ from typing import TypeAlias
 
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
+from .classical_domains import register_classical_domain
 
 TruthTable: TypeAlias = list[tuple[Sequence[object], Sequence[object]]]
 
@@ -68,3 +69,16 @@ def format_classical_truth_table(
         for inputs, outputs in truth_table
     ]
     return "\n".join([heading] + entries)
+
+
+def register_classical_truth_table(
+    signature: Signature,
+    evaluate: Callable[[dict[str, object]], Sequence[object]],
+) -> tuple[list[str], list[str], TruthTable]:
+    """Enumerate existing native dtype domains through the shared table owner.
+
+    Shape refusal, domain acquisition, Cartesian order and evaluator errors keep
+    classical_truth_table's behavior. The lower-level entry remains available
+    for explicit domains. No stochastic or phase policy is inferred here.
+    """
+    return classical_truth_table(signature, register_classical_domain, evaluate)

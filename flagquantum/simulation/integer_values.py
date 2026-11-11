@@ -7,13 +7,21 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 from numpy.typing import NDArray
 
 if TYPE_CHECKING:
     from sympy import Expr
+
+
+def integer_word_domain(width: int | Expr, *, signed: bool = False) -> range:
+    """Enumerate the source stored integer range without normalizing its width."""
+    if signed:
+        maximum = 1 << (width - 1)
+        return range(-maximum, maximum)
+    return range(cast(int, 2**width))
 
 
 def validate_integer_word_value(
