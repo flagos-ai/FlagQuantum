@@ -558,6 +558,9 @@ def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None
         if step.get("uses") == "./.github/actions/isolated-python"
     )
     assert isolated["with"]["torch-spec"] == "torch==${{ matrix.torch }}"
+    assert isolated["with"]["self-hosted-pypi-index"] == (
+        "${{ vars.FQ_CI_PYPI_MIRROR || 'https://pypi.tuna.tsinghua.edu.cn/simple' }}"
+    )
     commands = "\n".join(str(step.get("run", "")) for step in job["steps"])
     assert not any(
         step.get("uses", "").startswith("actions/checkout@") for step in job["steps"]
