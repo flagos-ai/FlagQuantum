@@ -30,7 +30,7 @@ def component_tensor_nodes(
             Mapping[str, tuple[tuple[int, ...], ...]],
             Mapping[str, tuple[tuple[int, ...], ...]],
         ],
-        Iterable[TensorNetworkNode],
+        Iterable[TensorNetworkNode | int],
     ],
     like: torch.Tensor,
     entry: str = "main",
@@ -52,6 +52,9 @@ def component_tensor_nodes(
     is supported. Classical ports and non-topological/incomplete orders raise
     ValueError before callbacks. Missing suppliers and callback errors propagate.
     Empty networks remain empty; scalar nodes must come from a supplier.
+    Integer trace requests use the mixed graph's existing discard protocol, but
+    are rejected here at the first request, matching source DiscardInd refusal.
+    No partial graph is returned and no later supplier item is requested.
     """
 
     def attach(
@@ -60,7 +63,14 @@ def component_tensor_nodes(
         outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
         fresh_label: Callable[[], int],
     ) -> Iterable[TensorNetworkNode]:
-        return supply(function, incoming, outgoing)
+        for item in supply(function, incoming, outgoing):
+            if isinstance(item, int):
+                raise ValueError(
+                    f"During tensor simulation, {function.name} tried to discard "
+                    "information. This requires using contract_component_superoperator "
+                    "or component_superoperator_nodes."
+                )
+            yield item
 
     return _component_tensor_nodes(record, order, attach, like, entry, classical=False)
 

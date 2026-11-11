@@ -27,7 +27,7 @@ def contract_component_tensors(
             Mapping[str, tuple[tuple[int, ...], ...]],
             Mapping[str, tuple[tuple[int, ...], ...]],
         ],
-        Iterable[TensorNetworkNode],
+        Iterable[TensorNetworkNode | int],
     ],
     like: torch.Tensor,
     entry: str = "main",
@@ -40,6 +40,8 @@ def contract_component_tensors(
     Supplier exceptions, dtype/device behavior and autograd are unchanged.
     Classical ports retain the pure graph's explicit refusal. An empty network
     raises ValueError; a scalar result requires an explicit scalar tensor node.
+    Integer trace requests fail at supply with guidance to the mixed entry;
+    they never reach contraction or become a projection.
     No decomposition, provider discovery, simulator fallback or normalization
     occurs. Dense output storage is exponential in the declared live bit axes.
     """
