@@ -466,7 +466,14 @@ class _GraphQLSource:
             "... on Tree{entries{mode name type oid}}}"
             for index, (sha, _) in enumerate(missing)
         )
-        response = self._query(fields)
+        try:
+            response = self._query(fields)
+        except (URLError, RemoteDisconnected, IncompleteRead, TimeoutError):
+            # A large batched response can be truncated repeatedly by a proxy.
+            # Use bounded individual requests; _materialize_api still verifies
+            # every returned object against the requested Git SHA.
+            print("Batch transport failed; fetching individual Git objects", flush=True)
+            return [get_json(f"/git/{kind}s/{sha}") for sha, kind in missing]
         result: list[object] = []
         for index, (sha, kind) in enumerate(missing):
             row = response.get(f"o{index}")

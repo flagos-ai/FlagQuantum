@@ -1,15 +1,23 @@
 # Native fermionic science without OpenFermion or Cirq
 
+This is the archived review description for the initial migration
+[#1109](https://github.com/flagos-ai/FlagQuantum/pull/1109), which has merged.
+The review status and CI results below describe the recorded initial-batch
+revision, not the current branch. For subsequent deliveries and runnable
+entry points, see [current migration status](OPENFERMION_NATIVE_MIGRATION.md#current-delivery-status).
+
 Add a native workflow from complex fermionic operators and molecular integrals
 to encoded measurement, state preparation and low-rank evolution. Production
 execution uses FlagQuantum and PyTorch. OpenFermion and Cirq are not required.
 The existing FermionOperator, stable root exports and API snapshots are unchanged.
 
-This PR delivers the selected native fermionic workflow and is ready for
-maintainer review. Full Linux CI run `42595072278` (attempt 2), GPU run
+At the recorded review point, this PR delivered the selected native fermionic
+workflow and was ready for maintainer review. Full Linux CI run `42595072278`
+(attempt 2), GPU run
 `42595072337` and container publication run `42595072334` passed for revision
 `901472c81d72f52fa966520de47166557c52ed79`. All four fixed images and 192 coverage
-worker caches were qualified. No merge has been performed. Later commits require
+worker caches were qualified. At that point, no merge had been performed.
+Later commits require
 their own applicable checks; these run IDs describe the recorded revision.
 
 ## User workflow

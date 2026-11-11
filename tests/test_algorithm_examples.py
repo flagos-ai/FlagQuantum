@@ -115,6 +115,7 @@ SCRIPTS = (
     "fermion_fourier",
     "fermion_tapering",
     "fermion_controlled_evolution",
+    "fermion_orbital_rotation",
     "fermion_hubbard",
 )
 
@@ -136,6 +137,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_orbital_rotation": (
+        "real CPU orbital rotations",
+        "not geometry gradients or SCF",
+    ),
     "fermion_hubbard": (
         "exponential inspection cost",
         "not a many-body scalability claim",
@@ -1888,6 +1893,13 @@ def test_fermion_controlled_evolution_reports_interference_and_convergence() -> 
     assert "Register: 4 system + 1 control = 5 qubits" in output
     assert "No phase alignment or energy-offset removal is used." in output
     _assert_premise("fermion_controlled_evolution", output)
+
+
+def test_fermion_orbital_rotation_example() -> None:
+    output = _run("fermion_orbital_rotation")
+    _assert_premise("fermion_orbital_rotation", output)
+    assert "Orbital gradient 0.85767388" in output
+    assert "After one gradient step -1.06185478" in output
 
 
 def test_fermion_hubbard_measures_two_particle_ground_state() -> None:

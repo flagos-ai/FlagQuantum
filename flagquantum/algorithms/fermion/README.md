@@ -88,6 +88,11 @@ interferometer and `python -m pytest tests/unit/fermion/test_controlled_evolutio
 -q` for independent full-branch, phase, convergence and gradient references.
  That profile is unreduced JW/CPU only and makes no routing or hardware claim.
 
+For the delivered stages, file-input workflows and planned extension boundaries,
+see the [migration status](../../../docs/development/OPENFERMION_NATIVE_MIGRATION.md#current-delivery-status).
+The initial PR description and its CI counts are historical records; the status
+section identifies the revision to which its delivery table applies.
+
 Spinful open-chain model assembly lives in `hubbard.py` and returns the existing
 `FermionOperator`. It owns only the static Hamiltonian: interleaved up/down modes,
 minus-t nearest-neighbor hopping, unshifted U double occupancy and minus-mu

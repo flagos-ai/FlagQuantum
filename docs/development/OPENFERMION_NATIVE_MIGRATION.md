@@ -1,10 +1,61 @@
 # Native fermionic science migration
 
-The feature branch `feat/native-fermion-migration` implements a selected scientific
-scope, not the entire OpenFermion API. Its base is `2a073ab9d`. The upstream
-reference is OpenFermion `34adf3196cd566f4ca53893f868753786797ae2a`.
+## Current delivery status
 
-## Delivery units
+Status checked on November 11, 2026, against main revision
+`504dc460f34f745db67566597cd69a94e345c298`. This is a selected native scientific
+workflow, not complete OpenFermion API compatibility. The initial PR01–PR16
+units below describe internal responsibilities delivered by one initial PR;
+they are not sixteen outstanding pull requests.
+
+| Scope | Delivery | Status at the checked revision | Shortest workflow |
+| --- | --- | --- | --- |
+| Initial selected migration | [#1109](https://github.com/flagos-ai/FlagQuantum/pull/1109) | Merged | `python -m examples.algorithms.fermion_chemistry` |
+| EXT02: real closed-shell FCIDUMP input | [#1110](https://github.com/flagos-ai/FlagQuantum/pull/1110) | Merged | `python -m examples.algorithms.fermion_fcidump` |
+| EXT03: MolecularData HDF5 input | [#1115](https://github.com/flagos-ai/FlagQuantum/pull/1115) | Merged; optional h5py | `python -m examples.algorithms.fermion_hdf5` |
+| EXT04: fermionic Fourier circuit | [#1118](https://github.com/flagos-ai/FlagQuantum/pull/1118) | Merged | `python -m examples.algorithms.fermion_fourier` |
+| EXT06: explicit Pauli stabilizer sector | [#1119](https://github.com/flagos-ai/FlagQuantum/pull/1119) | Merged | `python -m examples.algorithms.fermion_tapering` |
+| EXT07: controlled low-rank evolution | [#1121](https://github.com/flagos-ai/FlagQuantum/pull/1121) | Merged | `python -m examples.algorithms.fermion_controlled_evolution` |
+| EXT08: real orbital-parameter gradients | [#1122](https://github.com/flagos-ai/FlagQuantum/pull/1122) | Open; absent from this main revision | See the PR's branch-specific example |
+
+EXT01 (additional model Hamiltonians) and EXT05 (optional OpenFermion object
+conversion) remain demand-driven extensions. Neither is a prerequisite for
+these native workflows. A model extension must specify one physical model and
+reuse existing algebra. Object conversion belongs at an optional adapter
+boundary and must not become a production dependency.
+
+The following initial-batch records and CI counts retain their original scope.
+Later extensions and commits require their own evidence. The original branch
+was `feat/native-fermion-migration`, based on `2a073ab9d`; its upstream reference
+was OpenFermion `34adf3196cd566f4ca53893f868753786797ae2a`.
+
+## Module boundaries and composition
+
+| Responsibility | Owning module | Consumer boundary |
+| --- | --- | --- |
+| Canonical fermion algebra | `observables.fermion` | Existing public operator type is reused |
+| Complex Pauli values | `core.algebra.pauli` | Values contain no execution objects |
+| Static molecular data and active spaces | `algorithms.chemistry_domain` | `MolecularProblem` owns static snapshots |
+| PySCF, FCIDUMP and HDF5 input | `ecosystem.chemistry` | External data becomes `MolecularProblem` immediately |
+| Encodings and operator-sector reduction | `algorithms.fermion.encoding`, `symmetry`, `stabilizer` | Encoded/reduced operator contracts remain explicit |
+| Static orbital mathematics | `algorithms.fermion.decomposition`, `fourier`, `low_rank` | Mathematical plans do not own execution |
+| Preparation and evolution circuits | `algorithms.fermion.preparation`, `lowering`, `evolution` | Ordinary circuits are executed by existing `fq.run` |
+
+File readers and the direct driver share the same active-space, encoding and
+measurement consumers. Circuit preparation and evolution use full unreduced JW
+occupation registers; an encoded or reduced operator does not automatically
+provide a matching ansatz. Explicit state lifting is a bounded inspection path.
+Routing and low-rank evolution retain separate responsibilities.
+
+Core/native fermionic workflows require neither OpenFermion nor Cirq. The
+repository still offers `cirq-core` through optional Cirq interoperability
+extras. Optional PySCF and h5py dependencies stop at their input adapters; they
+are not native algebra dependencies. See the local
+[fermion domain README](../../flagquantum/algorithms/fermion/README.md),
+[chemistry domain README](../../flagquantum/algorithms/chemistry_domain/README.md)
+and [input adapter README](../../flagquantum/ecosystem/chemistry/README.md).
+
+## Initial-batch delivery units
 
 | Unit | Capability | Boundary |
 | --- | --- | --- |
@@ -29,9 +80,10 @@ EXT06 and EXT07 are independent extensions tracked after the selected migration
 batch. EXT07 reuses the existing evolution circuit and `Circuit.control`; its
 contract and limits are in `FERMION_CONTROLLED_EVOLUTION.md`.
 
-General non-diagonal stabilizer tapering, FFFT, file formats, complete upstream
-API compatibility, geometry gradients, and distributed training remain outside
-this selected batch. Unit 07 deliberately starts with diagonal parity
+General non-diagonal stabilizer tapering, FFFT and file formats were outside
+the initial batch and were delivered separately as shown above. Complete
+upstream API compatibility, geometry gradients and distributed training remain
+outside the delivered scope. Unit 07 deliberately starts with diagonal parity
 generators, an exact and independently verifiable subset.
 
 ## Existing workflow preserved
@@ -80,8 +132,10 @@ present the concrete compatibility options.
 
 All execution evidence here is local CPU complex128. Static decompositions own
 CPU snapshots and reject autograd inputs. Time differentiation is verified with
-finite differences; geometry, integrals, orbital frames, rank selection and
-Gaussian block differentiation are unsupported. Encoding and reduction results
+finite differences; geometry, supplied integrals, decomposition orbital frames, rank selection and
+Gaussian block differentiation are unsupported. EXT08 separately differentiates
+real orbital parameters through integral rotation and a closed-shell determinant
+objective; it does not differentiate the static decomposition path. Encoding and reduction results
 are separate contracts: preparation/evolution circuits do not accept encoded or
 reduced values and always use the unreduced JW occupation register.
 
@@ -222,7 +276,7 @@ both dependency manifests byte for byte. The 192 coverage worker caches were
 qualified against those identities. No manifest comparison, coverage floor or
 merge gate was relaxed.
 
-## Remote CI acceptance and review status
+## Historical initial-batch remote CI acceptance
 
 The following results are bound to implementation revision
 `901472c81d72f52fa966520de47166557c52ed79`, before the documentation reconciliation:
@@ -240,9 +294,10 @@ they do not establish native fermionic GPU scalability or full upstream parity.
 Linux validation is owned by CI, as requested by the user. Local Docker was
 unavailable during the earlier attempt and is not cited as execution evidence.
 
-PR #1109 is open and ready for maintainer review; it has not been merged. The
-FCIDUMP follow-up is reviewed separately in stacked PR #1110. Merge #1109 first,
-then retarget #1110 to main and validate that target. Any later commit, including
+At that recorded pre-merge point, #1109 was open and #1110 was a stacked
+FCIDUMP follow-up. The then-required order was to merge #1109, retarget #1110
+to main and validate that target. Both PRs have since merged, as recorded in
+the current delivery table. Any later commit, including
 documentation changes, needs its own applicable checks; the runs above remain
 evidence for their recorded revision.
 
@@ -301,3 +356,19 @@ new dependency and makes no claims for tapered encodings, multiple controls,
 hardware routing, GPU or distributed execution. See
 `docs/development/FERMION_CONTROLLED_EVOLUTION.md` and
 `tests/unit/fermion/test_controlled_evolution.py`.
+
+## EXT08: differentiable orbital parameters
+
+[The stage contract](FERMION_ORBITAL_GRADIENTS.md) defines a local CPU tensor
+workflow in `algorithms.chemistry_domain.orbital_rotation`. Static real chemist
+integrals and antisymmetric generators produce differentiable rotated tensors.
+The separate closed-shell contraction provides an orbital-optimization objective.
+Static molecular snapshots, symbolic encodings and circuit lowering remain
+independent and reject attempts to detach a trainable integral input silently.
+
+Run `python -m examples.algorithms.fermion_orbital_rotation`. At angle 0.2 radians,
+the H2 determinant energy is -1.0286951779 Ha and its gradient is 0.8576738812
+Ha/rad, agreeing with central finite differences. One step of size 0.05 lowers
+it to -1.0618547836 Ha. This is a determinant objective, not correlated energy,
+geometry differentiation or a converged SCF calculation. The fresh-interpreter
+isolation test also executes this example with external science SDKs blocked.

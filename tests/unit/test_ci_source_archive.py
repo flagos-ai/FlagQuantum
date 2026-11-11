@@ -177,8 +177,12 @@ def test_redirects_do_not_forward_the_api_token_to_another_host() -> None:
     assert not redirected.has_header("Authorization")
 
 
+@pytest.mark.parametrize("truncated_batch", [False, True])
 def test_api_objects_restore_exact_source_and_reuse_cache(
-    tmp_path: Path, source: _Source
+    tmp_path: Path,
+    source: _Source,
+    monkeypatch: pytest.MonkeyPatch,
+    truncated_batch: bool,
 ) -> None:
     import base64
 
@@ -208,19 +212,34 @@ def test_api_objects_restore_exact_source_and_reuse_cache(
             "content": base64.b64encode(raw).decode(),
         }
 
+    get_objects = None
+    if truncated_batch:
+        from http.client import IncompleteRead
+
+        from tools.ci_source_archive import _GraphQLSource
+
+        def truncated_query(self: _GraphQLSource, fields: str) -> dict[str, object]:
+            raise IncompleteRead(b"partial batch")
+
+        monkeypatch.setattr(_GraphQLSource, "_query", truncated_query)
+        client = _GraphQLSource("https://api.github.com/graphql", "owner/repo", {})
+
+        def get_objects(missing: list[tuple[str, str]]) -> list[object]:
+            return client.objects(missing, get_json)
+
     workspace = tmp_path / "api-workspace"
     workspace.mkdir()
-    assert _materialize_api(workspace, source.commit, get_json)
+    assert _materialize_api(workspace, source.commit, get_json, get_objects=get_objects)
     _checkout(workspace, source.commit, None)
     assert _git(workspace, "status", "--porcelain") == b""
     assert (workspace / "ignored.data").read_bytes() == bytes(range(256))
     assert (workspace / "link").is_symlink()
     calls.clear()
-    assert _materialize_api(workspace, source.commit, get_json)
+    assert _materialize_api(workspace, source.commit, get_json, get_objects=get_objects)
     assert calls == []
     blob = _git(directory, "rev-parse", "HEAD:tracked.txt").decode().strip()
     (workspace / ".git/objects" / blob[:2] / blob[2:]).unlink()
-    assert _materialize_api(workspace, source.commit, get_json)
+    assert _materialize_api(workspace, source.commit, get_json, get_objects=get_objects)
     assert calls == [f"/git/blobs/{blob}"]
 
 
