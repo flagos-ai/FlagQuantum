@@ -526,6 +526,42 @@ def test_the_container_matrix_does_not_land_all_at_once() -> None:
         )
 
 
+def test_container_builds_cannot_hold_a_trusted_pull_request_ci_capacity_lock() -> None:
+    publish = _document("publish-dev-container.yml")["jobs"]["publish"]
+    build_groups = _groups(publish)
+    assert len(build_groups) == publish["strategy"]["max-parallel"] == 2
+    for name, job in _github_hosted_jobs("ci.yml").items():
+        # Trusted pool jobs have independent locks, checked by the CPU routing
+        # policy; their hosted fallback is only used by fork pull requests.
+        if "flagquantum-cpu" in str(job["runs-on"]):
+            continue
+        assert not (
+            _groups(job) & build_groups
+        ), f"CI job {name} waits behind a development container build"
+
+
+def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None:
+    job = _document("ci.yml")["jobs"]["native-fermion"]
+    assert job["runs-on"] == TRUSTED_CPU_ROUTE
+    assert len(job["strategy"]["matrix"]["include"]) == 2
+    isolated = next(
+        step
+        for step in job["steps"]
+        if step.get("uses") == "./.github/actions/isolated-python"
+    )
+    assert isolated["with"]["torch-spec"] == "torch==${{ matrix.torch }}"
+    commands = "\n".join(str(step.get("run", "")) for step in job["steps"])
+    assert not any(
+        step.get("uses", "").startswith("actions/checkout@") for step in job["steps"]
+    )
+    assert 'test "$sha" = "$GITHUB_SHA"' in commands
+    assert 'git checkout --force --detach "$sha"' in commands
+    assert 'test "$(git rev-parse HEAD)" = "$GITHUB_SHA"' in commands
+    assert "importlib.util.find_spec(name) is None" in commands
+    assert "tests/integration/test_native_chemistry_driver.py" in commands
+    assert _document("ci.yml")["jobs"]["package"]["runs-on"] == "ubuntu-22.04"
+
+
 def test_the_release_matrix_leaves_capacity_for_other_repositories() -> None:
     jobs = _document("cd.yml")["jobs"]
     wheel_strategy = jobs["build-wheels"]["strategy"]
