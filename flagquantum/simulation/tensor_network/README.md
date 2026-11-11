@@ -195,3 +195,10 @@ preserves phaseful children and refuses complex-to-real phase loss. See
 [feedback tensors](../../../docs/development/CONTROLLED_REGISTER_TENSORS.md#classical-feedback-nodes-graph76)
 for both control polarities, raw original tensor parity, prepared instruments,
 all small measurement branches and the existing append workflow.
+
+Direct external input discards in `component_superoperator_nodes.py` now produce
+shared binary trace-effect tensors while retaining declared forward/backward
+input axes. Internal traces still use the existing helper. See
+[input discard effects](../../../docs/development/COMPONENT_TENSOR_NODES.md#direct-input-discard-effects-graph77)
+for the locked source's missing-input failure, the executable Cast-wrapped
+reference, full partial-trace channels and separate physical adaptation costs.

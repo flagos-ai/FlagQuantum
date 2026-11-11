@@ -145,8 +145,8 @@ labels to discard. This adapts unchanged `cbloq_to_superquimb`'s tensor and
 `DiscardInd` protocol. The helper doubles nodes using the existing conjugate
 pair mapping, then joins only explicitly requested trace edges. The existing
 trace validator requires one exposed leg in each direction and rejects missing,
-internal, duplicate and invalid labels. External entry ports cannot be discarded
-without changing their signature. Port maps returned by the helper remain
+internal, duplicate and invalid labels. At GRAPH74 all external-port discards were refused. GRAPH77 below admits
+explicit trace-only input effects while retaining output-port refusal. Port maps returned by the helper remain
 undoubled; pass them to `contract_register_superoperator` with the same entry
 signature. Empty graphs still return no nodes and require explicit scalar
 supply before contraction.
@@ -187,8 +187,7 @@ and dense contraction storage must not be reported as physical resources or
 peak construction memory.
 
 Automatic leaf discovery, feedback/conditional call admission, classical parity
-leaf supply, trace-only inputs without numerical tensor legs, nested numerical
-expansion policy, and full `_quimb.py` parent-file acceptance remain open. Callers
+leaf supply, nested numerical expansion policy, and full `_quimb.py` parent-file acceptance remain open. Callers
 must select/expand components using the existing Compiler boundary first.
 The supplier is responsible for genuine classical/quantum semantics; merely
 accepting a CBit axis does not infer a stochastic channel or dephase it.
@@ -226,3 +225,82 @@ Default smoke/unit: seven failed, 21507 passed, 300 skipped and 1037 warnings in
 there is no new observed failure ID. The maxfail run is not a fully passing
 default suite. Raw local logs, source hashes, resources and failure comparison
 are under `ftqc-reference-env/g2-component-superoperator-*`.
+
+## Direct input discard effects (GRAPH77)
+
+An explicitly discarded external input with **no numerical tensor leg** now
+contributes a binary identity effect between its forward and backward input
+axes. The original undoubled input map and declared signature remain intact,
+so `contract_register_superoperator` can return the full trace functional or a
+partial-trace channel. This effect is delta(i,j), not an all-ones bra, a zero
+projection, input normalization, dephasing-only map or a physical reset.
+
+The owner remains `component_superoperator_nodes`; no traversal, registry,
+contract, compiler opcode or public export is added. Existing internal edges
+still use the unchanged conjugate-pair/trace helpers. The graph validates every
+explicit discard label, including duplicates, before splitting internal and
+input effects. Discarding declared output ports remains an error. An external
+input already present in numerical nodes is also refused: it is not a trace-only
+input and silently adding an effect could double-consume it. A graph with no
+ports and no nodes still returns an empty graph rather than inventing scalar one.
+
+All direct input effects share one four-element identity tensor with like's
+dtype/device. They add one rank-two node per discarded bit, no physical gate,
+classical slot, environment wire or work qubit. Node logical bytes therefore
+grow linearly; unique effect tensor storage stays four elements. Dense channel
+inspection remains exponential and is not a capacity or peak-memory guarantee.
+
+### Unmodified source boundary
+
+Qualtran v0.7.0 Discard and DiscardQ each supply only a `DiscardInd`. A direct
+external discard has no producer tensor in `cbloq_to_superquimb`; reindexing that
+nonexistent leg does nothing. The resulting graph has missing declared input
+indices, so `quimb_to_dense(..., superoperator=True)` raises `KeyError`.
+Tests preserve this exact original failure, including missing port/index/bit,
+for scalar and shaped classical/quantum inputs. With no other ports, the
+original graph contains zero tensors. Reference files are never patched.
+
+The native effect is an explicit extension of that unsupported source case.
+For an executable upstream equivalent, tests insert an unchanged same-type Cast
+before each original Discard/DiscardQ, without changing source code. The original
+Cast supplies identity tensors, making its consumed leg available to the source
+trace routine. Native direct effects match the entire resulting channel. This
+comparison is **not** raw-tensor or node-count parity with the broken direct
+source graph. Each native effect replaces the contracted pair of source Cast
+identities in this equivalent reference.
+
+### Verification and existing user workflow
+
+Four dtypes, both input kinds, and scalar/(2,)/(1,2)/(0,) layouts compare complete
+channels with the original Cast-wrapped reference. Complex entangled inputs
+independently check every spectator density entry and relative-phase derivative
+against an explicit partial trace. All-inputs-discarded widths 1/2/8 return the
+identity trace functional; source direct failures remain negative cases.
+Classical axes are checked as numerical linear maps, not a promise to prepare
+physical classical superpositions.
+
+Quantum physical verification uses an existing valid typed **MeasureZ then
+classical Discard** body, never Free or a fabricated quantum-discard opcode.
+The selected numerical supplier explicitly contracts that effect to a trace.
+At widths 1/2/3, all fourteen physical measurement branches preserve complete
+complex amplitudes and an unused clean bit remains zero. Summing their
+spectator densities matches the numerical channel. Actual instructions remain
+one measurement per consumed quantum input, in original operand/slot order;
+there is no physical reset and no claim that the consumed measured bits end in
+zero. This is the native measure-and-forget adaptation, not a source DiscardQ
+gate decomposition.
+
+For two external CBits, all four classical assignments use the existing physical
+entry initialization and discard path: two classical XOR assignments, zero
+quantum gates/measurements/resets, and no retained classical output. These
+initialization costs are separate from zero-cost numerical trace supply.
+Users continue to use `circuit.append(op)`. The supported existing example is:
+
+```bash
+python -m examples.algorithms.binary_field_arithmetic
+python -m pytest tests/unit/test_component_trace_only.py -q
+```
+
+This is a finite `single_device_fast_path` slice. Source direct-discard failure,
+unsupported source costs, conditional call admission, automatic leaf supply and
+full parent-file acceptance remain explicitly open; G3 is not entered.

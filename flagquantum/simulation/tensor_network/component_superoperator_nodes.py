@@ -11,7 +11,7 @@ import torch
 
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from .component_tensor_nodes import _component_tensor_nodes
-from .conjugate_pairs import tensor_conjugate_pairs
+from .conjugate_pairs import conjugate_pair_labels, tensor_conjugate_pairs
 from .models import TensorNetworkNode
 from .trace_indices import trace_conjugate_indices
 
@@ -48,6 +48,12 @@ def component_superoperator_nodes(
     then conjugate-double and trace the explicitly supplied labels. Returned
     port maps remain undoubled for contract_register_superoperator. Supplier
     failures propagate; trace validation rejects missing/internal/duplicate legs.
+    A discarded external input with no numerical leg gets a binary identity
+    effect on its forward/backward input axes. This extends the source's direct
+    input-discard case, whose empty network fails contraction. Declared input
+    maps remain intact; discarding an external output or an input already used
+    by a numerical tensor is refused. Each effect shares one four-element
+    tensor with other input effects, with dtype/device taken from like.
     No normalization, sampling, physical allocation, automatic leaf discovery,
     backend selection or compiler traversal occurs. Pure-state wiring retains
     its existing classical-port refusal and three-argument supplier interface.
@@ -69,14 +75,33 @@ def component_superoperator_nodes(
     nodes, incoming, outgoing = _component_tensor_nodes(
         record, order, attach, like, entry, classical=True
     )
-    external = {
-        label
-        for bindings in (incoming, outgoing)
-        for words in bindings.values()
-        for word in words
-        for label in word
-    }
-    if external.intersection(discarded):
-        raise ValueError("discarded indices must not be external ports")
-    doubled = tensor_conjugate_pairs(nodes)
-    return trace_conjugate_indices(doubled, tuple(discarded)), incoming, outgoing
+    conjugate_pair_labels(tuple(discarded))
+    if len(discarded) != len(set(discarded)):
+        raise ValueError("trace requests must name distinct original indices")
+    inputs = {label for words in incoming.values() for word in words for label in word}
+    outputs = {label for words in outgoing.values() for word in words for label in word}
+    if outputs.intersection(discarded):
+        raise ValueError("discarded indices must not be external output ports")
+    trace_only = tuple(label for label in discarded if label in inputs)
+    if any(label in node.labels for node in nodes for label in trace_only):
+        raise ValueError(
+            "trace-only external inputs must have no numerical tensor legs"
+        )
+    internal = tuple(label for label in discarded if label not in inputs)
+    doubled = trace_conjugate_indices(tensor_conjugate_pairs(nodes), internal)
+    # A direct external discard has no producer tensor to reindex. Retain its
+    # two input axes with a trace effect instead of removing the declared port.
+    if trace_only:
+        identity = torch.eye(2, dtype=like.dtype, device=like.device)
+        doubled += tuple(
+            TensorNetworkNode(
+                identity,
+                (
+                    *conjugate_pair_labels((label,)),
+                    *conjugate_pair_labels((label,), backward=True),
+                ),
+                name="input_trace_effect",
+            )
+            for label in trace_only
+        )
+    return doubled, incoming, outgoing
