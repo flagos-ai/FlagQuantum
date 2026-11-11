@@ -119,7 +119,14 @@ def source_gates(
     source: Any, ports: SourcePorts, slots: int
 ) -> tuple[Instruction, ...]:
     """Read original connections with the same declared atomic normalization."""
-    from qualtran.bloqs.basic_gates import CHadamard, Hadamard, XGate, ZPowGate
+    from qualtran.bloqs.basic_gates import (
+        CNOT,
+        CHadamard,
+        Hadamard,
+        Toffoli,
+        XGate,
+        ZPowGate,
+    )
     from qualtran.bloqs.basic_gates.su2_rotation import SU2RotationGate
     from qualtran.bloqs.mcmt import And
 
@@ -142,6 +149,13 @@ def source_gates(
         if isinstance(bloq, (Hadamard, XGate)):
             return (
                 Instruction("h" if isinstance(bloq, Hadamard) else "x", inputs["q"]),
+            ), inputs
+        if isinstance(bloq, (CNOT, Toffoli)):
+            return (
+                Instruction(
+                    "cx" if isinstance(bloq, CNOT) else "ccx",
+                    (*inputs["ctrl"], *inputs["target"]),
+                ),
             ), inputs
         if isinstance(bloq, CHadamard):
             return (Instruction("ch", (*inputs["ctrl"], *inputs["target"])),), inputs
