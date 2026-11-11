@@ -32,11 +32,12 @@ empty arrays, preserving the source field class, conversion errors and missing
 assignment errors. It does not substitute integer array storage. Field class
 resolution remains lazy on scalar collection.
 
-`ComponentClassicalState` accepts an explicit mapping from Core `RegisterType`
+`ComponentClassicalState` accepts an optional explicit mapping from Core `RegisterType`
 to Simulation `FiniteFieldEncoding` through `field_encodings`. The mapping is
 copied, then used only for declared field ports; its projected descriptor must
-match exactly before value callbacks run. No new metadata reconstruction or
-implicit domain inference occurs. The class consumes the same Core SSA values,
+match exactly before value callbacks run. This override path does not reconstruct
+metadata. Missing encoders now use the explicit
+[binary metadata resolver](BINARY_FIELD_ENCODING.md). The class consumes the same Core SSA values,
 Compiler-supplied operation positions and existing action/distribution/phase
 owners. Simulation imports no Compiler implementation and owns no graph rewrite.
 
@@ -126,8 +127,10 @@ or scalability claim. Quantum users continue `circuit.append(op)`.
 
 Q-0882 and Q-0883 remain open. Source-wide dtype dispatch, foreign lazy
 decomposition exception conversion and complete original test-file replacement
-remain incomplete. Field execution requires explicit matching encoders; this
-is a native representation boundary, not an automatic upstream QGF constructor.
+remain incomplete. [Binary metadata resolution](BINARY_FIELD_ENCODING.md) now restores missing
+encoders automatically for already admitted binary quantum fields; explicit
+matching encoders remain optional overrides. This native representation adapter
+is separate from an upstream QGF constructor.
 The source's empty external array finalization still raises
 `KeyError(RightDangle)` while native typed return metadata collects an empty
 field array. Tests preserve and report that difference. Wider standalone field

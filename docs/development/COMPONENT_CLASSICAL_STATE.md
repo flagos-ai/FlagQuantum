@@ -111,6 +111,10 @@ G3 remains unstarted.
 [Field binding and collection](CLASSICAL_FIELD_REGISTERS.md) now supplies explicit
 matching `field_encodings` for binary-field graph ports. The original integer-only
 admission described above is historical. Shared traversal replaces the former
-integer-only loops; wider Core admission and automatic dtype resolution remain
+integer-only loops; wider Core admission and source-wide dtype resolution remain
 open. [Truth-table inspection](CLASSICAL_TRUTH_TABLE.md) also supplies the two
 source table utilities without changing graph ownership.
+
+[Binary metadata resolution](BINARY_FIELD_ENCODING.md) now restores field encoders
+without an explicit map for Core-admitted binary descriptors. Wider dtype
+admission and source-wide resolution remain open; numerical codecs are shared.

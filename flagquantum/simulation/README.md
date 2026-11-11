@@ -840,7 +840,8 @@ remaining finite-field and source-wide boundaries.
 
 `classical_field_registers.py` supplies finite-field validation and field-array
 storage to the shared binding/collection traversal in `classical_registers.py`.
-The SSA state accepts explicit matching `field_encodings`; Core admission stays
+The SSA state resolves admitted binary metadata through `binary_field_encoding.py`;
+explicit matching `field_encodings` remain optional overrides. Core admission stays
 unchanged. See [field graph values](../../docs/development/CLASSICAL_FIELD_REGISTERS.md)
 for source dtype/error comparisons, complete field-add matrices and append
 roundtrips, including the retained empty-array finalization difference.
@@ -865,3 +866,7 @@ until Join collection. Run `python -m examples.algorithms.classical_on_each_valu
 for noncontiguous append and complete complex inverse checks. See
 [numerical OnEach](../../docs/development/CLASSICAL_ON_EACH_VALUES.md) for zero-width
 source topology, dtype diagnostics and metadata-owner responsibilities.
+
+[Binary field metadata resolution](../../docs/development/BINARY_FIELD_ENCODING.md)
+retains full polynomial/coefficient-field identity, validates the metadata
+roundtrip and avoids optional field resolution on integer-only graph paths.

@@ -137,3 +137,10 @@ field storage and validators stay with the existing numerical codec. Complete
 field-add tables/matrices, original gate operands and complex append roundtrips
 pass. Q-0882 and Q-0883 remain open for source-wide resolution and original test
 replacement. No additional parent or child acceptance count is inferred.
+
+The [binary metadata resolution slice](BINARY_FIELD_ENCODING.md) restores existing
+numerical field encoders from Core-admitted descriptors and removes the manual
+mapping requirement for those graphs. It retains polynomial/coefficient-field
+identity, exact source field classes and explicit override precedence. It is a
+native representation adapter, not a source-wide dtype or admission expansion.
+Q-0882/Q-0883 and fixed parent/child counts remain open and unchanged.
