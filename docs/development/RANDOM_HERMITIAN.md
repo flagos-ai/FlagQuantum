@@ -45,10 +45,12 @@ phase-insensitive distance is used to weaken amplitude comparison.
 
 The result is real symmetric, hence Hermitian, with operator norm at most one
 up to roundoff for ordinary finite draws. It is not a general complex Hermitian
-ensemble, a unitary, or a density matrix. The caller owns the mutable RNG; global
-NumPy RNG state is not consumed. The native typed boundary requires an explicit
-`RandomState`, as Qualtran annotates. Cirq's additional int-seed/None parser is
-not transplanted or claimed as accepted.
+ensemble, a unitary, or a density matrix. An explicit sampler remains caller-owned. The source Cirq parser is now
+inlined: `None` consumes NumPy's global RNG, a Python `int` (including `bool`)
+constructs a seeded `RandomState`, and other providers pass through unchanged.
+NumPy integer scalars and Generator objects retain the source AttributeError
+when they lack `randn`; invalid Python seeds retain NumPy's ValueError. There
+is no validation or coercion that changes failure order.
 
 Dimension zero returns a (0, 0) matrix. Negative dimensions retain NumPy's
 ValueError before consuming random numbers. QR failure leaves the one normal
@@ -74,4 +76,6 @@ that evidence.
 
 These numerical operations are not physical primitive gate counts, and no
 performance, scalability, PyTorch-gradient, or hardware-execution claim is made.
-The finite explicit-RNG slice does not close whole-file or full G2 acceptance.
+The original explicit-RNG slice was partial. The completed RNG selector and
+whole-file closure evidence are in [Matrix numerics](MATRIX_NUMERICS.md). G2
+as a whole remains open.
