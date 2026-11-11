@@ -1,0 +1,255 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from Qualtran v0.7.0 ClassicalSimState and PhasedClassicalSimState.
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/simulation/classical_sim.py
+
+"""Step selected typed SSA calls using explicit numerical value and phase actions."""
+
+from collections.abc import Callable, Iterable, Mapping
+
+import numpy as np
+
+from ..core.ir.program import (
+    FunctionRecord,
+    ProgramRecord,
+    ValueRef,
+    verify_program_record,
+)
+from ..core.ir.program.registers import Register
+from ..core.ir.program.signatures import Signature
+from .classical_action import evaluate_classical_action
+from .classical_distributions import draw_classical_value
+from .classical_measurement import MeasurementOutcomePhase, assert_unit_classical_phase
+from .classical_registers import (
+    bind_integer_register_values,
+    collect_integer_register_value,
+)
+from .classical_updates import commit_classical_outputs, commit_phased_classical_outputs
+
+
+class ComponentClassicalState:
+    """Numerically evaluate one verified unconditional typed-call entry.
+
+    Compiler supplies operation positions in dependency order. Optional occurrence
+    IDs align with block positions and identify random outcomes independently of
+    visitation order. Value and phase callbacks run in that order; decomposition
+    is an explicit callback, not Python method discovery or graph transformation.
+
+    Integer/bit scalar and array ports use existing native validators and storage
+    codecs. Other encodings, physical graphs, control flow and primitive entry
+    operations are refused before actions. Definitions and caller values are not
+    rewritten. Assignments and last_position remain inspectable after failures;
+    outputs are committed before phase rejection, as in the pinned simulator.
+    """
+
+    def __init__(
+        self,
+        record: ProgramRecord,
+        order: tuple[int, ...],
+        values: Mapping[str, object],
+        value_action: Callable[[FunctionRecord, dict[str, object]], object],
+        phase_action: (
+            Callable[
+                [FunctionRecord, dict[str, object]],
+                complex | MeasurementOutcomePhase | None,
+            ]
+            | None
+        ) = None,
+        *,
+        entry: str = "main",
+        phased: bool = False,
+        phase: complex = 1.0,
+        instance_ids: tuple[int, ...] | None = None,
+        rng: np.random.Generator | None = None,
+        fixed_values: Mapping[int, object] | None = None,
+        recurse: (
+            Callable[
+                [FunctionRecord, dict[str, object]],
+                tuple[dict[str, object], complex | MeasurementOutcomePhase | None],
+            ]
+            | None
+        ) = None,
+    ) -> None:
+        diagnostics = verify_program_record(record)
+        if diagnostics:
+            raise ValueError(f"invalid classical component graph: {diagnostics}")
+        functions = {function.name: function for function in record.functions}
+        if entry not in functions:
+            raise ValueError(f"unknown classical component entry {entry!r}")
+        function = functions[entry]
+        if (
+            record.physical_context is not None
+            or function.registers is None
+            or len(function.blocks) != 1
+        ):
+            raise ValueError("classical components require one typed logical block")
+        block = function.blocks[0]
+        if block.terminator != "return" or block.edges or block.return_values is None:
+            raise ValueError("classical components require explicit returned values")
+        if (
+            len(order) != len(block.operations)
+            or any(type(i) is not int for i in order)
+            or set(order) != set(range(len(block.operations)))
+        ):
+            raise ValueError(
+                "classical call order must visit every operation exactly once"
+            )
+        known = set(block.arguments)
+        for position in order:
+            operation = block.operations[position]
+            child = functions.get(operation.callee or "")
+            if (
+                operation.opcode != "call"
+                or child is None
+                or child.registers is None
+                or operation.parameters
+                or operation.condition_clauses
+            ):
+                raise ValueError(
+                    "classical components require unconditional typed calls"
+                )
+            if not set(operation.operands) <= known:
+                raise ValueError("classical call order must respect SSA dependencies")
+            known.update(operation.results)
+        for registers in (
+            function.registers,
+            *(functions[op.callee or ""].registers for op in block.operations),
+        ):
+            assert registers is not None
+            if any(
+                register.dtype.encoding not in {"bit", "opaque", "uint", "signed"}
+                for register in registers
+            ):
+                raise ValueError(
+                    "classical component ports require integer or bit encodings"
+                )
+        ids = (
+            tuple(range(len(block.operations)))
+            if instance_ids is None
+            else instance_ids
+        )
+        if (
+            len(ids) != len(block.operations)
+            or any(type(i) is not int or i < 0 for i in ids)
+            or len(set(ids)) != len(ids)
+        ):
+            raise ValueError(
+                "instance IDs must be distinct nonnegative integers per operation"
+            )
+        if type(phased) is not bool:
+            raise ValueError("phased evaluation requires a built-in boolean")
+        self.assignments: dict[ValueRef, object] = {}
+        self.last_position: int | None = None
+        self.phase = phase
+        self._phased = phased
+        self._functions, self._block = functions, block
+        self._signature = Signature(function.registers)
+        self._positions = iter(order)
+        self._ids, self._rng, self._fixed = ids, rng, fixed_values
+        self._values, self._phase_action, self._recurse = (
+            value_action,
+            phase_action,
+            recurse,
+        )
+        self._outcomes: dict[tuple[str, tuple[int, ...]], object] = {}
+        self._assign(self._signature.lefts(), block.arguments, values)
+        if phased:
+            assert_unit_classical_phase(phase)
+        elif phase != 1:
+            raise ValueError("an initial phase requires phased evaluation")
+
+    def _assign(
+        self,
+        registers: Iterable[Register],
+        identities: tuple[ValueRef, ...],
+        values: Mapping[str, object],
+    ) -> None:
+        refs = iter(identities)
+        instance = -1 if self.last_position is None else self._ids[self.last_position]
+        for register in registers:
+            bound = bind_integer_register_values(
+                register.name,
+                values,
+                register.bitsize,
+                shape=register.shape,
+                signed=register.dtype.encoding == "signed",
+                resolve_distribution=lambda distribution: draw_classical_value(
+                    distribution,
+                    instance_id=instance,
+                    rng=self._rng,
+                    fixed_values=self._fixed,
+                ),
+            )
+            for index, value in bound.items():
+                self.assignments[next(refs)] = value
+                self._outcomes[register.name, index] = value
+
+    def _collect(
+        self, registers: Iterable[Register], identities: tuple[ValueRef, ...]
+    ) -> dict[str, object]:
+        refs = iter(identities)
+        return {
+            register.name: collect_integer_register_value(
+                {index: self.assignments[next(refs)] for index in register.all_idxs()},
+                register.bitsize,
+                shape=register.shape,
+                signed=register.dtype.encoding == "signed",
+            )
+            for register in registers
+        }
+
+    def step(self) -> "ComponentClassicalState":
+        """Advance one call; propagate errors with its visible assignment prefix."""
+        position = next(self._positions)
+        self.last_position = position
+        operation = self._block.operations[position]
+        function = self._functions[operation.callee or ""]
+        assert function.registers is not None
+        signature = Signature(function.registers)
+        inputs = self._collect(signature.lefts(), operation.operands)
+
+        def decompose(
+            values: dict[str, object],
+        ) -> tuple[dict[str, object], complex | MeasurementOutcomePhase | None]:
+            if self._recurse is None:
+                raise NotImplementedError(
+                    f"no classical decomposition supplied for {function.name}"
+                )
+            return self._recurse(function, values)
+
+        outputs, contribution = evaluate_classical_action(
+            inputs,
+            lambda **values: self._values(function, values),
+            lambda **values: (
+                self._phase_action(function, values) if self._phase_action else None
+            ),
+            decompose,
+            operation_name=function.name,
+        )
+        self._outcomes.clear()
+
+        def assign(values: Mapping[str, object]) -> None:
+            self._assign(signature.rights(), operation.results, values)
+
+        if self._phased:
+            self.phase = commit_phased_classical_outputs(
+                outputs, contribution, assign, phase=self.phase, outcomes=self._outcomes
+            )
+        else:
+            commit_classical_outputs(
+                outputs, contribution, assign, operation_name=function.name
+            )
+        return self
+
+    def finalize(self) -> dict[str, object]:
+        """Collect returned SSA values; unfinished live outputs raise KeyError."""
+        assert self._block.return_values is not None
+        return self._collect(self._signature.rights(), self._block.return_values)
+
+    def simulate(self) -> dict[str, object]:
+        """Step to exhaustion and collect final values without normalizing phase."""
+        try:
+            while True:
+                self.step()
+        except StopIteration:
+            return self.finalize()
