@@ -47,20 +47,23 @@ Both functions adapt unchanged Qualtran v0.7.0 at
 Negative powers assume unitarity. For a nonunitary input the source uses an
 adjoint rather than an inverse; the native function does the same. Neither
 routine validates unitarity, promotes real storage to accommodate complex
-coefficients, or mutates input arrays. Native typing covers float32/float64/complex64/complex128 arrays;
-NumPy still determines operation and casting support. Accumulation uses
-`np.add(..., out=result)`, the same in-place ufunc as source `+=`, so real
-storage still rejects complex additions. The distance's NumPy
-scalar is converted to a Python float without changing its numerical value.
+coefficients, or mutates input arrays. The array dtype is a NumPy boundary; the
+native annotation does not restrict it
+to four floating/complex types or introduce coercion. Accumulation retains
+source `result += power * coefficient`. Dtype, subclass dispatch and casting
+failures remain NumPy-owned, including unsigned negative-coefficient overflow.
+The distance retains its original NumPy scalar dtype and extended precision;
+it is no longer coerced to Python float.
 
 The distance intentionally removes global phase. It must not replace exact
 complex-amplitude checks: U and exp(i phi) U can have zero distance while their
 controlled forms differ. Tests explicitly retain that counterexample. Empty
 matrix/nonfinite numerical policy remains NumPy/source behavior, not a new
-physical validation contract. Random Hermitian generation was outside NUM01/NUM02;
-[NUM03 now supplies its explicit-RandomState path](RANDOM_HERMITIAN.md).
-The full source parent remains open. Polynomial tests cover the complete
-single source function, not all linalg or G2 acceptance.
+physical validation contract. Random Hermitian generation is covered separately by
+[the completed matrix source closure](MATRIX_NUMERICS.md). The single-function
+polynomial source and its original test file are now closed; see
+[whole-file polynomial and assertion acceptance](POLYNOMIAL_ASSERTION_CLOSURE.md).
+This does not close other linalg files or G2.
 
 ## Verification and resource interpretation
 

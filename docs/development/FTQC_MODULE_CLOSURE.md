@@ -47,9 +47,10 @@ behavior belongs to an existing parent ID; any scope change needs an explicit
 record. The Chinese workspace ledger remains the live status source and its
 phase totals are generated from parent decisions, not test count.
 
-## First closed module
+## Closed source modules
 
 [Matrix numerics](MATRIX_NUMERICS.md) closes Q-0757 and Q-0758. The parent ledger
-therefore has **2 closed files and 1,278 open files**. These file counts are not
-a functional completion percentage or an effort estimate. Some open modules
+now also closes [polynomial evaluation and matrix assertions](POLYNOMIAL_ASSERTION_CLOSURE.md)
+(Q-0762, Q-0763, Q-0767), for **5 closed files and 1,275 open files**. These file
+counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.

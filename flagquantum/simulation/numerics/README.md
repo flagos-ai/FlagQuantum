@@ -31,7 +31,8 @@ python -m pytest tests/unit/test_unitary_polynomial.py tests/unit/test_unitary_d
 ## Random real symmetric inspection matrices
 
 `random_hermitian.random_hermitian_matrix(dimension, random_state)` consumes an
-explicit NumPy `RandomState` and reproduces the source's real orthogonal QR and
+explicit NumPy `RandomState`, accepts an integer seed, or uses the global RNG
+when passed `None`, and reproduces the source's real orthogonal QR and
 symmetrization sequence. It does not sample an arbitrary complex ensemble.
 See [source conditions, runnable example, and refusal behavior](../../../docs/development/RANDOM_HERMITIAN.md).
 Run `python -m pytest tests/unit/test_random_hermitian.py -q` with the reference
@@ -75,3 +76,13 @@ recursion uses the source rotation definition without importing Compiler.
 See [the runnable numerical chain and retained source failures](../../../docs/development/QSP_COMPLEMENT_PHASES.md).
 Run `python -m pytest tests/unit/test_qsp_complement.py tests/unit/test_qsp_phases.py -q`
 with the pinned reference environment for coefficient, matrix and rotation checks.
+
+
+## Whole-source closure
+
+The polynomial evaluator and both matrix assertions retain upstream NumPy
+operation order, dtype/subclass dispatch, failures and source test behavior.
+See [module acceptance and resource interpretation](../../../docs/development/POLYNOMIAL_ASSERTION_CLOSURE.md).
+With pinned references, run the two focused test files named there. These
+helpers do not synthesize circuits or claim that phase-insensitive distance
+certifies exact amplitude equivalence.

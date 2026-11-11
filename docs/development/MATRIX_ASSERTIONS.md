@@ -43,9 +43,10 @@ changes. No global-phase alignment is used in that phase-sensitive comparison.
 
 For two-dimensional arrays, the first criterion is the Frobenius norm, not a
 spectral or entrywise bound. It accepts rectangular matrices and vectors as the
-source does; it does not require square matrices or unitarity. The typed native
-inputs cover float32/float64/complex64/complex128 NumPy arrays. Input arrays are
-not modified. A norm exactly equal to atol passes. Empty matrices, negative
+source does; it does not require square matrices or unitarity. The native array
+boundary preserves NumPy dtype and subclass dispatch without coercion; accepted
+comparison behavior includes NumPy's own dtype errors. Input arrays are not
+modified. A norm exactly equal to atol passes. Empty matrices, negative
 atol, NaN and shape failures are checked against the original.
 
 The unitary criterion assumes caller-provided unitarity and retains the
@@ -60,7 +61,10 @@ the source Frobenius criterion fails.
 These are assertions for inspection/testing: they retain Python assertion
 semantics, including removal under Python optimization. They are not runtime
 capability validation, finite-input normalization, or a physical acceptance gate.
-Foreign/symbolic arrays and other dtype behavior are outside this typed slice.
+Object arrays with symbolic entries retain source arithmetic and comparison
+failures; accepting an array at the boundary does not guarantee its norm or
+trace is numerically defined. Extended scalar precision is inherited from the
+completed shared distance implementation.
 No reference source is changed to obtain parity.
 
 ## Verification and costs
@@ -81,5 +85,7 @@ not claim its whole synthesis algorithm was newly ported in this batch.
 
 The replacement circuit's original two H/Rz gates are unchanged. Neither a norm
 nor an assertion is a synthesized primitive, gate-count estimate, measurement
-branch, gradient implementation, or scalability claim. Finite typed comparison
-acceptance does not close full-parent or full G2 acceptance.
+branch, gradient implementation, or scalability claim. The original finite
+typed slice is now superseded by the
+[complete assertion source-file acceptance](POLYNOMIAL_ASSERTION_CLOSURE.md).
+The full G2 integration remains open.
