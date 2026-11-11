@@ -144,3 +144,9 @@ mapping requirement for those graphs. It retains polynomial/coefficient-field
 identity, exact source field classes and explicit override precedence. It is a
 native representation adapter, not a source-wide dtype or admission expansion.
 Q-0882/Q-0883 and fixed parent/child counts remain open and unchanged.
+
+The [bit graph validation fix](COMPONENT_BIT_VALUES.md) removes integer validation
+from bit ports and reuses the existing equality-based bit owner. Three concrete
+counterexamples now match unchanged source acceptance/rejection; floating and
+complex fixed outcomes retain exact phase and physical branch amplitudes.
+Q-0882 and Q-0883 remain open; frozen parent and child counts do not increase.

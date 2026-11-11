@@ -831,6 +831,12 @@ Both action-dispatch and measurement examples consume this update boundary.
 See [ordered output updates](../../docs/development/CLASSICAL_OUTPUT_UPDATES.md)
 for original state-after-failure comparisons and separate graph responsibilities.
 
+Bit graph ports now reuse the existing equality-based bit validators through the
+shared binder, preserving valid scalar floats and rejecting fractional/NaN arrays
+before storage conversion. Width-one integers keep their separate integer policy.
+See [bit graph values](../../docs/development/COMPONENT_BIT_VALUES.md) for original
+counterexamples and all measured branches with equivalent numeric representations.
+
 `component_classical_state.py` connects these numerical owners to explicit
 Core SSA call positions through `step`, `finalize` and `simulate`. It retains
 ordered assignment, stochastic occurrence identity and phased updates; Compiler

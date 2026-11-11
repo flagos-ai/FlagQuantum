@@ -118,3 +118,8 @@ source table utilities without changing graph ownership.
 [Binary metadata resolution](BINARY_FIELD_ENCODING.md) now restores field encoders
 without an explicit map for Core-admitted binary descriptors. Wider dtype
 admission and source-wide resolution remain open; numerical codecs are shared.
+
+[Bit validation dispatch](COMPONENT_BIT_VALUES.md) corrects the original
+integer-only path for QBit/CBit values: valid scalar float representations retain
+identity, while fractional/NaN bit arrays fail before uint8 collection. The
+existing bit numerical owner supplies the source semantics.
