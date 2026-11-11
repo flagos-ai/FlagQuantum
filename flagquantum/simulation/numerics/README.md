@@ -27,3 +27,12 @@ unchanged upstream implementations:
 ```bash
 python -m pytest tests/unit/test_unitary_polynomial.py tests/unit/test_unitary_distance.py -q
 ```
+
+## Random real symmetric inspection matrices
+
+`random_hermitian.random_hermitian_matrix(dimension, random_state)` consumes an
+explicit NumPy `RandomState` and reproduces the source's real orthogonal QR and
+symmetrization sequence. It does not sample an arbitrary complex ensemble.
+See [source conditions, runnable example, and refusal behavior](../../../docs/development/RANDOM_HERMITIAN.md).
+Run `python -m pytest tests/unit/test_random_hermitian.py -q` with the reference
+environment. This adds no production Cirq dependency or new execution engine.

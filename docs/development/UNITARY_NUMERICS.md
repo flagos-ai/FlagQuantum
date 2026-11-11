@@ -57,8 +57,9 @@ The distance intentionally removes global phase. It must not replace exact
 complex-amplitude checks: U and exp(i phi) U can have zero distance while their
 controlled forms differ. Tests explicitly retain that counterexample. Empty
 matrix/nonfinite numerical policy remains NumPy/source behavior, not a new
-physical validation contract. Random Hermitian generation in `matrix.py` is
-outside this slice; its parent remains open. Polynomial tests cover the complete
+physical validation contract. Random Hermitian generation was outside NUM01/NUM02;
+[NUM03 now supplies its explicit-RandomState path](RANDOM_HERMITIAN.md).
+The full source parent remains open. Polynomial tests cover the complete
 single source function, not all linalg or G2 acceptance.
 
 ## Verification and resource interpretation
