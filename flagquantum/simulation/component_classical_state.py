@@ -48,6 +48,8 @@ class ComponentClassicalState:
     and primitive entry operations are refused before actions. Caller values are not
     rewritten. Assignments and last_position remain inspectable after failures;
     outputs are committed before phase rejection, as in the pinned simulator.
+    Recursive NotImplementedError failures retain their cause and acquire the
+    current function name. Direct action and output-commit errors propagate.
     """
 
     def __init__(
@@ -265,7 +267,12 @@ class ComponentClassicalState:
                 raise NotImplementedError(
                     f"no classical decomposition supplied for {function.name}"
                 )
-            return self._recurse(function, values)
+            try:
+                return self._recurse(function, values)
+            except NotImplementedError as exc:
+                raise NotImplementedError(
+                    f"{function.name} does not support classical simulation: {exc}"
+                ) from exc
 
         outputs, contribution = evaluate_classical_action(
             inputs,
