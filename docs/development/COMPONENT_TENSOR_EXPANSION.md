@@ -176,3 +176,27 @@ This is a finite `single_device_fast_path` slice. Automatic provider discovery,
 lazy foreign decomposition error translation, empty numerical graph scalar
 semantics and full parent-file acceptance remain open. G2 continues; G3 is not
 entered. Evidence is retained under `ftqc-reference-env/g2-tensor-root-*`.
+
+### GRAPH78 verification evidence
+
+Implementation: `bf2ee8d6`. All 41 new source-backed cases pass. Final related
+regression: 1413 passed in 15.75 s (41 existing/source warnings). Focused
+verification: 688 passed in 20.51 s (39 warnings). All 64 local integration
+tests pass in 3.20 s. The changed expansion owner covers all 22 statements and
+six branches; the 16 selected owners cover 511 statements and 206 branches at
+99%, retaining two historical GRAPH60 profile-refusal misses. Strict mypy passes
+39 related files plus three source-following files. Black/Ruff, Compiler scope,
+architecture, Program IR and public API checks pass.
+
+Thirty locked source blobs, including Bloq.as_composite_bloq and CompositeBloq,
+match the unchanged inventory. Twenty-five unchanged source tests pass in
+1.05 s, with five existing/source warnings. Qualtran 0.7.0 and native Kickmix
+0.1 Simulator were checked; the existing binary-field append example passes.
+Eight full/partial resource scenarios preserve exact physical lowering and
+separately record the independent source costs.
+
+Default smoke/unit: seven failed, 21507 passed, 300 skipped and 1037 warnings in
+122.95 s. All seven failure IDs exactly match the independent baseline; no new
+failure ID was observed. The maxfail run is not a green default suite. It ran
+before the final shaped dense-operator assertions were added, without any later
+production behavior change. Raw evidence is at `ftqc-reference-env/g2-tensor-root-*`.
