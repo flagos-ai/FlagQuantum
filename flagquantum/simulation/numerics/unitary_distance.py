@@ -5,14 +5,16 @@
 
 """The source's phase-insensitive dense unitary comparison metric."""
 
+from typing import Any
+
 import numpy as np
 from numpy.typing import NDArray
 
 
 def unitary_distance_ignoring_global_phase(
-    left: NDArray[np.float32 | np.float64 | np.complex64 | np.complex128],
-    right: NDArray[np.float32 | np.float64 | np.complex64 | np.complex128],
-) -> float:
+    left: NDArray[Any],
+    right: NDArray[Any],
+) -> np.float16 | np.float32 | np.float64 | np.longdouble:
     """Return sqrt(max(0, 1 - abs(trace(left.dagger @ right)) / N)).
 
     Inputs must have the same square shape; unitarity is the caller's
@@ -30,4 +32,7 @@ def unitary_distance_ignoring_global_phase(
     dimension = left.shape[0]
     trace = np.trace(left.conj().T @ right)
     distance_squared = 1 - np.abs(trace) / dimension
-    return float(np.sqrt(max(0, distance_squared)))
+    result: np.float16 | np.float32 | np.float64 | np.longdouble = np.sqrt(
+        max(0, distance_squared)
+    )
+    return result

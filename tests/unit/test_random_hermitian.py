@@ -1,6 +1,7 @@
 """Sampling preserves the original matrix, RNG consumption, and failure order."""
 
 from collections.abc import Callable
+from typing import Any
 
 import numpy as np
 import pytest
@@ -112,3 +113,58 @@ def test_same_consumer_accepts_source_and_native_sampler() -> None:
 
     # Replacement changes no consumer code, including append and clean-wire checks.
     np.testing.assert_array_equal(evolve(random_hermitian_matrix), evolve(source))
+
+
+@pytest.mark.parametrize("seed", [0, 17, True, False, 2**32 - 1])
+def test_seed_parser_matches_source(seed: int) -> None:
+    from qualtran.linalg.matrix import random_hermitian_matrix as source
+
+    np.testing.assert_array_equal(random_hermitian_matrix(3, seed), source(3, seed))
+
+
+def test_none_consumes_global_rng_and_preserves_following_draws() -> None:
+    from qualtran.linalg.matrix import random_hermitian_matrix as source
+
+    saved = np.random.get_state()
+    try:
+        np.random.seed(1234)
+        expected = source(3, None)
+        following = np.random.randn(11)
+        np.random.seed(1234)
+        actual = random_hermitian_matrix(3, None)
+        np.testing.assert_array_equal(actual, expected)
+        np.testing.assert_array_equal(np.random.randn(11), following)
+    finally:
+        np.random.set_state(saved)
+
+
+@pytest.mark.parametrize(
+    "value", [-1, 2**32, np.int64(17), np.random.default_rng(17), object()]
+)
+def test_seed_or_provider_failure_matches_source(value: Any) -> None:
+    # Dynamic foreign objects deliberately exercise Cirq's unvalidated boundary.
+    from qualtran.linalg.matrix import random_hermitian_matrix as source
+
+    with pytest.raises((ValueError, AttributeError)) as expected:
+        source(3, value)
+    with pytest.raises(type(expected.value)) as actual:
+        random_hermitian_matrix(3, value)
+    assert str(actual.value) == str(expected.value)
+
+
+def test_custom_normal_provider_is_used_without_replacement() -> None:
+    from qualtran.linalg.matrix import random_hermitian_matrix as source
+
+    class Provider:
+        def __init__(self) -> None:
+            self.calls: list[tuple[int, ...]] = []
+
+        def randn(self, *dimensions: int) -> NDArray[np.float64]:
+            self.calls.append(dimensions)
+            return np.arange(np.prod(dimensions), dtype=np.float64).reshape(dimensions)
+
+    native, original = Provider(), Provider()
+    np.testing.assert_array_equal(
+        random_hermitian_matrix(2, native), source(2, original)
+    )
+    assert native.calls == original.calls == [(2, 2)]
