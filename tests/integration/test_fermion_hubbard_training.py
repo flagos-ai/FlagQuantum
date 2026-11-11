@@ -63,7 +63,8 @@ def test_runtime_gradient_matches_dense_difference_and_optimizer_updates() -> No
 def test_training_without_external_quantum_or_chemistry_sdks() -> None:
     # Torch optimizer initialization can import NumPy through Dynamo. Keep the
     # stronger algebra-only no-NumPy test in test_native_fermion_isolation.py.
-    script = textwrap.dedent("""
+    script = textwrap.dedent(
+        """
         import importlib.abc
         import sys
         blocked = {"openfermion", "openfermionpyscf", "cirq", "pyscf", "scipy", "h5py"}
@@ -76,7 +77,8 @@ def test_training_without_external_quantum_or_chemistry_sdks() -> None:
         from examples.algorithms.fermion_hubbard_training import main
         main()
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
-        """)
+        """,
+    )
     result = subprocess.run(
         [sys.executable, "-c", script],
         cwd=Path(__file__).resolve().parents[2],
