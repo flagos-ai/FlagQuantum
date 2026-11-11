@@ -30,6 +30,14 @@ at the existing register boundary; this extension does not authorize writing an
 unselected bit of a register used as a numeric predicate dependency. Signed or
 fixed-point sliced arithmetic and runtime/dynamic views remain unsupported.
 
+In-place real/probability preparation may use the same ordered partial or
+composed initialized writable storage. It applies the existing full unitary on
+every input column, not an assumed fresh-zero map. Nested controls prepend
+checked scalar locations to the existing indexed preparation effect; combined
+control/target locations remain bounded at eight, preserving inverse and branch
+global phase. Const, overlap and ownership rules are unchanged. No new opcode,
+control-state schema or resource ceiling is introduced.
+
 ## Acceptance
 
 - Compare all small basis words, nonzero surrounding bits and coherent complex
