@@ -128,6 +128,7 @@ def test_core_admission_precedes_any_optional_library_import(
     defect: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import flagquantum.simulation.binary_field_encoding as owner
+    import flagquantum.simulation.finite_field_metadata as metadata
 
     field = FiniteFieldEncoding(2, 3)
     dtype = field.register_type()
@@ -152,7 +153,7 @@ def test_core_admission_precedes_any_optional_library_import(
         "partial_poly": replace(dtype, parameters=(*base, ("polynomial", 11))),
     }[defect]
     monkeypatch.setattr(
-        owner, "import_module", lambda name: pytest.fail("optional import")
+        metadata, "import_module", lambda name: pytest.fail("optional import")
     )
     with pytest.raises(ValueError):
         owner.resolve_binary_field_encoding(mutated)

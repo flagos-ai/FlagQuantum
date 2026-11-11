@@ -222,17 +222,21 @@ def test_typed_field_codecs_full_add_matrix_exact_gates_and_complex_append(
 
 
 @pytest.mark.parametrize(
-    "defect", ["classical", "odd", "order", "width", "extra", "partial", "symbolic"]
+    "defect", ["storage", "degree", "order", "width", "extra", "partial", "symbolic"]
 )
-def test_field_default_obeys_existing_core_admission(defect: str) -> None:
+def test_field_default_rejects_malformed_projection(defect: str) -> None:
     import sympy
 
     field = FiniteFieldEncoding(2, 2)
     original = field.register_type()
     base = original.parameters[:3]
     dtype = {
-        "classical": field.register_type(classical=True),
-        "odd": FiniteFieldEncoding(3, 2).register_type(),
+        "storage": RegisterType("finite_field", 2, 1, parameters=original.parameters),
+        "degree": RegisterType(
+            "finite_field",
+            2,
+            parameters=(("characteristic", 2), ("degree", 0), ("order", 1)),
+        ),
         "order": RegisterType(
             "finite_field",
             2,
@@ -262,7 +266,7 @@ def test_integer_default_does_not_resolve_optional_fields(
 
     monkeypatch.setattr(
         owner,
-        "resolve_binary_field_encoding",
+        "resolve_finite_field_encoding",
         lambda dtype: pytest.fail("field resolution"),
     )
     signature = Signature([Register("x", unsigned_register_type(2))])
