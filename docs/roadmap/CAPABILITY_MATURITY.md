@@ -728,3 +728,14 @@ existing eight-location bound. Const, initialization, format, overlap, Output
 escape and actual resource refusals remain checked. Signed/fractional sliced
 arithmetic and dynamic views remain unsupported. These local CPU tests do not
 establish native Vlasov acceptance or release readiness.
+
+## Native pure-callback phase consistency
+
+Maturity: `development_evidence`. Whole-register and sliced borrowed helpers
+reuse the existing direct phase capture while expanding pure callbacks. Plain
+word phases and bounded predicate phases retain conditional scalar phase under
+QPE powers, without an artificial arithmetic scratch lifetime. Independent
+matrix powers and Fourier references cover quantum counting, Grover-operator
+QPE and nonzero coherent inputs. Nested phase-only helpers and adjoints have
+separate complex-state tests. This does not admit general QPE scratch, change
+the 4096 expanded-effect ceiling or establish native Vlasov acceptance.

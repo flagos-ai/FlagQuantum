@@ -1202,6 +1202,55 @@ combined control/target locations; actual gate and workspace limits still apply.
 
 Run `python -m pytest tests/integration/test_synthesis_native_numeric_borrows.py -q`.
 
+## Native phase expressions inside pure callbacks
+
+Whole-register helper expansion retains the same phase semantics as sliced
+borrows. In checked pure callbacks, plain word phases and bounded unsigned
+predicate phases reuse the existing polynomial/factored phase capture. They do
+not introduce an arithmetic result register solely because the helper received
+whole-register arguments. This preserves a pure QPE callback without admitting
+allocation, Output publication, channels or escaping scratch.
+
+The native quantum-counting and Grover-operator QPE programs retain their
+zero-workspace contracts. Independent dense powers and Fourier matrices check
+their complete environmental state and absolute phase. Callback expansion,
+physical gates and all resource budgets remain charged. General arithmetic
+scratch in QPE callbacks remains unsupported.
+
+```python
+import math
+from typing import Annotated
+
+import flagquantum as fq
+from flagquantum.synth import (
+    Output, QNum, allocate, drop, hadamard_transform, phase, qfunc, qpe, synthesize,
+)
+
+@qfunc
+def kick(data: QNum) -> None:
+    phase(data, math.pi / 2)
+
+@qfunc
+def main(p: Output[Annotated[QNum, (2, False, 2)]]) -> None:
+    data: Annotated[QNum, 2] = QNum()
+    allocate(data)
+    hadamard_transform(data)
+    allocate(p)
+    qpe(lambda: kick(data), p)
+    drop(data)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.numeric_probabilities(result, registers=("p",))))
+```
+
+The four eigenphases `0`, `1/4`, `1/2` and `3/4` each have probability `1/4`.
+The two dropped data bits remain part of the four-qubit environmental state;
+drop does not reset or erase them. No physical wire mapping is required.
+
+Run `python -m pytest tests/integration/test_synthesis_native_qpe_examples.py
+tests/integration/test_synthesis_native_qpe_callbacks.py -q`.
+
 ## Shared native borrowed helpers
 
 Repeated whole-register raw unsigned qfunc calls may share a checked internal

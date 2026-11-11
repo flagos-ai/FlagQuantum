@@ -923,6 +923,7 @@ class _Body:
                 self.emit("qreg.phase", node, (), angle=radians)
             elif (
                 self.aliases is not None
+                or self.owner.expanded_callbacks > 0
                 or has_numeric_reads(self, expr)
                 or any(
                     isinstance(

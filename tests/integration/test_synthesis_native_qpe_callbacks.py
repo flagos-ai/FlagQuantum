@@ -6,11 +6,69 @@ import pytest
 import torch
 
 import flagquantum as fq
+from examples.synthesis.qpe_reference import dense_qpe
 from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.integration.test_synthesis_native_exact_numbers import definition
 
 pytestmark = pytest.mark.integration
+
+
+@pytest.mark.parametrize("angle", [0.37, -0.61])
+@pytest.mark.parametrize("inverse", [False, True])
+def test_nested_word_and_predicate_phase_callbacks_keep_pure_effects(
+    angle: float, inverse: bool
+) -> None:
+    helper = f"""
+@qfunc
+def diagonal(a:QNum,t:QBit):
+    phase(0.19*a+0.23,1)
+    control(a<=1,lambda:phase(1.0,{-angle}))
+    control(a>=2,lambda:phase(t,{angle}))
+@qfunc
+def kick(a:QNum,t:QBit):
+"""
+    helper += (
+        "    with adjoint():\n        diagonal(a,t)\n"
+        if inverse
+        else "    diagonal(a,t)\n"
+    )
+    program = synth.synthesize(
+        definition(
+            "p:Output[QNum[3,False,3]]",
+            "a:QNum[2]=QNum()\nt:QBit=QBit()\nallocate(a)\nallocate(t)\n"
+            "hadamard_transform(a)\nH(t)\nRZ(0.17,a[0])\nRZ(-0.29,t)\n"
+            "allocate(p)\nqpe(lambda:kick(a,t),p)\ndrop(a)\ndrop(t)",
+            helper,
+        ),
+        max_workspace=0,
+    )
+    phases = torch.tensor(
+        [
+            0.19 * a + 0.23 - angle * int(a <= 1) + angle * t * int(a >= 2)
+            for a in range(4)
+            for t in range(2)
+        ],
+        dtype=torch.float64,
+    )
+    unitary = torch.diag(torch.exp((-1j if inverse else 1j) * phases))
+    hadamard = torch.tensor([[1, 1], [1, -1]], dtype=torch.complex128) / math.sqrt(2)
+    initial_phases = torch.tensor(
+        [
+            0.085 * (2 * (a & 1) - 1) - 0.145 * (2 * t - 1)
+            for a in range(4)
+            for t in range(2)
+        ],
+        dtype=torch.float64,
+    )
+    preparation = torch.diag(torch.exp(1j * initial_phases)) @ torch.kron(
+        torch.kron(hadamard, hadamard), hadamard
+    )
+    expected = fq.run(dense_qpe(unitary, preparation, 3)).statevector().flatten()
+    torch.testing.assert_close(
+        fq.run(program).statevector().flatten(), expected, atol=1e-11, rtol=0
+    )
+    assert program.report["workspace_qubits"] == 0
 
 
 def reference(matrix: torch.Tensor, word: int, bits: int = 3) -> torch.Tensor:
