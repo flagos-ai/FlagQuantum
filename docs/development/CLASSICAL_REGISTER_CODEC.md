@@ -33,7 +33,7 @@ classical ports still encounter the original zero-quantum-width reshape boundary
 The node entry continues to refuse classical ports before enumeration.
 
 This boundary supports concrete widths and concrete numerical parameters from
-the existing constructors. Symbolic metadata, finite fields and unknown encodings
+the existing constructors. Symbolic metadata, non-admitted field types and unknown encodings
 require an explicit codec; they do not silently fall back to unsigned integers.
 Broader numerical metadata support does not admit new types into executable
 Program IR. Core verification, physical lowering, call graphs and protected APIs
@@ -85,3 +85,11 @@ already valid. Evidence is retained in
 
 84 CPU/tensor-network integration checks passed with two existing warnings.
 Default smoke/unit result: `7 failed, 22125 passed, 300 skipped, 1037 warnings in 155.15s (0:02:35)`. All observed failure IDs belong to the seven known baseline IDs; 0 baseline IDs were not observed before the max-failure stop. This is not a green full-suite result. The comparison is retained in `ftqc-reference-env/g2-classical-register-codec-default-comparison.json`.
+
+## Admitted binary fields
+
+[Binary field codec composition](CLASSICAL_FIELD_CODEC.md) now delegates admitted
+quantum binary descriptors to the existing resolver and FiniteFieldEncoding.
+Complete polynomial identity and typed array behavior are retained. The original
+dense field-output type-loss and multidimensional array failures remain explicit;
+this does not certify successful dense field identity or wider Core admission.

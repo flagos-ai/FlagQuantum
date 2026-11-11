@@ -194,3 +194,10 @@ expanding Core execution admission. Default dense tables replace handwritten
 codec dispatch, preserve source Montgomery/negative-zero/empty-array behavior
 and match full complex Add branches. Q-0895 remains open for wider domains and
 its original classical-axis/phase-free boundaries; inventory counts do not rise.
+
+The [binary field codec connection](CLASSICAL_FIELD_CODEC.md) extends the shared
+metadata adapter through existing field resolution. Typed field codecs, input
+effects and exact Add matrices/primitive streams match the frozen source.
+Default dense identity output still loses its field class at the original
+NumPy conversion and fails; multidimensional array limitations are retained.
+Q-0895/source-wide closure remains open and the inventory counts do not change.

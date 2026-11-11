@@ -900,3 +900,7 @@ the process-default random stream independently of root fixed or seeded values.
 [Register codec composition](../../docs/development/CLASSICAL_REGISTER_CODEC.md)
 connects concrete metadata to existing numerical codecs. Dense classical action
 tables now have native default codecs while explicit overrides retain precedence.
+
+[Binary field register codec composition](../../docs/development/CLASSICAL_FIELD_CODEC.md)
+connects admitted descriptors through the existing field resolver, preserving
+source numerical classes and its dense-output type-loss failure boundary.
