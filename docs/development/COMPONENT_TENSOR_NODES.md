@@ -386,3 +386,21 @@ physical discard decomposition, or public API. The dephasing-shaped supplier
 fixture is only a numerical leaf descriptor; its body is not claimed as a
 physical lowering. Exact source and local resource records are under
 `ftqc-reference-env/g2-pure-tensor-discard-*`.
+
+## Explicit provider bindings (GRAPH81)
+
+`ComponentTensorProviders` keeps partial-expansion leaf selection and
+Simulation callback dispatch on one caller-owned mapping from exact
+`FunctionRecord.name` keys to suppliers. Call `has_custom_tensor` in the
+existing Compiler expansion owner and pass `supply` to the pure or mixed
+Simulation entry. The copied mapping is read-only; absent providers raise
+explicitly and callback failures propagate unchanged. The mixed four-argument
+provider keeps the current shared `fresh_label` contract.
+
+This maps the source's per-Bloq `my_tensors` dispatch to the native typed Core
+boundary. It does not copy Qualtran's method-override name heuristic: typed
+FunctionRecords do not carry Python Bloq objects, and exact user bindings avoid
+guessing. No global registry, automatic selection, fallback, graph traversal,
+physical instruction, or public export is added. See
+[component tensor providers](COMPONENT_TENSOR_PROVIDERS.md) for the calling
+example and source comparison.

@@ -128,6 +128,8 @@ error translation and source simplification policy equivalence require separate
 audit. Pure supplier trace-token admission is now a finite explicit refusal:
 GRAPH80 rejects the first trace token before contraction while retaining mixed
 channel tracing; see [component tensor nodes](COMPONENT_TENSOR_NODES.md#pure-supplier-discard-refusal-graph80).
+Explicit per-function leaf bindings now share expansion selection and numerical
+dispatch; see [component tensor providers](COMPONENT_TENSOR_PROVIDERS.md).
 G3 is not entered.
 
 

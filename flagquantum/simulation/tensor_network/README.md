@@ -195,6 +195,13 @@ retains forwarded x, and emits no physical instruction. Locked upstream Parity
 has no tensor recipe; see [parity tensors](../../../docs/development/CLASSICAL_PARITY_TENSORS.md)
 for the negative source contract and separate value-derived evidence.
 
+`component_tensor_providers.py` offers an internal immutable explicit mapping
+from exact Core function names to pure or mixed numerical suppliers. Its leaf
+predicate and dispatch method let callers use the same bindings across existing
+Compiler expansion and Simulation contraction; it does not discover providers
+or guess from Python method names. See
+[component tensor providers](../../../docs/development/COMPONENT_TENSOR_PROVIDERS.md).
+
 `controlled_register_tensor_node` in `controlled_tensor.py` binds the existing
 identity/active-child tensor for explicit quantum or classical controls. It
 preserves phaseful children and refuses complex-to-real phase loss. See
