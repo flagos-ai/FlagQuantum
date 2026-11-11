@@ -274,6 +274,7 @@ class _Body:
         self.operations: list[Operation] = []
         self.evolutions: list[_Evolution] = []
         self.branch_depth = 0
+        self.borrowed_unitary = False
         self.region_depth = 0
         self.expressions = 0
         self.aliases: dict[str, tuple[tuple[Value, int], ...]] | None = None
@@ -923,6 +924,7 @@ class _Body:
                 self.emit("qreg.phase", node, (), angle=radians)
             elif (
                 self.aliases is not None
+                or self.borrowed_unitary
                 or self.owner.expanded_callbacks > 0
                 or has_numeric_reads(self, expr)
                 or any(

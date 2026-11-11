@@ -6,7 +6,7 @@ import ast
 import math
 from typing import TYPE_CHECKING
 
-from .._phase_polynomial import Location
+from .._phase_polynomial import MAX_PHASE_DEGREE, Location
 from .frontend_phase import capture_polynomial_phase
 from .frontend_python import _error
 from .frontend_views import gate_target, locations
@@ -95,7 +95,10 @@ def capture_predicate_x(
         if ports[child.id].fractional_bits:
             return False
         reads.update(locations(owner, child))
-    if len(reads) > 8:
+    # The XOR target and enclosing coherent controls also occupy phase inputs.
+    # Reserve one slot per expanded callback before choosing the scratch-free
+    # path; callbacks without a new control may conservatively retain computation.
+    if len(reads) + 1 + owner.owner.expanded_callbacks > MAX_PHASE_DEGREE:
         return False
     target, bit = gate_target(owner, callback.args[0])
     if any(value == target for value, _ in reads):

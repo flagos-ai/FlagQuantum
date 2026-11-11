@@ -531,6 +531,7 @@ def inline_mutable(
             classical,
         )
         child.registers = {port.name: bindings[port.name][0][0] for port in ports}
+        child.borrowed_unitary = True
         child.effect, child.counter = owner.effect, owner.counter
         storage = dict(child.registers), dict(child.ports), dict(child.widths)
         owner.owner.active.add(id(definition))

@@ -3,8 +3,8 @@
 This example uses native FlagQuantum Python quantum functions.
 
 ```sh
-python -m examples.synthesis.tutorials.technology_demonstrations.qpe.qpe_for_unitary_matrix.main
-python -m examples.synthesis.tutorials.technology_demonstrations.qpe.qpe_for_unitary_matrix.comparisons.circuit
+python -m examples.synthesis.tutorials.technology_demonstrations.QPE.qpe_for_unitary_matrix.main
+python -m examples.synthesis.tutorials.technology_demonstrations.QPE.qpe_for_unitary_matrix.comparisons.circuit
 ```
 
 The Circuit comparison checks complete complex amplitudes, absolute phase,

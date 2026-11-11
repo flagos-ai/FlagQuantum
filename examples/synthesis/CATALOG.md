@@ -254,7 +254,7 @@ Validated local Notebook workflows:
 - [execution_tutorial_part2](tutorials/basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
 - [qpe_for_grover_operator](tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/README.md)
-- [qpe_for_unitary_matrix](tutorials/technology_demonstrations/qpe/qpe_for_unitary_matrix/README.md)
+- [qpe_for_unitary_matrix](tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](tutorials/technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)

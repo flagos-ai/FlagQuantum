@@ -296,6 +296,38 @@ def test_large_parent_slice_uses_existing_bounded_view_path() -> None:
     assert float(actual[:, 1:].abs().square().sum()) < 1e-22
 
 
+@pytest.mark.parametrize("width", [6, 7, 8])
+def test_predicate_degree_boundary_preserves_xor_and_computed_fallback(
+    width: int,
+) -> None:
+    helper = f"@qfunc\ndef mark(v:QNum,t:QBit):\n    control(v=={(1 << width) - 1},lambda:X(t))\n"
+    entry = definition(
+        f"c:Output[QBit],v:Output[QNum[{width}]],t:Output[QBit]",
+        "allocate(c)\nallocate(v)\nallocate(t)\nH(c)\nhadamard_transform(v)\nH(t)\n"
+        "RZ(0.37,t)\ncontrol(c,lambda:mark(v,t))",
+        helper,
+    )
+    program = synth.synthesize(entry)
+    size = 1 << (width + 2)
+    expected = torch.empty(size, dtype=torch.complex128)
+    for coin, raw, marker in product(range(2), range(1 << width), range(2)):
+        output = marker ^ int(bool(coin) and raw == (1 << width) - 1)
+        angle = 0.37 * (marker - 0.5)
+        expected[(coin << (width + 1)) | (raw << 1) | output] = torch.tensor(
+            complex(math.cos(angle), math.sin(angle)) / math.sqrt(size),
+            dtype=torch.complex128,
+        )
+    actual = fq.run(program).statevector().reshape(size, -1)
+    torch.testing.assert_close(actual[:, 0], expected, atol=1e-11, rtol=0)
+    assert float(actual[:, 1:].abs().square().sum()) < 1e-22
+    if width == 6:
+        assert program.report["workspace_qubits"] == 0
+    else:
+        assert program.report["workspace_qubits"] != 0
+        with pytest.raises(synth.SynthesisError):
+            synth.synthesize(entry, max_workspace=0)
+
+
 @pytest.mark.parametrize("budget", ["width", "operations", "memory"])
 def test_phase_callback_obeys_actual_budgets(budget: str) -> None:
     entry = definition(

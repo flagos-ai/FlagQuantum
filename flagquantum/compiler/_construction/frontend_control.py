@@ -163,6 +163,7 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         and not (numeric_predicate and phase_constant is not None)
         and (
             owner.aliases is not None
+            or owner.borrowed_unitary
             or owner.owner.expanded_callbacks > 0
             or isinstance(condition, ast.Subscript)
             or needs_predicate_phase_capture(condition)

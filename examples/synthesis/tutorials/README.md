@@ -27,7 +27,7 @@ Native FlagQuantum programs currently available:
 - [execution_tutorial_part2](basics/quantum_programming/execution_tutorial_part2/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 - [qpe_for_grover_operator](technology_demonstrations/QPE/qpe_for_grover_operator/README.md)
-- [qpe_for_unitary_matrix](technology_demonstrations/qpe/qpe_for_unitary_matrix/README.md)
+- [qpe_for_unitary_matrix](technology_demonstrations/QPE/qpe_for_unitary_matrix/README.md)
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
 - [arithmetic_expressions](technology_demonstrations/arithmetic_expressions/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
@@ -79,6 +79,5 @@ Native FlagQuantum programs currently available:
 - [controlled_predicate](control/controlled_predicate/main.py)
 - [phase_oracle](control/phase_oracle/main.py)
 - [trial](getting_started/trial/main.py)
-- [qpe_for_unitary_matrix](technology_demonstrations/QPE/qpe_for_unitary_matrix/main.py)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

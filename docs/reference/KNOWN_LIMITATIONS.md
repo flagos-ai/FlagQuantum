@@ -1205,8 +1205,11 @@ Run `python -m pytest tests/integration/test_synthesis_native_numeric_borrows.py
 ## Bounded integer controls inside native callbacks
 
 Checked pure callbacks can mark an arbitrary target with integer predicates
-without allocating a predicate work bit when the condition reads at most eight
-bits. Signed whole words retain two's-complement semantics; unsigned borrowed
+without allocating a predicate work bit when the condition and target fit the
+existing eight-degree phase bound, including enclosing coherent controls. Wider
+predicates retain their computed path when the target and controls would exceed
+that bound. The separate eight-input condition bound remains. Signed whole words
+retain two's-complement semantics; unsigned borrowed
 words use their explicit component order. This is XOR, including a target
 initially equal to one or entangled with another register. The compiler uses
 exact phase decomposition, so scratch savings may increase gate count and depth.
@@ -1249,6 +1252,16 @@ registers with small static slices keep their existing bounded-view path.
 
 Run `python -m pytest tests/integration/test_synthesis_native_callback_phase_controls.py
 tests/integration/test_synthesis_native_numeric_borrows.py -q`.
+
+Whole-register mutable helper borrows also use the checked exact phase path.
+Equivalent whole and partial bindings retain absolute phase, including nested
+helpers, adjoint and within/apply. This prevents an incidental whole-register
+binding from introducing numerical scratch for a phase-only calculation.
+The helper context does not expand root capture or fixed-point comparison
+semantics, and closed helper templates still require the existing effect proof.
+
+Run `python -m pytest tests/integration/test_synthesis_native_whole_borrow_phase.py
+tests/integration/test_synthesis_native_amplification.py -q`.
 
 ## Native phase expressions inside pure callbacks
 
