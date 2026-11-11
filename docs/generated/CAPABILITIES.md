@@ -401,6 +401,8 @@ This catalog is generated from the machine-validated
 | Pack detector rows without losing parity boundaries | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Convert captured measurement files into detector and logical files | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
 | Read captured records and decode bounded batches | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Differentiate a determinant energy with respect to orbital angles | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
+| Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 | Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 
@@ -1486,6 +1488,20 @@ Sample reference-normalized detector flips and derive an exact DEM from one boun
 - **Start:** [quick example](../../examples/qec/native_detector_sampling.py)
 - **Documentation:** [guide](../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md)
 - **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
+
+### Real orbital-parameter gradients
+
+Rotate static real spatial integrals with trainable orbital parameters and differentiate an explicit closed-shell determinant energy.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.chemistry_domain.orbital_rotation.rotate_spatial_integrals`, `flagquantum.algorithms.chemistry_domain.orbital_rotation.closed_shell_determinant_energy`
+- **Runtime modes:** `local_cpu_tensor`
+- **Hardware:** `cpu`
+- **Gradient support:** `real_orbital_parameters_only`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_orbital_rotation.py)
+- **Documentation:** [guide](../../docs/development/FERMION_ORBITAL_GRADIENTS.md)
+- **Known boundary:** Static real spatial integrals and antisymmetric generators; only real CPU orbital parameters are trainable. Dense O(n^4) integral storage. Explicit closed-shell occupations only. No geometry, supplied-integral, SCF, complex-orbital, open-shell or decomposition gradients; no correlated-ground-state or scalability claim.
 
 
 ## Distributed execution

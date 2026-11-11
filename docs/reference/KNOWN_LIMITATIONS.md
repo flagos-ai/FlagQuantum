@@ -112,6 +112,7 @@ Do not edit this generated region. Capability boundaries come from
 | Huawei Ascend 910C native quantum workflows | `development_evidence` | Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification. |
 | Huawei Ascend 910C sharded quantum training | `development_evidence` | Requires pinned Torch-FL and patched pure FlagOS FlagCX builds. The statevector ladder covers 2/4/8 logical NPUs, corresponding to 1/2/4 physical 910C cards. Two-host tests use one logical NPU per host and shared LeoFS checkpoints. FP64 reductions use blocking lossless int64 broadcasts plus device arithmetic. Small correctness workloads and real owner-sharded updates do not establish capacity expansion, speedup, convergence, production support or release certification. DDP evidence is separately labeled data_parallel_replicated. |
 | Native circuit detector sampling and exact DEM | `development_evidence` | Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope. |
+| Real orbital-parameter gradients | `experimental` | Static real spatial integrals and antisymmetric generators; only real CPU orbital parameters are trainable. Dense O(n^4) integral storage. Explicit closed-shell occupations only. No geometry, supplied-integral, SCF, complex-orbital, open-shell or decomposition gradients; no correlated-ground-state or scalability claim. |
 | Optional OpenFermion operator conversion | `experimental` | Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence. |
 
 ## Validated public performance claims
@@ -1041,7 +1042,8 @@ occupation-register circuits. They do not directly consume parity/BK or tapered
 registers. Chemistry supports real spatial chemist integrals and even-electron
 closed shells. The optional direct PySCF driver provides RHF only. Static data,
 rank selection, orbital decompositions and geometry do not support gradients;
-only evolution time is verified as differentiable in the added workflow.
+evolution time and the separate EXT08 real orbital parameters are verified as
+differentiable in their respective workflows.
 Low-rank truncation and product-formula errors are distinct. Evolution uses
 nonadjacent density gates, and makes no nearest-neighbor routing, distributed,
 GPU capacity, or performance claim. Existing optional Cirq interoperability
@@ -1107,3 +1109,15 @@ RSS and caller-retained batches. Zero stored columns are refused. See
 [the approved proposal](../development/QEC_SHOT_DATA_READING_PROPOSAL.md) for
 exact budgets, API mapping and remaining parity gaps. Native and installed
 acceptance are pending for this candidate.
+
+## Differentiable orbital rotations
+
+The experimental `algorithms.chemistry_domain.orbital_rotation` workflow uses
+static real spatial chemist integrals and static antisymmetric generators, with
+trainable real CPU orbital parameters. It returns tensors and a closed-shell
+determinant energy; no geometry, supplied-integral, SCF, complex-orbital,
+open-shell or decomposition gradients are supported. It uses dense O(n^4)
+integral storage and is not a scalability claim. Differentiable tensors must
+remain outside the static `MolecularProblem` snapshot path. See
+[the stage contract](../development/FERMION_ORBITAL_GRADIENTS.md) and run
+`python -m examples.algorithms.fermion_orbital_rotation`.

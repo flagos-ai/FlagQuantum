@@ -1,4 +1,4 @@
-# Static molecular problems
+# Molecular data and orbital rotations
 
 Owns real spatial-orbital integral semantics, explicit energy offsets and
 closed-shell active-space transformations. Dependencies are native algebra,
@@ -12,7 +12,18 @@ the fermionic Hamiltonian once; never add energy_offset to its measured energy.
 
 Change an active selection and run
 `python -m pytest tests/unit/fermion/test_chemistry.py -q`. Tensor inputs are
-owned static snapshots. Geometry and integral differentiation are unsupported.
+owned static snapshots. Geometry and supplied-integral differentiation are unsupported.
+
+`orbital_rotation.rotate_spatial_integrals` separately transforms static real
+integrals with trainable real orbital parameters. Its tensor results preserve
+autograd and must not be passed to static `MolecularProblem` snapshots while
+tracking gradients. `closed_shell_determinant_energy` contracts those tensors
+for explicit doubly occupied orbitals, including the supplied constant once.
+Run `python -m examples.algorithms.fermion_orbital_rotation` for the orbital
+gradient and one descent step; test with
+`python -m pytest tests/unit/fermion/test_orbital_rotation.py -q`.
+See [the stage contract](../../../docs/development/FERMION_ORBITAL_GRADIENTS.md)
+for conventions and limits.
 
 Shortest executable workflow:
 

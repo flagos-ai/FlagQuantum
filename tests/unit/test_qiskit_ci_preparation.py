@@ -25,7 +25,7 @@ def test_qiskit_gate_requires_both_complete_certified_lanes(result: str) -> None
     }
     assert lane["env"]["QISKIT_VERSION"] == "${{ matrix.qiskit }}.*"
     assert lane["runs-on"] == "ubuntu-latest"
-    assert lane["concurrency"]["group"] == "flagquantum-gh-7"
+    assert lane["concurrency"]["group"] == "flagquantum-gh-1"
     preflight = next(
         s
         for s in lane["steps"]
