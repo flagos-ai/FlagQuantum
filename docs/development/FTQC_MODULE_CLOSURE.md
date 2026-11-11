@@ -208,3 +208,5 @@ executable binary entry still calls Core admission first. Odd-field/classical
 codecs now match source domains, full multiplication tables, types and failures;
 this adds no executable gate family. Original dense and source-wide boundaries
 remain open and fixed inventory counts do not increase.
+
+Concrete register domains and the default truth-table connection reuse existing numerical owners; see [Classical register domains](CLASSICAL_REGISTER_DOMAINS.md). No executable admission is expanded.

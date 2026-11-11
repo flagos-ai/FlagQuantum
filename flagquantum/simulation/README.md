@@ -908,3 +908,5 @@ source numerical classes and its dense-output type-loss failure boundary.
 [Shared finite-field metadata](../../docs/development/FINITE_FIELD_METADATA.md)
 restores quantum/classical numerical declarations, including odd characteristic.
 Executable binary admission stays separate and unchanged.
+
+Concrete register domains and the default truth-table connection reuse existing numerical owners; see [Classical register domains](../../docs/development/CLASSICAL_REGISTER_DOMAINS.md). No executable admission is expanded.
