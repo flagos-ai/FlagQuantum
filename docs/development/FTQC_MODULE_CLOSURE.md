@@ -150,3 +150,10 @@ from bit ports and reuses the existing equality-based bit owner. Three concrete
 counterexamples now match unchanged source acceptance/rejection; floating and
 complex fixed outcomes retain exact phase and physical branch amplitudes.
 Q-0882 and Q-0883 remain open; frozen parent and child counts do not increase.
+
+The [recursive failure context](COMPONENT_CLASSICAL_RECURSION.md) preserves
+source NotImplementedError cause chains through explicit native recursive
+callbacks. Direct actions, other error categories and output commits retain
+their existing failure boundaries. Real depth 2/3/5 graphs match source chain
+contents without committing failed parent outputs. Foreign decomposition error
+translation and source-wide closure remain open; acceptance counts do not rise.

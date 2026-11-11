@@ -876,3 +876,7 @@ source topology, dtype diagnostics and metadata-owner responsibilities.
 [Binary field metadata resolution](../../docs/development/BINARY_FIELD_ENCODING.md)
 retains full polynomial/coefficient-field identity, validates the metadata
 roundtrip and avoids optional field resolution on integer-only graph paths.
+
+[Classical recursion diagnostics](../../docs/development/COMPONENT_CLASSICAL_RECURSION.md)
+retain source cause chains at explicit recursive callbacks while direct action
+and output-commit errors keep their original boundary.
