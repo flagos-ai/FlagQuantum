@@ -25,7 +25,7 @@ def capture_expression_xor(owner: _Body, node: ast.AugAssign) -> None:
         or node.target.id not in ports
         or ports[node.target.id].kind not in {"qnum", "qbit"}
         or ports[node.target.id].role
-        not in ({"output"} if owner.aliases is None else {"inout"})
+        not in ({"output", "inout"} if owner.aliases is None else {"inout"})
         or has_numeric(ports[node.target.id])
     ):
         _error(

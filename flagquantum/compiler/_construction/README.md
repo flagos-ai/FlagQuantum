@@ -1056,6 +1056,30 @@ print(dict(program.probabilities(result, registers=("q",))))
 Complete complex amplitudes, absolute phase, inverse action, arbitrary nonzero
 word targets, scratch cleanup, Const/alias/escape refusals and resource budgets
 are covered in `tests/integration/test_synthesis_native_numeric_callbacks.py`.
-This does not yet admit the fresh numeric locals and complete preparation/inverse
-composition required by the finance originals. No complete-original coverage
-is credited from these helper foundations.
+The following slice admits exact numeric lexical locals in whole-register borrowed
+preparation helpers; full original acceptance is recorded separately.
+
+### Exact numeric lexical scratch and whole-register helpers
+
+Sized `QNum` and `Annotated[QNum, (width, signed, fraction)]` lexical locals use the
+same annotation parser and exact numeric assignment compiler as owned outputs.
+Within/apply computes the value once and uncomputes it after the action; explicit
+sign, scale and width must fit the complete expression. A dependent input cannot
+be modified before cleanup, and the local cannot escape. Numeric locals require
+quantum computation rather than a constant-only initialization.
+
+Whole-register borrowed helpers capture through the ordinary function-body
+context with actual storage references and numeric formats. The existing shared
+register verifier checks their complete effects and all Const permissions. Every
+local must close before the helper returns; fresh ownership or publication cannot
+escape. Existing slice/view helpers retain their bounded view path. Recursion,
+source, call and loop budgets apply to both. User code may combine helper-local
+arithmetic with coherent control and adjoint without exposing physical work bits.
+
+The native direct Rainbow payoff demonstrates complete preparation, inverse and
+reflection using these paths. Its user program and independent Circuit live in
+`examples/synthesis/applications/finance/rainbow_options/rainbow_options_direct_method/`.
+Exact numeric region boundary tests are in
+`tests/integration/test_synthesis_native_numeric_regions.py`; complete original,
+native and Circuit acceptance is in
+`tests/integration/test_synthesis_native_rainbow_direct.py`.

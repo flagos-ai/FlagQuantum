@@ -294,6 +294,7 @@ def inline_mutable(
 ) -> None:
     """Expand checked borrowed helpers into the caller's owned effects."""
     from .frontend_evolution import flush_evolutions
+    from .frontend_increment import is_increment_helper
 
     if any(port.role == "output" for port in ports):
         _error(
@@ -329,6 +330,7 @@ def inline_mutable(
         port.name: locations(owner, argument)
         for port, argument in zip(ports, arguments, strict=True)
     }
+    increment_helper = is_increment_helper(definition)
     specialized = []
     for port in ports:
         view = bindings[port.name]
@@ -340,6 +342,13 @@ def inline_mutable(
         whole = view == tuple(
             (view[0][0], bit) for bit in range(register_width(view[0][0]))
         )
+        if whole and increment_helper and port.kind == "qnum" and actual.kind != "qnum":
+            _error(
+                owner.source,
+                node,
+                "program.kind",
+                "QNum helpers require a QNum actual; use a writable raw unsigned QNum",
+            )
         if port.width is not None and port.width != len(view):
             _error(
                 owner.source,
@@ -383,9 +392,14 @@ def inline_mutable(
                 "program.width",
                 "helper formal and actual widths disagree",
             )
-        if (
-            port.role == "inout" and any(value in readonly for value, _ in view)
-        ) or occupied.intersection(view):
+        if port.role == "inout" and any(value in readonly for value, _ in view):
+            _error(
+                owner.source,
+                node,
+                "program.borrow",
+                "Const cannot be passed as writable helper storage",
+            )
+        if occupied.intersection(view):
             _error(
                 owner.source,
                 node,
@@ -416,6 +430,50 @@ def inline_mutable(
             "program.borrow",
             "Const and writable helper views must use separate registers",
         )
+    if all(
+        view == tuple((view[0][0], bit) for bit in range(register_width(view[0][0])))
+        for view in bindings.values()
+    ):
+        # Whole-register functions can use the ordinary capture context, including
+        # fresh lexical scratch, without leaking formal names into caller state.
+        from .frontend_program import _Body
+
+        concrete = tuple(
+            replace(port, width=len(bindings[port.name])) for port in ports
+        )
+        child = _Body(
+            owner.owner,
+            definition,
+            f"{owner.name}.borrow{owner.owner.inline_calls}",
+            concrete,
+            classical,
+        )
+        child.registers = {port.name: bindings[port.name][0][0] for port in ports}
+        child.effect, child.counter = owner.effect, owner.counter
+        storage = dict(child.registers), dict(child.ports), dict(child.widths)
+        owner.owner.active.add(id(definition))
+        try:
+            child.statements(definition.source.node.body)
+            flush_evolutions(child)
+        finally:
+            owner.owner.active.remove(id(definition))
+        if (
+            storage != (child.registers, child.ports, child.widths)
+            or child.hidden
+            or child.dropped
+        ):
+            _error(
+                owner.source,
+                node,
+                "program.borrow",
+                "borrowed helpers must close all local storage without ownership changes",
+            )
+        _verify_borrowed_effects(
+            child.operations, owner.owner.functions, const_values, writable_values
+        )
+        owner.operations.extend(child.operations)
+        owner.effect, owner.counter = child.effect, child.counter
+        return
     start = len(owner.operations)
     saved = (
         owner.definition,

@@ -7,7 +7,6 @@ import math
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
-from typing import Annotated
 
 from .._hybrid.model import (
     QUANTUM_EFFECT,
@@ -44,6 +43,7 @@ from .frontend_ports import (
     _Port,
     _resolve,
     program_ports,
+    quantum_port,
 )
 from .frontend_preparation import capture_preparation
 from .frontend_python import _error, _QuantumFunction, _Source, capture
@@ -57,7 +57,6 @@ from .frontend_views import gate_target, locations
 from .frontend_xor import capture_expression_xor
 from .profile import _width
 from .program_types import (
-    QNum,
     _width_spec,
     adjoint,
     allocate,
@@ -989,54 +988,42 @@ class _Body:
                 "a local cannot shadow a quantum name",
             )
         annotation = _annotation_node(self.source, node.annotation)
-        if (
-            isinstance(annotation, ast.Subscript)
-            and _resolve(self.definition, annotation.value, annotation=True)
-            is Annotated
-            and isinstance(annotation.slice, ast.Tuple)
-            and len(annotation.slice.elts) == 2
-            and isinstance(annotation.slice.elts[0], (ast.Name, ast.Attribute))
-            and _resolve(self.definition, annotation.slice.elts[0], annotation=True)
-            is QNum
-        ):
-            annotation = ast.Subscript(
-                value=annotation.slice.elts[0], slice=annotation.slice.elts[1]
-            )
-        if (
-            not isinstance(annotation, ast.Subscript)
-            or _resolve(self.definition, annotation.value, annotation=True) is not QNum
-            or not isinstance(annotation.slice, ast.Constant)
-        ):
+        port = quantum_port(self.definition, name, annotation, annotation, "output")
+        if port.kind != "qnum" or port.width is None:
             _error(
                 self.source,
                 node,
                 "program.local",
-                "local declaration requires QNum[literal width]",
+                "local declaration requires a sized QNum",
             )
-        try:
-            width = _width_spec(annotation.slice.value)
-        except (TypeError, ValueError) as error:
-            _error(self.source, node, "program.local", str(error))
+        width = port.width
         value = Value(ValueId(self.name, self.counter), register_type(width))
         self.counter += 1
-        self.ports[name] = _Port(name, "output", "qnum", width)
+        self.ports[name] = port
         self.widths[name] = width
         self.registers[name] = value
         self.operations.append(
             Operation(
                 "qreg.local",
                 results=(value,),
-                attributes={"name": f"{name}.{value.id.index}"},
+                attributes={"name": f"{self.name}.{name}.{value.id.index}"},
                 location=self.source.location(node),
             )
         )
-        if needs_numeric(self, node.value):
-            _error(
-                self.source,
+        if needs_numeric(self, node.value) or has_numeric(port):
+            update = ast.copy_location(
+                ast.AugAssign(target=node.target, op=ast.BitOr(), value=node.value),
                 node,
-                "program.numeric",
-                "numeric arithmetic locals are not admitted",
             )
+            assign_numeric(self, update)
+            if self.operations[-1].name != "qreg.compute":
+                _error(
+                    self.source,
+                    node,
+                    "program.numeric.local",
+                    "a numeric local requires a quantum computation",
+                )
+            return name
         graph, actuals = self.capture_expression(node.value, node)
         self.emit("qreg.compute", node, (value, *actuals), callee=graph.name)
         return name
@@ -1098,7 +1085,7 @@ class _Body:
                     "apply accepts phase and Const-only qfunc calls",
                 )
             function = self.resolve_callable(statement.value.func)
-            if function is not phase and (
+            if function not in (phase, control) and (
                 not isinstance(function, _QuantumFunction)
                 or not function.source.program
                 or any(p.role != "const" for p in program_ports(function))
