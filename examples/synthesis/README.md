@@ -35,6 +35,9 @@ Original Qmod files, source identity, licenses and importer regressions are kept
 in [test fixtures](../../tests/fixtures/classiq_qmod). They are not loaded by
 user examples. Importer development tools live under `tools/`.
 
+The [local acceptance report](ACCEPTANCE.md) records the fresh 216-program
+comparison run, approved source repairs and remaining workflow/release limits.
+
 Regenerate navigation with `python -m tools.synthesis_catalog --write`.
 The separate [Circuit and framework examples](../README.md) cover gate-level
 construction, training, simulation and deployment.
