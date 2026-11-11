@@ -3,7 +3,8 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **215/216**.
+Recorded native quantum-program counterparts: **216/216**.
+Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -63,7 +64,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (58 native programs)
+## Applications (59 native programs)
 
 - [quantum_double_slit_experiment](applications/cfd/double_slit_experiment/quantum_double_slit_experiment/README.md)
 - [heat_eq_qsvt](applications/cfd/heat_eq_qsvt/README.md)
@@ -119,6 +120,7 @@ Validated local Notebook workflows:
 - [hhl_lanchester](applications/physical_systems/hhl_lanchester/README.md)
 - [ising_model](applications/physical_systems/ising_model/README.md)
 - [quantum_sawtooth_map](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/README.md)
+- [vlasov_ampere](applications/plasma/vlasov_ampere/README.md)
 - [network_traffic_optimization](applications/telecom/network_traffic_optimization/README.md)
 - [radio_access_network_positioning_antennas](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/README.md)
 - [resiliency_planning](applications/telecom/resiliency_planning/README.md)

@@ -48,8 +48,10 @@ def capture_polynomial_phase(
         )
 
     def numeric_format(node: ast.expr) -> tuple[bool, int]:
-        if isinstance(node, ast.Name) and node.id in owner.ports:
-            port = owner.ports[node.id]
+        ports = owner.alias_ports if owner.aliases is not None else owner.ports
+        assert ports is not None
+        if isinstance(node, ast.Name) and node.id in ports:
+            port = ports[node.id]
             return port.signed, port.fractional_bits
         return False, 0
 

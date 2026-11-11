@@ -56,6 +56,7 @@ Native FlagQuantum programs currently available:
 - [hhl_lanchester](physical_systems/hhl_lanchester/README.md)
 - [ising_model](physical_systems/ising_model/README.md)
 - [quantum_sawtooth_map](physical_systems/quantum_chaos/quantum_sawtooth_map/README.md)
+- [vlasov_ampere](plasma/vlasov_ampere/README.md)
 - [network_traffic_optimization](telecom/network_traffic_optimization/README.md)
 - [radio_access_network_positioning_antennas](telecom/radio_access_network/radio_access_network_positioning_antennas/README.md)
 - [resiliency_planning](telecom/resiliency_planning/README.md)

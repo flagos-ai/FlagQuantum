@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Value
@@ -49,6 +50,18 @@ def _emit(
             )
             if selected:
                 selected += (target[bit],)
+                if owner.owner.expanded_callbacks:
+                    value, index = target[bit]
+                    owner.emit("qreg.gate", node, (value,), gate="h", index=index)
+                    owner.emit(
+                        "qreg.control_phase",
+                        node,
+                        tuple(value for value, _ in selected),
+                        indices=tuple(index for _, index in selected),
+                        angle=math.pi,
+                    )
+                    owner.emit("qreg.gate", node, (value,), gate="h", index=index)
+                    continue
                 owner.emit(
                     "qreg.control_x",
                     node,

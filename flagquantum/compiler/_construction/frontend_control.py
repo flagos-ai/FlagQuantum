@@ -7,6 +7,7 @@ import math
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Operation, Value, ValueId
+from .frontend_callback_controls import capture_predicate_x, scalar_comparison
 from .frontend_cnf import capture_cnf_phase
 from .frontend_controlled_effects import capture_controlled_effects
 from .frontend_increment import capture_increment_call, is_increment_helper
@@ -124,6 +125,9 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     if operation is x and not is_composite_predicate(condition):
         capture_controlled_x(owner, condition, body)
         return
+    if operation is x and is_composite_predicate(condition):
+        if capture_predicate_x(owner, condition, body, node):
+            return
     if (
         owner.aliases is not None
         and operation not in (phase, r, x)
@@ -185,6 +189,12 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         capture_polynomial_phase(owner, expression, angle, body, condition=condition)
         return
 
+    negative_selector = False
+    if increment or composable:
+        condition, negative_selector = scalar_comparison(owner, condition)
+    if negative_selector:
+        selector, index = gate_target(owner, condition)
+        owner.emit("qreg.gate", node, (selector,), gate="x", index=index)
     predicate_computed = (
         numeric_predicate
         or isinstance(condition, ast.Compare)
@@ -372,6 +382,9 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
     if predicate_computed:
         owner.emit("qreg.uncompute", node, (predicate,))
         owner.emit("qreg.release", node, (predicate,))
+    if negative_selector:
+        selector, index = gate_target(owner, condition)
+        owner.emit("qreg.gate", node, (selector,), gate="x", index=index)
 
 
 def capture_controlled_x(owner: _Body, condition: ast.expr, body: ast.Call) -> None:

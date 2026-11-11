@@ -126,9 +126,9 @@ def test_catalog_rejects_incomplete_or_mislabelled_examples(change: str) -> None
 def test_native_coverage_requires_the_exact_original_source() -> None:
     catalog = deepcopy(load_catalog())
     native = next(case for case in catalog["cases"] if case["native_example"])
-    missing = next(case for case in catalog["cases"] if not case["native_example"])
-    missing["native_example"] = native["native_example"]
-    missing["native_comparison"] = native["native_comparison"]
+    other = next(case for case in catalog["cases"] if case["id"] != native["id"])
+    other["native_example"] = native["native_example"]
+    other["native_comparison"] = native["native_comparison"]
     with pytest.raises(ValueError, match="not tied to this original"):
         verify_catalog(catalog)
 

@@ -1202,6 +1202,54 @@ combined control/target locations; actual gate and workspace limits still apply.
 
 Run `python -m pytest tests/integration/test_synthesis_native_numeric_borrows.py -q`.
 
+## Bounded integer controls inside native callbacks
+
+Checked pure callbacks can mark an arbitrary target with integer predicates
+without allocating a predicate work bit when the condition reads at most eight
+bits. Signed whole words retain two's-complement semantics; unsigned borrowed
+words use their explicit component order. This is XOR, including a target
+initially equal to one or entangled with another register. The compiler uses
+exact phase decomposition, so scratch savings may increase gate count and depth.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import (
+    H, Output, QBit, QNum, X, allocate, control, hadamard_transform,
+    qfunc, synthesize,
+)
+
+@qfunc
+def mark(word: QNum, flag: QBit) -> None:
+    control(word == 2, lambda: X(flag))
+
+@qfunc
+def main(coin: Output[QBit], x: Output[QNum[4]], flag: Output[QBit]) -> None:
+    allocate(coin)
+    allocate(x)
+    allocate(flag)
+    H(coin)
+    hadamard_transform(x)
+    control(coin, lambda: mark(x[1:3], flag))
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("flag",))))
+```
+
+The flag probabilities are zero: `7/8`, one: `1/8`. No wire numbering or manual
+scratch allocation is needed. Raw scalar zero/one comparisons and modular
+increment/decrement callbacks can likewise reuse initialized storage under
+coherent control. Adjoint and within/apply preserve conditional scalar phases.
+
+Fixed-point and unsupported numeric predicates retain their checked computed
+path. The eight-bit bound, conservative register-level target disjointness,
+Const, initialization, ownership and resource checks remain. A negative Const
+selector does not become writable merely to avoid scratch. Oversized parent
+registers with small static slices keep their existing bounded-view path.
+
+Run `python -m pytest tests/integration/test_synthesis_native_callback_phase_controls.py
+tests/integration/test_synthesis_native_numeric_borrows.py -q`.
+
 ## Native phase expressions inside pure callbacks
 
 Whole-register helper expansion retains the same phase semantics as sliced
