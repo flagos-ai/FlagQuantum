@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, NoReturn
 from .._hybrid.model import INDEX, HybridProgram, Operation, Value, ValueId
 from .frontend_ports import _Port
 from .frontend_python import _error
-from .frontend_views import _require_builtin
+from .frontend_views import _require_builtin, locations
 from .numeric_expression import WordExpression
 from .profile import uint_type
 from .program_types import maximum, minimum
@@ -26,22 +26,24 @@ def has_numeric(port: _Port) -> bool:
 
 
 def needs_numeric(owner: _Body, expression: ast.expr) -> bool:
+    ports = owner.alias_ports if owner.aliases is not None else owner.ports
+    assert ports is not None
     return any(
         isinstance(node, (ast.Sub, ast.USub, ast.Call))
         or isinstance(node, ast.Constant)
         and type(node.value) is float
         or isinstance(node, ast.Name)
-        and node.id in owner.ports
-        and has_numeric(owner.ports[node.id])
+        and node.id in ports
+        and has_numeric(ports[node.id])
         for node in ast.walk(expression)
     )
 
 
 def has_numeric_reads(owner: _Body, expression: ast.expr | ast.stmt) -> bool:
+    ports = owner.alias_ports if owner.aliases is not None else owner.ports
+    assert ports is not None
     return any(
-        isinstance(node, ast.Name)
-        and node.id in owner.ports
-        and has_numeric(owner.ports[node.id])
+        isinstance(node, ast.Name) and node.id in ports and has_numeric(ports[node.id])
         for node in ast.walk(expression)
     )
 
@@ -79,15 +81,18 @@ _OPERATORS = {
 
 
 def _expression(owner: _Body, expression: ast.expr) -> WordExpression[ast.expr]:
+    ports = owner.alias_ports if owner.aliases is not None else owner.ports
+    assert ports is not None
+
     def reject(node: ast.expr, code: str, message: str) -> NoReturn:
         _error(owner.source, node, f"program.numeric.{code}", message)
 
     def text(node: ast.expr) -> str:
-        if isinstance(node, ast.Name) and node.id in owner.ports:
-            port = owner.ports[node.id]
+        if isinstance(node, ast.Name) and node.id in ports:
+            port = ports[node.id]
             if port.kind == "qarray":
                 reject(node, "format", "arithmetic reads require scalar inputs")
-            owner.register(node)
+            _numeric_input(owner, node)
             return node.id
         if isinstance(node, ast.Constant) and type(node.value) in {int, float}:
             return str(node.value)
@@ -139,18 +144,36 @@ def _expression(owner: _Body, expression: ast.expr) -> WordExpression[ast.expr]:
     owner.expressions += 1
     return WordExpression(
         expression,
-        owner.widths,
+        (
+            owner.widths
+            if owner.aliases is None
+            else {name: port.width for name, port in ports.items()}
+        ),
         name,
-        {name for name, port in owner.ports.items() if port.signed},
+        {name for name, port in ports.items() if port.signed},
         text=text,
         children=children,
         location=owner.source.location,
         reject=reject,
         numeric_inputs={
-            name: (port.signed, port.fractional_bits)
-            for name, port in owner.ports.items()
+            name: (port.signed, port.fractional_bits) for name, port in ports.items()
         },
     )
+
+
+def _numeric_input(owner: _Body, node: ast.Name) -> Value:
+    if owner.aliases is None:
+        return owner.register(node)
+    view = locations(owner, node)
+    value = view[0][0]
+    if view != tuple((value, bit) for bit in range(register_width(value))):
+        _error(
+            owner.source,
+            node,
+            "program.numeric.view",
+            "numeric inputs require whole registers in logical bit order",
+        )
+    return value
 
 
 def capture_numeric_expression(
@@ -160,7 +183,12 @@ def capture_numeric_expression(
     expression = _expression(owner, node)
     graph = expression.function()
     owner.owner.functions.append(graph)
-    return graph, tuple(owner.registers[name] for name in expression.names)
+    return graph, tuple(
+        _numeric_input(
+            owner, ast.copy_location(ast.Name(id=name, ctx=ast.Load()), node)
+        )
+        for name in expression.names
+    )
 
 
 def assign_numeric(owner: _Body, node: ast.AugAssign) -> None:

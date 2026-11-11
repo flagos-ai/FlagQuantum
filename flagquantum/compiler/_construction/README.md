@@ -895,8 +895,7 @@ print(dict(program.probabilities(result, registers=("q",))))
 ```
 
 The published bit is maximally mixed; its private partner remains physical
-environment. This foundation does not yet admit general mutable numeric helpers
-or the complete fixed-point finance examples.
+environment. This foundation does not yet admit the complete fixed-point finance examples.
 
 ### Exact numeric predicates in coherent control
 
@@ -916,9 +915,8 @@ including under `adjoint`. Negative encodings and exact threshold equality must
 not be interpreted through unsigned raw words.
 
 The existing eight-input-bit predicate bound and actual work, gate, qubit and
-execution-memory limits apply. Numeric callback expressions, numeric borrowed
-helper predicates and arbitrary conditional numeric phases remain outside this
-slice. Unsupported reads fail early; no format is discarded to enter an unsigned
+execution-memory limits apply. Numeric callback expressions and arbitrary conditional numeric phases remain
+outside this slice. Unsupported reads fail early; no format is discarded to enter an unsigned
 fallback. Const targets, dropped or uninitialized reads, callback overlap and
 Output ownership changes retain their existing checks. Complete amplitudes,
 nonzero target XOR, absolute phase, scratch cleanup and budget refusals are
@@ -958,3 +956,53 @@ arithmetic conditions, mutable helper inversion and wider clauses retain their
 existing admission boundaries. The 67-variable original uses exact product MPS
 on its initialized input, while reduced coherent cases compare every complex
 amplitude. Start with `tests/integration/test_synthesis_native_wide_cnf.py`.
+
+### Const numeric reads in borrowed helpers
+
+Unconditional helpers may mix `Const[QNum]` inputs and plain writable quantum
+ports. Unsized scalar formals preserve the actual signed and binary scale
+format; explicit formats must match. Exact comparison predicates use the same
+word compiler inside nested borrowed helpers. Numeric inputs must borrow a
+whole register in logical bit order. Const and writable actuals use separate
+registers; overlapping arguments and Output publication remain rejected.
+
+Captured helper effects are checked by the existing register verifier in a
+verification-only initialized-storage envelope. This retains all gate, inverse,
+Const, initialization and lifecycle rules without introducing another effect
+interpreter or emitting synthetic allocations into the caller's circuit.
+Mutation of Const through nested helpers is also rejected. Full coherent state,
+absolute phase, nonzero writable targets, scratch cleanup and refusals are
+covered by `tests/integration/test_synthesis_native_numeric_borrowing.py`.
+Numeric callback arguments and numeric within/apply locals remain unsupported;
+this foundation does not certify any complete finance original.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum.synth import (
+    Const, Output, QBit, QNum, R, allocate, control,
+    hadamard_transform, qfunc, synthesize,
+)
+
+
+@qfunc
+def payoff(value: Const[QNum], target: QBit) -> None:
+    control(value > 0.5, lambda: R(0.73, math.pi / 2, target))
+
+
+@qfunc
+def main(x: Output[QNum[3, True, 1]], q: Output[QBit]) -> None:
+    allocate(x)
+    allocate(q)
+    hadamard_transform(x)
+    payoff(x, q)
+
+
+program = synthesize(main, memory_limit_bytes=16 * 1024**2)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+Here the unsized helper reads the caller's signed three-bit word with one
+fractional bit. It compares numeric values, so encodings of negative values do
+not accidentally trigger the positive threshold. The caller owns all storage.

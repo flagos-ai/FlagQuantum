@@ -428,9 +428,9 @@ class _Body:
     def capture_expression(
         self, expr: ast.expr, statement: ast.AST
     ) -> tuple[HybridProgram, tuple[Value, ...]]:
+        if needs_numeric(self, expr):
+            return capture_numeric_expression(self, expr)
         if self.aliases is None:
-            if needs_numeric(self, expr):
-                return capture_numeric_expression(self, expr)
             reject_numeric_reads(self, expr, "unsigned expressions")
         bindings = {
             name: value for name, value in self.classical.items() if type(value) is int

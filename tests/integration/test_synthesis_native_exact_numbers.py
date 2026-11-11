@@ -255,7 +255,6 @@ def test_numeric_refusals_have_source_locations(
 
 def test_mutable_numeric_regions_and_shadowed_builtins_refuse() -> None:
     for helper, body in [
-        ("@qfunc\ndef helper(a:QNum):\n    hadamard_transform(a)\n", "helper(a)"),
         (
             "",
             "with within():\n    score:QNum[4] = -a\nwith apply():\n    phase(score,0.5)",

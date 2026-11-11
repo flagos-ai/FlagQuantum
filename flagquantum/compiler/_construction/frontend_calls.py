@@ -7,7 +7,6 @@ from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Value
-from .frontend_fixed_xor import is_fixed_xor_helper
 from .frontend_numeric import has_numeric, has_numeric_reads
 from .frontend_ports import classical_parameters, program_ports
 from .frontend_python import _error, _QuantumFunction
@@ -39,13 +38,6 @@ def capture_helper_call(
             "numeric helpers require an unconditional forward call",
         )
     if any(port.role == "inout" for port in formal):
-        if numeric_call and not is_fixed_xor_helper(function):
-            _error(
-                owner.source,
-                node,
-                "program.numeric",
-                "mutable numeric helpers are not admitted",
-            )
         if inverse or control_bit is not None:
             _error(
                 owner.source,

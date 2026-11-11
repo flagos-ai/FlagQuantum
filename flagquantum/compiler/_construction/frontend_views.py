@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Sequence
+from dataclasses import replace
 from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING
 
@@ -11,7 +12,7 @@ from .._hybrid.model import Value
 from .frontend_classical import bind_helper
 from .frontend_ports import _Port, _resolve
 from .frontend_python import _error, _QuantumFunction
-from .register_profile import register_width
+from .register_profile import _verify_borrowed_effects, register_width
 
 if TYPE_CHECKING:
     from .frontend_program import _Body
@@ -294,12 +295,12 @@ def inline_mutable(
     """Expand checked borrowed helpers into the caller's owned effects."""
     from .frontend_evolution import flush_evolutions
 
-    if any(port.role != "inout" for port in ports):
+    if any(port.role == "output" for port in ports):
         _error(
             owner.source,
             node,
             "program.borrow",
-            "mutable helpers require only plain quantum ports and matching arguments",
+            "mutable helpers borrow Const or plain quantum ports without Outputs",
         )
     if id(definition) in owner.owner.active or len(owner.owner.active) >= 32:
         _error(
@@ -328,6 +329,43 @@ def inline_mutable(
         port.name: locations(owner, argument)
         for port, argument in zip(ports, arguments, strict=True)
     }
+    specialized = []
+    for port in ports:
+        view = bindings[port.name]
+        actual = next(
+            owner.ports[name]
+            for name, value in owner.registers.items()
+            if value == view[0][0]
+        )
+        whole = view == tuple(
+            (view[0][0], bit) for bit in range(register_width(view[0][0]))
+        )
+        if port.width is not None and port.width != len(view):
+            _error(
+                owner.source,
+                node,
+                "program.width",
+                "helper formal and actual widths disagree",
+            )
+        if port.kind != "qarray" and whole:
+            if port.width is not None and (port.signed, port.fractional_bits) != (
+                actual.signed,
+                actual.fractional_bits,
+            ):
+                _error(
+                    owner.source,
+                    node,
+                    "program.numeric.format",
+                    "declared and actual helper numeric formats must agree",
+                )
+            port = replace(
+                port,
+                width=len(view),
+                signed=actual.signed,
+                fractional_bits=actual.fractional_bits,
+            )
+        specialized.append(port)
+    ports = tuple(specialized)
     occupied: set[tuple[Value, int]] = set()
     readonly = {
         owner.registers[p.name]
@@ -345,7 +383,9 @@ def inline_mutable(
                 "program.width",
                 "helper formal and actual widths disagree",
             )
-        if any(value in readonly for value, _ in view) or occupied.intersection(view):
+        if (
+            port.role == "inout" and any(value in readonly for value, _ in view)
+        ) or occupied.intersection(view):
             _error(
                 owner.source,
                 node,
@@ -353,6 +393,30 @@ def inline_mutable(
                 "mutable helper arguments must be disjoint writable locations",
             )
         occupied.update(view)
+    const_values = tuple(
+        dict.fromkeys(
+            value
+            for port in ports
+            if port.role == "const"
+            for value, _ in bindings[port.name]
+        )
+    )
+    writable_values = tuple(
+        dict.fromkeys(
+            value
+            for port in ports
+            if port.role == "inout"
+            for value, _ in bindings[port.name]
+        )
+    )
+    if set(const_values).intersection(writable_values):
+        _error(
+            owner.source,
+            node,
+            "program.borrow",
+            "Const and writable helper views must use separate registers",
+        )
+    start = len(owner.operations)
     saved = (
         owner.definition,
         owner.source,
@@ -372,6 +436,13 @@ def inline_mutable(
     try:
         owner.statements(definition.source.node.body)
         flush_evolutions(owner)
+        if const_values:
+            _verify_borrowed_effects(
+                owner.operations[start:],
+                owner.owner.functions,
+                const_values,
+                writable_values,
+            )
     finally:
         owner.owner.active.remove(id(definition))
         (

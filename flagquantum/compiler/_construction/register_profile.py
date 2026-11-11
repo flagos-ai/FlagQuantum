@@ -7,14 +7,18 @@ inspected or certified by this structural verifier.
 
 import math
 from collections.abc import Sequence
+from dataclasses import replace
 from types import MappingProxyType
 
 import torch
 
 from .._hybrid.model import (
+    QUANTUM_EFFECT,
+    Block,
     HybridProgram,
     IRType,
     Operation,
+    Region,
     Value,
     ValueId,
 )
@@ -353,6 +357,67 @@ def register_ports(
         elif op.name == "qreg.release":
             free.update(values[op.operands[1].id])
     return names, values, position
+
+
+def _verify_borrowed_effects(
+    operations: Sequence[Operation],
+    functions: Sequence[HybridProgram],
+    readonly: Sequence[Value],
+    writable: Sequence[Value],
+) -> None:
+    """Check borrowed effects with the existing Const and lifecycle verifier.
+
+    This verification-only envelope models incoming writable storage as already
+    initialized. It is never emitted or lowered. Its allocation operations prove
+    initialization structurally; they make no zero-state assumption about the
+    actual caller storage or the captured unitary effects.
+    """
+    from .register_verifier import _verify_body
+
+    scope = "$borrow"
+    occupied = {value.id.scope for value in (*readonly, *writable)}
+    occupied.update(
+        value.id.scope
+        for operation in operations
+        for value in (*operation.operands, *operation.results)
+    )
+    while scope in occupied:
+        scope += "$"
+    entry = Value(ValueId(scope, 0), QUANTUM_EFFECT)
+    effect = entry
+    counter = 1
+    checked: list[Operation] = []
+    for index, value in enumerate(writable):
+        checked.append(
+            Operation(
+                "qreg.declare", results=(value,), attributes={"name": f"$inout{index}"}
+            )
+        )
+        following = Value(ValueId(scope, counter), QUANTUM_EFFECT)
+        counter += 1
+        checked.append(Operation("qreg.allocate", (effect, value), (following,)))
+        effect = following
+    for operation in operations:
+        if not operation.operands:
+            checked.append(operation)
+            continue
+        following = Value(ValueId(scope, counter), QUANTUM_EFFECT)
+        counter += 1
+        checked.append(
+            replace(
+                operation,
+                operands=(effect, *operation.operands[1:]),
+                results=(following,),
+            )
+        )
+        effect = following
+    checked.append(Operation("qreg.return", (effect, *readonly, *writable)))
+    envelope = HybridProgram(
+        scope, Region((Block((entry, *readonly), tuple(checked)),))
+    )
+    arithmetic = tuple(f for f in functions if not is_register_function(f))
+    helpers = {f.name: f for f in functions if is_register_function(f)}
+    _verify_body(envelope, arithmetic, helpers, 256, const_entry=True)
 
 
 def verify_register_program(
