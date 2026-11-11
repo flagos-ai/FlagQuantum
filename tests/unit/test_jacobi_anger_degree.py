@@ -79,9 +79,14 @@ def test_symbolic_formula_and_positive_constant_match_source(case: int) -> None:
     assert constant.is_positive is True
 
 
-def test_concrete_search_requires_explicit_provider() -> None:
-    with pytest.raises(ValueError, match="Bessel evaluator"):
-        degree_jacobi_anger_approximation(2, precision=1e-5)
+def test_default_concrete_search_matches_source() -> None:
+    from qualtran.linalg.polynomial.jacobi_anger_approximations import (
+        degree_jacobi_anger_approximation as source,
+    )
+
+    assert degree_jacobi_anger_approximation(2, precision=1e-5) == source(
+        2, precision=1e-5
+    )
 
 
 def test_scalar_provider_replacement_and_errors() -> None:

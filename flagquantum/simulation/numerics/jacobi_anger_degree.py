@@ -29,11 +29,11 @@ def degree_jacobi_anger_approximation(
     with positive unspecified C_JA. This is an asymptotic expression, not a
     physical gate count or a numerical error certificate.
 
-    Concrete parameters require an explicit scalar Bessel evaluator. Preserve
-    source evaluation order, NumPy isclose defaults, and final assertion,
-    including source assertion failures at coarse precision. Finite, valid numeric inputs are the
-    supported inspection domain; the source search has no nonfinite guard or
-    iteration bound. No fallback or degree correction is applied.
+    Concrete parameters use the supplied evaluator or lazily imported SciPy jv.
+    Preserve source evaluation order, NumPy isclose defaults and final assertion,
+    including source assertion failures at coarse precision. The source search
+    has no nonfinite guard or iteration bound; callers must not rely on it
+    terminating for arbitrary inputs. No fallback or degree correction is applied.
     """
     if is_symbolic_value(t, precision):
         import sympy
@@ -42,12 +42,15 @@ def degree_jacobi_anger_approximation(
         return constant * (
             t + sympy.log(1 / precision) / sympy.log(sympy.log(1 / precision))
         )
-    if bessel_jn is None:
-        raise ValueError("concrete degree search requires a Bessel evaluator")
+    evaluator = bessel_jn
+    if evaluator is None:
+        from scipy.special import jv
+
+        evaluator = jv
 
     def term_too_small(order: int) -> bool:
         return bool(
-            np.isclose(bessel_jn(order, cast(float, t)), 0, atol=float(precision))
+            np.isclose(evaluator(order, cast(float, t)), 0, atol=float(precision))
         )
 
     degree = 1
