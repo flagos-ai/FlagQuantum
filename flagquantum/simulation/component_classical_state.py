@@ -18,6 +18,7 @@ from ..core.ir.program import (
 from ..core.ir.program.registers import Register, RegisterType
 from ..core.ir.program.signatures import Signature
 from .binary_field_encoding import resolve_binary_field_encoding
+from .bit_encoding import validate_bit_array, validate_bit_value
 from .classical_action import evaluate_classical_action
 from .classical_distributions import ClassicalDistribution, draw_classical_value
 from .classical_field_registers import (
@@ -26,6 +27,7 @@ from .classical_field_registers import (
 )
 from .classical_measurement import MeasurementOutcomePhase, assert_unit_classical_phase
 from .classical_registers import (
+    bind_classical_register_values,
     bind_integer_register_values,
     collect_integer_register_value,
 )
@@ -196,6 +198,15 @@ class ComponentClassicalState:
                     register.name,
                     values,
                     self._fields[register.dtype],
+                    shape=register.shape,
+                    resolve_distribution=resolve,
+                )
+            elif register.dtype.encoding == "bit":
+                bound = bind_classical_register_values(
+                    register.name,
+                    values,
+                    validate_bit_value,
+                    validate_bit_array,
                     shape=register.shape,
                     resolve_distribution=resolve,
                 )
