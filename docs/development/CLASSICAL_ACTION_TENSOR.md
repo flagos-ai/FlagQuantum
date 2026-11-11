@@ -375,3 +375,11 @@ existing doubled-label and explicit-trace consumers, preserving these boundaries
 GRAPH71 default smoke/unit: 5 failed, 21400 passed, 300 skipped, 1037 warnings in 129.86s (0:02:09). All 5 observed
 failure IDs belong to the independent seven-failure baseline; 2 were not
 reached before maxfail. The default suite is not certified as fully passing.
+
+## Native default codecs
+
+The dense entry now uses [register codec composition](CLASSICAL_REGISTER_CODEC.md)
+when decode/encode callbacks are omitted. Explicit callbacks continue to override
+the defaults. This connects concrete native metadata to existing codecs; it
+does not discover actions or change the original phase-free, classical-axis
+or empty-array boundaries. The node entry keeps its explicit codec arguments.

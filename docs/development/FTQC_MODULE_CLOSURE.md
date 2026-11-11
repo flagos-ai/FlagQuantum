@@ -187,3 +187,10 @@ nested calls reuse the process default, independently of phased recursion.
 Full complex Add branches, exact primitive streams and separate QEC model
 accounts agree with the frozen source. Source-wide dtype and foreign exception
 boundaries remain open; parent and child counts do not increase.
+
+The [classical register codec composition](CLASSICAL_REGISTER_CODEC.md) connects
+17 quantum/classical descriptor cases to existing numerical owners without
+expanding Core execution admission. Default dense tables replace handwritten
+codec dispatch, preserve source Montgomery/negative-zero/empty-array behavior
+and match full complex Add branches. Q-0895 remains open for wider domains and
+its original classical-axis/phase-free boundaries; inventory counts do not rise.

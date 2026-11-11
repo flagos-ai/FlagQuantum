@@ -896,3 +896,7 @@ stored operation positions and visitation order.
 [Pure recursive component evaluation](../../docs/development/COMPONENT_PURE_EVALUATION.md)
 composes the same state with the source pure helper policy: nested bodies use
 the process-default random stream independently of root fixed or seeded values.
+
+[Register codec composition](../../docs/development/CLASSICAL_REGISTER_CODEC.md)
+connects concrete metadata to existing numerical codecs. Dense classical action
+tables now have native default codecs while explicit overrides retain precedence.
