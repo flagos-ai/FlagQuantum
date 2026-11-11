@@ -16,6 +16,7 @@ from numpy.typing import NDArray
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from ..classical_action import ClassicalValueCallback
+from ..classical_register_codec import decode_register_bits, encode_register_bits
 from .models import TensorNetworkNode
 from .register_axis_groups import register_tensor_label_groups
 from .register_tensor import register_tensor_shape
@@ -66,8 +67,10 @@ def _classical_action_tensor_data(
 def classical_action_tensor(
     signature: Signature,
     action: ClassicalValueCallback[tuple[object, ...]],
-    decode_input: Callable[[Register, NDArray[Any]], object],
-    encode_output: Callable[[Register, NDArray[Any]], NDArray[np.uint8]],
+    decode_input: Callable[[Register, NDArray[Any]], object] = decode_register_bits,
+    encode_output: Callable[
+        [Register, NDArray[Any]], NDArray[np.uint8]
+    ] = encode_register_bits,
     *,
     operation_name: str,
 ) -> NDArray[np.float64]:
@@ -79,6 +82,8 @@ def classical_action_tensor(
     shape `register.shape + (register.dtype.num_qubits,)`, matching the pinned
     source even for classical ports. Caller codecs own value interpretation.
     Output codecs receive np.asarray(value) and return arrays of encoded bits.
+    Omitted codecs use native metadata dispatch to the existing numerical owners;
+    explicit callbacks retain precedence for other supported numerical domains.
 
     Values are zero or one, with no inferred phase, normalization or unitarity.
     Non-injective actions are permitted. Dense storage is 8 * 2**(left+right)
