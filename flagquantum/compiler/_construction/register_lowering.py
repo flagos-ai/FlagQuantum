@@ -20,6 +20,7 @@ from ...core.ir import CircuitIR, Instruction
 from ...noise import amplitude_damping_channel
 from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
+from .._hybrid.verifier import Diagnostic
 from ..noise import _encode_channel_instruction
 from ..optimization.state_preparation_synthesis import _synthesize_real_state
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
@@ -356,6 +357,7 @@ def schedule_register_program(
     segments: list[ArithmeticCandidate] = []
     computed: dict[ValueId, ArithmeticCandidate] = {}
     used_boolean = False
+    boolean_refusal: BooleanCandidateError | None = None
     control_workspace = 0
     symbols = {f.name: f for f in functions}
     operations = program.body.blocks[0].operations
@@ -772,59 +774,83 @@ def schedule_register_program(
                     peak_workspace=width + segment.peak_workspace,
                     recomputations=segment.recomputations + adjoint.recomputations,
                 )
-            elif boolean_values and not phase:
-                boolean = lower_boolean_value(
-                    segment_functions,
-                    inputs,
-                    output,
-                    entry=name,
-                    n_qubits=n_qubits,
-                    workspace=workspace,
-                    workspace_state="fresh_zero",
-                    max_operations=remaining,
-                )
-                # Track individual ladder qubits, including cubes with multiple controls.
-                trace: list[ScheduleEvent] = []
-                live_scratch: set[int] = set()
-                for gate in boolean.circuit.instructions:
-                    if gate.wires[-1] in boolean.workspace:
-                        wire = gate.wires[-1]
-                        action: Literal["compute", "uncompute"] = (
-                            "uncompute" if wire in live_scratch else "compute"
-                        )
-                        live_scratch.symmetric_difference_update((wire,))
-                        trace.append(
-                            ScheduleEvent(
-                                action,
-                                boolean.source_result,
-                                (),
-                                (wire,),
-                                len(live_scratch),
-                                1,
-                            )
-                        )
-                segment = ArithmeticCandidate(
-                    boolean.circuit,
-                    scheduling,
-                    boolean.lifetimes,
-                    tuple(trace),
-                    len(boolean.workspace),
-                    0,
-                    implementation="boolean",
-                    implementation_rules=((boolean.source_result, "bounded_anf_xor"),),
-                )
-                used_boolean = True
             else:
-                segment = BoundArithmetic(
-                    segment_functions,
-                    name,
-                    inputs,
-                    output,
-                    workspace,
-                    "phase" if phase else "value",
-                ).lower(
-                    n_qubits=n_qubits, max_operations=remaining, scheduling=scheduling
-                )
+                boolean = None
+                segment_refusal = None
+                if boolean_values and not phase:
+                    try:
+                        boolean = lower_boolean_value(
+                            segment_functions,
+                            inputs,
+                            output,
+                            entry=name,
+                            n_qubits=n_qubits,
+                            workspace=workspace,
+                            workspace_state="fresh_zero",
+                            max_operations=remaining,
+                        )
+                    except BooleanCandidateError as error:
+                        if error.exhausted:
+                            raise
+                        segment_refusal = error
+                        if boolean_refusal is None:
+                            boolean_refusal = error
+                if boolean is not None:
+                    # Track individual ladder qubits, including cubes with multiple controls.
+                    trace: list[ScheduleEvent] = []
+                    live_scratch: set[int] = set()
+                    for gate in boolean.circuit.instructions:
+                        if gate.wires[-1] in boolean.workspace:
+                            wire = gate.wires[-1]
+                            action: Literal["compute", "uncompute"] = (
+                                "uncompute" if wire in live_scratch else "compute"
+                            )
+                            live_scratch.symmetric_difference_update((wire,))
+                            trace.append(
+                                ScheduleEvent(
+                                    action,
+                                    boolean.source_result,
+                                    (),
+                                    (wire,),
+                                    len(live_scratch),
+                                    1,
+                                )
+                            )
+                    segment = ArithmeticCandidate(
+                        boolean.circuit,
+                        scheduling,
+                        boolean.lifetimes,
+                        tuple(trace),
+                        len(boolean.workspace),
+                        0,
+                        implementation="boolean",
+                        implementation_rules=(
+                            (boolean.source_result, "bounded_anf_xor"),
+                        ),
+                    )
+                    used_boolean = True
+                else:
+                    segment = BoundArithmetic(
+                        segment_functions,
+                        name,
+                        inputs,
+                        output,
+                        workspace,
+                        "phase" if phase else "value",
+                    ).lower(
+                        n_qubits=n_qubits,
+                        max_operations=remaining,
+                        scheduling=scheduling,
+                    )
+                    if segment_refusal is not None:
+                        segment = replace(
+                            segment,
+                            implementation_errors=(
+                                Diagnostic(
+                                    "lowering.boolean.refused", str(segment_refusal)
+                                ),
+                            ),
+                        )
             segment = replace(
                 segment,
                 circuit=replace(
@@ -859,6 +885,8 @@ def schedule_register_program(
             _fail("lowering.operations", "whole program exceeds operation budget", op)
         instructions.extend(gates)
     if boolean_values and not used_boolean:
+        if boolean_refusal is not None:
+            raise boolean_refusal
         raise BooleanCandidateError("unsupported: no unsigned value segment")
     epochs = tuple(
         op

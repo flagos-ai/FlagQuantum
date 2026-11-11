@@ -245,7 +245,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_bruteforce_method/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_direct_method/main.py) | pending |
-| `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | Pending | pending |
+| `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_integration_method/main.py) | pending |
 | `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | [Native program](applications/finance/value_at_risk/main.py) | pending |
 | `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | Pending | pending |
 | `applications/logistics/facility_location/facility_location` | notebook_workflow | [Native program](applications/logistics/facility_location/main.py) | pending |

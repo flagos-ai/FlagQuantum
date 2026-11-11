@@ -6,7 +6,7 @@ import ast
 from typing import TYPE_CHECKING
 
 from .frontend_fixed_xor import capture_fixed_xor
-from .frontend_numeric import has_numeric
+from .frontend_numeric import has_numeric, has_numeric_reads, reject_numeric_reads
 from .frontend_python import _error
 from .frontend_views import locations
 from .register_profile import register_width
@@ -15,9 +15,26 @@ if TYPE_CHECKING:
     from .frontend_program import _Body
 
 
+def _predicate_expression(node: ast.expr) -> bool:
+    if isinstance(node, ast.Compare):
+        return True
+    if isinstance(node, ast.Constant):
+        return type(node.value) is int and node.value in (0, 1)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Invert):
+        return _predicate_expression(node.operand)
+    return (
+        isinstance(node, ast.BinOp)
+        and isinstance(node.op, (ast.BitAnd, ast.BitOr, ast.BitXor))
+        and _predicate_expression(node.left)
+        and _predicate_expression(node.right)
+    )
+
+
 def capture_expression_xor(owner: _Body, node: ast.AugAssign) -> None:
     if capture_fixed_xor(owner, node):
         return
+    if has_numeric_reads(owner, node.value) and not _predicate_expression(node.value):
+        reject_numeric_reads(owner, node.value, "non-predicate XOR expressions")
     ports = owner.alias_ports if owner.aliases is not None else owner.ports
     assert ports is not None
     if (

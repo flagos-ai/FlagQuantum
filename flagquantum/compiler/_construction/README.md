@@ -218,6 +218,20 @@ The fresh-register circuit assumes all-zero entry storage; this is an allocator
 precondition, not a proof about an externally supplied state.
 
 The bounded Boolean candidate also consumes exact numeric frontend graphs.
+Register composition keeps supported Boolean arithmetic segments when another
+segment exceeds the bounded Boolean profile. That segment uses the existing
+checked arithmetic scheduler and retains its refusal diagnostic. Construction
+budget exhaustion still propagates; a program with no Boolean segment retains
+the original Boolean refusal. Candidate resources measure the entire mixed
+circuit, including controls and cleanup, before selection.
+
+Expression XOR may read signed or fractional words when its verified graph
+returns a one-bit predicate. Numeric comparison inference encodes sign and scale
+before lowering. The destination remains an initialized unsigned register;
+non-predicate formatted value XOR remains rejected. The independent acceptance
+tests in `tests/integration/test_synthesis_native_mixed_candidates.py` exercise
+mixed schedules, differently scaled signed comparisons and nonzero coherent
+targets.
 Fraction alignment and signed comparison remain owned by `WordExpression`;
 the candidate implements their verified raw-word subtraction and sign extension.
 It never floors or truncates a fresh numeric assignment. Modular subtraction

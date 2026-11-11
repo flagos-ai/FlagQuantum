@@ -929,7 +929,9 @@ def _verify_body(
                     )
                 changed = (destination,)
             elif op.name == "qreg.xor":
-                if any(value in formatted for value in operands):
+                # The expression graph encodes source scales and signedness.
+                # Only the XOR destination must retain raw unsigned semantics.
+                if destination in formatted:
                     _fail(
                         "register.numeric", "expression XOR requires unsigned words", op
                     )
@@ -940,6 +942,14 @@ def _verify_body(
                         "register.uninitialized", "XOR reads uninitialized storage", op
                     )
                 check_call(op, arguments, destination)
+                if any(value in formatted for value in arguments):
+                    body = symbols[op.attributes["callee"]].body.blocks[0]
+                    if _width(body.operations[-1].operands[0].type, max_qubits) != 1:
+                        _fail(
+                            "register.numeric",
+                            "expression XOR requires unsigned value inputs or a one-bit predicate",
+                            op,
+                        )
                 changed = (destination,)
             elif op.name == "qreg.gate":
                 if destination in borrowed:

@@ -3,7 +3,7 @@
 User examples contain native Python programs and independent Circuit comparisons.
 Original source files and importer launchers are test/development evidence, not examples.
 
-Validated quantum-program counterparts: **211/216**.
+Validated quantum-program counterparts: **212/216**.
 Validated local Notebook workflows: **24/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
@@ -62,7 +62,7 @@ Validated local Notebook workflows:
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
 
 
-## Applications (55 native programs)
+## Applications (56 native programs)
 
 - [heat_eq_qsvt](applications/cfd/heat_eq_qsvt/README.md)
 - [qlbm](applications/cfd/qlbm/README.md)
@@ -89,6 +89,7 @@ Validated local Notebook workflows:
 - [hhl_portfolio](applications/finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
 - [rainbow_options_bruteforce_method](applications/finance/rainbow_options/rainbow_options_bruteforce_method/README.md)
 - [rainbow_options_direct_method](applications/finance/rainbow_options/rainbow_options_direct_method/README.md)
+- [rainbow_options_integration_method](applications/finance/rainbow_options/rainbow_options_integration_method/README.md)
 - [value_at_risk](applications/finance/value_at_risk/README.md)
 - [facility_location](applications/logistics/facility_location/README.md)
 - [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
