@@ -10,3 +10,20 @@ owns selection and evidence. Start in `complex_arithmetic.py` for portable
 complex operations or `double_single.py` for extended-precision arithmetic,
 and run `tests/unit/test_double_single.py` plus
 `tests/test_double_single_conformance.py`.
+
+## Dense unitary inspection
+
+`unitary_polynomial.evaluate_polynomial_of_unitary_matrix` evaluates ascending
+coefficients with an integer power offset. `unitary_distance` owns the explicitly
+phase-insensitive comparison metric. These NumPy inspection functions do not
+synthesize operations, estimate resources, select execution paths, or provide
+PyTorch gradients. Full complex-amplitude checks remain authoritative for exact
+and controlled-operation conformance. See
+[the runnable example and source boundaries](../../../docs/development/UNITARY_NUMERICS.md).
+
+With the pinned reference environment, check the adapted functions against
+unchanged upstream implementations:
+
+```bash
+python -m pytest tests/unit/test_unitary_polynomial.py tests/unit/test_unitary_distance.py -q
+```
