@@ -118,6 +118,10 @@ from flagquantum.qec.execution.measurement_conversion import (
     compile_m2d_converter,
     convert_measurement_records,
 )
+from flagquantum.qec.execution.shot_data import (
+    iter_shot_data_file,
+    read_shot_data_file,
+)
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
 from flagquantum.simulation.lindblad import evolve_density_matrix
@@ -211,6 +215,8 @@ pytestmark = pytest.mark.unit
 # figures a caller takes from one run rather than a second execution.
 
 ENTRIES = (
+    read_shot_data_file,
+    iter_shot_data_file,
     CompiledDetectorSampler,
     fq.Circuit.compile_detector_sampler,
     fq.Circuit.detector_error_model,
