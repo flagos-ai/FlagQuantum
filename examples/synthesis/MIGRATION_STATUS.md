@@ -236,7 +236,7 @@ Validated local Notebook workflows: **24/213**.
 | `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py) | pending |
 | `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | [Native program](applications/cybersecurity/whitebox_fuzzing/main.py) | pending |
 | `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | [Native program](applications/finance/autocallable_options/partial_exponential_state_preparation/main.py) | pending |
-| `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | Pending | pending |
+| `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | [Native program](applications/finance/autocallable_options/quantum_autocallable_option_pricing/main.py) | pending |
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | [Native program](applications/finance/brownian_chebyshev_polynomials/main.py) | pending |
 | `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/main.py) | pending |
 | `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/main.py) | pending |
