@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import itertools
 from collections.abc import Callable
+from importlib import import_module
 
 import pytest
 import sympy
@@ -25,7 +26,8 @@ from flagquantum.observables.fermion import FermionOperator, FermionTerm
 from tests.unit.fermion.oracles import fock_matrix
 
 of = pytest.importorskip("openfermion")
-np = pytest.importorskip("numpy")
+# NumPy is required by the installed upstream package; a broken install must fail.
+np = import_module("numpy")
 pytestmark = pytest.mark.openfermion
 
 

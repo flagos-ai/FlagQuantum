@@ -91,15 +91,9 @@ def from_openfermion_interaction(source: object) -> FermionOperator:
     objects, unsupported tensor keys/dtypes and nonfinite coefficients raise
     TypeError or ValueError. No external arrays are modified or retained.
 
-    Examples:
-        >>> import numpy as np
-        >>> from openfermion import InteractionOperator
-        >>> from flagquantum.algorithms.fermion.encoding import encode_fermion
-        >>> source = InteractionOperator(
-        ...     0.25, np.diag([1.0, 2.0]), np.zeros((2, 2, 2, 2))
-        ... )
-        >>> native = from_openfermion_interaction(source)
-        >>> encoded = encode_fermion(native, n_modes=2, encoding="jordan_wigner")
+    A runnable import/encode/measure workflow, requiring the optional upstream
+    environment, is in ``docs/development/OPENFERMION_OBJECT_INTEROP.md`` under
+    "InteractionOperator import extension". Its expected energy is 1.25.
     """
     upstream = _upstream()
     if not isinstance(source, upstream.InteractionOperator):
