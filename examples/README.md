@@ -982,3 +982,4 @@ Stim 1.16.0. External repeated-slot records 010 produce detectors 10 and logical
 The example performs bounded file conversion, not sampling or a research study.
 
 - `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build and PyMatching required).
+- `qec/shot_file_encoding.py`: write caller-owned Torch shot rows in Stim-compatible formats and read them back (Stim 1.16.0 extra or embedded build required).

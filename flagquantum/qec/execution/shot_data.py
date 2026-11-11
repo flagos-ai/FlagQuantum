@@ -1,4 +1,4 @@
-"""Read captured measurement, detector and logical records as CPU tensors."""
+"""Read and write measurement, detector and logical records as CPU tensors."""
 
 from __future__ import annotations
 
@@ -9,8 +9,9 @@ from typing import Literal
 import torch
 
 from ...simulation.stabilizer._shot_data import _iterate_file, _read_file
+from ...simulation.stabilizer._shot_data_write import _write_file
 
-__all__ = ("read_shot_data_file", "iter_shot_data_file")
+__all__ = ("read_shot_data_file", "iter_shot_data_file", "write_shot_data_file")
 
 
 def read_shot_data_file(
@@ -105,4 +106,48 @@ def iter_shot_data_file(
         bit_packed,
         separate_observables,
         batch_size,
+    )
+
+
+def write_shot_data_file(
+    *,
+    data: torch.Tensor,
+    path: str | os.PathLike[str],
+    format: Literal["01", "b8", "r8", "ptb64", "hits", "dets"],
+    num_measurements: int | None = None,
+    num_detectors: int | None = None,
+    num_observables: int | None = None,
+) -> None:
+    """Write CPU bool or bit-packed uint8 shot records without replacing a file.
+
+    Specify measurement columns alone, or detector and observable columns.
+    Packed uint8 rows use little-endian bit order and must have zero padding.
+    The 64 MiB principal-payload and 1 GiB output guards are not RSS limits.
+
+    Raises:
+        TypeError: The tensor dtype or dimensions have invalid types.
+        ValueError: Shapes, sections, values, padding or format are invalid.
+        OSError: File admission, encoding or publication fails.
+        CapabilityError: A selected backend is unavailable or a byte limit is exceeded.
+
+    Examples:
+        >>> from importlib.util import find_spec
+        >>> from pathlib import Path
+        >>> from tempfile import TemporaryDirectory
+        >>> import torch
+        >>> import flagquantum.simulation.stabilizer as stabilizer
+        >>> if find_spec("stim") is not None or Path(stabilizer.__file__).with_name("_embedded_stim_profile.txt").is_file():
+        ...     with TemporaryDirectory() as directory:
+        ...         path = Path(directory) / "detectors.b8"
+        ...         rows = torch.tensor([[False, True], [True, False]])
+        ...         write_shot_data_file(
+        ...             data=rows, path=path, format="b8", num_detectors=2,
+        ...         )
+        ...         assert path.read_bytes() == b"\\x02\\x01"
+    """
+    _write_file(
+        data,
+        path,
+        format,
+        (num_measurements, num_detectors, num_observables),
     )

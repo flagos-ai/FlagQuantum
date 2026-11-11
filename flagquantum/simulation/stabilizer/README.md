@@ -366,3 +366,13 @@ Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
 checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
 for byte and numerical conformance. The ten-minute user path is
 `python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.
+
+## Write caller-owned shot data
+
+The private `_shot_data_write.py` owns tensor admission, the single bounded
+bytearray copy, codec selection and no-replace publication. Embedded mode uses
+the existing 96-file Stim 1.16.0 closure and `write_table_data`; SDK mode uses
+the same pinned Python writer. No upstream source or translation unit is added.
+Start with `tests/qec/test_shot_data_writing.py`, then run
+`tests/team/simulation/test_shot_data_writing_conformance.py`. The 64 MiB
+principal estimate and 1 GiB output bound are request guards, not RSS guarantees.

@@ -457,5 +457,14 @@ for the embedded build, not an upstream Stim API. Its independently packed
 detectors can feed the existing `PyMatchingDecoder.decode_packed_batch`.
 See [shot-file decoding](../../examples/qec/shot_file_decoding.py) and the
 [approved contract](../development/QEC_SHOT_DATA_READING_PROPOSAL.md). Standard
-SDK builds support eager reads only. Zero-column records and arbitrary-data
-write_shot_data_file remain explicit gaps. This candidate is not full parity.
+SDK builds support eager reads only. Zero-column records remain an explicit
+gap, and the reading candidate is not full parity.
+
+## Write caller-owned records
+
+Pass a CPU Torch table to `write_shot_data_file`; bool rows are dense and uint8
+rows are already bit-packed. The format remains Stim's `01`, `b8`, `r8`,
+`ptb64`, `hits` or `dets`. Supply `num_measurements` alone, or detector and
+observable widths. The example `python -m examples.qec.shot_file_encoding`
+prints two shots and the exact `b8` bytes. The writing candidate uses the Stim
+1.16.0 SDK or an embedded build; installed acceptance is pending.

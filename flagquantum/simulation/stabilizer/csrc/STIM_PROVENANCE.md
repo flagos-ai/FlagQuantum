@@ -73,3 +73,13 @@ PTB64 retains the upstream 64-shot buffer across consumer batches. No pybind11,
 NumPy, upstream source edits, dependency changes or extra translation units are
 introduced. read_write.pybind.cc is a semantic reference, not a compiled input.
 Native and installed acceptance remain required before delivery.
+
+## Caller-owned shot-data writer candidate
+
+The private `write_shot_records` bridge accepts the already-owned bounded
+bytearray and writes at most 64 shots per SIMD table through the locked
+`write_table_data` implementation. PTB64 uses Stim's transposed-table branch;
+other formats use its `MeasureRecordWriter`. Python owns dimensions, framing,
+staging and no-replace publication. No upstream source, source lock, translation
+unit, dependency or license byte changes. Native and installed acceptance
+remain pending.
