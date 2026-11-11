@@ -122,3 +122,10 @@ consumers agree with unchanged source. Q-0882 and Q-0883 remain open for
 finite-field/dtype traversal, source-wide utilities, native admission boundaries
 and original test replacement. The 28 original tests are source-only regression.
 No new child ID is added; the totals remain 17 closed and 1,263 open files.
+
+The [classical truth table slice](CLASSICAL_TRUTH_TABLE.md) maps both scalar
+truth-table enumeration and formatting onto existing Core metadata, numerical
+domains and bound evaluators. The complete Add table reconstructs the source
+matrix and matches every measured forward branch with clean work. Q-0882 and
+Q-0883 remain open for source-wide graph and original test replacement gaps.
+The frozen 1,280 parents and 1,172 checked child records remain unchanged.

@@ -838,6 +838,12 @@ still owns graph ordering and transformations. See [classical graph execution](.
 for exhaustive call-by-call comparisons, complex measurement branches and the
 remaining finite-field and source-wide boundaries.
 
+`classical_truth_table.py` enumerates explicit scalar domain providers and bound
+numerical actions, including the existing SSA classical evaluator. It preserves
+source product order, output identity and text formatting; input arrays remain
+unsupported. See [truth table inspection](../../docs/development/CLASSICAL_TRUTH_TABLE.md)
+for a runnable CNOT consumer, complete Add matrix and all-branch work erasure.
+
 `classical_power.py` repeats a complete bound child numerical evaluator in source
 order, preserving constructor versus build count guards. It reuses phased output
 commit rather than implementing another phase accumulator. Run
