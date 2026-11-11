@@ -224,7 +224,7 @@ def test_numeric_register_phase_uses_unsigned_bit_weights_and_finite_real_terms(
             "q:Output[QBit]",
             "@qfunc\ndef helper(a:Output[QBit]):\n    allocate(a)\n    phase(a-0.5,0.1)\n"
             "@qfunc\ndef outer(a:QBit):\n    helper(a)\n",
-            "publish Outputs|writable quantum",
+            "call requires fresh Output actuals",
         ),
     ],
 )

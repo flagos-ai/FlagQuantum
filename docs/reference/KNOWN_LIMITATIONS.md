@@ -1284,6 +1284,16 @@ Run `python -m pytest tests/integration/test_synthesis_native_raw_predicate_phas
 tests/integration/test_synthesis_native_phase_predicates.py
 tests/integration/test_synthesis_native_grover_models.py -q`.
 
+Within one exact phase expression, emitted monomials also witness their selected
+quantum reads. Separate zero-angle effects remain for reads removed by algebraic
+cancellation. This reduces redundant model nodes without moving reads between
+statements or bypassing initialization and ownership checks. A zero coefficient
+does not remove these checks. The 4096-node model budget and all gate, workspace
+and phase bounds remain; this representation change does not promise fewer
+physical gates.
+
+Run `python -m pytest tests/integration/test_synthesis_native_phase_read_witnesses.py -q`.
+
 ## Native phase expressions inside pure callbacks
 
 Whole-register helper expansion retains the same phase semantics as sliced

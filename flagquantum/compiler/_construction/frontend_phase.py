@@ -240,9 +240,15 @@ def capture_polynomial_phase(
         polynomial, reads, factors = expanded
     for factor, value in factors:
         emit_factor(owner, statement, factor, value)
-    # Algebraic cancellation must not hide uninitialized or illegal reads.
-    for value, bit in reads:
-        owner.emit("qreg.control_phase", statement, (value,), indices=(bit,), angle=0.0)
+    # Emitted monomials witness their reads; canceled reads still need a check.
+    covered = 0
+    for mask in polynomial:
+        covered |= mask
+    for index, (value, bit) in enumerate(reads):
+        if not covered & (1 << index):
+            owner.emit(
+                "qreg.control_phase", statement, (value,), indices=(bit,), angle=0.0
+            )
     for mask, weight in sorted(polynomial.items()):
         angle = coefficient * weight
         if not math.isfinite(angle) or abs(angle) > 2**53:

@@ -241,19 +241,19 @@ def test_preexisting_constant_controls_preserve_resources_and_absolute_phase(
             "allocate(a)\nhelper(a)",
             "a:Output[QBit]",
             "@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:H(a))\n",
-            "phase, predicate-X or direct Pauli-axis rotation control",
+            "expected phase, Hadamard, QFT",
         ),
         (
             "allocate(a)\nwith adjoint():\n    helper(a)",
             "a:Output[QBit]",
             "@qfunc\ndef helper(a:QBit):\n    allocate(a)\n",
-            "mutable helpers allow gates",
+            "destination is already initialized",
         ),
         (
             "allocate(a)\nhelper(a)",
             "a:Output[QBit]",
             "@qfunc\ndef publish(a:Output[QBit]):\n    allocate(a)\n@qfunc\ndef helper(a:QBit):\n    control(a==0,lambda:publish(a))\n",
-            "phase, predicate-X or direct Pauli-axis rotation control",
+            "controlled helpers require Const-only ports",
         ),
         (
             "allocate(9,a)\ncontrol(a<3,lambda:phase(a-0.5,0.2))",
