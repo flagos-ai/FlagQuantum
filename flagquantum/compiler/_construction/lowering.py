@@ -33,6 +33,9 @@ from .ranges import unsigned_width
 
 _WireValue = tuple[int, ...] | int
 Schedule = Literal["retain", "recompute"]
+InstructionRole = Literal[
+    "compute", "uncompute", "xor_write", "copy", "phase", "phase_inverse"
+]
 
 # Bound optional duplicate circuit construction; SSA facts remain available.
 _NORMALIZATION_PROBE_MAX_OPERATIONS = 10_000
@@ -46,6 +49,39 @@ class ScheduleEvent:
     scratch: tuple[int, ...]
     live_workspace: int
     operation_count: int
+    instruction_start: int = 0
+    instruction_stop: int = 0
+
+
+@dataclass(frozen=True)
+class InstructionSpan:
+    """A non-overlapping half-open instruction range and its lowering role."""
+
+    start: int
+    stop: int
+    role: InstructionRole
+    value: ValueId | None
+
+
+@dataclass(frozen=True)
+class OwnershipTransition:
+    """Acquire or release physical workspace at an instruction boundary."""
+
+    instruction_index: int
+    event_index: int
+    action: Literal["allocate", "release"]
+    resource: Literal["value", "scratch"]
+    value: ValueId
+    wires: tuple[int, ...]
+
+
+@dataclass(frozen=True)
+class AllocationReplay:
+    """Validated final ownership and peak live workspace for one candidate."""
+
+    peak_workspace: int
+    live_allocations: Mapping[ValueId, tuple[int, ...]]
+    live_scratch: tuple[int, ...]
 
 
 @dataclass(frozen=True)
@@ -56,6 +92,8 @@ class ArithmeticCandidate:
     events: tuple[ScheduleEvent, ...]
     peak_workspace: int
     recomputations: int
+    instruction_spans: tuple[InstructionSpan, ...] = ()
+    ownership_transitions: tuple[OwnershipTransition, ...] = ()
     normalization: ArithmeticNormalization | None = field(default=None, repr=False)
     baseline: ArithmeticCandidate | None = field(default=None, repr=False)
     normalized_cost: tuple[int, int, int] | None = None
@@ -67,6 +105,144 @@ class ArithmeticCandidate:
     implementation_cost: tuple[int, int, int] | None = None
     implementation_errors: tuple[Diagnostic, ...] = ()
     conservative_errors: tuple[Diagnostic, ...] = ()
+
+
+def _ownership_transitions(
+    events: Sequence[ScheduleEvent],
+) -> tuple[OwnershipTransition, ...]:
+    transitions: list[OwnershipTransition] = []
+    held_terminal_scratch: tuple[ValueId, tuple[int, ...]] | None = None
+    for index, event in enumerate(events):
+        terminal_pair = (
+            event.action == "compute"
+            and not event.allocation
+            and index + 1 < len(events)
+            and events[index + 1].value == event.value
+            and events[index + 1].action == "uncompute"
+            and events[index + 1].scratch == event.scratch
+        )
+        scratch_is_held = held_terminal_scratch == (event.value, event.scratch)
+        if event.action == "compute" and event.allocation:
+            transitions.append(
+                OwnershipTransition(
+                    event.instruction_start,
+                    index,
+                    "allocate",
+                    "value",
+                    event.value,
+                    event.allocation,
+                )
+            )
+        if event.scratch and not scratch_is_held:
+            transitions.append(
+                OwnershipTransition(
+                    event.instruction_start,
+                    index,
+                    "allocate",
+                    "scratch",
+                    event.value,
+                    event.scratch,
+                )
+            )
+        if terminal_pair:
+            held_terminal_scratch = (event.value, event.scratch)
+        elif event.scratch:
+            transitions.append(
+                OwnershipTransition(
+                    event.instruction_stop,
+                    index,
+                    "release",
+                    "scratch",
+                    event.value,
+                    event.scratch,
+                )
+            )
+            held_terminal_scratch = None
+        if event.action == "uncompute" and event.allocation:
+            transitions.append(
+                OwnershipTransition(
+                    event.instruction_stop,
+                    index,
+                    "release",
+                    "value",
+                    event.value,
+                    event.allocation,
+                )
+            )
+    return tuple(transitions)
+
+
+def replay_allocation_trace(candidate: ArithmeticCandidate) -> AllocationReplay:
+    """Validate instruction coverage and replay workspace ownership transitions.
+
+    Instruction spans are disjoint, ordered, and cover the circuit exactly.
+    Event spans may overlap classification spans because they separately identify
+    the operation associated with each allocation lifecycle transition.
+    """
+    cursor = 0
+    for span in candidate.instruction_spans:
+        if span.start != cursor or span.stop < span.start:
+            raise ValueError("instruction spans must be ordered and non-overlapping")
+        cursor = span.stop
+    if cursor != len(candidate.circuit.instructions):
+        raise ValueError("instruction spans must cover the generated arithmetic block")
+    for event in candidate.events:
+        if not 0 <= event.instruction_start <= event.instruction_stop <= cursor:
+            raise ValueError("schedule event instruction span is out of bounds")
+        if event.instruction_stop - event.instruction_start != event.operation_count:
+            raise ValueError("schedule event span disagrees with operation count")
+
+    expected = _ownership_transitions(candidate.events)
+    if candidate.ownership_transitions != expected:
+        raise ValueError("ownership transitions do not match schedule events")
+    active: dict[ValueId, tuple[int, ...]] = {}
+    scratch: set[int] = set()
+    owners: dict[int, tuple[str, ValueId]] = {}
+    peak = 0
+    for index, event in enumerate(candidate.events):
+        transitions = tuple(
+            transition
+            for transition in candidate.ownership_transitions
+            if transition.event_index == index
+        )
+        for transition in transitions:
+            if transition.action != "allocate":
+                continue
+            if transition.resource == "value":
+                if event.action != "compute" or transition.value in active:
+                    raise ValueError("allocation overlaps a live value binding")
+            elif transition.value not in active and event.allocation:
+                raise ValueError("scratch allocation has no owning value")
+            for wire in transition.wires:
+                if wire in owners:
+                    raise ValueError("workspace wire has overlapping live allocations")
+                owners[wire] = (transition.resource, transition.value)
+            if transition.resource == "value":
+                active[transition.value] = transition.wires
+            else:
+                scratch.update(transition.wires)
+        if event.action == "uncompute" and event.allocation:
+            if active.get(event.value) != event.allocation:
+                raise ValueError("uncompute uses a stale physical allocation")
+        if len(owners) != event.live_workspace:
+            raise ValueError("event live workspace disagrees with replayed ownership")
+        peak = max(peak, len(owners))
+        for transition in transitions:
+            if transition.action != "release":
+                continue
+            for wire in transition.wires:
+                if owners.get(wire) != (transition.resource, transition.value):
+                    raise ValueError("release does not match a live allocation")
+                del owners[wire]
+            if transition.resource == "scratch":
+                scratch.difference_update(transition.wires)
+            elif active.pop(transition.value, None) != transition.wires:
+                raise ValueError("release does not match the active value binding")
+    if active or scratch or owners:
+        raise ValueError("arithmetic workspace is not clean after replay")
+    if peak != candidate.peak_workspace:
+        raise ValueError("replayed peak workspace disagrees with candidate metric")
+    return AllocationReplay(peak, active.copy(), tuple(sorted(scratch)))
 
 
 @dataclass(frozen=True)
@@ -119,8 +295,28 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
     if not _self_adjoint_gates(candidate.circuit.instructions) or computes != cleans:
         _fail("register.adjoint", "cleanup requires a clean exact value candidate")
     events = tuple(
-        replace(event, action="uncompute" if event.action == "compute" else "compute")
+        replace(
+            event,
+            action="uncompute" if event.action == "compute" else "compute",
+            instruction_start=len(candidate.circuit.instructions)
+            - event.instruction_stop,
+            instruction_stop=len(candidate.circuit.instructions)
+            - event.instruction_start,
+        )
         for event in reversed(candidate.events)
+    )
+    instruction_spans = tuple(
+        replace(
+            span,
+            start=len(candidate.circuit.instructions) - span.stop,
+            stop=len(candidate.circuit.instructions) - span.start,
+            role=(
+                "uncompute"
+                if span.role == "compute"
+                else "compute" if span.role == "uncompute" else span.role
+            ),
+        )
+        for span in reversed(candidate.instruction_spans)
     )
     return replace(
         candidate,
@@ -129,6 +325,8 @@ def adjoint_value_candidate(candidate: ArithmeticCandidate) -> ArithmeticCandida
             instructions=tuple(reversed(candidate.circuit.instructions)),
         ),
         events=events,
+        instruction_spans=instruction_spans,
+        ownership_transitions=_ownership_transitions(events),
         recomputations=(
             0
             if candidate.implementation == "boolean"
@@ -257,6 +455,7 @@ def _emit_arithmetic(
     peak = 0
     instructions: list[Instruction] = []
     events: list[ScheduleEvent] = []
+    instruction_spans: list[InstructionSpan] = []
     active: dict[ValueId, _Allocation] = {}
     bound_inputs = {key: tuple(value) for key, value in inputs.items()}
     counts: dict[ValueId, int] = {}
@@ -300,7 +499,13 @@ def _emit_arithmetic(
         peak = max(peak, len(occupied))
         return result
 
-    def emit(gates: Iterable[Instruction], op: Operation) -> int:
+    def emit(
+        gates: Iterable[Instruction],
+        op: Operation,
+        *,
+        role: InstructionRole,
+        value: ValueId | None = None,
+    ) -> tuple[int, int, int]:
         start = len(instructions)
         for gate in gates:
             if len(instructions) >= max_operations:
@@ -310,7 +515,10 @@ def _emit_arithmetic(
                     op,
                 )
             instructions.append(gate)
-        return len(instructions) - start
+        stop = len(instructions)
+        if stop > start:
+            instruction_spans.append(InstructionSpan(start, stop, role, value))
+        return start, stop, stop - start
 
     def bound(key: ValueId) -> int:
         return analysis.values[key].upper_bound
@@ -498,7 +706,12 @@ def _emit_arithmetic(
                     _fail("lowering.operations", "inverse exceeds operation budget", op)
                 buffered.append(gate)
             gates = reversed(buffered)
-        count = emit(gates, op)
+        start, stop, count = emit(
+            gates,
+            op,
+            role="uncompute" if inverse else "compute",
+            value=key,
+        )
         if len(events) >= 100_000:
             _fail(
                 "lowering.schedule.budget",
@@ -513,6 +726,8 @@ def _emit_arithmetic(
                 scratch,
                 len(occupied),
                 count,
+                start,
+                stop,
             )
         )
         occupied.difference_update(scratch)
@@ -593,14 +808,20 @@ def _emit_arithmetic(
                 ),
             ),
             block.operations[-1],
+            role="phase",
+            value=returned,
         )
         # Invert the actual selected prefix, including its earlier cleanups and
         # physical rebindings. Preparation is composed later, outside this U.
-        emit(reversed(prefix), block.operations[-1])
+        inverse_start, inverse_stop, _ = emit(
+            reversed(prefix), block.operations[-1], role="phase_inverse", value=returned
+        )
         for event in reversed(forward_events):
             action: Literal["compute", "uncompute"] = (
                 "uncompute" if event.action == "compute" else "compute"
             )
+            event_start = inverse_start + len(prefix) - event.instruction_stop
+            event_stop = inverse_start + len(prefix) - event.instruction_start
             events.append(
                 ScheduleEvent(
                     action,
@@ -609,6 +830,8 @@ def _emit_arithmetic(
                     event.scratch,
                     event.live_workspace,
                     event.operation_count,
+                    event_start,
+                    event_stop,
                 )
             )
             if action == "compute":
@@ -633,21 +856,41 @@ def _emit_arithmetic(
                     "terminal XOR exceeds event budget",
                     final,
                 )
-            count = emit((*prefix, *writes), final)
+            start, _, prefix_count = emit(prefix, final, role="compute", value=returned)
+            _, stop, write_count = emit(writes, final, role="xor_write", value=returned)
+            count = prefix_count + write_count
             # Empty owned allocation denotes an external XOR result. The paired
             # events account for carry computation/write and exact carry cleanup.
             events.append(
-                ScheduleEvent("compute", returned, (), scratch, len(occupied), count)
+                ScheduleEvent(
+                    "compute", returned, (), scratch, len(occupied), count, start, stop
+                )
             )
-            count = emit(reversed(prefix), final)
+            start, stop, count = emit(
+                reversed(prefix), final, role="uncompute", value=returned
+            )
             events.append(
-                ScheduleEvent("uncompute", returned, (), scratch, len(occupied), count)
+                ScheduleEvent(
+                    "uncompute",
+                    returned,
+                    (),
+                    scratch,
+                    len(occupied),
+                    count,
+                    start,
+                    stop,
+                )
             )
             occupied.difference_update(scratch)
             counts[returned] = 1
             rules.append((returned, "terminal_xor_add"))
         else:
-            emit(_copy(encoding(returned), tuple(output)), block.operations[-1])
+            emit(
+                _copy(encoding(returned), tuple(output)),
+                block.operations[-1],
+                role="copy",
+                value=returned,
+            )
         # Restoration order is not dependency order. Clean descendants first so a
         # still-live ancestor is not erased only to be rebuilt for the next inverse.
         for key in reversed(definitions):
@@ -661,6 +904,8 @@ def _emit_arithmetic(
         tuple(events),
         peak,
         sum(count - 1 for count in counts.values()),
+        instruction_spans=tuple(instruction_spans),
+        ownership_transitions=_ownership_transitions(events),
         implementation=implementation,
         implementation_rules=tuple(dict.fromkeys(rules)),
     )

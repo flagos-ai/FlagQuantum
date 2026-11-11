@@ -14,6 +14,7 @@ from flagquantum.compiler._construction.lowering import (
     Schedule,
     _emit_arithmetic,
     lower_arithmetic,
+    replay_allocation_trace,
     schedule_arithmetic,
 )
 from flagquantum.compiler._construction.profile import uint_type
@@ -168,6 +169,9 @@ def test_fixed_workload_has_real_workspace_gate_tradeoff(
     assert len(recomputed.circuit.instructions) <= clean_ops
     assert retained.recomputations == 0 < recomputed.recomputations
     for candidate in (retained, recomputed):
+        replay = replay_allocation_trace(candidate)
+        assert replay.peak_workspace == candidate.peak_workspace
+        assert not replay.live_allocations and not replay.live_scratch
         block = candidate.lifetimes.program.body.blocks[0]
         io = 2 * width + block.operations[-1].operands[0].type.parameters[0]
         # Re-emitting at the measured capacity succeeds; this is actual binding
@@ -213,6 +217,12 @@ def test_allocation_trace_requires_available_inverse_dependencies(
     assert not active and not occupied
     assert peak == candidate.peak_workspace
     assert candidate == _candidate(2, strategy)
+
+
+def test_allocation_trace_rejects_incomplete_instruction_coverage() -> None:
+    candidate = _candidate(1, "recompute")
+    with pytest.raises(ValueError, match="cover the generated arithmetic block"):
+        replay_allocation_trace(replace(candidate, instruction_spans=()))
 
 
 @pytest.mark.parametrize("width", [1, 2, 3])

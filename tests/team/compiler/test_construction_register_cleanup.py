@@ -15,6 +15,7 @@ from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import (
     Schedule,
     adjoint_value_candidate,
+    replay_allocation_trace,
 )
 from flagquantum.compiler._construction.register_lowering import (
     schedule_register_program,
@@ -58,9 +59,18 @@ def test_cleanup_reverses_selected_gates_events_and_reuses_result_ports(
         (row.segments[1], row.segments[3]),
         (row.segments[4], row.segments[6]),
     ):
+        assert replay_allocation_trace(forward).peak_workspace == forward.peak_workspace
+        assert replay_allocation_trace(inverse).peak_workspace == inverse.peak_workspace
         assert inverse.circuit.instructions == forward.circuit.instructions[::-1]
         assert inverse.events == tuple(
-            replace(e, action="uncompute" if e.action == "compute" else "compute")
+            replace(
+                e,
+                action="uncompute" if e.action == "compute" else "compute",
+                instruction_start=len(forward.circuit.instructions)
+                - e.instruction_stop,
+                instruction_stop=len(forward.circuit.instructions)
+                - e.instruction_start,
+            )
             for e in reversed(forward.events)
         )
         assert inverse.peak_workspace == forward.peak_workspace
