@@ -157,3 +157,10 @@ callbacks. Direct actions, other error categories and output commits retain
 their existing failure boundaries. Real depth 2/3/5 graphs match source chain
 contents without committing failed parent outputs. Foreign decomposition error
 translation and source-wide closure remain open; acceptance counts do not rise.
+
+The [opaque graph value fix](COMPONENT_OPAQUE_VALUES.md) removes integer-domain
+validation from QAny-equivalent ports while retaining shared shape traversal,
+sampling and source NumPy storage conversion. Scalar identity, array conversion
+failures/warnings, RNG state and complex physical identity append consumers are
+compared to unchanged source. Source fixed-input handler failure is retained as
+an explicit difference. Q-0882/Q-0883 and fixed acceptance counts remain open.

@@ -880,3 +880,7 @@ roundtrip and avoids optional field resolution on integer-only graph paths.
 [Classical recursion diagnostics](../../docs/development/COMPONENT_CLASSICAL_RECURSION.md)
 retain source cause chains at explicit recursive callbacks while direct action
 and output-commit errors keep their original boundary.
+
+[Opaque classical graph values](../../docs/development/COMPONENT_OPAQUE_VALUES.md)
+retain QAny's unrestricted numerical domain while shared binding still validates
+shapes and collection preserves source NumPy storage conversions.
