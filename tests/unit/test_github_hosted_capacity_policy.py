@@ -559,7 +559,16 @@ def test_native_fermion_uses_isolated_cpu_capacity_for_trusted_changes() -> None
     )
     assert isolated["with"]["torch-spec"] == "torch==${{ matrix.torch }}"
     assert isolated["with"]["self-hosted-pypi-index"] == (
-        "https://pypi.tuna.tsinghua.edu.cn/simple"
+        "https://mirrors.aliyun.com/pypi/simple"
+    )
+    native_install = next(
+        step
+        for step in job["steps"]
+        if step.get("name")
+        == "Install the native package without optional science dependencies"
+    )
+    assert native_install["run"] == (
+        "python -m pip install --no-build-isolation -e . 'pytest>=7,<10'"
     )
     commands = "\n".join(str(step.get("run", "")) for step in job["steps"])
     assert not any(
