@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from ....core.ir import Instruction
 from ..bits.bitwise import controlled_xor_constant_ir
 from ..comparison.equality import equality_constant_ir
+from .cycle_decomposition import partial_permutation_cycles
 
 
 def source_partial_permutation_cycles(
@@ -33,20 +34,7 @@ def source_partial_permutation_cycles(
     ):
         raise ValueError("Partial permutation must be injective and in range")
 
-    seen: set[int] = set()
-    cycles = []
-    for start in mapping:
-        cycle = []
-        node = start
-        while node not in seen:
-            seen.add(node)
-            cycle.append(node)
-            if node not in mapping:
-                break
-            node = mapping[node]
-        if len(cycle) >= 2:
-            cycles.append(tuple(cycle))
-    return tuple(cycles)
+    return tuple(partial_permutation_cycles(mapping))
 
 
 def permutation_cycle_ir(
