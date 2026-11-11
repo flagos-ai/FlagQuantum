@@ -115,3 +115,11 @@ ladder products vanish. It retains no arrays and preserves tiny nonzero
 coefficients without a tolerance. This experimental import has no reverse tensor
 export and does not construct a molecular problem. See the separate interaction
 import extension in the contract for its exact formula and acceptance checks.
+
+The optional lane's UCCSD replacement scenario checks that this imported value
+and a native Hubbard Hamiltonian give matching energies, gradients and SGD
+updates through the same unchanged consumer. Run
+`python -m pytest tests/unit/test_openfermion_conversion.py -k replacement -q`
+after installing the optional upstream environment. This is a small CPU/full-JW
+training proof; parameter differentiation stays in native circuits rather than
+in the imported static coefficients.

@@ -11,7 +11,9 @@ import sympy
 import torch
 
 import flagquantum as fq
+from flagquantum.algorithms.chemistry import uccsd_ansatz
 from flagquantum.algorithms.fermion.encoding import Encoding, encode_fermion
+from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.core.algebra.pauli import PauliOperator, PauliTerm
@@ -329,3 +331,89 @@ def test_interaction_rejects_wrong_type_and_corrupted_keys() -> None:
     source.n_body_tensors = []
     with pytest.raises(TypeError):
         from_openfermion_interaction(source)
+
+
+def _uccsd_training_trace(
+    operator: FermionOperator,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    observable = to_observable(
+        encode_fermion(operator, n_modes=4, encoding="jordan_wigner").operator
+    )
+
+    def energy(parameters: torch.Tensor) -> torch.Tensor:
+        circuit = uccsd_ansatz(4, 2, parameters, dtype=torch.complex128, device="cpu")
+        value = fq.run(circuit, outputs=[fq.expectation(observable)]).expectation()
+        assert isinstance(value, torch.Tensor)
+        return value.reshape(())
+
+    parameters = torch.tensor(
+        [0.1, -0.07, 0.2], dtype=torch.float32, requires_grad=True
+    )
+    initial = parameters.detach().clone()
+    first = energy(parameters)
+    gradient = torch.autograd.grad(first, parameters)[0]
+    assert torch.all(torch.isfinite(gradient)) and float(gradient.norm()) > 0.1
+    step = 1e-3
+    for index in range(3):
+        shift = torch.zeros_like(initial)
+        shift[index] = step
+        finite_difference = (energy(initial + shift) - energy(initial - shift)) / (
+            2 * step
+        )
+        torch.testing.assert_close(
+            gradient[index], finite_difference.to(gradient.dtype), atol=2e-4, rtol=2e-4
+        )
+
+    optimizer = torch.optim.SGD([parameters], lr=0.1)
+    energies, gradients = [], []
+    for _ in range(16):
+        optimizer.zero_grad()
+        value = energy(parameters)
+        energies.append(value.detach())
+        torch.autograd.backward(value)
+        assert parameters.grad is not None and torch.all(
+            torch.isfinite(parameters.grad)
+        )
+        gradients.append(parameters.grad.detach().clone())
+        optimizer.step()
+    final = energy(parameters).detach()
+    energies.append(final)
+    assert float(final) < float(first.detach()) - 0.1
+    assert float((parameters.detach() - initial).norm()) > 0.1
+    state = (
+        uccsd_ansatz(4, 2, parameters.detach(), dtype=torch.complex128, device="cpu")
+        .state()
+        .reshape(-1)
+    )
+    outside = [index for index in range(16) if index.bit_count() != 2]
+    assert float(state[outside].abs().square().sum()) < 1e-20
+    torch.testing.assert_close(
+        state.abs().square().sum(), torch.tensor(1.0, dtype=torch.float64)
+    )
+    reference = torch.vdot(state, fock_matrix(operator, 4) @ state)
+    assert float(reference.imag.abs()) < 1e-12
+    torch.testing.assert_close(final, reference.real)
+    return torch.stack(energies), torch.stack(gradients), parameters.detach()
+
+
+def test_interaction_replacement_preserves_native_uccsd_training() -> None:
+    # Independently write the spin-interleaved two-site Hubbard coefficients.
+    one = -0.2 * np.eye(4)
+    for spin in (0, 1):
+        one[spin, spin + 2] = one[spin + 2, spin] = -1.0
+    two = np.zeros((4,) * 4)
+    two[0, 1, 1, 0] = two[2, 3, 3, 2] = 2.0
+    source = of.InteractionOperator(0.375, one, two)
+    imported = from_openfermion_interaction(source)
+    native = fermi_hubbard_chain(2, t=1.0, u=2.0, mu=0.2) + FermionOperator(
+        (FermionTerm(0.375),)
+    )
+    assert imported == native
+    # Destroy the external input before encoding, differentiation or optimization.
+    one[:] = float("nan")
+    two[:] = float("nan")
+    source.n_body_tensors = {}
+    expected = _uccsd_training_trace(native)
+    actual = _uccsd_training_trace(imported)
+    for value, reference in zip(actual, expected, strict=True):
+        torch.testing.assert_close(value, reference, atol=1e-7, rtol=1e-7)

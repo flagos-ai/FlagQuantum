@@ -142,3 +142,27 @@ python tools/check_dependency_policy.py
 
 The existing optional workflow runs real-upstream checks on Python 3.10 and
 3.12. Linux broad test tiers remain CI's responsibility.
+
+
+### Native training consumer replacement
+
+The optional real-upstream lane also replaces a native two-site Hubbard
+Hamiltonian with an independently assembled InteractionOperator import, including
+a nonzero constant offset and chemical potential. Both native operators feed the
+same existing four-mode, two-electron UCCSD circuit, JW encoding, `fq.run`
+expectation and PyTorch SGD optimizer. Sixteen optimizer steps must preserve the
+energy history, gradients and updated parameters. Initial nonzero gradients are
+checked against central finite differences; final energies are checked against
+independent occupation-bit matrix action, and states retain two particles.
+External tensors are corrupted after import and before either training run to
+verify ownership at the handoff. With the test's fixed starting angles and
+learning rate 0.1, local Python 3.12.14 CPU validation lowered energy from
+1.9943140889 to -0.9947611722 after 16 updates. This is measured descent for the
+selected scenario, not a ground-state convergence claim.
+
+Run `python -m pytest tests/unit/test_openfermion_conversion.py -k replacement -q`
+in the optional environment. The scenario requires energy descent and a real
+parameter update. It certifies this bounded CPU complex128 state/float32 angle,
+full JW register workflow only: no general convergence, integral gradients,
+encoded/tapered ansatz synthesis, accelerator or distributed training claim.
+No new solver, execution API, production dependency or contract type is added.
