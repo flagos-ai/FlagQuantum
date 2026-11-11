@@ -444,3 +444,9 @@ clean word preparations and one child call, preserving RIGHT outputs and explici
 ownership transfer. It reuses existing allocation definitions and owns no tensor
 execution. See [zero-input initialization](../../../docs/development/COMPONENT_ZERO_INITIALIZATION.md)
 for namespace/metadata rules, original failure boundaries and local tests.
+
+The [stored-unitary GQSP guide](../../../docs/development/GQSP_STORED_UNITARY.md)
+connects these existing hierarchy, control, exact-adjoint and physical-binding
+paths to the same dynamic append consumer. It records full source leaf equality,
+all small measurement histories and separate emitted/model counts for a
+noncommuting shared H/phase component.
