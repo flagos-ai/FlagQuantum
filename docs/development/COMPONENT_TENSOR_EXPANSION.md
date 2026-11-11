@@ -17,6 +17,11 @@ classifier. This explicit declaration replaces the source's Python
 Python method names enter Program IR. This classifier does not execute a tensor
 supplier or inspect numerical values.
 
+The returned labels preserve occurrence identity and may differ from operation
+positions after expansion. Pass traversal positions from `iter_component_calls`
+to Simulation, not these IDs. See the expanded provider consumer in
+[component tensor providers](COMPONENT_TENSOR_PROVIDERS.md#expanded-graph-visitation-graph82).
+
 Full expansion ignores custom declarations, does not query the classifier and
 expands every available typed-call decomposition. Partial expansion queries the
 classifier in existing traversal order and retains calls with custom tensors.
