@@ -6,12 +6,18 @@
 """Dense register tensors in output-then-input, row-major element order."""
 
 import math
+from typing import cast
 
 import numpy as np
 from numpy.typing import NDArray
 
-from ...core.ir.program.registers import RegisterSide
+from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
+from .register_tensor_data import (
+    project_register_tensor,
+    register_identity_data,
+    register_word_shape,
+)
 
 DenseRegisterTensor = NDArray[np.complex128] | np.complex128
 
@@ -32,11 +38,19 @@ def register_tensor_shape(signature: Signature) -> tuple[int, ...]:
         _word_dimension(register.bitsize)
         if any(type(size) is not int or size < 0 for size in register.shape):
             raise ValueError("dense register tensors require nonnegative array shapes")
-    return tuple(
-        _word_dimension(register.bitsize)
-        for ports in (signature.rights(), signature.lefts())
-        for register in ports
-        for _ in register.all_idxs()
+    # Validation above proves raw word dimensions are concrete integers.
+    return cast(tuple[int, ...], register_word_shape(signature))
+
+
+def _projection_signature(signature: Signature) -> Signature:
+    # The validated native boundary already admits a shared name on separate
+    # LEFT/RIGHT ports. Names do not affect numerical axes; distinguish those
+    # declarations before the raw source's THRU-signature reconstruction.
+    if len({reg.name for reg in signature}) == len(signature):
+        return signature
+    return Signature(
+        Register(str(i), reg.dtype, reg.shape, reg.side)
+        for i, reg in enumerate(signature)
     )
 
 
@@ -58,17 +72,10 @@ def register_tensor_from_matrix(
     dimension = math.prod(dimensions)
     if matrix.shape != (dimension, dimension):
         raise ValueError("matrix shape does not match the complete register signature")
-    count = len(dimensions)
-    indices: list[int | slice] = [slice(size) for size in dimensions * 2]
-    position = 0
-    for register in signature:
-        for _ in register.all_idxs():
-            if register.side == RegisterSide.LEFT:
-                indices[position] = 0
-            elif register.side == RegisterSide.RIGHT:
-                indices[position + count] = 0
-            position += 1
-    result: DenseRegisterTensor = matrix.reshape(dimensions * 2)[tuple(indices)]
+    result = cast(
+        DenseRegisterTensor,
+        project_register_tensor(matrix, _projection_signature(signature)),
+    )
     assert result.shape == target_shape
     return result
 
@@ -80,11 +87,6 @@ def register_identity_tensor(signature: Signature) -> DenseRegisterTensor:
     inspection path does not select a backend or replace circuit execution.
     """
     register_tensor_shape(signature)
-    dimension = math.prod(
-        _word_dimension(register.bitsize)
-        for register in signature
-        for _ in register.all_idxs()
-    )
-    return register_tensor_from_matrix(
-        np.eye(dimension, dtype=np.complex128), signature
+    return cast(
+        DenseRegisterTensor, register_identity_data(_projection_signature(signature))
     )

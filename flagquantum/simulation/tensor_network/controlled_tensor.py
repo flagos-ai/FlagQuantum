@@ -17,6 +17,7 @@ from ..value_dimensions import ArrayValue
 from .models import TensorNetworkNode
 from .register_tensor import register_identity_tensor, register_tensor_shape
 from .register_tensor_binding import bind_register_tensor, register_tensor_label_groups
+from .register_tensor_data import register_active_indices
 
 
 def controlled_register_tensor(
@@ -50,19 +51,14 @@ def controlled_register_tensor(
         child = child.reshape(child_shape)
     if is_symbolic_value(*patterns):
         raise ValueError("cannot compute active tensor space for symbolic patterns")
-    indices: list[int | slice] = [slice(size) for size in data.shape]
-    output_count = len(data.shape) // 2
-    position = 0
     for register, pattern in zip(controls, patterns, strict=True):
         if not isinstance(pattern, np.ndarray) or pattern.shape != register.shape:
             raise ValueError("activation pattern shape must match its control register")
-        for index in np.ndindex(pattern.shape):
-            indices[position] = indices[position + output_count] = int(pattern[index])
-            position += 1
+    indices = register_active_indices(signature, patterns)
     if not isinstance(data, np.ndarray):
         # The pinned scalar identity is a NumPy scalar, which cannot be assigned.
         raise TypeError("scalar controlled identity does not support item assignment")
-    data[tuple(indices)] = child
+    data[indices] = child
     return data
 
 
