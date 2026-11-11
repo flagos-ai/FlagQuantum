@@ -233,7 +233,14 @@ def test_entangling_gqsp_full_leaf_order_amplitudes_all_branches_and_work_zero(
         np.testing.assert_array_equal(actual[:, 1:], 0)
 
 
-def assert_costs(source: Any, length: int, negative_power: int, repeats: int) -> None:
+def assert_costs(
+    source: Any,
+    length: int,
+    negative_power: int,
+    repeats: int,
+    *,
+    system_width: int = 2,
+) -> None:
     """Use existing primitive query identities; never infer model from emitted IR."""
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
@@ -281,20 +288,22 @@ def assert_costs(source: Any, length: int, negative_power: int, repeats: int) ->
     )
     model = source_generalized_qsp_cost(
         length,
-        2,
+        system_width,
         negative_power=negative_power,
         signal_rotation=ComponentCost("SU2", 1, GateCost(rotation=3)),
         zero_control_unitary=ComponentCost(
-            "zero-U", 4, GateCost(clifford=2).plus(positive, 1)
+            "zero-U", system_width + 2, GateCost(clifford=2).plus(positive, 1)
         ),
-        unitary_adjoint=ComponentCost("U-adjoint", 2, bare),
-        controlled_adjoint=ComponentCost("controlled-adjoint", 4, backward),
+        unitary_adjoint=ComponentCost("U-adjoint", system_width, bare),
+        controlled_adjoint=ComponentCost(
+            "controlled-adjoint", system_width + 2, backward
+        ),
     )
     actual = estimate_component_resources(model)
     expected = get_cost_value(source, QECGatesCost())
     for field in fields:
         assert getattr(actual.gates, field) == getattr(expected, field)
-    assert actual.peak_logical_qubits == 4
+    assert actual.peak_logical_qubits == system_width + 2
 
 
 @pytest.mark.parametrize("repeats", [1, 2])
