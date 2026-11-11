@@ -56,3 +56,49 @@ register another framework. Compiler retains lowering/selection and Runtime
 retains execution. See its [contributor guide](_qmod/README.md) and
 [separate compatibility counts](../../docs/roadmap/CS07_QMOD_PARSER_DELIVERY.md).
 No public native-source execution entry is admitted by this private work.
+
+## Optional OpenFermion operator migration
+
+`openfermion.py` owns only explicit operator conversion. Its four entry points
+are `from_openfermion_fermion`, `to_openfermion_fermion`,
+`from_openfermion_qubit` and `to_openfermion_qubit`. Imports stop at native
+fermionic/Pauli algebra and standard-library validation; upstream OpenFermion is
+loaded only when a conversion is called. It must not own simulation, model
+construction, encoding, chemistry drivers or runtime selection. Native modules
+never depend on this adapter. No adapter registry entry or root API is added.
+
+For an old-object migration, install `openfermion==1.7.1` separately in the
+interoperability environment; upstream also installs its own dependencies,
+including Cirq. Neither package is required by the native core. This experimental
+boundary is verified against that upstream release; it does not promise complete
+upstream API compatibility. See the
+[EXT05 contract](../../docs/development/OPENFERMION_OBJECT_INTEROP.md).
+
+The ten-minute workflow is conversion followed by the unchanged native consumer:
+
+```python
+import torch
+import openfermion
+import flagquantum as fq
+from flagquantum.ecosystem.openfermion import from_openfermion_fermion
+from flagquantum.algorithms.fermion.encoding import encode_fermion
+from flagquantum.algorithms.fermion.observables import to_observable
+
+old = openfermion.FermionOperator("0^ 0", 1.5)
+native = from_openfermion_fermion(old)
+encoded = encode_fermion(native, n_modes=2, encoding="jordan_wigner")
+circuit = fq.Circuit(2).x(0)
+value = fq.run(circuit, outputs=[fq.expectation(to_observable(encoded.operator))])
+assert abs(float(torch.as_tensor(value.expectation()).reshape(-1)[0]) - 1.5) < 1e-6
+```
+
+Change the source coefficient and rerun this path, then run
+`python -m pytest tests/unit/test_openfermion_conversion.py
+ tests/integration/test_openfermion_interop.py -q` (as one shell command).
+Tests exercise real upstream operators, independent matrices, round trips,
+contractions, exact small coefficients and malformed mutable terms. Without
+OpenFermion the upstream tests skip; the fresh-interpreter native isolation test
+still executes. Conversion preserves mode labels; neither algebra records idle
+register width, so always pass it explicitly to native encoding or inspection.
+Exported raw term dictionaries may differ from upstream normal ordering while
+representing the same operator. Observable Hermiticity checks remain native.

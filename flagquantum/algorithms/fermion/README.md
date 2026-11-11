@@ -87,3 +87,26 @@ the existing product formula. Only its scalar time supports autograd. Run
 interferometer and `python -m pytest tests/unit/fermion/test_controlled_evolution.py
 -q` for independent full-branch, phase, convergence and gradient references.
  That profile is unreduced JW/CPU only and makes no routing or hardware claim.
+
+For the delivered stages, file-input workflows and planned extension boundaries,
+see the [migration status](../../../docs/development/OPENFERMION_NATIVE_MIGRATION.md#current-delivery-status).
+The initial PR description and its CI counts are historical records; the status
+section identifies the revision to which its delivery table applies.
+
+Spinful open-chain model assembly lives in `hubbard.py` and returns the existing
+`FermionOperator`. It owns only the static Hamiltonian: interleaved up/down modes,
+minus-t nearest-neighbor hopping, unshifted U double occupancy and minus-mu
+population. It must not own encoding, state preparation, runtime policy or a
+solver. Dependencies stop at native scalar validation and fermionic algebra;
+OpenFermion, Cirq and additional science packages are unnecessary.
+
+Run `python -m examples.algorithms.fermion_hubbard` for the ten-minute model path:
+build two sites with t=1, u=4, mu=0, select N=2 and measure -0.8284271247 with
+particle number 2 through JW, parity and BK. Change U and compare the analytic
+energy printed by the example with its measured values. Dense reference state
+construction is an exponential inspection tool, not a scalable eigensolver.
+Run `python -m pytest tests/unit/fermion/test_hubbard.py -q` for independent
+occupation-bit and analytic sector references before changing assembly. The
+[EXT01 contract](../../../docs/development/FERMION_HUBBARD_CHAIN.md) records
+validation and unsupported boundaries. Always encode with explicit
+`n_modes=2*n_sites`, including the zero Hamiltonian.

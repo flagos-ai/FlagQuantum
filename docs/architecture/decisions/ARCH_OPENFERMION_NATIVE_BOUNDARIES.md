@@ -28,7 +28,10 @@ Chemistry, symmetry and circuit synthesis extend that path independently.
 Core Pauli algebra uses the standard library only. Native scientific algorithms
 use the existing PyTorch requirement. External chemistry imports PySCF only
 inside the explicit driver boundary and returns native problem data. No migrated
-production module imports OpenFermion or Cirq. The existing optional Cirq adapter
+production algorithm module imports OpenFermion or Cirq. EXT05 permits lazy
+OpenFermion imports only inside explicitly invoked ecosystem object conversion;
+this optional migration boundary is not an algorithm or a core dependency.
+The existing optional Cirq adapter
 is unrelated and remains available.
 
 Keep integral conventions, electron counts, orbital ordering, energy offsets,

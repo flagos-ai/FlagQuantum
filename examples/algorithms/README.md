@@ -37,6 +37,7 @@ python -m examples.algorithms.fermion_tapering
 python -m examples.algorithms.fermion_fourier
 python -m examples.algorithms.fermion_energy
 python -m examples.algorithms.fermion_chemistry
+python -m examples.algorithms.fermion_orbital_rotation
 python -m examples.algorithms.fermion_fcidump
 python -m examples.synthesis.tutorials.getting_started.trial.main
 python -m examples.synthesis.tutorials.getting_started.source_trial.main
@@ -279,3 +280,13 @@ boundary for each.
   H2 in unreduced JW order, a controlled low-rank second-order product formula,
   and a measured control interferometer that retains the constant energy phase.
   The overlap defect is measured against a small dense reference, not bounded.
+
+- [`fermion_orbital_rotation.py`](fermion_orbital_rotation.py): fixed H2 real orbital
+  gradients, finite-difference verification and one closed-shell energy descent step.
+
+[`fermion_hubbard.py`](fermion_hubbard.py), run with
+`python -m examples.algorithms.fermion_hubbard`, constructs a spinful two-site
+open chain with `fermi_hubbard_chain`, prepares a fixed-N=2 dense reference and
+measures energy -0.8284271247 and particle number 2 through JW, parity and BK.
+The dense inspection and state preparation have exponential cost; this example
+makes no many-body scalability claim.

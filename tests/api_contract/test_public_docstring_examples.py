@@ -34,6 +34,7 @@ from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
 )
+from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
 from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
 from flagquantum.algorithms.fermion.preparation import prepare_slater
 from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
@@ -301,6 +302,7 @@ ENTRIES = (
     pauli_exponential_circuit,
     pauli_readout,
     prepare_slater,
+    fermi_hubbard_chain,
     fermionic_fourier_transform,
     reduce_stabilizers,
     PyMatchingDecoder.decode_batch,

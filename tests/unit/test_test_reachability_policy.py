@@ -40,6 +40,7 @@ ROOT = Path(__file__).resolve().parents[2]
 #   qiskit-optional       qiskit
 #   braket-optional       braket
 #   pennylane-optional    pennylane
+#   operator-conversion   openfermion (isolated real-upstream workflow)
 #   cpu-core (launched)   distributed_launch (under `torchrun`, not a bare pytest)
 #   multinode-scheduled   distributed_multinode
 #
@@ -59,6 +60,7 @@ LANE_SELECTORS = frozenset(
         "triton",
         "qiskit",
         "pennylane",
+        "openfermion",
         "braket",
     }
 )

@@ -20,7 +20,7 @@ from ...core.algebra.pauli import PauliOperator, count, pauli
 from ...observables.fermion import FermionOperator
 
 Encoding = Literal["jordan_wigner", "parity", "bravyi_kitaev"]
-ENCODINGS = ("jordan_wigner", "parity", "bravyi_kitaev")
+ENCODINGS: tuple[Encoding, ...] = ("jordan_wigner", "parity", "bravyi_kitaev")
 
 
 def encode_occupation(
