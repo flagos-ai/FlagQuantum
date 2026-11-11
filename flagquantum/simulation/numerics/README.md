@@ -57,3 +57,12 @@ the entire unit circle; a source counterexample is retained. See
 Run `python -m pytest tests/unit/test_qsp_sampling.py tests/unit/test_qsp_grid.py -q`
 with the pinned reference environment. These are numerical inspection helpers,
 not a QSP circuit synthesis implementation.
+
+## Matrix assertions
+
+`matrix_assertions` owns phase-sensitive default-norm comparison and the separate
+unitary assertion that ignores global phase. The latter reuses `unitary_distance`
+and must not replace full-amplitude conformance. See
+[the executable example and source assumptions](../../../docs/development/MATRIX_ASSERTIONS.md).
+Run `python -m pytest tests/unit/test_matrix_assertions.py -q` in the reference
+environment to compare both assertions with unchanged upstream functions.
