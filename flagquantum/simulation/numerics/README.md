@@ -46,3 +46,14 @@ production dependency. The symbolic path reuses Core's parameter classifier.
 See [the executable composition and exact adaptation boundaries](../../../docs/development/JACOBI_ANGER.md).
 Run `python -m pytest tests/unit/test_jacobi_anger_coefficients.py tests/unit/test_jacobi_anger_degree.py -q`
 with the pinned reference environment for source comparisons.
+
+## Sampled QSP polynomial checks
+
+`qsp_sampling` owns explicit-RNG QSP coefficient draws and sampled GQSP pair
+consistency. `qsp_grid` owns FFT-grid maxima, scaling, and assertions through a
+caller-owned FFT provider. Neither a random check nor a finite grid certifies
+the entire unit circle; a source counterexample is retained. See
+[the executable example, source failures, and resource boundaries](../../../docs/development/QSP_POLYNOMIAL_CHECKS.md).
+Run `python -m pytest tests/unit/test_qsp_sampling.py tests/unit/test_qsp_grid.py -q`
+with the pinned reference environment. These are numerical inspection helpers,
+not a QSP circuit synthesis implementation.
