@@ -32,10 +32,11 @@ phase. It does not return a normalized quantum branch amplitude: measurement
 projection factors still belong to physical execution. The state class remains
 available for explicit single-step inspection and custom recursive evaluators.
 
-Pure source recursion uses a separately constructed default random handler.
-That policy is not generalized from the phased implementation or silently
-changed; this new entry supports phased evaluation only. Foreign lazy Python
-decomposition exceptions and wider Core dtype admission remain open.
+Pure source recursion uses a separate process-default random handler.
+The [pure recursive evaluator](COMPONENT_PURE_EVALUATION.md) now provides that
+policy independently; this entry continues to support phased evaluation only.
+Foreign lazy Python decomposition exceptions and wider Core dtype admission
+remain open.
 
 ## Source and physical verification
 

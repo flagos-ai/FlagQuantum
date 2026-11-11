@@ -892,3 +892,7 @@ orders and shared measurement policy. Step inspection remains with the state.
 [Persistent phased instance IDs](../../docs/development/COMPONENT_PHASED_INSTANCE_IDS.md)
 pass Compiler expansion labels through that recursive entry independently of
 stored operation positions and visitation order.
+
+[Pure recursive component evaluation](../../docs/development/COMPONENT_PURE_EVALUATION.md)
+composes the same state with the source pure helper policy: nested bodies use
+the process-default random stream independently of root fixed or seeded values.

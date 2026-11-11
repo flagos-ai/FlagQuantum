@@ -180,3 +180,10 @@ source instance IDs, including reversed storage versus visitation and local-ID
 reuse. Full complex two-measurement branches retain their projection factors
 and clean spectator. Raw source CompositeBloq pure dispatch remains a separate
 negative; parent closure counts remain unchanged.
+
+The [pure recursive evaluator](COMPONENT_PURE_EVALUATION.md) supplies the missing
+source default-RNG policy for stored bodies. Root policies remain local while
+nested calls reuse the process default, independently of phased recursion.
+Full complex Add branches, exact primitive streams and separate QEC model
+accounts agree with the frozen source. Source-wide dtype and foreign exception
+boundaries remain open; parent and child counts do not increase.
