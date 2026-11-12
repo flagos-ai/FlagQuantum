@@ -383,3 +383,12 @@ when decode/encode callbacks are omitted. Explicit callbacks continue to overrid
 the defaults. This connects concrete native metadata to existing codecs; it
 does not discover actions or change the original phase-free, classical-axis
 or empty-array boundaries. The node entry keeps its explicit codec arguments.
+
+## Complete source disposition follow-up
+
+`CLASSICAL_TENSOR_SOURCE_DISPOSITION.md` maps all four functions and the nested
+index iterator, with thirty direction/shape/classical-bit source checks and
+exact callback-prefix comparisons. The existing implementation is reused.
+Raw classical-rank failures, empty codecs and phase limitations remain explicit,
+so Q-0895 stays open. Historical publication-blocker notes above describe their
+original batch; that implementation is now present in the integration branch.

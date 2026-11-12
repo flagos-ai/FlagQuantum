@@ -436,3 +436,9 @@ Zero/discard: RIGHT classical output guard corrected, implementation `32f4e4bd`.
 and format/scope/architecture/IR/API/example. Q-0891 retains source empty/zero
 width/direct-discard differences and physical pool-retirement refusal; Q-0891.04
 stays unchecked. No new ID;20 closed/1260 open/390 active,1184 records.
+
+Classical tensor disposition: acceptance `cd1648e1`,30 new/2692 related/
+84 CPU-TN/6 unchanged source tests pass; strict1 and quality checks; owner
+52 statements10 branches100%. All4 functions/nested iterator have targets,
+but classical-rank/empty/phase limitations keep Q-0895 open. No new ID;
+20 closed/1260 open/390 active,1184 records. Next Q-0882; reuse Q-0893 audit.
