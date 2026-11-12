@@ -219,11 +219,11 @@ pytestmark = pytest.mark.unit
 # figures a caller takes from one run rather than a second execution.
 
 ENTRIES = (
-    DetectorErrorModel.compile_sampler,
-    CompiledDemSampler,
     read_shot_data_file,
     iter_shot_data_file,
     write_shot_data_file,
+    DetectorErrorModel.compile_sampler,
+    CompiledDemSampler,
     CompiledDetectorSampler,
     fq.Circuit.compile_detector_sampler,
     fq.Circuit.detector_error_model,
