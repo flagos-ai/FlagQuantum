@@ -3,10 +3,11 @@
 ## Current delivery status
 
 The current checked main baseline is
-`9d1f5f34b9eae002f1c0e74714c2cb8e00bc1080` on November 12, 2026.
+`f073a800f040f8b8a667fa19397d1ceb14794200` on November 12, 2026.
 This is selected-workflow coverage, not complete OpenFermion API compatibility.
 The earlier merged-baseline audit was
-`ffb6e7de71b9b9c9e172b20ecbc49ac04f14a0c5`. The initial selected migration and EXT01–EXT08 are merged.
+`ffb6e7de71b9b9c9e172b20ecbc49ac04f14a0c5`. The initial selected migration
+and EXT01–EXT08 are merged.
 The later delivery audit #1133, training/input/object compositions #1137–#1144,
 InteractionOperator registration #1146 and frozen-core training proof #1147 are
 also merged. The follow-up queue below preserves its earlier checked-revision
@@ -49,7 +50,8 @@ python -m examples.algorithms.fermion_spinless --periodic
 At three sites, t=1, V=2, mu=0 and N=2, the chain and ring measure
 -0.7320508076 and 1.0000000000 respectively through JW, parity and BK.
 Dense eigenstate preparation remains an exponential correctness inspection.
-The exact current baseline passed 235 related tests, seven spinless/Hubbard
+The earlier spinless model baseline
+`9d1f5f34b9eae002f1c0e74714c2cb8e00bc1080` passed 235 related tests, seven spinless/Hubbard
 CLI/inventory checks, both spinless examples and
 [Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43203085504).
 The reviewed capability head passed all 233 full Linux CI jobs on
@@ -61,6 +63,19 @@ the native chemistry CI install budget after earlier optional-download timeouts;
 those cancelled runs remain failures, not passing scientific evidence.
 These results establish bounded CPU correctness, not full mainline scientific
 certification or accelerator/distributed support.
+
+The coverage audit [#1158](https://github.com/flagos-ai/FlagQuantum/pull/1158)
+and spinless training composition
+[#1159](https://github.com/flagos-ai/FlagQuantum/pull/1159) are merged.
+The actual current baseline passed 161 focused scientific, native-isolation,
+training, documentation and capability tests, six spinless CLI/inventory checks,
+generated-documentation and dependency-policy validation, and
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43217014837).
+The training guide records both fixed 160-step CPU runs; only circuit angles
+are trainable. No capability promotion or new model API was needed.
+The first #1159 CI run failed five dependency-floor jobs on Black 24.1 string
+formatting; the corrected final head passed both formatter versions and its
+full CI before merging. Earlier failed/cancelled runs retain their own status.
 
 Arbitrary graphs, coefficient gradients, automatic matched encoded/tapered
 ansatz construction, accelerator and distributed migration evidence remain
@@ -153,7 +168,7 @@ percentage of OpenFermion compatibility. Module paths are relative to
 | Low-rank and controlled evolution | `algorithms/fermion/low_rank.py`, `evolution.py` | `unit/fermion/test_evolution.py`, `test_controlled_evolution.py` | Real spatial closed-shell order-1/2 formulas, static factors, scalar-time gradients, unreduced JW |
 | Explicit symmetry sectors | `algorithms/fermion/symmetry.py`, `stabilizer.py` | `unit/fermion/test_symmetry.py`, `test_stabilizer.py` | Supplied sectors/generators; no discovery or automatic ansatz tapering; lifting is bounded inspection |
 | Real orbital-angle gradients | `algorithms/chemistry_domain/orbital_rotation.py` | `unit/fermion/test_orbital_rotation.py` | Real CPU orbital parameters; static snapshot boundary unchanged |
-| Training composition | Existing circuit/ansatz, observable and PyTorch interfaces | Hubbard, periodic Hubbard, FCIDUMP, active-space and object-replacement training scenarios | Circuit-angle optimization only; no separate fermion solver or general convergence guarantee |
+| Training composition | Existing circuit/ansatz, observable and PyTorch interfaces | Hubbard, periodic Hubbard, spinless, FCIDUMP, active-space and object-replacement training scenarios | Circuit-angle optimization only; no separate fermion solver or general convergence guarantee |
 | Native dependency isolation | Native modules and explicit ecosystem boundaries | `integration/test_native_fermion_isolation.py`, fresh-process example scenarios | Native workflows need no OpenFermion/Cirq; optional interoperability may install them |
 
 Upstream adaptations retain their license and attribution in
@@ -163,18 +178,19 @@ selected adaptations; it does not certify all upstream code as migrated.
 
 ## Proposed next PR sequence
 
-The next recommended slice is a bounded spinless chain/ring training composition.
-The existing spinless tests already prove a circuit-angle gradient and optimizer
-step. The proposed example extends that evidence into a readable optimization
-loop without adding a model family, solver, dependency or Stable Core export.
-The following entries are proposals, not implemented capabilities or merge
-approval.
+The bounded spinless training sequence below is complete at the current checked
+baseline. The heading is retained for existing links; these rows are delivery
+records rather than an outstanding queue or approval for additional work.
 
-| Order | Owner and scope | Acceptance boundary | Dependency |
-| --- | --- | --- | --- |
-| 1: spinless training composition | Algorithms: example, scenario tests and local guide | Same fixed-particle circuit consumer accepts chain/ring producers; independent occupation reference, finite-difference angle gradient, optimizer update, sector preservation, closing-bond sensitivity and native dependency isolation; report achieved energy without assuming ground-state convergence | Existing merged model, encoding and execution interfaces |
-| 2: capability registration, if support scope changes | Integration: authoritative catalog and generated limitations only | Register exactly the verified CPU profile; preserve static-coefficient and scalability limitations; generate and validate documentation | Reviewed implementation/evidence from PR 1; omit if no catalog boundary changes |
-| 3: combined-main acceptance | Algorithms: verify the actual merged tree and reconcile this plan | Run focused scientific, CLI and isolation checks on the combined commit; keep full Linux qualification in CI and retain failed-run history | Merged implementation and any required registration |
+| Step | Delivery | Acceptance |
+| --- | --- | --- |
+| Spinless training composition | [#1159](https://github.com/flagos-ai/FlagQuantum/pull/1159), merged | Chain/ring replace only the static producer; independent occupation references, angle gradients, optimizer updates, sector preservation, separate closing-bond checks and native dependency isolation |
+| Conditional capability registration | Not needed for this composition | Existing static model constructors remain experimental with unsupported coefficient gradients; ordinary circuit-angle training changes no catalog support boundary |
+| Combined-main acceptance | Main `f073a800f040f8b8a667fa19397d1ceb14794200` | 161 related tests, six CLI/inventory checks, documentation/dependency validation and Main smoke passed; see current delivery status |
+
+No further implementation slice is selected by this plan. A future proposal
+must name its user workflow, owning domain, failure boundary and independent
+acceptance evidence before implementation.
 
 Keep future arbitrary-graph models, symmetry discovery/matched encoded ansatz,
 coefficient/SCF gradients and accelerator/distributed qualification as separate
