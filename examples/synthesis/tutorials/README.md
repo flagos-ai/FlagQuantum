@@ -63,6 +63,7 @@ Native FlagQuantum programs currently available:
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
 - [overview](technology_demonstrations/arithmetic_expressions/overview/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [overview](technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/README.md)
 - [overview](workshops/grover_workshop/grover_workshop/overview/README.md)
 
 ## Additional FlagQuantum teaching examples
