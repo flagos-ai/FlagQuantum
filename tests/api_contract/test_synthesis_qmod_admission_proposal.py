@@ -39,35 +39,12 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
     )
     assert active["namespace_exports"] == program["previous_namespace_exports"]
-    assert tuple(synth.__all__) == (
-        *program["namespace_exports"],
-        "phase",
-        "within",
-        "apply",
-        "adjoint",
-        "CX",
-        "SWAP",
-        "CRX",
-        "R",
-        "U",
-        "prepare_uniform_interval_state",
-        "control",
-        "X",
-        "RZ",
-        "PHASE",
-        "RZZ",
-        "prepare_bell_state",
-        "prepare_ghz_state",
-        "prepare_amplitudes",
-        "prepare_state",
-        "QArray",
-        "H",
-        "S",
-        "RX",
-        "qft",
-        "unitary",
-        "modular_exp",
+    # Later authorized deltas are checked by the current admission validator.
+    from tools.public_api_snapshot import (
+        _validate_authorized_synthesis_python_program,
     )
+
+    assert not _validate_authorized_synthesis_python_program(program)
     assert (
         str(
             inspect.signature(synth.synthesize).replace(
