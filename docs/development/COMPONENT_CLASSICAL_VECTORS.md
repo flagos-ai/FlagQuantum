@@ -174,3 +174,40 @@ numerical warnings remain visible. Evidence prefix: `g2-vector-checks-`.
 This refactor adds no acceptance scenario or completed source file. The previous
 600-second default-suite timeout remains unresolved and was not repeated for a
 test-helper relocation; no full-suite pass is claimed.
+
+## Shared construction fixtures
+
+The remaining drawing-to-example-to-binding-to-call-test dependency chain now
+uses three separate, non-collected fixture modules:
+
+| Fixture owner | Responsibility | Allowed fixture dependency |
+| --- | --- | --- |
+| `tests/unit/program_call_fixtures.py` | Explicit finite return blocks and nested call wrappers | None |
+| `tests/unit/register_binding_fixtures.py` | Real gate bodies with private clean work and data-only returns | `program_call_fixtures` |
+| `tests/unit/classical_vector_fixtures.py` | Locked X/CNOT/Toffoli/Add examples, input values and numerical callbacks | `register_binding_fixtures` |
+
+All consumers of the relocated helpers import the fixture owners directly. The
+original definitions are removed from collected test modules. Other unrelated
+scenario fixtures remain where they were; this does not claim that every
+cross-test import in the repository has been removed. Foreign reference objects
+and their existing `Any` annotations stay at the test boundary. No product module
+imports these fixtures, and no production code or protected contract changes.
+
+The six moved functions retain identical ASTs, including cache decorators.
+Across 11 affected test modules, all 241 ordered collection IDs, parameterizations,
+assertions and scenario ASTs are unchanged apart from import locations. All 241
+cases pass with three retained reference numerical warnings and no skips. Nine
+pinned source blobs remain unchanged. The three fixture modules and the two
+direct source/drawing consumers pass strict typing; all 14 changed Python files
+pass Black and Ruff. Compiler scope, architecture, IR and API checks pass.
+
+The wider 14-file strict run reports 55 diagnostics in six existing test files.
+A before/after check using original Git contents as mypy shadow files confirms
+that the path, enclosing scope, diagnostic text and multiplicity are identical:
+zero new diagnostics. This is not an all-files strict-type pass. Those existing
+test diagnostics remain follow-up work; no ignore, cast or weakened assertion
+is introduced to hide them.
+
+This construction-fixture cleanup adds no acceptance scenario, capability
+checkbox or closed parent file. The previous default-suite 600-second timeout
+remains unresolved and was not repeated. Evidence prefix: `g2-fixture-chain-`.

@@ -255,3 +255,9 @@ move reusable observation/contraction helpers out of a collected test module.
 All 85 affected collection IDs and original assertions survive. Product code
 and source-module acceptance decisions are unchanged; this cleanup adds no new
 capability checkbox or closed parent file.
+
+The [shared construction fixtures](COMPONENT_CLASSICAL_VECTORS.md#shared-construction-fixtures)
+continue that cleanup through finite call graphs, private workspace and locked
+classical-vector examples. Six moved functions and 241 existing scenarios retain
+their implementation/collection contracts. Wider strict typing has 55 confirmed
+unchanged baseline diagnostics; this refactor closes no additional source file.
