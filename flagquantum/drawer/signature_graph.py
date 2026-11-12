@@ -8,7 +8,8 @@
 from ..core.ir.program.registers import RegisterSide
 from ..core.ir.program.signatures import Signature
 from .component_score import _label
-from .register_graph import export_register_graph_dot
+from .register_graph import _export_register_graph_dot
+from .register_graph_table import pretty_connection_attributes, signature_instance_table
 from .register_score import RegisterScore, RegisterStep, layout_register_score
 
 
@@ -50,6 +51,18 @@ def signature_register_score(signature: Signature, name: str) -> RegisterScore:
     )
 
 
-def export_signature_graph_dot(signature: Signature, name: str) -> str:
+def export_signature_graph_dot(
+    signature: Signature, name: str, *, pretty: bool = False
+) -> str:
     """Render standalone metadata through the shared register graph renderer."""
-    return export_register_graph_dot(signature_register_score(signature, name))
+    return _export_register_graph_dot(
+        signature_register_score(signature, name),
+        (
+            pretty_connection_attributes
+            if pretty
+            else lambda edge: f'label="{edge.width}"'
+        ),
+        table=lambda ordinal, step, ports: signature_instance_table(
+            signature, step, ports, pretty=pretty
+        ),
+    )

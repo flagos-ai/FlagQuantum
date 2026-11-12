@@ -3,6 +3,7 @@
 import builtins
 import hashlib
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
@@ -76,7 +77,7 @@ def test_all_original_code_cells_and_native_asset(
         patch.setattr(builtins, "__import__", native_import)
         patch.setattr(IPython.display, "display", lambda *args: None)
         native = execute(notebook)
-    assert len(native["renders"]) == 9
+    assert len(native["renders"]) == 10
     for i, svg in enumerate(native["renders"]):
         ElementTree.fromstring(svg)
         (tmp_path / f"native-{i}.svg").write_bytes(svg)
@@ -96,7 +97,9 @@ def test_all_large_signature_cases_match_source_connection_widths_and_ports(
     from qualtran import Bloq, QAny, Side
     from qualtran import Register as SourceRegister
     from qualtran import Signature as SourceSignature
-    from qualtran.drawing import GraphDrawer
+    from qualtran.drawing.graphviz import GraphDrawer, PrettyGraphDrawer
+
+    from flagquantum.drawer.register_graph_table import signature_instance_table
 
     source_registers = [SourceRegister("x", QAny(100))]
     registers = [Register("x", RegisterType("opaque", 100))]
@@ -124,6 +127,19 @@ def test_all_large_signature_cases_match_source_connection_widths_and_ports(
     expected = sorted(int(c.left.reg.bitsize) for c in drawer._cbloq.connections)
     score = signature_register_score(Signature(registers), "Signature")
     assert sorted(e.width for e in register_connections(score)) == expected
+    for pretty, drawer_type in ((False, GraphDrawer), (True, PrettyGraphDrawer)):
+        styled = drawer_type(source)
+        graph = styled.get_graph()
+        instance = next(iter(styled._binsts))
+        table = signature_instance_table(
+            Signature(registers),
+            replace(score.columns[0].step, name=str(source)),
+            {line.register: f"p{i}" for i, line in enumerate(score.lines)},
+            pretty=pretty,
+        )
+        assert normalized_table("<" + table + ">") == normalized_table(
+            graph.get_node(styled.ids[instance])[0].get_label()
+        )
     assert len(score.columns) == 1
     assert sum(e.producer is None for e in register_connections(score)) == sum(
         1 for r in registers if r.side != RegisterSide.RIGHT for _ in r.all_idxs()
@@ -242,3 +258,117 @@ def test_classical_symbolic_refusal_and_empty_signature_without_execution() -> N
             signature_register_score(Signature((Register("q", dtype),)), "invalid")
     score = signature_register_score(Signature(()), "empty")
     assert len(score.columns) == 1 and not score.lines
+
+
+def normalized_table(label: str) -> tuple[Any, ...]:
+    """Compare HTML semantics independently of Graphviz IDs and source casing."""
+    root = ElementTree.fromstring(label.strip()[1:-1])
+
+    def node(element: ElementTree.Element) -> tuple[Any, ...]:
+        attributes = tuple(
+            sorted(
+                (key.lower(), "port" if key.lower() == "port" else value)
+                for key, value in element.attrib.items()
+            )
+        )
+        return (
+            element.tag.lower(),
+            attributes,
+            (element.text or "").strip(),
+            tuple(node(child) for child in element),
+        )
+
+    return node(root)
+
+
+@pytest.mark.parametrize("pretty", [False, True])
+@pytest.mark.parametrize(
+    "counts", [(0, 3), (3, 0), (1, 4), (4, 1), (2, 4), (4, 2), (2, 2), (0, 0)]
+)
+def test_signature_group_tables_match_unmodified_source(
+    pretty: bool, counts: tuple[int, int]
+) -> None:
+    import pydot
+    from qualtran import Bloq, QAny, Side
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.drawing.graphviz import GraphDrawer, PrettyGraphDrawer
+
+    from flagquantum.drawer.register_graph_table import signature_instance_table
+
+    left, right = counts
+    native = [Register("x", RegisterType("opaque", 100))]
+    original = [SourceRegister("x", QAny(100))]
+    for count, side, source_side in (
+        (left, RegisterSide.LEFT, Side.LEFT),
+        (right, RegisterSide.RIGHT, Side.RIGHT),
+    ):
+        if count:
+            native.append(Register("a", RegisterType("opaque", 2), (count,), side))
+            original.append(SourceRegister("a", QAny(2), (count,), source_side))
+    native.append(Register("y", RegisterType("opaque", 200)))
+    original.append(SourceRegister("y", QAny(200)))
+    source: Any = type(
+        "SignatureOnly",
+        (Bloq,),
+        {
+            "signature": property(lambda self: SourceSignature(original)),
+            "__str__": lambda self: "Signature<&>",
+        },
+    )()
+    drawer = (PrettyGraphDrawer if pretty else GraphDrawer)(source)
+    instance = next(iter(drawer._binsts))
+    graph = drawer.get_graph()
+    expected = graph.get_node(drawer.ids[instance])[0].get_label()
+    signature = Signature(native)
+    score = signature_register_score(signature, "Signature<&>")
+    table = signature_instance_table(
+        signature,
+        score.columns[0].step,
+        {line.register: f"p{i}" for i, line in enumerate(score.lines)},
+        pretty=pretty,
+    )
+    assert normalized_table("<" + table + ">") == normalized_table(expected)
+    # XML compares every row, local label, port, colspan and rowspan.
+    assert len(register_connections(score)) == len(drawer._cbloq.connections)
+    assert len(pydot.graph_from_dot_data(composite_dot(pretty=pretty))) == 1
+
+
+@pytest.mark.parametrize("pretty", [False, True])
+def test_composite_styles_preserve_ports_edges_and_match_source_attributes(
+    pretty: bool,
+) -> None:
+    import pydot
+    from qualtran.bloqs.for_testing import TestParallelCombo
+    from qualtran.drawing.graphviz import GraphDrawer, PrettyGraphDrawer
+
+    drawer = (PrettyGraphDrawer if pretty else GraphDrawer)(
+        TestParallelCombo().decompose_bloq()
+    )
+    expected = drawer.get_graph()
+    actual = pydot.graph_from_dot_data(composite_dot(pretty=pretty))[0]
+    for instance in drawer._binsts:
+        source_label = expected.get_node(drawer.ids[instance])[0].get_label()
+        native_label = actual.get_node(f"n{instance.i}")[0].get_label()
+        # The example uses its native Atom name for the source testing fixture.
+        source_label = source_label.replace("TestAtom", "Atom")
+        assert normalized_table(native_label) == normalized_table(source_label)
+    assert sorted(
+        tuple(sorted((k, str(v).strip(chr(34))) for k, v in e.get_attributes().items()))
+        for e in actual.get_edges()
+    ) == sorted(
+        tuple(sorted((k, str(v).strip(chr(34))) for k, v in e.get_attributes().items()))
+        for e in expected.get_edges()
+    )
+    other = pydot.graph_from_dot_data(composite_dot(pretty=not pretty))[0]
+    assert [(e.get_source(), e.get_destination()) for e in actual.get_edges()] == [
+        (e.get_source(), e.get_destination()) for e in other.get_edges()
+    ]
+    for node in actual.get_nodes():
+        other_node = other.get_node(node.get_name())[0]
+
+        def ports(label: str) -> list[str]:
+            root = ElementTree.fromstring(label.strip()[1:-1])
+            return [e.attrib["PORT"] for e in root.iter() if "PORT" in e.attrib]
+
+        assert ports(node.get_label()) == ports(other_node.get_label())

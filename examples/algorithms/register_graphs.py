@@ -26,7 +26,14 @@ from flagquantum.drawer.classical_component_graph import (
     export_classical_component_graph_dot,
 )
 from flagquantum.drawer.component_score import component_register_score
-from flagquantum.drawer.register_graph import export_register_graph_dot
+from flagquantum.drawer.register_graph import (
+    RegisterConnection,
+    _export_register_graph_dot,
+)
+from flagquantum.drawer.register_graph_table import (
+    pretty_connection_attributes,
+    signature_instance_table,
+)
 from flagquantum.drawer.register_score import RegisterStep
 from flagquantum.simulation.classical_and import and_classical_values
 from flagquantum.simulation.component_classical_state import ComponentClassicalState
@@ -101,16 +108,31 @@ def classical_predicate_dot() -> str:
     return export_classical_component_graph_dot(record, state.assignments)
 
 
-def composite_dot() -> str:
+def composite_dot(*, pretty: bool = False) -> str:
     """Draw real split, atom and join calls without executing the program."""
 
+    signatures: list[Signature] = []
+
     def style(function: FunctionRecord, step: RegisterStep) -> RegisterStep:
+        assert function.registers is not None
+        signatures.append(Signature(function.registers))
         if len(step.inputs) == 1 and len(step.outputs) == 3:
             return replace(step, name="Split")
         if len(step.inputs) == 3 and len(step.outputs) == 1:
             return replace(step, name="Join")
         return replace(step, name="Atom")
 
-    return export_register_graph_dot(
-        component_register_score(parallel_program(), style=style)
+    def attributes(edge: RegisterConnection) -> str:
+        return pretty_connection_attributes(edge) if pretty else f'label="{edge.width}"'
+
+    return _export_register_graph_dot(
+        component_register_score(parallel_program(), style=style),
+        attributes,
+        table=lambda ordinal, step, ports: signature_instance_table(
+            signatures[ordinal],
+            step,
+            ports,
+            pretty=pretty,
+            reshaping=ordinal in (0, 4),
+        ),
     )

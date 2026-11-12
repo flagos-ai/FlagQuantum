@@ -76,7 +76,10 @@ def export_register_graph_dot(score: RegisterScore) -> str:
 
 
 def _export_register_graph_dot(
-    score: RegisterScore, attributes: Callable[[RegisterConnection], str]
+    score: RegisterScore,
+    attributes: Callable[[RegisterConnection], str],
+    *,
+    table: Callable[[int, RegisterStep, dict[str, str]], str] | None = None,
 ) -> str:
     """Share instance/port geometry across explicit edge presentations."""
     ports = {line.register: f"p{i}" for i, line in enumerate(score.lines)}
@@ -92,8 +95,12 @@ def _export_register_graph_dot(
                 )
         lines.append("  }")
     for column in score.columns:
-        table = _instance_table(column.step, ports)
-        lines.append(f"  n{column.ordinal} [shape=plain, label=<{table}>];")
+        label = (
+            _instance_table(column.step, ports)
+            if table is None
+            else table(column.ordinal, column.step, ports)
+        )
+        lines.append(f"  n{column.ordinal} [shape=plain, label=<{label}>];")
     for edge in register_connections(score):
         port = ports[edge.register]
         source = (
