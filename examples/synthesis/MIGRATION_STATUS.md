@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **58/213**.
+Validated local Notebook workflows: **59/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -230,7 +230,7 @@ Validated local Notebook workflows: **58/213**.
 | `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | [Native program](applications/chemistry/qpe_for_molecules/main.py) | pending |
 | `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/main.py) | pending |
 | `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | [Native program](applications/chemistry/quantum_walk_fmo/main.py) | validated |
-| `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | [Native program](applications/chemistry/second_quantized_hamiltonian/main.py) | pending |
+| `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | [Native program](applications/chemistry/second_quantized_hamiltonian/overview/main.py) | validated |
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | [Native program](applications/chemistry/tensor_hypercontraction/main.py) | pending |
 | `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | [Native program](applications/cybersecurity/link_monitoring/main.py) | pending |
 | `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py) | pending |
