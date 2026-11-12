@@ -78,3 +78,13 @@ solver. Example values are asserted by tests/test_algorithm_examples.py.
 Run `python -m pytest tests/unit/fermion/test_stabilizer.py -q` for mathematical
 and boundary checks, and tests/integration/test_native_fermion_isolation.py for
 execution with external scientific SDK imports blocked.
+
+
+## Separate discovery producer
+
+The [commuting Pauli discovery stage](FERMION_PAULI_DISCOVERY.md) adds
+`discover_pauli_symmetries` as an optional producer of positive independent
+commuting generators. Reduction and its signed-generator/eigenvalue contract
+remain unchanged. Discovery selects no eigenvalues and does not transform an
+ansatz. A candidate's original sign does not survive discovery; explicit sectors
+must refer to the returned positive words.

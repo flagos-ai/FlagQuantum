@@ -24,7 +24,9 @@ only identity and returns no generator. Candidates may anticommute or fail to
 commute with the input individually. Their products can still produce valid
 constraints. Candidate signs are ignored, and returned representatives are
 always positive Hermitian words, so caller-supplied signed eigenvalues cannot be
-transferred without adjusting their signs. Identity, multiword, nonunit,
+transferred without adjusting their signs. The returned basis can also contain
+products of candidates, so an old eigenvalue list cannot simply be reused.
+Identity, multiword, nonunit,
 dependent, out-of-register and malformed candidates fail before discovery.
 
 The algorithm solves termwise binary symplectic commutation equations using the
@@ -73,8 +75,37 @@ belongs to a separate Integration-owned change.
 
 ## Contributor path
 
-The implementation and focused tests will be indexed here with measured results
-before the feature PR is opened. Symbolic discovery owns only native algebra and
-binary constraints; lowering owns the existing Clifford/state embedding and
-`fq.run` owns execution. The existing reduction entry point is the replacement
-boundary, so consumers do not learn discovery internals.
+Run the shortest workflow:
+
+```bash
+python -m examples.algorithms.fermion_pauli_discovery
+python -m pytest tests/unit/fermion/test_pauli_discovery.py tests/integration/test_fermion_pauli_discovery.py -q
+```
+
+The three-qubit encoded model is H = Z2 + 0.4*Z1*X2 + 0.2*Y0 + 0.3*X1*Z2.
+Discovery returns positive Y0 and X1*Z2. The example explicitly chooses their
++1 and -1 eigenvalues, reducing three qubits to one. In that selected sector the
+two energies are -0.1 +/- sqrt(1.16); native measurement of the small reduced
+eigenstate gives -1.1770329614. Its lifted eigenvector residual is below 1e-12.
+The other three joint sectors are checked separately by independent projectors
+and analytic spectra; no global ground-sector claim follows from this example.
+
+Change a static coefficient and run the focused tests. Exhaustive one-, two-
+and seeded three-qubit matrices verify centralizer membership, maximum commuting
+rank and completeness within the selected subgroup. Candidate-span tests cover
+anticommuting factors, binary products, equivalent bases and discarded signs.
+A 128-qubit case blocks dense tensor constructors. Integration replaces supplied
+X/Y constraints, checks complete embeddings and measurements, and substitutes
+JW/parity/BK physical spin-parity suppliers. The latter deliberately selects the
+joint sector of an explicitly intended reference occupation, rather than
+inferring spin sectors from total particle number. The existing Z-only result is
+preserved when general discovery is restricted to the full diagonal span.
+A fresh interpreter runs the example with OpenFermion, Cirq, PySCF, SciPy, h5py
+and NumPy blocked.
+
+Symbolic discovery owns only native algebra and binary constraints; lowering
+owns the existing Clifford/state embedding and `fq.run` owns execution. Both
+Z-only and general discovery reuse one private GF(2) nullspace implementation.
+The existing reduction entry point is the replacement boundary, so consumers
+do not learn discovery internals. Discovery does not construct a circuit or
+choose a state. Only the explicitly invoked small example diagonalizes a matrix.

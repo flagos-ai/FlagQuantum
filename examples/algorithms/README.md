@@ -384,3 +384,13 @@ in 200 Adam steps; the analytic even-sector minimum is -sqrt(1.49).
 The lifted state has zero odd-parity support but a noninteger particle-number
 expectation. Only the circuit angle is trainable. Dense lifting checks a bounded
 CPU example; this is not a general convergence or scalability claim.
+
+
+[`fermion_pauli_discovery.py`](fermion_pauli_discovery.py), run with
+`python -m examples.algorithms.fermion_pauli_discovery`, discovers Y0 and X1Z2
+for a fixed three-qubit encoded Pauli model. Explicit +1/-1 eigenvalues reduce
+the register to one qubit. Native measurement gives -1.1770329614, agreeing with
+the selected-sector analytic minimum -0.1-sqrt(1.16), and lifting checks the
+original eigenvector residual below 1e-12. Dense state preparation is bounded
+inspection. Discovery chooses no sector, particle number or ground state, and
+returns a commuting subgroup rather than an anticommuting centralizer basis.
