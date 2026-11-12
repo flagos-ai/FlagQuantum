@@ -351,3 +351,12 @@ particle of each spin. The analytic ground energy -3.1231056256 is an inspection
 lower bound, not a convergence promise. Angles remain float32, coefficients
 remain static, and verification is bounded CPU/full JW. This example adds no
 solver, accelerator or distributed claim.
+
+[`fermion_spinless.py`](fermion_spinless.py), run with
+`python -m examples.algorithms.fermion_spinless [--periodic]`, measures a
+three-site spinless t-V model with two particles. At t=1, V=2, mu=0, JW, parity
+and BK give -0.7320508076 for the chain and 1.0000000000 for the ring, each with
+particle number 2. One mode represents each site; the nearest-neighbor V term
+uses unshifted densities. Dense reference preparation has exponential inspection
+cost and makes no many-body scalability claim. See the
+[spinless contributor guide](../../docs/development/FERMION_SPINLESS.md).

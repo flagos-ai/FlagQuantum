@@ -17,21 +17,33 @@ isolation, training, capability and documentation tests, both periodic/open-chai
 examples and [Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43161089138).
 These results qualify that revision and bounded CPU correctness only.
 
-The current delivery slice composes the existing ring constructor, JW encoding,
-UCCSD and PyTorch optimization in
-`python -m examples.algorithms.fermion_hubbard_ring_training`. It is a branch
-workflow until this change merges. It adds no solver or stable API: model
-coefficients stay static, circuit angles use the existing float32 UCCSD boundary,
-and execution stays CPU `single_device_fast_path`. Its independent two-particle
-lattice reference, spin-sector checks, finite differences and actual optimizer
-updates verify the closing bond through the training consumer. See the
-[ring training golden path](FERMION_HUBBARD_RING.md#training-golden-path).
+Periodic Hubbard UCCSD training merged in
+[#1153](https://github.com/flagos-ai/FlagQuantum/pull/1153). Its actual merge
+commit `9fb91085d08597458004e4ef9aa2478f9d27f9a5` passed 147 related tests,
+five Hubbard CLI/inventory checks and
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43170010993).
+This main revision also includes independently merged #1152; these results
+qualify the bounded fermionic workflow, not all scientific behavior on main.
+The ring training example lowers energy from 3.4853161208 to -2.6945627040
+in 60 Adam steps, with each spin population one. It does not reach the analytic
+ground energy -3.1231056256 and makes no general convergence claim.
 
-After this slice, arbitrary graphs, spinless variants, coefficient gradients,
-automatic matched encoded/tapered ansatz construction, accelerator and
-distributed migration evidence remain separate possible extensions. They are
-not unfinished units of the completed initial migration. No automatic merge
-approval or capability promotion follows from this plan.
+The current delivery slice adds spinless t-V chains and rings, reusing native
+fermion algebra, encodings and execution. It lives on its review branch until
+merged. Each site owns one mode, the unshifted interaction is V*n_i*n_j on each
+neighboring bond, and coefficients remain static finite real numbers. The
+[spinless golden path](FERMION_SPINLESS.md) includes independent occupation-bit
+matrices, free spectra, closing-bond signs, density terms and an actual circuit
+angle gradient/optimizer update. Its shortest workflow is
+`python -m examples.algorithms.fermion_spinless [--periodic]`.
+Algorithm implementation and Integration-owned capability registration remain
+separate PRs; neither changes Stable Core or introduces a solver/dependency.
+
+Arbitrary graphs, coefficient gradients, automatic matched encoded/tapered
+ansatz construction, accelerator and distributed migration evidence remain
+separate possible extensions. They are not unfinished units of the completed
+initial migration. No automatic merge approval or capability promotion follows
+from this plan.
 
 ## Historical delivery audit
 

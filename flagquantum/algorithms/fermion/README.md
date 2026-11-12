@@ -154,3 +154,18 @@ for independent lattice energies, finite-difference gradients, spin-sector
 preservation, closing-bond sensitivity and dependency isolation. See the
 [training golden path](../../../docs/development/FERMION_HUBBARD_RING.md#training-golden-path)
 for float32 angle precision and bounded CPU scope.
+
+The same model module owns experimental `spinless_fermion_chain` and
+`spinless_fermion_ring`: one mode per site, minus-t hopping, unshifted
+nearest-neighbor V interaction and minus-mu population. They return existing
+fermion values and own no solver or runtime. Open chains allow one site; rings
+require at least three. Static validation reuses the existing scalar and count
+boundaries. Encode with explicit `n_modes=n_sites`, including zero operators.
+Run `python -m examples.algorithms.fermion_spinless` and add `--periodic` to
+replace only the model producer; three encodings measure -0.7320508076 or 1.0
+respectively at t=1, V=2, mu=0 and N=2. See the
+[spinless golden path](../../../docs/development/FERMION_SPINLESS.md) and run
+`python -m pytest tests/unit/fermion/test_spinless.py tests/integration/test_spinless_fermion.py -q`
+for independent occupation action, boundary signs, free spectra, density bonds,
+encodings and native gradients. Dense state preparation remains a bounded CPU
+inspection tool; no coefficient-gradient or scalability claim is introduced.

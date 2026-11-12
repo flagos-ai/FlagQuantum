@@ -1,4 +1,4 @@
-"""Spinful chain and ring Hamiltonians in the native fermionic algebra."""
+"""Spinful Hubbard and spinless t-V models in native fermionic algebra."""
 
 from __future__ import annotations
 
@@ -101,3 +101,79 @@ def fermi_hubbard_ring(
         hop = create(2 * (n_sites - 1) + spin) * annihilate(spin)
         operator = operator - t * (hop + hop.dagger())
     return operator
+
+
+def spinless_fermion_chain(
+    n_sites: int, *, t: float = 1.0, v: float = 0.0, mu: float = 0.0
+) -> FermionOperator:
+    """Build an open spinless t-V chain with one fermionic mode per site.
+
+    Each neighboring bond contributes -t*(a†_i*a_j + h.c.) + v*n_i*n_j.
+    Chemical potential contributes -mu*n_i. Densities are unshifted.
+
+    Args:
+        n_sites: Positive site count; encode with explicit width n_sites.
+        t: Finite static real hopping amplitude.
+        v: Finite static real nearest-neighbor density interaction.
+        mu: Finite static real chemical potential.
+
+    Raises:
+        TypeError: A size has no integer index, is bool, or a coefficient is not static real.
+        ValueError: Site count is nonpositive or a coefficient is nonfinite.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum.algorithms.fermion.encoding import encode_fermion
+        >>> from flagquantum.algorithms.fermion.observables import to_observable
+        >>> encoded = encode_fermion(spinless_fermion_chain(2, v=3), n_modes=2)
+        >>> result = fq.run(fq.Circuit(2).x(0).x(1),
+        ...                 outputs=[fq.expectation(to_observable(encoded.operator))])
+        >>> float(result.expectation().reshape(()))
+        3.0
+    """
+    n_sites = count(n_sites, "n_sites", minimum=1)
+    t = _real_coefficient(t, "t")
+    v = _real_coefficient(v, "v")
+    mu = _real_coefficient(mu, "mu")
+    terms: list[FermionTerm] = []
+    for site in range(n_sites):
+        terms.extend((-mu * number(site)).terms)
+        if site + 1 < n_sites:
+            hop = create(site) * annihilate(site + 1)
+            terms.extend((-t * (hop + hop.dagger())).terms)
+            terms.extend((v * number(site) * number(site + 1)).terms)
+    return FermionOperator(tuple(terms))
+
+
+def spinless_fermion_ring(
+    n_sites: int, *, t: float = 1.0, v: float = 0.0, mu: float = 0.0
+) -> FermionOperator:
+    """Build a spinless t-V cycle with each undirected bond counted once.
+
+    Reuses the open chain and adds the closing hopping and density interaction.
+    Densities are unshifted; one site is one mode. No dense arrays are allocated.
+
+    Args:
+        n_sites: At least three sites, avoiding self/duplicate cycle bonds.
+        t: Finite static real hopping amplitude, with coefficient -t.
+        v: Finite static real nearest-neighbor density interaction.
+        mu: Finite static real chemical potential, subtracted from population.
+
+    Raises:
+        TypeError: A size has no integer index, is bool, or a coefficient is not static real.
+        ValueError: Fewer than three sites or a nonfinite coefficient is supplied.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum.algorithms.fermion.encoding import encode_fermion
+        >>> from flagquantum.algorithms.fermion.observables import to_observable
+        >>> encoded = encode_fermion(spinless_fermion_ring(3, v=2), n_modes=3)
+        >>> result = fq.run(fq.Circuit(3).x(0).x(1).x(2),
+        ...                 outputs=[fq.expectation(to_observable(encoded.operator))])
+        >>> float(result.expectation().reshape(()))
+        6.0
+    """
+    n_sites = count(n_sites, "n_sites", minimum=3)
+    operator = spinless_fermion_chain(n_sites, t=t, v=v, mu=mu)
+    hop = create(n_sites - 1) * annihilate(0)
+    return operator - t * (hop + hop.dagger()) + v * number(n_sites - 1) * number(0)
