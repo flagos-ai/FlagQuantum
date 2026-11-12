@@ -32,12 +32,10 @@ from .dynamic._conditions import instruction_is_dynamic
 from .execution_plan import ExecutionPlan
 from .execution_plan_contract import (
     ExecutionPlanContractError,
+    _canonical_program,
+    _noise_model_from_payload,
     _require_mapping,
-    plan_execution_program,
-    plan_noise_model,
-    plan_program,
-    plan_resolved_options,
-    validate_plan_environment,
+    _validate_plan_environment_payload,
 )
 from .measurements import validate_measurements
 from .result import ExecutionResult
@@ -276,8 +274,10 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
 
     from .execution import _normalize_execution_output, run_native
 
-    validate_plan_environment(execution_plan)
+    # Standalone plan readers authenticate independently and would duplicate
+    # embedded dense matrices. Reuse one validated snapshot within this attempt.
     payload = execution_plan.to_dict()
+    _validate_plan_environment_payload(payload)
     native_profile = payload["version"] in ("1.1", "1.2", "1.3")
     if native_profile != (execution_plan.analysis is None):
         raise ExecutionPlanContractError(
@@ -309,7 +309,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         raise ExecutionPlanContractError(
             "identity_mismatch", "decision batch_size must be a positive integer"
         )
-    source_ir = plan_program(execution_plan)
+    source_ir = CircuitIR.from_dict(
+        _require_mapping("ExecutionPlan.program", payload["program"])
+    )
     if any(
         instruction_is_dynamic(instruction) for instruction in source_ir.instructions
     ):
@@ -325,7 +327,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         )
         from .dynamic.execution import run_dynamic
 
-        resolved = plan_resolved_options(execution_plan)
+        resolved = _require_mapping(
+            "ExecutionPlan.resolved_options", payload["resolved_options"]
+        )
         shots = resolved["shots"]
         seed = resolved["seed"]
         if type(shots) is not int or shots < 1:  # pragma: no cover - plan invariant
@@ -391,8 +395,8 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
             str(decision["backend"]),
             str(decision["precision"]),
         )
-    execution_ir = plan_execution_program(execution_plan)
-    noise_model = plan_noise_model(execution_plan)
+    execution_ir = _canonical_program(source_ir, execution_plan)
+    noise_model = _noise_model_from_payload(payload)
     requests = tuple(source_ir.measurements)
     validate_measurements(requests, n_qubits=source_ir.n_wires)
     mode = str(decision["mode"])

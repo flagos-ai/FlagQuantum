@@ -487,7 +487,12 @@ def _validate_plan_payload(
 def validate_plan_environment(plan: ExecutionPlan) -> None:
     """Fail before kernel launch when the current environment cannot run a plan."""
 
-    payload = validate_plan_payload(_payload(plan))
+    _validate_plan_environment_payload(plan_to_dict(plan))
+
+
+def _validate_plan_environment_payload(payload: Mapping[str, Any]) -> None:
+    """Check live requirements after the caller has validated the sealed payload."""
+
     decision = payload["decision"]
     backend = str(decision["backend"])
 
@@ -550,7 +555,11 @@ def plan_resolved_options(plan: ExecutionPlan) -> dict[str, object]:
 def plan_noise_model(plan: ExecutionPlan) -> Any | None:
     """Restore the optional stable noise extension carried by a plan."""
 
-    extensions = plan_to_dict(plan)["extensions"]
+    return _noise_model_from_payload(plan_to_dict(plan))
+
+
+def _noise_model_from_payload(payload: Mapping[str, Any]) -> Any | None:
+    extensions = payload["extensions"]
     if not isinstance(extensions, list):  # pragma: no cover - validated invariant
         raise ExecutionPlanContractError(
             "unsupported_schema", "ExecutionPlan.extensions must be a JSON array"
@@ -560,8 +569,10 @@ def plan_noise_model(plan: ExecutionPlan) -> Any | None:
     from ..noise import NoiseModel
 
     extension = _require_mapping("ExecutionPlan.extension", extensions[0])
-    payload = _require_mapping("ExecutionPlan.extension.payload", extension["payload"])
-    return NoiseModel.from_dict(payload)
+    noise_payload = _require_mapping(
+        "ExecutionPlan.extension.payload", extension["payload"]
+    )
+    return NoiseModel.from_dict(noise_payload)
 
 
 def _payload(plan: ExecutionPlan) -> dict[str, Any]:
