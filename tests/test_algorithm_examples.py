@@ -123,6 +123,7 @@ SCRIPTS = (
     "fermion_hubbard_ring_training",
     "fermion_spinless",
     "fermion_spinless_training",
+    "fermion_parity_discovery",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -143,6 +144,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_parity_discovery": (
+        "not an exact particle-number sector",
+        "not a scalable solver",
+    ),
     "fermion_spinless_training": (
         "only circuit angles are trainable",
         "not a general convergence, coefficient-gradient or scalability claim",
@@ -2046,3 +2051,13 @@ def test_spinless_training_example_lowers_energy_in_the_two_particle_sector(
     assert float(_labelled(output, "Parameter update norm")) > 0.1
     assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
     _assert_premise("fermion_spinless_training", output)
+
+
+def test_parity_discovery_example_measures_explicit_even_sector() -> None:
+    output = _run("fermion_parity_discovery")
+    assert "Register: 4 -> 3 qubits" in output
+    assert float(_labelled(output, "Even-parity measured energy")) == pytest.approx(
+        (4 - 32**0.5) / 2, abs=1e-9
+    )
+    assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
+    _assert_premise("fermion_parity_discovery", output)

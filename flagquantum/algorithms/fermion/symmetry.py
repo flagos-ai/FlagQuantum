@@ -1,4 +1,4 @@
-"""Exact reduction of explicitly selected diagonal Pauli parity sectors."""
+"""Discover diagonal Pauli symmetries and reduce explicitly selected sectors."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import torch
 
 from ...core.algebra.pauli import PauliOperator, PauliTerm, count
 from ...core.ir import Instruction
-from .clifford import conjugate_pauli
+from .clifford import conjugate_pauli, symplectic_masks
 from .encoding import EncodedOperator
 
 
@@ -148,3 +148,98 @@ def reduce_z_parities(
                 factors.append((positions[q], axis))
         terms.append(PauliTerm(coefficient, tuple(factors)))
     return ReducedOperator(PauliOperator(tuple(terms)), mapping)
+
+
+def _binary_rows(
+    rows: Sequence[int], width: int
+) -> tuple[tuple[int, ...], tuple[int, ...]]:
+    """Return canonical reduced rows and pivot columns over GF(2)."""
+    work = sorted(set(rows) - {0})
+    pivots: list[int] = []
+    for column in range(width):
+        rank = len(pivots)
+        selected = next(
+            (i for i in range(rank, len(work)) if work[i] & (1 << column)), None
+        )
+        if selected is None:
+            continue
+        work[rank], work[selected] = work[selected], work[rank]
+        for i in range(len(work)):
+            if i != rank and work[i] & (1 << column):
+                work[i] ^= work[rank]
+        pivots.append(column)
+    return tuple(work[: len(pivots)]), tuple(pivots)
+
+
+def discover_z_parities(
+    encoded: EncodedOperator,
+    *,
+    candidates: Sequence[Sequence[int]] | None = None,
+) -> tuple[tuple[int, ...], ...]:
+    """Find independent commuting Z words in an explicit encoded register.
+
+    Args:
+        encoded: Native operator with its encoding and idle-register width.
+        candidates: Independent encoded Z words whose product span is searched.
+            None searches all Z words; an empty sequence searches only identity.
+
+    Returns:
+        A deterministic basis of nonidentity symmetries, as ascending encoded
+        qubit indices. Pass it to reduce_z_parities with explicit eigenvalues.
+        Particle number N fixes only total parity (-1)**N, not other sectors.
+
+    Raises:
+        TypeError: The operator or candidate indices have incorrect types.
+        ValueError: Candidates are empty words, repeated, dependent or outside
+            the register. Noncommuting individual candidates are allowed.
+
+    Examples:
+        >>> from flagquantum.algorithms.fermion.encoding import encode_fermion
+        >>> from flagquantum.observables import annihilate, create
+        >>> hop = create(0) * annihilate(1)
+        >>> encoded = encode_fermion(hop + hop.dagger(), n_modes=2)
+        >>> discover_z_parities(encoded)
+        ((0, 1),)
+    """
+    if not isinstance(encoded, EncodedOperator):
+        raise TypeError("encoded must be a native EncodedOperator")
+    width = encoded.n_qubits
+    basis = tuple(1 << q for q in range(width))
+    if candidates is not None:
+        masks: list[int] = []
+        for candidate in candidates:
+            qubits = tuple(count(q, "candidate qubit") for q in candidate)
+            if (
+                not qubits
+                or len(set(qubits)) != len(qubits)
+                or any(q >= width for q in qubits)
+            ):
+                raise ValueError("candidate requires distinct in-register qubits")
+            masks.append(sum(1 << q for q in qubits))
+        basis, _ = _binary_rows(masks, width)
+        if len(basis) != len(masks):
+            raise ValueError("candidate parities must be independent")
+    equations = []
+    for term in encoded.operator.terms:
+        x, _ = symplectic_masks(term)
+        equations.append(
+            sum(((x & word).bit_count() % 2) << i for i, word in enumerate(basis))
+        )
+    rows, pivots = _binary_rows(equations, len(basis))
+    solutions = []
+    for free in range(len(basis)):
+        if free in pivots:
+            continue
+        combination = 1 << free
+        for row, pivot in zip(rows, pivots, strict=True):
+            if row & (1 << free):
+                combination |= 1 << pivot
+        word = 0
+        for i, candidate_mask in enumerate(basis):
+            if combination & (1 << i):
+                word ^= candidate_mask
+        solutions.append(word)
+    canonical, _ = _binary_rows(solutions, width)
+    return tuple(
+        tuple(q for q in range(width) if word & (1 << q)) for word in canonical
+    )

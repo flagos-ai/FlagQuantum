@@ -181,3 +181,14 @@ particle-sector support and native dependency isolation. See the
 [training golden path](../../../docs/development/FERMION_SPINLESS.md#training-golden-path)
 for expected values and the zero-hopping stationary case. This example adds no
 solver or model API and makes no coefficient-gradient or scalability claim.
+
+
+Diagonal symmetry discovery lives in `symmetry.discover_z_parities`. It returns
+independent encoded Z words for the existing `reduce_z_parities` consumer;
+optional independent candidate words restrict the search to their product span.
+It selects no eigenvalues and does not infer particle-number conservation.
+Run `python -m examples.algorithms.fermion_parity_discovery` for the shortest
+explicit-total-parity path, then change a hopping term and run
+`python -m pytest tests/unit/fermion/test_parity_discovery.py tests/integration/test_fermion_parity_discovery.py -q`.
+See the [discovery scope](../../../docs/development/FERMION_PARITY_DISCOVERY.md)
+for encoded-index conventions, exact coefficients and unsupported X/Y discovery.
