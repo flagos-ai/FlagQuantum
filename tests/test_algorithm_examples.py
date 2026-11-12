@@ -124,6 +124,7 @@ SCRIPTS = (
     "fermion_spinless",
     "fermion_spinless_training",
     "fermion_parity_discovery",
+    "fermion_parity_training",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -144,6 +145,11 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_parity_training": (
+        "only the circuit angle is trainable",
+        "Even parity is not fixed particle number",
+        "not a general convergence or scalability claim",
+    ),
     "fermion_parity_discovery": (
         "not an exact particle-number sector",
         "not a scalable solver",
@@ -2061,3 +2067,21 @@ def test_parity_discovery_example_measures_explicit_even_sector() -> None:
     )
     assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
     _assert_premise("fermion_parity_discovery", output)
+
+
+def test_parity_training_example_optimizes_the_explicit_even_sector() -> None:
+    output = _run("fermion_parity_training")
+    assert "Register: 2 -> 1 qubits" in output
+    assert "eigenvalue: +1" in output
+    initial = float(_labelled(output, "Initial energy"))
+    final = float(_labelled(output, "Final energy"))
+    assert final < initial - 0.5
+    assert final == pytest.approx(-(1.49**0.5), abs=1e-8)
+    assert float(_labelled(output, "Gradient residual")) < 1e-9
+    assert float(_labelled(output, "Parameter update")) > 0.5
+    assert float(_labelled(output, "Lifted energy residual")) < 1e-12
+    assert float(_labelled(output, "Odd-sector leakage")) < 1e-25
+    assert float(_labelled(output, "Particles")) == pytest.approx(
+        1 - 1 / 1.49**0.5, abs=3e-5
+    )
+    _assert_premise("fermion_parity_training", output)

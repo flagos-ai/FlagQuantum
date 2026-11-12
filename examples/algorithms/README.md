@@ -374,3 +374,13 @@ qubits. Even parity includes N=0 and N=4; this is not an exact number projection
 Dense reduced-state diagonalization is bounded correctness inspection, not a
 scalable solver. See the
 [discovery guide](../../docs/development/FERMION_PARITY_DISCOVERY.md).
+
+
+[`fermion_parity_training.py`](fermion_parity_training.py), run with
+`python -m examples.algorithms.fermion_parity_training`, composes total-parity
+discovery, an explicit +1 sector and native one-qubit angle training for a fixed
+two-mode pairing Hamiltonian. Energy falls from -0.5653208730 to -1.2206555611
+in 200 Adam steps; the analytic even-sector minimum is -sqrt(1.49).
+The lifted state has zero odd-parity support but a noninteger particle-number
+expectation. Only the circuit angle is trainable. Dense lifting checks a bounded
+CPU example; this is not a general convergence or scalability claim.

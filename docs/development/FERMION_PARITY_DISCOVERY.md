@@ -66,3 +66,41 @@ scalability claim follows. The example does not choose the two unrestricted
 generators' eigenvalues from N alone. Encoding-replacement tests independently
 construct physical total parity and verify the same reduction consumer through
 JW, parity and BK, including the presence of all three even particle counts.
+
+
+## Explicit-sector training composition
+
+```bash
+python -m examples.algorithms.fermion_parity_training
+python -m pytest tests/integration/test_fermion_parity_training.py -q
+```
+
+The separate example uses H = n0 + n1 - 1 - 0.7*(c0† c1† + c1 c0).
+Total parity is conserved; particle number is not. The explicitly selected even
+sector spans vacuum and double occupancy. In that occupation basis its matrix
+is [[-1, -0.7], [-0.7, 1]], with ground energy -sqrt(1.49). The odd sector has
+zero energy. No sector search or automatic ground-sector selection is performed.
+
+Discovery and reduction happen once with static native coefficients. A native
+one-qubit RY preparation and `fq.run` expectation provide the trainable objective;
+PyTorch owns differentiation and optimization. Starting at angle 1.7, 200 Adam
+steps with learning rate 0.05 lower energy from -0.5653208730 to -1.2206555611.
+The gradient agrees with central differences below 1e-9. Dense lifting checks
+energy agreement and zero odd-sector leakage. The final number expectation is
+approximately 0.1808, rather than a fixed integer. Dense inspection is confined
+to the two-mode example and tests; no dense solver initializes the training.
+
+Integration tests substitute all three encodings at the existing encoded
+operator boundary. Physical parity is encoded before discovery, so encoded
+qubit indices are never assumed to be occupation-mode labels. Independent
+occupation-space matrices verify both coupling signs, energies, gradients and
+optimizer updates, and opposite-sector lifting checks the requested constraint.
+A fresh interpreter executes training with OpenFermion, Cirq, PySCF, SciPy and
+h5py blocked. PyTorch optimization may use NumPy; NumPy-free training is not
+claimed. Vector angles fail before circuit construction.
+
+This is an experimental `single_device_fast_path` composition of existing
+interfaces. Symbolic discovery/reduction remain nondifferentiable static
+operations; their capability registration is unchanged. Only the reduced circuit
+angle is trained. No general ansatz transformation, coefficient/SCF gradient,
+GPU/distributed qualification, performance or general convergence claim follows.

@@ -3,7 +3,10 @@
 ## Current delivery status
 
 The current checked main baseline is
-`f073a800f040f8b8a667fa19397d1ceb14794200` on November 12, 2026.
+`fc1df0e64da7a8087d5a64b58a439f23f1be515f` on November 12, 2026.
+The earlier spinless training baseline was
+`f073a800f040f8b8a667fa19397d1ceb14794200`; its evidence below remains
+bound to that revision.
 This is selected-workflow coverage, not complete OpenFermion API compatibility.
 The earlier merged-baseline audit was
 `ffb6e7de71b9b9c9e172b20ecbc49ac04f14a0c5`. The initial selected migration
@@ -188,9 +191,11 @@ records rather than an outstanding queue or approval for additional work.
 | Conditional capability registration | Not needed for this composition | Existing static model constructors remain experimental with unsupported coefficient gradients; ordinary circuit-angle training changes no catalog support boundary |
 | Combined-main acceptance | Main `f073a800f040f8b8a667fa19397d1ceb14794200` | 161 related tests, six CLI/inventory checks, documentation/dependency validation and Main smoke passed; see current delivery status |
 
-No further implementation slice is selected by this plan. A future proposal
-must name its user workflow, owning domain, failure boundary and independent
-acceptance evidence before implementation.
+At the spinless closeout, no further implementation slice was selected. The
+later diagonal-discovery delivery and current explicit-sector training follow-up
+are recorded at the end of this plan. Each future proposal must name its user
+workflow, owning domain, failure boundary and independent acceptance evidence
+before implementation.
 
 Keep future arbitrary-graph models, symmetry discovery/matched encoded ansatz,
 coefficient/SCF gradients and accelerator/distributed qualification as separate
@@ -638,3 +643,26 @@ alias native values. It does not add an upstream execution backend. Install
 `flagquantum[openfermion]` only when the explicit external-object workflow is
 needed. Native algorithms and the isolated core environment require neither
 OpenFermion nor Cirq.
+
+
+## Diagonal symmetry discovery and explicit-sector training
+
+Experimental Z-only discovery merged in #1161 and its separate capability
+registration in #1162, after the spinless delivery closeout #1160. The checked
+main revision `fc1df0e64da7a8087d5a64b58a439f23f1be515f` passed 134 related
+tests, three CLI/inventory checks and Main smoke run 43234849277. These are
+bounded CPU correctness results, not complete upstream or scalability evidence.
+The [discovery guide](FERMION_PARITY_DISCOVERY.md) records candidate-span
+semantics, encoded-qubit conventions and explicit sector ownership. Earlier
+statements excluding automatic discovery refer to their original delivery scope;
+Z-only discovery is now available, while general X/Y discovery remains a gap.
+
+The current follow-up composes that existing static boundary with reduced-angle
+training in `python -m examples.algorithms.fermion_parity_training`. A fixed
+two-mode pairing model explicitly selects even parity and trains one reduced
+qubit. Independent occupation-space energy/gradient checks and JW/parity/BK
+replacement tests accompany the example. It changes no Stable Core API,
+dependency, runtime, symbolic gradient support or capability maturity level.
+It is review-stage work until its PR and actual-main acceptance are recorded.
+General matched-ansatz transformation, automatic sector selection, coefficient
+and SCF gradients, and accelerator/distributed qualification remain separate gaps.
