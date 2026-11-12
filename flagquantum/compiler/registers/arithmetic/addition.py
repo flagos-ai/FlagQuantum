@@ -16,6 +16,7 @@ from ..._arithmetic_kernels import ripple_add_modular
 from ..bits.bitwise import bitwise_not_ir, controlled_xor_constant_ir, xor_constant_ir
 from ..primitives.always import Always
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
+from .addition_structure import addition_components
 
 
 def controlled_add_or_subtract_ir(
@@ -71,49 +72,18 @@ def _addition_ir(
     if len(classical_bits) != len(carries) or len(set(classical_bits)) != len(carries):
         raise ValueError("Add requires one distinct classical bit per carry")
 
-    a, b = left[::-1], right[::-1]
-    blocks: list[tuple[Instruction, ...]] = []
-
-    def cx(control: int, target: int) -> None:
-        blocks.append((Instruction("cx", (control, target)),))
-
-    def logical_and(x: int, y: int, i: int, *, erase: bool = False) -> None:
-        # Invert abstract components before expanding their measured gates.
-        if erase ^ adjoint:
-            block = and_uncompute_ir(x, y, carries[i], classical_bits[i])
+    slots = dict(zip(carries, classical_bits, strict=True))
+    gates: list[Instruction] = []
+    for kind, wires in addition_components(left, right, carries, adjoint=adjoint):
+        if kind == "cx":
+            gates.append(Instruction("cx", wires))
+        elif kind == "and":
+            gates.extend(and_compute_ir(*wires))
         else:
-            block = and_compute_ir(x, y, carries[i])
-        blocks.append(block)
-
-    if width == 1:
-        cx(a[0], b[0])
-        return tuple(g for block in blocks for g in block)
-
-    logical_and(a[0], b[0], 0)
-    for depth in range(1, width - 1):
-        previous = carries[depth - 1]
-        control = previous
-        if depth < len(a):
-            control = a[depth]
-            cx(previous, control)
-        cx(previous, b[depth])
-        logical_and(control, b[depth], depth)
-        cx(previous, carries[depth])
-    cx(carries[-1], b[-1])
-    if len(a) == width:
-        cx(a[-1], b[-1])
-    for depth in range(width - 2, 0, -1):
-        previous = carries[depth - 1]
-        cx(previous, carries[depth])
-        control = a[depth] if depth < len(a) else previous
-        logical_and(control, b[depth], depth, erase=True)
-        if depth < len(a):
-            cx(previous, control)
-            cx(control, b[depth])
-    logical_and(a[0], b[0], 0, erase=True)
-    cx(a[0], b[0])
-    ordered = reversed(blocks) if adjoint else iter(blocks)
-    return tuple(g for block in ordered for g in block)
+            gates.extend(
+                and_uncompute_ir(wires[0], wires[1], wires[2], slots[wires[2]])
+            )
+    return tuple(gates)
 
 
 def measurement_add_or_subtract_ir(
