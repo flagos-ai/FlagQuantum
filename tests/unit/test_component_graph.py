@@ -173,7 +173,7 @@ def test_traversal_and_copy_reject_outside_profile_before_results(failure: str) 
         record = replace(record, functions=(*record.functions, record.functions[0]))
     elif failure == "gate":
         from flagquantum.core.ir import CircuitIR
-        from tests.unit.test_program_calls import wrap_circuit
+        from tests.unit.program_call_fixtures import wrap_circuit
 
         record = wrap_circuit(CircuitIR(1, ()))
     elif failure == "primitive":

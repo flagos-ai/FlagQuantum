@@ -18,7 +18,7 @@ from flagquantum.core.ir.program import (
     verify_program_record,
 )
 from flagquantum.core.ir.program.registers import Register, RegisterType
-from tests.unit.test_program_calls import explicit_block
+from tests.unit.program_call_fixtures import explicit_block
 from tests.unit.test_program_registers import word_function
 
 pytestmark = pytest.mark.unit

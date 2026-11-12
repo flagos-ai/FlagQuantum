@@ -27,7 +27,7 @@ from flagquantum.core.ir.program import (
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.measurement_checks import forced_branch
-from tests.unit.test_program_calls import explicit_block, wrap_circuit
+from tests.unit.program_call_fixtures import explicit_block, wrap_circuit
 from tests.unit.test_program_registers import word_function
 from tests.unit.test_register_program_lowering import packed_circuit
 

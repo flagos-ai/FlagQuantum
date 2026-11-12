@@ -17,7 +17,7 @@ from flagquantum.core.ir.program import (
     program_to_circuit,
     verify_program_record,
 )
-from tests.unit.test_program_calls import explicit_block, wrap_circuit
+from tests.unit.program_call_fixtures import explicit_block, wrap_circuit
 
 pytestmark = pytest.mark.unit
 
