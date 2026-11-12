@@ -511,3 +511,19 @@ separate. Source empty automatic evaluation and wider constructor acceptance,
 foreign protocols and executable admission keep Q-0898 open. No new capability
 ID:22 closed/1258 open/391 active,1184 records. Next Q-0736 classical assignment
 graph audit, retaining existing Simulation/Drawer ownership.
+
+
+### Classical producer-value graph (2026-11-12)
+
+Q-0736's three methods map to explicit Simulation assignments and existing Drawer
+geometry. Implementation312df299 adds producer SSA labels without numerical
+execution. Two polarities/all16 inputs/13 edges/styles, THRU0/1/0, empty/shaped,
+errors and real Graphviz rendering pass. Eleven new/2919 related/84 CPU-TN tests,
+strict3 and all quality gates pass; both owners100%, six frozen blobs match.
+Q-0737's sole original test has unchanged assertions under native replacement and
+source-only execution; that test-file parent is closed. Q-0736's foreign/base
+admission remains open. Actual H6/T6/Tdg6/CX18/S3 and modelAND3 are separate;
+drawing adds no gates or work and leaves the bound physical program identical.
+23 closed/1257 open/392 active,1186 capability records. Next Q-0741 Graphviz
+notebook: restore the frozen source before whole-cell audit, retaining existing
+Simulation/Drawer ownership. No G3/merge/default-timeout retry.
