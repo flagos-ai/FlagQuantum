@@ -8,6 +8,9 @@ from collections.abc import Mapping
 
 import torch
 
+from flagquantum.compiler.registers.component_basis_vectors import (
+    integer_basis_function_data,
+)
 from flagquantum.compiler.registers.component_rebindings import (
     join_word_function,
     split_word_function,
@@ -39,12 +42,14 @@ Connections = Mapping[str, tuple[tuple[int, ...], ...]]
 
 def addition_tensor_providers(
     record: ProgramRecord,
-    vectors: Mapping[str, tuple[int, bool]],
+    vectors: Mapping[str, tuple[int, bool]] | None,
     like: torch.Tensor,
 ) -> ComponentTensorProviders[[Connections, Connections]]:
     """Bind this example's explicitly supported leaves in one immutable mapping.
 
     Vectors map exact preparation/effect names to (unsigned value, is_state).
+    None reads canonical integer preparation/effect definitions through Compiler;
+    this does not infer values from generated names or numerical gate execution.
     The caller owns their physical clean-release promise. Split/join declarations
     must equal the existing Compiler word-rebinding definitions; all other unknown
     functions remain unbound and fail if selected. Numerical data retains like's
@@ -74,7 +79,15 @@ def addition_tensor_providers(
         device=like.device,
     )
     matrices = {"add_cx": cnot, "add_and": compute, "add_and_adjoint": compute.mH}
-    basis = dict(vectors)
+    basis = (
+        {
+            function.name: data
+            for function in record.functions
+            if (data := integer_basis_function_data(function)) is not None
+        }
+        if vectors is None
+        else dict(vectors)
+    )
     wiring = {
         function.name
         for function in record.functions

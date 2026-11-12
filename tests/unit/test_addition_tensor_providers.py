@@ -181,3 +181,96 @@ def test_name_collision_unknown_leaf_and_permuted_rebind_do_not_silently_fallbac
     assert not addition_tensor_providers(changed, {}, like).has_custom_tensor(
         split.name
     )
+
+
+def test_automatic_vectors_survive_renaming_and_reject_a_changed_lifetime() -> None:
+    from flagquantum.compiler.registers.component_basis_vectors import (
+        integer_basis_function_data,
+    )
+    from flagquantum.compiler.registers.component_classical_vectors import (
+        flank_component_with_classical_vectors,
+    )
+
+    graph = flank_component_with_classical_vectors(
+        addition_component_program(2), {"a": 1, "b": 2}, {"a": 1, "b": 3}
+    )
+    aliases = {
+        f.name: f"vector_alias_{i}"
+        for i, f in enumerate(graph.functions)
+        if integer_basis_function_data(f) is not None
+    }
+    assert len(aliases) == 4
+    renamed = replace(
+        graph,
+        functions=tuple(
+            replace(
+                f,
+                name=aliases.get(f.name, f.name),
+                blocks=tuple(
+                    replace(
+                        block,
+                        operations=tuple(
+                            (
+                                replace(op, callee=aliases.get(op.callee, op.callee))
+                                if op.callee is not None
+                                else op
+                            )
+                            for op in block.operations
+                        ),
+                    )
+                    for block in f.blocks
+                ),
+            )
+            for f in graph.functions
+        ),
+    )
+    like = torch.empty((), dtype=torch.complex128)
+    automatic = addition_tensor_providers(renamed, None, like)
+    selected, _ = expand_components_for_tensor(
+        renamed, automatic.has_custom_tensor, "classical_vectors", full_flatten=False
+    )
+    order = tuple(i for i, _, _ in iter_component_calls(selected, "classical_vectors"))
+    result = contract_component_tensors(
+        selected, order, automatic.supply, like, "classical_vectors"
+    )
+    torch.testing.assert_close(
+        result, torch.ones((), dtype=like.dtype), atol=2e-12, rtol=0
+    )
+    # Explicit mappings remain caller-owned; an empty mapping does not discover.
+    explicit = addition_tensor_providers(renamed, {}, like)
+    assert all(not explicit.has_custom_tensor(name) for name in aliases.values())
+    state = next(
+        f for f in renamed.functions if integer_basis_function_data(f) == (1, True)
+    )
+    block = state.blocks[0]
+    dirty = replace(
+        state,
+        blocks=(
+            replace(
+                block,
+                operations=(
+                    replace(block.operations[0], workspace_dirty=True),
+                    *block.operations[1:],
+                ),
+            ),
+        ),
+    )
+    changed = replace(
+        renamed,
+        functions=tuple(
+            dirty if f.name == state.name else f for f in renamed.functions
+        ),
+    )
+    rejected = addition_tensor_providers(changed, None, like)
+    assert not rejected.has_custom_tensor(state.name)
+    with pytest.raises(ValueError, match="no tensor provider"):
+        rejected.supply(dirty, {}, {})
+
+
+def test_provider_refuses_untyped_selected_leaf() -> None:
+    graph = addition_component_program(2)
+    like = torch.empty((), dtype=torch.complex128)
+    recipes = addition_tensor_providers(graph, None, like)
+    leaf = next(f for f in graph.functions if f.name == "add_cx")
+    with pytest.raises(ValueError, match="require typed functions"):
+        recipes.supply(replace(leaf, registers=None), {}, {})

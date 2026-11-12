@@ -14,6 +14,9 @@ from flagquantum.compiler.registers.arithmetic.addition import add_ir
 from flagquantum.compiler.registers.arithmetic.addition_component import (
     addition_component_program,
 )
+from flagquantum.compiler.registers.component_classical_vectors import (
+    flank_component_with_classical_vectors,
+)
 from flagquantum.compiler.registers.component_graph import iter_component_calls
 from flagquantum.compiler.registers.component_tensor_expansion import (
     expand_components_for_tensor,
@@ -150,13 +153,13 @@ def test_full_factorized_matrix_complex_entanglement_all_measurement_branches(
     ],
 )
 def test_original_notebook_closed_inputs_use_only_factorized_native_tensors(
-    monkeypatch: pytest.MonkeyPatch, width: int, a: int, b: int, valid: bool
+    width: int, a: int, b: int, valid: bool
 ) -> None:
     graph = addition_component_program(width)
     outputs = {"a": a, "b": (a + b + int(not valid)) % (1 << width)}
-    closed, vectors = tracked_flank(monkeypatch, graph, {"a": a, "b": b}, outputs)
+    closed = flank_component_with_classical_vectors(graph, {"a": a, "b": b}, outputs)
     providers = addition_tensor_providers(
-        closed, vectors, torch.empty((), dtype=torch.complex128)
+        closed, None, torch.empty((), dtype=torch.complex128)
     )
     selected, _ = expand_components_for_tensor(
         closed, providers.has_custom_tensor, "classical_vectors", full_flatten=False
