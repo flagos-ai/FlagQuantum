@@ -19,7 +19,7 @@ transfer live ownership only when `allow_workspace_outputs=True`; the wrapper
 does not certify those output data bits are zero after computation.
 
 No new IR, graph type, preparation registry, numerical kernel, resource model or
-public API is added. Classical ports, invalid modules, untyped/physical entries,
+public API is added. Classical inputs, invalid modules, untyped/physical entries,
 unknown entries and wrapper-name collisions are rejected. Empty arrays add no
 preparation calls; zero-width words retain logical ownership.
 
@@ -83,3 +83,16 @@ four measurements, two clean work bits and original peak eight. Source zero-bit
 peak failures and empty-output initialization failures are recorded explicitly.
 Logs, source hashes, resource categories and exact baseline comparison are under
 `ftqc-reference-env/g2-zero-initialization-*` in the local reference workspace.
+
+## Classical output follow-up
+
+RIGHT-only classical results are now retained: the initializer only allocates
+left quantum words and does not prepare output ports. Classical inputs remain
+rejected. See `QUIMB_SOURCE_DISPOSITION.md` for initialized H/S followed by X/Z
+measurement with retained or discarded results, full density and phase-gradient
+comparison, all physical branches and separate actual/model resources.
+
+The physical pool-owned destructive measurement still requires a retirement
+ownership contract. Tests retain that refusal and bind the original graph with
+caller-owned zero inputs for physical branch and append checks. Numerical
+initialization support must not be read as that physical ownership capability.

@@ -430,3 +430,9 @@ and format/scope/architecture/IR/API/example. Acceptance `e6ad2789`. All two
 source functions and delegated error semantics have explicit disposition;
 foreign reflection/lazy callback boundaries retain Q-0889 open. No new
 production layer or capability ID;20 closed/1260 open/390 active,1184 records.
+
+Zero/discard: RIGHT classical output guard corrected, implementation `32f4e4bd`.
+8 new / 2,632 related / 84 CPU-TN /2 original source tests pass, strict2
+and format/scope/architecture/IR/API/example. Q-0891 retains source empty/zero
+width/direct-discard differences and physical pool-retirement refusal; Q-0891.04
+stays unchecked. No new ID;20 closed/1260 open/390 active,1184 records.
