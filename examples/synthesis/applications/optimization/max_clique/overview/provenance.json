@@ -1,0 +1,65 @@
+{
+  "upstream_path": "applications/optimization/max_clique/max_clique.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "88565d8749c12c4094fa9f172d27cf484873592a",
+  "original_sha256": "c617dceb757b7102b8b64ef8109442c1d4084e6b8557c4bbeb3d5ba1a6323858",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "d5f90bd523e9c64e92a65ec8d497e316a4ab813b69534b5e8c29e90c30e7c311"
+    },
+    {
+      "index": 5,
+      "sha256": "63f0b3b0cfbc0a3ea248a9a1d6137006534e78d909cf3aad6e5e954d8a8f383c"
+    },
+    {
+      "index": 7,
+      "sha256": "55f8e82d1ce053b2da4ffd4c7f991a87d54cc1f61efb0a3a2b1d6844a1b606f2"
+    },
+    {
+      "index": 9,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 11,
+      "sha256": "8977d147f79a907fbcb5f0c81c6db50cbb7e108da23770d84e9c0224ca738916"
+    },
+    {
+      "index": 12,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 16,
+      "sha256": "404d8f1645647175686ed93d4e388ccafb6f3e78d7fdf5482c7cf5f9ccaf215a"
+    },
+    {
+      "index": 18,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 20,
+      "sha256": "ef99e0efacf88e6d1666c361200324011f8abfef7162a49ba53568ec7d9933ba"
+    },
+    {
+      "index": 22,
+      "sha256": "d51c269c50391a8a91acd25014d60389ef540fcf8f15774af44ec5fbdd194280"
+    },
+    {
+      "index": 23,
+      "sha256": "e8c278f1da1062c2f47124ce7e3990436f7c1c82b82492bec2e2f2de7f0386a4"
+    },
+    {
+      "index": 26,
+      "sha256": "843cf19ec2b8477846d61757175b559a7fa8a619f3df1753e0405b189f8f4cdf"
+    },
+    {
+      "index": 27,
+      "sha256": "9991fac8e5258c3d593ae8b446d96963dad6e4575a871618bd4a8b132830be3f"
+    }
+  ],
+  "scope": "Complete local max clique workflow: original seeded7-node graph,3layers,maxiter50,quantile0.7,retained native quantum cost. Actual native evaluations,seeded optimized/uniform sampling,feasible solution filtering,bounded exact classical reference and all workflow plots. No foreign optimizer/solver trajectory or cloud equivalence.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_clique.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/max_clique/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_graph_optimization_notebooks.py",
+  "native_semantic_adaptations": "Reuse unchanged frozen native qfunc: 7 physical bits,zero workspace,gamma-then-beta order,RX(beta). Explicit lower-tail penalized CVaR0.7 and public Nelder-Mead step0.07 with original50-iteration bound replace private optimizer. Initial(.13,-.27,.19,.22,.31,-.17).1000 optimized local samples seed2718 and1000 uniform seed31415. Feasibility is checked separately from penalized minima. Exact128-assignment feasible enumeration replaces Couenne as labeled reference only after optimization/sampling. Seeded force graph layout replaces Kamada-Kawai to avoid SciPy. No unchanged private encoding,optimization trajectory,plot-value or hardware parity claim. Named packed-array integers use v[i] at bit i (node0 is LSB); model tables and selected node lists follow that indexing, independent of statevector axis order."
+}

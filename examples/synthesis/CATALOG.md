@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **68/213**.
+Validated local Notebook workflows: **70/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -139,6 +139,8 @@ Validated local Notebook workflows:
 
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
 - [overview](applications/chemistry/second_quantized_hamiltonian/overview/README.md)
+- [overview](applications/optimization/max_clique/overview/README.md)
+- [overview](applications/optimization/max_independent_set/overview/README.md)
 - [overview](applications/physical_systems/ising_model/overview/README.md)
 
 
