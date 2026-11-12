@@ -112,3 +112,8 @@ Python files; Black, Ruff, scope, architecture, internal IR and protected API
 checks pass. Reference autoray numerical warnings remain visible. The prior
 default-suite timeout is not rerun or reported as passing. Implementation:
 `f25503fe`. No parent is closed by this dependency-only acceptance.
+
+Follow-up: the [squeeze/C dependency](TENSOR_COLUMN_REDUCTION.md) now supplies
+shared output protection reused by R, shape-only squeezing, and explicit column
+selection. Its source-specific tolerance and gradient boundaries are documented
+separately. A/D and full fixed-point/width-policy integration remain open.

@@ -370,3 +370,16 @@ module/example coverage is 100%, strict checks cover three Python files.
 Squeeze/A/D/C and full default-policy integration remain open. Counts stay
 20 closed / 1,260 open parents, 390 active, and 1,184 capabilities; this dependency
 adds no duplicate child ID or parent closure. No G3 or merge is performed.
+
+The [squeeze/C dependency](TENSOR_COLUMN_REDUCTION.md) extends Q-0887.03 without
+a new ID or parent closure. Shared output validation is reused by R; squeeze
+protects output extents, and C matches original cut order and every resulting
+leaf on admitted finite NumPy-reference data. The existing slicer now removes
+all repeated-label axes. Fixed-support/Bell phase gradients pass; explicit
+counterexamples retain the source's tolerance-amplified error and changed
+ambient zero-entry Jacobian. Source NaN/backend and empty-shape differences are
+recorded separately rather than silently repaired. There are 130 new, 2,146
+related and 84 CPU/TN passing tests; new numerical owners/example cover 96
+statements and 28 branches at 100%, and strict checks cover seven Python files.
+A/D and complete default policy remain open. Counts remain 20 closed / 1,260
+open parents, 390 active and 1,184 capability records. No G3 or merge is performed.

@@ -304,3 +304,17 @@ reduces three tensors to one before the same register consumer. See the
 version pinning, pair-order evidence, scalar ownership and gradients. This is
 explicit preprocessing; the complete source width-triggered squeeze/ADCR policy
 remains open and is not silently substituted into default register contraction.
+
+### Protected squeezing and explicit column reduction
+
+[`squeeze_tensor_axes`](simplification_axes.py) preserves output unit extents
+and scalar nodes while removing unprotected size-one axes. R reuses its shared
+output validation. [`find_tensor_column`](tensor_columns.py) detects support;
+[`reduce_tensor_columns`](column_reduction.py) follows source cut order through
+the existing slicer, which now handles every repeated-label occurrence.
+The [executable example](../../../examples/algorithms/tensor_column_reduction.py)
+composes squeeze/C/R before the same register consumer. Read the
+[tolerance and gradient evidence](../../../docs/development/TENSOR_COLUMN_REDUCTION.md)
+before applying C: support choices can discard small terms and ambient gradients
+of zero entries. No default training path is changed; A/D and full-policy
+integration remain open.
