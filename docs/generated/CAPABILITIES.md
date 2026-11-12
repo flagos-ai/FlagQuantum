@@ -409,6 +409,8 @@ This catalog is generated from the machine-validated
 | Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Reuse populated molecular integrals without implicit file access | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
 | Replace external molecular input while preserving native Hamiltonian and measurement consumers | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
+| Migrate an existing InteractionOperator without pruning small coefficients | OpenFermion interaction operator input | Experimental | [Read guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md) |
+| Replace external operator input while preserving native encoding and UCCSD training consumers | OpenFermion interaction operator input | Experimental | [Read guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md) |
 
 ## Build and compile
 
@@ -1945,7 +1947,7 @@ Convert external fermionic and Pauli operators at an explicit optional ecosystem
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick-start guide](../../flagquantum/ecosystem/README.md)
 - **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
-- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
+- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. This entry covers only the four fermionic/Pauli converters; InteractionOperator import and MolecularData input have separate capability entries. No circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
 
 ### Populated OpenFermion molecular data input
 
@@ -1960,6 +1962,20 @@ Import cached real spatial integrals from an existing OpenFermion MolecularData 
 - **Start:** [quick-start guide](../../flagquantum/ecosystem/chemistry/README.md)
 - **Documentation:** [guide](../../flagquantum/ecosystem/chemistry/README.md)
 - **Known boundary:** One-way import of already populated OpenFermion 1.7.1 MolecularData objects only. Real dense closed-shell spatial integrals, multiplicity one and lowest-orbital reference occupations only. The adapter reads cached integral fields without implicit loading, runs no electronic-structure calculation and retains no upstream arrays. The default budget is 32 spatial orbitals before integral copies; dense O(n^4) storage remains required. No file discovery, writing, complex/open-shell or spin-orbital input, geometry/integral gradients, amplitudes, density matrices or full upstream compatibility. OpenFermion and its transitive dependencies are separately installed only for this optional boundary; native chemistry does not require OpenFermion or Cirq. No production or scalability claim.
+
+### OpenFermion interaction operator input
+
+Import finite number-conserving spin-orbital tensor coefficients into the existing native fermionic algebra for encoding, measurement and circuit-angle training consumers.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.openfermion.from_openfermion_interaction`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick-start guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Known boundary:** One-way import of actual OpenFermion 1.7.1 InteractionOperator objects with a finite scalar constant and dense numeric real or complex NumPy arrays of matching (n,n) and (n,n,n,n) shapes, including n=0. Two-body values multiply a-dagger[p] a-dagger[q] a[r] a[s] directly; no half factor, integral permutation or Hermiticity assumption is applied. This is spin-orbital operator input, not spatial molecular integrals. Native ladder algebra owns signs and canonicalization. Validation reads O(n^4) entries; native storage follows nonzero canonical terms, and external arrays are not retained. Consumer register width is explicit. No reverse tensor export, coefficient gradients, upstream execution, circuits or complete upstream compatibility. Hermitian observable validation and circuit-angle training remain native consumer responsibilities. OpenFermion and its transitive packages are separately installed only at this optional boundary; native execution requires neither OpenFermion nor Cirq. No production, accelerator or scalability claim.
 
 
 ## Validated public performance claims
