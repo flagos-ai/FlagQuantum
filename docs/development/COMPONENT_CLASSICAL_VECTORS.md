@@ -136,3 +136,9 @@ Evidence prefix: `g2-classical-vector-source-examples-`.
 
 The source notebook test remains unverified, so Q-0899 is not closed. Wider
 symbolic/foreign dtype and diagnostic interfaces keep Q-0898 open.
+
+The [factorized addition graph](ADDITION_COMPONENTS.md) now supports the original
+notebook's five-/32-bit closed numerical examples with bounded tensor inputs and
+intermediates. All 13 original notebook code cells execute in the reference
+environment. Native drawing replacement and automatic provider composition remain
+open; the source files are not marked closed on reference execution alone.

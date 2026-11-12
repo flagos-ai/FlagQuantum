@@ -224,3 +224,9 @@ Concrete register domains and the default truth-table connection reuse existing 
 [Classical vector graph construction](COMPONENT_CLASSICAL_VECTORS.md) composes existing typed ownership, integer loading and numerical vector suppliers. Its explicit evaluator boundary keeps Compiler independent of Simulation; wider source dtype and failure interfaces remain open.
 
 The original X, CNOT, Toffoli and five-bit Add classical/tensor examples now run through native executable graph replacements; complete matrices, complex measurement branches, work cleanup and separate resource accounts pass. Q-0899 remains open for its notebook test; Q-0898 retains source-wide dtype and diagnostic gaps. See [Classical vector graph construction](COMPONENT_CLASSICAL_VECTORS.md).
+
+[Factorized addition programs](ADDITION_COMPONENTS.md) share one literal logical
+sequence with the existing physical forward/exact-adjoint emitters. The original
+32-bit notebook scalar contracts through native numerical suppliers with 32-element
+peak intermediates. Native notebook drawing/provider composition remains open;
+original notebook execution is recorded separately from native replacement.
