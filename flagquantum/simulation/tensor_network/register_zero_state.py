@@ -11,7 +11,7 @@ import torch
 
 from ...core.ir.program.signatures import Signature
 from .models import TensorNetworkNode
-from .register_axis_groups import register_tensor_label_groups
+from .register_basis_vectors import register_basis_vector_nodes
 
 
 def register_zero_state_nodes(
@@ -31,15 +31,4 @@ def register_zero_state_nodes(
     """
     if tuple(signature.lefts()) or any(r.dtype.classical_bits for r in signature):
         raise ValueError("zero-state tensors require pure-output quantum ports")
-    groups = register_tensor_label_groups(signature, {}, outgoing)
-    labels = tuple(label for group in groups for label in group)
-    if len(labels) != len(set(labels)):
-        raise ValueError("zero-state bit labels must be distinct")
-    return tuple(
-        TensorNetworkNode(
-            torch.tensor([1, 0], dtype=like.dtype, device=like.device),
-            (label,),
-            name="register_zero_state",
-        )
-        for label in labels
-    )
+    return register_basis_vector_nodes(signature, outgoing, None, like)
