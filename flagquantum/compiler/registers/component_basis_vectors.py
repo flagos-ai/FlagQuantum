@@ -12,6 +12,51 @@ from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from .layout.int_vector import int_state_ir
 
 
+def integer_basis_function_data(function: FunctionRecord) -> tuple[int, bool] | None:
+    """Read a canonical integer ket/effect without interpreting function names.
+
+    Return (unsigned value, is_state) only for the exact definition produced by
+    integer_basis_function. The sole scalar val port, clean lifetime, bit order,
+    X operands, SSA returns and all function fields must match that constructor.
+    Other definitions, including equivalent noncanonical SSA, return None.
+    This Compiler query creates no numerical tensor and does not execute code.
+    """
+    if function.registers is None or len(function.registers) != 1:
+        return None
+    register = function.registers[0]
+    if (
+        register.name != "val"
+        or register.shape_symbolic
+        or register.side not in (RegisterSide.LEFT, RegisterSide.RIGHT)
+        or len(function.blocks) != 1
+    ):
+        return None
+    try:
+        width = executable_register_width(register.dtype)
+    except ValueError:
+        return None
+    splits = [
+        operation
+        for operation in function.blocks[0].operations
+        if operation.opcode == "split_register"
+    ]
+    if len(splits) != 1 or len(splits[0].results) != width:
+        return None
+    positions = {bit: index for index, bit in enumerate(splits[0].results)}
+    value = 0
+    for operation in function.blocks[0].operations:
+        if operation.opcode != "x":
+            continue
+        if len(operation.operands) != 1 or operation.operands[0] not in positions:
+            return None
+        value |= 1 << (width - 1 - positions[operation.operands[0]])
+    state = register.side is RegisterSide.RIGHT
+    canonical = integer_basis_function(
+        function.name, register.dtype, value, state=state
+    )
+    return (value, state) if function == canonical else None
+
+
 def integer_basis_function(
     name: str, dtype: RegisterType, value: int, *, state: bool = True
 ) -> FunctionRecord:
