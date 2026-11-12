@@ -55,16 +55,16 @@ Every source JavaScript function is accounted for below.
 
 | Source function | Native owner and disposition |
 | --- | --- |
-| `makeCanvas` | Existing SVG creation and viewport sizing in `register_score_html.py`. Source numeric axes, fixed domains and margins remain a display difference. |
+| `makeCanvas` | Existing SVG creation and viewport sizing in `register_score_html.py`. Fixed style now implements source margins, scales and numeric axes. Domains are fitted to native records, while arbitrary manual source domains remain open. |
 | `drawVlines` | `join(vertical, ...)` preserves x keys, lower-endpoint growth, movement, collapse and delayed removal. |
-| `drawHlines` | `join(horizontal, ...)` preserves lane/start keys, growth, movement, collapse and delayed removal. Native quantum/classical coloring is retained. |
+| `drawHlines` | `join(horizontal, ...)` preserves lane/start keys, growth, movement, collapse and delayed removal. Adaptive style retains quantum/classical coloring. Fixed style uses source lightblue lines. |
 | `drawCircles` | `portGlyph`, `updatePort` and `join(ports, ...)` preserve filled/open polarity, radius five, motion and opacity. |
 | `drawModPlus` | The same owners preserve radius seven, plus strokes, lower-baseline entry/exit and motion. |
 | `drawAnyTextBox` | Shared text-glyph creation, text updates, keyed movement and fading. Click diagnostics log the event and current bound record, including after an update. |
-| `drawTextBox` | Existing white, black-outlined box, half-height fourteen. Native width grows for long text. |
-| `drawRarrowTextBox` | Existing right-arrow polygon, half-height fourteen, with native adaptive width. |
-| `drawLarrowTextBox` | Existing left-arrow polygon with the same sizing boundary. |
-| `drawText` | Existing text-only glyph. Native explicit font size is retained. |
+| `drawTextBox` | Existing white, black-outlined box, half-height fourteen. Adaptive width grows for long text. Fixed style uses source half-width twenty-two. |
+| `drawRarrowTextBox` | Existing right-arrow polygon, half-height fourteen, with adaptive width or source fixed half-width twenty-two. |
+| `drawLarrowTextBox` | Existing left-arrow polygon with the same selectable sizing policy. |
+| `drawText` | Existing text-only glyph. Adaptive style preserves explicit font size. Fixed style inherits the browser default as in the source. |
 | `musicalScore` | `render` dispatches all shared joins and one 750 ms cubic-in-out animation clock. |
 | `showError` | `showScoreError` appends a red heading and details through text nodes. Repeated failures retain their history as in the source. |
 | `make_from_data` | `loadScore` uses fetch, checks HTTP status, parses JSON, and invokes the existing renderer. The URL form exposes that path alongside embedded records. Structural validation and newest-request ownership are native adaptations. |
@@ -197,6 +197,63 @@ Evidence prefix for this batch is `g2-score-loading-`. Browser clocks are
 controlled for deterministic completion. Python coverage measures the exporter
 and dependency projection, while JavaScript behavior is checked through DOM
 assertions without an instrumented coverage percentage.
+
+## Fixed geometry and numeric axes
+
+Select Score style and choose Fixed with numeric axes. This runs through the
+same persistent SVG, keyed maps and transition clock. Adaptive remains the
+initial selection, preserving existing long-label sizing, explicit font sizes,
+classical colors and connector captions. Fixed style uses the source 44 by 28
+boxes, directional shoulders, browser-default font, lightblue horizontal lines,
+and omission of connector captions. Returning to Adaptive restores its sizing,
+font and color behavior without replacing retained glyph nodes.
+
+Source margins are top 20, right 30, bottom 30 and left 40 pixels, with six-pixel
+insets. Columns span 55 pixels and lanes span 42 pixels. The source HTML sets
+manual domains. The native selected or imported view determines domains
+`[-2, max_x + 2]` and `[0, max_y + 1]`. These produce
+`width = (max_x + 4) * 55 + 82`,
+`height = (max_y + 1) * 42 + 62`,
+`x = 46 + (column + 2) * 55` and `y = 26 + lane * 42`.
+This automatic domain policy is an explicit adaptation. Arbitrary caller-selected
+manual domains and general-purpose D3 scales remain outside this accepted slice.
+
+`axisTicks` supplies linear 1/2/5 ticks, decimal precision, grouped thousands
+and the Unicode minus sign. `drawAxes` implements the source bottom/left tick
+placement and labels, removes domain paths, and accounts for the source
+half-pixel offset at device pixel ratio one. The reversed source y domain also
+preserves descending tick order. Axes refresh immediately when view dimensions
+change. Their DOM identity is outside the glyph transition contract. Production
+adds no D3 dependency.
+
+Twelve new real-Chrome cases use the unchanged source JS and pinned D3. Source
+domains are set before loading its script and its scale ranges stay unchanged.
+They compare complete glyph/line geometry, axis ticks and styles, fixed polygon
+and box attributes, and computed text typography. The domain fixture
+`max_x=3, max_y=6` uses exactly the original HTML domains `[-2,5]` and `[0,7]`.
+The other fixtures exercise one lane, larger extents and thousands separators,
+at device pixel ratios one and two. Tick positions are compared to six decimal
+places, while animation coordinates retain the existing 0.00002 pixel tolerance.
+Entry, update and exit are sampled at six cubic transition points. Further
+cases verify style round trips with retained nodes, dependency/empty domains,
+real HTTP imports with changed dimensions, and a directly serialized source
+MultiAnd without record translation or mutable reference-scale changes.
+
+On 2026-11-13, implementation `6fd66043` passes 28 browser cases in 24.37 seconds,
+343 concentrated cases in 14.98 seconds and 86 independent notebook/CPU/tensor
+cases in 12.03 seconds, without skips. The latter two sets retain eight and two
+existing warnings. Strict typing, Black, Ruff, Compiler scope, architecture,
+internal IR and protected API checks pass. Exporter Python coverage remains
+46/46 statements and 12/14 branches, 97% combined. JavaScript acceptance uses
+actual DOM assertions, with no instrumented coverage percentage. The settled
+original-MultiAnd screenshot has been visually inspected. Fixed source sizing
+also reproduces its long boundary-label crowding, while Adaptive supplies the
+previously accepted spacing. Initial font, y-tick order and polygon-attribute
+differences were corrected in production, with the failed logs retained.
+
+Evidence uses the `g2-score-axes-` prefix. Full HTML/JS parent acceptance remains
+open for manual-domain and complete page-boundary disposition. Q-0747 generic
+wire-symbol admission remains separately open.
 
 ## Separate resource accounts
 

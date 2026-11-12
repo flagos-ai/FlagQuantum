@@ -69,8 +69,12 @@ Real Chrome comparisons execute the unchanged source script and pinned test-only
 D3, explicitly aligning coordinate ranges. The native URL form now follows
 the source HTTP/JSON/error-panel chain and text-glyph click diagnostics. Native
 preflight validation, newest-request ownership and imported sequential-view
-selection have separate acceptance. Source axes, fixed sizing and styling
-remain whole-file differences.
+selection have separate acceptance. Fixed style now adds source axes, margins, sizing,
+font inheritance and lightblue lines through that same owner. Twelve new browser
+cases compare default ranges directly, including original MultiAnd JSON, two
+pixel ratios and HTTP reflow. Automatic native domains and the initial Adaptive
+style have explicit dispositions in REGISTER_SCORE_ANIMATION.md. Arbitrary
+manual domains and complete page-boundary acceptance remain open.
 Q-0744 and Q-0746 therefore remain open. The ordinary append and numerical paths
 continue through their existing owners.
 
