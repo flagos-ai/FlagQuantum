@@ -57,13 +57,54 @@ def component_tensor_nodes(
     No partial graph is returned and no later supplier item is requested.
     """
 
+    return component_tensor_nodes_with_labels(
+        record,
+        order,
+        lambda function, incoming, outgoing, _fresh: supply(
+            function, incoming, outgoing
+        ),
+        like,
+        entry,
+    )
+
+
+def component_tensor_nodes_with_labels(
+    record: ProgramRecord,
+    order: tuple[int, ...],
+    supply: Callable[
+        [
+            FunctionRecord,
+            Mapping[str, tuple[tuple[int, ...], ...]],
+            Mapping[str, tuple[tuple[int, ...], ...]],
+            Callable[[], int],
+        ],
+        Iterable[TensorNetworkNode | int],
+    ],
+    like: torch.Tensor,
+    entry: str = "main",
+) -> tuple[
+    tuple[TensorNetworkNode, ...],
+    dict[str, tuple[tuple[int, ...], ...]],
+    dict[str, tuple[tuple[int, ...], ...]],
+]:
+    """Wire pure suppliers that allocate internal edges from the graph owner.
+
+    The fourth callback argument is the existing per-construction allocator used
+    for SSA and idle edges. A factored supplier must request every internal label
+    from it; predicting labels from the current ports can collide with later
+    calls. The original three-argument supplier entry delegates here unchanged.
+    Pure discard refusal, visitation checks, dtype/device and autograd semantics
+    remain owned by the same traversal. No random/global labels, new graph,
+    classical ports, gate or workspace are introduced.
+    """
+
     def attach(
         function: FunctionRecord,
         incoming: Mapping[str, tuple[tuple[int, ...], ...]],
         outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
         fresh_label: Callable[[], int],
     ) -> Iterable[TensorNetworkNode]:
-        for item in supply(function, incoming, outgoing):
+        for item in supply(function, incoming, outgoing, fresh_label):
             if isinstance(item, int):
                 raise ValueError(
                     f"During tensor simulation, {function.name} tried to discard "
