@@ -6,6 +6,7 @@
 """Display lane allocation, independent of graph and numerical execution."""
 
 from collections.abc import Callable
+from dataclasses import dataclass, replace
 from heapq import heappop, heappush
 from typing import Literal, TypeAlias
 
@@ -15,14 +16,32 @@ LaneLocation: TypeAlias = int | Literal["input", "output"]
 ReleasePredicate: TypeAlias = Callable[[LaneLocation, Register], bool]
 
 
+@dataclass(frozen=True, order=True)
+class LaneSegment:
+    """A geometric lane interval visible during allocation and release.
+
+    An unfinished interval has no end. Register identities and word widths
+    remain owned by the layout's completed RegisterLine records.
+    """
+
+    y: int
+    seq_x_start: int
+    seq_x_end: int | None = None
+    flavor: Literal["HLineFlavor.QUANTUM", "HLineFlavor.CLASSICAL"] = (
+        "HLineFlavor.QUANTUM"
+    )
+
+
 class RegisterLaneManager:
-    """Own a score's minimum-lane heap and temporary reservations.
+    """Own a score's lane heap, reservations and geometric interval lifecycle.
 
     Locations are original call ordinals or the input/output boundary. Hooks
     receive native Core registers and row-major element indices. Subclasses can
     reserve lanes from ``maybe_reserve`` after each allocation or release.
     Capacity grows by default. An explicit finite capacity matches the source
     heap within that capacity. Create one manager per independent layout.
+    The layout sets seq_x before allocation and release. Hooks may inspect the
+    immutable open/closed intervals in hlines without modifying that collection.
     """
 
     def __init__(self, max_n_lines: int | None = None) -> None:
@@ -34,6 +53,8 @@ class RegisterLaneManager:
         self._capacity = max_n_lines
         self._next_lane = max_n_lines or 0
         self._reserved: list[tuple[tuple[int, ...], ReleasePredicate]] = []
+        self.seq_x = 0
+        self.hlines: set[LaneSegment] = set()
 
     def new_y(self) -> int:
         """Take the lowest free lane, growing an unbounded pool when needed."""
@@ -96,18 +117,55 @@ class RegisterLaneManager:
         """Override to reserve lanes after an element allocates or releases."""
 
     def new(self, location: LaneLocation, register: Register) -> tuple[int, ...]:
-        """Allocate all elements, checking release predicates once per register."""
+        """Open each element at seq_x before invoking its allocation hook."""
         self.unreserve(location, register)
+        classical = register.dtype.num_qubits == 0 and (
+            register.dtype.num_cbits != 0
+            or ("storage", "classical") in register.dtype.parameters
+        )
         lanes = []
         for index in register.all_idxs():
-            lanes.append(self.new_y_for(location, register, index or None))
+            lane = self.new_y_for(location, register, index or None)
+            lanes.append(lane)
+            self.hlines.add(
+                LaneSegment(
+                    lane,
+                    self.seq_x,
+                    flavor=(
+                        "HLineFlavor.CLASSICAL" if classical else "HLineFlavor.QUANTUM"
+                    ),
+                )
+            )
             self.maybe_reserve(location, register, index)
         return tuple(lanes)
+
+    def _partial_hline(self, y: int) -> LaneSegment:
+        (line,) = (h for h in self.hlines if h.y == y and h.seq_x_end is None)
+        return line
+
+    def finish_hline(self, y: int, seq_x_end: int) -> None:
+        """Replace the unique unfinished interval for y with its closed value.
+
+        Missing or ambiguous intervals raise ValueError without changing lines.
+        """
+        partial = self._partial_hline(y)
+        self.hlines.remove(partial)
+        self.hlines.add(replace(partial, seq_x_end=seq_x_end))
 
     def free(
         self, location: LaneLocation, register: Register, lanes: tuple[int, ...]
     ) -> None:
-        """Release elements in row-major order without evaluating predicates."""
-        for index, lane in zip(register.all_idxs(), lanes, strict=True):
+        """Return lanes, close their intervals at seq_x, then invoke each hook.
+
+        Invalid element counts, duplicate lanes and missing intervals are
+        refused before releasing any lane. Hook failures propagate.
+        """
+        elements = tuple(zip(register.all_idxs(), lanes, strict=True))
+        if len(set(lanes)) != len(lanes):
+            raise ValueError("Released display lanes must be unique")
+        for _, lane in elements:
+            self._partial_hline(lane)
+        for index, lane in elements:
             heappush(self.available, lane)
+            self.finish_hline(lane, self.seq_x)
             self.maybe_reserve(location, register, index)

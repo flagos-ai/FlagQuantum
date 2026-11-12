@@ -121,6 +121,7 @@ def layout_register_score(
     a dependency generation; lanes are assigned in sequential display order.
     A caller-owned lane_manager can reserve display lanes. Core register
     metadata preserves per-register predicate and per-element hook cadence.
+    The manager's seq_x cursor and partial hlines are current at each hook.
     Plain layouts synthesize scalar opaque metadata from their declared widths.
     Explicit outputs preserve final signature order for release callbacks.
     """
@@ -170,6 +171,7 @@ def layout_register_score(
         raise ValueError("Score outputs must retain every live register exactly once")
     final = _register_groups(final_keys, output_registers, widths)
     manager = RegisterLaneManager() if lane_manager is None else lane_manager
+    manager.seq_x = -1
     live: dict[str, tuple[int, int]] = {}
     for register, keys in initial:
         for key, lane in zip(keys, manager.new("input", register), strict=True):
@@ -177,6 +179,7 @@ def layout_register_score(
     columns = []
     lines = []
     for sequence, index in enumerate(key for key in generations if key >= 0):
+        manager.seq_x = sequence
         step = steps[index]
         left, right = groups[index]
         for register, keys in right:
@@ -199,6 +202,7 @@ def layout_register_score(
                     released.append(lane)
                 manager.free(index, register, tuple(released))
 
+    manager.seq_x = len(steps)
     for register, keys in final:
         released = []
         for key in keys:
