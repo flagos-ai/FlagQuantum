@@ -51,6 +51,11 @@ def energy(parameters: torch.Tensor, hamiltonian: Observable) -> torch.Tensor:
 
 
 def main() -> None:
+    print(
+        "premise: synthetic static integrals; single_device_fast_path CPU training. "
+        "UCCSD angles are float32. This is a fixed-occupancy projection, "
+        "not an ab initio calculation, full-space ground energy or scalability claim.\n"
+    )
     problem = illustrative_problem()
     selection = select_active_space(
         problem, active_orbitals=(2, 0), frozen_occupied=(1,)
@@ -69,7 +74,6 @@ def main() -> None:
         optimizer.zero_grad()
         torch.autograd.backward(energy(parameters, observable))
         optimizer.step()
-    print("Synthetic static integrals; single_device_fast_path CPU training.")
     print(f"Active orbital labels: {active.orbital_labels}")
     print(f"Frozen orbitals: {selection.frozen_occupied}")
     print(f"Discarded virtual orbitals: {selection.discarded_virtual}")
@@ -77,10 +81,7 @@ def main() -> None:
     print(f"Initial energy: {float(initial.detach()):.10f} Ha")
     print(f"Gradient norm: {float(gradient.norm()):.8f}")
     print(f"Final energy: {float(energy(parameters, observable).detach()):.10f} Ha")
-    print(
-        "Offsets are already included. This is a fixed-occupancy projection, "
-        "not a full-space ground energy or scalability claim."
-    )
+    print("Offsets are already included in the observable.")
 
 
 if __name__ == "__main__":
