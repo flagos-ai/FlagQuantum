@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **24/213**.
+Validated local Notebook workflows: **26/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -214,6 +214,8 @@ Validated local Notebook workflows:
 - [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
 - [overview](functions/arithmetic/bitwise_and/overview/README.md)
 - [bitwise_invert_example](functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md)
+- [overview](functions/arithmetic/bitwise_or/overview/README.md)
+- [overview](functions/arithmetic/bitwise_xor/overview/README.md)
 - [modular_exp_example](functions/arithmetic/modular_exp/modular_exp_example/README.md)
 - [modulo_example](functions/arithmetic/modulo/modulo_example/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
