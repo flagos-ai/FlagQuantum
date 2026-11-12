@@ -18,5 +18,6 @@ Native FlagQuantum programs currently available:
 ## Validated local Notebook workflows
 
 - [superposition](basic_examples/superposition/README.md)
+- [overview](basics/vqe/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

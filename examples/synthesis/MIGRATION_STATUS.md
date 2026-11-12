@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **47/213**.
+Validated local Notebook workflows: **50/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -173,7 +173,7 @@ Validated local Notebook workflows: **47/213**.
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qsvt` | notebook_workflow | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization` | notebook_workflow | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_utils` | python_unclassified | Pending | pending |
-| `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion` | notebook_workflow | Pending | pending |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/main.py) | validated |
 | `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Native program](algorithms/metrology/classical_shadow_tomography/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/discrete_log/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/main.py) | pending |
@@ -290,7 +290,7 @@ Validated local Notebook workflows: **47/213**.
 | `community/basic_examples/hw_aware_synthesis/hw_aware_synthesis` | notebook_workflow | Pending | pending |
 | `community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob` | notebook_workflow | Pending | pending |
 | `community/basic_examples/superposition/superposition` | notebook_workflow | [Native program](community/basic_examples/superposition/main.py) | validated |
-| `community/basic_examples/vqe/vqe` | notebook_workflow | Pending | pending |
+| `community/basic_examples/vqe/vqe` | notebook_workflow | [Native program](community/basics/vqe/overview/main.py) | validated |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE` | quantum_program | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/main.py) | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Laplacian_BE` | notebook_workflow | Pending | pending |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE` | quantum_program | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py) | pending |
@@ -425,6 +425,6 @@ Validated local Notebook workflows: **47/213**.
 | `tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/main.py) | pending |
 | `tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/main.py) | pending |
 | `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/main.py) | pending |
-| `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | [Native program](tutorials/workshops/grover_workshop/grover_workshop/main.py) | pending |
+| `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | [Native program](tutorials/workshops/grover_workshop/grover_workshop/overview/main.py) | validated |
 | `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | [Native program](tutorials/workshops/hhl_workshop/main.py) | pending |
 | `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/main.py) | pending |

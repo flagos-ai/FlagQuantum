@@ -242,7 +242,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 47
+    assert len(validated) == 50
     for operation in ("or", "xor"):
         assert (
             f"functions/function_usage_examples/arithmetic/bitwise_{operation}/bitwise_{operation}_example",
@@ -341,8 +341,23 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         ),
     ):
         assert (group, path) in validated
+    for group, path in (
+        (
+            "community/basic_examples/vqe/vqe",
+            "examples/synthesis/community/basics/vqe/overview/main.py",
+        ),
+        (
+            "tutorials/workshops/grover_workshop/grover_workshop",
+            "examples/synthesis/tutorials/workshops/grover_workshop/grover_workshop/overview/main.py",
+        ),
+        (
+            "algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion",
+            "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/main.py",
+        ),
+    ):
+        assert (group, path) in validated
     rendered = render(catalog)
-    assert "**47/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**50/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
