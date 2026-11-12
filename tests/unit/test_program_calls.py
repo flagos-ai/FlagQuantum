@@ -45,6 +45,7 @@ def test_nested_calls_are_verified_but_require_expansion_for_restoration() -> No
     leaf = record.functions[-1].blocks[0]
     flat = replace(record, functions=(FunctionRecord("main", (leaf,)),))
     assert program_to_circuit(flat).canonical_payload == circuit.to_dict()
+    assert leaf.return_values is not None
     permuted = replace(leaf, return_values=tuple(reversed(leaf.return_values)))
     tampered = replace(flat, functions=(FunctionRecord("main", (permuted,)),))
     assert codes(tampered) == set()
@@ -78,7 +79,7 @@ def test_invalid_call_profiles_fail_closed(defect: str) -> None:
         "main",
         (BlockRecord("entry", (q,), operations=(operation,), return_values=(r,)),),
     )
-    extra = ()
+    extra: tuple[FunctionRecord, ...] = ()
     if defect == "missing":
         operation = replace(operation, callee="absent")
     elif defect == "duplicate":
@@ -129,11 +130,12 @@ def test_return_ownership_includes_all_live_qubits(
 ) -> None:
     q = ValueRef("entry", 0, "qubit")
     r = ValueRef("entry", 1, "qubit")
-    value = {
+    named_returns = {
         "stale": (q,),
         "unknown": (ValueRef("entry", 9, "qubit"),),
         "alias": (r, r),
-    }.get(returns, returns)
+    }
+    value = named_returns[returns] if isinstance(returns, str) else returns
     block = BlockRecord(
         "entry", (q,), operations=(Operation("x", (q,), (r,)),), return_values=value
     )

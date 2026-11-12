@@ -183,6 +183,7 @@ def test_existing_append_branch_resource_consumer_accepts_hierarchical_replaceme
         expanded = inline_program_calls(hierarchical)
         restored = program_to_circuit(expanded)
         assert restored.state == "supported_exact", restored.diagnostics
+        assert restored.canonical_payload is not None
         result = CircuitIR.from_dict(restored.canonical_payload)
         assert result.instructions == gates
         seen.append((hierarchical, expanded))
