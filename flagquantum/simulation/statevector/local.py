@@ -107,6 +107,7 @@ from .product_state import (
     _cpu_product_state_fixed_clifford_enabled,
     _cpu_product_state_swap_remapping_enabled,
     execute_product_state_program,
+    execute_zero_state_product_prefix,
     product_state_execution_is_beneficial,
 )
 from .program import (
@@ -525,6 +526,14 @@ def _apply_cx_sequence(
 ) -> torch.Tensor:
     """Apply a compiled CX sequence through the available local kernel."""
 
+    if (
+        state.device.type == "flagos"
+        and state.dtype == torch.complex128
+        and state.shape[-1] >= 1 << 22
+    ):
+        from .cx_fp64_autograd import apply_cx_sequence
+
+        return apply_cx_sequence(state, step.controls, step.targets, circuit.n_qubits)
     if state.is_cuda and state.dtype == torch.complex64:
         from .cx_sequence_dispatch import _apply_cataloged_cx_sequence
 
@@ -603,6 +612,9 @@ def _execute_statevector_program(
     owns_input: bool = False,
 ) -> torch.Tensor:
     """Execute a compiled program for one full batch or bounded batch window."""
+    output, program, owns_input = execute_zero_state_product_prefix(
+        program, output, parameter_bindings, circuit.n_qubits, owns_input
+    )
     batched_rx_ry_rz_matrices, batched_rotation_matrices = (
         _prepare_batched_rotation_matrices(
             circuit,
@@ -870,6 +882,20 @@ def _execute_statevector_program(
                 dtype=output.dtype,
                 parameter_bindings=parameter_bindings,
             )
+            if name == "ry" and not carries_matrix:
+                from .rotation_autograd import try_apply_ry_rotation
+
+                rotated = try_apply_ry_rotation(
+                    circuit,
+                    instruction,
+                    output,
+                    matrix,
+                    parameter_bindings,
+                    carries_matrix,
+                )
+                if rotated is not None:
+                    output = rotated
+                    continue
             output = _apply_gate_matrix(
                 output,
                 matrix,

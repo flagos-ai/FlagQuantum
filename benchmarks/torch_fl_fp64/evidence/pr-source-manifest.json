@@ -1,0 +1,23 @@
+{
+  "flagquantum/kernels/catalog/evidence.py": "5831c284e71394f1b8f190d4348ef4ce70a2663496de14b56ef9d27b0fa7c8f0",
+  "flagquantum/kernels/catalog/implementations.py": "dbcdc4716473835b7f42f9683a0b5b22cbfceb62af133b8fc20ea7bdffe05f2f",
+  "flagquantum/kernels/catalog/semantics.py": "6e4693badb8ff2e774bdea98b2261b28d3af2b9a77e32f8396e11df9572d2ade",
+  "flagquantum/kernels/triton/statevector_cx_fp64.py": "44d5abca1f149446040d9d0f77ef89a169539f7c81dc1640e602e6833ff6176c",
+  "flagquantum/kernels/triton/statevector_ry_fp64.py": "b0c48d1d54638944015e6646b862f94970eaff5686787c33a3c383dabfefc0d2",
+  "flagquantum/simulation/statevector/cx_fp64_autograd.py": "6d0d8eca66fab99c07f77d08314c7af9b74119f1eab18fe49880e10ec2daef12",
+  "flagquantum/simulation/statevector/expectation_autograd.py": "616cc25b04d8da351e26934a408a08208bda98c17e0ab779246acd2beef9f76e",
+  "flagquantum/simulation/statevector/local.py": "1748a8113e9fe0068f570ed83d047d2f557f15989680ac609a1c18ac15007013",
+  "flagquantum/simulation/statevector/matrix_autograd.py": "4f227c5df0243414e678e93d9bde1b2448e426a468cad697ae995c5f7c52f7a2",
+  "flagquantum/simulation/statevector/measurement_ops.py": "f57d4d97049160a9d3bdced0721b6ecb7dc7ec4c222c4b61715d569cd4f24471",
+  "flagquantum/simulation/statevector/operations.py": "b09c8fd3313dc6dd41fbf9b6d09afa9a505ce8440a74759a9a76b7dfd7f6dc30",
+  "flagquantum/simulation/statevector/permutation_autograd.py": "e8a4bba3f22e86a7190be09f79a0dc9b1173e0abde0116c2f1c0c953aa754f89",
+  "flagquantum/simulation/statevector/product_state.py": "485deb75ae29b3ce01bd931b877337e9763a51d7f5928ef03091e3ff64caa48c",
+  "flagquantum/simulation/statevector/rotation_autograd.py": "07a507966597ead22bf1f392c672056351be0a032661ef373b24b27637499136",
+  "tests/unit/test_kernel_catalog.py": "d6f378559be58fff492b0081aeac8c65d54a2239e2210128761c397e4e9f150f",
+  "tests/unit/test_statevector_cx_fp64.py": "736d549f007d7ee15040094b3e95285efea40431fc03d478acf50a5a0b83b5d8",
+  "tests/unit/test_statevector_hermitian_autograd.py": "343edf8bdc48ebccaf70caf2bda09d0078b81400331f17f66a4d7b14edd52db9",
+  "tests/unit/test_statevector_layout_preserving_matrix.py": "86c3799c1513395ad3e2bf1e9538a6c1a36ff417c489724f36adef0776c09af3",
+  "tests/unit/test_statevector_matrix_autograd.py": "65c68b122bb182a86ac4d1d79d8267c91a61081f78a9ef200dddc936200a989e",
+  "tests/unit/test_statevector_ry_autograd.py": "f5de441a86a2505951058da034608e6a66cbe5187142ca3da7af01f2ec666002",
+  "tests/unit/test_statevector_ry_fp64.py": "9893843ae7c25880a30ee9f5fb4984b95e5851536f67b5038f789c8a5a5659e0"
+}

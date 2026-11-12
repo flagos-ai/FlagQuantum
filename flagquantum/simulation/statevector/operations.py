@@ -57,6 +57,7 @@ from .index_basis import (
     _basis_offsets_tensor,
     _zero_basis_local_indices,
 )
+from .matrix_autograd import apply_gate_matrix_bmm, apply_single_wire_matrix
 from .program import _StatevectorControlledPhaseDecompositionStep
 from .program import (
     _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
@@ -721,6 +722,13 @@ def _apply_matrix(
 ) -> torch.Tensor:
     wires = tuple(wires)
     if (
+        len(wires) == 1
+        and state.device.type == "flagos"
+        and state.dtype == torch.complex128
+        and state.shape[-1] >= 1 << 22
+    ):
+        return apply_single_wire_matrix(state, matrix, wires[0], n_wires)
+    if (
         len(wires) == 2
         and (
             preferred := _try_apply_preferred_two_qubit_matrix(
@@ -761,7 +769,7 @@ def _apply_matrix_layout(
         matrix = matrix.to(device=state.device, dtype=state.dtype)
     if matrix.ndim == 2:
         matrix = matrix.expand(bsz, -1, -1)
-    out = torch.bmm(matrix, flat)
+    out = apply_gate_matrix_bmm(matrix, flat)
     if (
         _cpu_release_matrix_layout_input_enabled()
         and not state.requires_grad
@@ -810,7 +818,20 @@ def _apply_single_wire_matrix(
         b = entries[:, 0, 1].reshape(bsz, 1, 1)
         c = entries[:, 1, 0].reshape(bsz, 1, 1)
         d = entries[:, 1, 1].reshape(bsz, 1, 1)
-    combined = torch.stack((a * low + b * high, c * low + d * high), dim=2)
+    if (
+        state.device.type == "flagos"
+        and state.dtype == torch.complex128
+        and not torch.is_grad_enabled()
+    ):
+        # Custom autograd owns this output; no caller input is modified.
+        combined = torch.empty_like(tensor)
+        output_low, output_high = combined[:, :, 0, :], combined[:, :, 1, :]
+        torch.mul(a, low, out=output_low)
+        output_low.add_(b * high)
+        torch.mul(c, low, out=output_high)
+        output_high.add_(d * high)
+    else:
+        combined = torch.stack((a * low + b * high, c * low + d * high), dim=2)
     return combined.reshape(bsz, -1)
 
 
@@ -820,6 +841,14 @@ def _apply_cx_permutation(
     n_wires: int,
 ) -> torch.Tensor:
     """Apply CNOT by flipping the target axis only in the control-one slice."""
+    if (
+        state.device.type == "flagos"
+        and state.dtype == torch.complex128
+        and state.shape[-1] >= 1 << 22
+    ):
+        from .cx_fp64_autograd import apply_cx_sequence
+
+        return apply_cx_sequence(state, (wires[0],), (wires[1],), n_wires)
 
     control, target = (int(wire) for wire in wires)
     tensor = state.reshape((state.shape[0],) + (2,) * n_wires)

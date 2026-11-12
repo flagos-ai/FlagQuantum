@@ -1,0 +1,20 @@
+{
+  "flagquantum/kernels/catalog/evidence.py": "a49e436773e8e77448cf55d6f80d550a171e86adb6445e6e18ca8f9f186954c2",
+  "flagquantum/kernels/catalog/implementations.py": "8d18bcc41a688809b21b03f16a264f659d21d992a8b19a9dc16312d47fde2772",
+  "flagquantum/kernels/catalog/semantics.py": "672cba9d026f7dbcff12849c94d9951eea021f25d4ff370b1f57b5b09959fa6e",
+  "flagquantum/kernels/triton/statevector_cx_fp64.py": "2193cdf9e83a493dd738a557b4224ae81d949be3134e97badfc675838edd1142",
+  "flagquantum/kernels/triton/statevector_ry_fp64.py": "6d09289854eabbae78f44b97e54e1afb6e6b9195cf9a786fd8f5d6b694055625",
+  "flagquantum/simulation/statevector/cx_fp64_autograd.py": "1c2b7087e8e78ad3779449308e0cbbadfb3db8782f33f1767d7ad44b37c6a2d1",
+  "flagquantum/simulation/statevector/expectation_autograd.py": "ddefbf20d1c5ba3705e760cf9c30ebfb5ac4ddfc2bb0ab0c9cf435df52506a2d",
+  "flagquantum/simulation/statevector/local.py": "65b198f64815cf170b456deb56be98e1f788b1a7b6e01488f3fecfc249a6ab32",
+  "flagquantum/simulation/statevector/matrix_autograd.py": "3a3b6f0cd84a2c491ced8dde9e377c12d64804017d5a715e342be56fa2a5f401",
+  "flagquantum/simulation/statevector/measurement_ops.py": "de85e1e2054e2bca055e168d0446602be638088e687e217cf4580e854c252595",
+  "flagquantum/simulation/statevector/operations.py": "0c1e307cb0208c38b04d921b3aecaeb82c0c6a1a6029308ba790a8f983c5349b",
+  "flagquantum/simulation/statevector/permutation_autograd.py": "8c5fd9fa84a31b6ded6d2540ddc73b83bd2af26d13516dfb40e21732f1f85e3b",
+  "flagquantum/simulation/statevector/rotation_autograd.py": "c2ffc3ee3bb829c271606a157fe58bdb5141e7621e4bbe3a90e6c55a69e60ec8",
+  "tests/unit/test_kernel_catalog.py": "d6f378559be58fff492b0081aeac8c65d54a2239e2210128761c397e4e9f150f",
+  "tests/unit/test_statevector_cx_fp64.py": "5975eeed30642fac27cd6aacfbbb51691d5a31b521b2881f3cc877acc83639c4",
+  "tests/unit/test_statevector_hermitian_autograd.py": "7f36f1c73c1684f5665255515017f4c38c244a01742f99d5fc778ead2ebb1015",
+  "tests/unit/test_statevector_ry_autograd.py": "67949922f1811066594c9a8f480b1fd966a4dbf3c20e7365e8f79705ddf1dea0",
+  "tests/unit/test_statevector_ry_fp64.py": "a0f58005cc9bbfd22e28048b3e190fe4b60ac050190dddc4d3f0558276c09452"
+}

@@ -1,0 +1,2488 @@
+{
+  "status": "development_evidence_not_release_certification",
+  "measured_date": "2026-11-12",
+  "records": [
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.10.22 (main, Oct  1 2026, 20:14:04) [GCC 14.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+dtk2604",
+      "hip": "6.3.26113",
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0+hcu3.6",
+        "triton": null
+      },
+      "device_name": "BW1101",
+      "device_memory_bytes": 154602045440,
+      "route_config_sha256": "4cc85c3507fd97e7b924012a942649e3687be83b3a64a4101a2e857c37328b0d",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 12,
+      "depth": 4,
+      "parameter_count": 48,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 12,
+          "depth": 4,
+          "value_error": 4.440892098500626e-16,
+          "gradient_max_error": 4.3021142204224816e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              37.328132,
+              37.496079,
+              37.487208,
+              37.42115,
+              37.426,
+              37.467169,
+              37.353581
+            ],
+            [
+              37.123176,
+              37.181725,
+              37.251793,
+              37.205225,
+              37.208854,
+              37.310202,
+              37.308193
+            ],
+            [
+              37.197775,
+              37.137506,
+              37.173055,
+              37.266023,
+              37.165035,
+              37.237244,
+              37.246373
+            ]
+          ],
+          "round_medians_ms": [
+            37.426,
+            37.208854,
+            37.197775
+          ],
+          "median_ms": 37.208854,
+          "peak_allocated_bytes": 67445248
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              16.643058,
+              16.755615,
+              16.722436,
+              16.747306,
+              16.714506,
+              16.739986,
+              16.723736
+            ],
+            [
+              16.732225,
+              16.677577,
+              16.696446,
+              16.636768,
+              16.676397,
+              16.710277,
+              16.685067
+            ],
+            [
+              16.573459,
+              16.655117,
+              16.678167,
+              16.593008,
+              16.546979,
+              16.50712,
+              16.624118
+            ]
+          ],
+          "round_medians_ms": [
+            16.723736,
+            16.685067,
+            16.593008
+          ],
+          "median_ms": 16.685067,
+          "peak_allocated_bytes": 70837760
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              56.788322,
+              56.710293,
+              56.782561,
+              56.897209,
+              56.611055,
+              57.085526,
+              56.962978
+            ],
+            [
+              56.791951,
+              56.834331,
+              56.87625,
+              56.737522,
+              56.800372,
+              56.925288,
+              56.638475
+            ],
+            [
+              56.861799,
+              56.636054,
+              56.780092,
+              56.807871,
+              56.933998,
+              56.729083,
+              56.87789
+            ]
+          ],
+          "round_medians_ms": [
+            56.788322,
+            56.800372,
+            56.807871
+          ],
+          "median_ms": 56.800372,
+          "peak_allocated_bytes": 70837248
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              57.148204,
+              57.197023,
+              57.200693,
+              57.252891,
+              57.122625,
+              57.132785,
+              57.276312
+            ],
+            [
+              57.184723,
+              57.312071,
+              57.151373,
+              57.33016,
+              57.117184,
+              57.197093,
+              57.192713
+            ],
+            [
+              57.038166,
+              57.257562,
+              57.127174,
+              57.193263,
+              57.123584,
+              57.361899,
+              61.887877
+            ]
+          ],
+          "round_medians_ms": [
+            57.197023,
+            57.192713,
+            57.193263
+          ],
+          "median_ms": 57.193263,
+          "peak_allocated_bytes": 70837248
+        }
+      },
+      "completed": true,
+      "vendor": "hygon",
+      "original_record_sha256": "c27698a5b2b28fce1945a5eba84dc00e667cb838df4762b5363877dcf491f3e0",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.10.22 (main, Oct  1 2026, 20:14:04) [GCC 14.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+dtk2604",
+      "hip": "6.3.26113",
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0+hcu3.6",
+        "triton": null
+      },
+      "device_name": "BW1101",
+      "device_memory_bytes": 154602045440,
+      "route_config_sha256": "4cc85c3507fd97e7b924012a942649e3687be83b3a64a4101a2e857c37328b0d",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 16,
+      "depth": 4,
+      "parameter_count": 64,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 16,
+          "depth": 4,
+          "value_error": 3.3306690738754696e-16,
+          "gradient_max_error": 6.2727600891321345e-15,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              49.07396,
+              49.07558,
+              49.294066,
+              49.047781,
+              49.931762,
+              49.016031,
+              48.918543
+            ],
+            [
+              48.821375,
+              48.735377,
+              48.956252,
+              48.699688,
+              48.856054,
+              48.948423,
+              48.903283
+            ],
+            [
+              48.740527,
+              48.873294,
+              49.098929,
+              48.921693,
+              48.998211,
+              48.764617,
+              48.992722
+            ]
+          ],
+          "round_medians_ms": [
+            49.07396,
+            48.856054,
+            48.921693
+          ],
+          "median_ms": 48.921693,
+          "peak_allocated_bytes": 72360448
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              22.660024,
+              22.85839,
+              22.785931,
+              22.752382,
+              22.712733,
+              22.746682,
+              22.8334
+            ],
+            [
+              22.951998,
+              22.80282,
+              22.889469,
+              22.81706,
+              22.790131,
+              22.769871,
+              22.906828
+            ],
+            [
+              22.79782,
+              23.031326,
+              22.954787,
+              22.84162,
+              22.82348,
+              22.795971,
+              22.878479
+            ]
+          ],
+          "round_medians_ms": [
+            22.752382,
+            22.81706,
+            22.84162
+          ],
+          "median_ms": 22.81706,
+          "peak_allocated_bytes": 142681600
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              75.449757,
+              75.371639,
+              75.393249,
+              75.449678,
+              75.455747,
+              75.31488,
+              75.30877
+            ],
+            [
+              75.368809,
+              75.461657,
+              75.585775,
+              75.679532,
+              75.549486,
+              80.026863,
+              75.667003
+            ],
+            [
+              75.465907,
+              75.591705,
+              75.473877,
+              75.489377,
+              75.175883,
+              75.436968,
+              75.556305
+            ]
+          ],
+          "round_medians_ms": [
+            75.393249,
+            75.585775,
+            75.473877
+          ],
+          "median_ms": 75.473877,
+          "peak_allocated_bytes": 142681088
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              75.204922,
+              75.408028,
+              75.113694,
+              75.208342,
+              75.104024,
+              75.263072,
+              75.34713
+            ],
+            [
+              75.30881,
+              75.28845,
+              75.325139,
+              75.435488,
+              75.135294,
+              75.268811,
+              75.432498
+            ],
+            [
+              75.29811,
+              75.28967,
+              75.3002,
+              75.230542,
+              75.219632,
+              75.32781,
+              75.216442
+            ]
+          ],
+          "round_medians_ms": [
+            75.208342,
+            75.30881,
+            75.28967
+          ],
+          "median_ms": 75.28967,
+          "peak_allocated_bytes": 142681088
+        }
+      },
+      "completed": true,
+      "vendor": "hygon",
+      "original_record_sha256": "80ecd24dfa2bc7bdb1517a2deaadba9cbed9b13680f4df1259b0d945017127e3",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.10.22 (main, Oct  1 2026, 20:14:04) [GCC 14.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+dtk2604",
+      "hip": "6.3.26113",
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0+hcu3.6",
+        "triton": null
+      },
+      "device_name": "BW1101",
+      "device_memory_bytes": 154602045440,
+      "route_config_sha256": "4cc85c3507fd97e7b924012a942649e3687be83b3a64a4101a2e857c37328b0d",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 20,
+      "depth": 4,
+      "parameter_count": 80,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 20,
+          "depth": 4,
+          "value_error": 5.551115123125783e-16,
+          "gradient_max_error": 9.71445146547012e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              70.626327,
+              70.374522,
+              70.299893,
+              70.353402,
+              70.333833,
+              74.484317,
+              70.819373
+            ],
+            [
+              70.178096,
+              70.508789,
+              70.304384,
+              70.152896,
+              70.289113,
+              70.263194,
+              70.269763
+            ],
+            [
+              70.286884,
+              70.248044,
+              70.222945,
+              69.96879,
+              70.176625,
+              70.047039,
+              70.291804
+            ]
+          ],
+          "round_medians_ms": [
+            70.374522,
+            70.269763,
+            70.222945
+          ],
+          "median_ms": 70.269763,
+          "peak_allocated_bytes": 151004672
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              38.439269,
+              38.351271,
+              38.38816,
+              38.487758,
+              38.353731,
+              38.428819,
+              38.499757
+            ],
+            [
+              38.41921,
+              38.382081,
+              38.492818,
+              38.36442,
+              38.592866,
+              38.507427,
+              38.40828
+            ],
+            [
+              38.427969,
+              38.438219,
+              38.41938,
+              38.40043,
+              38.513987,
+              38.420389,
+              38.38557
+            ]
+          ],
+          "round_medians_ms": [
+            38.428819,
+            38.41921,
+            38.420389
+          ],
+          "median_ms": 38.420389,
+          "peak_allocated_bytes": 1543597056
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              110.79434,
+              110.77685,
+              110.698652,
+              110.845429,
+              110.76753,
+              110.713311,
+              110.595914
+            ],
+            [
+              110.593664,
+              110.698462,
+              110.882058,
+              110.515276,
+              110.524616,
+              110.647213,
+              110.618934
+            ],
+            [
+              110.406508,
+              111.010326,
+              112.166381,
+              112.067924,
+              111.629722,
+              112.70705,
+              112.29693
+            ]
+          ],
+          "round_medians_ms": [
+            110.76753,
+            110.618934,
+            112.067924
+          ],
+          "median_ms": 110.76753,
+          "peak_allocated_bytes": 1543596544
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              112.352438,
+              112.621603,
+              112.637562,
+              112.548323,
+              112.479895,
+              112.860248,
+              112.618483
+            ],
+            [
+              113.445616,
+              111.234811,
+              303.284869,
+              111.203091,
+              115.13222,
+              110.988836,
+              111.158282
+            ],
+            [
+              115.614081,
+              111.735691,
+              116.232118,
+              111.78595,
+              111.76728,
+              111.870878,
+              111.687992
+            ]
+          ],
+          "round_medians_ms": [
+            112.618483,
+            111.234811,
+            111.78595
+          ],
+          "median_ms": 111.78595,
+          "peak_allocated_bytes": 1543596544
+        }
+      },
+      "completed": true,
+      "vendor": "hygon",
+      "original_record_sha256": "9ddab9c8a64ea70f38e8f019e26e3fe9efeb5b4224bdf8be6780eb5ccf7e592c",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.10.22 (main, Oct  1 2026, 20:14:04) [GCC 14.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+dtk2604",
+      "hip": "6.3.26113",
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0+hcu3.6",
+        "triton": null
+      },
+      "device_name": "BW1101",
+      "device_memory_bytes": 154602045440,
+      "route_config_sha256": "4cc85c3507fd97e7b924012a942649e3687be83b3a64a4101a2e857c37328b0d",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 22,
+      "depth": 4,
+      "parameter_count": 88,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 22,
+          "depth": 4,
+          "value_error": 6.661338147750939e-16,
+          "gradient_max_error": 1.8041124150158794e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              75.986686,
+              76.332979,
+              76.552625,
+              76.304889,
+              75.999956,
+              75.751571,
+              75.658663
+            ],
+            [
+              75.868579,
+              75.742891,
+              75.493707,
+              75.711782,
+              75.81543,
+              75.881919,
+              76.050535
+            ],
+            [
+              75.81971,
+              289.335705,
+              77.737741,
+              76.092074,
+              76.109894,
+              76.621223,
+              75.83112
+            ]
+          ],
+          "round_medians_ms": [
+            75.999956,
+            75.81543,
+            76.109894
+          ],
+          "median_ms": 75.999956,
+          "peak_allocated_bytes": 268446720
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              38.788812,
+              38.86209,
+              38.683424,
+              38.759682,
+              38.755072,
+              38.817451,
+              38.724603
+            ],
+            [
+              38.619465,
+              38.88012,
+              38.490028,
+              38.658164,
+              38.588165,
+              38.520628,
+              38.663245
+            ],
+            [
+              38.603496,
+              38.776762,
+              38.513158,
+              38.920849,
+              38.543857,
+              38.85467,
+              38.478918
+            ]
+          ],
+          "round_medians_ms": [
+            38.759682,
+            38.619465,
+            38.603496
+          ],
+          "median_ms": 38.619465,
+          "peak_allocated_bytes": 4764809216
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              118.657418,
+              118.927302,
+              118.760486,
+              119.019821,
+              118.677687,
+              118.781405,
+              118.853344
+            ],
+            [
+              119.074889,
+              119.266025,
+              119.222927,
+              118.831175,
+              118.778175,
+              121.062968,
+              119.699586
+            ],
+            [
+              119.07752,
+              118.863994,
+              121.087058,
+              118.758946,
+              118.760657,
+              118.816965,
+              118.448132
+            ]
+          ],
+          "round_medians_ms": [
+            118.781405,
+            119.222927,
+            118.816965
+          ],
+          "median_ms": 118.816965,
+          "peak_allocated_bytes": 4764809216
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              119.280735,
+              119.467441,
+              119.128068,
+              119.251106,
+              119.013601,
+              119.368744,
+              118.968602
+            ],
+            [
+              119.000301,
+              118.880033,
+              119.112349,
+              119.08205,
+              119.276936,
+              118.929113,
+              119.110849
+            ],
+            [
+              118.608729,
+              119.351884,
+              118.615969,
+              119.661158,
+              118.659789,
+              119.150768,
+              119.03833
+            ]
+          ],
+          "round_medians_ms": [
+            119.251106,
+            119.08205,
+            119.03833
+          ],
+          "median_ms": 119.08205,
+          "peak_allocated_bytes": 4764809216
+        }
+      },
+      "completed": true,
+      "vendor": "hygon",
+      "original_record_sha256": "89b365835c23dcd6e4287676bd11894edef832f5c93240f4d4520ca0e58dc56a",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.10.22 (main, Oct  1 2026, 20:14:04) [GCC 14.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+dtk2604",
+      "hip": "6.3.26113",
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0+hcu3.6",
+        "triton": null
+      },
+      "device_name": "BW1101",
+      "device_memory_bytes": 154602045440,
+      "route_config_sha256": "4cc85c3507fd97e7b924012a942649e3687be83b3a64a4101a2e857c37328b0d",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 24,
+      "depth": 4,
+      "parameter_count": 96,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 2,
+      "samples_per_round": 5,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 24,
+          "depth": 4,
+          "value_error": 8.881784197001252e-16,
+          "gradient_max_error": 1.942890293094024e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              105.199325,
+              110.2763,
+              110.2917,
+              104.867852,
+              104.840803
+            ],
+            [
+              110.484166,
+              104.987949,
+              120.01386,
+              105.603907,
+              106.4165
+            ],
+            [
+              106.001219,
+              107.687374,
+              105.991029,
+              105.107197,
+              106.43297
+            ]
+          ],
+          "round_medians_ms": [
+            105.199325,
+            106.4165,
+            106.001219
+          ],
+          "median_ms": 106.001219,
+          "peak_allocated_bytes": 872426496
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              84.786235,
+              84.360424,
+              84.827664,
+              84.622549,
+              84.53835
+            ],
+            [
+              83.723407,
+              83.814825,
+              83.749776,
+              84.148878,
+              83.734757
+            ],
+            [
+              84.335474,
+              84.388433,
+              84.706847,
+              84.494941,
+              84.266705
+            ]
+          ],
+          "round_medians_ms": [
+            84.622549,
+            83.749776,
+            84.388433
+          ],
+          "median_ms": 84.388433,
+          "peak_allocated_bytes": 20468289536
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              190.46525,
+              190.340973,
+              190.193086,
+              190.501769,
+              190.415352
+            ],
+            [
+              190.94791,
+              191.201275,
+              191.148986,
+              194.783532,
+              190.792864
+            ],
+            [
+              192.391951,
+              193.542147,
+              190.244155,
+              194.096156,
+              191.642786
+            ]
+          ],
+          "round_medians_ms": [
+            190.415352,
+            191.148986,
+            192.391951
+          ],
+          "median_ms": 191.148986,
+          "peak_allocated_bytes": 20468289536
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              191.023659,
+              190.341593,
+              191.382851,
+              190.45532,
+              190.990809
+            ],
+            [
+              190.876011,
+              191.619957,
+              193.256793,
+              190.279895,
+              411.146029
+            ],
+            [
+              191.665496,
+              190.668726,
+              191.292164,
+              190.814974,
+              191.257984
+            ]
+          ],
+          "round_medians_ms": [
+            190.990809,
+            191.619957,
+            191.257984
+          ],
+          "median_ms": 191.257984,
+          "peak_allocated_bytes": 20468289536
+        }
+      },
+      "completed": true,
+      "vendor": "hygon",
+      "original_record_sha256": "eee00a8e70b2f5f8aa392b44a891380c4e2e93011ee5d03e9fb6aa498cca7f21",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+cuda13.0",
+      "hip": null,
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0",
+        "triton": null
+      },
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_memory_bytes": 85093777408,
+      "route_config_sha256": "5eeb05c5550153903811afb8ca400f57a05b174d500f8f8b126d92d40e35c031",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 12,
+      "depth": 4,
+      "parameter_count": 48,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 12,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 3.608224830031759e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              55.089794,
+              54.771623,
+              54.843267,
+              54.728883,
+              54.947414,
+              55.182205,
+              54.904629
+            ],
+            [
+              54.759572,
+              54.468157,
+              55.002458,
+              57.776236,
+              54.405644,
+              54.339324,
+              54.403497
+            ],
+            [
+              54.629929,
+              54.17111,
+              54.308452,
+              54.217625,
+              54.602788,
+              54.561708,
+              54.362303
+            ]
+          ],
+          "round_medians_ms": [
+            54.904629,
+            54.468157,
+            54.362303
+          ],
+          "median_ms": 54.468157,
+          "peak_allocated_bytes": 17375744
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              28.260016,
+              23.437632,
+              25.72186,
+              29.405201,
+              28.429253,
+              27.052308,
+              26.359986
+            ],
+            [
+              29.645927,
+              21.608344,
+              27.890312,
+              29.107628,
+              28.962546,
+              24.478524,
+              21.603028
+            ],
+            [
+              21.463471,
+              29.546954,
+              21.692312,
+              21.577259,
+              21.472851,
+              21.696814,
+              29.555425
+            ]
+          ],
+          "round_medians_ms": [
+            27.052308,
+            27.890312,
+            21.692312
+          ],
+          "median_ms": 27.052308,
+          "peak_allocated_bytes": 20768256
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              87.40948,
+              95.556262,
+              81.000526,
+              89.192096,
+              89.77919,
+              81.560055,
+              83.848629
+            ],
+            [
+              87.384622,
+              80.442506,
+              88.010569,
+              80.456953,
+              90.220463,
+              87.065147,
+              85.08707
+            ],
+            [
+              81.516785,
+              80.899355,
+              86.946636,
+              86.54779,
+              96.064938,
+              83.256918,
+              85.004877
+            ]
+          ],
+          "round_medians_ms": [
+            87.40948,
+            87.065147,
+            85.004877
+          ],
+          "median_ms": 87.065147,
+          "peak_allocated_bytes": 20767744
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              86.52951,
+              93.330046,
+              95.785717,
+              89.030627,
+              89.20082,
+              94.371116,
+              87.917845
+            ],
+            [
+              94.656753,
+              88.941371,
+              93.070529,
+              93.676398,
+              92.258564,
+              93.185092,
+              94.473102
+            ],
+            [
+              83.102981,
+              84.617094,
+              83.436228,
+              89.816279,
+              90.481533,
+              85.973927,
+              90.408639
+            ]
+          ],
+          "round_medians_ms": [
+            89.20082,
+            93.185092,
+            85.973927
+          ],
+          "median_ms": 89.20082,
+          "peak_allocated_bytes": 20767744
+        }
+      },
+      "completed": true,
+      "vendor": "a800",
+      "original_record_sha256": "c1e00059dceb58977d3b5f8306df9d792af6681c31135c9d49593dec407d99df",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+cuda13.0",
+      "hip": null,
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0",
+        "triton": null
+      },
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_memory_bytes": 85093777408,
+      "route_config_sha256": "5eeb05c5550153903811afb8ca400f57a05b174d500f8f8b126d92d40e35c031",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 16,
+      "depth": 4,
+      "parameter_count": 64,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 16,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 2.914335439641036e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              73.03722,
+              72.795235,
+              72.507991,
+              72.584203,
+              72.476107,
+              74.315184,
+              72.681163
+            ],
+            [
+              72.429305,
+              72.927253,
+              73.034147,
+              73.384767,
+              72.387613,
+              71.936623,
+              72.361238
+            ],
+            [
+              72.512467,
+              72.118742,
+              77.774581,
+              72.007995,
+              71.913664,
+              72.318634,
+              72.363225
+            ]
+          ],
+          "round_medians_ms": [
+            72.681163,
+            72.429305,
+            72.318634
+          ],
+          "median_ms": 72.429305,
+          "peak_allocated_bytes": 22290944
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              30.047149,
+              29.672436,
+              29.6639,
+              29.753333,
+              29.610701,
+              29.872832,
+              29.827153
+            ],
+            [
+              29.856824,
+              29.688959,
+              29.740003,
+              29.791096,
+              29.899213,
+              29.68822,
+              29.722901
+            ],
+            [
+              29.946857,
+              30.249178,
+              30.515309,
+              30.370467,
+              47.207038,
+              29.520031,
+              29.382523
+            ]
+          ],
+          "round_medians_ms": [
+            29.753333,
+            29.740003,
+            30.249178
+          ],
+          "median_ms": 29.753333,
+          "peak_allocated_bytes": 92612096
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              106.782948,
+              106.673816,
+              118.463095,
+              108.528633,
+              108.004294,
+              107.848589,
+              110.896868
+            ],
+            [
+              108.78318,
+              108.20846,
+              108.284896,
+              116.070694,
+              109.438131,
+              113.817878,
+              110.109284
+            ],
+            [
+              108.522589,
+              108.6617,
+              118.671884,
+              125.973162,
+              114.106456,
+              113.089097,
+              111.705119
+            ]
+          ],
+          "round_medians_ms": [
+            108.004294,
+            109.438131,
+            113.089097
+          ],
+          "median_ms": 109.438131,
+          "peak_allocated_bytes": 92611584
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              107.622429,
+              108.231433,
+              108.780901,
+              110.954611,
+              366.559189,
+              108.962831,
+              119.858379
+            ],
+            [
+              114.127709,
+              108.14011,
+              114.03549,
+              107.615574,
+              113.615182,
+              115.260645,
+              118.902856
+            ],
+            [
+              112.713654,
+              117.618586,
+              114.249117,
+              126.101661,
+              116.656844,
+              109.268809,
+              109.702344
+            ]
+          ],
+          "round_medians_ms": [
+            108.962831,
+            114.03549,
+            114.249117
+          ],
+          "median_ms": 114.03549,
+          "peak_allocated_bytes": 92611584
+        }
+      },
+      "completed": true,
+      "vendor": "a800",
+      "original_record_sha256": "bca139e68ee2f875845b32ad57b6b403fe6afc3dd3c1ac7f9752f79713ca8126",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+cuda13.0",
+      "hip": null,
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0",
+        "triton": null
+      },
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_memory_bytes": 85093777408,
+      "route_config_sha256": "5eeb05c5550153903811afb8ca400f57a05b174d500f8f8b126d92d40e35c031",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 20,
+      "depth": 4,
+      "parameter_count": 80,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 20,
+          "depth": 4,
+          "value_error": 3.3306690738754696e-16,
+          "gradient_max_error": 4.85722573273506e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              89.054342,
+              89.171194,
+              93.2384,
+              89.178969,
+              89.550544,
+              89.18924,
+              89.387229
+            ],
+            [
+              92.82054,
+              89.61945,
+              88.82369,
+              91.054584,
+              88.752368,
+              89.253291,
+              89.031961
+            ],
+            [
+              89.222166,
+              89.091162,
+              98.712348,
+              89.573684,
+              89.629312,
+              89.664848,
+              89.365616
+            ]
+          ],
+          "round_medians_ms": [
+            89.18924,
+            89.253291,
+            89.573684
+          ],
+          "median_ms": 89.253291,
+          "peak_allocated_bytes": 100935168
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              47.210583,
+              41.281626,
+              40.697177,
+              47.715791,
+              48.563628,
+              40.189235,
+              40.472514
+            ],
+            [
+              48.215406,
+              40.697604,
+              46.158539,
+              50.511832,
+              47.728622,
+              49.158912,
+              48.086636
+            ],
+            [
+              45.167976,
+              45.663317,
+              47.162892,
+              44.909487,
+              44.868711,
+              38.960128,
+              48.070185
+            ]
+          ],
+          "round_medians_ms": [
+            41.281626,
+            48.086636,
+            45.167976
+          ],
+          "median_ms": 45.167976,
+          "peak_allocated_bytes": 1493527552
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              153.264566,
+              150.184771,
+              144.833406,
+              154.341151,
+              153.685593,
+              138.252763,
+              150.156474
+            ],
+            [
+              153.006259,
+              146.630796,
+              398.657222,
+              156.716757,
+              151.748148,
+              160.462338,
+              151.017298
+            ],
+            [
+              152.302015,
+              151.848619,
+              156.370381,
+              152.735936,
+              151.436454,
+              153.879841,
+              152.42595
+            ]
+          ],
+          "round_medians_ms": [
+            150.184771,
+            153.006259,
+            152.42595
+          ],
+          "median_ms": 152.42595,
+          "peak_allocated_bytes": 1493527040
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              154.241872,
+              153.974506,
+              150.201045,
+              153.059015,
+              152.938596,
+              153.918586,
+              155.199144
+            ],
+            [
+              139.273753,
+              147.836765,
+              149.879196,
+              148.910169,
+              155.454754,
+              139.038807,
+              139.969815
+            ],
+            [
+              146.807337,
+              152.337566,
+              152.339407,
+              150.945983,
+              155.147585,
+              153.510143,
+              154.52366
+            ]
+          ],
+          "round_medians_ms": [
+            153.918586,
+            147.836765,
+            152.339407
+          ],
+          "median_ms": 152.339407,
+          "peak_allocated_bytes": 1493527040
+        }
+      },
+      "completed": true,
+      "vendor": "a800",
+      "original_record_sha256": "5810ad8679bd8136fecee35da8fc89b88f8b74a50f031c24cd7928b2f7512677",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+cuda13.0",
+      "hip": null,
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0",
+        "triton": null
+      },
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_memory_bytes": 85093777408,
+      "route_config_sha256": "5eeb05c5550153903811afb8ca400f57a05b174d500f8f8b126d92d40e35c031",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 22,
+      "depth": 4,
+      "parameter_count": 88,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 3,
+      "samples_per_round": 7,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 22,
+          "depth": 4,
+          "value_error": 5.551115123125783e-16,
+          "gradient_max_error": 1.6653345369377348e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              107.703846,
+              106.576487,
+              106.622709,
+              107.071788,
+              106.476006,
+              110.877389,
+              107.552333
+            ],
+            [
+              106.89857,
+              107.399783,
+              107.383859,
+              106.902802,
+              107.394141,
+              106.577922,
+              106.976204
+            ],
+            [
+              105.948882,
+              106.639536,
+              106.83377,
+              117.294963,
+              107.968991,
+              107.517949,
+              107.651877
+            ]
+          ],
+          "round_medians_ms": [
+            107.071788,
+            106.976204,
+            107.517949
+          ],
+          "median_ms": 107.071788,
+          "peak_allocated_bytes": 218379776
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              54.004386,
+              46.137283,
+              43.081254,
+              43.165604,
+              44.499041,
+              42.920822,
+              42.93191
+            ],
+            [
+              50.736562,
+              49.559753,
+              49.589886,
+              53.065957,
+              53.293728,
+              50.06998,
+              43.540197
+            ],
+            [
+              43.131194,
+              42.999987,
+              43.210849,
+              42.997509,
+              50.523077,
+              42.29551,
+              42.325147
+            ]
+          ],
+          "round_medians_ms": [
+            43.165604,
+            50.06998,
+            42.999987
+          ],
+          "median_ms": 43.165604,
+          "peak_allocated_bytes": 4714739712
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              163.372881,
+              351.101682,
+              156.561947,
+              154.362725,
+              158.656423,
+              168.743959,
+              155.742048
+            ],
+            [
+              155.707732,
+              155.433111,
+              156.465116,
+              158.240095,
+              156.737972,
+              162.744169,
+              155.226554
+            ],
+            [
+              186.956642,
+              156.131275,
+              158.113075,
+              161.959569,
+              163.511751,
+              161.758844,
+              162.560535
+            ]
+          ],
+          "round_medians_ms": [
+            158.656423,
+            156.465116,
+            161.959569
+          ],
+          "median_ms": 158.656423,
+          "peak_allocated_bytes": 4714742272
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              161.373672,
+              169.065801,
+              175.42153,
+              167.489785,
+              383.036988,
+              167.927127,
+              169.827194
+            ],
+            [
+              169.725554,
+              155.658048,
+              162.663702,
+              157.381857,
+              157.644966,
+              174.747924,
+              159.062973
+            ],
+            [
+              155.237792,
+              155.471294,
+              175.686643,
+              155.718568,
+              157.885291,
+              165.364507,
+              156.011414
+            ]
+          ],
+          "round_medians_ms": [
+            169.065801,
+            159.062973,
+            156.011414
+          ],
+          "median_ms": 159.062973,
+          "peak_allocated_bytes": 4714742272
+        }
+      },
+      "completed": true,
+      "vendor": "a800",
+      "original_record_sha256": "20637716f59d8a7fb800e59e316e3b0f2a61cbab64a6c556a304f17acde3a17e",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    },
+    {
+      "schema": "flagquantum.cross_vendor.complex128.v1",
+      "source_revision": "c2ff8bda879816fc2fa48ce112bfff39b5218764",
+      "source_patch": "fused-ry-cx-statevector.patch",
+      "source_tree_sha256": "de83cc2b9a295dcc87226fe9d00578200c08d2629ec429d7bde9eb4d6fc09f84",
+      "label": "fused_ry_final",
+      "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
+      "torch": "2.10.0+cpu",
+      "torch_fl": "2.10.0+cuda13.0",
+      "hip": null,
+      "cuda": null,
+      "cpu": "x86_64",
+      "thread_count": 2,
+      "packages": {
+        "flag_gems": "5.4.0",
+        "flagtree": "0.7.0",
+        "triton": null
+      },
+      "device_name": "NVIDIA A800-SXM4-80GB",
+      "device_memory_bytes": 85093777408,
+      "route_config_sha256": "5eeb05c5550153903811afb8ca400f57a05b174d500f8f8b126d92d40e35c031",
+      "benchmark_sha256": "473911288165f7daa1932fbc61aa2afc03474e864c4c75582b063197943d5294",
+      "mode": "statevector",
+      "qubits": 24,
+      "depth": 4,
+      "parameter_count": 96,
+      "batch_size": 1,
+      "dtype": "complex128",
+      "parameter_dtype": "float64",
+      "optimizer": "SGD(lr=0.01)",
+      "gradient_method": "torch_autograd",
+      "runtime_mode": "portable",
+      "distribution_semantics": "single_device_fast_path",
+      "world_size": 1,
+      "local_world_size": 1,
+      "node_count": 1,
+      "scalability_claim_allowed": false,
+      "timing_scope": "Synchronized wall time including public API planning, circuit construction, and execution. Backward-only excludes forward.",
+      "warmup": 2,
+      "samples_per_round": 5,
+      "rounds": 3,
+      "checks": [
+        {
+          "qubits": 8,
+          "depth": 4,
+          "value_error": 2.220446049250313e-16,
+          "gradient_max_error": 4.718447854656915e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        },
+        {
+          "qubits": 24,
+          "depth": 4,
+          "value_error": 1.4432899320127035e-15,
+          "gradient_max_error": 1.942890293094024e-16,
+          "output_device": "flagos:0",
+          "output_dtype": "torch.float64",
+          "gradient_dtype": "torch.float64",
+          "gradient_device": "flagos:0",
+          "runtime": {
+            "mode": "statevector",
+            "execution_path": "local_statevector",
+            "simulation_engine": "pytorch_statevector",
+            "platform_provider": "torch_fl",
+            "device": "flagos:0",
+            "distribution_semantics": "single_device_fast_path"
+          },
+          "provenance": {
+            "requested_device": "flagos:0",
+            "selected_device": "flagos:0",
+            "cpu_fallback_used": false
+          }
+        }
+      ],
+      "timings": {
+        "forward": {
+          "raw_ms": [
+            [
+              132.809224,
+              129.822281,
+              129.677158,
+              129.959252,
+              129.261807
+            ],
+            [
+              130.400817,
+              129.744868,
+              129.57993,
+              129.826572,
+              129.709993
+            ],
+            [
+              128.973199,
+              129.389983,
+              128.969149,
+              129.092604,
+              129.764116
+            ]
+          ],
+          "round_medians_ms": [
+            129.822281,
+            129.744868,
+            129.092604
+          ],
+          "median_ms": 129.744868,
+          "peak_allocated_bytes": 822359552
+        },
+        "backward_only": {
+          "raw_ms": [
+            [
+              70.325059,
+              70.146523,
+              64.595747,
+              69.753215,
+              67.383196
+            ],
+            [
+              64.508629,
+              64.562858,
+              67.926719,
+              64.561959,
+              70.416688
+            ],
+            [
+              66.933571,
+              64.524158,
+              67.040271,
+              69.340528,
+              64.581046
+            ]
+          ],
+          "round_medians_ms": [
+            69.753215,
+            64.562858,
+            66.933571
+          ],
+          "median_ms": 66.933571,
+          "peak_allocated_bytes": 20418220032
+        },
+        "forward_backward": {
+          "raw_ms": [
+            [
+              196.953398,
+              197.529788,
+              200.059388,
+              198.733802,
+              195.976462
+            ],
+            [
+              198.526674,
+              199.833617,
+              202.122487,
+              202.670611,
+              196.148415
+            ],
+            [
+              196.994194,
+              398.931288,
+              196.974111,
+              200.232122,
+              200.652915
+            ]
+          ],
+          "round_medians_ms": [
+            197.529788,
+            199.833617,
+            200.232122
+          ],
+          "median_ms": 199.833617,
+          "peak_allocated_bytes": 20418222592
+        },
+        "training_step": {
+          "raw_ms": [
+            [
+              197.33602,
+              200.764133,
+              196.969418,
+              196.325204,
+              196.5644
+            ],
+            [
+              196.677301,
+              197.030933,
+              196.882217,
+              196.932112,
+              212.460593
+            ],
+            [
+              197.034318,
+              196.701869,
+              196.261047,
+              196.475204,
+              196.405458
+            ]
+          ],
+          "round_medians_ms": [
+            196.969418,
+            196.932112,
+            196.475204
+          ],
+          "median_ms": 196.932112,
+          "peak_allocated_bytes": 20418222592
+        }
+      },
+      "completed": true,
+      "vendor": "a800",
+      "original_record_sha256": "217e37a950e8f0b83aaae83fd2bdcb30b8209cd3ccfde3c6a43a82de55523cf5",
+      "omitted_fields": [
+        "host",
+        "route_config",
+        "source_manifest",
+        "torch_fl_path"
+      ]
+    }
+  ]
+}
