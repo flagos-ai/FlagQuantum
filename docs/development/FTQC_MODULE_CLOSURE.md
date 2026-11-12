@@ -442,3 +442,12 @@ Classical tensor disposition: acceptance `cd1648e1`,30 new/2692 related/
 52 statements10 branches100%. All4 functions/nested iterator have targets,
 but classical-rank/empty/phase limitations keep Q-0895 open. No new ID;
 20 closed/1260 open/390 active,1184 records. Next Q-0882; reuse Q-0893 audit.
+
+Classical simulator: complete definition ownership is recorded in
+[the source disposition](CLASSICAL_SIM_SOURCE_DISPOSITION.md). Implementation
+`c629405e` corrects current-output measurement phase lookup after output commit.
+13 new /12,943 related /84 CPU-TN /28 unchanged original tests pass; strict2,
+format/scope/architecture/IR/API and two examples pass. State coverage97%;
+original notebook and native replacement matrix remain distinct acceptance work.
+Q-0882/Q-0883 remain open; no new ID or physical primitive.
+20 closed/1260 open/390 active,1184 records remain unchanged.

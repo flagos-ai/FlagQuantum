@@ -108,6 +108,13 @@ G3 remains unstarted.
 
 ## Subsequent field support
 
+[Complete source disposition](CLASSICAL_SIM_SOURCE_DISPOSITION.md) maps every
+classical simulator definition to its native owner. Measurement phase lookup now
+rejects absent current output names or invalid indices with ValueError after
+assignment, matching source failure class and order. Prior-call output names
+cannot satisfy that lookup. Whole-file and original-test replacement acceptance
+remain open.
+
 [Field binding and collection](CLASSICAL_FIELD_REGISTERS.md) now supplies explicit
 matching `field_encodings` for binary-field graph ports. The original integer-only
 admission described above is historical. Shared traversal replaces the former
