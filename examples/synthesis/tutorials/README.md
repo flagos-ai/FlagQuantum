@@ -57,6 +57,7 @@ Native FlagQuantum programs currently available:
 - [prepare_state](basics/prepare_state/README.md)
 - [overview](basics/quantum_primitives/hadamard_test_tutorial/overview/README.md)
 - [overview](basics/quantum_primitives/linear_combination_of_unitaries/overview/README.md)
+- [overview](basics/quantumwalk_complex_network/overview/README.md)
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)

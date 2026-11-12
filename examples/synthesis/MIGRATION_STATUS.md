@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **50/213**.
+Validated local Notebook workflows: **51/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -391,7 +391,7 @@ Validated local Notebook workflows: **50/213**.
 | `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/main.py) | pending |
 | `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/main.py) | validated |
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/main.py) | validated |
-| `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | [Native program](tutorials/basics/quantumwalk_complex_network/main.py) | pending |
+| `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | [Native program](tutorials/basics/quantumwalk_complex_network/overview/main.py) | validated |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part1/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/controlled_rotation/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/classiq_overview_tutorial/main.py) | validated |

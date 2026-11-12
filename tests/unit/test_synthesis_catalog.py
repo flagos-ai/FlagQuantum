@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 50
+    assert len(validated) == 51
+    assert (
+        "tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network",
+        "examples/synthesis/tutorials/basics/quantumwalk_complex_network/overview/main.py",
+    ) in validated
     for operation in ("or", "xor"):
         assert (
             f"functions/function_usage_examples/arithmetic/bitwise_{operation}/bitwise_{operation}_example",
@@ -357,7 +361,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**50/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**51/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
