@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import io
+import json
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Literal, get_type_hints
 
 import pytest
 import torch
@@ -344,3 +347,246 @@ def test_embedded_converter_invalid_buffers_refused(
     converter = _EmbeddedRecordConverter("M 0\nDETECTOR rec[-1]", 1, 0)
     with pytest.raises(ValueError, match="invalid output"):
         converter.convert(torch.tensor([[False]]))
+
+
+def test_new_detector_noise_admission_keeps_old_sampler_refusal() -> None:
+    program = DynamicCircuit(1).bit_flip(0, 0.1).measure(0)
+    with pytest.raises(CapabilityError, match="exact Clifford slice"):
+        program.compile_sampler(seed=7)
+    from flagquantum.qec.execution.context import MeasurementMap
+
+    with pytest.raises(CapabilityError, match="exact Clifford slice"):
+        program.compile_m2d_converter(
+            detector_map=MeasurementMap(1, ((0,),)),
+            observable_map=MeasurementMap(1, ()),
+        )
+
+
+_FileFormat = Literal["01", "b8", "r8", "hits", "dets", "ptb64"]
+_FORMAT_BYTES: dict[str, bytes] = {
+    "01": b"10\n" * 64,
+    "b8": b"\x01" * 64,
+    "r8": b"\x00\x01" * 64,
+    "hits": b"0\n" * 64,
+    "dets": b"shot M0\n" * 64,
+    "ptb64": b"\xff" * 8 + b"\x00" * 8,
+}
+
+
+@pytest.mark.parametrize("format", tuple(_FORMAT_BYTES))
+def test_all_formats_publish_complete_records_without_sampling_a_tensor(
+    fake: _FakeSampler,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    format: _FileFormat,
+) -> None:
+    def write(shots: int, *, filepath: str, format: str) -> None:
+        assert shots == 64
+        fake.calls.append((shots, format))
+        Path(filepath).write_bytes(_FORMAT_BYTES[format])
+
+    monkeypatch.setattr(fake, "sample_write", write)
+    output = tmp_path / format
+    _program().compile_sampler(seed=7).sample_write(64, filepath=output, format=format)
+    assert output.read_bytes() == _FORMAT_BYTES[format]
+    assert fake.calls == [(64, format)]
+    assert list(tmp_path.iterdir()) == [output]
+
+
+def test_additive_format_contract_preserves_original_b8_contract() -> None:
+    root = Path(__file__).resolve().parents[2]
+    historical = json.loads(
+        (root / "contracts/compiled-measurement-sampler-v1.json").read_text()
+    )
+    contract = json.loads(
+        (
+            root / "contracts/compiled-measurement-file-formats-v1-candidate.json"
+        ).read_text()
+    )
+    assert historical["write_format"] == "b8"
+    assert contract["formats"] == list(_FORMAT_BYTES)
+    assert (
+        get_type_hints(implementation.CompiledMeasurementSampler.sample_write)["format"]
+        == _FileFormat
+    )
+    assert contract["max_file_bytes"] == implementation._MAX_FILE_BYTES
+
+
+@pytest.mark.parametrize("shots", (1, 63, 65))
+def test_ptb64_alignment_refuses_without_writer_or_staging(
+    fake: _FakeSampler,
+    tmp_path: Path,
+    shots: int,
+) -> None:
+    sampler = _program().compile_sampler(seed=7)
+    with pytest.raises(ValueError, match="multiple of 64"):
+        sampler.sample_write(shots, filepath=tmp_path / "output", format="ptb64")
+    assert not fake.calls and not list(tmp_path.iterdir())
+    assert sampler.sample(1).shape == (1, 2)
+
+
+@pytest.mark.parametrize("format", tuple(_FORMAT_BYTES))
+def test_format_bounds_refuse_before_writer_and_accept_exact_limit(
+    fake: _FakeSampler,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    format: _FileFormat,
+) -> None:
+    from flagquantum.simulation.stabilizer._measurement_file_validation import (
+        _file_size_bound,
+    )
+
+    bound = _file_size_bound(64, 2, format)
+    sampler = _program().compile_sampler(seed=7)
+    monkeypatch.setattr(implementation, "_MAX_FILE_BYTES", bound - 1)
+    with pytest.raises(CapabilityError, match="file bytes"):
+        sampler.sample_write(64, filepath=tmp_path / "refused", format=format)
+    assert not fake.calls and not list(tmp_path.iterdir())
+    monkeypatch.setattr(implementation, "_MAX_FILE_BYTES", bound)
+
+    def write(shots: int, *, filepath: str, format: str) -> None:
+        Path(filepath).write_bytes(_FORMAT_BYTES[format])
+
+    monkeypatch.setattr(fake, "sample_write", write)
+    sampler.sample_write(64, filepath=tmp_path / "accepted", format=format)
+    assert (tmp_path / "accepted").read_bytes() == _FORMAT_BYTES[format]
+
+
+@pytest.mark.parametrize(
+    ("format", "data"),
+    (
+        ("r8", b"\x00"),
+        ("r8", b"\x03"),
+        ("r8", b"\x02\x02"),
+        ("hits", b"0"),
+        ("hits", b"2\n"),
+        ("hits", b"0,0\n"),
+        ("hits", b"0,\n"),
+        ("hits", b"0\n\n"),
+        ("hits", b"x\n"),
+        ("dets", b"shot M0"),
+        ("dets", b"shot D0\n"),
+        ("dets", b"shot M2\n"),
+        ("dets", b"shot M0 M0\n"),
+        ("dets", b"shot \n"),
+        ("dets", b"shot\nshot\n"),
+        ("01", b"1x\n"),
+        ("01", b"100"),
+    ),
+)
+def test_incomplete_or_malformed_outputs_are_not_published(
+    fake: _FakeSampler,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    format: _FileFormat,
+    data: bytes,
+) -> None:
+    def write(shots: int, *, filepath: str, format: str) -> None:
+        Path(filepath).write_bytes(data)
+
+    monkeypatch.setattr(fake, "sample_write", write)
+    sampler = _program().compile_sampler(seed=7)
+    with pytest.raises(OSError):
+        sampler.sample_write(1, filepath=tmp_path / "output", format=format)
+    assert not list(tmp_path.iterdir())
+    with pytest.raises(RuntimeError, match="invalidated"):
+        sampler.sample(1)
+
+
+@pytest.mark.parametrize(
+    ("columns", "encoded"),
+    (
+        (254, b"\xfe"),
+        (255, b"\xff\x00"),
+        (256, b"\xff\x01"),
+    ),
+)
+def test_r8_zero_runs_include_the_terminating_bit(
+    tmp_path: Path,
+    columns: int,
+    encoded: bytes,
+) -> None:
+    from flagquantum.simulation.stabilizer._measurement_file_validation import (
+        _validate_record_file,
+    )
+
+    output = tmp_path / "runs.r8"
+    output.write_bytes(encoded * 2)
+    _validate_record_file(output, 2, columns, "r8", 2 * (columns + 1))
+    output.write_bytes(encoded[:-1])
+    with pytest.raises(OSError, match="incomplete"):
+        _validate_record_file(output, 1, columns, "r8", columns + 1)
+
+
+def test_stream_validation_reads_bounded_chunks_across_record_boundaries() -> None:
+    from flagquantum.simulation.stabilizer import (
+        _measurement_file_validation as validation,
+    )
+
+    class BoundedReader(io.BytesIO):
+        def read(self, size: int | None = -1) -> bytes:
+            assert size == 65536
+            return super().read(size)
+
+    validation._validate_sparse_text(
+        BoundedReader(b"0,10\n" * 14000), 14000, 11, dets=False
+    )
+    validation._validate_sparse_text(
+        BoundedReader(b"shot M0 M10\n" * 6000), 6000, 11, dets=True
+    )
+    validation._validate_sparse_text(BoundedReader(b"\n"), 1, 2, dets=False)
+    validation._validate_sparse_text(BoundedReader(b"shot\n"), 1, 2, dets=True)
+    validation._validate_r8(BoundedReader(b"\x00\x01" * 33000), 33000, 2)
+
+
+@pytest.mark.parametrize("format", tuple(_FORMAT_BYTES))
+def test_writer_failure_cleans_staging_and_invalidates_all_formats(
+    fake: _FakeSampler,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    format: _FileFormat,
+) -> None:
+    def fail(shots: int, *, filepath: str, format: str) -> None:
+        Path(filepath).write_bytes(b"partial")
+        raise OSError("controlled disk or close failure")
+
+    monkeypatch.setattr(fake, "sample_write", fail)
+    sampler = _program().compile_sampler(seed=7)
+    with pytest.raises(OSError, match="controlled"):
+        sampler.sample_write(64, filepath=tmp_path / "output", format=format)
+    assert not list(tmp_path.iterdir())
+    with pytest.raises(RuntimeError, match="invalidated"):
+        sampler.sample(1)
+
+
+def test_integer_and_unknown_format_preflight() -> None:
+    from flagquantum.simulation.stabilizer._measurement_file_validation import (
+        _file_size_bound,
+    )
+
+    with pytest.raises(CapabilityError, match="integer range"):
+        _file_size_bound(sys.maxsize + 1, 1, "01")
+    with pytest.raises(ValueError, match="format"):
+        _file_size_bound(1, 1, "unknown")
+
+
+@pytest.mark.parametrize("encoding", ["01", "b8", "r8", "hits", "dets", "ptb64"])
+def test_zero_width_file_framing(tmp_path: Path, encoding: str) -> None:
+    from flagquantum.simulation.stabilizer._measurement_file_validation import (
+        _file_size_bound,
+        _validate_record_file,
+    )
+
+    content = {
+        "01": b"\n",
+        "b8": b"",
+        "r8": b"\x00",
+        "hits": b"\n",
+        "dets": b"shot\n",
+        "ptb64": b"",
+    }[encoding] * 64
+    path = tmp_path / encoding
+    path.write_bytes(content)
+    _validate_record_file(
+        path, 64, 0, encoding, _file_size_bound(64, 0, encoding), sections=(("L", 0),)
+    )

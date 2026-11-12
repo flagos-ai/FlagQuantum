@@ -279,3 +279,90 @@ and the two `test_explicit_*conversion*.py` files under `tests/qec` and
 `tests/team/simulation` for core fakes and independent upstream conformance.
 The input is dense CPU bool. T, conditional H, noise, sweeps and routed programs
 are refused. Packed sampling and b8 writing remain separate sampler features.
+
+## Embedded detector producer
+
+`_detector_sampling.py` owns bounded source lowering, numerical preparation and
+exact error analysis. `_embedded_sampler.py` is the numerical wheel boundary.
+QEC owns maps, output layout, packed padding and the public handle lifecycle.
+Reuse the existing Pauli classifier; old sampler/converter noise refusals stay.
+The current embedded bridge invokes pinned FrameSimulator and ErrorAnalyzer
+without importing Stim Python. No additional upstream file is introduced. Run
+`tests/qec/test_native_detector_execution.py` and
+`tests/team/simulation/test_native_detector_execution_conformance.py`; the latter
+replaces a fake stream with the numerical stream behind one unchanged consumer.
+
+
+## Measurement record file formats
+
+The existing compiled measurement sampler writes `01`, `b8`, `r8`, `hits`,
+`dets`, and `ptb64` through Stim 1.16.0's existing codecs. See the executable
+`examples/qec/compiled_measurement_sampler.py` golden path and
+`docs/development/COMPILED_MEASUREMENT_FILE_FORMATS_PROPOSAL.md` for the byte
+bounds and acceptance scope. `dets` contains measurement `M` indices here;
+this method does not write detector/observable streams. `ptb64` requires shots
+in multiples of 64. Every explicit measurement keeps its own source-order
+column even when a classical slot is overwritten.
+
+The private file validator owns byte bounds and complete stream validation;
+it is not a public parser or a second codec. Keep `b8` exact-size admission,
+no-overwrite publication and cleanup intact when editing this workflow. Run
+`tests/unit/test_compiled_measurement_sampler_contract.py` first, followed by
+`tests/team/simulation/test_compiled_measurement_sampler_conformance.py`.
+File writing does not materialize the complete shot table in Python. The 1 GiB
+final-file bound and existing frame estimates do not impose process RSS or
+aggregate scratch-space limits.
+
+
+### Detector-file workflow
+
+`Circuit.compile_detector_sampler` owns maps and a reusable execution handle;
+Simulation owns the source lowering, reference normalization and numerical
+writer. The approved `sample_write` candidate streams six formats through the
+same private stream boundary as `sample`, with no new registry or backend.
+QEC validates layout and lifecycle; the shared private file validator checks
+framing before no-replace publication. Same-call observable output preserves
+correlation. Upstream files remain unchanged.
+
+The contributor golden path is `examples/qec/native_detector_sampling.py`;
+its deterministic file witness prints `detector_bytes 64`. Start with
+`tests/qec/test_native_detector_execution.py`, then numerical replacement tests
+in `tests/team/simulation/test_native_detector_execution_conformance.py`.
+See `docs/development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md` for capacities,
+publication limits and installed-wheel acceptance. No public file reader,
+research execution, universal Clifford-control support or RSS cap is added.
+
+## Stream supplied measurement files
+
+`_record_conversion.py` extends the existing dense converter boundary with a
+prepared file callback. The original lowered source and reference serve both
+methods; no second circuit representation or backend registry is introduced.
+The SDK callback normalizes paths to strings; the embedded callback uses
+`stream_measurements_to_detection_events_helper` from the unchanged 96-file
+Stim 1.16.0 closure. Both numerical implementations buffer 1024 records.
+
+`_measurement_file_validation.py` inspects regular input snapshots with reads
+of at most 64 KiB, retaining no all-shot table or unbounded token. Snapshot and
+aggregate outputs each have a 1 GiB guard, and padded principal tables have a
+64 MiB guard. These are request bounds, not RSS or filesystem quota guarantees.
+Outputs are staged, checked and linked without replacement; paired visibility
+is sequential. Cleanup reports residue, and a contained I/O error leaves the
+dense converter usable. Selected PTB64 output and sweep files refuse early.
+
+The golden path is `examples/qec/measurement_file_conversion.py`. Start with
+`tests/qec/test_measurement_file_conversion.py` for fake/SDK/embedded consumer
+replacement, malformed files, budgets and publication failures. No sampling,
+noise admission, research run or decoding is implied by file conversion.
+
+## Shot-file reading
+
+The public record I/O composition lives in
+`flagquantum.qec.execution.shot_data`; Simulation's private `_shot_data.py` owns
+snapshot admission, count/allocation checks and codec access. The embedded
+CPython cursor reuses the locked Stim reader; it introduces no numerical
+algorithm, decoder, scheduler or public SDK object. The standard build supports
+eager reading through pinned Stim; iteration requires the embedded build.
+Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
+checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
+for byte and numerical conformance. The ten-minute user path is
+`python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.

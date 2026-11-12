@@ -38,6 +38,9 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`algorithms/fermion_orbital_rotation.py`](algorithms/fermion_orbital_rotation.py)
+  differentiates a real orbital angle through domain tensor functions.
+
 - [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
   converts repeated-slot dynamic records to reference-normalized detector and
   observable flips using explicit measurement ordinals.
@@ -183,9 +186,17 @@ These examples do not use that alias:
   circuit the declared device can actually run, so a provider sees the whole path
   end to end without FlagQuantum changing to accept the device.
 - [`remote/jiuding_submit.py`](remote/jiuding_submit.py) — it imports its client.
-- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) — it imports
+- [`realtime/device_call.py`](realtime/device_call.py) — it imports
   the realtime messaging module directly, because the feedback loop it models is
   a channel between two programs rather than a program to run.
+- [`remote/realtime_device_call.py`](remote/realtime_device_call.py) forwards to
+  `realtime/device_call.py` for compatibility with the previous example path.
+  Run `python -m examples.realtime.device_call` for the canonical offline workflow.
+- [`realtime/feedback_loop.py`](realtime/feedback_loop.py) uses the existing
+  realtime handler and loopback channel to restore a classical binary state over
+  three rounds per shot. Run `python -m examples.realtime.feedback_loop`; both
+  shots print `corrected states=(0, 0, 0)`. It models five noisy observations of
+  one state, not a quantum circuit or a QEC decoder.
 - [`single_machine_quantum_ai/common.py`](single_machine_quantum_ai/common.py) —
   a shared helper for the examples beside it, which imports no FlagQuantum at all.
 - [`qec/restructure_compatibility.py`](qec/restructure_compatibility.py) imports
@@ -228,6 +239,10 @@ These examples do not use that alias:
   compares native matching and PyMatching on the same 35 distance-three Z
   memory shots. It uses the existing Stim and PyMatching extras on CPU and
   reports four paired outcome counts after all three batches complete.
+- [`qec/check_matrix_matching.py`](qec/check_matrix_matching.py) imports a
+  weighted check matrix through canonical QEC modules rather than the root alias.
+  CPU and the PyMatching extra are required. It prints the column mapping,
+  independent edge costs and the unique selected pair edge.
 - [`qec/stim_memory_experiment.py`](qec/stim_memory_experiment.py) runs an
   external Stim circuit through the canonical QEC fixed-shot report entry,
   using domain imports rather than the root-level alias. CPU and the existing
@@ -955,3 +970,16 @@ to display the detector and logical rows in the same fault-column order.
 
 Run `PYTHONPATH=. python examples/qec/dem_model_and_chunks.py --decode-rounds`
 to feed fixed detector events in round-local order and inspect the decoder records.
+
+[Native detector sampling and exact DEM](qec/native_detector_sampling.py): run
+`python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or Stim 1.16.0. The three-data-qubit code-capacity workflow
+samples 35 shots in 16/16/3 batches and reports actual logical failures.
+
+[Measurement-file conversion](qec/measurement_file_conversion.py): run
+`python -m examples.qec.measurement_file_conversion` with the embedded wheel or
+Stim 1.16.0. External repeated-slot records 010 produce detectors 10 and logical
+1. Expected output: `shots 64`, `detectors 10; observables 1`, `file_bytes 64 64`.
+The example performs bounded file conversion, not sampling or a research study.
+
+- `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build and PyMatching required).

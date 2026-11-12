@@ -1,3 +1,4 @@
+include third_party/openfermion/PROVENANCE.toml
 prune tests
 prune benchmarks
 prune examples

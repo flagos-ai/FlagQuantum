@@ -1,0 +1,52 @@
+name: Optional OpenFermion interoperability
+
+on:
+  pull_request:
+    paths:
+      - 'flagquantum/ecosystem/openfermion.py'
+      - 'flagquantum/observables/fermion.py'
+      - 'flagquantum/core/algebra/pauli.py'
+      - 'tests/unit/test_openfermion_conversion.py'
+      - 'tests/integration/test_openfermion_interop.py'
+      - '.github/workflows/openfermion-interop.yml'
+      - 'pyproject.toml'
+      - 'dependency-policy.toml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  operator-conversion:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: flagquantum-gh-2
+      queue: max
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.10', '3.12']
+    env:
+      OMP_NUM_THREADS: '1'
+      MKL_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      CUDA_VISIBLE_DEVICES: ''
+      MPLBACKEND: Agg
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: ./.github/actions/isolated-python
+      - run: python -m pip install --upgrade pip 'setuptools>=77.0.3' wheel
+      - uses: ./.github/actions/install-cpu-torch
+      - name: Install the separately owned optional upstream boundary
+        run: python -m pip install --no-build-isolation -e '.[dev,openfermion]'
+      - name: Verify real objects and native dependency isolation
+        run: |
+          python -m pip check
+          python -c "import openfermion; assert openfermion.__version__ == '1.7.1'"
+          python -m pytest tests/unit/test_openfermion_conversion.py tests/integration/test_openfermion_interop.py -m "openfermion or integration" -q

@@ -78,6 +78,17 @@ precision limitations are in
 `docs/development/QEC_STIM_EXPERIMENT_BRIDGE_PROPOSAL.md`.
 
 
+## Weighted graph SDK execution
+
+`pymatching_graph.py` owns PyMatchingGraphDecoder and the shared private SDK
+preparation boundary. It consumes immutable QEC MatchingGraph data; NumPy and
+SDK graph objects never escape. Existing DEM adapters retain their probability
+graphs, validation and result semantics while reusing preparation. Matching
+weights can be negative; matched endpoints remain nonnegative-only as in the
+pinned SDK. Do not assume an empty syndrome has zero cost. Run
+`python examples/qec/check_matrix_matching.py` with the PyMatching extra, then
+`python -m pytest -q tests/qec/test_pymatching_graph.py
+tests/qec/test_adapters_pymatching.py` after a representative change.
 ## Matched detection endpoints
 
 The approved `PyMatchingDecoder.decode_to_matched_detectors` reports immutable

@@ -1225,3 +1225,84 @@ The embedded macOS arm64 profile requires no Stim Python package. Standard
 builds use the optional Stim 1.16.0 SDK. The existing free
 `qec.execution.measurement_conversion.compile_m2d_converter` remains the
 terminal-readout entry point with its existing signature and support boundary.
+
+## Native detector sampling and exact DEM
+
+`Circuit.compile_detector_sampler(detector_map=..., observable_map=..., seed=...)`
+uses explicit measurement instruction order, including repeated classical slots.
+`sample(shots)` returns reference-normalized CPU bool detector flips; use
+`separate_observables=True` for a pair, `append_observables=True` for one array,
+and `bit_packed=True` for LSB-first uint8. Appended packing crosses the parity
+boundary without intermediate byte padding. Zero shots do not advance RNG.
+`Circuit.detector_error_model` returns the existing FlagQuantum DEM record.
+
+Run `python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or the Stim 1.16.0 extra. This bounded three-data-qubit
+code-capacity example is not a threshold study. The default source must have
+explicit Z records and a default CPU PyTorch initial state. Fixed Clifford
+gates, resets, single-slot X feedback and one-/two-qubit Pauli channels are
+supported. T, conditional H, general noise and unsupported exact DEM analysis
+refuse; there is no approximation or SV fallback. A channel may be sampleable
+but not convertible to an exact independent-mechanism DEM.
+
+The approved contract is [QEC native detector execution](../development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md).
+Output copies and conservatively padded tables are individually bounded at
+64 MiB, exact-analysis support at one million cells and DEM text at 16 MiB.
+These are allocation/work guards, not an RSS or performance claim. Compiled
+sampling reuses lowered source and RNG, not frame scratch. No detector file
+writer, MemoryCircuit backend replacement, new builder, SDK source integration
+for PyMatching, or broad parity certification is implied.
+
+## Convert a measurement file to detector and logical files
+
+Next-release additive API:
+`CompiledMeasurementsToDetectionEventsConverter.convert_file(...)`. Create the
+existing handle with `circuit.compile_m2d_converter(...)` for explicit records
+or the existing terminal converter factory. Existing `.convert()` is unchanged.
+
+```python
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import flagquantum as fq
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.qec.execution.context import MeasurementMap
+
+source = (DynamicCircuit(1).measure(0, classical_bit=0)
+          .measure(0, classical_bit=0).conditional("x", 0, classical_bit=0)
+          .measure(0, classical_bit=0))
+converter = fq.Circuit.from_ir(source.to_ir()).compile_m2d_converter(
+    detector_map=MeasurementMap(3, ((0, 1), (0, 2))),
+    observable_map=MeasurementMap(3, ((1,),)),
+)
+with TemporaryDirectory() as directory:
+    root = Path(directory)
+    source_path, events, logical = root / "input.b8", root / "events.b8", root / "logical.b8"
+    source_path.write_bytes(bytes([2]) * 64)  # External fault records: 010.
+    converter.convert_file(
+        measurements_filepath=source_path, measurements_format="b8",
+        detection_events_filepath=events, detection_events_format="b8",
+        obs_out_filepath=logical, obs_out_format="b8",
+    )
+    assert events.read_bytes() == logical.read_bytes() == bytes([1]) * 64
+```
+
+Inputs: `01`, `b8`, `r8`, `ptb64`, `hits`, `dets` (M occurrence indices).
+Outputs: `01`, `b8`, `r8`, `hits`, `dets` (typed D/L indices).
+`append_observables=True` may be combined with a separate `obs_out_filepath`.
+A selected PTB64 output or non-None sweep path is refused before I/O. All format
+arguments are validated, including unused formats. Empty input publishes empty
+files without numerical conversion. Paths accept strings and path-like objects.
+See [bounds and failure behavior](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md).
+
+## Captured shot-file reading candidate
+
+`flagquantum.qec.execution.shot_data` owns the two record-reading entry points.
+`read_shot_data_file` returns owned CPU Torch tensors in stored M/D/L order;
+`iter_shot_data_file` validates an immutable snapshot before yielding batches and
+requires the embedded profile. Use `contextlib.closing` on partial consumption.
+Six encodings are supported; independently pack separated logical columns.
+Inputs are bounded at 1 GiB and principal payload at 64 MiB, excluding runtime
+RSS and caller-retained batches. Zero stored columns are refused. See
+[the approved proposal](../development/QEC_SHOT_DATA_READING_PROPOSAL.md) for
+exact budgets, API mapping and remaining parity gaps. Native and installed
+acceptance are pending for this candidate.

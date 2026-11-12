@@ -115,3 +115,76 @@ and seeded instruction stream are preserved. See
 [QEC-FUNCTIONAL-004](../../../docs/development/QEC_FUNCTIONAL_004.md) and run
 `PYTHONPATH=. python examples/qec/correlated_circuit_noise.py` for the core-only
 declared-model example; physical circuit sampling uses the existing Stim extra.
+
+## Native detector sampling and exact DEM
+
+`Circuit.compile_detector_sampler(detector_map=..., observable_map=..., seed=...)`
+uses explicit measurement instruction order, including repeated classical slots.
+`sample(shots)` returns reference-normalized CPU bool detector flips; use
+`separate_observables=True` for a pair, `append_observables=True` for one array,
+and `bit_packed=True` for LSB-first uint8. Appended packing crosses the parity
+boundary without intermediate byte padding. Zero shots do not advance RNG.
+`Circuit.detector_error_model` returns the existing FlagQuantum DEM record.
+
+Run `python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or the Stim 1.16.0 extra. This bounded three-data-qubit
+code-capacity example is not a threshold study. The default source must have
+explicit Z records and a default CPU PyTorch initial state. Fixed Clifford
+gates, resets, single-slot X feedback and one-/two-qubit Pauli channels are
+supported. T, conditional H, general noise and unsupported exact DEM analysis
+refuse; there is no approximation or SV fallback. A channel may be sampleable
+but not convertible to an exact independent-mechanism DEM.
+
+The approved contract is [QEC native detector execution](../../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md).
+Output copies and conservatively padded tables are individually bounded at
+64 MiB, exact-analysis support at one million cells and DEM text at 16 MiB.
+These are allocation/work guards, not an RSS or performance claim. Compiled
+sampling reuses lowered source and RNG, not frame scratch. No detector file
+writer, MemoryCircuit backend replacement, new builder, SDK source integration
+for PyMatching, or broad parity certification is implied.
+
+
+### Detector-file workflow
+
+`Circuit.compile_detector_sampler` owns maps and a reusable execution handle;
+Simulation owns the source lowering, reference normalization and numerical
+writer. The approved `sample_write` candidate streams six formats through the
+same private stream boundary as `sample`, with no new registry or backend.
+QEC validates layout and lifecycle; the shared private file validator checks
+framing before no-replace publication. Same-call observable output preserves
+correlation. Upstream files remain unchanged.
+
+The contributor golden path is `examples/qec/native_detector_sampling.py`;
+its deterministic file witness prints `detector_bytes 64`. Start with
+`tests/qec/test_native_detector_execution.py`, then numerical replacement tests
+in `tests/team/simulation/test_native_detector_execution_conformance.py`.
+See `docs/development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md` for capacities,
+publication limits and installed-wheel acceptance. No public file reader,
+research execution, universal Clifford-control support or RSS cap is added.
+
+## Convert captured measurement files
+
+The existing compiled converter also exposes `convert_file()`. Both terminal
+and explicit factories reuse their prepared source/reference. QEC owns maps and
+the public request; Simulation owns snapshot validation, numerical conversion
+and file handles. No public file-reader or execution result type is added.
+
+Run `python -m examples.qec.measurement_file_conversion` with the embedded wheel
+or Stim 1.16.0. It prints `shots 64`, `detectors 10; observables 1` and
+`file_bytes 64 64`. Start contributor changes with
+`python -m pytest tests/qec/test_measurement_file_conversion.py -m unit -q`.
+See the approved [file conversion proposal](../../../docs/development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md)
+for snapshot, allocation, no-replace publication and refusal contracts.
+
+## Shot-file reading
+
+The public record I/O composition lives in
+`flagquantum.qec.execution.shot_data`; Simulation's private `_shot_data.py` owns
+snapshot admission, count/allocation checks and codec access. The embedded
+CPython cursor reuses the locked Stim reader; it introduces no numerical
+algorithm, decoder, scheduler or public SDK object. The standard build supports
+eager reading through pinned Stim; iteration requires the embedded build.
+Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
+checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
+for byte and numerical conformance. The ten-minute user path is
+`python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.

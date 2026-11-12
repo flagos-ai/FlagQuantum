@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import shlex
 import subprocess
 import sys
 import zipfile
@@ -10,6 +11,15 @@ from pathlib import Path
 
 import pytest
 import yaml
+
+try:
+    import tomllib
+except ModuleNotFoundError:
+    import tomli
+
+    load_toml = tomli.loads
+else:
+    load_toml = tomllib.loads
 
 pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
@@ -210,9 +220,39 @@ def test_workflow_prepares_wheels_before_installing_the_project() -> None:
         for step in steps
         if step.get("uses") == "./.github/actions/prepare-triton-wheels"
     )
-    install = next(step for step in steps if "-e '.[dev,cuda]'" in step.get("run", ""))
+    install = next(
+        step
+        for step in steps
+        if step.get("name") == "Install the Triton test environment"
+    )
     assert steps.index(preparation) < steps.index(install)
     assert preparation["timeout-minutes"] == 9
     assert install["timeout-minutes"] == 4
     assert any(step.get("uses") == "./.github/actions/hosted-cache" for step in steps)
     assert any("-m pip check" in step.get("run", "") for step in steps)
+
+
+def test_triton_lane_installs_only_its_runtime_and_test_dependencies() -> None:
+    project = load_toml((ROOT / "pyproject.toml").read_text())
+    pytest_requirement = next(
+        requirement
+        for requirement in project["project"]["optional-dependencies"]["dev"]
+        if requirement.startswith("pytest>=")
+    )
+    workflow = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())
+    steps = workflow["jobs"]["triton-optional"]["steps"]
+    install = next(
+        step
+        for step in steps
+        if step.get("name") == "Install the Triton test environment"
+    )
+    assert shlex.split(install["run"]) == [
+        "python",
+        "-m",
+        "pip",
+        "install",
+        "--no-build-isolation",
+        "-e",
+        ".[cuda]",
+        pytest_requirement,
+    ]

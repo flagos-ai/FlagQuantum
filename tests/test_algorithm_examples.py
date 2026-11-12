@@ -108,6 +108,15 @@ SCRIPTS = (
     "sparse_select",
     "logical_resources",
     "arithmetic",
+    "fermion_energy",
+    "fermion_chemistry",
+    "fermion_fcidump",
+    "fermion_hdf5",
+    "fermion_fourier",
+    "fermion_tapering",
+    "fermion_controlled_evolution",
+    "fermion_orbital_rotation",
+    "fermion_hubbard",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -128,6 +137,33 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_orbital_rotation": (
+        "real CPU orbital rotations",
+        "not geometry gradients or SCF",
+    ),
+    "fermion_hubbard": (
+        "exponential inspection cost",
+        "not a many-body scalability claim",
+    ),
+    "fermion_tapering": (
+        "explicitly supplied symmetry sector",
+        "not a scalable eigensolver",
+    ),
+    "fermion_fourier": ("JW occupation order", "quadratic gate cost"),
+    "fermion_controlled_evolution": (
+        "unreduced JW order",
+        "error is measured with a small dense reference, not bounded",
+    ),
+    "fermion_fcidump": (
+        "real closed-shell FCIDUMP integrals",
+        "not the correlated ground energy",
+    ),
+    "fermion_hdf5": ("real closed-shell file integrals", "not a computed ground state"),
+    "fermion_energy": ("exact statevector simulation", "no sampling or hardware noise"),
+    "fermion_chemistry": (
+        "fixed STO-3G hydrogen integrals",
+        "not an evolution error bound",
+    ),
     # "The density matrix is materialized classically and its exponential is
     # built with a dense matrix exponential" -- the input model is not met.
     "pca": ("built classically",),
@@ -1694,6 +1730,43 @@ def test_arithmetic_example_sums_and_hands_the_cost_to_the_compiler() -> None:
     assert "take away" in output
 
 
+def test_fermion_energy_example_preserves_energy_across_encodings() -> None:
+    output = _run("fermion_energy")
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        assert _number(output, encoding) == pytest.approx(1.3, abs=1e-6)
+    _assert_premise("fermion_energy", output)
+
+
+def test_fermion_chemistry_example_reports_energy_and_differentiable_evolution() -> (
+    None
+):
+    output = _run("fermion_chemistry")
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        value = _labelled(output, encoding)
+        assert value.startswith("HF energy ") and value.endswith(" Ha")
+        assert float(value.split()[2]) == pytest.approx(-1.1166843871, abs=1e-9)
+    match = re.search(
+        r"Real reference amplitude ([\d.e+-]+); time derivative ([\d.e+-]+)", output
+    )
+    assert match is not None, output
+    assert float(match[1]) == pytest.approx(0.9745154458, abs=1e-8)
+    assert float(match[2]) == pytest.approx(-0.2537232266, abs=1e-8)
+    residual = re.search(r"Integral reconstruction residual ([\d.e+-]+)", output)
+    assert residual is not None, output
+    assert 0 <= float(residual[1]) < 1e-12
+    _assert_premise("fermion_chemistry", output)
+
+
+def test_fermion_fcidump_example_measures_the_input_reference() -> None:
+    output = _run("fermion_fcidump")
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        value = _labelled(output, encoding)
+        assert value.startswith("reference energy ") and value.endswith(" Ha")
+        # 2 h_11 + (11|11) + E_core = 2 (-1) + 0.4 + 0.7.
+        assert float(value.split()[2]) == pytest.approx(-0.9, abs=1e-10)
+    _assert_premise("fermion_fcidump", output)
+
+
 def test_the_example_directory_is_covered_and_indexed() -> None:
     scripts = sorted(path.name for path in EXAMPLES.glob("*.py"))
     expected = sorted(f"{name}.py" for name in SCRIPTS)
@@ -1769,3 +1842,76 @@ def test_examples_readme_names_every_example_that_does_not_use_the_root_alias() 
             *missing,
         )
     )
+
+
+def test_fermion_hdf5_example_reports_encoded_reference_energies() -> None:
+    pytest.importorskip("h5py")
+    output = _run("fermion_hdf5")
+    _assert_premise("fermion_hdf5", output)
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        match = re.search(rf"{encoding}: reference energy (-?[0-9.]+) Ha", output)
+        assert match is not None
+        assert float(match.group(1)) == pytest.approx(-0.9, abs=1e-10)
+
+
+def test_fermion_fourier_example_measures_uniform_occupation_and_inverse() -> None:
+    output = _run("fermion_fourier")
+    for mode in range(4):
+        assert float(_labelled(output, f"Mode {mode} occupation")) == pytest.approx(
+            0.25, abs=1e-6
+        )
+    assert float(_labelled(output, "Inverse amplitude residual")) < 1e-12
+    _assert_premise("fermion_fourier", output)
+
+
+def test_fermion_tapering_example_measures_selected_h2_sector() -> None:
+    output = _run("fermion_tapering")
+    assert _labelled(output, "Register") == "4 -> 2 qubits"
+    assert float(
+        _labelled(output, "Selected-sector measured energy").split()[0]
+    ) == pytest.approx(-1.1372701747, abs=1e-9)
+    assert float(_labelled(output, "Particle number")) == pytest.approx(2, abs=1e-6)
+    assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
+    _assert_premise("fermion_tapering", output)
+
+
+def test_fermion_controlled_evolution_reports_interference_and_convergence() -> None:
+    output = _run("fermion_controlled_evolution")
+    defects = [
+        float(value)
+        for value in re.findall(r"Steps \d+ overlap defect: ([\d.e+-]+)", output)
+    ]
+    assert len(defects) == 3
+    assert defects[0] / defects[1] > 3.8
+    assert defects[1] / defects[2] > 3.8
+    assert float(_labelled(output, "Control X")) == pytest.approx(
+        0.8993719806, abs=1e-9
+    )
+    assert float(_labelled(output, "Control Y")) == pytest.approx(
+        0.4313256428, abs=1e-9
+    )
+    assert "Register: 4 system + 1 control = 5 qubits" in output
+    assert "No phase alignment or energy-offset removal is used." in output
+    _assert_premise("fermion_controlled_evolution", output)
+
+
+def test_fermion_orbital_rotation_example() -> None:
+    output = _run("fermion_orbital_rotation")
+    _assert_premise("fermion_orbital_rotation", output)
+    assert "Orbital gradient 0.85767388" in output
+    assert "After one gradient step -1.06185478" in output
+
+
+def test_fermion_hubbard_measures_two_particle_ground_state() -> None:
+    output = _run("fermion_hubbard")
+    for label in ("Analytic N=2 energy", "Dense N=2 energy"):
+        assert float(_labelled(output, label)) == pytest.approx(-0.8284271247, abs=1e-9)
+    rows = re.findall(
+        r"(jordan_wigner|parity|bravyi_kitaev) energy: ([\d.e+-]+); particles: ([\d.e+-]+)",
+        output,
+    )
+    assert {row[0] for row in rows} == {"jordan_wigner", "parity", "bravyi_kitaev"}
+    for _, energy, particles in rows:
+        assert float(energy) == pytest.approx(-0.8284271247, abs=1e-9)
+        assert float(particles) == pytest.approx(2, abs=1e-6)
+    _assert_premise("fermion_hubbard", output)

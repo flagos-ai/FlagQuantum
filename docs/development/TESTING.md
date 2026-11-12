@@ -132,6 +132,7 @@ so the check is per test rather than per file.
 | Marker | Runtime Environment | Proves | Does Not Prove |
 | --- | --- | --- | --- |
 | `smoke` | Fast local CPU; no subprocess, GPU, or benchmark run. | Importability, minimal `fq.Circuit`, expectation, and autograd health. | Planner completeness, distributed semantics, performance, or release readiness. |
+| `openfermion` | Isolated optional workflow with real OpenFermion 1.7.1 on Python 3.10/3.12. | Ordered operator conversion, matrix agreement and round trips at the explicit migration boundary. | Native dependency requirements, upstream execution support, or full OpenFermion compatibility. |
 | `unit` | Fast local CPU pure logic. | IR, planner, audit, metadata, helper, and schema logic in isolation. | Runtime integration, process-group behavior, accelerator execution, or benchmark truth. |
 | `integration` | Local single-process developer environment. | Cross-module API/runtime behavior without cluster setup. | Multi-process transport, GPU execution, or scalability claims. |
 | `distributed_cpu` | CPU/local distributed simulators, planner/audit checks, or torch distributed semantics that do not require real accelerator capacity. | Rank ownership metadata, sharding intent, fail-closed gates, and development-production semantic parity where applicable. | Real multi-GPU capacity expansion, production transport performance, or release-grade scalability evidence. |
@@ -154,7 +155,7 @@ so the check is per test rather than per file.
 | `slow` | Any environment, intentionally slower than default loops. | Longer-running behavior selected explicitly. | Release readiness or scalability on its own. |
 
 The coverage job installs `jax`, `braket`, `cirq`, `pennylane`, `cotengra`,
-`stim`, and `pymatching` because its marker
+`stim`, `pymatching`, `kaiwu`, and `chemistry-pyscf` because its marker
 expression selects their suites, and installs neither `qiskit` nor `triton`: the
 other two cannot be measured there.
 `cotengra` is a pure-Python wheel whose only dependency is `autoray`, so it does
@@ -552,7 +553,7 @@ pushes run the installed-wheel acceptance job instead of another full matrix;
 manual full validation remains available. See [the PR and main policy](CI_MERGE_QUEUE.md).
 
 GPU and multi-node tiers must run on explicitly provisioned environments.
-The checked-in `ci.yml` defines twenty-six jobs:
+The checked-in `ci.yml` defines twenty-seven jobs:
 
 - `pre-commit`: source-file hygiene hooks, using the same action as the manual
   diagnostics workflow;
@@ -567,6 +568,9 @@ The checked-in `ci.yml` defines twenty-six jobs:
   dependency-policy synchronization, architecture-boundary, generated-document,
   capability-maturity, evidence-revision-origin, Braket/Cirq/CUDA-Q/Qiskit/
   PennyLane interoperability contracts, and repository-hygiene checks;
+- `native-fermion`: independent Ubuntu source installations on Python 3.10 and
+  3.12, testing the native fermion workflow without optional science packages
+  before installing PySCF and requiring three real RHF cases to pass;
 - `cpu-core`: Python 3.10 and 3.11 compile, import, dependency-isolation, and
   smoke compatibility on pull requests; manual full validation runs the complete
   smoke/unit suite on both interpreters;
@@ -622,7 +626,7 @@ The checked-in `ci.yml` defines twenty-six jobs:
 - `distributed-cpu-shard`: partitions of the `pr-distributed` tier — CPU
   distributed semantics and release-contract checks — run separately from the core matrix;
 - `coverage-plan`: one complete collection of the maintained coverage selection,
-  partitioned in bounded file batches into at most 192 nonempty trusted PR shards or 16 hosted shards;
+  partitioned in bounded file batches into at most 192 nonempty trusted PR/manual shards or 16 hosted shards;
 - `coverage-shard`: execute the explicit node list for each planned partition
   under the unchanged marker expression on separate runners;
 - `coverage`: the required aggregation gate, which combines all raw coverage
@@ -663,6 +667,10 @@ Trusted core and runtime suites use the qualified A800 image caches. The
 locked core images still prove the absence of NumPy and optional frameworks.
 Quality and online SDK downloads use hosted runners. Coverage and distributed
 CPU work use the locked coverage image on the generic CPU pool.
+Trusted manual CI runs use the same qualified CPU pool and 192-partition coverage
+plan as same-repository pull requests. Fork pull requests retain hosted runners
+and 16 partitions. Manual runs continue to include slow tests; the runner choice
+does not change the collected selection, time limits, or coverage thresholds.
 Source preparation uses the generic CPU pool. Source hygiene runs on a hosted
 runner to download its pre-commit hooks.
 Dependency-bound and supply-chain checks retain the general CPU pool.
@@ -943,9 +951,24 @@ source and result artifacts with GitHub.
 For a dependency change, dispatch `publish-dev-container.yml` on the proposed
 branch with `ci-cpu=true`. The publisher resolves the core and coverage profiles,
 records their exact installed distributions, and checks them with networking
-disabled. Copy the four resulting image digests into the lock file and validate
-the PR. An outdated image is rejected when its dependency manifest differs from
-the checkout.
+disabled. Each `ci-image-lock-<profile>-py<version>` artifact contains a lock row
+with the published registry digest and the hash-verified OCI manifest digest
+from an actual offline export. Copy those four rows into the lock file, provision
+and qualify the caches, and validate the PR. An outdated image is rejected when
+its dependency manifest differs from the checkout.
+
+The native fermionic migration changes both `pyproject.toml` and the coverage
+profile. All four locked images must therefore be rebuilt and qualified before
+that PR can merge. A source-only manifest update does not update the immutable
+images. The `native-fermion` Ubuntu job independently installs the source and
+tests Python 3.10 / PyTorch 2.10 and Python 3.12 / PyTorch 2.14, first without
+optional science packages and then with PySCF 2.8 and 2.15 respectively. It runs
+on each PR and checks driver import before the real RHF tests. Coverage planning
+and execution also require a working PySCF import, so missing optional chemistry
+cannot turn those cases into a green run with only skips. These workflow changes
+use images rebuilt by workflow run `42582666522`; their complete lock rows are
+recorded in `docker/ci/images.lock`. Successful cache qualification and CI on the
+updated revision remain merge prerequisites until their evidence is recorded.
 
 
 ## CPU runner routing and reliability
@@ -1047,7 +1070,7 @@ from replacing another job artifact.
 
 The `coverage-plan` job collects the original marker selection once, then assigns
 file batches of at most 16 tests by estimated duration to at most 192 nonempty shards for trusted
-PRs (16 on hosted/manual runs). Each selected node appears exactly once in the
+PRs and trusted manual runs (16 on hosted fork runs). Each selected node appears exactly once in the
 plan. Coverage data stays under the runner temporary directory, outside the
 source tree copied by mutation tests. Shards verify the source SHA and content digest before running their explicit
 node list. Keeping bounded file batches together avoids full-repository collection on every

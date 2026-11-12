@@ -378,9 +378,9 @@ This catalog is generated from the machine-validated
 | Decode a detector error model whose mechanisms flip three or more detectors | Belief-propagation decoder with ordered statistics over a detector error model | Development evidence | [Read guide](../../flagquantum/qec/IMPLEMENTATION.md) |
 | Decode a model the minimum-weight matcher refuses as a hyperedge | Belief-propagation decoder with ordered statistics over a detector error model | Development evidence | [Read guide](../../flagquantum/qec/IMPLEMENTATION.md) |
 | Compare a hyperedge decoder with the matcher wherever both accept the model | Belief-propagation decoder with ordered statistics over a detector error model | Development evidence | [Read guide](../../flagquantum/qec/IMPLEMENTATION.md) |
-| Describe a call between a running program and a service without hardware | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/remote/realtime_device_call.py) |
-| Give a hardware partner an exact slot, payload, and status layout to implement against | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/remote/realtime_device_call.py) |
-| Exercise the protocol end to end offline over an in-process transport | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/remote/realtime_device_call.py) |
+| Describe a call between a running program and a service without hardware | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/realtime/device_call.py) |
+| Give a hardware partner an exact slot, payload, and status layout to implement against | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/realtime/device_call.py) |
+| Exercise the protocol end to end offline over an in-process transport | Realtime device-call messaging protocol | Development evidence | [Run example](../../examples/realtime/device_call.py) |
 | State a subsystem code whose checks leave more classes than it protects | Subsystem-code record | Development evidence | [Read guide](../../flagquantum/qec/IMPLEMENTATION.md) |
 | Declare the gauge generators that decide which of those classes are logical | Subsystem-code record | Development evidence | [Read guide](../../flagquantum/qec/IMPLEMENTATION.md) |
 | Read the tesseract family's checks and gauge as a subsystem instead of as a stabilizer code | Subsystem-code record | Development evidence | [Read guide](../../flagquantum/qec/IMPLEMENTATION.md) |
@@ -396,6 +396,17 @@ This catalog is generated from the machine-validated
 | Validate sharded training on Ascend 910C | Huawei Ascend 910C sharded quantum training | Development evidence | [Read guide](../../docs/guides/ASCEND_910C.md) |
 | Resume Ascend training across two hosts | Huawei Ascend 910C sharded quantum training | Development evidence | [Read guide](../../docs/guides/ASCEND_910C.md) |
 | Audit communication and device memory statistics | Huawei Ascend 910C sharded quantum training | Development evidence | [Read guide](../../docs/guides/ASCEND_910C.md) |
+| Sample detector and logical flips from a noisy native circuit | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Decode a model from the same source | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Pack detector rows without losing parity boundaries | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Convert captured measurement files into detector and logical files | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Read captured records and decode bounded batches | Native circuit detector sampling and exact DEM | Development evidence | [Run example](../../examples/qec/native_detector_sampling.py) |
+| Differentiate a determinant energy with respect to orbital angles | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
+| Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
+| Build a spinful open chain with explicit hopping, interaction and chemical potential | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
+| Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 
 ## Build and compile
 
@@ -1466,6 +1477,48 @@ Run native complex PyTorch simulation, gradients, hybrid training, noise, TEBD, 
 - **Documentation:** [guide](../../docs/guides/ASCEND_910C.md)
 - **Known boundary:** Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification.
 
+### Native circuit detector sampling and exact DEM
+
+Sample reference-normalized detector flips and derive an exact DEM from one bounded native Clifford source and explicit measurement maps.
+
+- **Maturity:** Development evidence
+- **Public API:** `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`, `flagquantum.qec.execution.measurement_conversion.CompiledMeasurementsToDetectionEventsConverter.convert_file`, `flagquantum.qec.execution.shot_data.read_shot_data_file`, `flagquantum.qec.execution.shot_data.iter_shot_data_file`
+- **Runtime modes:** `stabilizer`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_process`
+- **Start:** [quick example](../../examples/qec/native_detector_sampling.py)
+- **Documentation:** [guide](../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md)
+- **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
+
+### Real orbital-parameter gradients
+
+Rotate static real spatial integrals with trainable orbital parameters and differentiate an explicit closed-shell determinant energy.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.chemistry_domain.orbital_rotation.rotate_spatial_integrals`, `flagquantum.algorithms.chemistry_domain.orbital_rotation.closed_shell_determinant_energy`
+- **Runtime modes:** `local_cpu_tensor`
+- **Hardware:** `cpu`
+- **Gradient support:** `real_orbital_parameters_only`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_orbital_rotation.py)
+- **Documentation:** [guide](../../docs/development/FERMION_ORBITAL_GRADIENTS.md)
+- **Known boundary:** Static real spatial integrals and antisymmetric generators; only real CPU orbital parameters are trainable. Dense O(n^4) integral storage. Explicit closed-shell occupations only. No geometry, supplied-integral, SCF, complex-orbital, open-shell or decomposition gradients; no correlated-ground-state or scalability claim.
+
+### Spinful Fermi-Hubbard open chain
+
+Construct an open-chain Hamiltonian in the native fermionic algebra and measure its explicitly encoded small-system state.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_chain`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_hubbard.py)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_CHAIN.md)
+- **Known boundary:** Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency.
+
 
 ## Distributed execution
 
@@ -1855,14 +1908,14 @@ Read a vendor's own device declaration fail-closed into a backend profile, prefl
 Frame a device call into a fixed-size slot, type its payload against a handler schema, resolve it through a function table, and carry it over a channel chosen at runtime by name.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.remote.realtime`
+- **Public API:** `flagquantum.realtime`
 - **Runtime modes:** `offline_messaging_conformance`
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `single_process`
-- **Start:** [quick example](../../examples/remote/realtime_device_call.py)
-- **Documentation:** [guide](../../flagquantum/remote/realtime/README.md)
-- **Known boundary:** This is the software half of a realtime control surface and nothing else. It owns the 24-byte packed request and response headers, the ten payload type ids, the 12-byte type descriptor, the eight-argument and four-result limits, little-endian and IEEE-754 encoding, least-significant-bit-first bit packing, the function-id hash, the function table, the status convention, and the channel-selection seam. It does not own, implement, or reach an FPGA, a ConnectX NIC, RDMA or RoCE transport, GPUDirect, NVQLink, a Holoscan sensor bridge, persistent RX or TX dispatch kernels, a ring buffer, or a dispatcher, and it contains no compiler surface: there is no device_call lowering, no realtime dialect, and no slot-count, slot-size, or timeout flag family. No hardware was contacted and no hardware evidence exists; no realtime link has ever been established by this package. It carries a 64-bit timestamp field and echoes it verbatim, so it reads no clock, measures no duration, bounds no wait, and makes no latency, jitter, throughput, cycle-count, or realtime-ness claim of any kind; there is deliberately no per-dispatch timeout because waiting belongs to the transport. The type ids, the descriptor layout, and the argument and result limits are taken from CUDA-Q's published protocol so an interoperating implementation produces the same bytes, while the field names, the default slot size of 384 bytes, and every Python behaviour are FlagQuantum's own: CUDA-Q requires a slot size explicitly and documents no default, and a function-id miss raises a FlagQuantum exception here whereas the published dispatcher clears the slot with no response. Payloads are typeless on the wire, so a schema disagreement between a caller and a handler is caught out of band and not at runtime. LoopbackTransport is the contract fake and performs no I/O. A realtime call is consumed by a service-side handler; the simulator is not a sanctioned consumer, because architecture.toml forbids simulation from importing remote, and no realtime execution mode, runtime option, target, or result field is added anywhere. The parity rows for realtime_transport, realtime_feedback_loop, and realtime_sensor_bridge remain unsupported; only realtime_host_api moves to partial. No Stable Core export, capability availability claim, or maturity claim above development evidence follows from this entry.
+- **Start:** [quick example](../../examples/realtime/device_call.py)
+- **Documentation:** [guide](../../flagquantum/realtime/README.md)
+- **Known boundary:** This is the software half of a realtime control surface and nothing else. It owns the 24-byte packed request and response headers, the ten payload type ids, the 12-byte type descriptor, the eight-argument and four-result limits, little-endian and IEEE-754 encoding, least-significant-bit-first bit packing, the function-id hash, the function table, the status convention, and the channel-selection seam. It does not own, implement, or reach an FPGA, a ConnectX NIC, RDMA or RoCE transport, GPUDirect, NVQLink, a Holoscan sensor bridge, persistent RX or TX dispatch kernels, a ring buffer, or a dispatcher, and it contains no compiler surface: there is no device_call lowering, no realtime dialect, and no slot-count, slot-size, or timeout flag family. No hardware was contacted and no hardware evidence exists; no realtime link has ever been established by this package. It carries a 64-bit timestamp field and echoes it verbatim, so it reads no clock, measures no duration, bounds no wait, and makes no latency, jitter, throughput, cycle-count, or realtime-ness claim of any kind; there is deliberately no per-dispatch timeout because waiting belongs to the transport. The type ids, the descriptor layout, and the argument and result limits are taken from CUDA-Q's published protocol so an interoperating implementation produces the same bytes, while the field names, the default slot size of 384 bytes, and every Python behaviour are FlagQuantum's own: CUDA-Q requires a slot size explicitly and documents no default, and a function-id miss raises a FlagQuantum exception here whereas the published dispatcher clears the slot with no response. Payloads are typeless on the wire, so a schema disagreement between a caller and a handler is caught out of band and not at runtime. LoopbackTransport is the contract fake and performs no I/O. A realtime call is consumed by a service-side handler; the simulator is not a sanctioned consumer, because architecture.toml forbids simulation from importing realtime, and no realtime execution mode, runtime option, target, or result field is added anywhere. The parity rows for realtime_transport, realtime_feedback_loop, and realtime_sensor_bridge remain unsupported; only realtime_host_api moves to partial. No Stable Core export, capability availability claim, or maturity claim above development evidence follows from this entry.
 
 ### Target-directed local emulation
 
@@ -1877,6 +1930,20 @@ Compile a program for a declared third-party target and execute the compiled pro
 - **Start:** [quick example](../../examples/remote/emulate_local_target.py)
 - **Documentation:** [guide](../../flagquantum/remote/README.md)
 - **Known boundary:** A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. emulate_declared_target reaches the same execution from a provider's own declaration instead of a caller-built profile: the declaration is validated fail-closed first, its own shot limit is the limit enforced while its declared operation limit becomes the emulated target's own declared limit, and a declaration that offers several devices is refused unless the caller names one. The emission dialect stays the caller's request rather than a fact read out of the declaration, because artifacts.profiles is an open collection of the profiles a device publishes and not a syntax claim. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade.
+
+### Optional OpenFermion operator conversion
+
+Convert external fermionic and Pauli operators at an explicit optional ecosystem boundary, then use native operator consumers.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.openfermion.from_openfermion_fermion`, `flagquantum.ecosystem.openfermion.to_openfermion_fermion`, `flagquantum.ecosystem.openfermion.from_openfermion_qubit`, `flagquantum.ecosystem.openfermion.to_openfermion_qubit`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick-start guide](../../flagquantum/ecosystem/README.md)
+- **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
 
 
 ## Validated public performance claims

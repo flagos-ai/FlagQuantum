@@ -3,9 +3,14 @@
 from __future__ import annotations
 
 import math
+import os
+import shutil
+import stat
 from collections.abc import Callable
-from dataclasses import replace
+from contextlib import ExitStack
+from dataclasses import dataclass, replace
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any
 
 import torch
@@ -13,12 +18,219 @@ import torch
 from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import CircuitIR, Instruction
 from ...errors import CapabilityError
+from ._measurement_file_validation import (
+    _file_size_bound,
+    _identity,
+    _inspect_measurement_file,
+    _validate_record_file,
+)
+from ._measurement_file_validation import (
+    _snapshot as _snapshot_file,
+)
 from .engine import (
     CLIFFORD_GATE_NAMES,
     _annotated_stim_source,
     _parse_stim_experiment,
     _validate_stim_reference,
 )
+
+_FileWriter = Callable[[str, str, str, str, bool, str | None, str], None]
+_MAX_SNAPSHOT_BYTES = 1024**3
+_MAX_FILE_OUTPUT_BYTES = 1024**3
+_MAX_FILE_PRINCIPAL_BYTES = 64 * 1024**2
+
+
+@dataclass(frozen=True)
+class _RecordBackend:
+    dense: Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]
+    file: _FileWriter
+
+    def __call__(self, records: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.dense(records)
+
+
+@dataclass(frozen=True)
+class _PreparedConversion:
+    backend: _RecordBackend
+    widths: tuple[int, int, int]
+    qubits: int
+
+    def __call__(self, records: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        return self.backend(records)
+
+    def convert_file(
+        self,
+        source: Path,
+        input_format: str,
+        target: Path,
+        output_format: str,
+        append: bool,
+        observable: Path | None,
+        obs_format: str,
+    ) -> None:
+        _convert_record_file(
+            self,
+            source,
+            input_format,
+            target,
+            output_format,
+            append,
+            observable,
+            obs_format,
+        )
+
+
+def _snapshot(source: Path, target: Path) -> int:
+    return _snapshot_file(source, target, max_bytes=_MAX_SNAPSHOT_BYTES)
+
+
+def _file_principal_bytes(widths: tuple[int, int, int], qubits: int) -> int:
+    def padded(n: int) -> int:
+        return max(1024, ((n + 1023) // 1024) * 1024)
+
+    measurements, detectors, observables = widths
+    # Fixed 1024-shot upstream input, both output orientations, frame and scratch.
+    rows = (
+        padded(measurements)
+        + 2 * padded(detectors + observables)
+        + 2 * padded(qubits)
+        + 2 * padded(2 * measurements)
+        + padded(observables)
+        + 4 * padded(0)
+        + 8
+    )
+    return rows * 128
+
+
+def _convert_record_file(
+    prepared: _PreparedConversion,
+    source: Path,
+    input_format: str,
+    target: Path,
+    output_format: str,
+    append: bool,
+    observable: Path | None,
+    obs_format: str,
+) -> None:
+    measurements, detectors, observables = prepared.widths
+    if (
+        _file_principal_bytes(prepared.widths, prepared.qubits)
+        > _MAX_FILE_PRINCIPAL_BYTES
+    ):
+        raise CapabilityError(
+            "file conversion principal tables exceed the 64 MiB byte limit"
+        )
+    sections = (("D", detectors),) + ((("L", observables),) if append else ())
+    requests = [(target, output_format, sections)]
+    if observable is not None:
+        requests.append((observable, obs_format, (("L", observables),)))
+    plans: list[tuple[Path, str, tuple[tuple[str, int], ...], int]] = []
+    source_identity = source.lstat()
+    if not stat.S_ISREG(source_identity.st_mode):
+        raise ValueError("measurement input must be a regular file, without symlinks")
+    for destination, encoding, layout in requests:
+        parent = destination.parent.resolve(strict=True)
+        if not parent.is_dir():
+            raise NotADirectoryError(str(parent))
+        resolved = parent / destination.name
+        if os.path.lexists(resolved):
+            raise FileExistsError(f"conversion destination already exists: {resolved}")
+        if resolved == source.absolute() or any(resolved == plan[0] for plan in plans):
+            raise ValueError(
+                "conversion destinations must be distinct from input and each other"
+            )
+        plans.append((resolved, encoding, layout, 0))
+    staged: list[Path] = []
+    published: list[tuple[Path, int, int]] = []
+    snapshot_directory: Path | None = None
+    try:
+        with ExitStack() as stack:
+            snapshot_directory = Path(
+                stack.enter_context(TemporaryDirectory(prefix="fq-record-input-"))
+            )
+            snapshot = snapshot_directory / "measurements"
+            snapshot_size = _snapshot(source, snapshot)
+            if _identity(source_identity) != _identity(source.lstat()):
+                raise OSError("measurement input changed before snapshot admission")
+            shots = _inspect_measurement_file(snapshot, measurements, input_format)
+            capacity: dict[int, tuple[Path, int]] = {}
+            for i, (destination, encoding, layout, _) in enumerate(plans):
+                bound = _file_size_bound(shots, sum(n for _, n in layout), encoding)
+                if encoding == "dets":
+                    bound = shots * (
+                        5 + sum(n * (len(str(max(0, n - 1))) + 2) for _, n in layout)
+                    )
+                plans[i] = (destination, encoding, layout, bound)
+                device = destination.parent.stat().st_dev
+                capacity[device] = (
+                    destination.parent,
+                    capacity.get(device, (destination.parent, 0))[1] + bound,
+                )
+            output_bound = sum(plan[3] for plan in plans)
+            if (
+                output_bound > _MAX_FILE_OUTPUT_BYTES
+                or snapshot_size + output_bound > 2 * 1024**3
+            ):
+                raise CapabilityError(
+                    "conversion files exceed the aggregate byte limit"
+                )
+            # The snapshot is already allocated; remaining reservations share free space per device.
+            for parent, bound in capacity.values():
+                if shutil.disk_usage(parent).free < bound:
+                    raise OSError(
+                        f"insufficient free space for {bound} conversion output bytes"
+                    )
+            for destination, encoding, _, _ in plans:
+                directory = stack.enter_context(
+                    TemporaryDirectory(prefix=".fq-converted-", dir=destination.parent)
+                )
+                staged.append(Path(directory) / ("records." + encoding))
+            if shots:
+                prepared.backend.file(
+                    str(snapshot),
+                    input_format,
+                    str(staged[0]),
+                    output_format,
+                    append,
+                    str(staged[1]) if len(staged) == 2 else None,
+                    obs_format,
+                )
+            else:
+                for path in staged:
+                    path.touch(exist_ok=False)
+            for path, (_, encoding, layout, bound) in zip(staged, plans, strict=True):
+                _validate_record_file(
+                    path,
+                    shots,
+                    sum(n for _, n in layout),
+                    encoding,
+                    bound,
+                    sections=layout,
+                )
+            for path, (destination, _, _, _) in zip(staged, plans, strict=True):
+                metadata = path.stat()
+                os.link(path, destination)
+                published.append((destination, metadata.st_dev, metadata.st_ino))
+    except BaseException as error:
+        # Roll back only this request's published inodes, never a caller replacement.
+        cleanup_errors = []
+        for destination, device, inode in reversed(published):
+            try:
+                current = destination.lstat()
+                if (current.st_dev, current.st_ino) == (device, inode):
+                    destination.unlink()
+            except FileNotFoundError:
+                pass
+            except OSError as cleanup_error:
+                cleanup_errors.append(f"{destination}: {cleanup_error}")
+        remaining = [str(path.parent) for path in staged if path.parent.exists()]
+        if snapshot_directory is not None and snapshot_directory.exists():
+            remaining.append(str(snapshot_directory))
+        if cleanup_errors or remaining:
+            raise OSError(
+                f"conversion cleanup failed: {cleanup_errors}; staging: {remaining}; original: {error}"
+            ) from error
+        raise
 
 
 def _terminal_clifford_view(program: CircuitIR) -> CircuitIR:
@@ -139,7 +351,7 @@ def _prepare_terminal_record_conversion(
     terminal_qubits: tuple[int, ...],
     detector_columns: tuple[tuple[int, ...], ...],
     observable_columns: tuple[tuple[int, ...], ...],
-) -> Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]:
+) -> _PreparedConversion:
     text = _annotated_stim_source(
         _terminal_clifford_view(program),
         terminal_qubits=terminal_qubits,
@@ -162,15 +374,42 @@ def _prepare_terminal_record_conversion(
             converter, raw, None, ((shots, detectors), (shots, observables))
         )
 
-    return convert
+    return _PreparedConversion(
+        _RecordBackend(convert, _sdk_file_writer(converter)),
+        (width, detectors, observables),
+        program.n_wires,
+    )
 
 
 _MAX_EXPLICIT_CONVERSION_BYTES = 64 * 1024**2
 
 
+def _sdk_file_writer(converter: Any) -> _FileWriter:
+    def write(
+        source: str,
+        input_format: str,
+        target: str,
+        output_format: str,
+        append: bool,
+        observable: str | None,
+        obs_format: str,
+    ) -> None:
+        converter.convert_file(
+            measurements_filepath=source,
+            measurements_format=input_format,
+            detection_events_filepath=target,
+            detection_events_format=output_format,
+            append_observables=append,
+            obs_out_filepath=observable,
+            obs_out_format=obs_format,
+        )
+
+    return write
+
+
 def _prepare_explicit_backend(
     text: str, detectors: int, observables: int
-) -> Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]:
+) -> _RecordBackend:
     if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
         from ._embedded_sampler import _EmbeddedRecordConverter
 
@@ -191,7 +430,7 @@ def _prepare_explicit_backend(
                     "embedded measurement conversion failed"
                 ) from error
 
-        return embedded_convert
+        return _RecordBackend(embedded_convert, native.convert_file)
 
     from .engine import _stim
 
@@ -209,7 +448,7 @@ def _prepare_explicit_backend(
             ((len(records), detectors), (len(records), observables)),
         )
 
-    return sdk_convert
+    return _RecordBackend(sdk_convert, _sdk_file_writer(converter))
 
 
 def _prepare_explicit_record_conversion(
@@ -217,9 +456,7 @@ def _prepare_explicit_record_conversion(
     *,
     detector_columns: tuple[tuple[int, ...], ...],
     observable_columns: tuple[tuple[int, ...], ...],
-) -> tuple[
-    tuple[int, ...], Callable[[torch.Tensor], tuple[torch.Tensor, torch.Tensor]]
-]:
+) -> tuple[tuple[int, ...], _PreparedConversion]:
     from ._embedded_sampler import _operations_text
     from .measurement_sampler import _lower_program
 
@@ -277,4 +514,21 @@ def _prepare_explicit_record_conversion(
             )
         return backend(records)
 
-    return qubits, convert
+    def write(
+        source: str,
+        input_format: str,
+        target: str,
+        output_format: str,
+        append: bool,
+        observable: str | None,
+        obs_format: str,
+    ) -> None:
+        backend.file(
+            source, input_format, target, output_format, append, observable, obs_format
+        )
+
+    return qubits, _PreparedConversion(
+        _RecordBackend(convert, write),
+        (width, len(detector_columns), len(observable_columns)),
+        program.n_wires,
+    )

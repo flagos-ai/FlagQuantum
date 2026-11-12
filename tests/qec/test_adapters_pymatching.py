@@ -43,7 +43,9 @@ from __future__ import annotations
 import builtins
 import random
 import sys
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from types import ModuleType
 
 import pytest
 
@@ -163,7 +165,7 @@ def _syndromes(model: DetectorErrorModel, *, limit: int | None) -> list[list[int
         ]
     assert limit is not None
     rng = random.Random(20240517)
-    syndromes = [[]]
+    syndromes: list[list[int]] = [[]]
     for _ in range(400):
         size = rng.randint(1, limit)
         syndromes.append(sorted(rng.sample(range(count), size)))
@@ -495,10 +497,16 @@ def test_the_cross_check_names_the_extra_when_it_is_missing(
 
     real_import = builtins.__import__
 
-    def refuse(name: str, *args: object, **kwargs: object):
+    def refuse(
+        name: str,
+        globals: Mapping[str, object] | None = None,
+        locals: Mapping[str, object] | None = None,
+        fromlist: Sequence[str] | None = (),
+        level: int = 0,
+    ) -> ModuleType:
         if name == "pymatching" or name.startswith("pymatching."):
             raise ImportError("No module named 'pymatching'")
-        return real_import(name, *args, **kwargs)
+        return real_import(name, globals, locals, fromlist, level)
 
     model = _CONFIGURATIONS[0].model
     graph = DecodingGraph.from_detector_error_model(model)
@@ -550,3 +558,35 @@ def test_matched_multiple_boundaries_with_no_logical_observables() -> None:
         (1, None),
         (2, None),
     )
+
+
+def test_existing_consumer_accepts_a_replacement_graph_builder(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    import torch
+
+    from flagquantum.qec.adapters import pymatching_graph
+    from flagquantum.qec.decoders.matching_graph import MatchingGraph
+
+    calls: list[bool] = []
+
+    def replacement(
+        graph: MatchingGraph, *, record_edge_ids: bool = False
+    ) -> SimpleNamespace:
+        assert graph.num_nodes == 1 and graph.num_fault_ids == 1
+        calls.append(record_edge_ids)
+
+        def decode(syndrome: list[int]) -> torch.Tensor:
+            assert syndrome == [1]
+            return torch.tensor([1, 1] if record_edge_ids else [1], dtype=torch.uint8)
+
+        return SimpleNamespace(num_detectors=1, decode=decode)
+
+    monkeypatch.setattr(pymatching_graph, "_build_matching", replacement)
+    model = DetectorErrorModel(1, 1, (DemError(0.1, (0,), (0,)),))
+    # The existing public consumer is unchanged; the SDK builder is replaced.
+    record = PyMatchingDecoder.from_detector_error_model(model).decode((0,))
+    assert record.observables == (0,) and len(record.error_edges) == 1
+    assert calls == [False, True]

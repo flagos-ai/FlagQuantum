@@ -8,6 +8,7 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Literal, TypedDict
 
 PROFILES = {
@@ -405,6 +406,16 @@ def _exercise_stim_conversion(profile: str) -> dict[str, object] | None:
     }
 
 
+def _embedded_profile() -> bool:
+    from flagquantum.simulation.stabilizer import measurement_sampler
+
+    return (
+        Path(measurement_sampler.__file__)
+        .with_name("_embedded_stim_profile.txt")
+        .is_file()
+    )
+
+
 def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | None:
     from pathlib import Path
     from tempfile import TemporaryDirectory
@@ -419,7 +430,9 @@ def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | 
         if PROFILES[profile][0]:
             raise
         return None
-    assert PROFILES[profile][0], "prepared sampler ignored missing Stim"
+    assert (
+        PROFILES[profile][0] or _embedded_profile()
+    ), "prepared sampler ignored missing Stim"
     samples = sampler.sample(2, bit_packed=True)
     assert samples.tolist() == [[1], [1]]
     with TemporaryDirectory() as directory:
@@ -427,7 +440,130 @@ def _exercise_compiled_measurement_sampler(profile: str) -> dict[str, object] | 
         sampler.sample_write(2, filepath=output, format="b8")
         packed = output.read_bytes()
         assert packed == b"\x01\x01"
-    return {"packed_samples": samples.tolist(), "b8_hex": packed.hex()}
+        formats: dict[Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes] = {
+            "01": b"10\n" * 64,
+            "b8": b"\x01" * 64,
+            "r8": b"\x00\x01" * 64,
+            "hits": b"0\n" * 64,
+            "dets": b"shot M0\n" * 64,
+            "ptb64": b"\xff" * 8 + b"\x00" * 8,
+        }
+        for format, reference in formats.items():
+            output = Path(directory) / f"format-{format}"
+            sampler.sample_write(64, filepath=output, format=format)
+            assert output.read_bytes() == reference
+    return {
+        "packed_samples": samples.tolist(),
+        "b8_hex": packed.hex(),
+        "file_format_sizes": {format: len(data) for format, data in formats.items()},
+    }
+
+
+def _exercise_native_detector_execution(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][0] and not _embedded_profile():
+        return None
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.qec.execution.context import MeasurementMap
+
+    circuit = DynamicCircuit(1).x(0).bit_flip(0, 1.0).measure(0)
+    maps = MeasurementMap(1, ((0,),))
+    sampler = circuit.compile_detector_sampler(
+        detector_map=maps, observable_map=maps, seed=7
+    )
+    packed = sampler.sample(2, append_observables=True, bit_packed=True)
+    import torch
+
+    assert isinstance(packed, torch.Tensor)
+    assert packed.tolist() == [[3], [3]]
+    witnesses: dict[Literal["01", "b8", "r8", "hits", "dets", "ptb64"], bytes] = {
+        "01": b"11\n" * 64,
+        "b8": b"\x03" * 64,
+        "r8": b"\x00\x00\x00" * 64,
+        "hits": b"0,1\n" * 64,
+        "dets": b"shot D0 L0\n" * 64,
+        "ptb64": b"\xff" * 16,
+    }
+    with TemporaryDirectory() as directory:
+        for encoding, witness in witnesses.items():
+            path = Path(directory) / encoding
+            sampler.sample_write(
+                64, filepath=path, format=encoding, append_observables=True
+            )
+            assert path.read_bytes() == witness
+    model = circuit.detector_error_model(detector_map=maps, observable_map=maps)
+    assert model.num_detectors == model.num_observables == 1
+    assert len(model.errors) == 1 and model.errors[0].probability == 1.0
+    return {
+        "packed_detector_observable": packed.tolist(),
+        "mechanisms": len(model.errors),
+        "detector_file_sizes": {
+            encoding: len(data) for encoding, data in witnesses.items()
+        },
+    }
+
+
+def _exercise_measurement_file_conversion(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][0] and not _embedded_profile():
+        return None
+    import flagquantum as fq
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.qec.execution.context import MeasurementMap
+
+    source = (
+        DynamicCircuit(1)
+        .measure(0, classical_bit=0)
+        .measure(0, classical_bit=0)
+        .conditional("x", 0, classical_bit=0)
+        .measure(0, classical_bit=0)
+    )
+    converter = fq.Circuit.from_ir(source.to_ir()).compile_m2d_converter(
+        detector_map=MeasurementMap(3, ((0, 1), (0, 2))),
+        observable_map=MeasurementMap(3, ((1,),)),
+    )
+    inputs: dict[Literal["01", "b8", "r8", "ptb64", "hits", "dets"], bytes] = {
+        "01": b"010\n" * 64,
+        "b8": b"\x02" * 64,
+        "r8": b"\x01\x01" * 64,
+        "hits": b"1\n" * 64,
+        "dets": b"shot M1\n" * 64,
+        "ptb64": b"\0" * 8 + b"\xff" * 8 + b"\0" * 8,
+    }
+    outputs: dict[Literal["01", "b8", "r8", "hits", "dets"], bytes] = {
+        "01": b"101\n" * 64,
+        "b8": b"\x05" * 64,
+        "r8": b"\x00\x01\x00" * 64,
+        "hits": b"0,2\n" * 64,
+        "dets": b"shot D0 L0\n" * 64,
+    }
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        for input_format, raw in inputs.items():
+            source_path = root / ("input." + input_format)
+            source_path.write_bytes(raw)
+            for output_format, expected in outputs.items():
+                target = root / (input_format + "." + output_format)
+                logical = root / (input_format + "." + output_format + ".obs")
+                converter.convert_file(
+                    measurements_filepath=source_path,
+                    measurements_format=input_format,
+                    detection_events_filepath=target,
+                    detection_events_format=output_format,
+                    append_observables=True,
+                    obs_out_filepath=logical,
+                    obs_out_format="b8",
+                )
+                assert (
+                    target.read_bytes() == expected
+                    and logical.read_bytes() == b"\x01" * 64
+                )
+    return {
+        "shots_per_case": 64,
+        "input_formats": list(inputs),
+        "output_formats": list(outputs),
+        "byte_cases": len(inputs) * len(outputs),
+        "occurrence_columns": 3,
+        "appended_and_separate": True,
+    }
 
 
 def _exercise_terminal_conversion(profile: str) -> dict[str, object] | None:
@@ -459,6 +595,57 @@ def _exercise_terminal_conversion(profile: str) -> dict[str, object] | None:
         assert observables.shape == (1, 0)
         results.extend(detectors.tolist())
     return {"detectors": results, "observables": [[], []]}
+
+
+def _exercise_matching_graph(profile: str) -> dict[str, object] | None:
+    if not PROFILES[profile][1]:
+        return None
+    import torch
+
+    from flagquantum.qec.adapters.pymatching_graph import PyMatchingGraphDecoder
+    from flagquantum.qec.decoders.matching_graph import MatchingGraph
+
+    checks = torch.tensor([[1, 0, 1], [0, 1, 1]], dtype=torch.uint8)
+    faults = torch.tensor([[1, 0, 0], [0, 1, 0]], dtype=torch.uint8)
+    graph, columns = MatchingGraph.from_check_matrix(
+        checks,
+        faults_matrix=faults,
+        weights=torch.tensor([2.0, 3.0, 1.0], dtype=torch.float64),
+    )
+    solution = PyMatchingGraphDecoder(graph).decode((0, 1))
+    assert columns == (0, 1, 2) and solution.edge_indices == (2,)
+    assert solution.fault_ids == () and solution.weight == 1.0
+    return {
+        "column_to_edge": list(columns),
+        "selected_edges": list(solution.edge_indices),
+        "weight": solution.weight,
+    }
+
+
+def _exercise_shot_file_reading(profile: str) -> list[list[int]] | None:
+    """Exercise file reading in real installed SDK and embedded profiles."""
+    import torch
+
+    from flagquantum.errors import CapabilityError
+    from flagquantum.qec.execution.shot_data import read_shot_data_file
+
+    try:
+        read_shot_data_file(path="unused", format="b8", num_detectors=0)
+    except CapabilityError:
+        pass
+    else:
+        raise AssertionError("zero stored columns were admitted")
+    if not PROFILES[profile][0] and not _embedded_profile():
+        return None
+    with TemporaryDirectory() as directory:
+        path = Path(directory) / "events.b8"
+        path.write_bytes(b"\x00\x01")
+        result = read_shot_data_file(
+            path=path, format="b8", num_detectors=1, bit_packed=True
+        )
+        assert isinstance(result, torch.Tensor)
+        assert result.tolist() == [[0], [1]]
+        return [[0], [1]]
 
 
 def main() -> int:
@@ -497,6 +684,7 @@ def main() -> int:
     print(
         json.dumps(
             {
+                "shot_file_reading": _exercise_shot_file_reading(args.profile),
                 "profile": args.profile,
                 "package": flagquantum.__file__,
                 "python": sys.version.split()[0],
@@ -512,12 +700,19 @@ def main() -> int:
                     if present
                 },
                 "cells": records,
+                "matching_graph": _exercise_matching_graph(args.profile),
                 "packed_predictions": _exercise_packed_predictions(args.profile),
                 "sdk_weighted_batches": _exercise_sdk_weights(args.profile),
                 "matched_detectors": _exercise_matched_detectors(args.profile),
                 "stim_experiment": experiment,
                 "full_record_decoders": record_decoders,
+                "native_detector_execution": _exercise_native_detector_execution(
+                    args.profile
+                ),
                 "stim_conversion": _exercise_stim_conversion(args.profile),
+                "measurement_file_conversion": _exercise_measurement_file_conversion(
+                    args.profile
+                ),
                 "terminal_conversion": _exercise_terminal_conversion(args.profile),
                 "compiled_measurement_sampler": _exercise_compiled_measurement_sampler(
                     args.profile

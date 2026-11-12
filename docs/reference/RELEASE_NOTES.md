@@ -707,3 +707,16 @@ numbers and carry an ordered physical `target_qubits` mapping through
 
 No release build or distributed scalability release artifact is declared by
 these unreleased changes.
+
+## Captured shot-file reading candidate
+
+`flagquantum.qec.execution.shot_data` owns the two record-reading entry points.
+`read_shot_data_file` returns owned CPU Torch tensors in stored M/D/L order;
+`iter_shot_data_file` validates an immutable snapshot before yielding batches and
+requires the embedded profile. Use `contextlib.closing` on partial consumption.
+Six encodings are supported; independently pack separated logical columns.
+Inputs are bounded at 1 GiB and principal payload at 64 MiB, excluding runtime
+RSS and caller-retained batches. Zero stored columns are refused. See
+[the approved proposal](../development/QEC_SHOT_DATA_READING_PROPOSAL.md) for
+exact budgets, API mapping and remaining parity gaps. Native and installed
+acceptance are pending for this candidate.

@@ -5,6 +5,7 @@ import doctest
 import importlib
 import inspect
 from pathlib import Path
+from types import MethodType
 
 import pytest
 
@@ -34,6 +35,10 @@ from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
 )
+from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
+from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
+from flagquantum.algorithms.fermion.preparation import prepare_slater
+from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
 from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
@@ -100,16 +105,24 @@ from flagquantum.qec import (
     toric_code,
     triangular_colour_code,
 )
+from flagquantum.qec.adapters.pymatching_graph import PyMatchingGraphDecoder
 from flagquantum.qec.adapters.stim import (
     compile_stim_sampler,
     memory_to_stim_text,
     stim_circuit_to_dem_text,
 )
 from flagquantum.qec.decoders.batch import decode_batch
+from flagquantum.qec.decoders.matching_graph import MatchingGraph
+from flagquantum.qec.execution.detector_sampling import CompiledDetectorSampler
 from flagquantum.qec.execution.experiments import run_memory_experiment
 from flagquantum.qec.execution.measurement_conversion import (
+    CompiledMeasurementsToDetectionEventsConverter,
     compile_m2d_converter,
     convert_measurement_records,
+)
+from flagquantum.qec.execution.shot_data import (
+    iter_shot_data_file,
+    read_shot_data_file,
 )
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
@@ -202,14 +215,21 @@ pytestmark = pytest.mark.unit
 # entry point, whose example is the identity the pass ladder preserves, and the
 # density matrix and entanglement-entropy reads, whose examples show the two
 # figures a caller takes from one run rather than a second execution.
+
 ENTRIES = (
     synth.qdrift,
     synth.Program.numeric_probabilities,
+    read_shot_data_file,
+    iter_shot_data_file,
+    CompiledDetectorSampler,
+    fq.Circuit.compile_detector_sampler,
+    fq.Circuit.detector_error_model,
     fq.save,
     fq.load,
     run_memory_experiment,
     convert_measurement_records,
     compile_m2d_converter,
+    CompiledMeasurementsToDetectionEventsConverter,
     LatexFigure,
     ClassicalLayer,
     draw_latex,
@@ -282,7 +302,13 @@ ENTRIES = (
     optimize,
     pauli_exponential_circuit,
     pauli_readout,
+    prepare_slater,
+    fermi_hubbard_chain,
+    fermionic_fourier_transform,
+    reduce_stabilizers,
     PyMatchingDecoder.decode_batch,
+    PyMatchingGraphDecoder,
+    MatchingGraph,
     parity_encoding,
     plan_lindblad_evolution,
     planner.plan,
@@ -359,6 +385,7 @@ def test_every_module_with_examples_is_covered() -> None:
     """
     covered = {entry.__module__ for entry in ENTRIES}
     batch_owner = importlib.import_module("flagquantum.qec.adapters.pymatching")
+    assert batch_owner.__file__ is not None
     assert batch_owner.PyMatchingDecoder.decode_batch is PyMatchingDecoder.decode_batch
     assert (
         Path(PyMatchingDecoder.decode_batch.__code__.co_filename).resolve()
@@ -381,6 +408,7 @@ def test_every_module_with_examples_is_covered() -> None:
     ):
         assert entry in ENTRIES
         owner = importlib.import_module("flagquantum.qec." + owner_name)
+        assert owner.__file__ is not None
         assert getattr(owner, entry.__name__) is entry
         definition = entry.__post_init__ if inspect.isclass(entry) else entry
         assert (
@@ -388,16 +416,17 @@ def test_every_module_with_examples_is_covered() -> None:
             == Path(owner.__file__).resolve()
         )
         covered.add(owner.__name__)
-    entry = BeliefPropagationOsdDecoder.from_detector_error_model
-    assert entry in ENTRIES
+    decoder_entry = BeliefPropagationOsdDecoder.from_detector_error_model
+    assert isinstance(decoder_entry, MethodType)
+    assert decoder_entry in ENTRIES
     owner = importlib.import_module("flagquantum.qec.decoders.bposd")
+    assert owner.__file__ is not None
     assert owner.BeliefPropagationOsdDecoder is BeliefPropagationOsdDecoder
+    owner_entry = owner.BeliefPropagationOsdDecoder.from_detector_error_model
+    assert isinstance(owner_entry, MethodType)
+    assert decoder_entry.__func__ is owner_entry.__func__
     assert (
-        entry.__func__
-        is owner.BeliefPropagationOsdDecoder.from_detector_error_model.__func__
-    )
-    assert (
-        Path(entry.__func__.__code__.co_filename).resolve()
+        Path(decoder_entry.__func__.__code__.co_filename).resolve()
         == Path(owner.__file__).resolve()
     )
     covered.add(owner.__name__)

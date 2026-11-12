@@ -18,6 +18,7 @@ from ...core.classical_control import (
 )
 from ...core.ir import CircuitIR
 from ...errors import CapabilityError, ValidationError
+from ._measurement_file_validation import _file_size_bound, _validate_record_file
 from ._validation import _validate_seed, _validate_shots
 from .engine import (
     CLIFFORD_GATE_NAMES,
@@ -63,7 +64,9 @@ def _check_sample_budget(shots: int, columns: int, qubits: int, packed: bool) ->
     return width
 
 
-def _lower_program(ir: CircuitIR) -> tuple[tuple[_EngineOperation, ...], int]:
+def _lower_program(
+    ir: CircuitIR, *, allow_pauli_noise: bool = False
+) -> tuple[tuple[_EngineOperation, ...], int]:
     _require_within_limit("source qubits", ir.n_wires, _MAX_QUBITS)
     if ir.measurements or {"layout", "routing"} & ir.metadata.keys():
         raise CapabilityError(
@@ -80,6 +83,24 @@ def _lower_program(ir: CircuitIR) -> tuple[tuple[_EngineOperation, ...], int]:
     for index, instruction in enumerate(ir.instructions):
         opcode = instruction.name
         metadata = instruction.metadata
+        if allow_pauli_noise and metadata.get("is_channel"):
+            operators = getattr(instruction.matrix, "kraus", instruction.matrix)
+            if any(
+                isinstance(op, torch.Tensor) and op.requires_grad
+                for op in operators or ()
+            ):
+                raise CapabilityError("detector execution refuses trainable noise")
+            if len(instruction.wires) not in (1, 2):
+                raise CapabilityError(
+                    "detector execution accepts one-/two-qubit Pauli channels"
+                )
+            if instruction_condition_clauses(instruction):
+                raise CapabilityError("detector execution refuses conditional noise")
+            operations.extend(_instruction_operations(instruction, index))
+            _require_within_limit(
+                "lowered operations", len(operations), _MAX_LOWERED_OPERATIONS
+            )
+            continue
         if (
             instruction.matrix is not None
             or instruction.params
@@ -208,14 +229,22 @@ class CompiledMeasurementSampler:
         return result
 
     def sample_write(
-        self, shots: int, *, filepath: str | os.PathLike[str], format: Literal["b8"]
+        self,
+        shots: int,
+        *,
+        filepath: str | os.PathLike[str],
+        format: Literal["01", "b8", "r8", "hits", "dets", "ptb64"],
     ) -> None:
-        """Write a complete local b8 file without replacing an existing path."""
+        """Write explicit measurement records without replacing an existing path.
+
+        Formats follow Stim 1.16.0; ``dets`` uses measurement-prefixed indices.
+        ``ptb64`` requires shots divisible by 64. File bounds are conservative
+        for sparse formats; a bound over 1 GiB is refused before sampling.
+
+        """
         sdk = self._engine()
         shots = _validate_shots(shots)
-        if format != "b8":
-            raise ValueError("prepared measurement sampling writes only format='b8'")
-        expected = shots * ((self._columns + 7) // 8)
+        expected = _file_size_bound(shots, self._columns, format)
         _require_within_limit("sample file bytes", expected, _MAX_FILE_BYTES)
         target = Path(filepath)
         if os.path.lexists(target):
@@ -226,13 +255,10 @@ class CompiledMeasurementSampler:
         if shutil.disk_usage(parent).free < expected:
             raise OSError(f"insufficient free space for {expected} sample file bytes")
         with TemporaryDirectory(prefix=".fq-sample-", dir=parent) as directory:
-            staging = Path(directory) / "records.b8"
+            staging = Path(directory) / f"records.{format}"
             try:
-                sdk.sample_write(shots, filepath=str(staging), format="b8")
-                if staging.stat().st_size != expected:
-                    raise OSError(
-                        f"sample file size disagrees with expected {expected} bytes"
-                    )
+                sdk.sample_write(shots, filepath=str(staging), format=format)
+                _validate_record_file(staging, shots, self._columns, format, expected)
                 # A same-filesystem hard link publishes the complete file without replacing it.
                 os.link(staging, parent / target.name)
             except BaseException:

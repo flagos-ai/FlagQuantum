@@ -40,9 +40,10 @@ class _EmbeddedSampler:
         return torch.frombuffer(buffer, dtype=dtype).reshape(shots, width)
 
     def sample_write(self, shots: int, *, filepath: str, format: str) -> None:
-        if format != "b8":
-            raise ValueError("embedded measurement sampling writes only b8")
-        self._native.write_b8(self._handle, shots, filepath)
+        if format == "b8":
+            self._native.write_b8(self._handle, shots, filepath)
+        else:
+            self._native.write_records(self._handle, shots, filepath, format)
 
 
 class _EmbeddedRecordConverter:
@@ -72,3 +73,70 @@ class _EmbeddedRecordConverter:
             else:
                 result.append(torch.empty((len(records), 0), dtype=torch.bool))
         return result[0], result[1]
+
+    def convert_file(
+        self,
+        source: str,
+        input_format: str,
+        target: str,
+        output_format: str,
+        append: bool,
+        observable: str | None,
+        obs_format: str,
+    ) -> None:
+        self._native.convert_file(
+            self._handle,
+            source,
+            input_format,
+            target,
+            output_format,
+            append,
+            observable,
+            obs_format,
+        )
+
+
+class _EmbeddedDetectorSampler:
+    def __init__(
+        self, text: str, seed: int | None, detectors: int, observables: int
+    ) -> None:
+        self._native = import_module(f"{__package__}._embedded_stim")
+        self._handle = self._native.prepare_detector(text, seed)
+        self._widths = (detectors, observables)
+
+    def sample(self, shots: int) -> tuple[torch.Tensor, torch.Tensor]:
+        pair = self._native.sample_detectors(self._handle, shots)
+        if not isinstance(pair, tuple) or len(pair) != 2:
+            raise ValueError("embedded detector sampling returned an invalid pair")
+        results = []
+        for buffer, width in zip(pair, self._widths, strict=True):
+            if not isinstance(buffer, bytearray) or len(buffer) != shots * width:
+                raise ValueError("embedded detector sampling returned invalid bytes")
+            results.append(
+                torch.frombuffer(buffer, dtype=torch.bool).reshape(shots, width)
+                if width
+                else torch.empty((shots, 0), dtype=torch.bool)
+            )
+        return results[0], results[1]
+
+    def sample_write(
+        self,
+        shots: int,
+        *,
+        filepath: str,
+        format: str,
+        prepend_observables: bool,
+        append_observables: bool,
+        obs_out_filepath: str | None,
+        obs_out_format: str,
+    ) -> None:
+        self._native.write_detectors(
+            self._handle,
+            shots,
+            filepath,
+            format,
+            prepend_observables,
+            append_observables,
+            obs_out_filepath,
+            obs_out_format,
+        )

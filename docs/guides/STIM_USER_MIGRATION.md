@@ -1,15 +1,15 @@
 # Migrating a Stim workflow to FlagQuantum
 
-FlagQuantum replaces the half of a Stim-based QEC study that sits **after**
-circuit generation: reading a detector error model, sampling it, and decoding a
-syndrome. It does not replace Stim's circuit layer, and it does not ask you to
-stop using it.
+FlagQuantum supports both Stim interoperability and bounded native QEC circuit
+execution. Keep Stim circuit generation when needed, or use native Circuit IR
+with measurement maps. Compiled samplers and converters use an embedded pinned
+engine in qualified wheels; SDK-backed profiles use the optional Stim adapter.
+Vendor objects remain behind the numerical boundary.
 
-The interface between the two halves is the detector error model text, which
-Stim already writes and FlagQuantum reads. No Stim object crosses the boundary,
-no circuit is re-simulated, and nothing under `flagquantum/` imports `stim` — the
-reader, the model sampler, and both in-tree decoders are Stim-free, so the
-`stim` extra is only needed by the half that generates circuits.
+The model sampler draws declared fault mechanisms; circuit detector sampling
+executes the original noisy circuit. These are distinct distributions and
+validation routes, not interchangeable performance claims. The guide's original
+model-reading examples remain supported below.
 
 | Stim | FlagQuantum |
 | --- | --- |
@@ -17,7 +17,7 @@ reader, the model sampler, and both in-tree decoders are Stim-free, so the
 | `circuit.detector_error_model(...)` | keep it: write the model text with Stim |
 | `dem_from_stim_text(text)` | `DetectorErrorModel.from_stim_text(text)` |
 | `dem.compile_sampler(...).sample(...)` | `DetectorErrorModel.dem_sampling(...)` |
-| `circuit.compile_detector_sampler(...)` | `DetectorErrorModel.dem_sampling(...)` for a model, or keep circuit sampling |
+| `circuit.compile_detector_sampler(...)` | Native `circuit.compile_detector_sampler(detector_map=..., observable_map=...)` for admitted circuits; DEM sampling remains separate |
 | `pymatching.Matching.from_detector_error_model(...)` | `get_decoder("minimum_weight_matching", model)` |
 
 ## Read the model text
@@ -406,3 +406,56 @@ control. Unsupported hyperedges, isolated-detector/parallel-edge translation
 cases and other existing refusals remain explicit; this entry does not enable
 approximate graph conversion, implicit decoder fallback or adaptive stopping.
 See the [approved contract](../development/QEC_STIM_TEXT_EXPERIMENT_CONTRACT.md).
+
+
+## Write detector samples without retaining all shots
+
+The detector-file candidate adds the familiar `sampler.sample_write` method;
+see the [approved contract and executable example](../development/QEC_DETECTOR_FILE_OUTPUT_PROPOSAL.md).
+Run `python examples/qec/native_detector_sampling.py` in a qualified profile.
+The example retains the original decoder workflow and adds a deterministic
+repeated-slot witness, expected to print `detector_bytes 64`.
+
+Use `format="b8", append_observables=True` for detector-then-observable bits.
+Alternatively set `obs_out_filepath=...` and `obs_out_format="b8"` to write
+same-shot logical flips separately. Six formats are supported: 01, b8, r8,
+hits, dets and ptb64. Dets files name detectors D and logicals L; measurement
+files name occurrences M. These are reference-normalized flips, not raw records.
+
+Select at most one observable layout. Ptb64 requires shots divisible by 64.
+Existing destinations are refused. Final files total at most 1 GiB, with
+conservative sparse bounds and a 64 MiB principal-table estimate. These guards
+are not total disk or process RSS limits. Both streams validate before sequential
+no-replace publication; two-file atomic visibility is not promised. Failures
+invalidate the handle and retain errors. T gates, conditional H, general controls
+and non-Pauli noise remain outside this admitted path. Public file reading and
+streaming decoder composition remain future work.
+
+## Keep the familiar converter file method
+
+Use the existing native Circuit converter, then call
+`converter.convert_file(measurements_filepath=..., measurements_format="b8",
+detection_events_filepath=..., detection_events_format="b8")`.
+`python -m examples.qec.measurement_file_conversion` is a complete runnable
+repeated-classical-slot example: three writes retain three occurrence columns,
+and fixed records 010 produce detectors 10 and observable 1.
+
+Stim users keep the keyword names and defaults. Six input formats are accepted;
+selected PTB64 outputs and sweep files are refused in this bounded native route.
+Unlike detector `sample_write()`, this converter permits appended observables
+and a separate observable file together. `Path` inputs normalize to strings at
+the SDK boundary. No complete file is turned into a Python shot tensor.
+See the [API](../reference/API.md#convert-a-measurement-file-to-detector-and-logical-files)
+and [approved scope](../development/QEC_MEASUREMENT_FILE_CONVERSION_PROPOSAL.md).
+
+## Captured records and batch decoding candidate
+
+Use the familiar `read_shot_data_file` name from
+`flagquantum.qec.execution.shot_data`. Results are owned Torch bool/uint8 tensors
+instead of NumPy arrays. The new `iter_shot_data_file` is a FlagQuantum extension
+for the embedded build, not an upstream Stim API. Its independently packed
+detectors can feed the existing `PyMatchingDecoder.decode_packed_batch`.
+See [shot-file decoding](../../examples/qec/shot_file_decoding.py) and the
+[approved contract](../development/QEC_SHOT_DATA_READING_PROPOSAL.md). Standard
+SDK builds support eager reads only. Zero-column records and arbitrary-data
+write_shot_data_file remain explicit gaps. This candidate is not full parity.

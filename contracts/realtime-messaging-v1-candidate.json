@@ -4,7 +4,7 @@
   "status": "candidate",
   "owner": "remote maintainers",
   "approval": {
-    "record": "docs/architecture/decisions/ARCH_013_REALTIME_MESSAGING_AND_DEVICE_CALL_BOUNDARY.md",
+    "record": "docs/architecture/decisions/ARCH_014_REALTIME_PACKAGE_OWNERSHIP.md",
     "state": "contract_candidate",
     "public_api_change": false,
     "capability_claim": false

@@ -106,11 +106,15 @@ Do not edit this generated region. Capability boundaries come from
 | Bosonic operator algebra and its dense value on a truncated Fock space | `development_evidence` | A symbolic algebra and a dense finite-truncation reference. The existing static Lindblad input normalization consumes BosonOperator Hamiltonians, collapse operators, and low-level observable mappings with explicit dimensions by reusing to_matrix and its byte ceiling. examples/boson_interference.py demonstrates two-mode interference and independent loss; tests/unit/test_lindblad_boson_consumer.py checks analytic laws, cutoff, ordering, plan identities, batching, and initial-state gradients/adjoints. The algebra itself owns no execution entry point. There is no bosonic or photonic backend, no continuous-variable simulator, no Gaussian or phase-space representation, no squeezing, displacement, or beamsplitter primitive beyond what the ladder operators compose to, and no native Fock-space state, sampler, or trainable algebra coefficients. Static full-space Hamiltonian term mappings also accept boson operators paired with live scalar tensor coefficients; existing Parameter.bind resolves named values without changing the canonical algebra coefficients. examples/train_boson_coupling.py demonstrates an actual Adam update and tests/unit/test_lindblad_operator_coefficients.py checks two models, analytic gradients, complex conjugate pairs, batching, and plan equivalence. Serializing the bound numerical request does not serialize its autograd graph. The dense materialization remains a bounded reference rather than a scalable bosonic backend: it builds the Kronecker product over every mode and is refused above a byte ceiling of DEFAULT_DENSE_MATRIX_BYTES, which admits ten degrees at two levels each and refuses the eleventh. The truncation dimension is the caller's and is taken as a parameter rather than assumed, because the algebra has no finite matrix representation of its own: every creation operator raises the occupation without limit, so the commutation relations are applied here to untruncated monomials and the commutator of two truncated ladder matrices differs from the identity at the top level of every degree. Both statements are true of different operators, and only the explicit dimension says which one a caller's numbers describe. Two factors of the same kind and degree are a power rather than zero, so a monomial has no bounded length and the stored form is the Poincare-Birkhoff-Witt basis; equality is therefore structural rather than a tolerance, and two operators equal as matrices but not as canonical sums compare unequal. Exactly one transform to a qubit register ships, which is no transform: a BosonOperator is not an Observable and cannot be passed directly to fq.expectation; its materialized matrices can be used through the existing Simulation observable mapping. Nothing here executes, allocates a device buffer, or reads a runtime option. |
 | Fermionic operator algebra and its fermion-to-qubit images | `development_evidence` | A symbolic algebra and two transforms, and nothing that executes on its own. Two fermion-to-qubit transforms ship, Jordan-Wigner and the parity encoding, and they are the same operator written in two qubit bases: the parity image is the Jordan-Wigner image conjugated by the change of basis that replaces each mode's occupation with the parity of the modes up to it, which is measured rather than asserted, so a consumer written against Observable reads either one without being told which it holds. What the second basis buys is locality of the occupied-parity information and not a smaller image. Jordan-Wigner runs a Z string over the modes strictly below a factor's mode, so the first mode is a single Pauli and the last spans every wire; the parity encoding runs an X string over the modes strictly above it, so the last mode is one X plus one Z on the mode below and the first spans every wire. The widest factor image therefore costs one wire per mode in both encodings, reached at opposite ends of the mode list, and the reduction in worst-case Pauli weight that motivates the Bravyi-Kitaev and ternary-tree encodings follows from neither; those two remain absent. Both transforms take the mode count as an argument rather than inferring it, so a caller who names fewer modes than the operator addresses is the caller's error and is refused rather than silently widened, and both refuse a non-Hermitian operator for the same reason. Operators are stored normal-ordered against the vacuum, so equality is structural and a Hermiticity test is exact rather than a tolerance; the consequence is that two operators equal as matrices but not as canonical sums compare unequal, which is the documented boundary rather than a bug. The image of a structurally Hermitian operator has real dyadic coefficients under either transform and the imaginary part is checked against a fail-closed bound of 1e-9 rather than a tuned threshold, so a coefficient outside it is reported instead of having its imaginary part dropped, and no input this algebra builds needs the bound. There is no matrix form of a fermionic operator: the only numerical value is the Pauli image, which exists at the sizes the statevector path simulates. There is no circuit-level exponential of a fermionic operator, no molecular Hamiltonian assembly, no integral handling, and no sparse or dense second-quantised Hamiltonian; expectation values, sampling, and gradients follow from the image and the existing Observable path rather than from this module, which therefore makes no claim of its own about any of them. Nothing here executes, allocates a device buffer, or reads a runtime option, so the runtime mode named is the path its image feeds rather than a mode this unit runs. |
 | Belief-propagation decoder with ordered statistics over a detector error model | `development_evidence` | One decoder, in-process, over one detector error model at a time, with no batching, no streaming, no threshold, no logical-error-rate estimator, and no performance claim. The colour code was the first shipped family whose decoding evidence is this route rather than the matcher's, because its faces carry a single fault into three detectors and the matcher refuses the model: tests/qec/test_colour_memory_execution.py decodes every single fault of the executed distance-three patch and every syndrome the distance-five model samples, and asserts of each that the correction reproduces the syndrome it was given. The torus is the second, and it is the family where this route is measured as a rate and not as reproduction alone: tests/qec/test_toric_memory_execution.py takes the two-round declared model of the distance-three torus, whose eight weight-four mechanisms are exactly what moves it out of the matching decoder's reach, and asks every one of three hundred draws -- the empty syndrome included, which must be answered by selecting no mechanism -- for a set of mechanisms that reproduces it and for the observables they flip. At a one-percent fault rate the decoded logical rate is 0.0033 and 0.0100 against the model's exact raw rates of 0.1000 and 0.0933, and the margin that row asserts is a factor of four. The same measurement at the five-percent rate the file's other profile rows use is 0.2667 against 0.3588, a ratio of 1.34, and that number is recorded here rather than asserted into a claim: order-zero post-processing leaves the free mechanism positions at zero, so at that rate this decoder is a route to an answer and not a suppressed logical-error rate. The same file also records where the exact matcher's own budget bites -- at six rounds and two percent a sampled syndrome carries twenty-two detectors against its default twenty -- and that the windowed matcher refuses strictly fewer of those same draws while the hyperedge decoder and the PyMatching-backed name refuse none of them. It is a decoder and not an optimal one: belief propagation is an estimate, and the ordered-statistics pass holds every mechanism outside the elected information set at zero, so an answer reproduces the syndrome and need not be its most likely explanation. The exact claims are the measured ones. On the one-round Steane model the decoder reaches the least weight and the most likely observable for all 64 syndromes. On the one-round rotated surface code it carries more weight than the least-weight explanation on five of the 256 syndromes, by 0.6904 on two and 2.9444 on three, and differs from the most likely observable on three of those five, so the whole of its gap to an optimal decoder on that model is those five syndromes and not a property of the code. The iteration is min-sum with a caller-set damping factor, runs a caller-set number of passes, and reports whether it converged rather than looping until it does. The magnitude of a check message is capped, so a detector only one mechanism can flip forces that mechanism without producing an infinite message, and a mechanism whose stated probability is one or zero is floored before its log-odds ratio is taken so that the ratio stays finite. The decoder is reached through the name-keyed registry as get_decoder("belief_propagation_osd", model), and getting it named is why that registry states two protocols instead of one. Its DetectorErrorModelDecoder states what every registered name promises -- decode, returning the observables the correction flips -- and the pair graph moved to GraphlikeDetectorErrorModelDecoder, because a model carrying a three-detector mechanism has no pair-graph at all: DecodingGraph.from_detector_error_model refuses it as a hyperedge. The three matching names satisfy the graphlike protocol and this one does not, and a DecodingGraph handed to this name is refused with that reason rather than failing inside the constructor. The module imports torch and the standard library and nothing else, it is not wired to the stim sampling path, it reports the observables a mechanism set flips as a prediction rather than as a probability, and it is not calibrated. |
-| Realtime device-call messaging protocol | `development_evidence` | This is the software half of a realtime control surface and nothing else. It owns the 24-byte packed request and response headers, the ten payload type ids, the 12-byte type descriptor, the eight-argument and four-result limits, little-endian and IEEE-754 encoding, least-significant-bit-first bit packing, the function-id hash, the function table, the status convention, and the channel-selection seam. It does not own, implement, or reach an FPGA, a ConnectX NIC, RDMA or RoCE transport, GPUDirect, NVQLink, a Holoscan sensor bridge, persistent RX or TX dispatch kernels, a ring buffer, or a dispatcher, and it contains no compiler surface: there is no device_call lowering, no realtime dialect, and no slot-count, slot-size, or timeout flag family. No hardware was contacted and no hardware evidence exists; no realtime link has ever been established by this package. It carries a 64-bit timestamp field and echoes it verbatim, so it reads no clock, measures no duration, bounds no wait, and makes no latency, jitter, throughput, cycle-count, or realtime-ness claim of any kind; there is deliberately no per-dispatch timeout because waiting belongs to the transport. The type ids, the descriptor layout, and the argument and result limits are taken from CUDA-Q's published protocol so an interoperating implementation produces the same bytes, while the field names, the default slot size of 384 bytes, and every Python behaviour are FlagQuantum's own: CUDA-Q requires a slot size explicitly and documents no default, and a function-id miss raises a FlagQuantum exception here whereas the published dispatcher clears the slot with no response. Payloads are typeless on the wire, so a schema disagreement between a caller and a handler is caught out of band and not at runtime. LoopbackTransport is the contract fake and performs no I/O. A realtime call is consumed by a service-side handler; the simulator is not a sanctioned consumer, because architecture.toml forbids simulation from importing remote, and no realtime execution mode, runtime option, target, or result field is added anywhere. The parity rows for realtime_transport, realtime_feedback_loop, and realtime_sensor_bridge remain unsupported; only realtime_host_api moves to partial. No Stable Core export, capability availability claim, or maturity claim above development evidence follows from this entry. |
+| Realtime device-call messaging protocol | `development_evidence` | This is the software half of a realtime control surface and nothing else. It owns the 24-byte packed request and response headers, the ten payload type ids, the 12-byte type descriptor, the eight-argument and four-result limits, little-endian and IEEE-754 encoding, least-significant-bit-first bit packing, the function-id hash, the function table, the status convention, and the channel-selection seam. It does not own, implement, or reach an FPGA, a ConnectX NIC, RDMA or RoCE transport, GPUDirect, NVQLink, a Holoscan sensor bridge, persistent RX or TX dispatch kernels, a ring buffer, or a dispatcher, and it contains no compiler surface: there is no device_call lowering, no realtime dialect, and no slot-count, slot-size, or timeout flag family. No hardware was contacted and no hardware evidence exists; no realtime link has ever been established by this package. It carries a 64-bit timestamp field and echoes it verbatim, so it reads no clock, measures no duration, bounds no wait, and makes no latency, jitter, throughput, cycle-count, or realtime-ness claim of any kind; there is deliberately no per-dispatch timeout because waiting belongs to the transport. The type ids, the descriptor layout, and the argument and result limits are taken from CUDA-Q's published protocol so an interoperating implementation produces the same bytes, while the field names, the default slot size of 384 bytes, and every Python behaviour are FlagQuantum's own: CUDA-Q requires a slot size explicitly and documents no default, and a function-id miss raises a FlagQuantum exception here whereas the published dispatcher clears the slot with no response. Payloads are typeless on the wire, so a schema disagreement between a caller and a handler is caught out of band and not at runtime. LoopbackTransport is the contract fake and performs no I/O. A realtime call is consumed by a service-side handler; the simulator is not a sanctioned consumer, because architecture.toml forbids simulation from importing realtime, and no realtime execution mode, runtime option, target, or result field is added anywhere. The parity rows for realtime_transport, realtime_feedback_loop, and realtime_sensor_bridge remain unsupported; only realtime_host_api moves to partial. No Stable Core export, capability availability claim, or maturity claim above development evidence follows from this entry. |
 | Subsystem-code record | `development_evidence` | A declaration record, not an experiment. SubsystemCode takes the same four blocks flagquantum.qec.CssCode takes and adds the two gauge blocks, and the two additions change what the four mean rather than adding to them: the tesseract's sixteen data qubits carry ten independent check rows and two anticommuting gauge pairs, so the checks alone leave six classes and the record reports four protected qubits beside two gauge qubits, which is exactly the family's four declared logical operators. The protected count is derived from the two check ranks and the gauge block's length rather than stated, so a caller who writes the count down does not get it honoured. Every invariant is checked: the two check families commute, every gauge generator commutes with every check, no gauge generator lies in its own family's check span, the two gauge blocks pair up non-degenerately, and each logical operator commutes with the opposite checks while lying outside its own family's checks *and* gauge. The distance is the dressed one and it is searched for rather than read off the declared operator, under the same bounded distance_search_weight the matrix route uses and with the same refusal when the bound is exhausted; the tesseract reports four under both readings, and the file measures the same four when the operator is additionally required to commute with the opposite gauge generators, so the published number is not an artifact of which center the search took. That the distance is dressed rather than bare is a measured claim and not a coincidence of the tesseract, whose two readings agree: the file carries a second family, the 3x3 Bacon-Shor, where reading up to the checks alone finds a weight-two operator and the record reports three. One thing is deliberately absent. This package has no round structure, no detector model in which a gauge generator is measured and no decoder registered for a subsystem protocol, so the record builds no memory circuit, samples no noise and reports no distance in the executable sense, and that absence is stated on its own measurement rather than on a citation. The record is also deliberately not a flagquantum.qec.StabilizerCode, so flagquantum.qec.css_code_matrices refuses it with the protocol named instead of building matrices the gauge generators would be dropped from -- a subsystem code is a second reading of matrices this package already accepts, not a second matrix class. One family ships, the tesseract, whose gauge tables are four representatives of the gauge span modulo the checks rather than the family's raw neighbouring pairs, because a gauge qubit is a pair. The search bound is the caller's to accept. The family's free-CNOT gadget is published beside the record rather than held by a test: tesseract_column_swap derives the sixteen-wire permutation from the hypercube layout -- a wire whose lowest coordinate is clear exchanges the column above it -- and tesseract_free_cnot_pairs states the two protected pairs the permutation is held to act on as CNOT(control -> target) and nothing else, so the claim that the permutation implements two free logical CNOTs joins two independently written facts instead of restating one. The derivation is not a claim about how the code looks: the tuple it returns was measured against the one the framework this package replaces publishes for the same family, wire for wire, on the same protected order. What the pair of functions does not do is compile the gadget, and the action they state is stated on the record's own protected order rather than against a port-named encoding. Nothing here is differentiable, distributed or accelerator-backed, and no threshold or logical-suppression claim is made. |
 | Target-directed local emulation | `experimental` | A declared profile is not a device. The snapshot's target identity names an emulator, and only the device kind and precision facts are observed on the local CPU; the qubit capacity, native gate set, result formats, and limits are the profile's declaration, pinned by a digest of its payload. Compilation, routing, native-gate legalization, emission, and conformance run as they do for a submission, but execution happens on this machine, so a noiseless record is a simulation of the compiled program and not of the hardware. Noise is opt-in and applied to the compiled program, so its rules name the target's native opcodes plus swap when routing inserted one; the noisy record names whether its channels came from a caller model or a device calibration, the representation the planner chose, and whether the channel evolution is exact. Only terminal full-register samples or counts requests are accepted, because the static text emission profile refuses every other measurement request; observables, dynamic circuits, channels written into the program, and arbitrary matrices are refused rather than partially supported. emulate_declared_target reaches the same execution from a provider's own declaration instead of a caller-built profile: the declaration is validated fail-closed first, its own shot limit is the limit enforced while its declared operation limit becomes the emulated target's own declared limit, and a declaration that offers several devices is refused unless the caller names one. The emission dialect stays the caller's request rather than a fact read out of the declaration, because artifacts.profiles is an open collection of the profiles a device publishes and not a syntax claim. Nothing here contacts a provider, and the entry point is reached by its module path rather than through the remote facade. |
 | Huawei Ascend 910C native quantum workflows | `development_evidence` | Requires the exact source fixes and dependencies in the Ascend guide; published wheels alone are insufficient. The hardware record covers complex64/complex128 circuit workflows and the stated dynamics/QEC cases, with explicit CPU references, I/O and global QEC decoding boundaries. Optional JAX, CUDA-specific external simulators and quantum-cloud backends retain their own requirements. This is bounded hardware development evidence, not production, performance, capacity or hardware certification. |
 | Huawei Ascend 910C sharded quantum training | `development_evidence` | Requires pinned Torch-FL and patched pure FlagOS FlagCX builds. The statevector ladder covers 2/4/8 logical NPUs, corresponding to 1/2/4 physical 910C cards. Two-host tests use one logical NPU per host and shared LeoFS checkpoints. FP64 reductions use blocking lossless int64 broadcasts plus device arithmetic. Small correctness workloads and real owner-sharded updates do not establish capacity expansion, speedup, convergence, production support or release certification. DDP evidence is separately labeled data_parallel_replicated. |
+| Native circuit detector sampling and exact DEM | `development_evidence` | Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope. |
+| Real orbital-parameter gradients | `experimental` | Static real spatial integrals and antisymmetric generators; only real CPU orbital parameters are trainable. Dense O(n^4) integral storage. Explicit closed-shell occupations only. No geometry, supplied-integral, SCF, complex-orbital, open-shell or decomposition gradients; no correlated-ground-state or scalability claim. |
+| Spinful Fermi-Hubbard open chain | `experimental` | Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency. |
+| Optional OpenFermion operator conversion | `experimental` | Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence. |
 
 ## Validated public performance claims
 
@@ -131,9 +135,15 @@ requires all evidence for the target level to pass
 The Stim 1.16.0 path admits one CPU circuit with exact Clifford gates,
 explicit Z measurements and resets, and single-slot conditional X. It caps
 the returned tensor and the principal frame-table estimate at 64 MiB
-each, and a b8 write at 1 GiB. These limits do not bound process RSS.
+each, and a measurement-file write at 1 GiB. These limits do not bound process RSS.
 The sampler records explicit measurements in source order and requires
-a fresh destination for each b8 file.
+a fresh destination for each file. Writing accepts `01`, `b8`, `r8`, `hits`,
+`dets` and `ptb64`; the last requires shots divisible by 64. Sparse format
+admission uses conservative maximum bytes and can refuse a realized sparse
+file that would fit. `dets` writes measurement `M` indices, not detector or
+observable streams. Validation uses 64 KiB reads without a whole shot table.
+The final-file bound does not cover aggregate anonymous upstream scratch,
+reserve free space, or certify process RSS.
 
 ## Quafu multi-circuit job boundary
 
@@ -292,6 +302,53 @@ allocator, code and circuit preparation overhead. Zero shots retain exact empty
 shapes after circuit validation. Broad text/file conversion still uses the
 optional SDK; native source integration here proves explicit-record conversion,
 not complete Stim coverage or a performance claim.
+
+## Measurement-file conversion boundary
+
+The compiled native-record converter accepts six input formats and writes five
+formats. PTB64 output is refused, as it is by the pinned upstream converter;
+PTB64 input requires complete 64-shot groups. Sweep inputs are not supported by
+the admitted native Circuit domain. Existing source, map and determinism refusals
+remain, including T and conditional H; single-slot conditional X stays admitted.
+
+Input must be a regular non-symlink file and is snapshotted before inspection.
+Changes detected during copying refuse. Input snapshots and aggregate final
+outputs each have a 1 GiB guard, with at most 2 GiB for snapshot plus staged
+outputs. Parser reads are at most 64 KiB and upstream batches are 1024 records.
+The 64 MiB padded principal-table estimate is not a process RSS guarantee.
+Filesystem free space may change after admission, and I/O errors remain visible.
+No existing destination is replaced. Two validated files publish sequentially,
+not atomically together; rollback removes only this call's inodes and reports
+cleanup errors/residue. No automatic I/O retry is performed. A contained file
+failure does not invalidate dense conversion. There is no public record reader,
+batched decoder ingress, performance or scale claim in this package.
+
+## Native detector sampling and exact DEM
+
+`Circuit.compile_detector_sampler(detector_map=..., observable_map=..., seed=...)`
+uses explicit measurement instruction order, including repeated classical slots.
+`sample(shots)` returns reference-normalized CPU bool detector flips; use
+`separate_observables=True` for a pair, `append_observables=True` for one array,
+and `bit_packed=True` for LSB-first uint8. Appended packing crosses the parity
+boundary without intermediate byte padding. Zero shots do not advance RNG.
+`Circuit.detector_error_model` returns the existing FlagQuantum DEM record.
+
+Run `python -m examples.qec.native_detector_sampling` with PyMatching and either
+the embedded wheel or the Stim 1.16.0 extra. This bounded three-data-qubit
+code-capacity example is not a threshold study. The default source must have
+explicit Z records and a default CPU PyTorch initial state. Fixed Clifford
+gates, resets, single-slot X feedback and one-/two-qubit Pauli channels are
+supported. T, conditional H, general noise and unsupported exact DEM analysis
+refuse; there is no approximation or SV fallback. A channel may be sampleable
+but not convertible to an exact independent-mechanism DEM.
+
+The approved contract is [QEC native detector execution](../development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md).
+Output copies and conservatively padded tables are individually bounded at
+64 MiB, exact-analysis support at one million cells and DEM text at 16 MiB.
+These are allocation/work guards, not an RSS or performance claim. Compiled
+sampling reuses lowered source and RNG, not frame scratch. No detector file
+writer, MemoryCircuit backend replacement, new builder, SDK source integration
+for PyMatching, or broad parity certification is implied.
 
 ## Qmod integer record fields (UP-06 integration candidate)
 
@@ -1428,3 +1485,96 @@ complete audit after these changes; source replay and named model/refusal tests
 remain separate gates.
 
 Run `python -m pytest tests/team/compiler/test_borrowed_comparison_kernel.py -q`.
+## Native fermionic science migration
+
+The selected migration is documented in
+`docs/development/OPENFERMION_NATIVE_MIGRATION.md`. General JW/parity/BK operator
+encodings and explicit diagonal encoded Z-parity sectors are implemented in
+concrete submodules. No complete OpenFermion API compatibility or general
+stabilizer tapering is claimed. Existing stable fermionic APIs retain their
+original behavior.
+
+Slater and Gaussian vacuum preparation and low-rank evolution produce full JW
+occupation-register circuits. They do not directly consume parity/BK or tapered
+registers. Chemistry supports real spatial chemist integrals and even-electron
+closed shells. The optional direct PySCF driver provides RHF only. Static data,
+rank selection, orbital decompositions and geometry do not support gradients;
+evolution time and the separate EXT08 real orbital parameters are verified as
+differentiable in their respective workflows.
+Low-rank truncation and product-formula errors are distinct. Evolution uses
+nonadjacent density gates, and makes no nearest-neighbor routing, distributed,
+GPU capacity, or performance claim. Existing optional Cirq interoperability
+remains separately selectable; native scientific paths require neither Cirq nor
+OpenFermion.
+
+## Native fermionic Fourier transform
+
+`algorithms.fermion.lowering.fermionic_fourier_transform` builds a normalized
+radix-2 Fourier transform on full JW occupation registers, for positive
+power-of-two mode counts (including one). The forward orbital convention is
+F[p,q] = exp(-2j*pi*p*q/n)/sqrt(n); inverse is its adjoint. Natural mode order and
+vacuum phase one are retained. This is a fermionic orbital transform, not the
+qubit QFT. Static complex128 CPU factors lower to adjacent two-qubit matrix
+gates, with FSWAP signs preserved. Routing and plan storage cost O(n**2), with no
+FFT speedup, hardware gate-set, accelerator, distributed or gradient claim.
+Parity/BK/tapered registers and other mode counts are unsupported. See
+`python -m examples.algorithms.fermion_fourier` and
+`tests/unit/fermion/test_fourier.py` for the supported workflow and references.
+
+## Explicit Pauli stabilizer sectors
+
+`algorithms.fermion.stabilizer.reduce_stabilizers` accepts explicitly supplied,
+independent, commuting signed Pauli words and integer sector eigenvalues. It
+constructs a native Clifford C and a diagonal affine map J; the original sector
+embedding is C dagger J. The mapping field alone refers to the diagonal frame,
+not to the original state. Symmetries are interpreted in the input Pauli
+operator's qubit basis; JW, parity or BK occupation labels are not inferred.
+
+The operator must preserve every generator; nonpreserving operators and
+observables are rejected rather than silently projected. Automatic symmetry
+search, sector selection and arbitrary ansatz tapering are absent. Symbolic
+work allocates no dense arrays. Explicit state lifting is static CPU complex128,
+refuses autograd and is capped at 20 full qubits before allocation. Clifford
+circuits use native H, S dagger and CX with no device routing, accelerator,
+distributed or performance claim. The old Z-parity affine API remains available.
+The H2 example uses a small dense eigensolver to supply a state; its measured
+selected-sector energy is not evidence for a scalable ground-state solver.
+
+## Controlled low-rank fermionic evolution
+
+An existing low-rank JW evolution circuit may be controlled with
+`Circuit.control(1, ctrl_qubits=2*n_modes)`. This adds one most-significant
+control wire and retains the energy-offset phase as a measurable relative phase.
+Static inputs remain non-differentiable; only evolution time is differentiable.
+The supported chemistry profile is real spatial closed-shell data in the full
+spin-interleaved JW register on CPU. This workflow does not support parity, BK,
+tapered spaces, multiple controls, hardware-native synthesis, routing, GPU
+capacity, or distributed execution. Its small dense reference measures product
+formula error and does not provide an error bound. See
+`docs/development/FERMION_CONTROLLED_EVOLUTION.md` and
+`python -m examples.algorithms.fermion_controlled_evolution`.
+
+## Captured shot-file reading candidate
+
+`flagquantum.qec.execution.shot_data` owns the two record-reading entry points.
+`read_shot_data_file` returns owned CPU Torch tensors in stored M/D/L order;
+`iter_shot_data_file` validates an immutable snapshot before yielding batches and
+requires the embedded profile. Use `contextlib.closing` on partial consumption.
+Six encodings are supported; independently pack separated logical columns.
+Inputs are bounded at 1 GiB and principal payload at 64 MiB, excluding runtime
+RSS and caller-retained batches. Zero stored columns are refused. See
+[the approved proposal](../development/QEC_SHOT_DATA_READING_PROPOSAL.md) for
+exact budgets, API mapping and remaining parity gaps. Native and installed
+acceptance are pending for this candidate.
+
+## Differentiable orbital rotations
+
+The experimental `algorithms.chemistry_domain.orbital_rotation` workflow uses
+static real spatial chemist integrals and static antisymmetric generators, with
+trainable real CPU orbital parameters. It returns tensors and a closed-shell
+determinant energy; no geometry, supplied-integral, SCF, complex-orbital,
+open-shell or decomposition gradients are supported. It uses dense O(n^4)
+integral storage and is not a scalability claim. Differentiable tensors must
+remain outside the static `MolecularProblem` snapshot path. See
+[the stage contract](../development/FERMION_ORBITAL_GRADIENTS.md) and run
+`python -m examples.algorithms.fermion_orbital_rotation`.

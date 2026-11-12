@@ -16,7 +16,9 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.parametrize("compressed", [False, True])
-@pytest.mark.parametrize("failure", ["disconnect", "timeout", "url", "503", "429"])
+@pytest.mark.parametrize(
+    "failure", ["disconnect", "timeout", "url", "503", "429", "incomplete"]
+)
 def test_transient_request_recovers_with_an_independent_opener(
     monkeypatch: pytest.MonkeyPatch, compressed: bool, failure: str
 ) -> None:
@@ -27,11 +29,16 @@ def test_transient_request_recovers_with_an_independent_opener(
     class Response(io.BytesIO):
         headers = Message()
 
+        def read(self, size: int = -1) -> bytes:
+            if len(calls) == 1 and failure == "incomplete":
+                raise IncompleteRead(b'{"sha":', 40)
+            return super().read(size)
+
     class Opener:
         def open(self, request: source.Request, timeout: int) -> Response:
             assert timeout == 30
             assert request.get_header("Authorization") == "Bearer fixture"
-            if len(calls) == 1:
+            if len(calls) == 1 and failure != "incomplete":
                 if failure == "disconnect":
                     raise RemoteDisconnected("connection closed")
                 if failure == "timeout":
@@ -60,9 +67,11 @@ def test_transient_request_recovers_with_an_independent_opener(
     assert delays == [1]
 
 
-@pytest.mark.parametrize("status,attempts", [(401, 1), (403, 1), (404, 1), (503, 3)])
+@pytest.mark.parametrize(
+    "status,attempts", [(401, 1), (403, 1), (404, 1), (503, 3), ("incomplete", 3)]
+)
 def test_request_failures_remain_visible_after_the_retry_bound(
-    monkeypatch: pytest.MonkeyPatch, status: int, attempts: int
+    monkeypatch: pytest.MonkeyPatch, status: int | str, attempts: int
 ) -> None:
     calls: list[int] = []
     delays: list[float] = []
@@ -70,13 +79,19 @@ def test_request_failures_remain_visible_after_the_retry_bound(
     class Opener:
         def open(self, request: source.Request, timeout: int) -> None:
             calls.append(timeout)
+            if status == "incomplete":
+                raise IncompleteRead(b'{"sha":', 40)
+            assert isinstance(status, int)
             raise HTTPError(request.full_url, status, "refused", Message(), None)
 
     monkeypatch.setattr(source, "build_opener", lambda *handlers: Opener())
     monkeypatch.setattr(source.time, "sleep", delays.append)
-    with pytest.raises(HTTPError) as error:
+    with pytest.raises(
+        IncompleteRead if status == "incomplete" else HTTPError
+    ) as error:
         source._get_json("https://api.github.com/source", {})
-    assert error.value.code == status
+    if isinstance(error.value, HTTPError):
+        assert error.value.code == status
     assert len(calls) == attempts
     assert delays == ([1, 2] if attempts == 3 else [])
 

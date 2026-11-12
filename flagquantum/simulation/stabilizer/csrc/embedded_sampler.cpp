@@ -2,12 +2,16 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
+#include <algorithm>
 #include <cstring>
+#include <cerrno>
+#include <system_error>
 #include <limits>
 #include <memory>
 #include <stdexcept>
 
 #include "stim/circuit/circuit.h"
+#include "stim/io/measure_record_reader.h"
 #include "stim/simulators/frame_simulator_util.h"
 #include "stim/simulators/error_analyzer.h"
 #include "stim/simulators/measurements_to_detection_events.h"
@@ -106,11 +110,25 @@ PyObject *sample(PyObject *, PyObject *args) {
     }
 }
 
-PyObject *write_b8(PyObject *, PyObject *args) {
+stim::SampleFormat parse_format(const char *format) {
+    if (strcmp(format, "01") == 0) return stim::SampleFormat::SAMPLE_FORMAT_01;
+    if (strcmp(format, "b8") == 0) return stim::SampleFormat::SAMPLE_FORMAT_B8;
+    if (strcmp(format, "r8") == 0) return stim::SampleFormat::SAMPLE_FORMAT_R8;
+    if (strcmp(format, "hits") == 0) return stim::SampleFormat::SAMPLE_FORMAT_HITS;
+    if (strcmp(format, "dets") == 0) return stim::SampleFormat::SAMPLE_FORMAT_DETS;
+    if (strcmp(format, "ptb64") == 0) return stim::SampleFormat::SAMPLE_FORMAT_PTB64;
+    throw std::invalid_argument("Unknown sample file format.");
+}
+
+PyObject *write_measurements(PyObject *args, bool select_format) {
     PyObject *capsule;
     Py_ssize_t shots;
     const char *path;
-    if (!PyArg_ParseTuple(args, "Ons", &capsule, &shots, &path)) {
+    const char *format = "b8";
+    const bool parsed = select_format
+        ? PyArg_ParseTuple(args, "Onss", &capsule, &shots, &path, &format)
+        : PyArg_ParseTuple(args, "Ons", &capsule, &shots, &path);
+    if (!parsed) {
         return nullptr;
     }
     auto *sampler = static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
@@ -121,22 +139,35 @@ PyObject *write_b8(PyObject *, PyObject *args) {
         if (shots <= 0) {
             throw std::invalid_argument("Invalid embedded sampler shot count.");
         }
+        const auto output_format = parse_format(format);
+        if (output_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64 && shots % 64) {
+            throw std::invalid_argument("ptb64 shots must be a multiple of 64.");
+        }
         std::unique_ptr<FILE, decltype(&fclose)> file(fopen(path, "wb"), fclose);
         if (file == nullptr) {
-            throw std::runtime_error("Could not open the staged b8 output.");
+            throw std::runtime_error("Could not open the staged measurement output.");
         }
         stim::sample_batch_measurements_writing_results_to_disk(
             sampler->circuit, sampler->reference, size_t(shots), file.get(),
-            stim::SampleFormat::SAMPLE_FORMAT_B8, sampler->rng);
+            output_format, sampler->rng);
         const bool write_failed = ferror(file.get()) != 0;
         if (fclose(file.release()) != 0 || write_failed) {
-            throw std::runtime_error("Could not complete the staged b8 output.");
+            throw std::runtime_error("Could not complete the staged measurement output.");
         }
         Py_RETURN_NONE;
     } catch (const std::exception &error) {
         PyErr_SetString(PyExc_RuntimeError, error.what());
         return nullptr;
     }
+}
+
+
+PyObject *write_b8(PyObject *, PyObject *args) {
+    return write_measurements(args, false);
+}
+
+PyObject *write_records(PyObject *, PyObject *args) {
+    return write_measurements(args, true);
 }
 
 
@@ -247,12 +278,336 @@ PyObject *convert_records(PyObject *, PyObject *args) {
     }
 }
 
+
+PyObject *convert_file(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    const char *input_path, *input_format, *output_path, *output_format, *obs_path, *obs_format;
+    int append;
+    if (!PyArg_ParseTuple(args, "Osssspzs", &capsule, &input_path, &input_format,
+                          &output_path, &output_format, &append, &obs_path, &obs_format)) {
+        return nullptr;
+    }
+    auto *converter = static_cast<Converter *>(PyCapsule_GetPointer(capsule, converter_capsule_name));
+    if (converter == nullptr) return nullptr;
+    try {
+        const auto in_format = parse_format(input_format);
+        const auto out_format = parse_format(output_format);
+        const auto logical_format = parse_format(obs_format);
+        const auto &stats = converter->stats;
+        if (out_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64 ||
+            (obs_path && logical_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64) ||
+            stats.num_measurements == 0 || stats.num_measurements > 65536 ||
+            stats.num_qubits > 4096 || stats.num_detectors + stats.num_observables > 65536) {
+            throw std::invalid_argument("Invalid embedded file conversion request.");
+        }
+        auto padded = [](size_t n) { return std::max(size_t(1024), ((n + 1023) / 1024) * 1024); };
+        const size_t rows = padded(stats.num_measurements) +
+            2 * padded(stats.num_detectors + stats.num_observables) + 2 * padded(stats.num_qubits) +
+            2 * padded(2 * stats.num_measurements) + padded(stats.num_observables) + 4 * padded(0) + 8;
+        if (rows * 128 > 64 * 1024 * 1024) {
+            throw std::invalid_argument("Embedded conversion principal tables exceed 64 MiB.");
+        }
+        std::unique_ptr<FILE, decltype(&fclose)> input(fopen(input_path, "rb"), fclose);
+        if (!input) throw std::runtime_error("Could not open the measurement snapshot.");
+        std::unique_ptr<FILE, decltype(&fclose)> output(fopen(output_path, "wb"), fclose);
+        std::unique_ptr<FILE, decltype(&fclose)> obs(obs_path ? fopen(obs_path, "wb") : nullptr, fclose);
+        if (!output || (obs_path && !obs)) throw std::runtime_error("Could not open staged conversion output.");
+        stim::stream_measurements_to_detection_events_helper<width>(
+            input.get(), in_format, nullptr, stim::SampleFormat::SAMPLE_FORMAT_01,
+            output.get(), out_format, converter->circuit.aliased_noiseless_circuit(),
+            stats, append, converter->reference, obs.get(), logical_format);
+        bool failed = ferror(input.get()) != 0 || ferror(output.get()) != 0;
+        if (obs) {
+            failed |= ferror(obs.get()) != 0;
+            failed |= fclose(obs.release()) != 0;
+        }
+        failed |= fclose(input.release()) != 0;
+        failed |= fclose(output.release()) != 0;
+        if (failed) throw std::runtime_error("Could not complete staged conversion files.");
+        Py_RETURN_NONE;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+
+PyObject *prepare_detector(PyObject *self, PyObject *args) {
+    const char *text;
+    PyObject *seed;
+    if (!PyArg_ParseTuple(args, "sO", &text, &seed)) {
+        return nullptr;
+    }
+    try {
+        stim::Circuit circuit(text);
+        // Gauge rejection concerns the ideal circuit, not exact noisy DEM admission.
+        stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            circuit.aliased_noiseless_circuit(), false, false, false, 0, false, false);
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+    return prepare(self, args);
+}
+
+PyObject *sample_detectors(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    Py_ssize_t shots;
+    if (!PyArg_ParseTuple(args, "On", &capsule, &shots)) {
+        return nullptr;
+    }
+    auto *sampler = static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
+    if (sampler == nullptr) {
+        return nullptr;
+    }
+    try {
+        const auto stats = sampler->circuit.compute_stats();
+        const size_t limit = size_t(std::numeric_limits<Py_ssize_t>::max());
+        if (shots <= 0 || (stats.num_detectors && size_t(shots) > limit / stats.num_detectors) ||
+            (stats.num_observables && size_t(shots) > limit / stats.num_observables)) {
+            throw std::invalid_argument("Invalid embedded detector sample dimensions.");
+        }
+        auto records = stim::sample_batch_detection_events<width>(
+            sampler->circuit, size_t(shots), sampler->rng);
+        PyObject *pair = PyTuple_New(2);
+        if (pair == nullptr) {
+            return nullptr;
+        }
+        for (size_t part = 0; part < 2; ++part) {
+            const size_t columns = part == 0 ? stats.num_detectors : stats.num_observables;
+            const auto &table = part == 0 ? records.first : records.second;
+            PyObject *buffer = PyByteArray_FromStringAndSize(nullptr, Py_ssize_t(size_t(shots) * columns));
+            if (buffer == nullptr) {
+                Py_DECREF(pair);
+                return nullptr;
+            }
+            auto *output = PyByteArray_AsString(buffer);
+            for (size_t shot = 0; shot < size_t(shots); ++shot) {
+                for (size_t column = 0; column < columns; ++column) {
+                    output[shot * columns + column] = bool(table[column][shot]);
+                }
+            }
+            PyTuple_SetItem(pair, Py_ssize_t(part), buffer);
+        }
+        return pair;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+PyObject *write_detectors(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    Py_ssize_t shots;
+    const char *path, *format, *obs_path, *obs_format;
+    int prepend, append;
+    if (!PyArg_ParseTuple(args, "Onssppzs", &capsule, &shots, &path, &format,
+                          &prepend, &append, &obs_path, &obs_format)) return nullptr;
+    auto *sampler = static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
+    if (sampler == nullptr) return nullptr;
+    try {
+        auto output_format = parse_format(format);
+        auto observable_format = parse_format(obs_format);
+        if (shots <= 0 || prepend + append + (obs_path != nullptr) > 1 ||
+            ((output_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64 ||
+              (obs_path && observable_format == stim::SampleFormat::SAMPLE_FORMAT_PTB64)) && shots % 64)) {
+            throw std::invalid_argument("Invalid embedded detector file request.");
+        }
+        std::unique_ptr<FILE, decltype(&fclose)> file(fopen(path, "wb"), fclose);
+        std::unique_ptr<FILE, decltype(&fclose)> obs(obs_path ? fopen(obs_path, "wb") : nullptr, fclose);
+        if (!file || (obs_path && !obs)) throw std::runtime_error("Could not open staged detector output.");
+        stim::sample_batch_detection_events_writing_results_to_disk<width>(
+            sampler->circuit, size_t(shots), prepend, append, file.get(),
+            output_format, sampler->rng, obs.get(), observable_format);
+        bool failed = ferror(file.get()) != 0;
+        if (obs) {
+            failed |= ferror(obs.get()) != 0;
+            failed |= fclose(obs.release()) != 0;
+        }
+        failed |= fclose(file.release()) != 0;
+        if (failed) throw std::runtime_error("Could not complete staged detector output.");
+        Py_RETURN_NONE;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+PyObject *detector_error_model(PyObject *, PyObject *args) {
+    const char *text;
+    if (!PyArg_ParseTuple(args, "s", &text)) {
+        return nullptr;
+    }
+    try {
+        stim::Circuit circuit(text);
+        auto model = stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            circuit, false, false, false, 0, false, false);
+        const auto result = model.str();
+        if (result.size() > 16 * 1024 * 1024) {
+            throw std::invalid_argument("Embedded DEM text exceeds 16 MiB.");
+        }
+        return PyUnicode_FromStringAndSize(result.data(), Py_ssize_t(result.size()));
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+constexpr char reader_capsule_name[] = "flagquantum.embedded_shot_reader";
+
+struct ShotReader {
+    FILE *file;
+    std::unique_ptr<stim::MeasureRecordReader<width>> reader;
+    size_t columns;
+    bool check_padding;
+
+    ShotReader(const char *path, const char *format, size_t nm, size_t nd, size_t no)
+        : file(std::fopen(path, "rb")), columns(nm + nd + no),
+          check_padding(std::strcmp(format, "b8") == 0) {
+        if (!file) throw std::system_error(errno, std::generic_category(), "Cannot open shot snapshot");
+        try {
+            reader = stim::MeasureRecordReader<width>::make(file, parse_format(format), nm, nd, no);
+        } catch (...) {
+            std::fclose(file);
+            file = nullptr;
+            throw;
+        }
+    }
+    ~ShotReader() { if (file) std::fclose(file); }
+    void close() {
+        reader.reset();
+        FILE *owned = file;
+        file = nullptr;
+        if (owned && std::fclose(owned)) throw std::runtime_error("Cannot close shot snapshot.");
+    }
+    bool next(stim::simd_bits<width> &row) {
+        if (!file || !reader) throw std::invalid_argument("Shot reader is closed.");
+        row.clear();
+        bool more = reader->start_and_read_entire_record(row);
+        if (std::ferror(file)) throw std::system_error(errno, std::generic_category(), "Cannot read shot snapshot");
+        if (more && check_padding && columns % 8 && (row.u8[columns / 8] >> (columns % 8)))
+            throw std::invalid_argument("Nonzero b8 shot padding.");
+        return more;
+    }
+};
+
+void destroy_shot_reader(PyObject *capsule) {
+    delete static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+}
+
+PyObject *open_shot_reader(PyObject *, PyObject *args) {
+    const char *path, *format;
+    Py_ssize_t nm, nd, no;
+    if (!PyArg_ParseTuple(args, "ssnnn", &path, &format, &nm, &nd, &no)) return nullptr;
+    try {
+        if (nm < 0 || nd < 0 || no < 0 || nm > PY_SSIZE_T_MAX - nd || nm + nd > PY_SSIZE_T_MAX - no || nm + nd + no == 0)
+            throw std::invalid_argument("Invalid shot columns.");
+        // Bound codec scratch before construction and subsequent size arithmetic.
+        constexpr size_t max_columns = ((64 * 1024 * 1024 - 65536) / 16384) * 1024;
+        if (size_t(nm + nd + no) > max_columns)
+            throw std::invalid_argument("Shot codec scratch exceeds byte limit.");
+        auto owned = std::make_unique<ShotReader>(path, format, size_t(nm), size_t(nd), size_t(no));
+        PyObject *capsule = PyCapsule_New(owned.get(), reader_capsule_name, destroy_shot_reader);
+        if (capsule) owned.release();
+        return capsule;
+    } catch (const std::system_error &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_ValueError, error.what()); return nullptr;
+    }
+}
+
+PyObject *close_shot_reader(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    if (!PyArg_ParseTuple(args, "O", &capsule)) return nullptr;
+    auto *cursor = static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+    if (!cursor) return nullptr;
+    try { cursor->close(); Py_RETURN_NONE; }
+    catch (const std::exception &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; }
+}
+
+PyObject *scan_shot_reader(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    if (!PyArg_ParseTuple(args, "O", &capsule)) return nullptr;
+    auto *cursor = static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+    if (!cursor) return nullptr;
+    try {
+        stim::simd_bits<width> row(cursor->columns);
+        size_t count = 0;
+        while (cursor->next(row)) {
+            if (count == size_t(PY_SSIZE_T_MAX)) throw std::invalid_argument("Shot count overflow.");
+            ++count;
+        }
+        return PyLong_FromSize_t(count);
+    } catch (const std::system_error &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; } catch (const std::exception &error) { PyErr_SetString(PyExc_ValueError, error.what()); return nullptr; }
+}
+
+PyObject *read_shot_reader(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    Py_ssize_t requested, first_columns;
+    int packed, separate;
+    if (!PyArg_ParseTuple(args, "Onppn", &capsule, &requested, &packed, &separate, &first_columns)) return nullptr;
+    auto *cursor = static_cast<ShotReader *>(PyCapsule_GetPointer(capsule, reader_capsule_name));
+    if (!cursor) return nullptr;
+    try {
+        if (requested < 0 || first_columns < 0 || size_t(first_columns) > cursor->columns)
+            throw std::invalid_argument("Invalid shot read dimensions.");
+        size_t a = separate ? size_t(first_columns) : cursor->columns;
+        size_t b = separate ? cursor->columns - a : 0;
+        size_t astride = packed ? (a + 7) / 8 : a;
+        size_t bstride = packed ? (b + 7) / 8 : b;
+        // Independently enforce the reviewed payload estimate at the native boundary.
+        size_t p = (cursor->columns + 7) / 8;
+        size_t scratch = 128 * ((cursor->columns + 1023) / 1024) * 128 + 65536;
+        constexpr size_t limit = 64 * 1024 * 1024;
+        if (scratch > limit || p + astride + bstride > (limit - scratch) / 4 ||
+            size_t(requested) > (limit - scratch) / (4 * (p + astride + bstride)))
+            throw std::invalid_argument("Shot payload exceeds byte limit.");
+        PyObject *first = PyByteArray_FromStringAndSize(nullptr, requested * astride);
+        if (!first) return nullptr;
+        PyObject *second = PyByteArray_FromStringAndSize(nullptr, requested * bstride);
+        if (!second) { Py_DECREF(first); return nullptr; }
+        auto *outa = reinterpret_cast<uint8_t *>(PyByteArray_AsString(first));
+        auto *outb = reinterpret_cast<uint8_t *>(PyByteArray_AsString(second));
+        std::memset(outa, 0, requested * astride);
+        std::memset(outb, 0, requested * bstride);
+        size_t count = 0;
+        try {
+            stim::simd_bits<width> row(cursor->columns);
+            while (count < size_t(requested) && cursor->next(row)) {
+                for (size_t c = 0; c < cursor->columns; ++c) {
+                    if (!row[c]) continue;
+                    size_t bit = c < a ? c : c - a;
+                    size_t stride = c < a ? astride : bstride;
+                    uint8_t *out = c < a ? outa : outb;
+                    if (packed) out[count * stride + bit / 8] |= uint8_t(1 << (bit % 8));
+                    else out[count * stride + bit] = 1;
+                }
+                ++count;
+            }
+        } catch (...) { Py_DECREF(first); Py_DECREF(second); throw; }
+        PyObject *result = PyTuple_New(3);
+        PyObject *rows = PyLong_FromSize_t(count);
+        if (!result || !rows) { Py_XDECREF(result); Py_XDECREF(rows); Py_DECREF(first); Py_DECREF(second); return nullptr; }
+        PyTuple_SetItem(result, 0, first); PyTuple_SetItem(result, 1, second); PyTuple_SetItem(result, 2, rows);
+        return result;
+    } catch (const std::system_error &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; } catch (const std::exception &error) { PyErr_SetString(PyExc_ValueError, error.what()); return nullptr; }
+}
+
 PyMethodDef methods[] = {
+    {"open_shot_reader", open_shot_reader, METH_VARARGS, nullptr},
+    {"scan_shot_reader", scan_shot_reader, METH_VARARGS, nullptr},
+    {"read_shot_reader", read_shot_reader, METH_VARARGS, nullptr},
+    {"close_shot_reader", close_shot_reader, METH_VARARGS, nullptr},
+    {"prepare_detector", prepare_detector, METH_VARARGS, nullptr},
+    {"sample_detectors", sample_detectors, METH_VARARGS, nullptr},
+    {"write_detectors", write_detectors, METH_VARARGS, nullptr},
+    {"detector_error_model", detector_error_model, METH_VARARGS, nullptr},
     {"prepare_converter", prepare_converter, METH_VARARGS, nullptr},
     {"convert_records", convert_records, METH_VARARGS, nullptr},
+    {"convert_file", convert_file, METH_VARARGS, nullptr},
     {"prepare", prepare, METH_VARARGS, nullptr},
     {"sample", sample, METH_VARARGS, nullptr},
     {"write_b8", write_b8, METH_VARARGS, nullptr},
+    {"write_records", write_records, METH_VARARGS, nullptr},
     {nullptr, nullptr, 0, nullptr},
 };
 

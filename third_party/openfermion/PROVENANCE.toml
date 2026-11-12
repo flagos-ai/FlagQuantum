@@ -1,0 +1,19 @@
+repository = "https://github.com/quantumlib/OpenFermion"
+revision = "34adf3196cd566f4ca53893f868753786797ae2a"
+license = "Apache-2.0"
+notice = "NOTICE"
+
+[[adaptations]]
+upstream = "src/openfermion/transforms/opconversions/bravyi_kitaev.py"
+native = "flagquantum/algorithms/fermion/encoding.py"
+changes = "Fenwick sets and ladder images adapted to canonical native values, explicit width and native occupation basis metadata. JW/parity reuse existing mathematical conventions. No external runtime calls."
+
+[[adaptations]]
+upstream = "src/openfermion/linalg/givens_rotations.py"
+native = "flagquantum/algorithms/fermion/preparation.py"
+changes = "Canonical Gaussian vacuum elimination adapted to torch tensors and native adjacent orbital matrices. Canonical input is explicitly A*a+B*a_dagger; excited-state basis synthesis is excluded. Cirq gate generation replaced with native one- and two-qubit gates."
+
+[[adaptations]]
+upstream = "src/openfermion/circuits/low_rank.py"
+native = "flagquantum/algorithms/fermion/low_rank.py"
+changes = "Density-square factorization principle rederived for native spatial chemist integrals, including the one-half spin sum and full contraction correction. Uses torch eigh, signed factors, explicit rank and conservative discarded norm weights. No upstream tensor or gate objects."
