@@ -121,6 +121,7 @@ SCRIPTS = (
     "fermion_hubbard",
     "fermion_hubbard_training",
     "fermion_hubbard_ring_training",
+    "fermion_spinless",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -141,6 +142,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_spinless": (
+        "exponential inspection cost",
+        "not a many-body scalability claim",
+    ),
     "fermion_hubbard_ring_training": (
         "UCCSD angles are float32",
         "not a general convergence, coefficient-gradient or scalability claim",
@@ -2005,3 +2010,16 @@ def test_fermion_hubbard_ring_training_lowers_energy() -> None:
     assert float(_labelled(output, "Up particles")) == pytest.approx(1, abs=1e-7)
     assert float(_labelled(output, "Down particles")) == pytest.approx(1, abs=1e-7)
     _assert_premise("fermion_hubbard_ring_training", output)
+
+
+@pytest.mark.parametrize("args,expected", [((), 1 - 3**0.5), (("--periodic",), 1.0)])
+def test_spinless_example_measures_two_particle_sector(
+    args: tuple[str, ...], expected: float
+) -> None:
+    output = _run("fermion_spinless", *args)
+    assert float(_labelled(output, "Dense N=2 energy")) == pytest.approx(
+        expected, abs=1e-9
+    )
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        assert f"{encoding} energy: {expected:.10f}; particles: 2.000000" in output
+    _assert_premise("fermion_spinless", output)
