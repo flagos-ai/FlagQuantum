@@ -413,7 +413,9 @@ jobs:
   native-fermion:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
-    timeout-minutes: 25
+    # Runs 43178562378 and 43183202247 spent about 17 minutes downloading
+    # PySCF/SciPy on Python 3.10, leaving no time for the required RHF tests.
+    timeout-minutes: 40
     permissions:
       contents: read
     concurrency:
