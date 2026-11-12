@@ -49,6 +49,7 @@ Native FlagQuantum programs currently available:
 ## Validated local Notebook workflows
 
 - [overview](amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/README.md)
+- [overview](amplitude_amplification_and_estimation/quantum_counting/overview/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
 - [overview](foundational/simon/overview/README.md)
