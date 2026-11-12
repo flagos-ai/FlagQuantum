@@ -38,6 +38,15 @@ contains native, retained-source and independent Circuit scenarios. This
 ordering preserves the first rejection when malformed attributes and invalid
 storage use occur together.
 
+`_Body.capture_effects` owns nested effect-chain capture for QPE, coherent
+callbacks, reversible regions and reset loops. It flushes pending evolution at
+the boundaries, balances nesting counters, and detaches the captured operations
+while restoring the incoming effect unless the caller retains the forward body.
+Each caller still owns its storage, alias and allowed-operation checks. Capture
+failures discard partial effects and pending evolution before propagating the
+original diagnostic. Use the unitary-region, QPE-callback and reset-replay
+integration tests when changing this lifecycle.
+
 For a small change, start with the relevant accepted and rejected scenarios in
 `tests/team/compiler/test_construction_registers.py` and the end-to-end
 `tests/integration/test_synthesis_python_program.py`. The [synthesis examples](../../../examples/synthesis/README.md)

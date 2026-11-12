@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import ast
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from copy import deepcopy
 from dataclasses import replace
 
@@ -330,6 +330,33 @@ class _Body:
                 ValueId(self.name, index), register_type(width)
             )
         return self.registers[name]
+
+    def capture_effects(
+        self,
+        capture_body: Callable[[], None],
+        *,
+        expanded_callback: bool = False,
+        retain: bool = False,
+    ) -> tuple[Operation, ...]:
+        """Capture a nested effect chain and detach it unless explicitly retained."""
+        flush_evolutions(self)
+        start, incoming = len(self.operations), self.effect
+        self.region_depth += 1
+        self.owner.expanded_callbacks += int(expanded_callback)
+        keep = False
+        try:
+            capture_body()
+            flush_evolutions(self)
+            effects = tuple(self.operations[start:])
+            keep = retain
+            return effects
+        finally:
+            self.owner.expanded_callbacks -= int(expanded_callback)
+            self.region_depth -= 1
+            if not keep:
+                del self.operations[start:]
+                self.effect = incoming
+                self.evolutions.clear()
 
     def emit(
         self,

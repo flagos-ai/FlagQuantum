@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING
 from .._hybrid.model import Value
 from .frontend_callback_effects import emit_callback_effects
 from .frontend_classical import bind_helper
-from .frontend_evolution import flush_evolutions
 from .frontend_ports import program_ports
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import locations, packed_locations
@@ -59,20 +58,10 @@ def capture_controlled_effects(
             "program.control",
             "condition inputs and writable callback actual storage must be disjoint",
         )
-    flush_evolutions(owner)
     storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
-    start, incoming = len(owner.operations), owner.effect
-    owner.region_depth += 1
-    owner.owner.expanded_callbacks += 1
-    try:
-        owner.call(callback)
-        flush_evolutions(owner)
-    finally:
-        owner.owner.expanded_callbacks -= 1
-        owner.region_depth -= 1
-    effects = tuple(owner.operations[start:])
-    del owner.operations[start:]
-    owner.effect = incoming
+    effects = owner.capture_effects(
+        lambda: owner.call(callback), expanded_callback=True
+    )
     if not effects or storage != (owner.registers, owner.ports, owner.widths):
         _error(
             owner.source,

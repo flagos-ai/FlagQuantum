@@ -18,19 +18,18 @@ if TYPE_CHECKING:
 
 
 def _checked_effects(
-    owner: _Body, node: ast.With, statements: Sequence[ast.stmt]
+    owner: _Body,
+    node: ast.With,
+    statements: Sequence[ast.stmt],
+    *,
+    retain: bool = True,
 ) -> tuple[Operation, ...]:
     if owner.region_depth >= 32:
         _error(owner.source, node, "budget", "unitary region nesting exceeds 32")
     storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
-    start = len(owner.operations)
-    owner.region_depth += 1
-    try:
-        owner.statements(statements, nested=True)
-        flush_evolutions(owner)
-    finally:
-        owner.region_depth -= 1
-    effects = tuple(owner.operations[start:])
+    effects = owner.capture_effects(
+        lambda: owner.statements(statements, nested=True), retain=retain
+    )
     try:
         unitary_regions(effects)
     except ValueError as error:
@@ -117,8 +116,5 @@ def capture_adjoint(owner: _Body, block: ast.With) -> None:
                 "adjoint requires a static Const-only or mutable unitary qfunc; "
                 "Output publication is not admitted",
             )
-    start, effect = len(owner.operations), owner.effect
-    forward = _checked_effects(owner, block, block.body)
-    del owner.operations[start:]
-    owner.effect = effect
+    forward = _checked_effects(owner, block, block.body, retain=False)
     _emit_inverse(owner, block, forward)

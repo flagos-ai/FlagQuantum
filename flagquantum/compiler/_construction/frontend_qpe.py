@@ -84,10 +84,8 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
             "phase counter must be initialized by allocate and unused",
         )
     storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
-    start, effect = len(owner.operations), owner.effect
-    owner.region_depth += 1
-    owner.owner.expanded_callbacks += 1
-    try:
+
+    def capture_callback() -> None:
         if (
             owner.resolve_callable(body.func) is phase
             and len(body.args) == 2
@@ -97,13 +95,8 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
             capture_polynomial_phase(owner, body.args[0], angle, body)
         else:
             owner.call(body)
-        flush_evolutions(owner)
-    finally:
-        owner.owner.expanded_callbacks -= 1
-        owner.region_depth -= 1
-    effects = tuple(owner.operations[start:])
-    del owner.operations[start:]
-    owner.effect = effect
+
+    effects = owner.capture_effects(capture_callback, expanded_callback=True)
     allowed = {
         "qreg.gate",
         "qreg.pair_gate",
