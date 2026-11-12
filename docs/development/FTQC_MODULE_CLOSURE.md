@@ -239,3 +239,11 @@ expanded Add through 32 bits have matching geometry and explicit glyph suppliers
 native identifiers and open-boundary text differ. Q-0747/Q-0749/Q-0897 remain
 partial: source-wide drawing and automatic numerical provider composition are
 not closed by these cases. The fixed 17-file closure total is unchanged.
+
+## Explicit Add numerical composition
+
+[Add tensor providers](ADDITION_TENSOR_PROVIDERS.md) replace test-only numerical
+dispatch with an explicit example binding existing suppliers. Split/join and
+through-identity nodes share Simulation bit-wiring logic. Source-wide provider
+coverage and notebook parent closure remain open; no additional parent file is
+closed by this cleanup.

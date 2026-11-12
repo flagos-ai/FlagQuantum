@@ -20,8 +20,9 @@ two-control primitive is enumerated, not a whole addition matrix. The AND
 adjoint uses the conjugate transpose of that logical tensor; its physical measured
 erasure retains branch normalization and its valid-work promise. Split/join
 suppliers preserve bit connectivity without materializing full-word identities.
-These are explicit numerical suppliers at the test boundary, not automatic
-production provider discovery.
+The [explicit Add provider composition](ADDITION_TENSOR_PROVIDERS.md) now owns
+this assembly in a reusable example using the existing provider mapping; the
+test-only dispatcher has been removed. This is not general automatic discovery.
 
 ## Existing append workflow
 

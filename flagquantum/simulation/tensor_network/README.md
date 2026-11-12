@@ -246,3 +246,10 @@ namespace exports to their native owners. Numerical grouping consumers import
 `register_axis_groups` directly. Explicit provider declarations stay separate
 from Compiler expansion and numerical execution; namespace asset closure does
 not certify open source implementation boundaries.
+
+`register_identity.register_bit_wiring_nodes` factors explicit equal-width
+rebindings into binary identities. Direct-through placeholders reuse the same
+owner; directional split/join ports use its caller-declared bit correspondence.
+The [factorized Add composition](../../../docs/development/ADDITION_TENSOR_PROVIDERS.md)
+replaces test-only dispatch with the existing exact-name provider mapping and
+native CNOT/AND/basis/wiring suppliers, without adding automatic discovery.
