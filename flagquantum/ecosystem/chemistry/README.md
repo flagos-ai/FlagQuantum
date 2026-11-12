@@ -131,6 +131,41 @@ mutate source arrays, and forbid implicit file loading. The existing optional
 workflow executes them on Python 3.10 and 3.12; fakes alone do not establish
 upstream compatibility. Linux broad tiers remain CI's responsibility.
 
+## Native UCCSD after object import
+
+Continue the populated-object example with the existing four-mode, two-electron
+UCCSD circuit and a PyTorch optimizer. Only the input conversion uses upstream;
+the same native observable and training loop consume either MolecularProblem.
+
+```python
+from flagquantum.algorithms.chemistry import uccsd_ansatz
+
+hamiltonian = to_observable(encoded.operator)
+angles = torch.tensor([0.1, -0.07, 0.2], dtype=torch.float32, requires_grad=True)
+optimizer = torch.optim.SGD([angles], lr=0.2)
+for _ in range(24):
+    optimizer.zero_grad()
+    circuit = uccsd_ansatz(4, 2, angles, dtype=torch.complex128, device="cpu")
+    loss = fq.run(circuit, outputs=[fq.expectation(hamiltonian)]).expectation().reshape(())
+    loss.backward()
+    optimizer.step()
+assert angles.grad is not None and torch.isfinite(angles.grad).all()
+```
+
+This is local CPU training of circuit angles on static integrals. It supplies no
+SCF, geometry/integral gradients, encoded/tapered ansatz or convergence guarantee.
+The illustrative integrals above have a reference determinant energy of -0.9 Ha;
+they are not the computed H2 integrals. The independent H2 replacement scenario
+in `test_molecular_data_replacement_preserves_native_uccsd_training` compares
+24 native/imported energy, gradient and parameter-update steps, checks a nonzero
+gradient against finite differences, and verifies the final energy against an
+upstream dense matrix. It destroys the external arrays before training and
+checks state normalization and the two-particle sector. Run it explicitly with:
+
+```bash
+python -m pytest tests/unit/test_openfermion_conversion.py::test_molecular_data_replacement_preserves_native_uccsd_training -q
+```
+
 Ecosystem maintainers own this migration aid. OpenFermion remains a separately
 installed Apache-2.0 dependency; its NumPy, h5py and Cirq dependencies stop at the
 optional environment. No upstream source is copied. The existing optional

@@ -282,6 +282,110 @@ def test_molecular_data_rejects_wrong_external_type() -> None:
         from_openfermion_molecular_data(of.FermionOperator())
 
 
+def test_molecular_data_replacement_preserves_native_uccsd_training(
+    molecular_data_source: OpenMolecularData,
+) -> None:
+    from flagquantum.algorithms.chemistry import uccsd_ansatz
+    from flagquantum.algorithms.chemistry_domain.problem import (
+        fermion_hamiltonian,
+        from_native_molecule,
+    )
+    from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+    from flagquantum.observables import Observable
+
+    source = molecular_data_source
+    imported = from_openfermion_molecular_data(source)
+    native = from_native_molecule(
+        create_molecular_hamiltonian(
+            [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
+        )
+    )
+    reference = torch.tensor(
+        of.get_sparse_operator(source.get_molecular_hamiltonian()).toarray(),
+        dtype=torch.complex128,
+    )
+    # Conversion owns the snapshot before any circuit or optimizer is built.
+    source.one_body_integrals[:] = float("nan")
+    source.two_body_integrals[:] = float("nan")
+    source.nuclear_repulsion = float("nan")
+    observables = [
+        to_observable(
+            encode_fermion(
+                fermion_hamiltonian(problem), n_modes=4, encoding="jordan_wigner"
+            ).operator
+        )
+        for problem in (native, imported)
+    ]
+
+    def energy(angles: torch.Tensor, observable: Observable) -> torch.Tensor:
+        circuit = uccsd_ansatz(4, 2, angles, dtype=torch.complex128, device="cpu")
+        value = fq.run(circuit, outputs=[fq.expectation(observable)]).expectation()
+        assert isinstance(value, torch.Tensor)
+        return value.reshape(())
+
+    initial = torch.tensor([0.1, -0.07, 0.2], dtype=torch.float32)
+    parameters = [initial.clone().requires_grad_() for _ in observables]
+    optimizers = [torch.optim.SGD([angles], lr=0.2) for angles in parameters]
+    first = energy(parameters[0], observables[0]).detach()
+    gradient = torch.autograd.grad(
+        energy(parameters[1], observables[1]), parameters[1]
+    )[0]
+    assert float(gradient.norm()) > 0.01
+    # UCCSD normalizes angles to float32; resolve differences above that scale.
+    epsilon = 1e-3
+    for index in range(3):
+        shift = torch.zeros_like(initial)
+        shift[index] = epsilon
+        difference = (
+            energy(initial + shift, observables[1])
+            - energy(initial - shift, observables[1])
+        ) / (2 * epsilon)
+        torch.testing.assert_close(
+            gradient[index], difference.to(gradient.dtype), atol=2e-4, rtol=2e-4
+        )
+
+    for _ in range(24):
+        values, gradients = [], []
+        for angles, observable, optimizer in zip(
+            parameters, observables, optimizers, strict=True
+        ):
+            optimizer.zero_grad()
+            value = energy(angles, observable)
+            torch.autograd.backward(value)
+            assert angles.grad is not None and torch.all(torch.isfinite(angles.grad))
+            values.append(value.detach())
+            gradients.append(angles.grad.detach().clone())
+            optimizer.step()
+        torch.testing.assert_close(values[0], values[1], atol=1e-10, rtol=1e-10)
+        torch.testing.assert_close(gradients[0], gradients[1], atol=1e-7, rtol=1e-7)
+        torch.testing.assert_close(parameters[0], parameters[1], atol=1e-7, rtol=1e-7)
+
+    final = energy(parameters[1], observables[1]).detach()
+    assert float(final) < float(first) - 0.001
+    assert float((parameters[1].detach() - initial).norm()) > 0.01
+    state = (
+        uccsd_ansatz(4, 2, parameters[1].detach(), dtype=torch.complex128, device="cpu")
+        .state()
+        .reshape(-1)
+    )
+    outside = [index for index in range(16) if index.bit_count() != 2]
+    assert float(state[outside].abs().square().sum()) < 1e-20
+    torch.testing.assert_close(
+        state.abs().square().sum(), torch.tensor(1.0, dtype=torch.float64)
+    )
+    exact = torch.vdot(state, reference @ state)
+    assert float(exact.imag.abs()) < 1e-12
+    torch.testing.assert_close(final, exact.real, atol=1e-10, rtol=1e-10)
+    sector = [index for index in range(16) if index.bit_count() == 2]
+    assert (
+        float(final)
+        >= float(torch.linalg.eigvalsh(reference[sector][:, sector])[0]) - 1e-10
+    )
+
+
 def test_pauli_complex_sum_against_upstream_matrix_and_independent_factors() -> None:
     source = of.QubitOperator("X0 Y2", 0.5j) + of.QubitOperator("Z1", -2)
     source += of.QubitOperator((), 0.3 - 0.2j)
