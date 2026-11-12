@@ -1227,3 +1227,29 @@ comparisons cover each Pauli axis, multiple-axis support and controlled identity
 phase. `tests/integration/test_synthesis_native_controlled_helper_borrows.py`
 checks all small basis inputs, complex coherence, branch scalar phases, actual
 selector overlap, repeated writable aliases, Output escape and resource limits.
+
+
+### Identical candidate target compilation
+
+Selection builds and checks each supported schedule independently. Within one
+selection request, candidates with the same full `CircuitIR.content_hash` reuse
+one successfully compiled `TargetProduct`. The target configuration and
+intermediate operation budget are fixed for that request. Source identity covers
+width, dtype, shape, instructions, parameters, matrices and annotations, including
+preparation. Failed transforms are not cached, and later requests compile again.
+The cache holds at most the three bounded candidate products.
+
+Each row retains its own strategy, construction timing, arithmetic evidence,
+workspace ceiling, final resource checks and recovery diagnostics. Identical rows
+share the target artifact and its recorded transformation timing; those timings
+are observations of the same work and must not be summed as separate compiler
+work. `TargetProduct.validate()` runs for every row. Nested IR annotations remain
+mutable, so changing a shared artifact invalidates every row that references it.
+An identity failure makes the entire search incomplete and authorizes no result.
+Runtime planning and Program validation retain their existing authority.
+
+Start with `tests/team/compiler/test_construction_target_reuse.py` for equal and
+differing inputs, basis and routing profiles, request isolation, budget refusal
+and tamper behavior. The runnable eight-layer example at
+`examples/synthesis/applications/optimization/max_induced_k_color_subgraph/main.py`
+exercises this reuse through the unchanged public `synth.synthesize` workflow.
