@@ -257,7 +257,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         )
         assert not any("pip install" in step.get("run", "") for step in steps)
     else:
-        assert definition["timeout-minutes"] == 30
+        assert definition["timeout-minutes"] == 60
     if job == "coverage-shard":
         assert (
             definition["strategy"]["matrix"]

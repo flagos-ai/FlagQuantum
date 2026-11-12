@@ -2356,7 +2356,9 @@ jobs:
     permissions:
       contents: read
       packages: read
-    timeout-minutes: 30
+    # Run 43187409331 needed 28m53s for a passing QSVT partition before
+    # coverage/artifact finalization; full-state catalog partitions need longer.
+    timeout-minutes: 60
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
