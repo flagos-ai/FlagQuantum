@@ -357,3 +357,16 @@ The related 1,945 tests and 84 CPU/TN tests pass; strict checks cover the new te
 file. Existing physical/measurement/workspace evidence is preserved by those
 regressions. Other source-wide tensor/optimizer interfaces and the prior default
 suite timeout remain open. G3 and integration-PR merge are not authorized here.
+
+The [source-ordered rank pass](TENSOR_RANK_SIMPLIFICATION.md) extends Q-0887.03
+with the R dependency of Qualtran's width-triggered numerical simplification.
+The trigger is in `_dense.py`, not `_quimb.py`; Quimb is unpinned by Qualtran,
+so tests explicitly fix the reference dependency to 1.15.0 and verify its source
+hashes. Queue choices, operands, retained hyperedges, complete complex results,
+12/13-bit threshold behavior, meta structure and gradients pass. Scalar
+absorption into one native leaf is explicitly distinguished from source
+fractional-power spreading. The 71 new / 2,016 related and 84 CPU/TN tests pass;
+module/example coverage is 100%, strict checks cover three Python files.
+Squeeze/A/D/C and full default-policy integration remain open. Counts stay
+20 closed / 1,260 open parents, 390 active, and 1,184 capabilities; this dependency
+adds no duplicate child ID or parent closure. No G3 or merge is performed.

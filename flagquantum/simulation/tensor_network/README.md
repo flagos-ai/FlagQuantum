@@ -292,3 +292,15 @@ reuse the owners above. The [whole-source audit](../../../docs/development/TENSO
 records exact reference execution, five native figures, register/work ownership,
 resource units and presentation differences. It closes the concrete notebook
 asset without claiming the full external optimizer or renderer interface.
+
+### Explicit rank simplification
+
+[`simplify_tensor_ranks`](rank_simplification.py) implements the exact,
+shape-driven R pass over existing nodes and native einsum kernels. It protects
+output labels and hyperedges, collapses repeated indices, and chooses connected
+contractions without increasing rank. The [bounded example](../../../examples/algorithms/tensor_rank_simplification.py)
+reduces three tensors to one before the same register consumer. See the
+[source audit](../../../docs/development/TENSOR_RANK_SIMPLIFICATION.md) for
+version pinning, pair-order evidence, scalar ownership and gradients. This is
+explicit preprocessing; the complete source width-triggered squeeze/ADCR policy
+remains open and is not silently substituted into default register contraction.
