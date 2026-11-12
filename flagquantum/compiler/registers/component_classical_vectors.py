@@ -59,6 +59,11 @@ def _add_classical_bras(
     count = 0
     for register in registers:
         data = np.asarray(values[register.name]) if register.shape else None
+        array_bindings = bindings[register.name] if register.shape else None
+        if isinstance(array_bindings, RegisterBinding):
+            raise ValueError(
+                f"bindings {register.name} must be a numpy array: {array_bindings}"
+            )
         for index in register.all_idxs():
             value = data[index] if data is not None else values[register.name]
             leaf = prefix + "effect_" + str(count)
@@ -67,9 +72,11 @@ def _add_classical_bras(
                     leaf, register.dtype, _basis_index(value), state=False
                 )
             )
-            binding = bindings[register.name]
-            if isinstance(binding, np.ndarray):
-                binding = binding[index]
+            binding = (
+                array_bindings[index]
+                if array_bindings is not None
+                else bindings[register.name]
+            )
             assert isinstance(binding, RegisterBinding)
             builder.call_dict(leaf, {"val": binding})
             count += 1
