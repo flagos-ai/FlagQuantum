@@ -24,6 +24,11 @@ def simplify_tensor_ranks(
     output_labels: Sequence[int] | None = None,
     *,
     max_combinations: int = 500,
+    _cache: (
+        dict[tuple[int, int, int, int], tuple[torch.Tensor, torch.Tensor]] | None
+    ) = None,
+    _identities: list[int] | None = None,
+    _adjacency: dict[int, dict[int, None]] | None = None,
 ) -> tuple[TensorNetworkNode, ...]:
     """Contract connected pairs only when the result's rank does not increase.
 
@@ -52,9 +57,17 @@ def simplify_tensor_ranks(
     ):
         raise ValueError("rank simplification requires one dtype and device")
 
+    identities = list(range(len(nodes))) if _identities is None else _identities
+    assert len(identities) == len(nodes)
+    next_identity = max(identities) + 1
+    adjacency: dict[int, dict[int, None]] = {} if _adjacency is None else _adjacency
+    if _adjacency is None:
+        for identity, node in zip(identities, nodes, strict=True):
+            for label in node.labels:
+                adjacency.setdefault(label, {})[identity] = None
     active: dict[int, TensorNetworkNode] = {}
     scalars: list[torch.Tensor] = []
-    for identity, node in enumerate(nodes):
+    for identity, node in zip(identities, nodes, strict=True):
         if not node.labels:
             scalars.append(node.tensor)
             continue
@@ -83,11 +96,10 @@ def simplify_tensor_ranks(
         )
     )
     cutoff = (1 + isqrt(8 * max_combinations + 1)) // 2
-    failed_pairs: set[tuple[int, int, int, int]] = set()
-    next_identity = len(nodes)
+    failed_pairs = {} if _cache is None else _cache
     while queue:
         label, _ = queue.popitem()
-        connected = [i for i, node in active.items() if label in node.labels]
+        connected = list(adjacency.get(label, {}))
         if not connected:
             continue
         if counts[label] == 1:
@@ -95,6 +107,7 @@ def simplify_tensor_ranks(
             node = active[identity]
             labels = tuple(value for value in node.labels if value != label)
             tensor = einsum_reorder_by_labels(node.tensor, node.labels, labels)
+            adjacency.pop(label)
             if labels:
                 active[identity] = replace(node, tensor=tensor, labels=labels)
             else:
@@ -120,18 +133,25 @@ def simplify_tensor_ranks(
             if gain <= 0:
                 candidates.append((gain, left, right, retained, shared))
             else:
-                failed_pairs.add(cache_key)
+                failed_pairs[cache_key] = (a.tensor, b.tensor)
             if candidates and (trivial or checked > max_combinations):
                 break
         if not candidates:
             continue
         _, left, right, retained, shared = min(candidates)
         a, b = active.pop(left), active.pop(right)
+        for identity, node in ((left, a), (right, b)):
+            for key in dict.fromkeys(node.labels):
+                adjacency[key].pop(identity)
+                if not adjacency[key]:
+                    del adjacency[key]
         tensor = einsum_pair_by_labels(a.tensor, a.labels, b.tensor, b.labels, retained)
         for key in shared:
             counts[key] -= 1
         if retained:
             active[next_identity] = TensorNetworkNode(tensor, retained)
+            for key in retained:
+                adjacency.setdefault(key, {})[next_identity] = None
             next_identity += 1
             for key in retained:
                 queue.setdefault(key, None)
@@ -147,5 +167,9 @@ def simplify_tensor_ranks(
             node = active[identity]
             active[identity] = replace(node, tensor=node.tensor * factor)
         else:
+            if _identities is not None:
+                _identities[:] = [next_identity]
             return (TensorNetworkNode(factor, ()),)
+    if _identities is not None:
+        _identities[:] = active
     return tuple(active.values())

@@ -7,6 +7,8 @@
 
 from collections.abc import Sequence
 
+import torch
+
 from .contraction import _slice_nodes
 from .models import TensorNetworkNode
 from .simplification_axes import _simplification_axes
@@ -18,6 +20,8 @@ def reduce_tensor_columns(
     output_labels: Sequence[int] | None = None,
     *,
     atol: float = 1e-12,
+    _cache: dict[tuple[int, int], torch.Tensor] | None = None,
+    _identities: Sequence[int] | None = None,
 ) -> tuple[TensorNetworkNode, ...]:
     """Cut internally supported columns in source reverse-occurrence order.
 
@@ -37,13 +41,20 @@ def reduce_tensor_columns(
     """
     _, outputs = _simplification_axes(nodes, output_labels)
     protected = set(outputs)
+    cache = {} if _cache is None else _cache
+    identities = tuple(range(len(nodes))) if _identities is None else tuple(_identities)
+    assert len(identities) == len(nodes)
     active = tuple(nodes)
     queue = list(range(len(active)))
     while queue:
         identity = queue.pop()
         node = active[identity]
+        key = (identities[identity], id(node.tensor))
+        if key in cache:
+            continue
         candidate = find_tensor_column(node.tensor, atol=atol)
         if candidate is None:
+            cache[key] = node.tensor
             continue
         axis, column = candidate
         label = node.labels[axis]

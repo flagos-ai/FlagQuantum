@@ -320,8 +320,10 @@ def test_refusals_and_default_outputs() -> None:
 
 
 @pytest.mark.parametrize("prepared", [False, True])
+@pytest.mark.parametrize("fixed_point", [False, True])
 def test_bell_composition_all_passes_same_consumer_phase_and_gradient(
     prepared: bool,
+    fixed_point: bool,
 ) -> None:
     from examples.algorithms.bell_tensor_workflow import bell_program, bell_providers
     from flagquantum.compiler.registers.component_graph import iter_component_calls
@@ -366,11 +368,18 @@ def test_bell_composition_all_passes_same_consumer_phase_and_gradient(
         replace(nodes[0], tensor=nodes[0].tensor * torch.exp(1j * phase)),
         *nodes[1:],
     )
-    reduced = squeeze_tensor_axes(phased, outputs)
-    reduced = gauge_tensor_antidiagonals(reduced, outputs, atol=0)
-    reduced = reduce_tensor_diagonals(reduced, outputs, atol=0)
-    reduced = reduce_tensor_columns(reduced, outputs, atol=0)
-    reduced = simplify_tensor_ranks(reduced, outputs)
+    if fixed_point:
+        from flagquantum.simulation.tensor_network.full_simplification import (
+            simplify_tensor_network,
+        )
+
+        reduced = simplify_tensor_network(phased, outputs, atol=0)
+    else:
+        reduced = squeeze_tensor_axes(phased, outputs)
+        reduced = gauge_tensor_antidiagonals(reduced, outputs, atol=0)
+        reduced = reduce_tensor_diagonals(reduced, outputs, atol=0)
+        reduced = reduce_tensor_columns(reduced, outputs, atol=0)
+        reduced = simplify_tensor_ranks(reduced, outputs)
     actual = contract_register_tensors(
         reduced, signature, inc, out, output_groups=groups
     )

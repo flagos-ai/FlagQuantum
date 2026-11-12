@@ -8,6 +8,8 @@
 from collections.abc import Sequence
 from dataclasses import replace
 
+import torch
+
 from .models import TensorNetworkNode
 from .simplification_axes import _simplification_axes
 from .stages import einsum_reorder_by_labels
@@ -47,6 +49,8 @@ def gauge_tensor_antidiagonals(
     output_labels: Sequence[int] | None = None,
     *,
     atol: float = 1e-12,
+    _cache: dict[tuple[int, int], torch.Tensor] | None = None,
+    _identities: Sequence[int] | None = None,
 ) -> tuple[TensorNetworkNode, ...]:
     """Flip each selected internal edge at most once in source queue order.
 
@@ -61,14 +65,21 @@ def gauge_tensor_antidiagonals(
     """
     _, outputs = _simplification_axes(nodes, output_labels)
     protected = set(outputs)
+    cache = {} if _cache is None else _cache
+    identities = tuple(range(len(nodes))) if _identities is None else tuple(_identities)
+    assert len(identities) == len(nodes)
     active = tuple(nodes)
     queue = list(range(len(active)))
     done: set[int] = set()
     while queue:
         identity = queue.pop()
         node = active[identity]
+        key = (identities[identity], id(node.tensor))
+        if key in cache:
+            continue
         pair = find_tensor_diagonal(node.tensor, antidiagonal=True, atol=atol)
         if pair is None:
+            cache[key] = node.tensor
             continue
         left, right = (node.labels[axis] for axis in pair)
         if left in protected:
@@ -90,6 +101,9 @@ def reduce_tensor_diagonals(
     output_labels: Sequence[int] | None = None,
     *,
     atol: float = 1e-12,
+    _cache: dict[tuple[int, int], torch.Tensor] | None = None,
+    _identities: Sequence[int] | None = None,
+    _adjacency: dict[int, dict[int, None]] | None = None,
 ) -> tuple[TensorNetworkNode, ...]:
     """Merge diagonal edges globally, then collapse the triggering tensor only.
 
@@ -107,13 +121,20 @@ def reduce_tensor_diagonals(
     """
     _, outputs = _simplification_axes(nodes, output_labels)
     protected = set(outputs)
+    cache = {} if _cache is None else _cache
+    identities = tuple(range(len(nodes))) if _identities is None else tuple(_identities)
+    assert len(identities) == len(nodes)
     active = tuple(nodes)
     queue = list(range(len(active)))
     while queue:
         identity = queue.pop()
         node = active[identity]
+        key = (identities[identity], id(node.tensor))
+        if key in cache:
+            continue
         pair = find_tensor_diagonal(node.tensor, atol=atol)
         if pair is None:
+            cache[key] = node.tensor
             continue
         left, right = (node.labels[axis] for axis in pair)
         if right in protected:
@@ -122,6 +143,11 @@ def reduce_tensor_diagonals(
             removed, retained = left, right
         else:
             removed, retained = right, left
+        if _adjacency is not None and removed != retained:
+            neighbors = _adjacency.pop(removed)
+            kept = _adjacency.setdefault(retained, {})
+            for neighbor in neighbors:
+                kept.setdefault(neighbor, None)
         active = _merge_edge(active, removed, retained)
         node = active[identity]
         labels = tuple(dict.fromkeys(node.labels))
