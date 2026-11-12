@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/finance/rainbow_options/rainbow_options_direct_method.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "6a911a20ead2fd62de750ffc3d4c4638dd0ef07d961d008a45edbc6ce00ee913",
+  "native_entrypoint": "examples.synthesis.applications.finance.rainbow_options.rainbow_options_direct_method.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_rainbow_direct.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve original two input distributions, exact affine maximum, five-bit two-fraction payoff word, high/low branches, zero-auxiliary indicator XOR, full preparation/inverse/reflection and iteration count. Zero-controlled loading uses R(theta) then R(-theta) under a one-bit control without changing Const inputs. Local score is uncomputed and released. Public output remains indicator; dropped x/y/auxiliary stay physical environment. Independent rational branch Circuit verifies full joint states, absolute phase and scratch zero for k0/1/2 and two nonzero exponent rates. Original immutable source and resource baselines remain in test fixtures; native resource statistics are separate. No complete Notebook or performance superiority claim."
+}

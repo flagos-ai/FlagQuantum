@@ -1,14 +1,10 @@
-"""Compare Qmod and native qfunc against the independent Circuit."""
-
-from pathlib import Path
+"""Compare native FlagQuantum and independent Circuit amplitudes."""
 
 import torch
 
 import flagquantum as fq
 from examples.synthesis.algorithms.hamiltonian_simulation.large_pauli.main import main
 from flagquantum import synth
-
-QMOD = Path(__file__).with_name("source.qmod").read_text(encoding="utf-8")
 
 
 def run_example() -> None:
@@ -17,10 +13,7 @@ def run_example() -> None:
         .statevector()
         .reshape(-1)
     )
-    for program in (
-        synth.synthesize(main),
-        synth.synthesize(QMOD, source_format="qmod"),
-    ):
+    for program in (synth.synthesize(main),):
         actual = fq.run(program).statevector().reshape(-1)
         workspace = program.circuit.n_wires - 1
         expected = torch.zeros_like(actual)
@@ -28,7 +21,7 @@ def run_example() -> None:
         torch.testing.assert_close(actual, expected, atol=1e-12, rtol=0)
         print(program.report["resources"])
     print(
-        "Native phase intent, compact Qmod Pauli evolution and Circuit agree, including global phase."
+        "Native qfunc and Circuit agree, including absolute phase and clean workspace."
     )
 
 

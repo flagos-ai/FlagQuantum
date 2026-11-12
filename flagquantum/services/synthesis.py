@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field, replace
+from fractions import Fraction
 from os import PathLike
 from types import MappingProxyType
 from typing import Literal, overload
@@ -75,6 +76,15 @@ from ._synthesis_readout import Distribution
 from ._synthesis_readout import probabilities as _probabilities
 
 # Preserve the Qmod spelling for the captured Python operations.
+qft = program_types.qft
+qct_type2 = program_types.qct_type2
+qst_type2 = program_types.qst_type2
+qct_qst_type2 = program_types.qct_qst_type2
+qct_qst_type1 = program_types.qct_qst_type1
+unitary = program_types.unitary
+modular_exp = program_types.modular_exp
+suzuki_trotter = program_types.suzuki_trotter
+qdrift = program_types.qdrift
 H = program_types.h
 S = program_types.s
 CX = program_types.cx
@@ -85,6 +95,7 @@ U = program_types.u
 control = program_types.control
 prepare_uniform_interval_state = program_types.prepare_uniform_interval_state
 X = program_types.x
+RX = program_types.rx
 RZ = program_types.rz
 PHASE = program_types.phase_gate
 RZZ = program_types.rzz
@@ -92,6 +103,15 @@ prepare_bell_state = program_types.prepare_bell_state
 prepare_ghz_state = program_types.prepare_ghz_state
 prepare_amplitudes = program_types.prepare_amplitudes
 prepare_state = program_types.prepare_state
+inplace_prepare_amplitudes = program_types.inplace_prepare_amplitudes
+inplace_prepare_state = program_types.inplace_prepare_state
+RESET = program_types.reset
+drop = program_types.drop
+qpe = program_types.qpe
+select_rotation = program_types.select_rotation
+min = program_types.minimum
+max = program_types.maximum
+quantize = program_types.quantize
 
 __all__ = (
     "ConstructionBudget",
@@ -126,9 +146,28 @@ __all__ = (
     "prepare_ghz_state",
     "prepare_amplitudes",
     "prepare_state",
+    "inplace_prepare_amplitudes",
+    "inplace_prepare_state",
+    "drop",
+    "qpe",
+    "select_rotation",
     "QArray",
     "H",
     "S",
+    "RX",
+    "qft",
+    "qct_type2",
+    "qst_type2",
+    "qct_qst_type2",
+    "qct_qst_type1",
+    "unitary",
+    "modular_exp",
+    "suzuki_trotter",
+    "qdrift",
+    "min",
+    "max",
+    "RESET",
+    "quantize",
 )
 
 
@@ -304,6 +343,56 @@ class Program:
             threshold=threshold,
         )
 
+    def numeric_probabilities(
+        self,
+        result: ExecutionResult,
+        *,
+        registers: Sequence[str] = ("result",),
+        max_bits: int = 16,
+        max_keys: int = 65536,
+        max_amplitudes: int = 1 << 22,
+        threshold: float = 1e-14,
+    ) -> Mapping[tuple[Fraction, ...], float]:
+        """Read exact signed/scaled values from verified native declarations.
+
+        Raw words remain available through probabilities. Older/source-adapter
+        products without native numeric declarations refuse decoded reading.
+
+        Examples:
+            >>> values = program.numeric_probabilities(result)  # doctest: +SKIP
+            >>> dict(values)  # doctest: +SKIP
+            {(Fraction(1, 2),): 1.0}
+        """
+        self._validate()
+        formats = {
+            name: (signed, fraction)
+            for name, signed, fraction in self._checked.numeric_formats
+        }
+        if not formats or any(name not in formats for name in registers):
+            raise ValueError(
+                "numeric reading requires verified native numeric declarations for every selected register"
+            )
+        raw = self.probabilities(
+            result,
+            registers=registers,
+            max_bits=max_bits,
+            max_keys=max_keys,
+            max_amplitudes=max_amplitudes,
+            threshold=threshold,
+        )
+        values = {}
+        for key, probability in raw.items():
+            decoded = []
+            for name, word in zip(registers, key, strict=True):
+                signed, fraction = formats[name]
+                width = len(self.registers[name])
+                integer = (
+                    word - (1 << width) if signed and word >> (width - 1) else word
+                )
+                decoded.append(Fraction(integer, 1 << fraction))
+            values[tuple(decoded)] = probability
+        return MappingProxyType(values)
+
 
 _DEFAULT_BUDGET = ConstructionBudget()
 _LINE_BASIS = ("x", "h", "s", "sdg", "t", "tdg", "ry", "rz", "cx", "u3", "swap")
@@ -348,6 +437,7 @@ def synthesize(
     source_format: None = None,
     source_name: None = None,
     source_version: None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -374,6 +464,7 @@ def synthesize(
     source_format: None = None,
     source_name: None = None,
     source_version: None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["phase"],
 ) -> Program: ...
@@ -400,6 +491,7 @@ def synthesize(
     source_format: Literal["qmod"],
     source_name: str | None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -426,6 +518,7 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -452,6 +545,7 @@ def synthesize(
     source_format: None = None,
     source_name: None = None,
     source_version: None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value"] = "value",
 ) -> Program: ...
@@ -477,6 +571,7 @@ def synthesize(
     source_format: Literal["qmod"] | None = None,
     source_name: str | None = None,
     source_version: str | None = None,
+    classical_inputs: Mapping[str, float | Sequence[float]] | None = None,
     memory_limit_bytes: int | None = None,
     output_mode: Literal["value", "phase"] = "value",
 ) -> Program:
@@ -494,7 +589,9 @@ def synthesize(
     peak-memory limit. Scalar Python retains its existing memory behavior.
     A typed qfunc root owns Output ports and in-program preparation, reusing the
     same register workflow and 512 MiB default state-buffer ceiling. Omit scalar
-    inputs/state/constants/functions/preparation for that profile.
+    inputs/state/constants/functions/preparation for that profile. classical_inputs
+    binds finite scalar and one-dimensional real-array parameters at synthesis
+    time for typed qfunc and Qmod sources; it is not a runtime tensor input.
 
     output_mode="value" preserves the reversible XOR result. "phase" accepts
     only a one-bit Python return on logical CPU targets (basis/topology=None):
@@ -551,6 +648,7 @@ def synthesize(
         source_format=source_format,
         source_name=source_name,
         source_version=source_version,
+        classical_inputs=classical_inputs,
         memory_limit_bytes=memory_limit_bytes,
         output_mode=output_mode,
     )
@@ -620,8 +718,6 @@ def _synthesize(
     is_native_source = isinstance(function, (PathLike, str))
     if not is_native_source and qmod_machine_precision is not None:
         raise ValueError("qmod_machine_precision applies only to native Qmod source")
-    if not is_native_source and classical_inputs is not None:
-        raise ValueError("classical_inputs apply only to native Qmod source")
     if not is_native_source and any(
         value is not None for value in (source_format, source_name, source_version)
     ):
@@ -689,9 +785,13 @@ def _synthesize(
             )
         from ..compiler._construction.frontend_program import capture_program
 
-        owned_program, owned_functions = capture_program(function)
+        owned_program, owned_functions = capture_program(function, classical_inputs)
         owned_source = "python"
     else:
+        if classical_inputs is not None:
+            raise ValueError(
+                "classical_inputs require Qmod source or a typed qfunc program"
+            )
         owned_program = None
     if owned_program is not None:
         from ._synthesis_registers import synthesize_registers
@@ -802,6 +902,7 @@ def _complete(
     memory_limit_bytes: int | None = None,
     memory_limit_origin: Literal["profile_default", "explicit"] = "profile_default",
     exact_mps: bool = False,
+    numeric_formats: tuple[tuple[str, bool, int], ...] = (),
 ) -> Program:
     """Admit either construction producer through one checked execution authority."""
     row = selection.selected
@@ -830,6 +931,7 @@ def _complete(
         coupling=row.target.coupling,
         registers=selection.registers,
     )
+    checked = replace(checked, numeric_formats=numeric_formats)
     if memory_limit_bytes is not None and execution.state_bytes > memory_limit_bytes:
         raise PlanningError(
             f"execution memory budget exceeded: state requires {execution.state_bytes} "

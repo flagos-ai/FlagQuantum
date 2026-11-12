@@ -5,6 +5,8 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from ...compiler._construction import cnf_phase
+from ...compiler._construction.cnf_phase import Clause
 from ...compiler._construction.register_profile import register_type
 from ...compiler._hybrid.model import Operation, Value, ValueId
 from .syntax import Expression, Statement, reject
@@ -75,13 +77,12 @@ def lower_cnf_kickback(owner: _Adapt, statements: tuple[Statement, ...]) -> bool
     raw_clauses = _terms(mark.arguments[1], "and")
     if len(raw_clauses) > 80:
         reject(token, "budget.control", "CNF phase exceeds eighty clauses")
-    clauses: list[dict[Location, bool]] = []
+    resolved_clauses: list[Clause] = []
     for clause in raw_clauses:
         literals = _terms(clause, "or")
         if len(literals) > 3:
             reject(clause.token, "control", "CNF clauses admit at most three literals")
-        resolved: dict[Location, bool] = {}
-        tautology = False
+        resolved: list[tuple[Location, bool]] = []
         for literal in literals:
             negative = literal.token.text == "==" and len(literal.children) == 2
             if negative:
@@ -99,11 +100,9 @@ def lower_cnf_kickback(owner: _Adapt, statements: tuple[Statement, ...]) -> bool
             # Even a tautological clause reads an initialized source.
             value, bit = location
             owner.effect_op("qreg.gate", token, (value,), gate="i", index=bit)
-            if location in resolved and resolved[location] != negative:
-                tautology = True
-            resolved[location] = negative
-        if not tautology:
-            clauses.append(resolved)
+            resolved.append((location, negative))
+        resolved_clauses.append(tuple(resolved))
+    clauses = cnf_phase.canonical_cnf(tuple(resolved_clauses))
     if not clauses:
         owner.effect_op("qreg.phase", token, (), angle=math.pi)
         return True
@@ -122,29 +121,16 @@ def lower_cnf_kickback(owner: _Adapt, statements: tuple[Statement, ...]) -> bool
         ),
     )
     owner.effect_op("qreg.allocate", token, (scratch,))
-    flags = tuple((scratch, i) for i in range(len(clauses)))
-    marker_bit = len(clauses)
 
     def gate(location: Location, name: str) -> None:
         value, bit = location
         owner.effect_op("qreg.gate", token, (value,), gate=name, index=bit)
 
-    def clause_xor(literals: dict[Location, bool], target: Location) -> None:
-        positive = [location for location, negative in literals.items() if not negative]
-        for location in positive:
-            gate(location, "x")
-        owner.emit_indexed_x(token, (*literals, target))
-        for location in reversed(positive):
-            gate(location, "x")
-        gate(target, "x")
-
-    for clause_bits, flag in zip(clauses, flags, strict=True):
-        clause_xor(clause_bits, flag)
-    conjunction = (*flags, (scratch, marker_bit))
-    owner.emit_indexed_x(token, conjunction)
-    gate((scratch, marker_bit), "z")
-    owner.emit_indexed_x(token, conjunction)
-    for clause_bits, flag in zip(reversed(clauses), reversed(flags), strict=True):
-        clause_xor(clause_bits, flag)
+    cnf_phase.emit_cnf_phase(
+        clauses,
+        scratch,
+        gate=gate,
+        controlled_x=lambda locations: owner.emit_indexed_x(token, locations),
+    )
     owner.effect_op("qreg.drop", token, (scratch,))
     return True

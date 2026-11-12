@@ -1,0 +1,17 @@
+{
+  "schema": "flagquantum.synthesis_native_qpe_callback_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "signatures": {
+    "qpe": "(callback: 'Callable[[], None]', phase_result: 'QNum', /) -> 'None'"
+  },
+  "callback": "one static positional captured operation or qfunc call in a zero-argument lambda",
+  "phase_bits_max": 8,
+  "callback_ownership_changes": false,
+  "conditional_global_phase_preserved": true,
+  "shared_control_lowering_owner": "compiler",
+  "native_effect_operations_max": 4096,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-QPE-CALLBACK-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

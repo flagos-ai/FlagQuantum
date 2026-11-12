@@ -1163,3 +1163,95 @@ sweep; representatives are discarded when the block closes. This improves long
 repeated blocks without changing rule reach or storing a process-wide cache.
 Run tests/unit/test_compiler_commutation_scaling.py and the existing commutation
 matrix/conformance tests when modifying that grouping.
+
+## Shared Pauli product-formula schedule
+
+`_pauli_schedule.py` owns the private ordered Lie/Strang term schedule used by
+algorithm Circuit construction, Qmod adaptation and native qfunc capture. It
+streams term indices and per-term times; it does not own Hamiltonian objects,
+coefficient tensors, external syntax, commutation optimization or gate kernels.
+Callers retain validation, supported orders, repetition/resource bounds, storage
+mapping and live gradient values. Division and declared term order are preserved.
+
+The existing `algorithms.trotter_circuit` and Qmod calls stay unchanged for users.
+Run `tests/integration/test_synthesis_shared_pauli_schedule.py` to replace this
+schedule behind all three consumers, compare complete complex states and
+instruction hashes, and verify live tensor coefficient gradients. Existing
+Trotter, controlled/large-Pauli tests and frozen-source replays cover the full
+consumers. Native capture uses the same schedule and existing Pauli effects;
+it adds no alternate Hamiltonian representation or execution kernel.
+
+`_pauli_products.py` owns bounded compile-time composition in owner registers
+of at most three logical qubits. Native Pauli calls also accept nonempty static
+slices or lists/tuples of distinct mutable bits within one owner. Observable
+indices address the view order; capture embeds each factor in the owner space,
+retaining spectator identity and identity-term phase. Existing initialization,
+Const, finite-angle and resource checks remain authoritative. Cross-owner,
+repeated and out-of-range views refuse. Run
+`tests/integration/test_synthesis_native_pauli_views.py` for full-state
+Fermi-Hubbard, reordered views, fixed-seed sampling and compact-owner acceptance. It replaces the former Qmod-private matrix
+implementation and is shared by the native frontend. It composes static
+operators, never user statevectors. The adapters own finite-value, width,
+term-count and repetition checks. Native capture buffers at most 256 consecutive
+same-target calls and compacts otherwise over-budget sequences in 64-call chunks;
+small programs retain their previous streamed rotation effects. Intervening
+operations, target changes and mutable-helper ownership boundaries flush the
+buffer. Existing unitary verification, lowering and physical planning budgets
+remain authoritative. A phase-equivariant polar correction only repairs products
+inside the documented 1e-11 Gram-residual envelope.
+
+Run `tests/integration/test_synthesis_native_compact_evolution.py` for replacement
+behind both consumers, independent full complex states, global phase, logical
+bit order, helper/effect barriers, buffer bounds, storage refusals and physical
+resource limits. The complete retained AQC schedule exercises all 200 calls;
+no terms, repetitions or time literals are removed.
+
+## Shared Boolean phase factors
+
+`_phase_factors.py` owns the former Qmod cube-selection algorithm. It accepts
+syntax access/rewrite callbacks and resolved logical locations; the Qmod adapter
+and native phase capture both reuse it. Three-to-six distinct signed bit literals
+form a cube, and at most eight unique cubes are shared. It does not own syntax,
+allocate physical storage, execute states or select Runtime backends.
+
+Native `frontend_phase_factors.py` adapts AST nodes and emits predicate graphs
+through the existing exact WordExpression compiler. Existing checked locals,
+compute, phase, uncompute and release effects own lifetime verification. Only a
+phase-expansion budget refusal admits this alternative. Small expressions retain
+their previous resources. Original polynomial and physical-input bounds remain;
+conditional refusals and signed/scaled numeric reads do not gain new semantics.
+The Boolean candidate's twelve-bit intermediate bound also remains; higher masks
+may use conservative lowering and must respect actual memory limits.
+
+Run `tests/integration/test_synthesis_native_phase_factors.py` for replacement
+behind both consumers, Facility's full source/native/Circuit comparison, exact
+classical costs, ordered helper views, positive/negative literals, coherent
+spectators, multi-owner cubes, constant phase and workspace cleanup. Existing
+Qmod phase-factor tests and all frozen-source replays protect the source path.
+
+Root arithmetic locals in `within` may use standard Python
+`Annotated[QNum, literal_width]`, as already supported for ports, or the existing
+`QNum[literal_width]` spelling. Both produce the same checked unsigned local
+storage and automatic uncompute/release. The standard annotation allows strict
+Python type checking; signed/scaled metadata, symbolic widths and extra metadata
+remain excluded. See
+`tests/integration/test_synthesis_native_annotated_locals.py` for the shortest
+phase-and-cleanup example and the admission in
+`docs/api-changes/FQ-SYNTH-NATIVE-ANNOTATED-LOCALS-20261110.md`.
+
+Native `inplace_prepare_amplitudes` and `inplace_prepare_state` reuse the existing
+`qreg.inplace_prepare_amplitudes` verifier, inverse-effect rule and real RY/CX
+lowering. They apply that unitary to a complete initialized writable register;
+there is no allocation or reset. The first native admission accepts static real
+vectors of length 2..256 and whole-register mutable helper calls. Views, quantum
+controls and Const targets remain excluded. Full-column and entangled-input
+conformance is in `tests/integration/test_synthesis_native_inplace_preparation.py`.
+
+Native coherent control of static matrices reuses `qreg.unitary`: one writable
+scalar or indexed selector plus its target occupy at most five matrix qubits.
+`control(~bit, lambda: unitary(matrix, target))` selects zero; positive control
+selects one. Full block matrices preserve conditional global phase, indexed
+alias checks and the existing unitary/initialization/budget verifier. Const
+selectors, computed predicates and multi-bit truth tests remain refused. See
+`tests/integration/test_synthesis_native_controlled_matrix.py` and
+`docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-MATRIX-20261110.md`.

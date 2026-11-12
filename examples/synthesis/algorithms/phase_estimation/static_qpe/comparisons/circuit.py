@@ -1,14 +1,10 @@
-"""Compare Qmod and native qfunc against the independent Circuit."""
-
-from pathlib import Path
+"""Compare native FlagQuantum and independent Circuit amplitudes."""
 
 import torch
 
 import flagquantum as fq
 from examples.synthesis.algorithms.phase_estimation.static_qpe.main import estimate
 from flagquantum import synth
-
-QMOD = Path(__file__).with_name("source.qmod").read_text(encoding="utf-8")
 
 
 def main() -> None:
@@ -17,10 +13,7 @@ def main() -> None:
         0, 1, matrix=torch.diag(torch.tensor([1, 1, 1, 1j], dtype=torch.complex128))
     ).h(0)
     expected = fq.run(reference).statevector().reshape(-1)
-    programs = (
-        synth.synthesize(estimate, memory_limit_bytes=1024**2),
-        synth.synthesize(QMOD, source_format="qmod", memory_limit_bytes=1024**2),
-    )
+    programs = (synth.synthesize(estimate, memory_limit_bytes=1024**2),)
     for program in programs:
         result = fq.run(program)
         state = result.statevector().reshape(4, -1)

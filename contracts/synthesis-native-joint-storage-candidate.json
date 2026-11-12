@@ -1,0 +1,15 @@
+{
+  "schema": "flagquantum.synthesis_native_joint_storage_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "expanded_signatures": {
+    "unitary": "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'"
+  },
+  "initialization_or_reset": false,
+  "sequence_order": "least-significant element first; each element least-significant bit first",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-JOINT-STORAGE-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

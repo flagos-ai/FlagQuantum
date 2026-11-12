@@ -1,0 +1,11 @@
+{
+  "schema": "flagquantum.synthesis_native_array_control_admission",
+  "version": "1.1",
+  "namespace": "flagquantum.synth",
+  "changed_signatures": {
+    "control": "(condition: 'QNum | QArray[QBit] | bool', body: 'Callable[[], None]', /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-PREPARATION-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "2b4b1f4b11dc040aac3ab1b516a88e4aba185f84f8f683910db8c542c0672eca",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.quantum_algo_for_solving_linear_differential_equations.harmonic_oscillator.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_harmonic.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve5logical bits,all64encoding matrix entries and original rounded2amplitudes/bound0.01. New checked scalar control(unitary) applies encoding on y=0; identity branch is unchanged. Within/apply performs the exact inverse. Eight source evolution matrices equal RY(-pi*k) for k0..7; three weighted controlled RY rotations implement the same complete unitary,including conditional minus identity. Independent Circuit enumerates all8rotation matrices,not the native3bit decomposition. Original/native and2nonzero scale/signed-amplitude bindings match all32columns,absolute phase,bit order and2cleanwork bits. Native7physical387operations/depth335 versus original7physical3821operations/depth3339. No generic oscillator solver or full Notebook claim."
+}

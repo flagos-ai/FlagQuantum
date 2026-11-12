@@ -1,0 +1,51 @@
+{
+  "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/standard_gates.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "9f0b23d19b34d6dbbec1cceabae2f7b416aba80c",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+    },
+    {
+      "index": 4,
+      "sha256": "77a18f800d9a68ea8255254755f5a43e0646025a8bddc661931e424472b485ae"
+    },
+    {
+      "index": 7,
+      "sha256": "5961348a461821e09479af0b1ff1c5937e2521dcde52324d90c797ad5af4de9c"
+    },
+    {
+      "index": 9,
+      "sha256": "bd3989a2a6e44e53040d14bc57fba4e204b3bf9a29dbdc3243a6347b5e021ee6"
+    },
+    {
+      "index": 11,
+      "sha256": "5f75ba1cd63a4d64872299dbfdf536598d933e9e940c63726882c30de95f2e3e"
+    },
+    {
+      "index": 13,
+      "sha256": "46cbebe0b9e35737212cc8aab27dac7cdbaec77e99ebe0f99da6ad6e44fe2122"
+    },
+    {
+      "index": 15,
+      "sha256": "dc8e5e1d233de84e3c62c87c8be285909c28d889d0c8e3ba5a91c31dac3df53d"
+    },
+    {
+      "index": 17,
+      "sha256": "8307d6a1bc5357bdfec1865e396c504f4b271e39027efb7d7c2fd810ce3feca7"
+    },
+    {
+      "index": 19,
+      "sha256": "d28973fcc0fda6cc0f0af7047f7876a7aaa06a711634a624fd79122ab4a6c39a"
+    },
+    {
+      "index": 21,
+      "sha256": "8c78458c1159de12f67df4fb80358c2103b309cd5f52a48acf489ff9a5638f65"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.standard_gates.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "scope": "Complete local computational Notebook workflow: reuse and synthesize all nine native gate examples in source order, preserving source parameters. Direct synthesize(qfunc) replaces separate create_model and synthesis calls. Local execution and named probabilities additionally check each program; independent gate Circuit comparisons retain absolute phase. No cloud or hardware result is claimed.",
+  "native_semantic_adaptations": "Use a named two-bit QNum for the RZZ whole-register QArray; no indexing occurs. Other output names and order are unchanged."
+}

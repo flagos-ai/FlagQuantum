@@ -1,411 +1,287 @@
-# Classified Classiq Qmod cases
-
-All **216** pinned original paths are classified here. **27** have a byte-matched corresponding native example; the other native entries are explicitly marked missing.
-
-**211** cases link existing Circuit validation sources. A link locates a validation implementation; its own bindings and scope determine what it proves.
-
-The approved numerical revision passes 216/216 execution smoke checks. The original snapshot has 210 passes and six source-semantic refusals.
-
-```sh
-python -m examples.synthesis.run_qmod --verify
-python -m examples.synthesis.run_qmod --all --revision approved --output /tmp/qmod-examples.json
-```
-
-Use each case README for exact bindings, resource records, sources and validation links. Teaching examples in the other indexes may use smaller illustrative programs.
-
-## Tutorials (102)
-
-### advanced
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [tutorials/advanced_tutorials/discrete_quantum_walk/discrete_quantum_walk.qmod](tutorials/advanced/classiq/discrete_quantum_walk/discrete_quantum_walk/README.md) | Not provided | 2 | execution_smoke_passed |
-| [tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle.qmod](tutorials/advanced/classiq/discrete_quantum_walk/quantum_walk_circle/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin.qmod](tutorials/advanced/classiq/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube.qmod](tutorials/advanced/classiq/discrete_quantum_walk/quantum_walk_hypercube/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk.qmod](tutorials/advanced/classiq/discrete_quantum_walk_2d/discrete_time_quantum_walk/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh.qmod](tutorials/advanced/classiq/linear_approximation_of_tanh/tanh/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### arithmetic
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/bitwise_and/bitwise_and_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_integer_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/bitwise_and/bitwise_and_integer_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/bitwise_or/bitwise_or_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/bitwise_or/bitwise_or_integer_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/bitwise_or/bitwise_or_integer_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_integer_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_integer_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/comparator/comparator_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/comparator/comparator_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/comparator/comparator_integer_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/comparator/comparator_integer_example/README.md) | Not provided | 0 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/extremum/maximum_float_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/extremum/maximum_float_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/extremum/maximum_integer_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/extremum/maximum_integer_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/extremum/minimum_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/modular_exp/modular_exp_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/modulo/modulo_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/modulo/modulo_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example/README.md) | Available | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/multiplication/multiplication_float_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/negation/negation_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/negation/negation_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example.qmod](tutorials/arithmetic/classiq/function_usage_examples/arithmetic/subtraction/subtraction_float_example/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### basics
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [tutorials/basic_tutorials/add_bell_states/add_bell_states.qmod](tutorials/basics/classiq/add_bell_states/add_bell_states/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/entanglement/entanglement.qmod](tutorials/basics/classiq/entanglement/entanglement/README.md) | Available | 2 | execution_smoke_passed |
-| [tutorials/basic_tutorials/exponentiation/example_exponentiation.qmod](tutorials/basics/classiq/exponentiation/example_exponentiation/README.md) | Not provided | 2 | execution_smoke_passed |
-| [tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring.qmod](tutorials/basics/classiq/grover_graph_coloring/grover_graph_coloring/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/mcx/mcx.qmod](tutorials/basics/classiq/mcx/mcx/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/optimization/learning_optimization.qmod](tutorials/basics/classiq/optimization/learning_optimization/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/prepare_state/prepare_state.qmod](tutorials/basics/classiq/prepare_state/prepare_state/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation.qmod](tutorials/basics/classiq/qmci_pi_estimation/qmci_pi_estimation/README.md) | Not provided | 2 | execution_smoke_passed |
-| [tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide.qmod](tutorials/basics/classiq/qml_with_classiq_guide/qml_with_classiq_guide/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial.qmod](tutorials/basics/classiq/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries.qmod](tutorials/basics/classiq/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network.qmod](tutorials/basics/classiq/quantumwalk_complex_network/quantumwalk_complex_network/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1.qmod](tutorials/basics/classiq/the_classiq_tutorial/Qmod_tutorial_part1/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2.qmod](tutorials/basics/classiq/the_classiq_tutorial/Qmod_tutorial_part2/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/classiq_overview_tutorial/README.md) | Available | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/execution_tutorial/README.md) | Available | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/execution_tutorial_part2.qmod](tutorials/basics/classiq/the_classiq_tutorial/execution_tutorial_part2/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/basic_tutorials/the_classiq_tutorial/synthesis_tutorial.qmod](tutorials/basics/classiq/the_classiq_tutorial/synthesis_tutorial/README.md) | Available | 1 | execution_smoke_passed |
-
-### evolution
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift.qmod](tutorials/evolution/classiq/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift/README.md) | Not provided | 0 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter.qmod](tutorials/evolution/classiq/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### gates
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [functions/function_usage_examples/mcx/mcx_example.qmod](tutorials/gates/classiq/function_usage_examples/mcx/mcx_example/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/CRX.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CRX/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/CX.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/CX/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/PHASE/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/R.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/R/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/RZ.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZ/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/RZZ.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/RZZ/README.md) | Available | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/SWAP/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/U.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/U/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/standard_gates/X.qmod](tutorials/gates/classiq/qmod_library_reference/qmod_core_library/standard_gates/X/README.md) | Available | 1 | execution_smoke_passed |
-
-### library
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification/README.md) | Available | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/grover_operator/grover_operator/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qct_qst/qct_type2/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qct_qst/qst_type2.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qct_qst/qst_type2/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qft/qft.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qft/qft/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qpe/qpe.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qpe/qpe/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qpe/qpe_flexible/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/qsvt/qsvt.qmod](tutorials/library/classiq/qmod_library_reference/classiq_open_library/qsvt/qsvt/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/unitary/unitary.qmod](tutorials/library/classiq/qmod_library_reference/qmod_core_library/unitary/unitary/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### state preparation
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state/README.md) | Available | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state/README.md) | Available | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state/README.md) | Available | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch.qmod](tutorials/state_preparation/classiq/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch/README.md) | Not provided | 1 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes.qmod](tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes/README.md) | Available | 2 | execution_smoke_passed |
-| [functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state.qmod](tutorials/state_preparation/classiq/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state/README.md) | Available | 2 | execution_smoke_passed |
-
-### techniques
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator.qmod](tutorials/techniques/classiq/QPE/qpe_for_grover_operator/qpe_for_grover_operator/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix.qmod](tutorials/techniques/classiq/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix/README.md) | Not provided | 2 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation.qmod](tutorials/techniques/classiq/approximated_state_preparation/approximated_state_preparation/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions.qmod](tutorials/techniques/classiq/arithmetic_expressions/arithmetic_expressions/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management.qmod](tutorials/techniques/classiq/auxiliary_managment/auxiliary_management/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt.qmod](tutorials/techniques/classiq/classiq_paper/qsvt/classiq_qsvt/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk.qmod](tutorials/techniques/classiq/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle.qmod](tutorials/techniques/classiq/discrete_quantum_walk_circle/discrete_quantum_walk_circle/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution.qmod](tutorials/techniques/classiq/hamiltonian_evolution/hamiltonian_evolution/README.md) | Not provided | 2 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx.qmod](tutorials/techniques/classiq/hardware_aware_mcx/hardware_aware_mcx/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/hhl/hhl_example.qmod](tutorials/techniques/classiq/hhl/hhl_example/README.md) | Not provided | 1 | frontend_refused |
-| [tutorials/technology_demonstrations/oracle_generation/3sat_oracles.qmod](tutorials/techniques/classiq/oracle_generation/3sat_oracles/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/technology_demonstrations/qaoa/qaoa_demonstration.qmod](tutorials/techniques/classiq/qaoa/qaoa_demonstration/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### workshops
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I.qmod](tutorials/workshops/classiq/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II.qmod](tutorials/workshops/classiq/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II/README.md) | Not provided | 2 | execution_smoke_passed |
-| [tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut.qmod](tutorials/workshops/classiq/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/finance_workshops/Option_Pricing_Workshop.qmod](tutorials/workshops/classiq/finance_workshops/Option_Pricing_Workshop/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO.qmod](tutorials/workshops/classiq/finance_workshops/combi_workshop_Inequality_constriants_PO/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO.qmod](tutorials/workshops/classiq/finance_workshops/combi_workshop_equality_constriants_PO/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce.qmod](tutorials/workshops/classiq/finance_workshops/rainbow_options_workshop_bruteforce/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/grover_workshop/grover_workshop.qmod](tutorials/workshops/classiq/grover_workshop/grover_workshop/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/hhl_workshop/hhl_workshop.qmod](tutorials/workshops/classiq/hhl_workshop/hhl_workshop/README.md) | Not provided | 1 | execution_smoke_passed |
-| [tutorials/workshops/oracle_workshop/oracles_workshop.qmod](tutorials/workshops/classiq/oracle_workshop/oracles_workshop/README.md) | Not provided | 1 | execution_smoke_passed |
-
-## Algorithms (53)
-
-### amplitude estimation
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification.qmod](algorithms/amplitude_estimation/classiq/oblivious_amplitude_amplification/oblivious_amplitude_amplification/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined.qmod](algorithms/amplitude_estimation/classiq/qmc_user_defined/qmc_user_defined/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification.qmod](algorithms/amplitude_estimation/classiq/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting.qmod](algorithms/amplitude_estimation/classiq/quantum_counting/quantum_counting/README.md) | Not provided | 2 | execution_smoke_passed |
-| [algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae.qmod](algorithms/amplitude_estimation/classiq/quantum_counting/quantum_counting_iqae/README.md) | Not provided | 2 | execution_smoke_passed |
-| [algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe.qmod](algorithms/amplitude_estimation/classiq/quantum_counting/quantum_counting_qpe/README.md) | Not provided | 2 | execution_smoke_passed |
-
-### block encoding
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE.qmod](algorithms/block_encoding/classiq/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE.qmod](algorithms/block_encoding/classiq/paper_implementation_project/Block_encoding-ND_Laplacian/ND_Periodic_Laplacian_BE/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/block_encoding/checkerboard_BE_N8.qmod](algorithms/block_encoding/classiq/paper_implementation_project/block_encoding/checkerboard_BE_N8/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4.qmod](algorithms/block_encoding/classiq/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/block_encoding/toeplitz_BE_N16.qmod](algorithms/block_encoding/classiq/paper_implementation_project/block_encoding/toeplitz_BE_N16/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/block_encoding/tridiagonal_BE_size16.qmod](algorithms/block_encoding/classiq/paper_implementation_project/block_encoding/tridiagonal_BE_size16/README.md) | Not provided | 1 | frontend_refused |
-
-### cryptography
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/number_theory_and_cryptography/discrete_log/discrete_log.qmod](algorithms/cryptography/classiq/discrete_log/discrete_log/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log.qmod](algorithms/cryptography/classiq/elliptic_curves/elliptic_curve_discrete_log/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift.qmod](algorithms/cryptography/classiq/hidden_shift/hidden_shift/README.md) | Available | 2 | execution_smoke_passed |
-| [algorithms/number_theory_and_cryptography/shor/shor.qmod](algorithms/cryptography/classiq/shor/shor/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/bb84/bb84_implementation.qmod](algorithms/cryptography/classiq/paper_implementation_project/bb84/bb84_implementation/README.md) | Not provided | 2 | execution_smoke_passed |
-
-### foundational
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/foundational/bernstein_vazirani/bernstein_vazirani.qmod](algorithms/foundational/classiq/bernstein_vazirani/bernstein_vazirani/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/foundational/deutsch_jozsa/deutsch_jozsa.qmod](algorithms/foundational/classiq/deutsch_jozsa/deutsch_jozsa/README.md) | Not provided | 2 | execution_smoke_passed |
-| [algorithms/foundational/quantum_teleportation/quantum_teleportation.qmod](algorithms/foundational/classiq/quantum_teleportation/quantum_teleportation/README.md) | Not provided | 0 | execution_smoke_passed |
-| [algorithms/foundational/simon/simon.qmod](algorithms/foundational/classiq/simon/simon/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### grover
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/search_and_optimization/grover/3_sat_grover.qmod](algorithms/grover/classiq/grover/3_sat_grover/README.md) | Not provided | 2 | execution_smoke_passed |
-| [algorithms/search_and_optimization/grover/grover.qmod](algorithms/grover/classiq/grover/grover/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/search_and_optimization/grover/grover_max_cut.qmod](algorithms/grover/classiq/grover/grover_max_cut/README.md) | Not provided | 2 | execution_smoke_passed |
-| [algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa.qmod](algorithms/grover/classiq/grover_mixer_qaoa/gm_qaoa/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### hamiltonian simulation
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide.qmod](algorithms/hamiltonian_simulation/classiq/hamiltonian_simulation_guide/hamiltonian_simulation_guide/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift.qmod](algorithms/hamiltonian_simulation/classiq/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter.qmod](algorithms/hamiltonian_simulation/classiq/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### machine learning
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority.qmod](algorithms/machine_learning/classiq/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/QML/qgan/qgan_bars_and_strips.qmod](algorithms/machine_learning/classiq/qgan/qgan_bars_and_strips/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/QML/qsvm/qsvm.qmod](algorithms/machine_learning/classiq/qsvm/qsvm/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/QML/quantum_autoencoder/quantum_autoencoder.qmod](algorithms/machine_learning/classiq/quantum_autoencoder/quantum_autoencoder/README.md) | Available | 2 | execution_smoke_passed |
-
-### metrology
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/metrology/classical_shadow_tomography.qmod](algorithms/metrology/classiq/classical_shadow_tomography/README.md) | Available | 2 | execution_smoke_passed |
-| [community/paper_implementation_project/classical_shadows/classical_shadows.qmod](algorithms/metrology/classiq/paper_implementation_project/classical_shadows/classical_shadows/README.md) | Available | 2 | execution_smoke_passed |
-
-### phase estimation
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix.qmod](algorithms/phase_estimation/classiq/qpe_for_matrix/qpe_for_matrix/README.md) | Not provided | 2 | execution_smoke_passed |
-| [algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization.qmod](algorithms/phase_estimation/classiq/qpe_with_qubitization/qpe_for_molecule_with_qubitization/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### primitives
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/quantum_primitives/gqsp/gqsp.qmod](algorithms/primitives/classiq/gqsp/gqsp/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/quantum_primitives/hadamard_test/hadamard_test.qmod](algorithms/primitives/classiq/hadamard_test/hadamard_test/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/quantum_primitives/swap_test/swap_test.qmod](algorithms/primitives/classiq/swap_test/swap_test/README.md) | Not provided | 2 | frontend_refused |
-
-### qaoa
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/search_and_optimization/QAOA/qaoa.qmod](algorithms/qaoa/classiq/QAOA/qaoa/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/search_and_optimization/QAOA/qaoa_knapsack.qmod](algorithms/qaoa/classiq/QAOA/qaoa_knapsack/README.md) | Not provided | 2 | execution_smoke_passed |
-| [algorithms/search_and_optimization/QAOA/qaoa_max_cut.qmod](algorithms/qaoa/classiq/QAOA/qaoa_max_cut/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### quantum differential equations solvers
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver.qmod](algorithms/quantum_differential_equations_solvers/classiq/discrete_poisson_solver/discrete_poisson_solver/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/quantum_differential_equations_solvers/time_marching/time_marching.qmod](algorithms/quantum_differential_equations_solvers/classiq/time_marching/time_marching/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### quantum linear solvers
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc.qmod](algorithms/quantum_linear_solvers/classiq/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/quantum_linear_solvers/hhl/hhl.qmod](algorithms/quantum_linear_solvers/classiq/hhl/hhl/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion.qmod](algorithms/quantum_linear_solvers/classiq/qsvt_matrix_inversion/qsvt_matrix_inversion/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/quantum_linear_solvers/vqls/vqls_with_lcu.qmod](algorithms/quantum_linear_solvers/classiq/vqls/vqls_with_lcu/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### search and optimization
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/search_and_optimization/dqi/dqi_max_xorsat.qmod](algorithms/search_and_optimization/classiq/dqi/dqi_max_xorsat/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### state preparation
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe.qmod](algorithms/state_preparation/classiq/adapt_vqe/adapt_vqe/README.md) | Not provided | 1 | execution_smoke_passed |
-| [algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation.qmod](algorithms/state_preparation/classiq/gibbs/quantum_thermal_state_preparation/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states.qmod](algorithms/state_preparation/classiq/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states/README.md) | Not provided | 1 | execution_smoke_passed |
-| [community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt.qmod](algorithms/state_preparation/classiq/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/README.md) | Not provided | 0 | frontend_refused |
-
-## Applications (61)
-
-### benchmarking
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/benchmarking/quantum_volume/quantum_volume.qmod](applications/benchmarking/classiq/quantum_volume/quantum_volume/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/benchmarking/randomized_benchmarking/randomized_benchmarking.qmod](applications/benchmarking/classiq/randomized_benchmarking/randomized_benchmarking/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### chemistry
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/chemistry/molecular_energy_curve/molecular_energy_curve.qmod](applications/chemistry/classiq/molecular_energy_curve/molecular_energy_curve/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/chemistry/molecule_eigensolver/molecule_eigensolver.qmod](applications/chemistry/classiq/molecule_eigensolver/molecule_eigensolver/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding.qmod](applications/chemistry/classiq/protein_folding/protein_folding_with_qaoa/protein_folding/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold.qmod](applications/chemistry/classiq/protein_folding/protein_folding_with_quantum_walk/qfold/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/chemistry/qpe_for_molecules/qpe_for_molecules.qmod](applications/chemistry/classiq/qpe_for_molecules/qpe_for_molecules/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator.qmod](applications/chemistry/classiq/quantum_drude_oscillator/quantum_drude_oscillator/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/chemistry/quantum_walk_fmo/quantum_walk_fmo.qmod](applications/chemistry/classiq/quantum_walk_fmo/quantum_walk_fmo/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian.qmod](applications/chemistry/classiq/second_quantized_hamiltonian/second_quantized_hamiltonian/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/chemistry/tensor_hypercontraction/tensor_hypercontraction.qmod](applications/chemistry/classiq/tensor_hypercontraction/tensor_hypercontraction/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### cybersecurity
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/cybersecurity/link_monitoring/link_monitoring.qmod](applications/cybersecurity/classiq/link_monitoring/link_monitoring/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/cybersecurity/patching_management/patch_min_vertex_cover.qmod](applications/cybersecurity/classiq/patching_management/patch_min_vertex_cover/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing.qmod](applications/cybersecurity/classiq/whitebox_fuzzing/whitebox_fuzzing/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### differential equations
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [community/paper_implementation_project/bpde/bpde.qmod](applications/differential_equations/classiq/paper_implementation_project/bpde/bpde/README.md) | Available | 2 | execution_smoke_passed |
-| [community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator.qmod](applications/differential_equations/classiq/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### finance
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/finance/autocallable_options/partial_exponential_state_preparation.qmod](applications/finance/classiq/autocallable_options/partial_exponential_state_preparation/README.md) | Not provided | 1 | frontend_refused |
-| [applications/finance/autocallable_options/quantum_autocallable_option_pricing.qmod](applications/finance/classiq/autocallable_options/quantum_autocallable_option_pricing/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials.qmod](applications/finance/classiq/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/credit_card_fraud/credit_card_fraud.qmod](applications/finance/classiq/credit_card_fraud/credit_card_fraud/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl.qmod](applications/finance/classiq/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/option_pricing/option_pricing.qmod](applications/finance/classiq/option_pricing/option_pricing/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/portfolio_optimization/portfolio_optimization.qmod](applications/finance/classiq/portfolio_optimization/portfolio_optimization/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/portfolio_optimization_hhl/HHL_portfolio.qmod](applications/finance/classiq/portfolio_optimization_hhl/HHL_portfolio/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/rainbow_options/rainbow_options_bruteforce_method.qmod](applications/finance/classiq/rainbow_options/rainbow_options_bruteforce_method/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/rainbow_options/rainbow_options_direct_method.qmod](applications/finance/classiq/rainbow_options/rainbow_options_direct_method/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/rainbow_options/rainbow_options_integration_method.qmod](applications/finance/classiq/rainbow_options/rainbow_options_integration_method/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/finance/value_at_risk/value_at_risk.qmod](applications/finance/classiq/value_at_risk/value_at_risk/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### fluid dynamics
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/CFD/double_slit_experiment/quantum_double_slit_experiment.qmod](applications/fluid_dynamics/classiq/double_slit_experiment/quantum_double_slit_experiment/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/CFD/heat_eq_qsvt/heat_eq_qsvt.qmod](applications/fluid_dynamics/classiq/heat_eq_qsvt/heat_eq_qsvt/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/CFD/qlbm/qlbm.qmod](applications/fluid_dynamics/classiq/qlbm/qlbm/README.md) | Not provided | 0 | frontend_refused |
-
-### logistics
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/logistics/facility_location/facility_location.qmod](applications/logistics/classiq/facility_location/facility_location/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/logistics/task_scheduling_problem/task_scheduling_problem.qmod](applications/logistics/classiq/task_scheduling_problem/task_scheduling_problem/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/logistics/traveling_salesman_problem/traveling_salesman_problem.qmod](applications/logistics/classiq/traveling_salesman_problem/traveling_salesman_problem/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/logistics/vehicle_routing_problem/vehicle_routing_problem.qmod](applications/logistics/classiq/vehicle_routing_problem/vehicle_routing_problem/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### optimization
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/optimization/adapt_qaoa/adapt_qaoa.qmod](applications/optimization/classiq/adapt_qaoa/adapt_qaoa/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/electric_grid_optimization/electric_grid_optimization.qmod](applications/optimization/classiq/electric_grid_optimization/electric_grid_optimization/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/integer_linear_programming/integer_linear_programming.qmod](applications/optimization/classiq/integer_linear_programming/integer_linear_programming/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/kidney_exchange/kidney_exchange_problem.qmod](applications/optimization/classiq/kidney_exchange/kidney_exchange_problem/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs.qmod](applications/optimization/classiq/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/max_clique/max_clique.qmod](applications/optimization/classiq/max_clique/max_clique/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/max_independent_set/max_independent_set.qmod](applications/optimization/classiq/max_independent_set/max_independent_set/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph.qmod](applications/optimization/classiq/max_induced_k_color_subgraph/max_induced_k_color_subgraph/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/max_k_vertex_cover/max_k_vertex_cover.qmod](applications/optimization/classiq/max_k_vertex_cover/max_k_vertex_cover/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/min_graph_coloring/min_graph_coloring.qmod](applications/optimization/classiq/min_graph_coloring/min_graph_coloring/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/minimum_dominating_set/minimum_dominating_set.qmod](applications/optimization/classiq/minimum_dominating_set/minimum_dominating_set/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa.qmod](applications/optimization/classiq/qaoa_in_qaoa/qaoa_in_qaoa/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/rectangles_packing/rectangles_packing_grid.qmod](applications/optimization/classiq/rectangles_packing/rectangles_packing_grid/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/robust_posture_optimization/robust_posture_optimization.qmod](applications/optimization/classiq/robust_posture_optimization/robust_posture_optimization/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/set_cover/set_cover.qmod](applications/optimization/classiq/set_cover/set_cover/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/set_partition/set_partition.qmod](applications/optimization/classiq/set_partition/set_partition/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution.qmod](applications/optimization/classiq/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### physical systems
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D.qmod](applications/physical_systems/classiq/fermi_hubbard_model_1D/fermi_hubbard_1D/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/physical_systems/hhl_lanchester/hhl_lanchester.qmod](applications/physical_systems/classiq/hhl_lanchester/hhl_lanchester/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/physical_systems/ising_model/ising_model.qmod](applications/physical_systems/classiq/ising_model/ising_model/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/physical_systems/quantum_chaos/quantum_sawtooth_map.qmod](applications/physical_systems/classiq/quantum_chaos/quantum_sawtooth_map/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### plasma
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/plasma/vlasov_ampere/vlasov_ampere.qmod](applications/plasma/classiq/vlasov_ampere/vlasov_ampere/README.md) | Not provided | 1 | execution_smoke_passed |
-
-### telecom
-
-| Original case | Native qfunc | Circuit validation links | Original status |
-| --- | --- | --- | --- |
-| [applications/telecom/network_traffic_optimization/network_traffic_optimization.qmod](applications/telecom/classiq/network_traffic_optimization/network_traffic_optimization/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/telecom/radio_access_network/radio_access_network_positioning_antennas.qmod](applications/telecom/classiq/radio_access_network/radio_access_network_positioning_antennas/README.md) | Not provided | 1 | execution_smoke_passed |
-| [applications/telecom/resiliency_planning/resiliency_planning.qmod](applications/telecom/classiq/resiliency_planning/resiliency_planning/README.md) | Not provided | 2 | execution_smoke_passed |
-| [applications/telecom/resiliency_planning/resiliency_planning_AMD.qmod](applications/telecom/classiq/resiliency_planning/resiliency_planning_AMD/README.md) | Not provided | 2 | execution_smoke_passed |
+# Native FlagQuantum example library
+
+User examples contain native Python programs and independent Circuit comparisons.
+Original source files and importer launchers are test/development evidence, not examples.
+
+Recorded native quantum-program counterparts: **216/216**.
+Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
+Validated local Notebook workflows: **24/213**.
+Expanded inventory: **577** source artifacts in **417** provisional path groups.
+Python groups still require main-case/helper review. A quantum-program counterpart
+does not certify its notebook workflow. Pending entries have no runnable placeholder.
+
+See [migration status](MIGRATION_STATUS.md) for the complete five-category inventory.
+
+## Algorithms (43 native programs)
+
+- [hybrid_qnn_for_subset_majority](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
+- [qgan_bars_and_strips](algorithms/machine_learning/qgan/qgan_bars_and_strips/README.md)
+- [qsvm](algorithms/machine_learning/qsvm/README.md)
+- [quantum_autoencoder](algorithms/machine_learning/quantum_autoencoder/README.md)
+- [oblivious_amplitude_amplification](algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/README.md)
+- [qmc_user_defined](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/README.md)
+- [qsvt_fixed_point](algorithms/amplitude_amplification/qsvt_fixed_point/README.md)
+- [quantum_counting](algorithms/amplitude_amplification_and_estimation/quantum_counting/README.md)
+- [quantum_counting_iqae](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae/README.md)
+- [quantum_counting_qpe](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/README.md)
+- [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
+- [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+- [quantum_teleportation](algorithms/foundational/quantum_teleportation/README.md)
+- [simon](algorithms/foundational/simon/README.md)
+- [hamiltonian_simulation_guide](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/README.md)
+- [hamiltonian_simulation_guide_qdrift](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/README.md)
+- [hamiltonian_simulation_guide_trotter](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/README.md)
+- [classical_shadow_tomography](algorithms/metrology/classical_shadow_tomography/README.md)
+- [discrete_log](algorithms/number_theory_and_cryptography/discrete_log/README.md)
+- [elliptic_curve_discrete_log](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/README.md)
+- [hidden_shift](algorithms/number_theory_and_cryptography/hidden_shift/README.md)
+- [shor](algorithms/number_theory_and_cryptography/shor/README.md)
+- [discrete_poisson_solver](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/README.md)
+- [time_marching](algorithms/quantum_differential_equations_solvers/time_marching/README.md)
+- [solving_qlsp_with_aqc](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/README.md)
+- [hhl](algorithms/quantum_linear_solvers/hhl/README.md)
+- [qsvt_matrix_inversion](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/README.md)
+- [vqls_with_lcu](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/README.md)
+- [qpe_for_matrix](algorithms/quantum_phase_estimation/qpe_for_matrix/README.md)
+- [qpe_for_molecule_with_qubitization](algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/README.md)
+- [gqsp](algorithms/quantum_primitives/gqsp/README.md)
+- [hadamard_test](algorithms/quantum_primitives/hadamard_test/README.md)
+- [swap_test](algorithms/quantum_primitives/swap_test/README.md)
+- [adapt_vqe](algorithms/quantum_state_preparation/adapt_vqe/README.md)
+- [quantum_thermal_state_preparation](algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/README.md)
+- [qaoa](algorithms/search_and_optimization/qaoa/README.md)
+- [qaoa_knapsack](algorithms/search_and_optimization/qaoa/qaoa_knapsack/README.md)
+- [qaoa_max_cut](algorithms/search_and_optimization/qaoa/qaoa_max_cut/README.md)
+- [dqi_max_xorsat](algorithms/search_and_optimization/dqi/dqi_max_xorsat/README.md)
+- [three_sat_grover](algorithms/search_and_optimization/grover/three_sat_grover/README.md)
+- [grover](algorithms/search_and_optimization/grover/grover/README.md)
+- [grover_max_cut](algorithms/search_and_optimization/grover/grover_max_cut/README.md)
+- [gm_qaoa](algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/README.md)
+
+Validated local Notebook workflows:
+
+- [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
+- [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+
+
+## Applications (59 native programs)
+
+- [quantum_double_slit_experiment](applications/cfd/double_slit_experiment/quantum_double_slit_experiment/README.md)
+- [heat_eq_qsvt](applications/cfd/heat_eq_qsvt/README.md)
+- [qlbm](applications/cfd/qlbm/README.md)
+- [quantum_volume](applications/benchmarking/quantum_volume/README.md)
+- [randomized_benchmarking](applications/benchmarking/randomized_benchmarking/README.md)
+- [molecular_energy_curve](applications/chemistry/molecular_energy_curve/README.md)
+- [molecule_eigensolver](applications/chemistry/molecule_eigensolver/README.md)
+- [protein_folding](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/README.md)
+- [qfold](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/README.md)
+- [qpe_for_molecules](applications/chemistry/qpe_for_molecules/README.md)
+- [quantum_drude_oscillator](applications/chemistry/quantum_drude_oscillator/README.md)
+- [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
+- [second_quantized_hamiltonian](applications/chemistry/second_quantized_hamiltonian/README.md)
+- [tensor_hypercontraction](applications/chemistry/tensor_hypercontraction/README.md)
+- [link_monitoring](applications/cybersecurity/link_monitoring/README.md)
+- [patch_min_vertex_cover](applications/cybersecurity/patching_management/patch_min_vertex_cover/README.md)
+- [whitebox_fuzzing](applications/cybersecurity/whitebox_fuzzing/README.md)
+- [partial_exponential_state_preparation](applications/finance/autocallable_options/partial_exponential_state_preparation/README.md)
+- [quantum_autocallable_option_pricing](applications/finance/autocallable_options/quantum_autocallable_option_pricing/README.md)
+- [brownian_chebyshev_polynomials](applications/finance/brownian_chebyshev_polynomials/README.md)
+- [credit_card_fraud](applications/finance/credit_card_fraud/README.md)
+- [portfolio_optimization_with_hhl](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
+- [option_pricing](applications/finance/option_pricing/README.md)
+- [portfolio_optimization](applications/finance/portfolio_optimization/README.md)
+- [hhl_portfolio](applications/finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
+- [rainbow_options_bruteforce_method](applications/finance/rainbow_options/rainbow_options_bruteforce_method/README.md)
+- [rainbow_options_direct_method](applications/finance/rainbow_options/rainbow_options_direct_method/README.md)
+- [rainbow_options_integration_method](applications/finance/rainbow_options/rainbow_options_integration_method/README.md)
+- [value_at_risk](applications/finance/value_at_risk/README.md)
+- [facility_location](applications/logistics/facility_location/README.md)
+- [task_scheduling_problem](applications/logistics/task_scheduling_problem/README.md)
+- [traveling_salesman_problem](applications/logistics/traveling_salesman_problem/README.md)
+- [vehicle_routing_problem](applications/logistics/vehicle_routing_problem/README.md)
+- [adapt_qaoa](applications/optimization/adapt_qaoa/README.md)
+- [electric_grid_optimization](applications/optimization/electric_grid_optimization/README.md)
+- [integer_linear_programming](applications/optimization/integer_linear_programming/README.md)
+- [kidney_exchange_problem](applications/optimization/kidney_exchange/kidney_exchange_problem/README.md)
+- [evidence_scaling_labs](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/README.md)
+- [max_clique](applications/optimization/max_clique/README.md)
+- [max_independent_set](applications/optimization/max_independent_set/README.md)
+- [max_induced_k_color_subgraph](applications/optimization/max_induced_k_color_subgraph/README.md)
+- [max_k_vertex_cover](applications/optimization/max_k_vertex_cover/README.md)
+- [min_graph_coloring](applications/optimization/min_graph_coloring/README.md)
+- [minimum_dominating_set](applications/optimization/minimum_dominating_set/README.md)
+- [qaoa_in_qaoa](applications/optimization/qaoa_in_qaoa/README.md)
+- [rectangles_packing_grid](applications/optimization/rectangles_packing/rectangles_packing_grid/README.md)
+- [robust_posture_optimization](applications/optimization/robust_posture_optimization/README.md)
+- [set_cover](applications/optimization/set_cover/README.md)
+- [set_partition](applications/optimization/set_partition/README.md)
+- [variational_quantum_imaginary_time_evolution](applications/optimization/variational_quantum_imaginary_time_evolution/README.md)
+- [fermi_hubbard_1d](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/README.md)
+- [hhl_lanchester](applications/physical_systems/hhl_lanchester/README.md)
+- [ising_model](applications/physical_systems/ising_model/README.md)
+- [quantum_sawtooth_map](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/README.md)
+- [vlasov_ampere](applications/plasma/vlasov_ampere/README.md)
+- [network_traffic_optimization](applications/telecom/network_traffic_optimization/README.md)
+- [radio_access_network_positioning_antennas](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/README.md)
+- [resiliency_planning](applications/telecom/resiliency_planning/README.md)
+- [resiliency_planning_amd](applications/telecom/resiliency_planning/resiliency_planning_amd/README.md)
+
+Validated local Notebook workflows:
+
+- [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
+
+
+## Community (12 native programs)
+
+- [periodic_laplacian_1d](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/README.md)
+- [periodic_laplacian_nd](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/README.md)
+- [bb84_implementation](community/paper_implementation_project/bb84/bb84_implementation/README.md)
+- [checkerboard](community/paper_implementation_project/block_encoding/checkerboard/README.md)
+- [laplacian_4x4](community/paper_implementation_project/block_encoding/laplacian_4x4/README.md)
+- [toeplitz](community/paper_implementation_project/block_encoding/toeplitz/README.md)
+- [tridiagonal](community/paper_implementation_project/block_encoding/tridiagonal/README.md)
+- [bpde](community/paper_implementation_project/bpde/README.md)
+- [classical_shadows](community/paper_implementation_project/classical_shadows/README.md)
+- [harmonic_oscillator](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/README.md)
+- [quantum_compression_algorithm_for_symmetric_states](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/README.md)
+- [stateprep_guassian_using_qsvt](community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/README.md)
+
+Validated local Notebook workflows:
+
+- [superposition](community/basic_examples/superposition/README.md)
+
+
+## Functions (55 native programs)
+
+- [arithmetic_expression](functions/arithmetic/arithmetic_expression/README.md)
+- [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
+- [bitwise_and_2vars_example](functions/arithmetic/bitwise_and/bitwise_and_2vars_example/README.md)
+- [bitwise_and_integer_example](functions/arithmetic/bitwise_and/bitwise_and_integer_example/README.md)
+- [bitwise_invert_example](functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md)
+- [bitwise_or_2vars_example](functions/arithmetic/bitwise_or/bitwise_or_2vars_example/README.md)
+- [bitwise_or_integer_example](functions/arithmetic/bitwise_or/bitwise_or_integer_example/README.md)
+- [bitwise_xor_2vars_example](functions/arithmetic/bitwise_xor/bitwise_xor_2vars_example/README.md)
+- [bitwise_xor_integer_example](functions/arithmetic/bitwise_xor/bitwise_xor_integer_example/README.md)
+- [comparator_2vars_example](functions/arithmetic/comparator/comparator_2vars_example/README.md)
+- [comparator_integer_example](functions/arithmetic/comparator/comparator_integer_example/README.md)
+- [maximum_float_example](functions/arithmetic/extremum/maximum_float_example/README.md)
+- [maximum_integer_example](functions/arithmetic/extremum/maximum_integer_example/README.md)
+- [minimum_2vars_example](functions/arithmetic/extremum/minimum_2vars_example/README.md)
+- [modular_exp_example](functions/arithmetic/modular_exp/modular_exp_example/README.md)
+- [modulo_example](functions/arithmetic/modulo/modulo_example/README.md)
+- [multiplication_2vars_example](functions/arithmetic/multiplication/multiplication_2vars_example/README.md)
+- [multiplication_float_example](functions/arithmetic/multiplication/multiplication_float_example/README.md)
+- [negation_example](functions/arithmetic/negation/negation_example/README.md)
+- [subtraction_2vars_example](functions/arithmetic/subtraction/subtraction_2vars_example/README.md)
+- [subtraction_float_example](functions/arithmetic/subtraction/subtraction_float_example/README.md)
+- [mcx_example](functions/mcx/mcx_example/README.md)
+- [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
+- [grover_operator](functions/grover_operator/README.md)
+- [hadamard_transform](functions/hadamard_transform/README.md)
+- [linear_pauli_rotations](functions/linear_pauli_rotations/README.md)
+- [qct_qst_type1](functions/qct_qst/qct_qst_type1/README.md)
+- [qct_qst_type2](functions/qct_qst/qct_qst_type2/README.md)
+- [qct_type2](functions/qct_qst/qct_type2/README.md)
+- [qst_type2](functions/qct_qst/qst_type2/README.md)
+- [qft](functions/qft/README.md)
+- [qpe](functions/qpe/README.md)
+- [qpe_flexible](functions/qpe/qpe_flexible/README.md)
+- [qsvt](functions/qsvt/README.md)
+- [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
+- [prepare_exponential_state](functions/state_preparation/prepare_exponential_state/README.md)
+- [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
+- [prepare_uniform_interval_state](functions/state_preparation/prepare_uniform_interval_state/README.md)
+- [prepare_uniform_trimmed_state](functions/state_preparation/prepare_uniform_trimmed_state/README.md)
+- [encode_in_angle](functions/data_encoding/encode_in_angle/README.md)
+- [encode_on_bloch](functions/data_encoding/encode_on_bloch/README.md)
+- [qdrift](functions/hamiltonian_evolution/qdrift/README.md)
+- [suzuki_trotter](functions/hamiltonian_evolution/suzuki_trotter/README.md)
+- [example_prepare_amplitudes](functions/state_preparation/example_prepare_amplitudes/README.md)
+- [example_prepare_state](functions/state_preparation/example_prepare_state/README.md)
+- [crx](functions/standard_gates/crx/README.md)
+- [cx](functions/standard_gates/cx/README.md)
+- [phase](functions/standard_gates/phase/README.md)
+- [r](functions/standard_gates/r/README.md)
+- [rz](functions/standard_gates/rz/README.md)
+- [rzz](functions/standard_gates/rzz/README.md)
+- [swap](functions/standard_gates/swap/README.md)
+- [u](functions/standard_gates/u/README.md)
+- [x](functions/standard_gates/x/README.md)
+- [unitary](functions/unitary/README.md)
+
+Validated local Notebook workflows:
+
+- [arithmetic_expression_example](functions/arithmetic/arithmetic_expression/arithmetic_expression_example/README.md)
+- [overview](functions/arithmetic/bitwise_and/overview/README.md)
+- [bitwise_invert_example](functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md)
+- [modular_exp_example](functions/arithmetic/modular_exp/modular_exp_example/README.md)
+- [modulo_example](functions/arithmetic/modulo/modulo_example/README.md)
+- [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
+- [hadamard_transform](functions/hadamard_transform/README.md)
+- [qft](functions/qft/README.md)
+- [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
+- [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
+- [suzuki_trotter](functions/hamiltonian_evolution/suzuki_trotter/README.md)
+- [prepare_state_and_amplitudes](functions/state_preparation/prepare_state_and_amplitudes/README.md)
+- [overview](functions/standard_gates/overview/README.md)
+- [unitary](functions/unitary/README.md)
+
+
+## Tutorials (47 native programs)
+
+- [discrete_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk/README.md)
+- [quantum_walk_circle](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
+- [quantum_walk_circle_balanced_coin](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md)
+- [quantum_walk_hypercube](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/README.md)
+- [discrete_time_quantum_walk](tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/README.md)
+- [tanh](tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh/README.md)
+- [add_bell_states](tutorials/basics/add_bell_states/README.md)
+- [entanglement](tutorials/basics/entanglement/README.md)
+- [example_exponentiation](tutorials/basics/exponentiation/example_exponentiation/README.md)
+- [grover_graph_coloring](tutorials/basics/grover_graph_coloring/README.md)
+- [mcx](tutorials/basics/mcx/README.md)
+- [learning_optimization](tutorials/basics/optimization/learning_optimization/README.md)
+- [prepare_state](tutorials/basics/prepare_state/README.md)
+- [qmci_pi_estimation](tutorials/basics/qmci_pi_estimation/README.md)
+- [qml](tutorials/basics/qml/README.md)
+- [hadamard_test_tutorial](tutorials/basics/quantum_primitives/hadamard_test_tutorial/README.md)
+- [linear_combination_of_unitaries](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/README.md)
+- [quantumwalk_complex_network](tutorials/basics/quantumwalk_complex_network/README.md)
+- [qmod_tutorial_part1](tutorials/basics/quantum_programming/qmod_tutorial_part1/README.md)
+- [controlled_rotation](tutorials/basics/quantum_programming/controlled_rotation/README.md)
+- [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
+- [execution_tutorial](tutorials/basics/quantum_programming/execution_tutorial/README.md)
+- [execution_tutorial_part2](tutorials/basics/quantum_programming/execution_tutorial_part2/README.md)
+- [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
+- [qpe_for_grover_operator](tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/README.md)
+- [qpe_for_unitary_matrix](tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/README.md)
+- [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
+- [arithmetic_expressions](tutorials/technology_demonstrations/arithmetic_expressions/README.md)
+- [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [classiq_qsvt](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/README.md)
+- [classiq_discrete_quantum_walk](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md)
+- [discrete_quantum_walk_circle](tutorials/technology_demonstrations/discrete_quantum_walk_circle/README.md)
+- [hamiltonian_evolution](tutorials/technology_demonstrations/hamiltonian_evolution/README.md)
+- [hardware_aware_mcx](tutorials/technology_demonstrations/hardware_aware_mcx/README.md)
+- [hhl_example](tutorials/technology_demonstrations/hhl/hhl_example/README.md)
+- [three_sat_oracles](tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/README.md)
+- [qaoa_demonstration](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/README.md)
+- [algo_design_qce_tutorial_part_i](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
+- [algo_design_qce_tutorial_part_ii](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)
+- [combinatorial_qmod_workshop_for_maxcut](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
+- [option_pricing_workshop](tutorials/workshops/finance_workshops/option_pricing_workshop/README.md)
+- [combi_workshop_inequality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
+- [combi_workshop_equality_constriants_po](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
+- [rainbow_options_workshop_bruteforce](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/README.md)
+- [grover_workshop](tutorials/workshops/grover_workshop/README.md)
+- [hhl_workshop](tutorials/workshops/hhl_workshop/README.md)
+- [oracles_workshop](tutorials/workshops/oracle_workshop/oracles_workshop/README.md)
+
+Validated local Notebook workflows:
+
+- [entanglement](tutorials/basics/entanglement/README.md)
+- [prepare_state](tutorials/basics/prepare_state/README.md)
+- [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
+- [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
+- [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
+- [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)

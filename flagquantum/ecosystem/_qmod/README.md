@@ -71,6 +71,15 @@ The following table locates the existing implementations and detailed profiles.
 | Block encodings, QSVT and checked fixed-point regions | `qsvt.py`, `fixed_regions.py`, `scoped_amplification.py` | [QSVT profiles](PROFILE_HISTORY.md#coherent-even-and-odd-qsvt) |
 | Private measurement/reset and bounded classical optimization | `deferred_measurement.py`, `cscope.py` | [Execution profiles](PROFILE_HISTORY.md) |
 
+`adapter_model._Expression` binds syntax to Compiler-owned exact word semantics
+in `compiler/_construction/numeric_expression.py`. Source token objects and
+source diagnostics stay here; no source type crosses the Compiler boundary.
+The separate quantized-program precision profile remains source-owned.
+
+`unitary_effects.py` retains source diagnostics and storage checks; inverse-effect
+rules are owned by `compiler/_hybrid/unitary_effects.py` and shared with native
+Python capture.
+
 `syntax_model.py` is the authority for lexical and parsing budgets.
 `adapter_model.py` owns adapter constants and the private handoff. Compiler
 construction budgets and Runtime memory ceilings are checked at their existing
@@ -118,3 +127,16 @@ resource evidence remain distinct from the batch execution smoke results.
 profiles, restrictions, examples and validation notes. Early sections describe
 the narrower scope at that stage. Later sections record the subsequent supported
 profiles. Use this README for current module ownership and contributor navigation.
+
+First/second-order Pauli product-formula scheduling is shared with the existing
+algorithm Circuit builder through Compiler's private `_pauli_schedule.py`.
+The adapter still owns source parsing, static operator data, coefficient/time
+binding, repetition/resource bounds and commutation compaction. It emits the
+same checked register effects and retains term order, identity phase and source
+locations. No native evolution entry, external type leak or new IR is introduced.
+
+Real phase polynomial expansion is owned by Compiler `_phase_polynomial.py`.
+The local `phase.py` retains Qmod's syntax callbacks, diagnostics and compatibility
+imports; it must not own a second expansion algorithm. Native Python supplies
+a different syntax implementation to the same compiler boundary. Qmod signed,
+fractional, predicate and factor-sharing behavior remains unchanged.

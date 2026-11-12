@@ -5,10 +5,10 @@ from __future__ import annotations
 import ast
 from dataclasses import dataclass
 from types import FunctionType, ModuleType
-from typing import Literal
+from typing import Annotated, Literal
 
 from .frontend_python import _error, _QuantumFunction, _Source
-from .program_types import Const, Output, QArray, QBit, QNum, _width_spec
+from .program_types import Const, Output, QArray, QBit, QNum, _numeric_spec
 
 
 @dataclass(frozen=True)
@@ -17,6 +17,8 @@ class _Port:
     role: Literal["output", "const", "inout"]
     kind: Literal["qbit", "qnum", "qarray"]
     width: int | None
+    signed: bool = False
+    fractional_bits: int = 0
 
 
 def _resolve(
@@ -54,7 +56,15 @@ def _resolve(
                     _error(
                         source, node, "name", "the referenced closure binding is empty"
                     )
-        return function.__globals__.get(node.id)
+        if node.id in function.__globals__:
+            return function.__globals__[node.id]
+        if annotation and node.id in {"int", "float", "list"}:
+            import builtins
+
+            namespace = function.__globals__.get("__builtins__", builtins)
+            values = vars(namespace) if type(namespace) is ModuleType else namespace
+            return dict.get(values, node.id) if isinstance(values, dict) else None
+        return None
     if isinstance(node, ast.Attribute):
         parent = _resolve(definition, node.value, depth + 1, annotation=annotation)
         if type(parent) is ModuleType:
@@ -85,17 +95,158 @@ def _annotation_node(source: _Source, node: ast.expr) -> ast.expr:
 def program_annotation_names(source: _Source) -> set[str]:
     return {
         node.id
-        for arg in (*source.node.args.posonlyargs, *source.node.args.args)
-        if arg.annotation is not None
-        for node in ast.walk(_annotation_node(source, arg.annotation))
+        for annotation in (
+            *(
+                arg.annotation
+                for arg in (*source.node.args.posonlyargs, *source.node.args.args)
+                if arg.annotation is not None
+            ),
+            *(
+                item.annotation
+                for item in ast.walk(source.node)
+                if isinstance(item, ast.AnnAssign)
+            ),
+        )
+        for node in ast.walk(_annotation_node(source, annotation))
         if isinstance(node, ast.Name)
     }
+
+
+@dataclass(frozen=True)
+class _ClassicalParameter:
+    """Annotation-owned scalar kind and shape; binding never infers either."""
+
+    integer: bool
+    array: bool
+
+
+def classical_parameters(
+    definition: _QuantumFunction,
+) -> dict[str, _ClassicalParameter]:
+    """Identify finite synthesis-time numeric scalars and flat numeric arrays."""
+    parameters: dict[str, _ClassicalParameter] = {}
+    for argument in (
+        *definition.source.node.args.posonlyargs,
+        *definition.source.node.args.args,
+    ):
+        if argument.annotation is None:
+            continue
+        node = _annotation_node(definition.source, argument.annotation)
+        array = isinstance(node, ast.Subscript)
+        if array:
+            assert isinstance(node, ast.Subscript)
+            if _resolve(definition, node.value, annotation=True) is not list:
+                continue
+            node = node.slice
+        if isinstance(node, (ast.Name, ast.Attribute)):
+            scalar = _resolve(definition, node, annotation=True)
+            if scalar is int or scalar is float:
+                parameters[argument.arg] = _ClassicalParameter(scalar is int, array)
+    return parameters
+
+
+def quantum_port(
+    definition: _QuantumFunction,
+    name: str,
+    annotation: ast.expr,
+    quantum: ast.expr,
+    role: Literal["output", "const", "inout"],
+) -> _Port:
+    """Resolve one signature or owned-local type using identical numeric rules."""
+    source = definition.source
+    width = None
+    signed, fractional = False, 0
+    if isinstance(quantum, ast.Subscript):
+        kind = _resolve(definition, quantum.value, annotation=True)
+        if kind is Annotated:
+            if (
+                not isinstance(quantum.slice, ast.Tuple)
+                or len(quantum.slice.elts) != 2
+                or not isinstance(quantum.slice.elts[0], (ast.Name, ast.Attribute))
+                or _resolve(definition, quantum.slice.elts[0], annotation=True)
+                is not QNum
+            ):
+                _error(
+                    source,
+                    annotation,
+                    "annotation",
+                    "use Annotated[QNum, literal_width]",
+                )
+            size = quantum.slice.elts[1]
+            try:
+                width, signed, fractional = _numeric_spec(ast.literal_eval(size))
+            except (TypeError, ValueError, SyntaxError) as error:
+                _error(source, annotation, "annotation", str(error))
+            kind = QNum
+        elif kind is QArray:
+            if (
+                not isinstance(quantum.slice, (ast.Name, ast.Attribute))
+                or _resolve(definition, quantum.slice, annotation=True) is not QBit
+            ):
+                _error(
+                    source,
+                    annotation,
+                    "annotation",
+                    "the array profile supports QArray[QBit] only",
+                )
+        elif kind is not QNum:
+            _error(
+                source,
+                annotation,
+                "annotation",
+                "only QNum accepts numeric type parameters",
+            )
+        if kind is QNum and width is None:
+            sizes = (
+                quantum.slice.elts
+                if isinstance(quantum.slice, ast.Tuple)
+                else (quantum.slice,)
+            )
+            if any(not isinstance(size, ast.Constant) for size in sizes):
+                _error(
+                    source,
+                    annotation,
+                    "annotation",
+                    "numeric widths/sign/fraction must be literals",
+                )
+            spec = tuple(size.value for size in sizes if isinstance(size, ast.Constant))
+            try:
+                width, signed, fractional = _numeric_spec(spec)
+            except (TypeError, ValueError) as error:
+                _error(source, annotation, "annotation", str(error))
+    else:
+        kind = _resolve(definition, quantum, annotation=True)
+        if kind is QArray:
+            _error(
+                source,
+                annotation,
+                "annotation",
+                "QArray requires the QBit element parameter",
+            )
+    if kind is not QNum and kind is not QBit and kind is not QArray:
+        _error(
+            source,
+            annotation,
+            "annotation",
+            "program ports require QNum, QBit or QArray[QBit]",
+        )
+    return _Port(
+        name,
+        role,
+        "qbit" if kind is QBit else "qarray" if kind is QArray else "qnum",
+        1 if kind is QBit else width,
+        signed,
+        fractional,
+    )
 
 
 def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
     source = definition.source
     ports: list[_Port] = []
+    classical = classical_parameters(definition)
     for argument in (*source.node.args.posonlyargs, *source.node.args.args):
+        if argument.arg in classical:
+            continue
         annotation = argument.annotation
         if annotation is None:
             _error(
@@ -117,71 +268,7 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
             quantum = node.slice
         else:
             quantum = node
-        width = None
-        if isinstance(quantum, ast.Subscript):
-            kind = _resolve(definition, quantum.value, annotation=True)
-            if kind is QArray:
-                if (
-                    not isinstance(quantum.slice, (ast.Name, ast.Attribute))
-                    or _resolve(definition, quantum.slice, annotation=True) is not QBit
-                ):
-                    _error(
-                        source,
-                        annotation,
-                        "annotation",
-                        "the array profile supports QArray[QBit] only",
-                    )
-            elif kind is not QNum:
-                _error(
-                    source,
-                    annotation,
-                    "annotation",
-                    "only QNum accepts numeric type parameters",
-                )
-            if kind is QNum:
-                sizes = (
-                    quantum.slice.elts
-                    if isinstance(quantum.slice, ast.Tuple)
-                    else (quantum.slice,)
-                )
-                if any(not isinstance(size, ast.Constant) for size in sizes):
-                    _error(
-                        source,
-                        annotation,
-                        "annotation",
-                        "numeric widths/sign/fraction must be literals",
-                    )
-                spec = tuple(
-                    size.value for size in sizes if isinstance(size, ast.Constant)
-                )
-                try:
-                    width = _width_spec(spec)
-                except (TypeError, ValueError) as error:
-                    _error(source, annotation, "annotation", str(error))
-        else:
-            kind = _resolve(definition, quantum, annotation=True)
-            if kind is QArray:
-                _error(
-                    source,
-                    annotation,
-                    "annotation",
-                    "QArray requires the QBit element parameter",
-                )
-        if kind is not QNum and kind is not QBit and kind is not QArray:
-            _error(
-                source,
-                annotation,
-                "annotation",
-                "program ports require QNum, QBit or QArray[QBit]",
-            )
-        ports.append(
-            _Port(
-                argument.arg,
-                role,
-                "qbit" if kind is QBit else "qarray" if kind is QArray else "qnum",
-                1 if kind is QBit else width,
-            )
-        )
+        ports.append(quantum_port(definition, argument.arg, annotation, quantum, role))
     returned = source.node.returns
     if returned is not None and not (
         isinstance(returned, ast.Constant) and returned.value in (None, "None")
@@ -203,11 +290,13 @@ def program_ports(definition: _QuantumFunction) -> tuple[_Port, ...]:
     for index, statement in enumerate(statements):
         if (
             isinstance(statement, ast.AugAssign)
-            and isinstance(statement.op, ast.BitOr)
+            and isinstance(statement.op, (ast.BitOr, ast.BitXor, ast.Add, ast.Sub))
             and isinstance(statement.target, ast.Name)
         ):
             continue
-        if isinstance(statement, (ast.With, ast.For)):
+        if isinstance(statement, ast.AnnAssign):
+            continue
+        if isinstance(statement, (ast.With, ast.For, ast.If)):
             continue
         if isinstance(statement, ast.Expr) and isinstance(statement.value, ast.Call):
             continue

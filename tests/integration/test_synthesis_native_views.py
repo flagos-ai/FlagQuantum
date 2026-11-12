@@ -219,17 +219,17 @@ def test_view_and_loop_refusals(tmp_path: Path, body: str, diagnostic: str) -> N
         (
             "@qfunc\ndef init(a: QArray[QBit]):\n    allocate(1,a)\n",
             "allocate(1,q)\ninit(q)",
-            "program.borrow",
+            "register.initialized",
         ),
         (
             "@qfunc\ndef init(a: QArray[QBit]):\n    prepare_state([1,0],0,a)\n",
             "allocate(1,q)\ninit(q)",
-            "program.borrow",
+            "register.initialized",
         ),
         (
             "@qfunc\ndef fresh(a: Output[QArray[QBit]]):\n    allocate(1,a)\n@qfunc\ndef escape(a: QArray[QBit]):\n    fresh(a)\n",
             "allocate(1,q)\nescape(q)",
-            "program.borrow",
+            "register.initialized",
         ),
         (
             "@qfunc\ndef recursive(a: QArray[QBit]):\n    recursive(a)\n",
@@ -255,11 +255,6 @@ def test_view_and_loop_refusals(tmp_path: Path, body: str, diagnostic: str) -> N
             "@qfunc\ndef wrong(a: Const[QBit], b: QArray[QBit]):\n    H(b[0])\n",
             "allocate(2,q)\nwrong(q[0],q[1:])",
             "program.borrow",
-        ),
-        (
-            "@qfunc\ndef change(a: QArray[QBit]):\n    H(a[0])\n",
-            "allocate(1,q)\nwith adjoint():\n    change(q)",
-            "program.adjoint",
         ),
     ],
 )
@@ -304,7 +299,13 @@ def test_final_resource_limits_remain_independent() -> None:
         {"memory_limit_bytes": 1},
     ):
         with pytest.raises(ValueError):
-            synth.synthesize(asymmetric, **limits)
+            synth.synthesize(
+                asymmetric,
+                max_qubits=limits.get("max_qubits", 256),
+                max_operations=limits.get("max_operations", 100000),
+                max_depth=limits.get("max_depth"),
+                memory_limit_bytes=limits.get("memory_limit_bytes"),
+            )
 
 
 @pytest.mark.parametrize("name", ["range", "len"])
@@ -317,3 +318,18 @@ def test_none_is_also_a_shadowed_builtin(tmp_path: Path, name: str) -> None:
                 f"{name} = None\n",
             )
         )
+
+
+def test_mutable_helper_adjoint_retains_absolute_coherent_state(tmp_path: Path) -> None:
+    entry = _definition(
+        tmp_path,
+        "allocate(1,q)\nH(q[0])\nS(q[0])\nwith adjoint():\n    change(q)",
+        "@qfunc\ndef change(a:QArray[QBit]):\n    H(a[0])\n    S(a[0])\n",
+    )
+    expected = fq.Circuit(1, dtype=torch.complex128).h(0).s(0).gate("sdg", 0).h(0)
+    torch.testing.assert_close(
+        fq.run(synth.synthesize(entry)).statevector(),
+        fq.run(expected).statevector(),
+        atol=1e-12,
+        rtol=0,
+    )

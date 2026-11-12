@@ -91,7 +91,7 @@ As an optional advanced task, compose an emitted circuit with an existing
 Circuit using that API's explicit mappings. Expert composition may use gates
 and mappings, but it changes the program and requires fresh planning/validation.
 Do not use the original Program's checked report or reader to certify the
-modified circuit. The [workspace example](../../examples/synthesis/tutorials/workspace/workspace/main.py)
+modified circuit. The [workspace example](../../tools/synthesis_compiler_examples/workspace/main.py)
 shows existing low-level composition; it is separate from the normal user path.
 
 ## Blank record, completed only by an actual tester

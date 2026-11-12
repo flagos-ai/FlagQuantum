@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/physical_systems/quantum_chaos/quantum_sawtooth_map.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "36a17564a2c366044fc84d36e2a017aeb645ef86bc27445d4344ce19fc34b1b7",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.quantum_chaos.quantum_sawtooth_map.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_quadratic_maps.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve signed3-bit momentum, -2 initialization, integer kick count and exact signed quadratic phases. The source declares kick_mag but calls single_step(0.1,p), so the native entry exposes only num_kicks and explicitly preserves literal0.1. Independent Circuit uses a dense DFT and independently enumerated signed quadratic diagonal entries. Two distinct nonzero original kick_mag bindings must give the same state. Existing Compiler operations only, no new production opcode or export."
+}

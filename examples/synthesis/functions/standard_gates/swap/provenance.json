@@ -1,0 +1,6 @@
+{
+  "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/SWAP.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "2e37c3cefa75dd52af1292b4790b5698654428e4ad6f3b6272afbbf90e537ad2",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

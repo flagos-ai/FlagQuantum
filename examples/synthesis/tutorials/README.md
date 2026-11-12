@@ -1,46 +1,83 @@
-# Synthesis tutorials
+# Tutorials
 
-The [complete original Qmod catalog](../CATALOG.md) includes **102** classified
-tutorials cases, with source, execution and native/Circuit availability.
-The table below lists the existing teaching examples.
+Native FlagQuantum programs currently available:
 
-| Example | Entry profile |
-| --- | --- |
-| [arithmetic/arithmetic_baseline](arithmetic/arithmetic_baseline/README.md) | High-level Python example |
-| [arithmetic/arithmetic_implementations](arithmetic/arithmetic_implementations/README.md) | High-level Python example |
-| [arithmetic/boolean_factors](arithmetic/boolean_factors/README.md) | High-level Python example |
-| [arithmetic/boolean_predicate](arithmetic/boolean_predicate/README.md) | High-level Python example |
-| [arithmetic/carry_free_add](arithmetic/carry_free_add/README.md) | High-level Python example |
-| [arithmetic/conditional](arithmetic/conditional/README.md) | High-level Python example |
-| [arithmetic/interval](arithmetic/interval/README.md) | High-level Python example |
-| [arithmetic/normalization](arithmetic/normalization/README.md) | High-level Python example |
-| [arithmetic/power_two_multiply](arithmetic/power_two_multiply/README.md) | High-level Python example |
-| [arithmetic/predicate](arithmetic/predicate/README.md) | High-level Python example |
-| [arithmetic/python_powers](arithmetic/python_powers/README.md) | High-level Python example |
-| [composition/const_calls](composition/const_calls/README.md) | Compiler contributor diagnostic |
-| [composition/integer_composition](composition/integer_composition/README.md) | High-level Python example |
-| [composition/local_registers](composition/local_registers/README.md) | Compiler contributor diagnostic |
-| [composition/python_program](composition/python_program/README.md) | High-level Python example |
-| [composition/register_cleanup](composition/register_cleanup/README.md) | Compiler contributor diagnostic |
-| [composition/static_loop](composition/static_loop/README.md) | High-level Python example |
-| [control/controlled_predicate](control/controlled_predicate/README.md) | High-level Python example |
-| [control/native_predicate_phase](control/native_predicate_phase/README.md) | Qmod import tutorial |
-| [control/phase_oracle](control/phase_oracle/README.md) | High-level Python example |
-| [control/register_phase](control/register_phase/README.md) | Compiler contributor diagnostic |
-| [getting_started/source_trial](getting_started/source_trial/README.md) | Qmod import tutorial |
-| [getting_started/trial](getting_started/trial/README.md) | High-level Python example |
-| [qmod/native_and_qmod_rz](qmod/native_and_qmod_rz/README.md) | Qmod import tutorial |
-| [qmod/qmod_bit_predicates](qmod/qmod_bit_predicates/README.md) | Qmod import tutorial |
-| [qmod/qmod_comparisons](qmod/qmod_comparisons/README.md) | Qmod import tutorial |
-| [qmod/qmod_const](qmod/qmod_const/README.md) | Qmod import tutorial |
-| [qmod/qmod_helpers](qmod/qmod_helpers/README.md) | Qmod import tutorial |
-| [qmod/qmod_nested](qmod/qmod_nested/README.md) | Qmod import tutorial |
-| [qmod/qmod_pair_gates](qmod/qmod_pair_gates/README.md) | High-level Python example |
-| [qmod/qmod_phase](qmod/qmod_phase/README.md) | Qmod import tutorial |
-| [qmod/qmod_phase_gate](qmod/qmod_phase_gate/README.md) | Qmod import tutorial |
-| [qmod/qmod_powers](qmod/qmod_powers/README.md) | Qmod import tutorial |
-| [qmod/qmod_within](qmod/qmod_within/README.md) | Qmod import tutorial |
-| [workspace/execution_contract](workspace/execution_contract/README.md) | Compiler contributor diagnostic |
-| [workspace/selection](workspace/selection/README.md) | Compiler contributor diagnostic |
-| [workspace/selection_costs](workspace/selection_costs/README.md) | Compiler contributor diagnostic |
-| [workspace/workspace](workspace/workspace/README.md) | Compiler contributor diagnostic |
+- [discrete_quantum_walk](advanced_tutorials/discrete_quantum_walk/README.md)
+- [quantum_walk_circle](advanced_tutorials/discrete_quantum_walk/quantum_walk_circle/README.md)
+- [quantum_walk_circle_balanced_coin](advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/README.md)
+- [quantum_walk_hypercube](advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/README.md)
+- [discrete_time_quantum_walk](advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/README.md)
+- [tanh](advanced_tutorials/linear_approximation_of_tanh/tanh/README.md)
+- [add_bell_states](basics/add_bell_states/README.md)
+- [entanglement](basics/entanglement/README.md)
+- [example_exponentiation](basics/exponentiation/example_exponentiation/README.md)
+- [grover_graph_coloring](basics/grover_graph_coloring/README.md)
+- [mcx](basics/mcx/README.md)
+- [learning_optimization](basics/optimization/learning_optimization/README.md)
+- [prepare_state](basics/prepare_state/README.md)
+- [qmci_pi_estimation](basics/qmci_pi_estimation/README.md)
+- [qml](basics/qml/README.md)
+- [hadamard_test_tutorial](basics/quantum_primitives/hadamard_test_tutorial/README.md)
+- [linear_combination_of_unitaries](basics/quantum_primitives/linear_combination_of_unitaries/README.md)
+- [quantumwalk_complex_network](basics/quantumwalk_complex_network/README.md)
+- [qmod_tutorial_part1](basics/quantum_programming/qmod_tutorial_part1/README.md)
+- [controlled_rotation](basics/quantum_programming/controlled_rotation/README.md)
+- [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
+- [execution_tutorial](basics/quantum_programming/execution_tutorial/README.md)
+- [execution_tutorial_part2](basics/quantum_programming/execution_tutorial_part2/README.md)
+- [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
+- [qpe_for_grover_operator](technology_demonstrations/QPE/qpe_for_grover_operator/README.md)
+- [qpe_for_unitary_matrix](technology_demonstrations/QPE/qpe_for_unitary_matrix/README.md)
+- [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
+- [arithmetic_expressions](technology_demonstrations/arithmetic_expressions/README.md)
+- [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+- [classiq_qsvt](technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/README.md)
+- [classiq_discrete_quantum_walk](technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/README.md)
+- [discrete_quantum_walk_circle](technology_demonstrations/discrete_quantum_walk_circle/README.md)
+- [hamiltonian_evolution](technology_demonstrations/hamiltonian_evolution/README.md)
+- [hardware_aware_mcx](technology_demonstrations/hardware_aware_mcx/README.md)
+- [hhl_example](technology_demonstrations/hhl/hhl_example/README.md)
+- [three_sat_oracles](technology_demonstrations/oracle_generation/three_sat_oracles/README.md)
+- [qaoa_demonstration](technology_demonstrations/qaoa/qaoa_demonstration/README.md)
+- [algo_design_qce_tutorial_part_i](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/README.md)
+- [algo_design_qce_tutorial_part_ii](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/README.md)
+- [combinatorial_qmod_workshop_for_maxcut](workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/README.md)
+- [option_pricing_workshop](workshops/finance_workshops/option_pricing_workshop/README.md)
+- [combi_workshop_inequality_constriants_po](workshops/finance_workshops/combi_workshop_inequality_constriants_po/README.md)
+- [combi_workshop_equality_constriants_po](workshops/finance_workshops/combi_workshop_equality_constriants_po/README.md)
+- [rainbow_options_workshop_bruteforce](workshops/finance_workshops/rainbow_options_workshop_bruteforce/README.md)
+- [grover_workshop](workshops/grover_workshop/README.md)
+- [hhl_workshop](workshops/hhl_workshop/README.md)
+- [oracles_workshop](workshops/oracle_workshop/oracles_workshop/README.md)
+
+## Validated local Notebook workflows
+
+- [entanglement](basics/entanglement/README.md)
+- [prepare_state](basics/prepare_state/README.md)
+- [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
+- [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
+- [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
+- [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
+
+## Additional FlagQuantum teaching examples
+
+- [arithmetic_baseline](arithmetic/arithmetic_baseline/main.py)
+- [arithmetic_implementations](arithmetic/arithmetic_implementations/main.py)
+- [boolean_factors](arithmetic/boolean_factors/main.py)
+- [boolean_predicate](arithmetic/boolean_predicate/main.py)
+- [carry_free_add](arithmetic/carry_free_add/main.py)
+- [conditional](arithmetic/conditional/main.py)
+- [interval](arithmetic/interval/main.py)
+- [normalization](arithmetic/normalization/main.py)
+- [power_two_multiply](arithmetic/power_two_multiply/main.py)
+- [predicate](arithmetic/predicate/main.py)
+- [python_powers](arithmetic/python_powers/main.py)
+- [integer_composition](composition/integer_composition/main.py)
+- [numeric_program](composition/numeric_program/main.py)
+- [python_program](composition/python_program/main.py)
+- [static_loop](composition/static_loop/main.py)
+- [controlled_predicate](control/controlled_predicate/main.py)
+- [phase_oracle](control/phase_oracle/main.py)
+- [trial](getting_started/trial/main.py)
+
+See the [full migration inventory](../MIGRATION_STATUS.md).

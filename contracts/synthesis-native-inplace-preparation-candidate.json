@@ -1,0 +1,19 @@
+{
+  "schema": "flagquantum.synthesis_native_inplace_preparation_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": ["inplace_prepare_amplitudes", "inplace_prepare_state"],
+  "signatures": {
+    "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'",
+    "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit]', /) -> 'None'"
+  },
+  "internal_effect": "qreg.inplace_prepare_amplitudes",
+  "vector_lengths": [2, 256],
+  "complete_initialized_writable_register_only": true,
+  "allocation_or_reset": false,
+  "new_physical_ir_opcode": false,
+  "new_numerical_kernel": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-INPLACE-PREPARATION-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

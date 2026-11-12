@@ -1,0 +1,10 @@
+{
+  "upstream_path": "community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "3bee74cf6e620f933c033a51933fb7adb4cfc2e1ecdc74336e51cce857055d51",
+  "approved_sha256": "28d5beca520401249ad439cf3ff3e67e62da26edad6cbd1ba8aeab97f73e82f2",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.quantum_state_preparation_without_coherent_arithmetic.stateprep_guassian_using_qsvt.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_gaussian_qsvt.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Original incorrect overlap remains a semantic refusal. Use the previously approved overlap0.39191102421483637 with all29/28phase values unchanged. Raw8bit data encodes word/256. Explicit attenuation and reflectionmarker outputs are proved clean. Retain2exact amplification rounds. Bound angle arrays,combined phase polynomials and commutingCRX basis changes fit unchanged compiler caps. No production changes."
+}

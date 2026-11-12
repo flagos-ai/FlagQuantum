@@ -28,7 +28,11 @@ def _run(name: str, *args: str) -> str:
         [
             sys.executable,
             "-m",
-            f"examples.synthesis.tutorials.getting_started.{name}.main",
+            (
+                "tools.synthesis_import_examples.source_trial.main"
+                if name == "source_trial"
+                else f"examples.synthesis.tutorials.getting_started.{name}.main"
+            ),
             *args,
         ],
         cwd=ROOT,
@@ -78,6 +82,7 @@ def test_synthesis_source_trial_runs_text_and_local_file(
     tmp_path: Path, file_input: bool, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv("PYTHONPATH", raising=False)
+    expected: dict[tuple[int, ...], float]
     if file_input:
         source = tmp_path / "example.qmod"
         source.write_text(

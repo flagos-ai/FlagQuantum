@@ -372,3 +372,12 @@ Keep defaults deterministic, preserve requested precision and autograd, and
 avoid embedding device selection or performance assertions in an algorithm.
 Changes to root exports or protected result types require the public API change
 process rather than an algorithms-local compatibility wrapper.
+
+The existing Trotter builder delegates ordered first/second-order product-formula
+scheduling to Compiler's private `_pauli_schedule.py`. Algorithms still owns
+Hamiltonian reading, coefficient tensors, validation and Circuit composition;
+coefficients never pass through the static schedule, preserving autograd.
+The public `trotter_circuit` entry, term order, step arithmetic and identity-term
+refusal remain unchanged. Replacement tests exercise the unchanged consumer
+against independent dense evolution and live coefficient gradients in
+`tests/integration/test_synthesis_shared_pauli_schedule.py`.

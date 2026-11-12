@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/plasma/vlasov_ampere/vlasov_ampere.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "260ce15bfe818903c34c7ae3a6010ceca9784ae8e41b893a50c695a7d28b9a8f",
+  "native_entrypoint": "examples.synthesis.applications.plasma.vlasov_ampere.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_vlasov.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve all frozen constants, signed three-bit velocity, seven data bits entangled with seven reference bits, and eight block bits. Native helpers use numeric borrows and exact low-workspace callback phases. Independent local-matrix Circuit compares all 4194304 complex amplitudes at absolute tolerance1e-11, including global phase, and aggregate dirty-work probability below1e-22. Measured24physical/2work/22976operations/depth18578; frozen original24physical/2work/4467operations/depth3359 remains unchanged. Semantic/budget acceptance only, not resource parity."
+}

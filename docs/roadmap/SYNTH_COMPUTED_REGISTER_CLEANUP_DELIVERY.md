@@ -41,7 +41,7 @@ print(dict(program.probabilities(result, registers=("x", "y"))))
 Each input pair has probability 1/16, with sign -1 when x<=y. Probabilities alone
 do not prove this phase. This is an existing supported user example, not a new
 public cleanup API. The new contributor path is
-`python -m examples.synthesis.tutorials.composition.register_cleanup.main`, whose owned records compute
+`python -m tools.synthesis_compiler_examples.register_cleanup.main`, whose owned records compute
 less/equal flags successively into the same physical slot, phase each flag,
 clean each and reinitialize the retained flag to zero. It also retains a copied
 basis reference and an S-prepared complex input. Expected amplitudes are
@@ -143,5 +143,5 @@ Original Qmod sources/licenses/hashes and the four-original cohort are unchanged
 
 ```bash
 python -m pytest tests/team/compiler/test_construction_register_cleanup.py tests/integration/test_synthesis_register_cleanup.py -q
-python -m examples.synthesis.tutorials.composition.register_cleanup.main
+python -m tools.synthesis_compiler_examples.register_cleanup.main
 ```

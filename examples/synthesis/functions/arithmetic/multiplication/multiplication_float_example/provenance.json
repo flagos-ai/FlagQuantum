@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "3d7e136b2934dee8d16707de5b652df972523293927d8172e1dd034e9701be1b",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.multiplication.multiplication_float_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_exact_numbers.py",
+  "scope": "Quantum program only; associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain complete signed input domains and exact binary output scales. Explicit Annotated metadata has the same meaning as QNum[width, signed, fractional_bits]. Native |= creates fresh numeric outputs; literal ^= modifies a raw initialized word. Numeric probabilities decode verified formats without changing the raw reader. Both maximum originals compute max(3.5,a), including the integer-named file."
+}

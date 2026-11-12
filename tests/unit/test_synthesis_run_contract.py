@@ -4,6 +4,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -16,10 +17,11 @@ pytestmark = pytest.mark.unit
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def _contract():
-    return json.loads(
+def _contract() -> dict[str, Any]:
+    contract: dict[str, Any] = json.loads(
         (ROOT / "contracts/synthesis-program-run-v1-candidate.json").read_text()
     )
+    return contract
 
 
 def test_namespace_reexports_one_authoritative_services_implementation() -> None:
@@ -50,9 +52,28 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "prepare_ghz_state",
         "prepare_amplitudes",
         "prepare_state",
+        "inplace_prepare_amplitudes",
+        "inplace_prepare_state",
+        "drop",
+        "qpe",
+        "select_rotation",
         "QArray",
         "H",
         "S",
+        "RX",
+        "qft",
+        "qct_type2",
+        "qst_type2",
+        "qct_qst_type2",
+        "qct_qst_type1",
+        "unitary",
+        "modular_exp",
+        "suzuki_trotter",
+        "qdrift",
+        "min",
+        "max",
+        "RESET",
+        "quantize",
     )
     assert all(
         getattr(synth, name) is getattr(synthesis, name) for name in synth.__all__
@@ -62,8 +83,8 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
     from flagquantum.observables import X as OBSERVABLE_X
 
     assert set(synth.__all__).intersection(fq.__all__) == {"X"}
-    assert fq.X is OBSERVABLE_X and fq.X is not synth.X
-    namespace = {}
+    assert fq.X is OBSERVABLE_X and id(fq.X) != id(synth.X)
+    namespace: dict[str, object] = {}
     exec("from flagquantum.synth import *", namespace)
     assert set(namespace) - {"__builtins__"} == set(synth.__all__)
 
@@ -83,7 +104,7 @@ def test_namespace_reexports_one_authoritative_services_implementation() -> None
         "unknown",
     ],
 )
-def test_admission_checker_rejects_unapproved_contract_expansion(change) -> None:
+def test_admission_checker_rejects_unapproved_contract_expansion(change: str) -> None:
     contract = copy.deepcopy(_contract())
     if change == "authorization":
         contract["implementation_authorized"] = False

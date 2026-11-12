@@ -13,7 +13,7 @@ from flagquantum.compiler._construction.lowering import schedule_arithmetic
 from flagquantum.compiler._construction.selection import ConstructionBudget
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.runtime.execution_plan_contract import plan_execution_program
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 

@@ -22,7 +22,7 @@ def _propagate(instructions: Sequence[Instruction], data: int) -> torch.Tensor:
     work = torch.zeros(size, dtype=torch.int64)
     state = torch.zeros(size, dtype=torch.complex128)
     state[0] = 1
-    mixed = {"h", "ry", "rx", "u3"}
+    mixed = {"h", "ch", "ry", "rx", "u3"}
     for instruction in instructions:
         op, wires = instruction.name, instruction.wires
         target = wires[-1]
@@ -84,8 +84,13 @@ def _propagate(instructions: Sequence[Instruction], data: int) -> torch.Tensor:
                     f"quantum gate leaves the classical workspace domain {instruction}"
                 )
             flipped = state.index_select(0, permutation)
-            if op == "h":
-                state = _S * (state * (1 - 2 * bit(target)) + flipped)
+            if op in {"h", "ch"}:
+                transformed = _S * (state * (1 - 2 * bit(target)) + flipped)
+                state = (
+                    torch.where(bit(wires[0]).bool(), transformed, state)
+                    if op == "ch"
+                    else transformed
+                )
             elif op == "ry":
                 state = math.cos(phi / 2) * state + math.sin(phi / 2) * flipped * (
                     2 * bit(target) - 1
@@ -104,9 +109,9 @@ def _propagate(instructions: Sequence[Instruction], data: int) -> torch.Tensor:
                     c * phi_unit * lam_unit * state + s * phi_unit * flipped,
                     c * state - s * lam_unit * flipped,
                 )
-        elif op in {"phase", "cphase", "cz", "rz", "z", "s", "sdg"}:
+        elif op in {"phase", "cphase", "cz", "rz", "crz", "z", "s", "sdg"}:
             mask = bit(target)
-            if op in {"cphase", "cz"}:
+            if op in {"cphase", "cz", "crz"}:
                 mask &= bit(wires[0])
             if op in {"cz", "z"}:
                 phase = -1
@@ -119,6 +124,10 @@ def _propagate(instructions: Sequence[Instruction], data: int) -> torch.Tensor:
             state = torch.where(mask.bool(), state * phase, state)
             if op == "rz":
                 state *= cmath.exp(-0.5j * phi)
+            elif op == "crz":
+                state = torch.where(
+                    bit(wires[0]).bool(), state * cmath.exp(-0.5j * phi), state
+                )
         else:
             raise _UnsupportedWorkspaceError(f"unsupported {op}")
     if torch.any(work):

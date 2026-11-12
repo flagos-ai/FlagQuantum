@@ -38,14 +38,18 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- Synthesis support modules (`operations.py`, `physics.py`, `data.py`, `curve.py`,
+  `portfolio_reference.py`, and `quadratic_reference.py`) define source helpers or
+  mathematical data. Some `comparisons/circuit.py` entrypoints delegate to shared
+  references, and `synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py`
+  defines its quantum function through the synthesis namespace.
+
 - [`algorithms/fermion_orbital_rotation.py`](algorithms/fermion_orbital_rotation.py)
   differentiates a real orbital angle through domain tensor functions.
 
 - [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
   converts repeated-slot dynamic records to reference-normalized detector and
   observable flips using explicit measurement ordinals.
-- [`synthesis/run_qmod.py`](synthesis/run_qmod.py) verifies catalog source hashes
-  and delegates execution to the existing Qmod corpus audit tool.
 
 - [`qec/compiled_measurement_sampler.py`](qec/compiled_measurement_sampler.py)
   reuses one Clifford sampler for dense records, packed records and a b8 file

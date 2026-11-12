@@ -1,0 +1,8 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/exponentiation/example_exponentiation.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "70068a39d29b37ec30234de3ee46ed1f62353e6727c0b6a8c36a7ed1d5ef16df",
+  "hamiltonian_data_sha256": "32f4f830cc5a04656c0c1781b5043becaf0d94a883e013603465d7b7f9eac77f",
+  "scope": "Retained 12-qubit, 551-term quantum program with one first-order Lie product step. This is not exact matrix exponentiation. Complete companion Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Ordered coefficients, term identities and logical indices are retained in plain numeric JSON. Native Observable and Pauli evolution replace source-language structs. No source importer is used by this example."
+}

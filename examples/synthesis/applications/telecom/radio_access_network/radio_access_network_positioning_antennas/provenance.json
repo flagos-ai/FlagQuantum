@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/telecom/radio_access_network/radio_access_network_positioning_antennas.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5214a49242595d1fce3e1a86a13a1e76263a480494eab232e09d942f75b4a85c",
+  "native_entrypoint": "examples.synthesis.applications.telecom.radio_access_network.radio_access_network_positioning_antennas.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_penalty_qaoa.py",
+  "scope": "Complete 16-bit 4-layer quantum ansatz with every one of the 137 original cost terms and 8 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending.",
+  "native_semantic_adaptations": "Existing static Observable evolution, bounded quantum helpers, initial Hadamards, RX and static loops express exp(-i gamma H) followed by RX(beta). No new special-purpose synthesis API, production lowering or budget increase. Circuit references independently transform bounded Boolean spin truth tables; source data and native Observable coefficients are checked against frozen original literals. Zero workspace, both objective instruction sequences and actual resource refusals are verified. No user example imports Qmod."
+}

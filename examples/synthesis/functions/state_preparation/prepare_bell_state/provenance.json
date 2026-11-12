@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "6ef951d1c554ef34ea1fc466c084a704b4d1b95e9b59cce535ac53fe330fc995",
+  "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
+  "notebook_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state.ipynb",
+  "git_blob_sha1": "227ae4ca1025b1a5e479f992350a8032f8d33a34",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "09c5b71c320adc2c85a90d5b75ecd9507f190f760faddaf8150ff9c21eb045cc"
+    },
+    {
+      "index": 4,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_bell_state.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state."
+}

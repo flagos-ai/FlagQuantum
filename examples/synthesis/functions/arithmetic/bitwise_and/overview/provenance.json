@@ -1,0 +1,27 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/bitwise_and/bitwise_and_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "bc01fec962a6aae64cac37ff2300e77e59681488",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "d891b4a30b2f02cb9a66b39031df09ab389fe21f1f6ebf7b942c8df1addc5737"
+    },
+    {
+      "index": 3,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    },
+    {
+      "index": 5,
+      "sha256": "cf3d44e7bc2c071a53ec49ed1cb38be1aaafa160592dbf1a78862f46b9b17c3c"
+    },
+    {
+      "index": 6,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_and.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py",
+  "scope": "Complete local computational Notebook workflow: two-register AND and literal-mask AND, synthesis, execution and 1000 seeded samples each. Local execution replaces cloud sampling; no hardware claim.",
+  "native_semantic_adaptations": "Reuse both native unsigned qfunc examples and replace cloud samples/dataframe display with local executed named probabilities and seeded count dictionaries."
+}

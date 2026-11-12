@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/extremum/maximum_integer_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "a68827f07d67d85353e0bbbf1dade7382ba14cd2b961c0c25e9ddda3b9c7aedb",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.extremum.maximum_integer_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_exact_numbers.py",
+  "scope": "Quantum program only; associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain complete signed input domains and exact binary output scales. Explicit Annotated metadata has the same meaning as QNum[width, signed, fractional_bits]. Native |= creates fresh numeric outputs; literal ^= modifies a raw initialized word. Numeric probabilities decode verified formats without changing the raw reader. Both maximum originals compute max(3.5,a), including the integer-named file."
+}

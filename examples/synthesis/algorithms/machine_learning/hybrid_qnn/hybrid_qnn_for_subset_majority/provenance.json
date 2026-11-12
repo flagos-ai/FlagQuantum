@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "e7070708b270852ae1301029ebf4af23114487f8e1b7f21b3b14f4b54f781b6e",
+  "scope": "Quantum program only. The training, data preparation and optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve four features, 3 weights and 2 output qubits. Fixed source array shapes specialize the gate-only mutable helpers. R(theta,pi/2,q) preserves RY entrywise, but currently costs three rotations instead of one; no resource parity claim. ",
+  "native_entrypoint": "examples.synthesis.algorithms.machine_learning.hybrid_qnn.hybrid_qnn_for_subset_majority.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qml_encoders.py"
+}

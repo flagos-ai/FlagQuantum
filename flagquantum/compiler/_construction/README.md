@@ -8,8 +8,17 @@ selection and lowering to CircuitIR.
 
 | Module | Responsibility |
 | --- | --- |
+| `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
+| `fixed_point.py` | Bounded quantized scalar arithmetic, shared prepared-selector rows and actual-value discard-environment proofs |
+| `fixed_point_program.py` | Shared fresh bindings, read/drop ownership facts and reversible output-column lowering |
+| `frontend_quantized.py` | Resolve the explicit native quantization marker and closed Python numeric/helper bindings |
+| `frontend_numeric.py` | Exact native numeric assignment, typed extrema and explicit scalar format admission |
 | `frontend_program.py` | Capture source-retaining Python qfunc programs |
+| `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
+| `frontend_statements.py` | Dispatch captured statements and specialize bounded classical branches |
 | `frontend_ports.py` | Resolve annotation identities, quantum roles and bounded port types |
+| `frontend_regions.py` | Capture pure unitary regions and retain arithmetic/Const-only inverse boundaries |
+| `frontend_phase.py` | Read native real phase arithmetic and checked views for shared sparse expansion |
 | `frontend_preparation.py` | Capture bounded literal native preparation calls into existing register effects |
 | `frontend_views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
 | `frontend_python.py` | Capture the supported scalar Python expression profile |
@@ -22,14 +31,47 @@ selection and lowering to CircuitIR.
 
 `verify_operation_attributes` checks the operation's exact permitted attributes
 before the body verifier inspects operands or modifies its local storage state.
-The body verifier remains the single authority for effects and lifecycle. This
+The body verifier remains the single authority for effects and lifecycle.
+Pure unitary inverses use `../_hybrid/unitary_effects.py`, shared with the Qmod
+source boundary. `tests/integration/test_synthesis_native_unitary_regions.py`
+contains native, retained-source and independent Circuit scenarios. This
 ordering preserves the first rejection when malformed attributes and invalid
 storage use occur together.
+
+`_Body.capture_effects` owns nested effect-chain capture for QPE, coherent
+callbacks, reversible regions and reset loops. It flushes pending evolution at
+the boundaries, balances nesting counters, and detaches the captured operations
+while restoring the incoming effect unless the caller retains the forward body.
+Each caller still owns its storage, alias and allowed-operation checks. Capture
+failures discard partial effects and pending evolution before propagating the
+original diagnostic. Use the unitary-region, QPE-callback and reset-replay
+integration tests when changing this lifecycle.
 
 For a small change, start with the relevant accepted and rejected scenarios in
 `tests/team/compiler/test_construction_registers.py` and the end-to-end
 `tests/integration/test_synthesis_python_program.py`. The [synthesis examples](../../../examples/synthesis/README.md)
 provide runnable public programs and independent Circuit comparisons.
+
+For bounded quantized arithmetic, `FixedPointBranches` records at most five
+independent uniform preparations. Derived words retain the same 32 correlated
+rows through helper bindings; their storage widths do not create new independent
+inputs. Environment compression requires that the values actually dropped by the
+source distinguish all prepared branches. Cancellation does not erase a
+preparation witness, and a dropped value is not clean workspace. Ecosystem owns
+Qmod lexical recognition, helper roles and lifetime checks; Compiler owns this
+source-independent arithmetic and proof. The independent Python-AST consumer in
+`tests/unit/test_synth_fixed_point.py` and the complete original-source Circuit
+comparison in `tests/integration/test_synthesis_qmod_brownian_quantized.py` exercise
+the shared implementation. `frontend_quantized.py` now captures explicit native
+`quantize` markers with the same scalar, binding, selector and output-table
+authorities. It reuses native annotation/symbol resolution and `_Body` effect
+construction; the existing register verifier checks the emitted HybridProgram.
+Unmarked arithmetic remains exact within the closed twenty-bit/eight-fractional-
+bit domain and refuses rather than rounds when that bound is exceeded. Programs
+without the marker retain their existing exact capture path. Start with the
+complete native/Circuit tests in
+`tests/integration/test_synthesis_native_brownian.py` and the runnable Brownian
+example under `examples/synthesis/applications/finance/`.
 
 ## Profile development notes
 
@@ -56,7 +98,13 @@ are legal; overlapping physical input/output/workspace ports are not.
 Supported records are `arith.constant` with classical INDEX type and a checked
 nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`. The Qmod adapter also uses
 `qint.subtract_mod` for raw word subtraction modulo the declared result width.
-Qmod owns sign extension and binary-point alignment before this operation.
+The shared `numeric_expression.py` owns exact sign extension and binary-point
+alignment before this operation; the source adapter supplies syntax accessors
+and retains its diagnostics. Native numeric admission uses `frontend_numeric.py` and checked scalar
+`qreg.declare.numeric_format` metadata; raw storage widths retain their meaning.
+`tests/team/compiler/test_construction_numeric_expression.py` checks a second
+syntax consumer against independent full-domain rational/word oracles and
+nonzero XOR targets.
 Functions return one quantum integer expression. Definitions form an acyclic
 call graph. This is a closed verifier profile, not an extension to the existing
 classical hybrid verifier or its lowering pipeline.
@@ -115,7 +163,7 @@ This is a deterministic heuristic, not a general free/drop operation or optimal
 pebbling. The private `schedule_arithmetic` diagnostic includes peak workspace
 and compute/cleanup events; `lower_arithmetic` still returns CircuitIR.
 
-Run `python -m examples.synthesis.tutorials.workspace.workspace.main`, then
+Run `python -m tools.synthesis_compiler_examples.workspace.main`, then
 `tests/team/compiler/test_construction_scheduling.py` and
 `tests/integration/test_construction_scheduling_execution.py` for the shortest
 CS-05 contributor path. The [delivery record](../../../docs/roadmap/CS05_WORKSPACE_SCHEDULING_DELIVERY.md)
@@ -139,8 +187,8 @@ Each target stage retains its existing CoreIR content identity, and `validate()`
 rejects later mutations without compiling. Runtime confirmation still goes
 through CS06-A; C owns the single normal facade and named reading integration.
 
-Run `python -m examples.synthesis.tutorials.workspace.selection.main` for the real constraint-driven
-phase/cleanup workflow, or `python -m examples.synthesis.tutorials.workspace.selection_costs.main` for the
+Run `python -m tools.synthesis_compiler_examples.selection.main` for the real constraint-driven
+phase/cleanup workflow, or `python -m tools.synthesis_compiler_examples.selection_costs.main` for the
 complete static table and current manual comparison. Relevant tests are
 `tests/team/compiler/test_construction_selection.py` and
 `tests/integration/test_construction_selection_execution.py`. See the
@@ -177,6 +225,38 @@ initialization, ordered preparation and all arithmetic cleanup. The original
 Python arithmetic product retains its separate preparation/resource semantics.
 The fresh-register circuit assumes all-zero entry storage; this is an allocator
 precondition, not a proof about an externally supplied state.
+
+The bounded Boolean candidate also consumes exact numeric frontend graphs.
+Register composition keeps supported Boolean arithmetic segments when another
+segment exceeds the bounded Boolean profile. That segment uses the existing
+checked arithmetic scheduler and retains its refusal diagnostic. Construction
+budget exhaustion still propagates; a program with no Boolean segment retains
+the original Boolean refusal. Candidate resources measure the entire mixed
+circuit, including controls and cleanup, before selection.
+
+Expression XOR may read signed or fractional words when its verified graph
+returns a one-bit predicate. Numeric comparison inference encodes sign and scale
+before lowering. The destination remains an initialized unsigned register;
+non-predicate formatted value XOR remains rejected. The independent acceptance
+tests in `tests/integration/test_synthesis_native_mixed_candidates.py` exercise
+mixed schedules, differently scaled signed comparisons and nonzero coherent
+targets.
+Fraction alignment and signed comparison remain owned by `WordExpression`;
+the candidate implements their verified raw-word subtraction and sign extension.
+It never floors or truncates a fresh numeric assignment. Modular subtraction
+uses the declared SSA result width, and signed bitwise operands extend from their
+declared sign bit rather than from a narrowed constant's effective width.
+ANF products, intermediate widths, active inputs and emitted instructions retain
+their existing safety limits. Higher-degree monomials use the shared clean MCX
+ladder, with its actual gate count charged before emission and all work bits
+restored. An unavailable candidate remains an explicit selection refusal.
+
+For example, `result |= max(x*1.0, x*0.75+y*0.75-1.25)` on two unsigned two-bit
+inputs and `Output[QNum[5, False, 2]]` fits eleven physical bits, including two
+clean work bits. This is a general raw-word optimization, not a payoff-specific
+rule or a completed finance workflow. Full-domain nonzero XOR, coherent phase,
+signed extrema and actual budget checks live in
+`tests/integration/test_synthesis_native_numeric_boolean.py`.
 
 For a small change, edit the corresponding profile/lowering rule and run:
 
@@ -217,7 +297,8 @@ and numeric 0/1 constants. It validates all operands, including source that a
 host Python expression could short-circuit; source bodies are never executed.
 Multi-bit truthiness is rejected at the offending operand's source location.
 Boolean expressions compute coherent values; classical if/loops, side effects,
-bool parameters/literals and bitwise operators keep their existing refusals.
+bool parameters/literals keep their existing refusals. Unsigned word bitwise
+values use the existing qint.bitwise kernel; see the native value contract below.
 
 Reuse the existing graph: AND is qint.multiply, NOT is qint.equal with zero,
 and OR is their De Morgan composition. No Boolean opcode, type, kernel or
@@ -351,7 +432,7 @@ routing with physical layout retained. Its restored route is refused because
 the existing normalizer cancels restore-SWAP witnesses. That strict evidence
 check remains, and no unverified mapping is passed to Runtime.
 
-Run `python -m examples.synthesis.tutorials.control.register_phase.main`, then
+Run `python -m tools.synthesis_compiler_examples.register_phase.main`, then
 `tests/team/compiler/test_construction_register_phase.py` and
 `tests/integration/test_synthesis_register_phase.py`. The example is a private
 owned-IR contributor trial. The public Python predicate path is unchanged;
@@ -384,7 +465,7 @@ nested calls cannot hide phase effects. Limits include 32 call levels, the
 existing 4096 source/final model nodes, and 4096 expansion visits including
 empty calls. No alternative executor, public type or role manager is needed.
 
-Run `python -m examples.synthesis.tutorials.composition.const_calls.main` for the contributor-only owned-IR
+Run `python -m tools.synthesis_compiler_examples.const_calls.main` for the contributor-only owned-IR
 path, then `tests/team/compiler/test_construction_register_calls.py` and
 `tests/integration/test_synthesis_const_calls.py`. Public Python stays unchanged.
 Ecosystem now delegates native Const/Output helpers through this boundary; its
@@ -420,7 +501,7 @@ closed prerequisite for later local/within scopes, not a general unitary inverse
 Every helper verifies independently, including unused ones, and the expanded
 root verifies again through the existing call boundary.
 
-Run `python -m examples.synthesis.tutorials.composition.register_cleanup.main`, then
+Run `python -m tools.synthesis_compiler_examples.register_cleanup.main`, then
 `tests/team/compiler/test_construction_register_cleanup.py` and
 `tests/integration/test_synthesis_register_cleanup.py`. This owned-record example
 is for contributors; public Python/native source syntax is unchanged. See the
@@ -454,7 +535,7 @@ independently and the expanded root verifies again. Existing model/visit/depth
 budgets and exact phase targets remain. No Runtime allocator or public API is
 added, and native local/within/free/drop syntax is still outside admission.
 
-Run `python -m examples.synthesis.tutorials.composition.local_registers.main`, then
+Run `python -m tools.synthesis_compiler_examples.local_registers.main`, then
 `tests/team/compiler/test_construction_local_registers.py` and
 `tests/integration/test_synthesis_local_registers.py`. The contributor example
 returns x/y/reference, with every temporary hidden and zero. See the
@@ -630,3 +711,467 @@ native qfunc/Qmod workflow. Kernel tests are in
 acceptance covers coherent targets, controls, adjoints and both schedules.
 See [the AO-02 delivery record](../../../docs/roadmap/SYNTH_ARITHMETIC_AO02_DELIVERY.md)
 for proofs, scope, fixed receipts and the remaining AO-03/04 gap.
+
+## Native comparison and bitwise values
+
+Typed qfunc fresh assignment also captures comparison results and unsigned
+`&`, `|`, `^`, `~` values. The shared Python expression capture emits the existing
+comparison/word operations; it does not execute Python or translate via Qmod.
+Zero extension, result widths, ownership, lifetimes and resource ceilings remain
+checked by the existing pipeline. Quantum `~x` is finite-width complement; a
+classical-only inversion has no quantum width and is refused. Signed and
+fractional native annotations and in-place XOR are outside this extension.
+See the [native value contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-EXPRESSION-VALUES-20261109.md).
+
+Native `qft` capture reuses `qreg.qft` and the shared Fourier kernel. It requires
+a complete initialized writable register, including a complete mutable-helper
+alias; partial views are rejected without changing the register schema. Run
+`python -m pytest tests/integration/test_synthesis_native_fourier.py -q` for the
+independent Fourier matrix, bit ordering, coherence and ownership checks. See the
+[Fourier admission](../../../docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md).
+
+Native `qct_type2`, `qst_type2`, `qct_qst_type2` and `qct_qst_type1` reuse the
+existing bounded Type-I/Type-II register effects and gate factorization. Targets
+must be complete initialized writable registers of one through four qubits.
+The combined Type-II selector is one initialized, disjoint qubit. Its sine block
+retains the negative sign; Type I retains the positive imaginary sine-sector
+phase. See the [transform admission](../../../docs/api-changes/FQ-SYNTH-PYTHON-TRANSFORMS-UP06.md).
+
+Native unsigned `%` by a literal positive power of two lowers to the same
+`qint.bitwise` AND used by word expressions. Divisor one has a one-bit zero
+encoding. General/nonliteral/quantum divisors remain rejected. Run
+`python -m pytest tests/integration/test_synthesis_native_modulo.py -q` for
+independent XOR-permutation full states, input domains and ownership refusals.
+
+`frontend_matrix.py` reads bounded static built-in matrix data and translates
+native unitary calls to existing indexed `qreg.unitary` effects. Shared profile
+validation owns matrix shape/unitarity and storage legality; shared lowering owns
+the gate decomposition and absolute phase. No numerical matrix code is duplicated
+in capture. Run `tests/integration/test_synthesis_native_unitary.py` for independent
+matrix application, array/list bit order, helper views and fail-closed inputs.
+
+Typed qfunc arithmetic also admits `yes if predicate else no`. The scalar
+frontend owns predicate checks, branch-width inference and `qint.select`;
+register capture only admits the existing expression node. This is coherent
+value computation with fresh output storage, including checked helper calls.
+Run `tests/integration/test_synthesis_native_selection.py` for independent
+truth-table circuits, nested values, coherence, cleanup and refusal checks.
+
+Native `modular_exp(n,a,x,power)` emits the existing modular-permutation effect.
+Capture reads bounded static integers and complete numeric ports; the register
+validator owns coprimality, storage legality and width limits, while shared
+lowering owns permutations and scratch accounting. Run
+`tests/integration/test_synthesis_native_modular_exp.py` for independent modular
+truth tables, coherent amplitudes, helper borrowing and budget refusals.
+
+Native `suzuki_trotter` capture in `frontend_evolution.py` snapshots existing
+immutable Observable terms, validates logical target indices and emits existing
+Pauli rotations through the shared ordered product-formula schedule. It owns
+neither numerical execution nor a new Hamiltonian representation. Complete
+registers and mutable helpers are supported; Const, partial views and oversized
+formulas fail closed. Run `tests/integration/test_synthesis_native_evolution.py`
+for independent dense products, absolute phase, coherence and refusal checks.
+
+Native `qdrift` uses the same immutable Observable snapshot and Pauli effects.
+Compiler-owned `sampled_pauli_steps` also supplies the Qmod boundary, preserving
+ordered weighted draws, coefficient signs and identity phase. Complete writable
+targets admit 1..2048 samples; seed zero is reproducible, with an optional
+explicit static seed. Static operators admit up to 1024 terms, while the 4096
+effect ceiling and final resource budgets remain enforced. No new IR operation
+or executor is introduced. Run `tests/integration/test_synthesis_native_qdrift.py`
+and `tests/integration/test_synthesis_native_sampled_examples.py` for independent
+CDF/full-state references, the retained 551-term/2000-sample workloads and
+ownership/budget rejection. See the
+[local admission](../../../docs/api-changes/FQ-SYNTH-NATIVE-QDRIFT-20261110.md).
+
+Native classical specialization also admits `int` and `list[int]`, with exact
+built-in integer binding distinct from real binding and quantum numeric ports.
+Static `if` selects a branch from finite comparisons and boolean combinations;
+it never reads quantum values or calls host code. Integer range/index uses and
+branch nesting remain bounded, and helper calls restore binding scopes. Only
+the selected arm is captured; neither arm may contain branch control flow.
+Run `tests/integration/test_synthesis_native_integer_control.py` for complete
+BB84 statevectors, coherent borrowed signals, ownership and resource refusals.
+See the [integer and branch contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-INTEGER-CONTROL-20261109.md).
+
+Native `phase` over array elements and real arithmetic uses Compiler-owned
+`_phase_polynomial.expand_phase`, also consumed by the Qmod adapter. Source
+inspection is supplied by each frontend; shared bounded sparse expansion and
+existing indexed phase effects preserve physical reads and absolute phase.
+This is phase arithmetic, not signed/real quantum output assignment. Run
+`tests/integration/test_synthesis_native_polynomial_phase.py` and the native
+ADAPT-QAOA/MaxCut comparisons for the contributor golden path. See the
+[phase contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-POLYNOMIAL-PHASE-20261109.md).
+
+Native predicate-gated real phases reuse the same expansion with a checked
+`condition`. Conditions are scalar bits or one integer comparison. Read-only
+predicate and phase inputs may overlap; each encountered read retains an
+initialization witness. Writable helpers admit phase control, preserving
+disjoint arguments, Output-escape rejection and the existing adjoint boundary.
+Run `python -m examples.synthesis.algorithms.search_and_optimization.qaoa.main`
+and `tests/integration/test_synthesis_native_guarded_phase.py` for the contributor
+golden path. See the [guarded phase contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-GUARDED-PHASE-20261109.md).
+
+`frontend_control` also admits direct controlled Pauli-axis `R` rotations.
+Scalar array controls and borrowed helper formals resolve through
+`frontend_views.gate_target` into the existing `qreg.pauli_rotation` effect's
+`control_index`. Preserve disjoint underlying registers and writable targets;
+do not silently narrow a whole register or relax controlled-helper-call rules.
+Bounded comparison conditions use the existing compute/uncompute lifecycle.
+The [indexed scalar contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-INDEXED-PAULI-CONTROL-20261110.md)
+and `tests/integration/test_synthesis_native_indexed_rotations.py` cover the
+contributor path. No source-specific affine-rotation intrinsic is introduced.
+
+Native root arithmetic phases pass declared sign and binary scale through the
+existing `expand_phase` callbacks. `frontend_numeric.has_numeric_reads` selects
+this path; `frontend_phase` owns the source callbacks and rejects numeric
+conditions/comparisons and numeric factor fallback. Never interpret formatted
+words as unsigned raw bits. Initialization witnesses, coefficient/expansion
+limits and ordinary register-phase lowering stay shared. Numeric helper ports
+remain refused. Run `tests/integration/test_synthesis_native_numeric_phase.py`
+and the [typed diagonal QPE example](../../../examples/synthesis/functions/qpe/README.md)
+for the contributor path. This admits no generic quantum callback or new IR.
+
+### Initialized expression XOR
+
+Native root `target ^= expression` emits `qreg.xor` with the existing pure
+unsigned expression callee. The destination must already be initialized and be
+an owned unsigned scalar Output, disjoint from every input. The result must fit;
+smaller values XOR only the low destination bits. No zero target is assumed.
+Both arithmetic schedules and the checked Boolean XOR implementation are reused.
+The effect invalidates dependent cleanup proofs and does not establish a fresh
+computation or zero proof. It is its own inverse, so existing root adjoint and
+within/apply composition can reverse it without a separate arithmetic inverse.
+
+Signed/scaled expression reads, signed/scaled destinations, array/subregister
+assignment remains refused. Borrowed helper expression XOR follows the bounded
+whole-register contract below. Literal
+raw-mask XOR keeps its existing behavior. Every read witness survives source
+alias checking, including canceled target reads. The register verifier also
+rejects formatted operands rather than trusting native capture alone.
+
+Native reversible regions also admit closed compiler-generated predicate scratch:
+local declaration, direct compute, pure action, matching uncompute and release.
+`unitary_effects.unitary_regions` checks this structural boundary without adding
+lifecycle opcodes to `PURE_EFFECTS`. The register verifier still proves unchanged
+compute inputs, initialization, roles and cleanup. `frontend_regions` freshens
+local SSA identities when emitting the inverse, retaining compute/action/cleanup
+order while reversing adjacent unitary regions. User allocation, publication,
+drop and escaping locals remain outside the native unitary-region contract.
+
+Native predicate-X shares bounded predicate capture with Pauli-axis rotations.
+A comparison or Boolean composite controls one initialized writable scalar X
+location, disjoint from every condition input register. Raw all-ones array/scalar
+controls keep their existing direct-location path. Borrowed helper predicates
+resolve formal names against their active aliases, require complete raw registers
+in logical bit order and derive graph widths from actual values. Partial or
+permuted numeric views, array arithmetic, Output escape and arbitrary helper
+control remain outside this boundary.
+
+### Borrowed expression XOR
+
+Static mutable helpers can apply `target ^= expression` to complete unsigned
+scalar registers. `frontend_views` retains the active formal port metadata while
+inlining and restores it after nested calls. `frontend_xor` checks the writable
+destination and complete logical-bit view; `capture_expression` resolves inputs
+through actual aliases. Existing `qreg.xor` verification and lowering preserve
+nonzero targets, coherent amplitudes and cleaned arithmetic work. Inputs and
+targets cannot overlap. Partial/permuted views, arrays, numeric formats, implicit
+initialization and mutable helper adjoint/control remain refused. See the
+[borrowed XOR contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-BORROWED-XOR-20261110.md)
+and `tests/integration/test_synthesis_native_expression_xor.py`.
+
+### Caller-owned helper outputs
+
+A forward static helper may initialize a fresh caller-owned root local through
+an `Output` formal. `frontend_calls` emits the existing `qreg.call`; the register
+verifier checks freshness, disjoint read/write actuals, Const protection and
+complete formats. The caller retains ownership and must drop the initialized
+local before return. Dropping preserves its physical environment and correlations.
+Already initialized/dropped actuals, duplicate Outputs, Const destinations,
+Output calls under coherent control or inverse, and Output initialization through
+a mutable alias remain refused. No separate ownership proof or opcode is added.
+See `tests/integration/test_synthesis_native_owned_helper_outputs.py` for complete
+Circuit comparisons of bit, array, integer and signed fractional cases.
+
+```python
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import CX, H, Output, QBit, allocate, drop, qfunc
+
+@qfunc
+def prepare(out: Output[QBit]) -> None:
+    allocate(out)
+    H(out)
+
+@qfunc
+def main(q: Output[QBit]) -> None:
+    allocate(q)
+    private: QBit = QBit()
+    prepare(private)
+    CX(private, q)
+    drop(private)
+
+program = synth.synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+The published bit is maximally mixed; its private partner remains physical
+environment. This foundation does not yet admit the complete fixed-point finance examples.
+
+### Exact numeric predicates in coherent control
+
+Root scalar predicates may compare signed and binary-scaled `QNum` values using
+`==`, `!=`, `<`, `<=`, `>` and `>=`, including exact dyadic constants and bounded
+bitwise combinations of comparisons. An explicit comparison is required; a
+formatted number is never implicitly converted to a Boolean. Root predicate
+capture reuses `WordExpression` for exact scale alignment, sign extension and
+comparison, then the existing `qreg.compute`, controlled effect, uncompute and
+release sequence. No evaluator, opcode or Runtime path is added.
+
+For example, after allocating `x: Output[QNum[3, True, 1]]` and a disjoint
+`q: Output[QBit]`, `control(x > 0.5, lambda: R(0.73, math.pi / 2, q))`
+rotates only the strictly greater numeric values. A constant action such as
+`control(x > 0.5, lambda: phase(1, 0.73))` retains its branch-relative phase,
+including under `adjoint`. Negative encodings and exact threshold equality must
+not be interpreted through unsigned raw words.
+
+The existing eight-input-bit predicate bound and actual work, gate, qubit and
+execution-memory limits apply. Direct numeric callback expressions and arbitrary conditional numeric phases
+remain outside this slice. Unsupported reads fail early; no format is discarded to enter an unsigned
+fallback. Const targets, dropped or uninitialized reads, callback overlap and
+Output ownership changes retain their existing checks. Complete amplitudes,
+nonzero target XOR, absolute phase, scratch cleanup and budget refusals are
+covered by `tests/integration/test_synthesis_native_numeric_control.py`.
+
+### Bounded modular updates
+
+`frontend_increment` captures initialized raw unsigned scalar `+=`/`-=` with
+static integer offsets in -256..256. It reduces the offset modulo the complete
+target width and emits the existing indexed X ripple sequence. Borrowed targets
+must cover complete registers in logical bit order. A coherent control may call
+a helper containing exactly one such update; classical parameters are bound
+without executing host Python. Predicate capture and cleanup, alias checks,
+effect/call/AST budgets and gate lowering retain their existing authorities.
+Zero updates still witness initialization and writability, including raw
+controls. General controlled mutable helpers and partial numeric views remain
+outside this extension. Start with
+`tests/integration/test_synthesis_native_modular_increment.py` and the complete
+grid-walk state comparison in `tests/integration/test_synthesis_native_grid_walk.py`.
+
+### Bounded signed-clause phase oracles
+
+`frontend_cnf` captures `control(predicate, lambda: phase(1, pi))` when the
+predicate is a conjunction of signed indexed-bit disjunctions. Python
+`and`/`or`/`not` and `&`/`|`/`~` are captured as syntax, without evaluating the
+host function. The bound is eighty clauses, each with at most three literals.
+`cnf_phase` owns duplicate/tautology normalization and the reversible
+clause-flag/phase/uncompute algorithm; Qmod delegates to the same implementation.
+All original reads are verified even when normalization removes a tautology.
+Conditions reading at most twelve distinct bits retain the existing sparse
+phase path and its resource choices; the logical spelling is translated to the
+same bitwise AST. Wider CNF uses the shared clause algorithm.
+Existing register effects, indexed control-X decomposition and resource selection
+remain authoritative. Scratch is allocated, computed and restored explicitly;
+there is no truth-table enumeration or simulator substitution. Other angles,
+arithmetic conditions, mutable helper inversion and wider clauses retain their
+existing admission boundaries. The 67-variable original uses exact product MPS
+on its initialized input, while reduced coherent cases compare every complex
+amplitude. Start with `tests/integration/test_synthesis_native_wide_cnf.py`.
+
+### Const numeric reads in borrowed helpers
+
+Unconditional helpers may mix `Const[QNum]` inputs and plain writable quantum
+ports. Unsized scalar formals preserve the actual signed and binary scale
+format; explicit formats must match. Exact comparison predicates use the same
+word compiler inside nested borrowed helpers. Numeric inputs must borrow a
+whole register in logical bit order. Const and writable actuals use separate
+registers; overlapping arguments and Output publication remain rejected.
+
+Captured helper effects are checked by the existing register verifier in a
+verification-only initialized-storage envelope. This retains all gate, inverse,
+Const, initialization and lifecycle rules without introducing another effect
+interpreter or emitting synthetic allocations into the caller's circuit.
+Mutation of Const through nested helpers is also rejected. Full coherent state,
+absolute phase, nonzero writable targets, scratch cleanup and refusals are
+covered by `tests/integration/test_synthesis_native_numeric_borrowing.py`.
+Numeric within/apply locals remain unsupported;
+this foundation does not certify any complete finance original.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum.synth import (
+    Const, Output, QBit, QNum, R, allocate, control,
+    hadamard_transform, qfunc, synthesize,
+)
+
+
+@qfunc
+def payoff(value: Const[QNum], target: QBit) -> None:
+    control(value > 0.5, lambda: R(0.73, math.pi / 2, target))
+
+
+@qfunc
+def main(x: Output[QNum[3, True, 1]], q: Output[QBit]) -> None:
+    allocate(x)
+    allocate(q)
+    hadamard_transform(x)
+    payoff(x, q)
+
+
+program = synthesize(main, memory_limit_bytes=16 * 1024**2)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+Here the unsized helper reads the caller's signed three-bit word with one
+fractional bit. It compares numeric values, so encodings of negative values do
+not accidentally trigger the positive threshold. The caller owns all storage.
+
+### Read-only numeric inputs in controlled callbacks
+
+A controlled borrowed helper may read the same numeric input used by its outer
+predicate when that formal is `Const`. Writable callback storage remains disjoint
+from the predicate dependencies. Before expansion, the existing register verifier
+checks the captured effects with those dependencies marked Const. An actual
+argument does not gain writable permission merely by crossing a callback.
+
+Callbacks may compose exact comparison XOR, constant phase and nested controlled
+Pauli-axis rotations. Expression XOR computes a disjoint temporary, controls the
+XOR into the arbitrary target, then uncomputes and releases the temporary. Closed
+scratch regions can nest at most 32 levels, with matching compute/uncompute and
+no escaping references. The existing inverse path inverts each action while
+retaining the compute/uncompute envelope. Nested controlled Pauli rotations reuse
+the existing basis and parity network and keep the conditional scalar phase.
+All emitted storage and operations charge the ordinary synthesis budgets.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum.synth import (
+    Const, Output, QBit, QNum, R, allocate, control,
+    hadamard_transform, phase, qfunc, synthesize,
+)
+
+
+@qfunc
+def payoff(value: Const[QNum], target: QBit) -> None:
+    target ^= value > 1.5
+    control(value > 0.5, lambda: R(0.73, math.pi / 2, target))
+    phase(1, 0.37)
+
+
+@qfunc
+def main(x: Output[QNum[3, True, 1]], q: Output[QBit]) -> None:
+    allocate(x)
+    allocate(q)
+    hadamard_transform(x)
+    control(x > 0.5, lambda: payoff(x, q))
+
+
+program = synthesize(main, memory_limit_bytes=16 * 1024**2)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+Complete complex amplitudes, absolute phase, inverse action, arbitrary nonzero
+word targets, scratch cleanup, Const/alias/escape refusals and resource budgets
+are covered in `tests/integration/test_synthesis_native_numeric_callbacks.py`.
+The following slice admits exact numeric lexical locals in whole-register borrowed
+preparation helpers; full original acceptance is recorded separately.
+
+### Exact numeric lexical scratch and whole-register helpers
+
+Sized `QNum` and `Annotated[QNum, (width, signed, fraction)]` lexical locals use the
+same annotation parser and exact numeric assignment compiler as owned outputs.
+Within/apply computes the value once and uncomputes it after the action; explicit
+sign, scale and width must fit the complete expression. A dependent input cannot
+be modified before cleanup, and the local cannot escape. Numeric locals require
+quantum computation rather than a constant-only initialization.
+
+Whole-register borrowed helpers capture through the ordinary function-body
+context with actual storage references and numeric formats. The existing shared
+register verifier checks their complete effects and all Const permissions. Every
+local must close before the helper returns; fresh ownership or publication cannot
+escape. Existing slice/view helpers retain their bounded view path. Recursion,
+source, call and loop budgets apply to both. User code may combine helper-local
+arithmetic with coherent control and adjoint without exposing physical work bits.
+
+The native direct Rainbow payoff demonstrates complete preparation, inverse and
+reflection using these paths. Its user program and independent Circuit live in
+`examples/synthesis/applications/finance/rainbow_options/rainbow_options_direct_method/`.
+Exact numeric region boundary tests are in
+`tests/integration/test_synthesis_native_numeric_regions.py`; complete original,
+native and Circuit acceptance is in
+`tests/integration/test_synthesis_native_rainbow_direct.py`.
+
+### Repeated unsigned definitions and nested scalar phases
+
+One capture reuses an unsigned expression definition when its specialized AST,
+ordered input names and widths, and source location agree. This cache is local
+to that capture. Classical constants and input widths remain part of identity;
+different bindings cannot borrow an incompatible definition. Every compute,
+effect and cleanup call remains in the program, with its own storage and call
+location. The existing 4096-node verifier charges the resulting unique definitions
+and all dynamic operations; no source or construction ceiling is enlarged.
+
+The shared controlled-effect expander also preserves a predicate-only phase's
+implicit scalar coordinate when adding an outer control. That phase becomes a
+joint conditional phase, including its absolute scalar factor. Existing register
+verification still checks initialization, disjointness, borrowing and budgets.
+
+The complete molecular walk example groups selector leaves by their per-data-bit
+Pauli axis while retaining all sixteen leaves and the original power sequence.
+Independent matrix acceptance includes private data after drop and clean scratch.
+See `tests/integration/test_synthesis_native_molecular_walk.py`,
+`tests/integration/test_synthesis_native_expression_sharing.py` and
+`tests/integration/test_synthesis_native_nested_scalar_phase.py`.
+
+### Shared borrowed unitary helpers
+
+Native whole-register unsigned helpers with 32..512 checked effects can retain
+one capture-local template for repeated identical classical bindings and formal
+widths. At most 32 templates are retained. Small helpers and controlled, QPE and
+reset-loop callbacks continue through the existing expanded paths. This is an
+internal representation choice; users continue calling ordinary `@qfunc`
+functions. Const permissions, disjoint actuals, definite initialization, closed
+scratch and an acyclic call graph are checked before sharing and again at the
+register IR boundary. Channel and ownership effects are not shareable.
+
+`borrowed_unitary.py` supplies a layout for incoming storage to the existing
+scheduler; it never allocates or reinitializes caller data at execution time.
+Lowering remaps actual registers and scratch, reuses released lexical storage,
+preserves absolute phase under adjoint, and charges every emitted gate. Shared
+source does not enlarge the 100000-operation construction budget or permit
+selection from an incomplete portfolio. Target phase checks inspect reachable
+bodies rather than assuming every compact call contains a phase operation.
+
+Run `python -m pytest tests/integration/test_synthesis_native_unitary_calls.py -q`
+for complete amplitudes, nonzero bindings, remapping, inverse interference,
+workspace cleanup, Const laundering, malformed IR and actual resource limits.
+
+
+### Bounded predicate evaluation and closed-boundary normalization
+
+One-bit predicates with at most eight argument bits evaluate the existing
+Boolean word operations over at most 256 exact truth assignments. A bounded
+set of ordered decision diagrams supplies disjoint covers alongside the original
+cover; actual gate count, work and a deterministic tie break choose the mapping.
+The mapper shares signed-control input polarities between cubes and restores
+all inputs at the end. Existing source, intermediate-width, work, cube and gate
+ceilings remain. Every register schedule can reuse this predicate mapping;
+non-predicate word values keep their existing paths.
+
+At closed helper and scratch boundaries, the scheduler reuses existing exact
+inverse-cancellation passes over at most 4096 trailing instructions with a
+128-instruction overlap. It checks the operation cap before appending each
+source region and never accepts an incomplete portfolio. Programs with shared
+helpers may retain the existing computational-workspace layout hint. Simulation
+independently verifies the actual gates and clean return; Compiler does not
+certify numerical execution or suppress unsupported gates.
+
+Run `python -m pytest tests/integration/test_synthesis_native_predicate_truth.py -q`.
+The full double-slit native/Circuit/mathematical acceptance is in
+`tests/integration/test_synthesis_native_double_slit.py`.

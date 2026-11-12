@@ -11,6 +11,10 @@ from ..compiler._construction.selection import (
 from ..compiler._construction.target import Target
 from ..compiler._hybrid.model import HybridProgram
 from ..runtime.options import ExecutionOptions
+from ..runtime.planner.estimates import (
+    exact_basis_mps_bond,
+    exact_interval_mps_bond,
+)
 from .synthesis import Program, _complete
 
 _CONSTRAINTS = Constraints()
@@ -91,10 +95,46 @@ def synthesize_registers(
             report["qmod_measurement_profile"] = "deferred_private_measurements"
         if signed_registers:
             report["qmod_signed_registers"] = signed_registers
+    formats = tuple(
+        (op.attributes["name"], *op.attributes["numeric_format"])
+        for op in program.body.blocks[0].operations
+        if op.name == "qreg.declare" and "numeric_format" in op.attributes
+    )
+    if formats:
+        report["numeric_formats"] = formats
+    selected = selection.selected
+    if (
+        source_format == "python"
+        and selected is not None
+        and selected.target is not None
+        and selected.target.submitted.n_wires > 32
+        and not any(
+            gate.metadata.get("is_channel")
+            for gate in selected.target.submitted.instructions
+        )
+    ):
+        submitted = selected.target.submitted
+        if exact_basis_mps_bond(submitted) == 1:
+            exact_mps = True
+            report.update(
+                execution_profile="exact_computational_basis_mps",
+                intermediate_mps_bond_bound=1,
+            )
+        else:
+            bond = exact_interval_mps_bond(
+                tuple(gate.wires for gate in submitted.instructions)
+            )
+            if bond is not None:
+                exact_mps = True
+                report.update(
+                    execution_profile="exact_independent_interval_mps",
+                    intermediate_mps_bond_bound=bond,
+                )
     return _complete(
         selection,
         report,
         memory_limit_bytes=memory_limit_bytes,
         memory_limit_origin=memory_limit_origin,
         exact_mps=exact_mps,
+        numeric_formats=formats,
     )

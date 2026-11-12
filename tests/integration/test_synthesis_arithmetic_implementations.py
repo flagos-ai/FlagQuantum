@@ -2,6 +2,7 @@
 
 from collections.abc import Callable
 from itertools import product
+from pathlib import Path
 from typing import Literal
 
 import pytest
@@ -9,11 +10,9 @@ import torch
 
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
-from examples.synthesis.tutorials.arithmetic.arithmetic_implementations.comparisons.circuit import (
-    QMOD,
-)
 from examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main import main
 from flagquantum import synth
+from flagquantum.compiler import ResourceEstimate
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import (
     ArithmeticCandidate,
@@ -22,10 +21,15 @@ from flagquantum.compiler._construction.lowering import (
     adjoint_value_candidate,
     schedule_arithmetic,
 )
+from flagquantum.compiler._construction.register_lowering import RegisterCandidate
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
+QMOD = (
+    Path(__file__).resolve().parents[1]
+    / "fixtures/classiq_qmod/teaching_sources/tutorials/arithmetic/arithmetic_implementations/comparisons/source.qmod"
+).read_text()
 
 
 def square(x: int) -> int:
@@ -108,6 +112,7 @@ def test_native_and_qmod_complete_uniform_state_and_actual_costs(
         assert len(program.registers["result"]) == 4
         check_state(program, fq.run(program), expected)
         resource = program.report["resources"]
+        assert isinstance(resource, ResourceEstimate)
         assert (
             resource.n_qubits,
             program.report["workspace_qubits"],
@@ -124,6 +129,7 @@ def test_native_and_qmod_complete_uniform_state_and_actual_costs(
             old.resources.n_operations,
             old.resources.depth,
         ) == (16, 8, 81, 59)
+        assert isinstance(old.arithmetic, RegisterCandidate)
         segment = old.arithmetic.segments[0]
         assert {rule for _, rule in segment.implementation_rules} == {
             "square_symmetry",

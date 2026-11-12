@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/cybersecurity/link_monitoring/link_monitoring.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "387eea491283597dc063d0d759828acf2968776658a04c831f3f59ce076eef42",
+  "native_entrypoint": "examples.synthesis.applications.cybersecurity.link_monitoring.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_penalty_qaoa.py",
+  "scope": "Complete 12-bit 1-layer quantum ansatz with every one of the 21 original cost terms and 2 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending.",
+  "native_semantic_adaptations": "Existing static Observable evolution, bounded quantum helpers, initial Hadamards, RX and static loops express exp(-i gamma H) followed by RX(beta). No new special-purpose synthesis API, production lowering or budget increase. Circuit references independently transform bounded Boolean spin truth tables; source data and native Observable coefficients are checked against frozen original literals. Zero workspace, both objective instruction sequences and actual resource refusals are verified. No user example imports Qmod."
+}

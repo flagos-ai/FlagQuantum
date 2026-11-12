@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "777232ccf90d7004091b1d0648c9afdc9e72d2414e4d0fd7bc7c396538ed0a5a",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.algo_design_qce_tutorial.algo_design_qce_tutorial_part_ii.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qce_knapsack.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Expose the original unsigned3/2-bit fields as named QNum a and b. Native helpers compose preparation, the already-validated Knapsack cost helper and commuting Pauli X-sum mixers at beta/2, retaining all three layers and the inclusive weight<=12 predicate. Independent Circuit uses direct classical costs and RX gates. No raw physical bit indexing or source importer in user examples."
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_differential_equations_solvers/time_marching/time_marching.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "bd82222da499fc6fc5f07896173a88cadea46b68935df57d2374d18671ce31fe",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_differential_equations_solvers.time_marching.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_time_marching.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Unpack source11bitstruct into namedindex,time,block,signal,selector,unused andcounter ports with explicitaxispermutation. Retain4timeslices,7/8phases,selectorRY preparation andinverse,controlledlastblock/projector andmodulo8successdecrement. Explicit successmarker isprovedclean. Phasepolynomials andpublicrotation/adjoint/control reused;no productionchanges orcapincreases."
+}

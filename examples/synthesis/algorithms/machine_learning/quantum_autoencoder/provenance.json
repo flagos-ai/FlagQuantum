@@ -1,0 +1,6 @@
+{
+  "upstream_path": "algorithms/QML/quantum_autoencoder/quantum_autoencoder.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "b718ab54e71f1fd79d440342121af585522d8e2918f1a98b24a751b808f2d3c8",
+  "scope": "Quantum program only; notebook workflow is separate."
+}
