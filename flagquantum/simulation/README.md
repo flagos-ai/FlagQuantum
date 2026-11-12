@@ -924,3 +924,8 @@ Concrete register domains and the default truth-table connection reuse existing 
 Explicit [A/D tensor preprocessing](../../docs/development/TENSOR_DIAGONAL_REDUCTION.md)
 uses the existing register consumers with output groups captured before simplification.
 See `examples/algorithms/tensor_diagonal_reduction.py` for the numerical golden path.
+
+The explicit [ADCR fixed-point loop](../../docs/development/TENSOR_FIXED_POINT.md)
+reuses those owners with run-local cache and ordered-neighbor state. Its golden
+path is `examples/algorithms/tensor_fixed_point.py`; automatic width planning
+and default training integration remain outside this slice.

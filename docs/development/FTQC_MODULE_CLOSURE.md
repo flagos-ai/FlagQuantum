@@ -395,3 +395,14 @@ A/D acceptance: 146 new / 2,292 related / 84 CPU-TN tests pass; strict checks
 cover eight changed Python files, and new numerical owners plus example cover
 122 statements and 40 branches at 100%. Implementation `051cde78`. Counts stay
 20 closed / 1,260 open / 390 active parents and 1,184 capability records.
+
+The [default ADCR fixed point](TENSOR_FIXED_POINT.md) extends Q-0887.03 using
+existing pass owners with run-local negative caches, stable occurrence ownership
+and ordered adjacency. Source/native every-operation and per-round count traces
+are compared, including a three-round sparse graph; source zero-scalar NaNs
+remain explicit. Complete width planning/automatic policy and the parent remain
+open. Counts and capability IDs are unchanged.
+
+ADCR acceptance: 60 added / 2,352 related / 84 CPU-TN tests pass; strict7,
+new loop/example57 statements12 branches100%. Implementation `0f1dbb2b`.
+The source width planner and complete automatic entry remain open.
