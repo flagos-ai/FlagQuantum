@@ -593,3 +593,28 @@ source blob7205fa53b168a8b0de5429345dc25d2081979446 has been restored and verifi
 with seven cells/three code cells. Its relative JSON dump must run in a temporary
 output directory to preserve frozen reference assets. Evidence uses
 `g2-graph-source-`; the historical default-suite timeout remains recorded.
+
+
+### Complete score browser assets (2026-11-13)
+
+[Register score browser ownership](REGISTER_SCORE_ANIMATION.md) closes Q-0744
+and Q-0746 after the complete HTML/JS, thirteen-function and global disposition.
+Implementation de524ee0 adds manual domains through the shared renderer. The
+original HTML loading order, source script and original serialized MultiAnd data
+match native fixed graph geometry and computed styles. CDN relocation and the
+clock/probe are explicit test-boundary instrumentation. Offline embedded data,
+initial Adaptive style, transactional input admission and automatic fitting have
+separate native dispositions. Safe domain magnitudes, positive canvas dimensions
+and the 20,000-tick axis limit bound admitted browser work.
+
+Twenty-five new cases bring the browser set to53 passes, alongside343 concentrated
+and86 independent notebook/CPU/tensor passes without skips. Strict3, formatting,
+scope, architecture, internal IR and protected API pass. Python exporter coverage
+remains97%, while JS behavior has direct DOM assertions. Actual quantum primitives
+and source analytical cost models remain separate. Presentation adds zero gates,
+physical work or measurements.
+
+The current ledger has29 closed/1251 open/387 active parents and1187 capability
+records. Earlier totals above are dated historical batch snapshots. Q-0747's
+Python protocol and Q-0748's original JSON asset remain open. The full default-suite
+timeout remains recorded. G3 acceptance remains a separate stage.

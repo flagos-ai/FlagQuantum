@@ -72,10 +72,13 @@ preflight validation, newest-request ownership and imported sequential-view
 selection have separate acceptance. Fixed style now adds source axes, margins, sizing,
 font inheritance and lightblue lines through that same owner. Twelve new browser
 cases compare default ranges directly, including original MultiAnd JSON, two
-pixel ratios and HTTP reflow. Automatic native domains and the initial Adaptive
-style have explicit dispositions in REGISTER_SCORE_ANIMATION.md. Arbitrary
-manual domains and complete page-boundary acceptance remain open.
-Q-0744 and Q-0746 therefore remain open. The ordinary append and numerical paths
+pixel ratios and HTTP reflow. Automatic fitting, the initial Adaptive style and manual-domain controls now
+have explicit dispositions in REGISTER_SCORE_ANIMATION.md. The complete source
+HTML loading chain runs with only the test CDN relocation and clock/probe
+injection. Manual, fractional, descending and constant domains, failure admission
+and retry have source-backed acceptance. All thirteen JS functions and globals,
+HTML elements, dependencies and loader boundaries are accounted for. Q-0744 and
+Q-0746 close with their documented native admission and page organization. The ordinary append and numerical paths
 continue through their existing owners.
 
 ## Complete original test matrix
@@ -127,8 +130,9 @@ source tests and the native equivalents pass. Q-0747 remains open for the
 general foreign, partial-line inspection and custom-coordinate protocol boundaries listed
 above. Native reservation and subclass hooks are documented in
 [REGISTER_SCORE_RESERVATIONS.md](REGISTER_SCORE_RESERVATIONS.md). The accepted Q-0745 notebook and Q-0749 tests do not imply those missing
-implementation extensions are available. The builtin glyph adjoint follow-up is documented in [REGISTER_SCORE_SYMBOL_ADJOINT.md](REGISTER_SCORE_SYMBOL_ADJOINT.md). Q-0744/Q-0746 Javascript animation also
-remains separately open.
+implementation extensions are available. The builtin glyph adjoint follow-up is documented in [REGISTER_SCORE_SYMBOL_ADJOINT.md](REGISTER_SCORE_SYMBOL_ADJOINT.md). The Q-0744/Q-0746 HTML and JavaScript assets close after the complete browser
+and manual-domain audit in REGISTER_SCORE_ANIMATION.md. The original example
+JSON asset Q-0748 remains a separate parent.
 
 Run the source-backed local comparison in the locked environment.
 

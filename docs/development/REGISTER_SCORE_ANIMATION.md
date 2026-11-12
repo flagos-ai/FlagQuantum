@@ -55,7 +55,7 @@ Every source JavaScript function is accounted for below.
 
 | Source function | Native owner and disposition |
 | --- | --- |
-| `makeCanvas` | Existing SVG creation and viewport sizing in `register_score_html.py`. Fixed style now implements source margins, scales and numeric axes. Domains are fitted to native records, while arbitrary manual source domains remain open. |
+| `makeCanvas` | Existing SVG creation and viewport sizing in `register_score_html.py`. Fixed style now implements source margins, scales and numeric axes. The bounds form supplies manual domains, and Fit selected view restores domains fitted to native records. |
 | `drawVlines` | `join(vertical, ...)` preserves x keys, lower-endpoint growth, movement, collapse and delayed removal. |
 | `drawHlines` | `join(horizontal, ...)` preserves lane/start keys, growth, movement, collapse and delayed removal. Adaptive style retains quantum/classical coloring. Fixed style uses source lightblue lines. |
 | `drawCircles` | `portGlyph`, `updatePort` and `join(ports, ...)` preserve filled/open polarity, radius five, motion and opacity. |
@@ -215,8 +215,9 @@ manual domains. The native selected or imported view determines domains
 `width = (max_x + 4) * 55 + 82`,
 `height = (max_y + 1) * 42 + 62`,
 `x = 46 + (column + 2) * 55` and `y = 26 + lane * 42`.
-This automatic domain policy is an explicit adaptation. Arbitrary caller-selected
-manual domains and general-purpose D3 scales remain outside this accepted slice.
+This automatic domain policy is an explicit adaptation. The subsequent manual-domain
+batch below supplies caller-selected bounds. General-purpose D3 scale APIs belong
+to the test dependency and have no native public export.
 
 `axisTicks` supplies linear 1/2/5 ticks, decimal precision, grouped thousands
 and the Unicode minus sign. `drawAxes` implements the source bottom/left tick
@@ -251,9 +252,80 @@ also reproduces its long boundary-label crowding, while Adaptive supplies the
 previously accepted spacing. Initial font, y-tick order and polygon-attribute
 differences were corrected in production, with the failed logs retained.
 
-Evidence uses the `g2-score-axes-` prefix. Full HTML/JS parent acceptance remains
-open for manual-domain and complete page-boundary disposition. Q-0747 generic
-wire-symbol admission remains separately open.
+Evidence uses the `g2-score-axes-` prefix. At the fixed-style batch boundary, full HTML/JS parent acceptance remained
+open for manual domains and complete page-boundary disposition. The following
+batch closes those two assets. Q-0747 generic wire-symbol admission remains open.
+
+## Manual domains and complete browser asset disposition
+
+Implementation `de524ee0` completes the existing renderer's manual-domain path.
+Enter X start/end and Y start/end, then submit Apply bounds. Submission selects
+Fixed with numeric axes. Committed bounds survive column/view switches and JSON
+imports. Fit selected view releases the manual override and fills the fields
+from the currently selected view. Invalid edits append an error and retain the
+committed bounds, selection, SVG geometry and keyed nodes. A corrected retry
+uses the same form. This UI and its state ownership are native adaptations of
+the source HTML's manually edited `xDomain` and `yDomain` declarations.
+
+The admitted domains have finite endpoint magnitudes at most
+`Number.MAX_SAFE_INTEGER`, positive finite canvas width/height, safe integer tick
+indices and at most 20,000 ticks per axis. Equal endpoints use the source
+constant-scale midpoint and zero-decimal tick formatter. Descending domains are
+supported when the resulting canvas dimensions remain positive. Fractional,
+negative and narrow intervals preserve tick order and reciprocal tick arithmetic.
+The native admission limits bound browser work and reject invalid dimensions
+before committing view state. Source D3 and SVG handling of values outside this
+surface is explicitly adapted to transactional diagnostics.
+
+Widths and heights retain the source's ordered margin/inset additions.
+`linearPosition` preserves domain/range normalization and ordered interpolation,
+including extrapolation. The ModPlus baseline is the upper declared y endpoint,
+including for exit animations. Replacing these with the algebraically simplified
+55/42 pixel formulas changes floating-point results for narrow domains. The
+first retained browser log exposes the difference
+`82.00000055` versus `82.00000055000001`. Production now uses the source operation
+order and interpolation. The same initial log exposed zero-span tick precision,
+which now follows the source. Rounded negative zero is suppressed as in D3.
+
+The complete original HTML is executed through its actual script-loading and
+`make_from_data("musical_score_example.json")` flow. The test relocates only its
+CDN script URL to the hash-pinned local D3 bundle, injects the deterministic
+clock/probe, serves the original JS bytes, and provides JSON generated by the
+original MultiAnd serializer at the expected relative filename. Source domain
+statements, graph container and renderer call remain the original HTML content.
+The native fixed view matches its complete geometry, tick labels, fonts and
+shape attributes. This test exercises the source HTML structure and loading
+order. The separately inventoried original example JSON asset Q-0748 remains
+outside that generated-data test.
+
+| Complete asset surface | Native owner or explicit disposition |
+| --- | --- |
+| HTML language, encoding, title and graph container | Existing self-contained English HTML document, responsive metadata and score container. Native title and margins follow the application viewer. |
+| D3 CDN script and separate score script | Existing DOM/maps/animation owner embeds its code. Reference D3 is test-only and hash-pinned. |
+| Manual domain declarations | Bounds form, `scoreDomains`, `validateDomains` and `linearPosition`, with the admission surface above. |
+| Initial relative JSON request | Embedded records are the offline default. The URL form owns requested HTTP loads, including original relative-filename source execution. |
+| Serving/CORS instructions | Local-file and cross-origin failures, HTTP diagnostics, retries and existing error history are covered by loading tests and the documented HTTP workflow. |
+| All thirteen source JS functions | Each row in the function ownership table above is implemented through the existing shared renderer or its documented native adaptation. |
+| Scale/axis constructors and derived globals | Source constants, domains, dimensions, normalization, ticks, margins, typography and responsive SVG have explicit native owners. D3's general API stays a reference dependency. |
+| Native controls, two layouts and glyph DOM wrappers | Application-owned UI and keyed-node representation. SVG graph geometry and behavior are compared independently from page chrome. |
+
+Q-0744 and Q-0746 close after this complete asset disposition. Their closure
+includes the documented native admission and page-organization adaptations.
+Q-0747's general Python drawing protocol and Q-0748's original JSON asset remain
+separate parents.
+
+Twenty-five new cases cover manual-domain matrices, nine invalid-domain classes
+plus the oversized constant endpoint, retry after a committed edit, automatic
+fit, view/style switches, HTTP success/failure and the original HTML workflow.
+The complete browser set passes 53 cases in 44.41 seconds on 2026-11-13.
+The concentrated set passes 343 cases in 28.49 seconds with eight existing
+warnings. Independent notebook/CPU/tensor checks pass 86 cases in 19.10 seconds
+with two existing warnings. No cases skip. Strict typing of three files,
+Black/Ruff/scope/architecture/internal IR/protected API pass. Exporter coverage
+remains 46/46 statements and 12/14 branches, 97% combined. JavaScript has DOM
+behavior assertions without an instrumented coverage percentage. The manual-form
+and completed original-MultiAnd screenshot has been visually inspected.
+Evidence uses `g2-score-domains-`.
 
 ## Separate resource accounts
 
