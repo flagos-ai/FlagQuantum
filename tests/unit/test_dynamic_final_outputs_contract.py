@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from dataclasses import replace
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -99,7 +100,9 @@ def test_inconsistent_replay_is_refused_before_sampling(
     plan = fq.plan(feedback, options=fq.ExecutionOptions(shots=8), outputs=fq.samples())
     ir = plan_program(plan)
     malformed = replace(ir, measurements=(replace(ir.measurements[0], shots=9),))
-    monkeypatch.setattr(plan_execution, "plan_program", lambda _: malformed)
+    monkeypatch.setattr(
+        plan_execution, "CircuitIR", SimpleNamespace(from_dict=lambda _: malformed)
+    )
 
     def must_not_run() -> None:
         pytest.fail("inconsistent replay reached the dynamic sampler")
