@@ -115,7 +115,9 @@ function element(parent, name, attributes = {}) {
 }
 
 function label(parent, x, y, text, size) {
-  element(parent, "text", {x, y, "font-size": size}).textContent = text;
+  const node = element(parent, "text", {x, y, "font-size": size});
+  node.textContent = text;
+  return node;
 }
 
 function portGlyph(svg, port, x, y) {
@@ -128,12 +130,12 @@ function portGlyph(svg, port, x, y) {
   });
   if (kind === "Circle") {
     element(group, "circle", {r: 5, stroke: "black", fill: attrs.filled ? "black" : "white"});
-    return;
+    return group;
   }
   if (kind === "ModPlus") {
     element(group, "circle", {r: 7, stroke: "black", fill: "none"});
     element(group, "path", {d: "M 0 -7 l 0 14 M -7 0 l 14 0", stroke: "black"});
-    return;
+    return group;
   }
   const w = Math.max(22, attrs.text.length * 3.5 + 6);
   if (kind === "TextBox") {
@@ -146,34 +148,157 @@ function portGlyph(svg, port, x, y) {
     element(group, "polygon", {points: outline, fill: "white", stroke: "black"});
   }
   label(group, 0, 0, attrs.text, attrs.fontsize || 12);
+  return group;
+}
+
+// Keyed joins and cubic-in-out timing follow the frozen source's D3 transitions.
+const svg = element(container, "svg", {role: "img", "aria-label": "Register musical score"});
+const horizontal = new Map();
+const vertical = new Map();
+const captions = new Map();
+const ports = new Map();
+let frame = 0;
+let tweens = [];
+
+function transition(node, targets, finish = () => {}) {
+  const from = {};
+  for (const name of Object.keys(targets)) {
+    const value = node.getAttribute(name);
+    from[name] = name === "transform"
+      ? value.slice(10, -1).split(",").map(Number) : Number(value);
+  }
+  tweens.push({node, from, targets, finish});
+}
+
+function join(nodes, rows, key, enter, update, exit) {
+  const seen = new Set();
+  for (const data of rows) {
+    const identity = key(data);
+    seen.add(identity);
+    let record = nodes.get(identity);
+    if (!record) {
+      record = {node: enter(data), data};
+      nodes.set(identity, record);
+    }
+    record.data = data;
+    update(record.node, data);
+  }
+  for (const [identity, record] of nodes) {
+    if (!seen.has(identity)) {
+      exit(record.node, record.data, () => {
+        record.node.remove();
+        nodes.delete(identity);
+      });
+    }
+  }
+}
+
+function updatePort(group, port) {
+  const attrs = port.symb_attributes;
+  group.dataset.column = port.seq_x;
+  group.dataset.lane = port.y;
+  if (port.symb_cls === "Circle") {
+    group.querySelector("circle").setAttribute("fill", attrs.filled ? "black" : "white");
+  } else if (port.symb_cls !== "ModPlus") {
+    const text = group.querySelector("text");
+    text.textContent = attrs.text;
+    text.setAttribute("font-size", attrs.fontsize || 12);
+    const w = Math.max(22, attrs.text.length * 3.5 + 6);
+    const rect = group.querySelector("rect");
+    if (rect) {
+      rect.setAttribute("x", -w);
+      rect.setAttribute("width", 2 * w);
+    }
+    const polygon = group.querySelector("polygon");
+    if (polygon) polygon.setAttribute("points", port.symb_cls === "RarrowTextBox"
+      ? `${-w},-14 ${w-7},-14 ${w},0 ${w-7},14 ${-w},14`
+      : `${-w},0 ${7-w},-14 ${w},-14 ${w},14 ${7-w},14`);
+  }
 }
 
 function render() {
+  cancelAnimationFrame(frame);
+  tweens = [];
   const data = views[selector.value];
   const cell = data.soqs.reduce((size, port) => Math.max(
     size, (port.symb_attributes.text || "").length * 7 + 14
   ), 55);
   const x = column => (column + 2) * cell;
   const y = lane => 32 + lane * 42;
+  const baseline = y(data.max_y + 1);
   const width = x(data.max_x + 1);
   const height = y(data.max_y) + 28;
-  container.replaceChildren();
-  const svg = element(container, "svg", {
-    width, height, viewBox: `0 0 ${width} ${height}`,
-    role: "img", "aria-label": "Register musical score"
-  });
-  for (const line of data.hlines) {
-    element(svg, "line", {class: "h", x1: x(line.seq_x_start), x2: x(line.seq_x_end),
-      y1: y(line.y), y2: y(line.y),
-      stroke: line.flavor === "HLineFlavor.CLASSICAL" ? "blue" : "black"});
+  for (const [name, value] of Object.entries({width, height, viewBox: `0 0 ${width} ${height}`})) {
+    svg.setAttribute(name, value);
   }
-  for (const line of data.vlines) {
-    element(svg, "line", {class: "v", x1: x(line.x), x2: x(line.x),
-      y1: y(line.bottom_y), y2: y(line.top_y), stroke: "black"});
-    const text = typeof line.label === "string" ? line.label : line.label.text;
-    if (text) label(svg, x(line.x), y(line.bottom_y) - 22, text, 11);
+  join(horizontal, data.hlines, d => `${d.y},${d.seq_x_start}`,
+    d => element(svg, "line", {class: "h", x1: x(d.seq_x_start), x2: x(d.seq_x_start),
+      y1: y(d.y), y2: y(d.y)}),
+    (node, d) => {
+      node.setAttribute("stroke", d.flavor === "HLineFlavor.CLASSICAL" ? "blue" : "black");
+      transition(node, {x1: x(d.seq_x_start), x2: x(d.seq_x_end), y1: y(d.y), y2: y(d.y)});
+    },
+    (node, d, remove) => transition(node, {x2: x(d.seq_x_start)}, remove)
+  );
+  join(vertical, data.vlines, d => d.x,
+    d => element(svg, "line", {class: "v", stroke: "black", x1: x(d.x), x2: x(d.x),
+      y1: y(d.bottom_y), y2: y(d.bottom_y)}),
+    (node, d) => transition(node, {x1: x(d.x), x2: x(d.x), y1: y(d.bottom_y), y2: y(d.top_y)}),
+    (node, d, remove) => transition(node, {y2: y(d.bottom_y)}, remove)
+  );
+  const caption = d => typeof d.label === "string" ? d.label : d.label.text;
+  join(captions, data.vlines.filter(d => caption(d)), d => d.x,
+    d => {
+      const node = label(svg, x(d.x), y(d.bottom_y) - 22, caption(d), 11);
+      node.setAttribute("opacity", 0);
+      return node;
+    },
+    (node, d) => {
+      node.textContent = caption(d);
+      transition(node, {x: x(d.x), y: y(d.bottom_y) - 22, opacity: 1});
+    },
+    (node, d, remove) => transition(node, {opacity: 0}, remove)
+  );
+  join(ports, data.soqs, d => `${d.symb_cls},${d.ident}`,
+    d => {
+      const startY = d.symb_cls === "Circle" ? 0 : d.symb_cls === "ModPlus" ? baseline : y(d.y);
+      const node = portGlyph(svg, d, x(d.seq_x), startY);
+      node.setAttribute("opacity", 0);
+      return node;
+    },
+    (node, d) => {
+      updatePort(node, d);
+      transition(node, {transform: [x(d.seq_x), y(d.y)], opacity: 1});
+    },
+    (node, d, remove) => {
+      const targets = {opacity: 0};
+      if (d.symb_cls === "Circle" || d.symb_cls === "ModPlus") {
+        targets.transform = [x(d.seq_x), d.symb_cls === "Circle" ? 0 : baseline];
+      }
+      transition(node, targets, remove);
+    }
+  );
+  // Keep line layers below ports even when a later update introduces new lines.
+  for (const record of [...vertical.values()].reverse()) svg.prepend(record.node);
+  for (const record of [...horizontal.values()].reverse()) svg.prepend(record.node);
+  const started = performance.now();
+  function tick(now) {
+    const t = Math.max(0, Math.min(1, (now - started) / 750));
+    const eased = t < 0.5 ? 4 * t * t * t : 1 - 4 * (1 - t) ** 3;
+    for (const {node, from, targets, finish} of tweens) {
+      for (const [name, target] of Object.entries(targets)) {
+        if (name === "transform") {
+          const xy = target.map((end, i) => from[name][i] + (end - from[name][i]) * eased);
+          node.setAttribute(name, `translate(${xy[0]},${xy[1]})`);
+        } else {
+          node.setAttribute(name, from[name] + (target - from[name]) * eased);
+        }
+      }
+      if (t === 1) finish();
+    }
+    if (t < 1) frame = requestAnimationFrame(tick);
   }
-  for (const port of data.soqs) portGlyph(svg, port, x(port.seq_x), y(port.y));
+  frame = requestAnimationFrame(tick);
 }
 
 selector.addEventListener("change", render);
@@ -184,7 +309,12 @@ render();
 
 
 def export_register_score_html(data: MusicalScoreData) -> str:
-    """Export an offline HTML page with sequential and dependency column views."""
+    """Export an offline score with keyed, 750 ms cubic-in-out view transitions.
+
+    SVG nodes retain identity across view changes. Fresh lines grow, ports fade
+    in, and retired nodes complete their exit animation before removal. Rapid
+    changes resume from current geometry through the same shared score data.
+    """
     payload = json.dumps(
         {"sequential": data, "dependency": _dependency_view(data)}, ensure_ascii=False
     )
