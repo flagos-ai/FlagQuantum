@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/logistics/vehicle_routing_problem/vehicle_routing_problem.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "b88589a757a939a36a20b14ce9c062653dc595d92ced31343904f000ae1002ec",
+  "native_entrypoint": "examples.synthesis.applications.logistics.vehicle_routing_problem.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_flow_costs.py",
+  "scope": "Complete retained 16-bit 12-layer quantum program. Two nonzero parameter vectors and both width/depth objectives; raw full-state comparison with independent factored classical costs and Circuit parities. Complete Notebook optimizer workflow remains pending.",
+  "native_semantic_adaptations": "Parameters retain interleaved gamma/beta order. Native static loops replace repeat/apply_to_all. Source coefficients, widths and layers are unchanged. No source importer in user examples. Each reference factor enumerates at most six logical bits, with independent Walsh spin-parity Circuit construction; no Compiler algorithms reused. Routing data are explicit finite classical arrays; preserve mixer RX(0.1*beta), both depot directions and all row/column constraints. Split diagonal phases change static instruction scheduling versus the original; no efficiency claim."
+}

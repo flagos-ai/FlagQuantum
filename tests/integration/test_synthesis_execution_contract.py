@@ -11,7 +11,6 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis.tutorials.workspace.workspace.main import candidate, pressure
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import estimate_resources
 from flagquantum.compiler._construction.constraints import CircuitLimits
@@ -26,6 +25,7 @@ from flagquantum.services._synthesis_execution import (
     ExecutionContractError,
     inspect_execution,
 )
+from tools.synthesis_compiler_examples.workspace.main import candidate, pressure
 
 pytestmark = pytest.mark.integration
 
@@ -37,7 +37,7 @@ def test_execution_contract_example_runs_as_documented() -> None:
         [
             sys.executable,
             "-m",
-            "examples.synthesis.tutorials.workspace.execution_contract.main",
+            "tools.synthesis_compiler_examples.execution_contract.main",
         ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,

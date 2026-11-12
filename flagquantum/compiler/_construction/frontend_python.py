@@ -22,7 +22,7 @@ from .._hybrid.model import (
 )
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
 from .profile import _positive_integer, uint_type, verify_construction
-from .ranges import unsigned_width
+from .ranges import bitwise_width, unsigned_width
 
 
 @dataclass(frozen=True)
@@ -475,6 +475,34 @@ def capture_named(
         )
         return result, bound
 
+    def bitwise(
+        operator: str,
+        operands: tuple[_Expression, ...],
+        source: _Source,
+        node: ast.expr,
+    ) -> _Expression:
+        if all(operand[0].type == INDEX for operand in operands):
+            if operator == "~":
+                _error(source, node, "bitwise", "inversion requires a quantum width")
+            left, right = (operand[1] for operand in operands)
+            folded = {"&": left & right, "|": left | right, "^": left ^ right}
+            return constant(folded[operator], source, node)
+        widths = tuple(unsigned_width(operand[1]) for operand in operands)
+        width = bitwise_width(operator, widths, (False,) * len(operands))
+        result = value(width)
+        emit(
+            Operation(
+                "qint.bitwise",
+                tuple(operand[0] for operand in operands),
+                (result,),
+                attributes={"operator": operator},
+                location=source.location(node),
+            ),
+            source,
+            node,
+        )
+        return result, (1 << width) - 1
+
     def expression(
         node: ast.expr, env: Mapping[str, _Expression], source: _Source, depth: int = 0
     ) -> _Expression:
@@ -496,6 +524,10 @@ def capture_named(
             return env[node.id]
         if isinstance(node, ast.Constant):
             return constant(node.value, source, node)
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Invert):
+            return bitwise(
+                "~", (expression(node.operand, env, source, depth + 1),), source, node
+            )
         if isinstance(node, ast.IfExp):
             predicate = expression(node.test, env, source, depth + 1)
             if predicate[1] > 1 or (
@@ -599,6 +631,28 @@ def capture_named(
             return left
         if isinstance(node, ast.BinOp):
             left = expression(node.left, env, source, depth + 1)
+            if isinstance(node.op, ast.Mod):
+                divisor = node.right
+                if (
+                    not isinstance(divisor, ast.Constant)
+                    or type(divisor.value) is not int
+                    or not 1 <= divisor.value <= 1 << 256
+                    or divisor.value & (divisor.value - 1)
+                ):
+                    _error(
+                        source,
+                        divisor,
+                        "operator",
+                        "unsigned modulo requires a literal positive power of two at most 2**256",
+                    )
+                mask = constant(divisor.value - 1, source, divisor)
+                return bitwise("&", (left, mask), source, node)
+            if isinstance(node.op, (ast.BitAnd, ast.BitOr, ast.BitXor)):
+                right = expression(node.right, env, source, depth + 1)
+                operator = {ast.BitAnd: "&", ast.BitOr: "|", ast.BitXor: "^"}[
+                    type(node.op)
+                ]
+                return bitwise(operator, (left, right), source, node)
             if isinstance(node.op, ast.Pow):
                 if (
                     not isinstance(node.right, ast.Constant)
@@ -623,7 +677,7 @@ def capture_named(
                     source,
                     node,
                     "operator",
-                    "only +, * and literal powers 1..8 are supported; unsigned subtraction/division/modulo need a separate contract",
+                    "only +, * and literal powers 1..8 are supported; unsigned subtraction/division and general modulo need a separate contract",
                 )
             return arithmetic(opcode, left, right, source, node)
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):

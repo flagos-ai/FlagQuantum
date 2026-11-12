@@ -4,7 +4,7 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis.applications.machine_learning.autoencoder.comparisons.circuit import (
+from examples.synthesis.algorithms.machine_learning.quantum_autoencoder.comparisons.circuit import (
     run_example,
 )
 from flagquantum import synth

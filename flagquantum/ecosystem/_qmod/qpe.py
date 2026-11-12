@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-import math
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
+from ...compiler._construction.qpe_control import emit_controlled_effect
 from ...compiler._construction.register_profile import register_width
 from ...compiler._hybrid.model import Operation, Value
 from .angles import REAL_LITERAL
@@ -261,113 +261,15 @@ def lower_qpe(owner: _Adapt, statement: Statement, index: str) -> None:
 def _controlled(
     owner: _Adapt, token: Token, control: Value, bit: int, op: Operation
 ) -> None:
-    values, attrs = op.operands[1:], op.attributes
+    def emit(
+        name: str, values: tuple[Value, ...], attributes: dict[str, object]
+    ) -> None:
+        owner.effect_op(name, token, values, **attributes)
 
-    def phase(locations: tuple[tuple[Value, int], ...], angle: float) -> None:
-        all_locations = ((control, bit), *locations)
-        owner.effect_op(
-            "qreg.control_phase",
-            token,
-            tuple(value for value, _ in all_locations),
-            indices=tuple(index for _, index in all_locations),
-            angle=angle,
-        )
-
-    if op.name == "qreg.phase":
-        phase((), attrs["angle"])
-    elif op.name == "qreg.gate":
-        target = values[0]
-        gate, wire = attrs["gate"], attrs["index"]
-        direction = -1 if attrs.get("inverse") else 1
-        if gate == "x":
-            owner.effect_op(
-                "qreg.control_x", token, (control, target), indices=(bit, wire)
-            )
-        elif gate in {"z", "s", "phase", "i"}:
-            angle = {"z": math.pi, "s": math.pi / 2, "i": 0.0}.get(
-                gate, attrs.get("angle", 0.0)
-            )
-            phase(((target, wire),), direction * angle)
-        elif gate in {"h", "rx", "ry", "rz", "sx"}:
-            if gate == "h":
-                phase(((target, wire),), math.pi)
-                axis, angle = "Y", math.pi / 4
-            elif gate == "sx":
-                phase((), direction * math.pi / 4)
-                axis, angle = "X", direction * math.pi / 4
-            else:
-                axis, angle = gate[-1].upper(), direction * attrs["angle"] / 2
-            owner.pauli_exponential(
-                token, target, ((wire, axis),), angle, control=(control, bit)
-            )
-        else:
-            reject(token, "qpe", "unsupported gate in QPE callback")
-    elif op.name in {"qreg.control_phase", "qreg.control_x"} and "indices" in attrs:
-        indices = (bit, *attrs["indices"])
-        owner.effect_op(
-            op.name,
-            token,
-            (control, *values),
-            indices=indices,
-            **({"angle": attrs["angle"]} if op.name == "qreg.control_phase" else {}),
-        )
-    elif op.name == "qreg.array_phase_flip":
-        phase(tuple((values[0], i) for i in range(register_width(values[0]))), math.pi)
-    elif (
-        op.name == "qreg.pauli_rotation"
-        and "control_index" not in attrs
-        or op.name == "qreg.unitary"
-        and "control_index" not in attrs
-    ):
-        owner.effect_op(
-            op.name, token, (*values, control), **dict(attrs), control_index=bit
-        )
-    elif op.name == "qreg.inplace_prepare_amplitudes" and "control_count" not in attrs:
-        locations = (
-            tuple(zip(values, attrs["indices"], strict=True))
-            if "indices" in attrs
-            else tuple(
-                (values[0], i) for i in reversed(range(register_width(values[0])))
-            )
-        )
-        selected = ((control, bit), *locations)
-        owner.effect_op(
-            op.name,
-            token,
-            tuple(value for value, _ in selected),
-            **{**attrs, "control_count": 1, "indices": tuple(i for _, i in selected)},
-        )
-    elif op.name == "qreg.pair_gate" and attrs["gate"] == "cry":
-        control_wire, target_wire = attrs.get("indices", (0, 0))
-        angle = attrs["angle"] / 2
-        for radians in (angle, -angle):
-            owner.effect_op(
-                "qreg.gate",
-                token,
-                (values[1],),
-                gate="ry",
-                index=target_wire,
-                angle=radians,
-            )
-            owner.effect_op(
-                "qreg.control_x",
-                token,
-                (control, *values),
-                indices=(bit, control_wire, target_wire),
-            )
-    elif op.name == "qreg.pair_gate" and attrs["gate"] in {"cx", "cz"}:
-        coordinates = tuple(zip(values, attrs.get("indices", (0, 0)), strict=True))
-        if attrs["gate"] == "cz":
-            phase(coordinates, math.pi)
-        else:
-            owner.effect_op(
-                "qreg.control_x",
-                token,
-                (control, *values),
-                indices=(bit, *(i for _, i in coordinates)),
-            )
-    else:
-        reject(token, "qpe", "unsupported controlled operation in QPE callback")
+    try:
+        emit_controlled_effect(control, bit, op, emit)
+    except ValueError as error:
+        reject(token, "qpe", str(error))
 
 
 def infer_phase_allocation(

@@ -25,7 +25,7 @@ from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import Instruction
 from flagquantum.errors import PlanningError
 from flagquantum.services.synthesis import SynthesisError, _complete
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 

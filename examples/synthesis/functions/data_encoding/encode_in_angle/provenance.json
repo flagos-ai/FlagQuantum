@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "334ba1c4cee9f776171961aae9c681b5cc11380abb3800621268342ed105913e",
+  "scope": "Quantum program only; the combined variational-data-encoding Notebook is a separate pending workflow.",
+  "native_semantic_adaptations": "Preserve four features and four output qubits. A parameterized mutable helper uses R(pi*data[i],pi/2,q[i]) as an entrywise-exact RY rotation; current lowering uses three rotations per feature, so native resources exceed the original RY implementation.",
+  "native_entrypoint": "examples.synthesis.functions.data_encoding.encode_in_angle.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_data_encoding.py"
+}

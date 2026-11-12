@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from fractions import Fraction
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
+from ...compiler._fixed_word import exact_expression, fixed_xor_table
 from .angles import REAL_LITERAL
-from .computed_rotation import exact_expression
 from .masked_selection import emit_truth_xor
 from .syntax import Expression, Token, reject
 
@@ -100,26 +100,31 @@ def lower_fixed_xor(
     if set(locations).intersection(targets):
         reject(token, "alias", "fixed-point XOR reads must be disjoint from the target")
 
-    evaluate = exact_expression(expression, set(operands), constants)
-    positions = {location: bit for bit, location in enumerate(locations)}
+    def fail(node: Expression, message: str) -> NoReturn:
+        reject(node.token, "precision", message)
 
-    def word(basis: int, view: tuple[Location, ...]) -> int:
-        return sum(
-            (basis >> positions[location] & 1) << bit
-            for bit, location in enumerate(view)
+    evaluate = exact_expression(
+        expression,
+        name=lambda node: (
+            node.token.text
+            if not node.children and node.token.text in operands
+            else None
+        ),
+        constant=lambda node: constants.get(node),
+        operator=lambda node: node.token.text,
+        children=lambda node: node.children,
+        fail=fail,
+    )
+    try:
+        locations, table = fixed_xor_table(
+            operands,
+            targets,
+            target_fraction=len(targets),
+            evaluate=evaluate,
+            guard=(selected, expected) if selected else None,
         )
-
-    table = []
-    for basis in range(1 << len(locations)):
-        if selected and word(basis, selected) != expected:
-            table.append(0)
-            continue
-        inputs = {
-            name: Fraction(word(basis, view), 1 << scale)
-            for name, (view, scale) in operands.items()
-        }
-        exact = evaluate(inputs) * (1 << len(targets))
-        table.append((exact.numerator // exact.denominator) & ((1 << len(targets)) - 1))
+    except ValueError as error:
+        reject(token, "precision", str(error))
 
     checked = set()
     for value, bit in (*locations, *targets):

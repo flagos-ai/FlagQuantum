@@ -1,0 +1,10 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/extremum/minimum_2vars_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "6a260cd80ccaf5346c209abe1b1b8dc34a9b6a1cb8193ace75f3394e56f2943d",
+  "git_blob_sha1": "d75c7c814f0036f8d2f4eb3a79ae85bd153d73cb",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.extremum.minimum_2vars_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_selection.py",
+  "scope": "Complete retained quantum program. The sibling extremum Notebook includes fractional maximum examples and remains separately pending.",
+  "native_semantic_adaptations": "Preserve a=4, three-bit uniform b, unsigned minimum and declared output order. Python conditional value expresses min(a,b) through the existing comparison/select lowering. No source importer in native examples; no fractional maximum substitution."
+}

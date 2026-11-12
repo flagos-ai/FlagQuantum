@@ -153,16 +153,19 @@ def test_independent_manual_reference_preserves_all_256_input_target_pairs() -> 
 def test_primary_qfunc_example_prepares_composes_and_improves_frozen_costs() -> None:
     from benchmarks.synthesis.arithmetic_baseline import costs, workspace_of
     from examples.synthesis.tutorials.arithmetic.arithmetic_baseline.main import (
-        QMOD,
         main,
     )
     from flagquantum import synth
 
     case = Case(EXPRESSIONS[4], (2, 2))
     native = synth.synthesize(main, memory_limit_bytes=64 * 1024**2)
-    migrated = synth.synthesize(
-        QMOD, source_format="qmod", memory_limit_bytes=64 * 1024**2
+    from pathlib import Path
+
+    original = (
+        Path(__file__).resolve().parents[1]
+        / "fixtures/classiq_qmod/teaching_sources/tutorials/arithmetic/arithmetic_implementations/comparisons/source.qmod"
     )
+    migrated = synth.synthesize(original, memory_limit_bytes=64 * 1024**2)
     for program in (native, migrated):
         # The full state checks all sixteen logical outcomes and zero workspace.
         coherent_check(case, program, phased=False)

@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
+from ..compiler import _pauli_schedule
 from ..errors import CapabilityError
 from ..simulation.pauli import finite_rotation_angle, pauli_word_operators
 
@@ -347,19 +348,11 @@ def trotter_circuit(
     from ..circuit import Circuit
 
     circuit = Circuit(width, dtype=dtype)
-    step_time = time_value / step_count
-    for _ in range(step_count):
-        if step_order == 1:
-            for coefficient, operators in prepared:
-                _append_term(circuit, coefficient, operators, step_time)
-            continue
-        half = step_time / 2.0
-        for coefficient, operators in prepared:
-            _append_term(circuit, coefficient, operators, half)
-        # The symmetric composition repeats the same term exponentials in reverse, so
-        # the leading defect cancels and the step is accurate to the third order.
-        for coefficient, operators in reversed(prepared):
-            _append_term(circuit, coefficient, operators, half)
+    for index, step_time in _pauli_schedule.ordered_pauli_steps(
+        len(prepared), time_value, step_order, step_count
+    ):
+        coefficient, operators = prepared[index]
+        _append_term(circuit, coefficient, operators, step_time)
     return circuit
 
 

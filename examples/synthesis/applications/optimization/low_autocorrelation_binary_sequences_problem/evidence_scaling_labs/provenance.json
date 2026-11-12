@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "ef09e4c4cbdef9b75d6731725869d66c6281d423eca46069c8bab8325a3d5a70",
+  "native_entrypoint": "examples.synthesis.applications.optimization.low_autocorrelation_binary_sequences_problem.evidence_scaling_labs.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_penalty_qaoa.py",
+  "scope": "Complete 13-bit 3-layer quantum ansatz with every one of the 162 original cost terms and 6 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending.",
+  "native_semantic_adaptations": "Existing static Observable evolution, bounded quantum helpers, initial Hadamards, RX and static loops express exp(-i gamma H) followed by RX(beta). No new special-purpose synthesis API, production lowering or budget increase. Circuit references independently transform bounded Boolean spin truth tables; source data and native Observable coefficients are checked against frozen original literals. Zero workspace, both objective instruction sequences and actual resource refusals are verified. No user example imports Qmod."
+}

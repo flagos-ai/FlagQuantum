@@ -20,26 +20,13 @@ def main(x: Output[QNum], y: Output[QNum], result: Output[QNum]) -> None:
     energy(x, y, result)
 
 
-QMOD = """qfunc energy(const x:qnum<2>, const y:qnum<2>, output result:qnum) {
-    result=x*x+y;
-}
-qfunc main(output x:qnum<2>, output y:qnum<2>, output result:qnum) {
-    allocate(x); allocate(y);
-    hadamard_transform(x); hadamard_transform(y);
-    energy(x,y,result);
-}"""
-
-
 def run() -> None:
-    program = synth.synthesize(
-        main,
-        memory_limit_bytes=64 * 1024**2,
-    )
+    program = synth.synthesize(main, memory_limit_bytes=64 * 1024**2)
     result = fq.run(program)
     outcomes = dict(program.probabilities(result, registers=("x", "y", "result")))
     expected = {(x, y, x * x + y): 1 / 16 for x in range(4) for y in range(4)}
     assert outcomes.keys() == expected.keys()
-    assert all(abs(outcomes[key] - value) < 1e-12 for key, value in expected.items())
+    assert all(abs(outcomes[key] - value) < 1e-12 for (key, value) in expected.items())
     resource = estimate_resources(program.circuit)
     print(outcomes)
     print(resource.to_dict())

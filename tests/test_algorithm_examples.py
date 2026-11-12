@@ -120,6 +120,12 @@ SCRIPTS = (
     "fermion_orbital_rotation",
     "fermion_hubbard",
     "fermion_hubbard_training",
+    "fermion_hubbard_ring_training",
+    "fermion_spinless",
+    "fermion_spinless_training",
+    "fermion_parity_discovery",
+    "fermion_parity_training",
+    "fermion_pauli_discovery",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -140,6 +146,31 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_pauli_discovery": (
+        "not select a ground sector or particle number",
+        "not a scalable solver",
+    ),
+    "fermion_parity_training": (
+        "only the circuit angle is trainable",
+        "Even parity is not fixed particle number",
+        "not a general convergence or scalability claim",
+    ),
+    "fermion_parity_discovery": (
+        "not an exact particle-number sector",
+        "not a scalable solver",
+    ),
+    "fermion_spinless_training": (
+        "only circuit angles are trainable",
+        "not a general convergence, coefficient-gradient or scalability claim",
+    ),
+    "fermion_spinless": (
+        "exponential inspection cost",
+        "not a many-body scalability claim",
+    ),
+    "fermion_hubbard_ring_training": (
+        "UCCSD angles are float32",
+        "not a general convergence, coefficient-gradient or scalability claim",
+    ),
     "fermion_active_space_training": (
         "synthetic static integrals",
         "fixed-occupancy projection",
@@ -1989,3 +2020,85 @@ def test_fermion_hubbard_training_lowers_energy_with_valid_gradients() -> None:
     assert -1e-9 <= final - reference < 1e-5
     assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
     _assert_premise("fermion_hubbard_training", output)
+
+
+def test_fermion_hubbard_ring_training_lowers_energy() -> None:
+    output = _run("fermion_hubbard_ring_training")
+    assert (
+        float(_labelled(output, "Final energy"))
+        < float(_labelled(output, "Initial energy")) - 1
+    )
+    assert float(_labelled(output, "Up particles")) == pytest.approx(1, abs=1e-7)
+    assert float(_labelled(output, "Down particles")) == pytest.approx(1, abs=1e-7)
+    _assert_premise("fermion_hubbard_ring_training", output)
+
+
+@pytest.mark.parametrize("args,expected", [((), 1 - 3**0.5), (("--periodic",), 1.0)])
+def test_spinless_example_measures_two_particle_sector(
+    args: tuple[str, ...], expected: float
+) -> None:
+    output = _run("fermion_spinless", *args)
+    assert float(_labelled(output, "Dense N=2 energy")) == pytest.approx(
+        expected, abs=1e-9
+    )
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        assert f"{encoding} energy: {expected:.10f}; particles: 2.000000" in output
+    _assert_premise("fermion_spinless", output)
+
+
+@pytest.mark.parametrize("args,reference", [((), 1 - 3**0.5), (("--periodic",), 1.0)])
+def test_spinless_training_example_lowers_energy_in_the_two_particle_sector(
+    args: tuple[str, ...], reference: float
+) -> None:
+    output = _run("fermion_spinless_training", *args)
+    initial = float(_labelled(output, "Initial energy"))
+    final = float(_labelled(output, "Final energy"))
+    assert final < initial - 1
+    assert -1e-10 <= final - reference < 1e-5
+    assert float(_labelled(output, "Analytic N=2 ground energy")) == pytest.approx(
+        reference, abs=1e-9
+    )
+    assert float(_labelled(output, "Gradient residual")) < 1e-9
+    assert float(_labelled(output, "Parameter update norm")) > 0.1
+    assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
+    _assert_premise("fermion_spinless_training", output)
+
+
+def test_parity_discovery_example_measures_explicit_even_sector() -> None:
+    output = _run("fermion_parity_discovery")
+    assert "Register: 4 -> 3 qubits" in output
+    assert float(_labelled(output, "Even-parity measured energy")) == pytest.approx(
+        (4 - 32**0.5) / 2, abs=1e-9
+    )
+    assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
+    _assert_premise("fermion_parity_discovery", output)
+
+
+def test_parity_training_example_optimizes_the_explicit_even_sector() -> None:
+    output = _run("fermion_parity_training")
+    assert "Register: 2 -> 1 qubits" in output
+    assert "eigenvalue: +1" in output
+    initial = float(_labelled(output, "Initial energy"))
+    final = float(_labelled(output, "Final energy"))
+    assert final < initial - 0.5
+    assert final == pytest.approx(-(1.49**0.5), abs=1e-8)
+    assert float(_labelled(output, "Gradient residual")) < 1e-9
+    assert float(_labelled(output, "Parameter update")) > 0.5
+    assert float(_labelled(output, "Lifted energy residual")) < 1e-12
+    assert float(_labelled(output, "Odd-sector leakage")) < 1e-25
+    assert float(_labelled(output, "Particles")) == pytest.approx(
+        1 - 1 / 1.49**0.5, abs=3e-5
+    )
+    _assert_premise("fermion_parity_training", output)
+
+
+def test_pauli_discovery_example_measures_explicit_mixed_axis_sector() -> None:
+    output = _run("fermion_pauli_discovery")
+    assert "Independent commuting generators: 2" in output
+    assert "Selected Y0 and X1Z2 eigenvalues: +1, -1" in output
+    assert "Register: 3 -> 1 qubits" in output
+    assert float(_labelled(output, "Selected-sector measured energy")) == pytest.approx(
+        -0.1 - 1.16**0.5, abs=1e-9
+    )
+    assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
+    _assert_premise("fermion_pauli_discovery", output)

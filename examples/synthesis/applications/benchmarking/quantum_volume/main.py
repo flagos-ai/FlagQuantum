@@ -1,0 +1,54 @@
+"""Apply a retained static complex matrix through native quantum functions."""
+
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import Output, QArray, QBit, allocate, qfunc, unitary
+
+MATRIX = (
+    (
+        (-0.0792372423655 + 0.129238358361356j),
+        (0.735039838492193 - 0.028784098902938j),
+        (-0.202865715068347 + 0.40619745540708j),
+        (0.478472801948578 - 0.028630827724462j),
+    ),
+    (
+        (0.183079187176476 + 0.396954702753067j),
+        (0.038497221605193 - 0.47767023864278j),
+        (-0.551009533515713 - 0.027115071495763j),
+        (-0.35213255130809 + 0.388476531350979j),
+    ),
+    (
+        (0.043456682111199 - 0.877641471413623j),
+        (0.196058960311687 - 0.285879582526399j),
+        (-0.289901474402544 - 0.122449266718453j),
+        (-0.093017721674619 + 0.001314718470907j),
+    ),
+    (
+        (-0.11516760025202 + 0.022831329843149j),
+        (0.065119799284894 - 0.323774888835554j),
+        (0.346694470721704 - 0.519873688441279j),
+        (0.474200502716825 + 0.511676228284031j),
+    ),
+)
+
+
+@qfunc
+def layer(target: QArray[QBit]) -> None:
+    unitary(MATRIX, (target[1], target[2]))
+
+
+@qfunc
+def main(target: Output[QArray[QBit]]) -> None:
+    allocate(3, target)
+    for _ in range(3):
+        layer(target)
+
+
+def build_program() -> synth.Program:
+    return synth.synthesize(main)
+
+
+if __name__ == "__main__":
+    program = build_program()
+    result = fq.run(program)
+    print(dict(program.probabilities(result, registers=tuple(program.registers))))

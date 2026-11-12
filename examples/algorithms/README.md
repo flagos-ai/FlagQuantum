@@ -40,7 +40,7 @@ python -m examples.algorithms.fermion_chemistry
 python -m examples.algorithms.fermion_orbital_rotation
 python -m examples.algorithms.fermion_fcidump
 python -m examples.synthesis.tutorials.getting_started.trial.main
-python -m examples.synthesis.tutorials.getting_started.source_trial.main
+python -m tools.synthesis_import_examples.source_trial.main
 ```
 
 [`tests/test_algorithm_examples.py`](../../tests/test_algorithm_examples.py) runs
@@ -178,13 +178,6 @@ What they show:
   a constrained line-topology example. Finite candidate selection and exact
   local CPU statevectors are supported. There is no optimality claim; independent
   developer trials and final release review remain pending.
-
-- [`synthesis_source_trial.py`](../synthesis/tutorials/getting_started/source_trial/main.py): the unreleased pinned
-  Qmod subset uses the same checked Program, exact CPU execution and named reader.
-  With no arguments, it runs coherent `x*x+1` source text. Append a local `.qmod`
-  path to run a bounded regular UTF-8 file instead. Native synthesis defaults to
-  a 512 MiB planned-state buffer ceiling; larger named reads remain explicitly
-  bounded. This does not imply general Qmod standard-library compatibility.
 
 ## These scripts use the subpackage surface
 
@@ -342,3 +335,62 @@ state mapping and measurement consumer. At t=1, U=4, mu=0 the N=2 energy is
 The constructor counts each ring bond once and rejects fewer than three sites.
 See the [periodic-ring scope](../../docs/development/FERMION_HUBBARD_RING.md);
 dense reference preparation has exponential inspection cost.
+
+[`fermion_hubbard_ring_training.py`](fermion_hubbard_ring_training.py), run with
+`python -m examples.algorithms.fermion_hubbard_ring_training`, composes the
+three-site Hubbard ring with existing six-mode UCCSD and 60 PyTorch Adam updates.
+It reports initial/final energy, gradient residual, parameter movement and one
+particle of each spin. The analytic ground energy -3.1231056256 is an inspection
+lower bound, not a convergence promise. Angles remain float32, coefficients
+remain static, and verification is bounded CPU/full JW. This example adds no
+solver, accelerator or distributed claim.
+
+[`fermion_spinless.py`](fermion_spinless.py), run with
+`python -m examples.algorithms.fermion_spinless [--periodic]`, measures a
+three-site spinless t-V model with two particles. At t=1, V=2, mu=0, JW, parity
+and BK give -0.7320508076 for the chain and 1.0000000000 for the ring, each with
+particle number 2. One mode represents each site; the nearest-neighbor V term
+uses unshifted densities. Dense reference preparation has exponential inspection
+cost and makes no many-body scalability claim. See the
+[spinless contributor guide](../../docs/development/FERMION_SPINLESS.md).
+
+[`fermion_spinless_training.py`](fermion_spinless_training.py), run with
+`python -m examples.algorithms.fermion_spinless_training [--periodic]`, trains
+two real circuit angles for the three-site N=2 chain or ring. It reuses native
+single-excitation circuits and PyTorch Adam, with no reference-state
+diagonalization. The fixed 160-step CPU runs reach approximately -0.7320507169
+and 1.0000001488 respectively and retain particle number 2. This is bounded
+full-JW circuit-angle training, not coefficient differentiation, a general
+convergence guarantee or scalability evidence. See the
+[training golden path](../../docs/development/FERMION_SPINLESS.md#training-golden-path).
+
+
+[`fermion_parity_discovery.py`](fermion_parity_discovery.py), run with
+`python -m examples.algorithms.fermion_parity_discovery`, discovers diagonal
+symmetries of a two-site Hubbard model. An explicit total-parity candidate
+restricts discovery to the constraint fixed by N=2, then the existing reduction
+and native measurement consumer give even-sector energy -0.8284271247 on three
+qubits. Even parity includes N=0 and N=4; this is not an exact number projection.
+Dense reduced-state diagonalization is bounded correctness inspection, not a
+scalable solver. See the
+[discovery guide](../../docs/development/FERMION_PARITY_DISCOVERY.md).
+
+
+[`fermion_parity_training.py`](fermion_parity_training.py), run with
+`python -m examples.algorithms.fermion_parity_training`, composes total-parity
+discovery, an explicit +1 sector and native one-qubit angle training for a fixed
+two-mode pairing Hamiltonian. Energy falls from -0.5653208730 to -1.2206555611
+in 200 Adam steps; the analytic even-sector minimum is -sqrt(1.49).
+The lifted state has zero odd-parity support but a noninteger particle-number
+expectation. Only the circuit angle is trainable. Dense lifting checks a bounded
+CPU example; this is not a general convergence or scalability claim.
+
+
+[`fermion_pauli_discovery.py`](fermion_pauli_discovery.py), run with
+`python -m examples.algorithms.fermion_pauli_discovery`, discovers Y0 and X1Z2
+for a fixed three-qubit encoded Pauli model. Explicit +1/-1 eigenvalues reduce
+the register to one qubit. Native measurement gives -1.1770329614, agreeing with
+the selected-sector analytic minimum -0.1-sqrt(1.16), and lifting checks the
+original eigenvector residual below 1e-12. Dense state preparation is bounded
+inspection. Discovery chooses no sector, particle number or ground state, and
+returns a commuting subgroup rather than an anticommuting centralizer basis.

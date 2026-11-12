@@ -9,7 +9,7 @@ Do not edit this generated region. Capability boundaries come from
 | Unified circuit API and FlagQuantum IR | `release_certified` | IR v1; incompatible schema changes require an explicit migration. |
 | Program optimization and target-aware compilation | `production_supported` | In-process transformation of one FlagQuantum IR v1 program on CPU; the compiler never executes a program or certifies hardware behavior. optimize() removes identity gates, merges self-inverse runs, and merges adjacent rotations to a fixed point. compile() runs that same fixed point, optionally routes onto one explicit CouplingMap, optimizes again, and records post-routing optimization. Routing offers four caller-selected strategies: restore_after_each_gate, persistent_layout, sabre, and sabre_layout. All four restore the identity logical order at the program output, so a caller cannot ask for an unrestored final permutation, and the cost-estimate automatic selection covers only restore_after_each_gate and persistent_layout because the two SABRE strategies plan SWAPs instead of estimating them; the topology is always caller-supplied and never discovered. A device may also state what each coupling costs: LinkErrorRates pairs a CouplingMap with one measured two-qubit error probability per link, and a route then costs the expected number of fault events its links carry rather than the number of hops, so a longer route over clean links can be chosen over a shorter one over dirty links. Such a device narrows the automatic selection to the two strategies that read the rate and refuses the two SABRE strategies by name, because plan_sabre_swaps takes no per-link weight, so it would route by hop count while reporting a price the calibration had no part in. RoutingCostEstimate.expected_link_faults reports the total the plan pays and is None on a device that states only its couplings, so a caller who passes a CouplingMap gets the plan it got before. Initial placement is planned separately: plan_trivial_layout places logical qubit i on physical qubit i, and plan_dense_layout places the program on the most densely connected window of device qubits a breadth-first walk from every physical qubit finds, which is the only placement that can help on a device with unequal connectivity and the only one of the two that can reach a program the lowest qubits cannot hold at all. That walk is a heuristic and not an exact optimum: over 55 device and program-width combinations it matched an exhaustive search of every connected window 45 times and returned a window with one fewer internal connection the other 10 times. Both return a placement as a tuple of physical qubits, one per logical qubit, which is what route_to_directed_topology takes as initial_layout; final_layout reports the assignment a routed program ended on as a Layout, and a route that allocates workspace on a device wider than the program reports the device width there with its idle slots as None in physical_to_logical. Both placements collapse to the identity on a device no wider than the program. Neither reaches route_to_topology, which refuses an initial_layout because a plain CouplingMap routes only over qubits the program owns; a non-identity placement requires a DirectedCouplingMap, whose physical workspace owns the idle slots and is cleaned by the inverse routing SWAPs, and it is passed to route_to_directed_topology or to legalize_circuit_topology. remove_layout_restore drops the appended logical-restore phase from a program that was already routed, halving the SWAP count over a batch of random programs for persistent_layout because that strategy's restore is a full reverse replay of its forward SWAPs and leaving restore_after_each_gate unchanged because its restores are interleaved with the program, and its result is a program for a local simulator or a provider that accepts per-physical-qubit results rather than deployable routing evidence: the deployment routing contract rejects it and the deployment entry points treat it as unrouted and route it again. Window selection is greedy over device connectivity and never estimates routing cost, so it can cost more SWAPs than the trivial placement on a program whose interactions prefer a sparser window, and it is not noise- or calibration-aware. Scheduling constructs deterministic logical ASAP layers with explicit qubit and classical-data dependencies; it is not target timing or pulse scheduling. There is no directed acyclic graph intermediate over the IR, and a pass is a Python function over a whole program rather than a rewrite rule with a pattern and a replacement. The pipeline itself is a named sequence of registered passes, each declaring the analyses it reads and preserves, so a caller can admit a pass of its own by name through optimize(..., passes=...) or compile(..., passes=...), or register one with declarations on default_pass_registry() and run it over OPTIMIZATION_PIPELINE through PassManager; a built-in name cannot be shadowed, an admission next to optimize=False is refused rather than ignored, and the admitted names are recorded on the program as an admitted_passes entry in its metadata while the optimization entry keeps its level. An installed external compiler is still selected by name through the extension SDK rather than composed as a pass. Pulse-level and parameter-aware compilation, dynamic-circuit control flow, and noise-aware optimization beyond lower_noise_model are unsupported. Calibration enters routing as one number per link and nowhere else: no readout fidelity, gate duration, or two-qubit fidelity stated apart from its error probability is priced, correlated and gate-dependent error is not expressible, and no route is a bridge gate, so every route is still a chain of hops between declared pairs. A SABRE search weighted by a calibration is absent and is refused rather than approximated. The structured hybrid program slice under flagquantum/compiler/_hybrid is private and absent from public exports. Compilation is single-process; no distributed or multi-device compilation path exists. |
 | Target-basis gate and state-preparation synthesis | `development_evidence` | In-process target-basis rewriting of one FlagQuantum IR v1 program on CPU; it never executes a program, chooses a target, or certifies hardware behavior, and no performance, fidelity, or hardware claim is made. The synthesis entry points are deliberately not stable flagquantum.compiler exports: synthesize_one_qubit, synthesize_two_qubit and synthesize_state_preparation are reached by module path, and only legalize_native_gates applies them as a whole-program pass. A synthesized rewrite equals its source only up to one global phase, which FlagQuantum IR has no field to record, so every entry point refuses rather than approximating. The refusals are per entry point rather than uniform: synthesize_one_qubit declines z_rotation='u3' and pulse_opcode='ry' while it does accept z_rotation='phase' for a single gate, and the state-preparation ladder declines 'phase' and 'u1' at the same keyword because a ladder needs an entrywise-exact rz. synthesize_two_qubit declines any entangler outside the supercontrolled table, 'ecr' among them, and it is handed a matrix rather than an instruction because the matrix of a named two-qubit gate belongs to flagquantum.simulation, which this layer must not import; it holds only the three parameter-free entangler matrices and the closed form of the rotation family, so a named two-qubit opcode reaches it only after the equivalence table has rewritten it or has reported the gate the target is missing. That table declares eighteen identities from named opcodes to named opcodes and composes them recursively, because a named gate carries no matrix on this layer; an entry that is not itself exact therefore does not stay exact under further expansion, and cphase drops a global phase. For ccx the table's T-form was measured against Qiskit's MCXGrayCode statement and kept: the Gray-code form declares seven leaves against fifteen but costs eight two-qubit gates on the interaction basis against six, and its further expansion runs through cphase, the one table entry that is not exact. Multi-controlled decomposition above three controls is unsupported: FlagQuantum IR declares no arity above three, Qiskit builds MCXGrayCode from an ancilla chain only from five controls, and the V-chain and recursive forms that do cover four controls and above use fewer entanglers than Gray code but need caller-supplied ancillas the IR does not model. The one-qubit angle form and the two-qubit block form are exact only to the working precision of their own arithmetic, and a rewrite whose leaves leave the native set is reported as the opcode the target is missing rather than as the shortest near miss. Synthesis is single-process CPU work with no distributed, multi-device, pulse-level, calibration-aware, or noise-aware path. |
-| Constrained coherent integer synthesis | `development_evidence` | Python qfunc programs now admit in-program allocation/Hadamard preparation, fresh unsigned arithmetic and static Output/Const helper composition. QBit and generic or literal-width unsigned QNum annotations share existing Compiler register/effect verification and kernels; no Python bodies are executed. Root outputs are signature ports, and scalar preparation overrides are refused. Source/effect/model bounds and final memory/resource limits apply. Input/free/drop, arrays/views, locals, explicit phase/control/inverse, host callbacks, runtime classical parameters and general Python remain outside the typed profile. Multiplication by classical powers of two >=2 uses shifted copies without generic multiplication scratch when the full unsigned operand bound is positive; other cases retain generic lowering. Range-proven positive constant additions reuse result-only X/CX copies when constant bits are disjoint from the complete unsigned domain mask; zero, overlapping and quantum-quantum additions retain ripple lowering. This reduces some workspace costs without optimality or process peak-memory guarantees. Python capture admits positive literal powers 1..8, evaluating the base once and expanding through at most seven existing multiplications with full-domain and model budgets; exponent one reuses its operand. Bool, zero, negative, fractional, configured/computed and larger exponents remain refused. Unreleased unsigned-integer CPU profile with bounded Python syntax including all six unsigned comparisons and chained interval predicates and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending. |
+| Constrained coherent integer synthesis | `development_evidence` | Native joint target sequences for inplace real/probability preparation and unitary flatten whole numeric/bit/array ports and existing explicit array views in least-significant-first order. Existing indexed effects enforce distinct initialized writable locations; nested/alias/Const/uninitialized selections refuse. Direct inplace subviews remain refused; vectors retain2..256 and matrices2..32 bounds. Lanchester preserves separate rabbits/time_index output names and entangled32entry preparation,all matrix/table entries,16physical/4work bits,20213operations/depth18016;independent complete states and exact field/phase marginals match original and two nonzero inputs. No record class or new numerical kernel is added. Native select_rotation admits finite static X/Y/Z raw-word tables on one-to-eight distinct initialized selector bits and a disjoint writable target, reusing the exact Walsh/Gray sequence extracted from Ecosystem into Compiler. Root pure within/adjoint matrix-QPE composes existing inverse effects without storage changes. Four matrix HHL native programs preserve all matrix/table entries and full environmental states; the rounded hhl_example input is explicitly normalized as approved while the original stays refused. The four-data-bit portfolio still needs three clean matrix-decomposition work bits. General controlled tables, implicit qstruct storage, flexible QPE callbacks and complete Notebook workflows remain pending. Native root matrix-only qpe accepts one zero-argument static unitary lambda and an allocated/unused whole1to8bit all-fractional signed/unsigned counter. Existing controlled matrix powers1to128 and inverse_qft retain numeric metadata,environment and actual costs. Two matrix originals/native keep9physical347ops/depth322 and11physical26898ops/depth23711,zero work. General callbacks,flexible powers,nested helper QPE and numeric-helper borrowing remain pending. Native root typed hidden handles and explicit drop reuse qreg.hidden/qreg.drop. Matching zero-argument constructors are captured without host execution; definite initialization and one root drop are required. Drop retains entangled environment without reset/uncompute/reuse; physical and memory costs remain charged, separate from clean workspace. Signature/view/Const drops, Output-helper escape, post-drop access and nested ownership changes refuse. The native swap program explicitly normalizes source rounded vectors as approved, preserves7physical/0work bits and full environmental amplitudes; native67operations/depth39 versus approved37operations/depth16 is semantic acceptance, not resource parity; unchanged original still refuses. Generic numeric-register helper borrowing remains refused; native matrix-QPE uses a dedicated checked composition without weakening that contract. Native control(bit, lambda: unitary(matrix,target)) and one-bit complement reuse bounded qreg.unitary block matrices with at most five combined selector/target qubits. Initialized writable selector and disjoint targets are required; Const selectors, computed predicates and multibit truth tests remain refused. All conditional global phases and actual unitary decomposition work remain checked. Harmonic oscillator preserves all64encoding entries and all32input columns; three binary-weighted controlled RY rotations replace eight equivalent branch matrices. Original/native both7physical/2work bits; native387operations/depth335 versus original3821operations/depth3339. This measured rotation-composition reduction is not global optimality or full Notebook acceptance. Native in-place real amplitude/probability preparation applies the existing exact unitary to initialized writable whole registers of2..256 entries, including plain mutable helpers and root inverses; quantum controls, Const and views remain refused. Static plain integer bindings and scoped loop indices specialize unsigned expression ASTs without host execution or float coercion. Native tridiagonal explicitly normalizes original rounded amplitudes as in the approved revision; unchanged originals remain refused. Its7physical/0work bits and23604operations/depth19568 trade fewer qubits for more operations versus approved10physical,17250operations/depth13899. Efficient typed predicate capture in mutable helpers remains a gap. Native root expression XOR admits only initialized owned unsigned scalar Outputs and existing checked unsigned expressions, with no target/input alias or truncation. It is self-inverse under root adjoint/within, restores actual work and invalidates dependent cleanup proofs without establishing a fresh-zero proof. Signed/scaled XOR expressions, arrays, subviews and borrowed mutable helpers remain refused; literal raw masks retain existing behavior. The concrete native square-root QSVT uses 17 physical/7 work qubits versus 13 physical/3 work qubits in its source, while operations/depth fall to 1437/1194 versus 2243/2053; these are measured tradeoffs, not an optimality claim. Native root unsigned arithmetic locals also admit standard Annotated[QNum, literal_width], normalized to existing local compute/uncompute/release; signed/scaled, symbolic and extra metadata remain refused. The concrete 26-phase fixed-point QSVT uses 21 physical/14 work qubits and 14015 operations/depth 10218 versus source 10 physical/3 work qubits and 20542 operations/depth 16850. Both preserve exact absolute phase and clean hidden work in local CPU comparisons; complete Notebook workflows remain pending. Native real phase expansion reuses the Compiler Boolean-factor pass after monomial-budget refusal: up to eight shared cubes of three-to-six distinct signed Boolean literals, exact fresh predicate computation and reverse cleanup. Small expressions and existing bounds retain their path. Facility Location has complete two-binding independent Circuit acceptance for all five layers, twelve decisions and five clean work bits. No factoring of conditional budget refusals or signed/scaled numeric words is added. The existing Boolean candidate keeps its twelve-bit intermediate-word ceiling; higher masks can require conservative lowering and fail physical memory budgets before allocation. Native suzuki_trotter/qdrift admit nonempty static slices and ordered bit lists/tuples in one initialized writable owner; local Observable indices map to view order, preserving spectator identity, absolute phase and fixed-seed sampling. Cross-owner, duplicate, invalid and Const views refuse. Small-owner compact products retain the existing precision guard and budgets. Fermi-Hubbard num_iter=1/2 has independent full-state Circuit acceptance over eight bits and zero scratch; associated Notebook workflow remains pending. Python qfunc programs now admit in-program allocation/Hadamard preparation, fresh unsigned arithmetic and static Output/Const helper composition. QBit and generic or literal-width unsigned QNum annotations share existing Compiler register/effect verification and kernels; no Python bodies are executed. Root outputs are signature ports, and scalar preparation overrides are refused. Source/effect/model bounds and final memory/resource limits apply. Input/free/drop, runtime classical feedback and general Python remain outside the typed profile. Unreleased native exact numeric admission includes signed integer allocation, fitting literal raw XOR, full-domain subtraction/negation, mixed-sign bitwise/equality, unsigned exact binary multiply and min/max. QNum width/sign/fraction annotations use checked scalar declaration metadata; explicit numeric_probabilities reads exact Fraction keys while raw probabilities remain unchanged. Scaled arithmetic inputs, general signed operators, numeric helpers/locals and signed/scaled phase/control reads remain refused. Typed synth.min/max preserve two-operand syntax without executing host comparisons. Unreleased native additions include bounded QBit arrays/views, sized locals, checked Const-only adjoint composition, static loops/branches and finite synthesis-time scalar/array parameter binding. Sparse real phase arithmetic and phase-only control may share read-only predicate/expression bits, including writable helper aliases; integer predicates use at most eight input bits, while the full phase uses at most 24 bits, degree 8, 256 monomials and 20,000 intermediate products. Host callbacks, chained native phase-guard comparisons, implicit multi-bit truth tests and arbitrary mutable-helper control or effectful adjoint remain refused. Pure unitary regions admit checked static mutable helpers and direct gates on existing initialized storage, retaining constant global phases; allocation and Output publication are refused. Literal-power phase expressions use the existing bounded sparse polynomial lowering. These are local CPU semantic admissions, not hardware or optimality certification. Multiplication by classical powers of two >=2 uses shifted copies without generic multiplication scratch when the full unsigned operand bound is positive; other cases retain generic lowering. Range-proven positive constant additions reuse result-only X/CX copies when constant bits are disjoint from the complete unsigned domain mask; zero, overlapping and quantum-quantum additions retain ripple lowering. This reduces some workspace costs without optimality or process peak-memory guarantees. Unsigned fresh-computation capture admits positive literal powers 1..8, evaluating the base once and expanding through at most seven existing multiplications with full-domain and model budgets; exponent one reuses its operand. Bool, zero, negative, fractional, configured/computed and larger exponents remain refused. Unreleased unsigned-integer CPU profile with bounded Python syntax including all six unsigned comparisons and chained interval predicates and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending. |
 | Coherent predicate phase synthesis | `development_evidence` | Native Python phase accepts one-bit predicates; float-return radians phases and typed quantum program roles are not admitted. Unreleased Python one-bit predicates admit output_mode=phase through the existing public Program/run/read flow on native logical CPU only, with no result flag. Wider Python returns, Qmod with the Python-only output_mode flag and explicit basis/topology are refused before source work where knowable. Exact phase and clean workspace are verified; controlled one-bit predicates use the existing expression syntax with direct terminal-product phase markers; generic controlled-block legalization remains outside admission. Conservative line polynomial probes pass, but equality line is explicitly refused by the retained routed-SWAP witness guard; no general line, projective conversion or generic controlled-Circuit legalization claim. Zero workspace is a declared precondition, not an external-state proof. No arbitrary angles, general within-apply DSL, all-corpus or release admission. Ordered qreg.phase borrows with local cleanup are Compiler-private; native phase(expression, pi) now reaches them for exactly one-bit quantum arithmetic through Ecosystem, using default value mode and logical CPU targets. Private Compiler qreg.call additionally composes verified Const-entry/fresh-Output register functions, with exact roles, bounded expansion and reachable phase checks; native fixed-width scalar const helper parameters now delegate to this contract; consuming Input and general mutable roles remain outside admission. Compiler-private qreg.uncompute restores unchanged directly computed results to fresh zero storage using the selected circuit exact inverse, retaining physical ownership. It tracks mutation dependencies, includes inverse events and costs, and admits reinitialization/recomputation; prepared-state assertions, Const cleanup, consuming Input and manual native uncompute syntax remain refused. Compiler-private local/release excludes temporary references from named outputs, requires fresh proven-zero ownership before release, invalidates released references and reuses their slots for subsequent locals. A separate reserved local band keeps saved inverse scratch safe; whole workspace and budgets include that band plus arithmetic scratch. Helper locals are cloned and checked not to escape. Ecosystem now translates bounded native local declarations and bounded within/apply into this existing Compiler contract; preparation is fresh quantum-expression assignment, apply is phase or Const-only calls, and cleanup reverses preparation order before proven-zero release. Sequential scopes reuse names with fresh identities and retained widths; locals stay outside named results. General Input/free/drop semantics remain unadmitted. Interleaving restored routes retain the existing fail-closed SWAP-witness restriction. Independent trials remain 0/2. |
 | Bounded native Qmod source and checked execution | `development_evidence` | Uppercase PHASE/RZ accept nonnegative integer or fixed-decimal literals 0..2**53 radians on initialized qbits; exact decimal bounds precede float64 conversion and a 78-character literal cap. Negative, exponent-form, symbolic, computed and quantum angles, numeric/array/Const targets and decimal data arithmetic remain refused. Both names are reserved. Unreleased pinned-source subset only, with one main, bounded acyclic scalar Const/fresh-Output helpers and fresh unsigned scalar outputs, unsigned binary comparisons and ordered phase(expression, pi) on initialized exactly-one-bit quantum expressions. The lowercase phase statement preserves basis values and exact signs with local workspace cleanup; arbitrary coefficients, multibit results, fixed classical phases and explicit phase basis/line targets are refused. Use default value mode; the Python-only output_mode flag remains refused for Qmod. Helpers are independently verified even when unused, require initialized fixed-width Const actuals and disjoint fresh Outputs with exact kinds/widths, and delegate calls and expansion to Compiler. Const preserves basis values, allowing phase/entanglement; gate/write/consume roles are refused. Main remains Output-only. Limits are 32 definitions and existing Compiler node/visit bounds. No general standard library, arrays/views, consuming Input, implicit mutable borrowing, free/drop or .fq support. Native comparisons reuse existing equal/less kernels with full unsigned domains and one-bit flags; unparenthesized chains and keyword and/or/not are refused. Direct and nested comparisons may appear in exactly-one-bit phase arguments as a FlagQuantum-native extension to the pinned import profile, using existing Compiler predicate cleanup. This is not upstream Classiq grammar admission or extra original-source compatibility evidence. Function-level scalar locals and bounded within/apply admit fresh quantum-expression preparations, phase or Const-only helper actions, exact inverse cleanup and proven-zero reuse. Helper calls may contain supported scopes. Local references cannot escape scopes; widths persist across repeated names and locals do not appear in named outputs. Unused declarations allocate nothing. Literal/allocation/gate/helper preparations, arbitrary apply writes, nesting in preparation and manual uncompute/release remain refused. Apply-only lexical nesting is bounded to depth 32; inner cleanup restores parent ownership and preserves live outer references. Positive literal powers 1..8 expand into at most seven existing multiplications with complete intermediate domains; exponent one reuses its operand. Zero, symbolic/computed and larger exponents are refused. Existing node/width/workspace/memory guards still apply; no optimal multiplication-chain claim. One-bit &, \|, ^ and ~ compose initialized unsigned domains through existing multiply/equal/add/less kernels. Both operands are checked eagerly; multibit operands, signed complement and in-place XOR remain refused. Unary tree depth and existing expansion/resource guards apply. Original corpus: eight of 216 pinned file paths parsed, lowered, executed and full-state verified on exact CPU complex128, including two additional tutorial paths. These are seven distinct blobs out of 208; execution_tutorial is byte-identical to synthesis_tutorial, and the added tutorials do not establish new algorithm families. Both file and text inputs pass at unchanged sizes; baseline uses 1/23/24 allocated qubits, comparator uses 10 allocated/9 used, and the two added tutorials each use 23 allocated qubits. The added unchanged PHASE original uses one qubit and zero workspace; coherent probes separately verify its absolute and relative phases. The added unchanged RZ original uses one qubit and zero workspace, with global-phase verification. A whole-corpus frontend-only audit admits eight and refuses 208 at their first blocker; admission alone is not execution. The signed two-variable comparator remains unsupported. Services reuses the same checked Program and named reader with a default 512 MiB planned-state buffer ceiling; this is not a process peak-memory guarantee. Synthetic probes do not increase original counts. Source-version context is declared, not authenticated; retained manifests separately check original bytes. No all-corpus, release or hardware claim. |
 | Circuit drawing | `experimental` | Presentation only. The drawer owns layout, labels, gate symbols, and styles; it does not execute, compile, validate, or route a circuit, and it changes no numerical result. The text renderer depends only on the standard library and Core, while Matplotlib is optional and is imported only by the figure renderer, so draw_mpl is absent from flagquantum.drawer when Matplotlib is not installed. The rendered text layout is not a frozen contract: no compatibility guarantee is made for exact spacing, gate symbols, column placement, or option names, and the only tests assert renderer self-consistency rather than a golden diagram. Rendering is single-process CPU work with no streaming or interactive backend. Structured hybrid programs, pulse-level schedules, and target timing diagrams are not drawable. The package README is the only user-facing documentation. |
@@ -115,6 +115,9 @@ Do not edit this generated region. Capability boundaries come from
 | Real orbital-parameter gradients | `experimental` | Static real spatial integrals and antisymmetric generators; only real CPU orbital parameters are trainable. Dense O(n^4) integral storage. Explicit closed-shell occupations only. No geometry, supplied-integral, SCF, complex-orbital, open-shell or decomposition gradients; no correlated-ground-state or scalability claim. |
 | Spinful Fermi-Hubbard open chain | `experimental` | Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency. |
 | Spinful Fermi-Hubbard periodic ring | `experimental` | At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency. |
+| Commuting Pauli symmetry discovery | `experimental` | Exact canonical static native Pauli coefficients and an explicit encoded-qubit width only. Returns a deterministic maximum-size independent commuting subgroup, not the full potentially anticommuting centralizer or every conserved observable. Independent signed candidates restrict their binary span modulo scalar phases; signs are discarded and the output basis can contain products. Eigenvalues must be chosen explicitly for returned positive words. No unique chemically preferred choice, particle-number inference, automatic ground-sector selection or matched-ansatz transform. Symbolic discovery allocates no dense state; the three-qubit example uses bounded dense diagonalization, native measurement and lifting solely for correctness inspection. No coefficient/SCF gradients, external quantum/chemistry dependency, full upstream compatibility, accelerator/distributed qualification, performance or capacity claim. Existing Z-only discovery and reduction contracts are unchanged. |
+| Diagonal fermion Z2 symmetry discovery | `experimental` | Z-only encoded Pauli symmetries, exact canonical static coefficients and explicit register width only. Optional independent candidate words restrict discovery to their binary product span; identity is omitted. Qubit labels are encoded indices, not occupation modes. Discovery chooses no eigenvalues: particle number N fixes only total parity (-1)**N, not exact particle number or other symmetry sectors. No automatic number-conservation proof, ground-sector selection, general X/Y discovery, matched tapered ansatz, coefficient gradients or full upstream compatibility. Symbolic discovery constructs no Fock matrices; the two-site example uses bounded exponential-cost reduced-state diagonalization for correctness inspection. Native discovery requires neither OpenFermion nor Cirq. No accelerator, distributed, performance or capacity claim. |
+| Spinless t-V chains and rings | `experimental` | One mode per site, finite static real t/V/mu and unshifted nearest-neighbor densities only. Open chains allow one site; rings require at least three and count each closing hopping/density bond once. Explicit encoding width is n_sites, including zero operators. No coefficient gradients, arbitrary graphs, twisted phases, particle-hole convention, automatic ansatz or model solver. Circuit-angle gradients in the composed execution scenario do not differentiate static Hamiltonian coefficients. The three-site example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish accelerator, distributed, performance, capacity or full upstream model compatibility. Native workflows require neither OpenFermion nor Cirq. |
 | Optional OpenFermion operator conversion | `experimental` | Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. This entry covers only the four fermionic/Pauli converters; InteractionOperator import and MolecularData input have separate capability entries. No circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence. |
 | Populated OpenFermion molecular data input | `experimental` | One-way import of already populated OpenFermion 1.7.1 MolecularData objects only. Real dense closed-shell spatial integrals, multiplicity one and lowest-orbital reference occupations only. The adapter reads cached integral fields without implicit loading, runs no electronic-structure calculation and retains no upstream arrays. The default budget is 32 spatial orbitals before integral copies; dense O(n^4) storage remains required. No file discovery, writing, complex/open-shell or spin-orbital input, geometry/integral gradients, amplitudes, density matrices or full upstream compatibility. OpenFermion and its transitive dependencies are separately installed only for this optional boundary; native chemistry does not require OpenFermion or Cirq. No production or scalability claim. |
 | OpenFermion interaction operator input | `experimental` | One-way import of actual OpenFermion 1.7.1 InteractionOperator objects with a finite scalar constant and dense numeric real or complex NumPy arrays of matching (n,n) and (n,n,n,n) shapes, including n=0. Two-body values multiply a-dagger[p] a-dagger[q] a[r] a[s] directly; no half factor, integral permutation or Hermiticity assumption is applied. This is spin-orbital operator input, not spatial molecular integrals. Native ladder algebra owns signs and canonicalization. Validation reads O(n^4) entries; native storage follows nonzero canonical terms, and external arrays are not retained. Consumer register width is explicit. No reverse tensor export, coefficient gradients, upstream execution, circuits or complete upstream compatibility. Hermitian observable validation and circuit-angle training remain native consumer responsibilities. OpenFermion and its transitive packages are separately installed only at this optional boundary; native execution requires neither OpenFermion nor Cirq. No production, accelerator or scalability claim. |
@@ -1032,6 +1035,462 @@ program = synth.synthesize(source, max_qubits=8, max_workspace=0)
 print(dict(program.probabilities(fq.run(program), registers=("ind",))))
 ```
 
+## Native synthesis classical parameters
+
+The unreleased [native classical binding profile](../api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md)
+admits finite synthesis-time float scalars, one-dimensional real arrays and
+parameterized gate-only helpers through `synthesize(..., classical_inputs=...)`.
+It reuses the existing checked register IR, RX lowering and local CPU execution.
+Classical arrays are bounded to 4096 total elements; exact names, finite values,
+indices, quantum aliasing and existing resource budgets are checked. This is not
+runtime parameter binding or gradient support. Parameterized Const/Output
+helpers, effectful mutable helper adjoints, general mutable helper control, nested classical arrays and arbitrary
+Python execution remain refused. The QML original has a runnable native/Circuit
+counterpart verified at two nonzero bindings with absolute phase. Current native
+program and complete Notebook coverage are separately tracked in the
+[generated migration inventory](../../examples/synthesis/MIGRATION_STATUS.md).
+
+Root native probability/amplitude preparation also accepts explicitly bound real
+vectors, reusing the same immutable binding and register lowering. Preparation
+requires power-of-two length 2..256 and valid normalization; no normalization is
+repaired. Unbound global vectors, nested arrays and parameterized Output helpers
+remain refused. The [native vector workflow](../../examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/main.py)
+uses local sampling/state access; it does not claim cloud or hardware execution.
+
+## Native synthesis Fourier boundary
+
+Wide native programs above 32 physical bits can use exact CPU MPS when the
+existing Runtime proof bounds every connected gate interval to twelve sites.
+The earlier closed computational-basis proof remains separate. No truncation,
+backend fallback or dense full-state allocation is allowed on this profile.
+Wide connected circuits without either proof retain statevector memory-budget
+refusal. Run `python -m pytest tests/integration/test_synthesis_native_interval_mps.py -q`.
+
+The unreleased native `qft(target)` accepts complete initialized writable QNum
+and QArray[QBit] registers, including whole-register mutable helper aliases.
+Partial views, Const targets and uninitialized storage are refused. This
+admission does not add controlled/inverse Python helper forms. The positive-sign
+transform includes final bit reversal and uses no workspace; exact local CPU
+statevector tests establish semantics, not hardware or scalability performance.
+
+Native unsigned integer `%` accepts only literal positive powers of two up to
+2**256, using existing bitwise AND lowering. General/nonliteral/quantum divisors
+and signed/fractional modulo remain refused. This is exact local CPU semantic
+support, not a new approximate arithmetic kernel or hardware capability.
+
+Native `unitary` accepts static 1..5-bit matrices from numeric literals or
+immutable tuple globals. Arrays, contiguous slices and explicit scalar lists
+use local position zero as the least significant matrix bit. Mutable matrix
+globals, arbitrary constructors, classical parameter matrices and new native
+controlled/inverse helper forms are not admitted. Existing matrix decomposition
+is locally CPU verified with absolute phase; this is not a hardware claim.
+
+Native qfunc conditional values accept only unsigned expressions and one-bit
+predicates or comparisons. Both branches are checked statically; this does not
+admit host callbacks, Python min/max calls, signed arithmetic or fractional
+selection. The `max(3.5,a)` originals remain pending native fractional support.
+
+Native modular exponentiation admits complete initialized unsigned numeric
+registers: target 1..5 bits and exponent 1..10 bits. Modulus/base are bounded
+static integers, with a fitting modulus and positive coprime base. Padding
+states stay unchanged. Partial views, real/quantum modulus/base, mixed mutable/
+Const helpers, and new native controlled/adjoint forms remain outside admission.
+
+## Native checked unitary regions
+
+The [native unitary-region contract](../api-changes/FQ-SYNTH-NATIVE-UNITARY-REGIONS-20261110.md)
+admits bounded direct gates and static mutable gate helpers under adjoint, and
+pure-gate within/apply on existing initialized storage. The inverse rules are
+owned once by Compiler and shared with the Qmod adapter. Constant global phases,
+QFT direction, Pauli rotation signs and matrix conjugate transpose are retained.
+Closed compiler-generated predicate scratch is admitted under the
+[clean predicate contract](../api-changes/FQ-SYNTH-NATIVE-CLEAN-PREDICATE-REGIONS-20261110.md):
+compute, pure action, uncompute and release must form one closed region. Inverse
+emission freshens its local identity and preserves compute/cleanup order. The
+register verifier still proves input stability and zero cleanup. Composite
+comparison predicates also control direct QFT within the existing eight-input-bit
+bound. Native Fourier-LCU currently needs eight work bits with composite range
+predicates, versus zero in the original adapter; no resource parity is claimed.
+User allocation, Output publication, mixed fresh locals and ownership changes are
+refused. Atomic Const-only inverse calls and arithmetic-local cleanup retain
+their existing checked paths; mixing arithmetic calls into a pure-unitary region
+is not admitted. Native literal-power phase expressions use existing bounded
+sparse polynomial lowering. This is local CPU correctness, not hardware,
+scalability, optimality or full Notebook-workflow evidence.
+
+## Native bounded predicate-X
+
+The [predicate-X contract](../api-changes/FQ-SYNTH-NATIVE-PREDICATE-X-20261110.md)
+admits comparison and Boolean-composite comparison controls with at most eight
+input bits and one disjoint initialized writable scalar X target. Raw all-ones
+controls keep their existing semantics. Mutable helper predicates require complete
+raw numeric registers in logical bit order; partial/permuted numeric views,
+array arithmetic, arbitrary controlled helper calls and in-place increments are
+not admitted by this change. Generated predicate work is checked and cleaned
+under inverse regions. The native hypercube walk and qfold examples retain source
+coin/shift/oracle semantics and independent complete state checks; resource gaps
+remain explicit, and retained qfold coin/move environment is not clean workspace.
+This is local semantic evidence, not full Notebook workflow or optimization proof.
+
+## Native borrowed expression XOR
+
+Static mutable Python helpers admit expression `^=` on complete raw unsigned
+scalar registers, reusing the existing reversible XOR profile. Formal names may
+differ from root names, including across nested calls. Nonzero targets and
+coherent inputs are preserved and compiler work is cleaned. Helpers retain the
+existing all-inout, disjoint-writable-argument boundary. Partial or permuted
+views, array targets, signed/fractional formats, fresh assignment and mutable
+helper control/adjoint remain refused. This primitive alone does not establish
+acceptance of any additional original corpus program.
+
+## Native bounded modular updates
+
+Initialized raw unsigned scalar QNum storage supports static integer `+=`/`-=`
+offsets in -256..256 with modular wraparound at its declared width. Plain
+all-inout helpers and coherent calls to a helper containing exactly one update
+use existing checked indexed-X effects. Zero offsets retain initialization
+checks. Conditions and target storage must be disjoint; predicate controls keep
+their eight-input-bit limit. Numeric formats, arrays, partial/permuted words,
+quantum offsets and arbitrary controlled mutable helpers refuse. The native
+two-dimensional walk retains five-bit position words, the signed original coin
+and its retained quantum environment. Full complex-state acceptance does not
+claim resource parity, complete Notebook coverage or acceptance of QLBM's
+unchanged unnormalized input.
+
+## Bounded unsigned predicate cubes
+
+The optional Boolean value candidate admits one-bit unsigned comparison
+predicates with at most eight active input bits. Exact truth assignments are
+merged into at most 32 disjoint signed cubes; exhaustive partition checks and
+existing mapped-gate, expression-product and source-operation limits remain
+mandatory. This bounded candidate can reduce clean predicate work for coherent
+lattice reflection. It is neither a general Boolean optimizer nor an optimality
+claim. Existing multi-bit arithmetic retains its six-active-input bound. Signed,
+oversized or insufficient-budget candidates refuse; other legal synthesis
+candidates may still be selected.
+
+## Sparse native predicate phases
+
+A native constant phase controlled by a raw unsigned predicate may use a
+separate exact sparse path for nine-to-twelve distinct input bits. It compiles
+at most512 syntax nodes (depth below128), evaluates at most4096 assignments,
+and admits at most32 satisfying minterms, with all-true/all-false cases explicit.
+Integer intermediates remain within53 bits; supported modulo divisors are
+positive literal powers of two and literal exponents are0..8. Existing eight-bit
+polynomial and multi-bit Boolean arithmetic limits remain unchanged. Each
+minterm uses checked six-literal clean factors, followed by a phase and inverse
+cleanup. This is a bounded fallback, not an optimal minimizer or a general
+wide-predicate promise. Ordinary helper ownership, definite initialization,
+Const and alias refusal, phase magnitude and actual resource ceilings remain
+in force. Original full-width graph-coloring and whitebox Grover programs have
+independent Circuit acceptance; complete Notebook workflows remain separate.
+
+## Native scalar reset channels
+
+The unreleased native `RESET(target)` reuses the existing Qmod reset effect,
+channel lowering and exact CPU density-matrix planner. Targets must be
+initialized writable scalar bits or static array elements. Whole arrays,
+Const/uninitialized targets, reversible scopes and coherent control are
+refused. Reset keeps physical storage allocated and destroys prior correlations;
+it is not a clean uncompute or postselection. Density memory and operation
+budgets remain enforced. This does not yet admit the original thermal program's
+fifty-cycle compact native channel replay.
+
+## Native unsigned numeric predicate views
+
+Native `control` accepts static bit indices and nonempty, unit-step slices of
+unsigned integer `QNum` parents in bounded comparisons. For example,
+`control(x[1:4] == 2, lambda: X(flag))` reads bits 1, 2 and 3, with bit 1 as
+the least-significant bit of the three-bit value. Views share their parent's
+physical storage; they do not allocate or copy a data register. Predicate
+computation and cleanup still use the ordinary checked workspace scheduler.
+The existing eight-input-bit predicate budget counts unique selected physical
+bits, including repeated and algebraically cancelled reads. Predicate-X,
+supported rotations, constant branch phases, checked callbacks and inverse
+composition reuse the same word compiler and lowering.
+
+Parent borrowing remains conservative at register granularity: a controlled
+action cannot modify any part of a register read by its predicate, even when
+the bit ranges are disjoint. A raw unsigned sliced or explicitly composed
+numeric helper actual can itself be used as a predicate parent; nested slices
+are relative to the formal word. Negative, empty, strided, dynamic or
+out-of-range views, signed/fractional parents and read sets exceeding eight bits
+refuse before lowering. This does not promise general sliced numeric assignment
+or signed/fixed-point reinterpretation.
+
+Run `python -m pytest tests/integration/test_synthesis_native_predicate_views.py -q`.
+
+## Native unsigned borrowed words
+
+Plain `QNum` helper ports borrow static unsigned slices and explicit lists or
+tuples of up to eight storage components in least-significant-first order.
+No data register is copied or allocated. Raw `+=`/`-=` updates wrap modulo the
+selected width, including cross-component carry; nonselected bits are preserved.
+Formal widths, distinct initialized writable locations, Const, alias and Output
+escape checks still apply. Signed/fractional and dynamic views are unsupported.
+This bounded extension supersedes the earlier whole-register-only restrictions
+for raw numeric helpers; it does not introduce general mutable slice assignment.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import (
+    Output, QBit, QNum, X, allocate, control, hadamard_transform, qfunc, synthesize,
+)
+
+@qfunc
+def mark(word: QNum, flag: QBit) -> None:
+    control(word == 2, lambda: X(flag))
+
+@qfunc
+def main(x: Output[QNum[4]], flag: Output[QBit]) -> None:
+    allocate(x)
+    allocate(flag)
+    hadamard_transform(x)
+    mark(x[1:3], flag)
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("x", "flag"))))
+```
+
+The flag is one exactly for `x` in `{4, 5, 12, 13}`. All sixteen inputs have
+probability `1/16`, with clean predicate workspace. The example uses a borrowed
+word rather than requiring a copied low-bit register or physical wire numbers.
+
+In-place real preparation can also act on checked partial or composed storage.
+It applies the same full unitary on every input column, including entangled and
+nonzero storage. Adjoint and within/apply preserve this unitary. Nested scalar
+controls reuse the existing indexed preparation effect, with at most eight
+combined control/target locations; actual gate and workspace limits still apply.
+
+Run `python -m pytest tests/integration/test_synthesis_native_numeric_borrows.py -q`.
+
+## Bounded integer controls inside native callbacks
+
+Checked pure callbacks can mark an arbitrary target with integer predicates
+without allocating a predicate work bit when the condition and target fit the
+existing eight-degree phase bound, including enclosing coherent controls. Wider
+predicates retain their computed path when the target and controls would exceed
+that bound. The separate eight-input condition bound remains. Signed whole words
+retain two's-complement semantics; unsigned borrowed
+words use their explicit component order. This is XOR, including a target
+initially equal to one or entangled with another register. Bounded predicate XOR
+and raw modular carries use checked indexed X effects directly, including mixed
+negative control masks under another coherent control. Existing exact Boolean
+analysis supplies disjoint cubes or XOR-parity monomials; canceled reads and a
+writable marker remain checked even for an always-false predicate.
+
+The lowerer uses proven-zero clean ladders when the declared width and workspace
+ceilings permit them. An internal capacity hint is translated through nested
+unitary layouts; it never changes verifier capacity or final resource checks.
+Without a width ceiling below construction capacity or an explicit workspace
+ceiling, masked controls preserve their established compact grouped
+decomposition and default physical width. Tighter ceilings allow the faster
+clean decomposition within the declared capacity.
+With `max_workspace=0`, bounded controls retain an exact no-extra-scratch
+decomposition, which may cost more gates and depth. Wider controls retain their
+existing workspace refusals outside that bounded decomposition. All candidate,
+source and operation caps remain unchanged.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import (
+    H, Output, QBit, QNum, X, allocate, control, hadamard_transform,
+    qfunc, synthesize,
+)
+
+@qfunc
+def mark(word: QNum, flag: QBit) -> None:
+    control(word == 2, lambda: X(flag))
+
+@qfunc
+def main(coin: Output[QBit], x: Output[QNum[4]], flag: Output[QBit]) -> None:
+    allocate(coin)
+    allocate(x)
+    allocate(flag)
+    H(coin)
+    hadamard_transform(x)
+    control(coin, lambda: mark(x[1:3], flag))
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("flag",))))
+```
+
+The flag probabilities are zero: `7/8`, one: `1/8`. No wire numbering or manual
+scratch allocation is needed. Raw scalar zero/one comparisons and modular
+increment/decrement callbacks can likewise reuse initialized storage under
+coherent control. Adjoint and within/apply preserve conditional scalar phases.
+
+Fixed-point and unsupported numeric predicates retain their checked computed
+path. The eight-bit bound, conservative register-level target disjointness,
+Const, initialization, ownership and resource checks remain. A negative Const
+selector does not become writable merely to avoid scratch. Oversized parent
+registers with small static slices keep their existing bounded-view path.
+
+Run `python -m pytest tests/integration/test_synthesis_native_callback_phase_controls.py
+tests/integration/test_synthesis_native_numeric_borrows.py -q`.
+
+Run `python -m pytest tests/integration/test_synthesis_native_indexed_x_composition.py -q`
+for independent full states, arbitrary markers, branch phases and the measured
+clean-ladder versus scratch-free trade-off.
+
+Whole-register mutable helper borrows also use the checked exact phase path.
+Equivalent whole and partial bindings retain absolute phase, including nested
+helpers, adjoint and within/apply. This prevents an incidental whole-register
+binding from introducing numerical scratch for a phase-only calculation.
+The helper context does not expand fixed-point comparison semantics, and
+closed helper templates still require the existing effect proof.
+
+Run `python -m pytest tests/integration/test_synthesis_native_whole_borrow_phase.py
+tests/integration/test_synthesis_native_amplification.py -q`.
+
+## Raw integer differences in native predicate phases
+
+Raw unsigned integer comparisons such as
+`control((a - b) == -1, lambda: phase(1.0, 0.37))` use the existing bounded
+exact phase capture. Differences are mathematical integers, including negative
+values; subtraction alone does not require a numeric scratch register. Root,
+whole-register and partial helper bindings retain the same absolute phase.
+Static unsigned slices and packed helper arguments keep their established
+little-endian order. Actual signed/fractional input metadata still selects the
+checked numeric path.
+
+Bitwise and modulo operands must be nonnegative over their complete bounded
+domain, even when the surrounding predicate cancels. Boolean literals do not
+become integers. Initialization, borrowing, eight-input, phase-degree and actual
+operation budgets remain unchanged. This does not add general numeric array
+arithmetic or relax the unsupported signed/fixed-point slice boundary.
+
+Run `python -m pytest tests/integration/test_synthesis_native_raw_predicate_phase.py
+tests/integration/test_synthesis_native_phase_predicates.py
+tests/integration/test_synthesis_native_grover_models.py -q`.
+
+Within one exact phase expression, emitted monomials also witness their selected
+quantum reads. Separate zero-angle effects remain for reads removed by algebraic
+cancellation. This reduces redundant model nodes without moving reads between
+statements or bypassing initialization and ownership checks. A zero coefficient
+does not remove these checks. The 4096-node model budget and all gate, workspace
+and phase bounds remain; this representation change does not promise fewer
+physical gates.
+
+Run `python -m pytest tests/integration/test_synthesis_native_phase_read_witnesses.py -q`.
+
+## Native phase expressions inside pure callbacks
+
+Whole-register helper expansion retains the same phase semantics as sliced
+borrows. In checked pure callbacks, plain word phases and bounded unsigned
+predicate phases reuse the existing polynomial/factored phase capture. They do
+not introduce an arithmetic result register solely because the helper received
+whole-register arguments. This preserves a pure QPE callback without admitting
+allocation, Output publication, channels or escaping scratch.
+
+The native quantum-counting and Grover-operator QPE programs retain their
+zero-workspace contracts. Independent dense powers and Fourier matrices check
+their complete environmental state and absolute phase. Callback expansion,
+physical gates and all resource budgets remain charged. General arithmetic
+scratch in QPE callbacks remains unsupported.
+
+```python
+import math
+from typing import Annotated
+
+import flagquantum as fq
+from flagquantum.synth import (
+    Output, QNum, allocate, drop, hadamard_transform, phase, qfunc, qpe, synthesize,
+)
+
+@qfunc
+def kick(data: QNum) -> None:
+    phase(data, math.pi / 2)
+
+@qfunc
+def main(p: Output[Annotated[QNum, (2, False, 2)]]) -> None:
+    data: Annotated[QNum, 2] = QNum()
+    allocate(data)
+    hadamard_transform(data)
+    allocate(p)
+    qpe(lambda: kick(data), p)
+    drop(data)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.numeric_probabilities(result, registers=("p",))))
+```
+
+The four eigenphases `0`, `1/4`, `1/2` and `3/4` each have probability `1/4`.
+The two dropped data bits remain part of the four-qubit environmental state;
+drop does not reset or erase them. No physical wire mapping is required.
+
+Run `python -m pytest tests/integration/test_synthesis_native_qpe_examples.py
+tests/integration/test_synthesis_native_qpe_callbacks.py -q`.
+
+## Shared native borrowed helpers
+
+Repeated whole-register raw unsigned qfunc calls may share a checked internal
+unitary template for identical bindings and widths. Scalar and numeric gates,
+closed arithmetic scratch and adjoint reuse the existing scheduler. Sharing
+reduces source expansion; all physical gates, work bits and target phase
+requirements are still charged and checked. Signed/fractional or sliced helper
+actuals, controlled/QPE callbacks and reset-loop bodies retain their existing
+expanded paths and limits. This does not expand the supported apply-block
+language or allow channels and ownership effects in a unitary template.
+
+A large program can still exceed the 100000-operation intermediate construction
+ceiling even when its optimized executable might fit the final resource limit.
+An incomplete portfolio still refuses; a fitting best-so-far circuit is not
+accepted. Bounded suffix normalization at closed helper and scratch boundaries can reduce
+intermediate growth, but does not relax this ceiling. Original-source acceptance
+and native-example coverage remain separate.
+
+
+## Bounded native predicate truth lowering
+
+One-bit predicates with at most eight argument bits can reuse the existing
+Boolean word evaluator over at most 256 exact truth assignments. A bounded
+collection of ordered decision-diagram covers competes with the existing cube
+cover; selection charges actual gates and restores every input polarity. The
+64 source-operation, 12 intermediate-bit, 20000 work, 32 cube and 256 mapped-gate
+ceilings remain. All register schedules can use this checked predicate lowering;
+non-predicate word expressions retain their existing schedule paths.
+
+Closed helper/scratch boundaries reuse exact inverse-cancellation passes on at
+most 4096 trailing gates with a 128-gate overlap. The pre-append 100000-operation
+ceiling and incomplete-portfolio refusal remain. A workspace layout hint enables
+Simulation's independent computational-fiber proof, including CH and CRZ; an
+unproved gate or dirty work map uses the ordinary execution path. The hint is not
+a clean-workspace attestation. CRZ retains its control-dependent scalar phase.
+
+Run `python -m pytest tests/integration/test_synthesis_native_predicate_truth.py tests/unit/test_basis_workspace_controlled.py -q`.
+
+## Low-work borrowed comparisons
+
+The unsigned arithmetic scheduler uses one clean carry for less-than comparisons
+of equally wide, physically disjoint words. A reversible majority sweep borrows
+the operand storage, XORs the comparison into an arbitrary target, and restores
+both operands and the carry. X, CX and CCX gates preserve absolute phase. Retain
+and recompute schedules charge the actual carry allocation and gate sequence;
+the existing operation, width, workspace and memory limits still apply.
+
+Constants, unequal widths, equality and overlapping operand maps retain the
+prefix-equality implementation. Signed and fixed-point expressions keep their
+existing checked alignment before unsigned lowering. This optimization does
+not admit signed slices, dynamic views or new borrowing syntax.
+
+The whitebox and graph-coloring comparison modules now execute their independent
+Circuit checks when run with `python -m`. They compare complete logical complex
+amplitudes in declared register order, without phase alignment, and check the
+complete workspace tail of each producer separately. Whitebox includes its
+original ten iterations as well as zero, one and two; graph coloring includes
+its original one iteration as well as zero and two. Different proven-zero
+scratch widths are handled by zero embeddings, never by ignoring dirty states.
+
+The prior pinned module audit retains the Rainbow timeout and two empty module
+entries as incomplete acceptance. Full native-corpus acceptance requires a new
+complete audit after these changes; source replay and named model/refusal tests
+remain separate gates.
+
+Run `python -m pytest tests/team/compiler/test_borrowed_comparison_kernel.py -q`.
 ## Native fermionic science migration
 
 The selected migration is documented in

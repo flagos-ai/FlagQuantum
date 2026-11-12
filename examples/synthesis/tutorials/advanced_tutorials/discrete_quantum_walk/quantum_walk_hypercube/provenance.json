@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "536a7ff9e0a3e1eb4ad6130451c84f0922328044ef1e6f2564bfbb21c2d7a488",
+  "native_entrypoint": "examples.synthesis.tutorials.advanced_tutorials.discrete_quantum_walk.quantum_walk_hypercube.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_predicate_walks.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain four-dimensional position,uniform two-bit coin,phase-exact uniform diffuser and selector-directed Hamming-distance-one shift. Native bounded predicate-X and whole-raw borrowed helper capture compose through static move helpers;original t0/1/2/3 and two nonzero position/coin models compare independent full states,named marginals and zero work. Defaultt2 native14physical/8work/418operations/depth337 versus source6physical/0work/36operations/depth26;no optimization claim."
+}

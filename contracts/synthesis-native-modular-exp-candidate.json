@@ -1,0 +1,14 @@
+{
+  "schema": "flagquantum.synthesis_native_modular_exp_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [
+    "modular_exp"
+  ],
+  "signatures": {
+    "modular_exp": "(n: 'int', a: 'int', x: 'QNum', power: 'QNum', /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

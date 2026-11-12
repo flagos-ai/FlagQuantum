@@ -150,7 +150,10 @@ def test_projector_and_const_borrow_reject_alias_and_writes(
         synth.synthesize(source, source_format="qmod")
 
 
-def test_expanded_qsvt_refuses_insufficient_workspace_budget() -> None:
-    path, _ = original()
-    with pytest.raises(synth.SynthesisError, match="workspace"):
-        synth.synthesize(path, max_workspace=2)
+def test_expanded_qsvt_uses_scratch_free_decomposition_under_tight_budget() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(original()[0])
+    constrained = synth.synthesize(original()[0], max_workspace=0)
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

@@ -1,0 +1,36 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "5e28d56fea67b203a6e0e0b44ef0fa8998e66ae477fc62a4b02d2c5c8bcd30d1",
+  "scope": "Complete local computational Notebook workflow: native arithmetic program, synthesis, text circuit drawing and seeded sampling from executed named probabilities. Text drawing and local sampling replace cloud services; no hardware measurement is claimed.",
+  "notebook_path": "tutorials/basic_tutorials/the_classiq_tutorial/classiq_overview_tutorial.ipynb",
+  "git_blob_sha1": "1bdf9c4a1a32896778002bb047c17ad84603950e",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+    },
+    {
+      "index": 5,
+      "sha256": "37a7eb6ed3397ce7441faf8660f94201d7bdaca027da17db8a1e6a31b03ea1be"
+    },
+    {
+      "index": 10,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 12,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 17,
+      "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+    },
+    {
+      "index": 21,
+      "sha256": "32c220482c68413fbf8290e3b1e49b0a85901cfcd62ab0738760568a2a6e8a57"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.classiq_overview_tutorial.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+}

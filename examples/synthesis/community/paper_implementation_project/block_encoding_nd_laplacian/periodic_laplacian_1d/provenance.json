@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "d693b2da6bac932c51549f2222901f9eb366ff43216ad56468b93d4630fbad41",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding_nd_laplacian.periodic_laplacian_1d.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_quadratic_maps.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Keep original5-bit position and2-bit selector. Use a QArray view of the unsigned selector and a reusable mutable helper, not source array rebinding. Exactly combine commuting conditional -1/+1 modular shifts via a whole-register QFT and polynomial phase. Preserve selector H/Z interference. Independent Circuit explicitly enumerates the conditional basis permutation; boundary and coherent tests include nonzero selectors, absolute phases and wraparound. Normalized example path is a Python identifier; upstream identity is unchanged. Existing Compiler operations only, no new production opcode or export. Native named ports position/selector correspond, in order, to original j/l; tests compare absolute amplitudes in each program's declared named order."
+}

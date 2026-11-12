@@ -9,7 +9,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"

@@ -36,8 +36,6 @@ from .execution_plan_contract import (
     _noise_model_from_payload,
     _require_mapping,
     _validate_plan_environment_payload,
-    plan_program,
-    plan_to_dict,
 )
 from .measurements import validate_measurements
 from .result import ExecutionResult
@@ -276,7 +274,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
 
     from .execution import _normalize_execution_output, run_native
 
-    payload = plan_to_dict(execution_plan)
+    # Standalone plan readers authenticate independently and would duplicate
+    # embedded dense matrices. Reuse one validated snapshot within this attempt.
+    payload = execution_plan.to_dict()
     _validate_plan_environment_payload(payload)
     native_profile = payload["version"] in ("1.1", "1.2", "1.3")
     if native_profile != (execution_plan.analysis is None):
@@ -309,7 +309,9 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
         raise ExecutionPlanContractError(
             "identity_mismatch", "decision batch_size must be a positive integer"
         )
-    source_ir = plan_program(execution_plan)
+    source_ir = CircuitIR.from_dict(
+        _require_mapping("ExecutionPlan.program", payload["program"])
+    )
     if any(
         instruction_is_dynamic(instruction) for instruction in source_ir.instructions
     ):

@@ -1,0 +1,26 @@
+{
+  "schema": "flagquantum.synthesis_native_hidden_storage_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [
+    "drop"
+  ],
+  "signatures": {
+    "drop": "(target: 'QNum | QArray[QBit]', /) -> 'None'"
+  },
+  "storage_scope": "root unconditional owned whole registers",
+  "effects": [
+    "qreg.hidden",
+    "qreg.drop"
+  ],
+  "retains_entangled_environment": true,
+  "reset_or_reuse": false,
+  "free_admitted": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-HIDDEN-STORAGE-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false,
+  "declaration_initializers": [
+    "none",
+    "matching zero-argument QBit/QNum/QArray constructor"
+  ]
+}

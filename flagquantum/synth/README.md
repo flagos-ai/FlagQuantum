@@ -20,6 +20,39 @@ adds `QArray[QBit]`, checked indexing/slices, bounded builtin `range`/`len`, H/S
 and plain writable helper ports. Mutable helpers currently contain only gates,
 bounded loops and other mutable helpers, with disjoint actual bit locations.
 
+Root qfunc programs also support `control(bit, lambda: qft(target))`, including
+the existing bounded comparison conditions. This reuses the checked controlled
+Fourier transform; target and condition inputs must be disjoint. Mutable-helper
+control supports phase and the direct controlled-X form below. See the
+[controlled Fourier admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-FOURIER-20261110.md)
+and the [Hadamard-test program](../../examples/synthesis/algorithms/quantum_primitives/hadamard_test/main.py).
+That program retains its entangled four-bit target as an explicit Output and
+selects the ancilla in `program.probabilities`. Selecting readout neither resets
+nor frees the target; all five physical qubits remain charged to budgets.
+
+The [all-ones control admission](../../docs/api-changes/FQ-SYNTH-NATIVE-ARRAY-CONTROL-20261110.md)
+adds `control(controls, lambda: X(target))` for a numeric register, qubit array,
+static element or nonempty slice. Every control bit must be one; a numeric
+condition here does not mean nonzero. The target is one distinct writable bit.
+The same spelling works inside static mutable helpers. Existing indexed
+control-X verification and lowering choose clean scratch and charge it to all
+resource budgets. General array-controlled unitary callbacks remain pending. The
+[50-control native example](../../examples/synthesis/tutorials/basics/mcx/main.py)
+uses a checked exact product-MPS plan, with no dense state allocation. This
+[planning admission](../../docs/api-changes/FQ-SYNTH-NATIVE-BASIS-MPS-20261110.md)
+is limited to more than32 physical wires and closed I/X/Z/CCX instructions
+on the raw IR implicit zero input. The report records the profile and rank bound;
+state-buffer, scratch and named-read budgets remain enforced. CX/SWAP and
+unproven coherent programs do not qualify for this storage proof.
+
+Wide native programs can also reuse Runtime's exact independent-interval MPS
+proof when each connected physical gate interval spans at most twelve sites.
+The report records `exact_independent_interval_mps` and the intermediate bond
+bound. Execution remains exact CPU complex128 with no approximation or backend
+fallback. Larger connected intervals retain statevector admission and its
+memory refusal. This does not prove that an application-level subroutine can
+be omitted; such a reduction requires a separate semantic argument.
+
 
 ## Python quantum programs
 
@@ -68,18 +101,74 @@ See the [UP-01 delivery](../../docs/roadmap/SYNTH_PYTHON_PROGRAM_UP01_DELIVERY.m
 
 The typed profile supports QBit, unsigned integer QNum and QArray[QBit], Output/Const,
 literal basis initialization, allocation, Hadamard preparation, fresh `|=`
-expressions using +, *, literal powers 1..8, and acyclic positional qfunc calls.
-Root ports are Output-only. The phase, within/apply, adjoint and scalar-control
+expressions using +, *, literal powers 1..8, comparisons, unsigned word bitwise
+operations and acyclic positional qfunc calls.
+Quantum root ports are Output-only; finite classical parameters follow the binding profile below. The phase, within/apply, adjoint and scalar-control
 extensions retain their checked individual scopes. Array views and static loops
 follow the native views admission above. Signed/fractional types, Input/free/drop,
 nested arrays, host callbacks, dynamic loops/branches and runtime classical
 parameters remain outside this Python profile. Existing scalar/Qmod capabilities
 retain their own documented scopes.
 
+For example, `res |= a <= 2` coherently computes a one-bit comparison into a
+fresh output. `res |= 3 & a`, `res |= a | b` and `res |= a ^ b` compute unsigned
+word values with zero extension. `res |= ~a` complements the inferred width of
+the quantum encoding: three-bit 6 becomes 1. It does not produce Python's negative
+integer `~6`. Outputs must be fresh; `|=` is the capture marker for assignment,
+not an in-place OR update. See the
+[native expression contract](../../docs/api-changes/FQ-SYNTH-NATIVE-EXPRESSION-VALUES-20261109.md)
+and [runnable inversion workflow](../../examples/synthesis/functions/arithmetic/bitwise_invert/bitwise_invert_example/README.md).
+
 Do not combine typed roots with scalar inputs/InputState/constants/functions/
 custom preparation or predicate output_mode=phase. A root owns its preparation.
 Its default state-buffer ceiling is 512 MiB; explicit limits apply to the actual
 checked plan. No new executor, root export or execution unwrap is introduced.
+
+## Static classical parameters
+
+Use the same `synthesize(..., classical_inputs=...)` for native typed qfunc and
+Qmod parameters. `float` denotes a scalar and `list[float]` a one-dimensional
+real array, bound at synthesis time. Quantum storage still uses Output/QArray.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import RX, Output, QArray, QBit, allocate, qfunc, synthesize
+
+@qfunc
+def encoding(theta: float, q: QArray[QBit]) -> None:
+    RX(theta, q[0])
+
+@qfunc
+def main(input_0: float, weight_0: float, res: Output[QArray[QBit]]) -> None:
+    allocate(1, res)
+    encoding(input_0, res)
+    encoding(weight_0, res)
+
+program = synthesize(main, classical_inputs={"input_0": 0.37, "weight_0": -0.81})
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("res",))))
+```
+
+Arrays are snapshotted from built-in lists/tuples; their elements and scalar
+bindings must be finite built-in int/float values in ±2**53, excluding bool.
+Each array is nonempty and total bindings are limited to 4096 elements. Helpers
+can take classical parameters alongside disjoint writable quantum views and use
+`len(angles)` in existing bounded static loops. Angle expressions admit +, -, *,
+/, unary signs and bounded element access. Real parameters cannot supply indices
+or allocation widths. Parameterized mutable helpers retain the gate/loop-only
+scope: no allocation, Output escape, adjoint or coherent control. Bindings do not
+become runtime tensors or differentiable parameters; synthesize again to rebind.
+See the [semantic contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CLASSICAL-20261107.md)
+and [native/Circuit QML comparison](../../examples/synthesis/tutorials/basics/qml/comparisons/circuit.py).
+
+Root `prepare_state(probabilities, bound, output)` and
+`prepare_amplitudes(amplitudes, bound, output)` also accept named bound real arrays.
+Their preparation limit remains 2..256 elements with power-of-two length;
+probabilities must sum to one and real amplitudes must have unit norm.
+Synthesis validates normalization without repairing it and infers the output
+width. Unbound global lists and parameterized Output helpers remain refused.
+Run the [complete native vector workflow](../../examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/main.py)
+for host-generated vectors, named sampling and raw signed amplitudes.
 
 ## Pure-function convenience
 
@@ -275,7 +364,7 @@ forms report whole source_resources and actual resources, source locations,
 source_format and effective memory limit/origin. Native reports also retain
 source_name/source_version and omit the Python arithmetic_resources field.
 
-Run python -m examples.synthesis.tutorials.getting_started.source_trial.main for the complete text
+Run python -m tools.synthesis_import_examples.source_trial.main for the complete text
 workflow, or append a local .qmod path. Four unchanged originals have passed
 both public forms: the baseline three at 1/23/24 qubits and the added integer
 comparator at 10 allocated qubits. This is development evidence; independent
@@ -307,7 +396,7 @@ FlagQuantum also admits phase(x<y,pi) as a native predicate extension; see the
 [profile and upstream grammar boundary](../ecosystem/_qmod/README.md).
 The named flag remains a live output, with internal workspace cleaned. This
 does not change Python predicate phase mode. Run
-`python -m examples.synthesis.tutorials.qmod.qmod_comparisons.main`; the complete circuit uses
+`python -m tools.synthesis_import_examples.qmod_comparisons.main`; the complete circuit uses
 10 total/used qubits, five work qubits, 49 operations and depth 40. See the
 [delivery record](../../docs/roadmap/SYNTH_QMOD_COMPARISONS_DELIVERY.md).
 
@@ -401,7 +490,7 @@ The two named results (0,0) and (1,1) each have probability 1/2, within floating
 precision. Default costs are 2 qubits, zero workspace, 4 operations (3 H, 1 CZ)
 and depth 3. Compiler handles arithmetic selection, exact inverse cleanup and
 wire layout; users supply register widths, preparation, phase intent and budgets.
-Run `python -m examples.synthesis.tutorials.qmod.qmod_phase.main`. Arbitrary angles, multibit phase
+Run `python -m tools.synthesis_import_examples.qmod_phase.main`. Arbitrary angles, multibit phase
 results, fixed classical phase, helpers and explicit basis/line targets remain
 unsupported. The Python-only output_mode option is not needed for source phase
 statements. See the [delivery](../../docs/roadmap/SYNTH_QMOD_PHASE_DELIVERY.md).
@@ -436,7 +525,7 @@ widths infer to 2, 2 and 4 bits. Compiler still handles gate design, temporary
 qubits, cleanup and layout; no gate sequence, physical index or bit decoding is
 needed. This source uses 18 qubits, 10 workspace, 166 operations and depth 124,
 including preparation and cleanup. Width/depth objectives select the same costs
-for this fixture. Run `python -m examples.synthesis.tutorials.qmod.qmod_helpers.main`.
+for this fixture. Run `python -m tools.synthesis_import_examples.qmod_helpers.main`.
 
 Helpers accept fixed-width Const and fresh Output scalars. Const actuals must
 be initialized and can alias other Const arguments; Outputs remain disjoint and
@@ -471,7 +560,7 @@ print(dict(program.probabilities(result, registers=("x", "y", "energy"))))
 All sixteen `(x,y,x*x+y)` tuples have probability approximately 1/16, with
 18 qubits, 10 workspace, 166 operations and depth 124 for this complete example.
 Compiler generates arithmetic, selects work storage, cleans it and handles the
-layout. Run `python -m examples.synthesis.tutorials.qmod.qmod_const.main`. Source roles can be
+layout. Run `python -m tools.synthesis_import_examples.qmod_const.main`. Source roles can be
 interleaved positionally; the adapter maps them to the same verified Compiler
 call ABI used by the previous internal slice.
 
@@ -709,7 +798,7 @@ temporary slot. The two scopes fit ten qubits, including six internal work bits;
 simultaneously preparing both flags needs eleven. Width and depth objectives
 both preserve these measured costs; scope orders are not automatically rewritten.
 
-Use `python -m examples.synthesis.tutorials.qmod.qmod_within.main` or a local .qmod file through the
+Use `python -m tools.synthesis_import_examples.qmod_within.main` or a local .qmod file through the
 same entry. Local declarations are function-level; within prepares fresh
 quantum-dependent unsigned expressions, and apply permits phase or Const-only
 helpers. Sequential blocks may reuse the source name. Bare qnum infers once;
@@ -784,7 +873,7 @@ This is a coherent variant with H, not the unmodified pinned RZ original.
 Amplitudes are exp(-0.95i)/sqrt(2) and exp(0.95i)/sqrt(2); probabilities are
 approximately 1/2 each. Decimal PHASE/RZ limits and gate-target restrictions are
 in the [compatibility delivery](../../docs/roadmap/SYNTH_LITERAL_RZ_DELIVERY.md).
-Run `python -m examples.synthesis.tutorials.qmod.native_and_qmod_rz.main` for current Python
+Run `python -m tools.synthesis_import_examples.native_and_qmod_rz.main` for current Python
 high-level arithmetic, matching Qmod and the independent RZ Circuit reference.
 The example states the native phase gap rather than calling Circuit high-level.
 
@@ -952,3 +1041,390 @@ python -m examples.synthesis.algorithms.grover.predicate_oracle.main compares Qm
 qfunc phase intent and an independent Circuit. It does not add a native Python
 phase_oracle/Grover export or a Python QStruct API. The private contract is
 docs/api-changes/FQ-SYNTH-UP06-PREDICATE-ORACLE-20261105.md.
+
+Native `qft(target)` applies the positive-sign Fourier transform, including bit
+reversal, to a complete initialized writable QNum or QArray[QBit] register. It
+shares the checked Qmod lowering and adds no workspace. Whole-register mutable
+helpers are supported; partial views and Const targets are refused. See the
+[Fourier contract](../../docs/api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md)
+and [runnable native example](../../examples/synthesis/functions/qft/README.md).
+
+Unsigned `expression % d` supports literal positive power-of-two divisors up to
+2**256, using the existing bitwise kernel. General, quantum and nonliteral
+divisors remain refused. See the [modulo contract](../../docs/api-changes/FQ-SYNTH-NATIVE-POWER-TWO-MODULO-20261109.md).
+
+For strict static typing, a fixed unsigned port may use standard metadata:
+`Output[Annotated[QNum, 5]]` with `from typing import Annotated`. This is the same
+five-bit domain as the existing capture spelling `Output[QNum[5]]`. Metadata is
+one literal width; signed/fractional annotations remain unsupported.
+
+`unitary(matrix, target)` accepts bounded static complex matrices, using the
+existing matrix validator and decomposition into registered gates. Complete
+registers, static QArray slices and scalar-bit lists use the same local order:
+position zero is the least significant matrix bit. Matrices are literal nested
+numeric lists/tuples or immutable global tuples; arbitrary host constructors and
+parameterized matrices remain refused. See the
+[unitary contract](../../docs/api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md).
+
+Typed qfunc fresh assignment accepts coherent conditional values, for example
+`res |= a if a < b else b`. The compiler derives a comparison and value-selection
+circuit, infers the wider branch width, and cleans its workspace. Nested values
+and checked helpers use the existing expression path. Conditions must be one
+bit, comparisons, or literal zero/one; host calls and signed/fractional branches
+remain refused. See the [conditional-value contract](../../docs/api-changes/FQ-SYNTH-NATIVE-CONDITIONAL-VALUES-20261109.md)
+and the [native minimum example](../../examples/synthesis/functions/arithmetic/extremum/minimum_2vars_example/README.md).
+
+`modular_exp(n, a, x, power)` applies coherent modular multiplication to an
+initialized numeric target `x` using a distinct exponent `power`. Starting from
+`x=1` computes `a**power mod n`; padding states `x>=n` stay unchanged. The base
+must be positive and coprime to the modulus. Static integer parameters, target
+width 1..5 and exponent width 1..10 use existing validation and lowering. See the
+[modular contract](../../docs/api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md)
+and [complete native workflow](../../examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example/WORKFLOW.md).
+
+`suzuki_trotter(operator,time,order,repetitions,target)` accepts a static native
+`fq.Observable` and finite classical time. Targets include whole registers,
+nonempty static slices and lists/tuples of distinct mutable bits in one owner.
+Observable index zero addresses the first view element, which is the least
+significant bit for a whole numeric register. Spectators retain identity action.
+The same target rules apply to fixed-seed `qdrift` calls. Cross-owner, repeated,
+invalid or Const locations refuse; zero-time calls still require initialization.
+See the [static-view contract](../../docs/api-changes/FQ-SYNTH-NATIVE-PAULI-VIEWS-20261110.md)
+and the [native Fermi-Hubbard example](../../examples/synthesis/applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/main.py). Orders 1/2 and 1..256 repetitions preserve
+declared term order and identity global phase using the shared Pauli lowering.
+The result is the specified product formula; no general exact-exponential or
+approximation-error guarantee is implied. See the
+[native evolution contract](../../docs/api-changes/FQ-SYNTH-NATIVE-EVOLUTION-20261109.md)
+and [native example](../../examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter/WORKFLOW.md).
+
+## Checked native unitary regions
+
+The [unitary-region admission](../../docs/api-changes/FQ-SYNTH-NATIVE-UNITARY-REGIONS-20261110.md)
+extends the existing markers to pure gates and static writable helpers on
+initialized storage. Both Python and the test-only source adapter use the same
+Compiler inverse rules. Existing arithmetic-local scopes and Const-only inverse
+calls retain their contracts.
+
+```python
+import math
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import Output, QNum, allocate, apply, hadamard_transform, phase, qft, qfunc, within
+
+@qfunc
+def main(x: Output[QNum[3]], y: Output[QNum[4]]) -> None:
+    allocate(x)
+    hadamard_transform(x)
+    allocate(y)
+    with within():
+        qft(y)
+    with apply():
+        phase(y * x**2, 2 * math.pi / 16)
+
+program = synth.synthesize(main, max_workspace=0)
+print(dict(program.probabilities(fq.run(program), registers=("x", "y"))))
+```
+
+Each pair `(x, x*x %16)` has probability1/8. No gate decomposition, physical
+wire numbers, manual inverse or bit-string decoding is needed. The retained
+[QCE example](../../examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/main.py)
+has an independent modular-permutation Circuit reference. Integer literal
+powers in phases reuse sparse polynomial lowering without arithmetic scratch.
+
+`with adjoint():` also accepts direct gates and bounded static writable helper
+calls. Gate order, constant global phase and matrix conjugate transpose are
+preserved. Allocation, Output publication, fresh locals mixed into a unitary
+preparation, general host callbacks and ownership changes are refused. Arbitrary
+mutable-helper coherent control is a separate boundary. The
+[credit-card kernel](../../examples/synthesis/applications/finance/credit_card_fraud/main.py)
+checks two nonzero parameter pairs; [randomized benchmarking](../../examples/synthesis/applications/benchmarking/randomized_benchmarking/main.py)
+keeps the original sequence and explicitly retains the global phase of SX.
+These are local quantum-program checks; full Notebook workflows remain separate.
+
+
+## Exact signed and binary-scaled numbers
+
+Native scalar annotations support `QNum[width, signed, fractional_bits]`.
+Use `Annotated[QNum, (width, signed, fractional_bits)]` for static Python type
+checking. A signed register uses two's complement; the encoded integer is
+scaled by `2**(-fractional_bits)`. Width-only QNum remains unsigned and unscaled.
+Fresh `|=` assignments infer the complete input domain, even when an input was
+prepared in a single basis state. Literal `^=` modifies a fitting raw initialized
+word; it never numerically adds or changes the scale.
+
+```python
+from typing import Annotated
+
+import flagquantum as fq
+from flagquantum.synth import Output, QNum, allocate, hadamard_transform, max, qfunc, synthesize
+
+
+@qfunc
+def main(a: Output[Annotated[QNum, 3]], result: Output[QNum]) -> None:
+    allocate(a)
+    hadamard_transform(a)
+    result |= max(3.5, a)
+
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.numeric_probabilities(result, registers=("result",))))
+```
+
+The exact numeric keys are `Fraction(7, 2)` with probability 1/2, and integers
+4, 5, 6 and 7 with probability 1/8 each. The existing `probabilities` method
+continues to return raw integer words. `numeric_probabilities` applies the same
+bounded named reading and returns immutable exact Fraction keys; verified native
+numeric declarations are required. It never infers scale from mutable report
+fields or Qmod-prefixed metadata.
+
+Import the typed `synth.min`/`synth.max` markers for quantum extrema; each takes
+exactly two positional values and returns a captured QNum. They refuse ordinary
+host execution. Python's unshadowed min/max are also recognized during capture,
+but their host annotations do not express quantum-valued extrema. After a
+wildcard synth import, use `builtins.min`/`builtins.max` in host-only code.
+
+The current slice supports mixed-sign integer bitwise operations/equality,
+subtraction/negation, unsigned exact binary multiplication and min/max. Decimal
+operands such as 0.1 refuse instead of rounding. Arithmetic reads of scaled
+inputs, general signed operators, numeric helpers/locals and signed/scaled
+control expressions remain outside this admission. Complete native
+quantum examples and independent Circuit references live under
+[`examples/synthesis/functions/arithmetic`](../../examples/synthesis/functions/arithmetic/).
+Associated Notebook workflows are tracked separately.
+
+## Shared Boolean factors in real phases
+
+Large expressions containing repeated Boolean products can retain those products
+as shared predicates instead of expanding every monomial. This is automatic after
+an existing expansion-budget refusal; the small-expression path is preserved.
+The compiler computes bounded predicates, applies the phase, and uncomputes their
+work bits. Existing operator, polynomial and physical resource limits still apply.
+This admits no new signed/scaled numeric or controlled-region semantics.
+
+See the [internal semantic contract](../../docs/api-changes/FQ-SYNTH-NATIVE-PHASE-FACTORS-20261110.md)
+and [native Facility Location workflow](../../examples/synthesis/applications/logistics/facility_location/WORKFLOW.md).
+
+
+Native root programs may control a Pauli-axis equatorial rotation with
+`control(predicate, lambda: R(theta, phi, target))`. Use `phi=0` for X or
+`phi=pi/2` for Y; negative axes are also exact. Other equatorial axes are
+rejected rather than rounded. The condition is a scalar bit or a bounded
+comparison, including `&`, `|`, `^` and `~` trees of comparisons over at most
+eight input bits. The target must be initialized, writable and disjoint from
+the condition's registers. Predicate workspace is computed, uncomputed and
+included in resource budgets; controlling mutable helper calls remains excluded.
+The [native tutorial](../../examples/synthesis/tutorials/basics/quantum_programming/controlled_rotation/README.md)
+and its independent Circuit comparison demonstrate the complete workflow.
+
+A Pauli-axis rotation can also use one static array location as its condition:
+`control(x[i], lambda: R(theta, pi/2, target))`. A one-bit slice is accepted;
+multi-bit conditions and out-of-bounds indices are refused. A gate-only mutable
+helper may contain this direct rotation on its checked borrowed scalar ports.
+This allows static loops to call a reusable rotation helper, while keeping its
+control read-only, its target writable and both underlying registers disjoint.
+The [affine rotation example](../../examples/synthesis/functions/linear_pauli_rotations/README.md)
+composes `slope*x+offset` on three targets without physical wire indices or work
+qubits. Its test-only original and native program both match an independent
+block matrix, including coherent input and absolute phase. See the
+[indexed control contract](../../docs/api-changes/FQ-SYNTH-NATIVE-INDEXED-PAULI-CONTROL-20261110.md).
+
+## Exact numeric phase reads
+
+Root program `phase(expression, angle)` reads signed and binary-scaled QNum
+values with their declared meaning, including negative two's-complement values.
+For example, `phase(a*a - a/2 + 0.17, 0.37)` uses the numeric value of `a`, not
+its raw unsigned word. The finite coefficient is classical; existing phase
+expansion and actual circuit budgets still apply. All encountered reads remain
+checked even after cancellation. Numeric comparisons, control conditions,
+helper ports and Boolean-factor fallback remain outside this admission.
+
+The [native diagonal QPE example](../../examples/synthesis/functions/qpe/README.md)
+combines commuting controlled evolution into a phase expression and then
+applies inverse QFT. It preserves `Output[Annotated[QNum, (2, False, 2)]]` for
+the fractional phase result. `numeric_probabilities` directly reports exact
+phase values 0, 1/2, 1/4 and 3/4, correlated with the four input words at
+probability 1/4 each. This concrete composition and its identical flexible-QPE
+source counterpart do not add a general callback-based QPE operation.
+See the [numeric phase contract](../../docs/api-changes/FQ-SYNTH-NATIVE-NUMERIC-PHASE-20261110.md)
+and `tests/integration/test_synthesis_native_numeric_phase.py` for acceptance.
+
+### Reversible arithmetic into initialized outputs
+
+An unsigned root qfunc can XOR a computed value into an initialized scalar:
+
+```python
+@qfunc
+def main(a: Output[QNum], b: Output[QNum], marker: Output[QBit]):
+    allocate(4, a)
+    allocate(4, b)
+    allocate(marker)
+    hadamard_transform(a)
+    hadamard_transform(b)
+    marker ^= a <= b
+```
+
+The target may contain a nonzero or coherent quantum value. The operation means
+`target XOR expression`, not replacement. Inputs remain unchanged; actual work
+qubits are restored. Expressions reuse the checked unsigned grammar and must fit
+the target without truncation. Use `|=` for fresh initialization. Literal `^=`
+mask behavior is unchanged. Target/input overlap, uninitialized storage,
+signed/scaled expressions, arrays and borrowed mutable-helper expression XOR
+are currently refused. Existing root `adjoint` and `within`/`apply` can reverse
+expression XOR. The native [QSVT program](../../examples/synthesis/functions/qsvt/main.py)
+uses it for reversible comparison; its complete resource report remains visible.
+
+### Reversible preparation on existing storage
+
+`inplace_prepare_amplitudes` and `inplace_prepare_state` apply the existing real
+preparation unitary to initialized storage, including nonzero or entangled input.
+They allocate no qubits and do not reset the register. The amplitude vector must
+be normalized; probability vectors must be nonnegative and sum to one. Adjoint
+reverses the complete unitary, rather than just its action on zero input.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import *
+
+@qfunc
+def main(q: Output[QNum]) -> None:
+    allocate(2, q)
+    hadamard_transform(q)
+    with within():
+        inplace_prepare_amplitudes([0.5, -0.5, 0.5, 0.5], 0, q)
+    with apply():
+        phase(0.37 * q, 1)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+```
+
+The initial profile accepts a complete writable register and static real vectors
+of power-of-two length 2..256. Slices, reordered views, quantum-controlled
+preparation, complex amplitudes and Const mutation are refused. Existing
+`prepare_amplitudes` and `prepare_state` still initialize fresh output storage.
+
+## Coherent control of a static matrix
+
+Existing `control` and `unitary` compose directly in native Python qfuncs:
+
+```python
+import flagquantum as fq
+from flagquantum.synth import Output, QBit, allocate, control, hadamard_transform, qfunc, synthesize, unitary
+
+@qfunc
+def main(selector: Output[QBit], target: Output[QBit]) -> None:
+    allocate(selector)
+    allocate(target)
+    hadamard_transform(selector)
+    control(~selector, lambda: unitary(((-1, 0), (0, -1)), target))
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("selector", "target"))))
+print(result.statevector())
+```
+
+The zero-selector branch receives minus identity, retaining the relative sign
+that probabilities alone cannot reveal. Positive `control(selector, ...)`
+selects one. A scalar or indexed selector must be initialized and writable;
+selector and target locations must be disjoint. Existing literal/immutable
+matrix and target-view rules apply. Selector plus target occupy at most five
+matrix qubits, with actual decomposition work still subject to synthesis
+budgets. Plain mutable helpers and root inverse/within regions reuse the same
+checked unitary effect. Const selectors, arbitrary computed predicates and
+multi-bit truth tests remain refused; see the
+[semantic admission](../../docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-MATRIX-20261110.md).
+
+## Owned private registers
+
+Private storage uses the same quantum types as ports. A constructor initializer
+creates a captured handle, not a quantum state. Allocate or prepare it before
+use and explicitly drop it at the unconditional root:
+
+```python
+import flagquantum as fq
+from flagquantum.synth import CX, H, Output, QBit, allocate, drop, qfunc, synthesize
+
+@qfunc
+def main(test: Output[QBit]) -> None:
+    private: QBit = QBit()
+    allocate(test)
+    allocate(private)
+    H(private)
+    CX(private, test)
+    drop(private)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("test",))))
+```
+
+The test marginal is 50/50. Both physical qubits remain in the Bell state;
+`result.statevector()` retains the environment, while `program.registers` exposes
+only `test`. Drop does not reset, uncompute, measure or recycle storage. Dirty
+private qubits count toward physical width/memory and are distinct from clean
+work bits. Missing/duplicate drops, post-drop access, signature/view drops,
+Output-helper escape and ownership changes in helpers/loops/branches/unitary
+regions refuse. This profile adds no `free` operation. See the
+[admission](../../docs/api-changes/FQ-SYNTH-NATIVE-HIDDEN-STORAGE-20261110.md) and
+[native overlap example](../../examples/synthesis/algorithms/quantum_primitives/swap_test/main.py).
+
+## Static matrix phase estimation
+
+The native `qpe` subset composes an existing static matrix into controlled powers
+and inverse QFT, keeping the numeric counter format explicit:
+
+```python
+from typing import Annotated
+import flagquantum as fq
+from flagquantum.synth import Output, QArray, QBit, QNum, allocate, drop, qfunc, qpe, synthesize, unitary
+
+@qfunc
+def main(phase_result: Output[Annotated[QNum, (3, False, 3)]]) -> None:
+    state: QArray[QBit] = QArray()
+    allocate(1, state)
+    allocate(phase_result)
+    qpe(lambda: unitary([[-1, 0], [0, -1]], state), phase_result)
+    drop(state)
+
+program = synthesize(main, max_workspace=0)
+result = fq.run(program)
+print(dict(program.numeric_probabilities(result, registers=("phase_result",))))
+```
+
+The exact phase value is `Fraction(1, 2)` with probability one; both physical
+registers remain charged to budgets.
+The current callback is exactly one static unitary call in a zero-argument
+lambda, at the unconditional root. The whole numeric counter is one to eight
+all-fractional bits, signed or unsigned, initialized by allocate and unused.
+General callbacks, flexible powers and nested/inverse QPE remain pending.
+See the [matrix-QPE admission](../../docs/api-changes/FQ-SYNTH-NATIVE-MATRIX-QPE-20261110.md)
+and the [native matrix example](../../examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/main.py).
+
+## Resetting a quantum bit
+
+`RESET(q)` accepts an initialized writable scalar bit or array element. It
+traces the bit's old state and prepares zero, preserving a mixed state on any
+previously entangled partner. This selects checked density-matrix execution and
+charges its memory and channel operations. RESET does not free storage and is
+refused inside adjoint, within/apply or coherent-control regions. Use a bounded
+static loop for multiple bits; a whole array is not a scalar RESET target.
+
+```python
+import flagquantum as fq
+from flagquantum.synth import CX, H, RESET, Output, QArray, QBit, allocate, qfunc, synthesize
+
+@qfunc
+def main(q: Output[QArray[QBit]]) -> None:
+    allocate(2, q)
+    H(q[0])
+    CX(q[0], q[1])
+    RESET(q[0])
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("q",))))
+# {(0,): 0.5, (2,): 0.5}; the remaining bit is mixed.
+```

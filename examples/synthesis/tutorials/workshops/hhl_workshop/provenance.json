@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/workshops/hhl_workshop/hhl_workshop.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "1969cd5e613a8da44f843b4e04b6c0cca4aa3796bb987d34ab6251170fd44edd",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.hhl_workshop.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_matrix_hhl.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Original matrix entries,all rotation angles,source register order,width and fractional metadata retained. Allocate the indicator before the pure within/apply region; it remains fresh zero until table application. Shared Walsh/Gray synthesis plus reversible matrix QPE reuse existing effects. Independent Householder,matrix powers,dense Fourier and direct table blocks compare complete absolute-phase states at source input and two nonzero input variations. Actual matrix decomposition workspace is charged and clean. Dirty dropped environments remain physical and are marginalized,not reset or recycled. No algorithmic performance or complete Notebook claim."
+}

@@ -1,0 +1,6 @@
+{
+  "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/PHASE.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "8cd253f41e1ae55f32592e1a8af20c09409d970e365d4e84b5e0eed06bcca035",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

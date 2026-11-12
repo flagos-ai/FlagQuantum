@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/minimum_dominating_set/minimum_dominating_set.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f72ad8452a3fa953f44c7b6dd64522fa47bbf10195bea93ab349f5ea8fb5d721",
+  "native_entrypoint": "examples.synthesis.applications.optimization.minimum_dominating_set.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_constraint_costs.py",
+  "scope": "Complete retained 20-bit 6-layer quantum program, two nonzero parameter vectors and raw full-state source/native/independent Circuit comparison. Both width/depth instruction sequences and actual budgets checked. Complete Notebook optimizer workflow remains pending.",
+  "native_semantic_adaptations": "Native explicit one-dimensional quantum fields replace qstruct storage; keep every original field width, coefficient, constraint, layer and gamma-first/beta-last parameter convention. Preserve the two three-bit slack fields with weights1,2,1 rather than binary1,2,4. Existing phase arithmetic, disjoint mutable helpers, bounded static loops and RX are reused. No production Compiler, API, budget, dependency or executor changes. Independent affine-square reference emits only one/two-bit truth tables, preserving the existing six-bit enumerated-reference bound. Field-placement mapping explicitly handles declaration order and low-bit indices within each field. No Qmod source/importer in user examples."
+}

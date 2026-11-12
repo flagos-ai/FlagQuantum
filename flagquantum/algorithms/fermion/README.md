@@ -143,3 +143,88 @@ and run `python -m pytest tests/unit/fermion/test_hubbard_ring.py
 tests/integration/test_fermion_hubbard_ring.py -q` after changing this behavior.
 One/two-site cycles are refused, coefficients remain static, and the dense
 reference remains a bounded correctness oracle.
+
+For the bounded periodic training composition, run
+`python -m examples.algorithms.fermion_hubbard_ring_training`. Existing six-mode
+UCCSD and PyTorch Adam optimize circuit angles for the three-site ring with
+one up and one down particle. No dense reference state, domain solver or runtime
+change is needed. Run
+`python -m pytest tests/integration/test_fermion_hubbard_ring_training.py -q`
+for independent lattice energies, finite-difference gradients, spin-sector
+preservation, closing-bond sensitivity and dependency isolation. See the
+[training golden path](../../../docs/development/FERMION_HUBBARD_RING.md#training-golden-path)
+for float32 angle precision and bounded CPU scope.
+
+The same model module owns experimental `spinless_fermion_chain` and
+`spinless_fermion_ring`: one mode per site, minus-t hopping, unshifted
+nearest-neighbor V interaction and minus-mu population. They return existing
+fermion values and own no solver or runtime. Open chains allow one site; rings
+require at least three. Static validation reuses the existing scalar and count
+boundaries. Encode with explicit `n_modes=n_sites`, including zero operators.
+Run `python -m examples.algorithms.fermion_spinless` and add `--periodic` to
+replace only the model producer; three encodings measure -0.7320508076 or 1.0
+respectively at t=1, V=2, mu=0 and N=2. See the
+[spinless golden path](../../../docs/development/FERMION_SPINLESS.md) and run
+`python -m pytest tests/unit/fermion/test_spinless.py tests/integration/test_spinless_fermion.py -q`
+for independent occupation action, boundary signs, free spectra, density bonds,
+encodings and native gradients. Dense state preparation remains a bounded CPU
+inspection tool; no coefficient-gradient or scalability claim is introduced.
+
+For spinless training, run
+`python -m examples.algorithms.fermion_spinless_training` and add `--periodic`
+to replace only the static producer. Existing single excitations prepare N=2 in
+three full JW modes, and native expectations feed 160 PyTorch Adam steps on two
+float64 circuit angles. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_spinless_training.py -q` to
+check occupation-matrix energies, finite-difference gradients, closing bonds,
+particle-sector support and native dependency isolation. See the
+[training golden path](../../../docs/development/FERMION_SPINLESS.md#training-golden-path)
+for expected values and the zero-hopping stationary case. This example adds no
+solver or model API and makes no coefficient-gradient or scalability claim.
+
+
+Diagonal symmetry discovery lives in `symmetry.discover_z_parities`. It returns
+independent encoded Z words for the existing `reduce_z_parities` consumer;
+optional independent candidate words restrict the search to their product span.
+It selects no eigenvalues and does not infer particle-number conservation.
+Run `python -m examples.algorithms.fermion_parity_discovery` for the shortest
+explicit-total-parity path, then change a hopping term and run
+`python -m pytest tests/unit/fermion/test_parity_discovery.py tests/integration/test_fermion_parity_discovery.py -q`.
+See the [discovery scope](../../../docs/development/FERMION_PARITY_DISCOVERY.md)
+for encoded-index conventions, exact coefficients and unsupported X/Y discovery.
+
+
+## Explicit parity-sector training composition
+
+Run `python -m examples.algorithms.fermion_parity_training` for the ten-minute
+path from a fixed pairing Hamiltonian through total-parity discovery, explicit
++1 selection, reduced-register angle training and lifted-state inspection.
+Change the static pairing coefficient and run
+`python -m pytest tests/integration/test_fermion_parity_training.py -q`.
+The tests replace JW with parity and BK without changing the training consumer,
+and check energies and gradients against an independent occupation-space matrix.
+Symbolic discovery/reduction remain static: they own no optimizer, runtime or
+trainable-coefficient conversion. This experimental CPU example trains one
+circuit angle, not model coefficients or an automatic matched tapered ansatz.
+The selected sector contains N=0 and N=2; it is not an exact-number projection.
+
+
+## Commuting X/Y/Z symmetry discovery
+
+`stabilizer.discover_pauli_symmetries` discovers a deterministic maximum-size
+independent commuting set of positive Pauli words in an explicit encoded
+register. The full centralizer can contain anticommuting pairs; it is not returned
+as if every member defined a joint sector. Independent signed candidates can
+restrict the binary search span; signs and scalar product phases are discarded.
+Choose eigenvalues for the returned positive words explicitly and pass them to
+the unchanged `reduce_stabilizers` consumer. General discovery need not choose
+the same commuting subgroup as diagonal discovery unless candidates restrict it.
+
+Run `python -m examples.algorithms.fermion_pauli_discovery` for the ten-minute
+path: discover Y0 and X1Z2, choose +1/-1, reduce three qubits to one, measure
+-1.1770329614 and inspect its lifted residual. Change a static coefficient, then
+run `python -m pytest tests/unit/fermion/test_pauli_discovery.py tests/integration/test_fermion_pauli_discovery.py -q`.
+See [the scope and conventions](../../../docs/development/FERMION_PAULI_DISCOVERY.md).
+Symbolic discovery depends on native algebra and shared binary elimination;
+it owns no optimizer, runtime, adapter, dense solver or automatic sector choice.
+This is experimental local CPU behavior with static coefficients.

@@ -70,7 +70,7 @@ with those ceilings.
 existing sealed-plan validation, Compiler resource limits, basis membership,
 topology and replayed layout evidence. It neither plans nor executes and contains
 no numerical kernel. Start with
-`python -m examples.synthesis.tutorials.workspace.execution_contract.main` and
+`python -m tools.synthesis_compiler_examples.execution_contract.main` and
 `tests/team/services/test_synthesis_plan_checks.py`, then the real scenarios in
 `tests/integration/test_synthesis_execution_contract.py`. The
 [contract](../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md) and

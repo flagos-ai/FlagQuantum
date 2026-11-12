@@ -10,6 +10,7 @@ from types import MethodType
 import pytest
 
 import flagquantum as fq
+from flagquantum import synth
 from flagquantum.algorithms.arithmetic import (
     adder_circuit,
     adder_qubits,
@@ -37,7 +38,11 @@ from flagquantum.algorithms.data_encoding import (
 from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
 from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
 from flagquantum.algorithms.fermion.preparation import prepare_slater
-from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
+from flagquantum.algorithms.fermion.stabilizer import (
+    discover_pauli_symmetries,
+    reduce_stabilizers,
+)
+from flagquantum.algorithms.fermion.symmetry import discover_z_parities
 from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
@@ -219,6 +224,8 @@ pytestmark = pytest.mark.unit
 # figures a caller takes from one run rather than a second execution.
 
 ENTRIES = (
+    synth.qdrift,
+    synth.Program.numeric_probabilities,
     read_shot_data_file,
     iter_shot_data_file,
     write_shot_data_file,
@@ -309,6 +316,8 @@ ENTRIES = (
     fermi_hubbard_chain,
     fermionic_fourier_transform,
     reduce_stabilizers,
+    discover_pauli_symmetries,
+    discover_z_parities,
     PyMatchingDecoder.decode_batch,
     PyMatchingGraphDecoder,
     MatchingGraph,

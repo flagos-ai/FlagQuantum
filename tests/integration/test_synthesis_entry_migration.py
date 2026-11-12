@@ -15,7 +15,7 @@ from flagquantum.synth import (
     phase,
     qfunc,
 )
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 

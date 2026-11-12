@@ -1,0 +1,7 @@
+{
+  "upstream_path": "tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "9af2e559531a540f5a633e26557c644b35c062cff2de49079cfe3d8477cd8497",
+  "scope": "Complete retained quantum program; companion workflows pending.",
+  "native_semantic_adaptations": "Retain the3-bit input and4-bit Fourier target. QFT preparation and its checked inverse implement square modulo16. The independent Circuit uses a modular permutation instead of Fourier gates."
+}

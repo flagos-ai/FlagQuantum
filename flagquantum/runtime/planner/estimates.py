@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from math import isqrt
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -156,12 +157,39 @@ def exact_interval_mps_bond(qubits: tuple[tuple[int, ...], ...]) -> int | None:
     return 1 << (largest // 2)
 
 
+def exact_basis_mps_bond(source_ir: CircuitIR) -> int | None:
+    """Prove rank one for a closed permutation/sign circuit on implicit zero input.
+
+    This proof applies to raw CircuitIR only, not an external initial tensor.
+    The caller must establish that initialization contract before using it.
+    CX/SWAP stay outside this storage proof: their current exact SVD path may
+    retain zero singular directions even for a mathematical product state.
+    """
+    arities = {"i": 1, "x": 1, "z": 1, "ccx": 3}
+    if any(
+        arities.get(gate.name) != len(gate.wires)
+        or len(set(gate.wires)) != len(gate.wires)
+        or any(
+            type(wire) is not int or not 0 <= wire < source_ir.n_wires
+            for wire in gate.wires
+        )
+        or gate.params
+        or gate.matrix is not None
+        or gate.metadata
+        for gate in source_ir.instructions
+    ):
+        return None
+    return 1
+
+
 def _exact_mps_bond(
     source_ir: CircuitIR,
     resolved: ResolvedExecutionOptions,
     has_noise: bool,
     is_dynamic: bool,
     world_size: int,
+    *,
+    zero_initial_state: bool = False,
 ) -> int | None:
     if (
         resolved.mode == "mps"
@@ -171,7 +199,58 @@ def _exact_mps_bond(
         and source_ir.n_wires > 32
         and world_size == 1
     ):
+        if zero_initial_state and exact_basis_mps_bond(source_ir) == 1:
+            return 1
         return exact_interval_mps_bond(
             tuple(gate.wires for gate in source_ir.instructions)
         )
     return None
+
+
+def _mps_storage_policy(
+    source_ir: CircuitIR,
+    resolved: ResolvedExecutionOptions,
+    has_noise: bool,
+    is_dynamic: bool,
+    world_size: int,
+    *,
+    zero_initial_state: bool,
+    complex_bytes: int,
+    trajectory_count: int,
+) -> tuple[int | None, bool]:
+    """Keep exact rank proofs and the existing noisy storage estimate together."""
+    bond = _exact_mps_bond(
+        source_ir,
+        resolved,
+        has_noise,
+        is_dynamic,
+        world_size,
+        zero_initial_state=zero_initial_state,
+    )
+    preserve_basis_vocabulary = (
+        bond == 1 and zero_initial_state and exact_basis_mps_bond(source_ir) == 1
+    )
+    if (
+        has_noise
+        and resolved.mode == "auto"
+        and resolved.allow_approximate
+        and resolved.memory_limit_bytes is not None
+        and estimate_density_bytes(
+            source_ir.n_wires,
+            bsz=resolved.batch_size,
+            complex_bytes=complex_bytes,
+        )
+        > resolved.memory_limit_bytes
+    ):
+        denominator = (
+            resolved.batch_size
+            * source_ir.n_wires
+            * 2
+            * complex_bytes
+            * trajectory_count
+        )
+        bond = max(
+            1,
+            isqrt(resolved.memory_limit_bytes // denominator),
+        )
+    return bond, preserve_basis_vocabulary

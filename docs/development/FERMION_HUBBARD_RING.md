@@ -71,3 +71,29 @@ claim follows. Circuit angle differentiation in the composed integration test
 does not make static Hamiltonian coefficients trainable. The open-chain
 capability entry remains specific to the chain. Ring catalog registration is
 owned separately by Integration; this slice does not promote capability maturity.
+
+## Training golden path
+
+```bash
+python -m examples.algorithms.fermion_hubbard_ring_training
+python -m pytest tests/integration/test_fermion_hubbard_ring_training.py -q
+```
+
+The fixed three-site, two-electron example composes the existing ring producer,
+full JW observable, six-mode UCCSD circuit, native `fq.run` and PyTorch Adam.
+It prepares one particle of each spin without a dense eigenvector and runs 60
+parameter updates. The analytic ground energy -3.1231056256 is a lower-bound
+inspection reference, not a promised optimizer result. UCCSD normalizes angles
+to float32; the example reports central differences at epsilon=1e-3, parameter
+movement and separate final spin populations. Optimizer initialization may import
+NumPy through PyTorch; OpenFermion, Cirq, PySCF, SciPy and h5py are unnecessary.
+
+Change the initial angles and run the focused tests. A separate nine-dimensional
+distinguishable-particle lattice Hamiltonian checks arbitrary nonzero UCCSD
+energies with the interleaved-occupation sign applied explicitly. Central
+differences of that reference check native gradients; an optimizer update must
+lower energy and retain one up and one down particle. Replacing the ring producer
+with the chain must change both energy and gradient in the same consumer.
+Incorrect parameter counts fail at the existing ansatz boundary. This composition
+owns no new algorithm or execution contract, does not differentiate static model
+coefficients and makes no general convergence, accelerator or scalability claim.

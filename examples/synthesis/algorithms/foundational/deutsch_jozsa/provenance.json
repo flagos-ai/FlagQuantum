@@ -1,0 +1,45 @@
+{
+  "upstream_path": "algorithms/foundational/deutsch_jozsa/deutsch_jozsa.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "bff22e530fb7b716bd30f846cc20efa9293c45072c2c89aa3f6bbc6e6e3b903e",
+  "notebook_path": "algorithms/foundational/deutsch_jozsa/deutsch_jozsa.ipynb",
+  "git_blob_sha1": "d17b0a03012e8d5ee39a5ab2f9e34c34f37619e3",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "sha256": "2438efbf7f87a7c8ed55c40d7d6bdcb0344f4799d50c1b3c95f7d59e13d6e31e"
+    },
+    {
+      "index": 9,
+      "sha256": "401584d8206fe87cc2c3ed49c284bfeb2f3832afe588b83b9c86e8488797ec10"
+    },
+    {
+      "index": 13,
+      "sha256": "84184a95f30ce1006c6a1082513cd8c9ab5625df1b921fd5f56d819f93d97985"
+    },
+    {
+      "index": 15,
+      "sha256": "f43cc48104303e8555c385372f572d484841f0d372b01fdbf8de36cf2b3f9c57"
+    },
+    {
+      "index": 17,
+      "sha256": "bc97d14396b450b04413a94bc2566a5ece96d542587202c1ca98b462dc0d54fe"
+    },
+    {
+      "index": 18,
+      "sha256": "5af493d5f69bd523bb70d1504055780d95fa373db4c70a94c216cfbd62c84cac"
+    },
+    {
+      "index": 22,
+      "sha256": "6bcf20a1f56595c256ed0edf51030338acdfb26caa12766551696e641b9b5957"
+    },
+    {
+      "index": 25,
+      "sha256": "f033384f950d0379fa7e76470d3deaf492de87cf809092696b4a493a0defce50"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.algorithms.foundational.deutsch_jozsa.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "scope": "Complete local computational Notebook workflow: quantum composition, synthesis, text visualization, seeded sampling from exact named probabilities, and classical decision/recovery. Local drawing and sampling replace cloud services; no hardware result is claimed. Concrete tutorial oracles are specialized; general quantum callable ports are not added.",
+  "native_semantic_adaptations": "Algebraically reduce the two concrete predicates to the high bit and its complement; retain the constant pi phase. Classify from zero-outcome probability under the promise rather than the upstream row-count heuristic. Explicit Hadamard transforms replace gate-preparation within/apply."
+}

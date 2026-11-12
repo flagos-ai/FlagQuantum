@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "a782a5e6fc3cf6b7f9d7bd2ed32645da1e3b80185172081e3bfcb578f1df1433",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_phase_estimation.qpe_for_matrix.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_matrix_qpe.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "All original matrix entries,phase widths,signedness and fractional metadata retained. Native static matrix-only qpe callback reuses existing controlled matrix power and inverse_qft effects. Private state is dropped without reset or reuse. Complete environmental state and named raw/exactFraction marginals match independent matrix powers and dense inverseFourier,including two nonzero real input variations. Existing numeric helper borrowing contract remains unchanged. Original/native resource counts match."
+}

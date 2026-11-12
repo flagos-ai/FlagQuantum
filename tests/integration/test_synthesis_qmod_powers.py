@@ -8,7 +8,7 @@ import flagquantum as fq
 from flagquantum import synth
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 
