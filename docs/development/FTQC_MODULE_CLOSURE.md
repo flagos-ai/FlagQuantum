@@ -212,3 +212,5 @@ remain open and fixed inventory counts do not increase.
 Concrete register domains and the default truth-table connection reuse existing numerical owners; see [Classical register domains](CLASSICAL_REGISTER_DOMAINS.md). No executable admission is expanded.
 
 [Typed classical values](CLASSICAL_TYPED_VALUES.md) connect concrete declarations to existing validation and collection owners, replacing state-local dispatch without widening executable admission.
+
+[Symbolic numerical metadata](CLASSICAL_SYMBOLIC_METADATA.md) reaches existing binding, collection and domain owners while binary codecs retain concrete admission.

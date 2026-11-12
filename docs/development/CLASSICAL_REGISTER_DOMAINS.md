@@ -61,3 +61,7 @@ source is unchanged. G2 remains open; this does not start G3.
 Batch checks: 53 new tests, 3556 concentrated regressions and 84 CPU/TN checks passed. Strict typing passed for six changed Python files. Domain dispatch (30 statements/16 branches), shared metadata (13/8), truth table (29/8) and codec (51/28) reached 100%; the broader measured owners reached 97% collectively. Seven pinned source blobs matched the inventory.
 
 Default smoke/unit: `7 failed, 22234 passed, 300 skipped, 1037 warnings in 245.15s (0:04:05)`. Observed failures belong to the seven known baseline IDs; 0 baseline IDs were not observed before the bounded stop. This is not a green full-suite result. Evidence: `ftqc-reference-env/g2-classical-domains-default-comparison.json`.
+
+## Subsequent symbolic composition
+
+[Symbolic metadata](CLASSICAL_SYMBOLIC_METADATA.md) replaces the concrete-only numerical adapter described above. Existing numerical owners now receive symbolic widths/value parameters; bit codecs still require concrete metadata. Source operation-specific successes and failures, rather than blanket symbolic support, are verified.

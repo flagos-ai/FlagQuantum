@@ -67,3 +67,7 @@ inferred for wider numerical declarations.
 Local verification: 151 new tests, 3707 concentrated regressions, and 84 CPU/TN checks passed. Strict typing of four changed Python files, Black, Ruff, Simulation scope, architecture, internal IR and protected API checks passed. The typed owner reached 100% statement/branch coverage (53 statements, 22 branches); the existing state owner reached 97% (132/46). Seven pinned source blobs matched the inventory.
 
 Default smoke/unit: `7 failed, 22385 passed, 300 skipped, 1048 warnings in 145.45s (0:02:25)`. All observed failure IDs belong to the seven known baseline cases; 0 baseline cases were not observed before the configured stop. This is not a green full suite. Evidence is retained in `ftqc-reference-env/g2-classical-typed-values-default-comparison.json`.
+
+## Subsequent symbolic composition
+
+[Symbolic metadata](CLASSICAL_SYMBOLIC_METADATA.md) replaces the concrete-only numerical adapter described above. Existing numerical owners now receive symbolic widths/value parameters; bit codecs still require concrete metadata. Source operation-specific successes and failures, rather than blanket symbolic support, are verified.
