@@ -29,8 +29,9 @@ def initialize_component_from_zero(
     invalidated. Generated allocation names avoid existing definitions.
 
     Only verified logical typed functions with quantum ports are admitted.
-    Unknown entries, wrapper-name collisions and classical ports raise
-    ValueError. Existing builder and register validation failures propagate.
+    Unknown entries, wrapper-name collisions and classical inputs raise
+    ValueError. Classical outputs are retained without quantum preparation.
+    Existing builder and register validation failures propagate.
     Zero-width words retain ownership; empty arrays make no preparation calls.
     Physical binding later requires enough caller-owned clean output wires.
     """
@@ -48,8 +49,8 @@ def initialize_component_from_zero(
             "zero-initialization entry conflicts with an existing definition"
         )
     signature = Signature(child.registers)
-    if any(register.dtype.classical_bits for register in signature):
-        raise ValueError("zero initialization does not admit classical ports")
+    if any(register.dtype.classical_bits for register in signature.lefts()):
+        raise ValueError("zero initialization does not admit classical inputs")
     prefix_index = 0
     while any(key.startswith(f"__fq_zero_{prefix_index}_") for key in functions):
         prefix_index += 1
