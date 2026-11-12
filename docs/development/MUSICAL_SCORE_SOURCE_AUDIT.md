@@ -66,8 +66,11 @@ The HTML template and all thirteen JavaScript functions now have a complete
 ownership table in REGISTER_SCORE_ANIMATION.md. The existing offline renderer
 implements keyed enter/update/exit with the source's 750 ms cubic-in-out timing.
 Real Chrome comparisons execute the unchanged source script and pinned test-only
-D3, explicitly aligning coordinate ranges. Source axes, fixed sizing, styling,
-click logging and HTTP/error-panel behavior remain whole-file differences.
+D3, explicitly aligning coordinate ranges. The native URL form now follows
+the source HTTP/JSON/error-panel chain and text-glyph click diagnostics. Native
+preflight validation, newest-request ownership and imported sequential-view
+selection have separate acceptance. Source axes, fixed sizing and styling
+remain whole-file differences.
 Q-0744 and Q-0746 therefore remain open. The ordinary append and numerical paths
 continue through their existing owners.
 

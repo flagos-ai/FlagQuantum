@@ -46,8 +46,10 @@ export embeds data and drawing code, sizes its viewport from the records, and
 uses the existing `score-container` and selector. Embedded labels escape `<` in
 the JSON script and reach SVG through `textContent`. Caller-owned file export
 propagates Python serialization and filesystem errors through their existing
-boundaries. Source HTTP/CORS failures and the source error panel remain outside
-the native offline loader. A separate fetch API has not been introduced.
+boundaries. The optional Score JSON URL form follows the source fetch/error
+chain through
+`loadScore` and `showScoreError`. The embedded viewer opens without a fetch.
+HTTP loading occurs when the user submits the form.
 
 Every source JavaScript function is accounted for below.
 
@@ -58,14 +60,14 @@ Every source JavaScript function is accounted for below.
 | `drawHlines` | `join(horizontal, ...)` preserves lane/start keys, growth, movement, collapse and delayed removal. Native quantum/classical coloring is retained. |
 | `drawCircles` | `portGlyph`, `updatePort` and `join(ports, ...)` preserve filled/open polarity, radius five, motion and opacity. |
 | `drawModPlus` | The same owners preserve radius seven, plus strokes, lower-baseline entry/exit and motion. |
-| `drawAnyTextBox` | Shared text-glyph creation, text updates, keyed movement and fading. The source's click-to-console diagnostic remains unported. |
+| `drawAnyTextBox` | Shared text-glyph creation, text updates, keyed movement and fading. Click diagnostics log the event and current bound record, including after an update. |
 | `drawTextBox` | Existing white, black-outlined box, half-height fourteen. Native width grows for long text. |
 | `drawRarrowTextBox` | Existing right-arrow polygon, half-height fourteen, with native adaptive width. |
 | `drawLarrowTextBox` | Existing left-arrow polygon with the same sizing boundary. |
 | `drawText` | Existing text-only glyph. Native explicit font size is retained. |
 | `musicalScore` | `render` dispatches all shared joins and one 750 ms cubic-in-out animation clock. |
-| `showError` | Source red heading/details for fetch failures remain outside the embedded-data path. |
-| `make_from_data` | Source asynchronous JSON fetch is replaced at the existing export boundary by embedded typed records. The HTTP loader and its failure behavior remain open. |
+| `showError` | `showScoreError` appends a red heading and details through text nodes. Repeated failures retain their history as in the source. |
+| `make_from_data` | `loadScore` uses fetch, checks HTTP status, parses JSON, and invokes the existing renderer. The URL form exposes that path alongside embedded records. Structural validation and newest-request ownership are native adaptations. |
 
 Source globals comprise the D3 linear-scale constructors and axes, circle radius,
 margins/insets, box half-width/height, domains, derived dimensions/ranges, canvas
@@ -95,8 +97,8 @@ long labels, explicit font size, captions, classical color and script-like label
 text. Existing current/legacy JSON browser checks pass as well.
 
 The source's numeric axes, light-blue horizontal lines, fixed 44-pixel box width,
-default text size, click logging and HTTP/error-panel behavior remain explicit
-open differences. Native captions and the sequential/dependency selector are
+and default text size remain explicit open differences. Native captions and the
+sequential/dependency selector are
 existing presentation features. Q-0744 and Q-0746 remain open pending disposition
 of those remaining whole-file behaviors. Generic foreign graph and line-manager
 protocols remain owned by Q-0747.
@@ -124,6 +126,77 @@ Add(3) example exports successfully. Its settled-frame Chrome screenshot was
 visually inspected using the same deterministic clock as the reference tests.
 A direct virtual-time screenshot captured an incomplete entry frame and is
 retained separately from the settled-frame evidence.
+
+## JSON URL loading
+
+Export the viewer and JSON through the existing owners, then serve their output
+directory with the standard-library HTTP server.
+
+```python
+from flagquantum.drawer.register_score_data import export_register_score_json
+
+Path("addition.json").write_text(export_register_score_json(score), encoding="utf-8")
+```
+
+```bash
+python -m http.server 8000 --bind 127.0.0.1
+```
+
+Open `addition.html` on that server, enter `addition.json` in Score JSON URL and
+press Load score. The same SVG joins update to the fetched records. Relative and
+absolute URLs use browser fetch semantics. HTTP status failures, invalid JSON,
+CORS denial and local-file fetch refusal follow the frozen source's error text,
+details and red heading. An error appends a new diagnostic, preserving previous
+errors across retries. Error text and imported labels reach the DOM through text
+nodes. Clicks on each text-glyph class log the event and current bound record.
+Circles and ModPlus markers retain their source behavior.
+
+The imported JSON retains all original fields and identities. Loading accepts the
+current structured labels and legacy string-label records. Core graph validation
+and numerical execution remain with their existing owners. The browser checks
+only the dimensions, consumed coordinates, admitted glyph attributes, labels and
+unique join keys before replacing the current view. Twenty-four malformed
+record variants are refused before the original view changes. Duplicate glyph
+or line keys are outside this import surface. Native JSON export supplies unique
+sequential keys.
+
+Two adaptations preserve browser state. A failed import keeps both existing
+views and their current selection. The latest requested URL owns the next
+update, so older responses and older errors leave the current display intact.
+The source itself has no request-generation guard. Imported source JSON provides
+one sequential layout, while the native embedded viewer contains both sequential
+and collision-free dependency layouts. After a successful import the selector
+shows Sequential and disables Dependency, and the stale dependency records are
+removed. Reloading an exported viewer supplies both computed layouts again.
+
+`test_drawer_score_loading.py` executes ten new cases against unchanged source
+JavaScript and the pinned D3 bundle in real Chrome. They cover current/legacy
+exports, a directly serialized locked MultiAnd, 404, malformed JSON, cross-origin
+refusal, local-file refusal, transactional admission, successful retry, safe label
+text and out-of-order requests. Success cases compare complete glyph/line
+snapshots after explicitly aligning mutable source scale ranges. Direct MultiAnd
+records are compared without translation. Default long-label spacing remains
+an open style difference. The initial direct-source check retained a failure
+showing native x=224 versus source x=110 at the same logical column. The aligned
+rerun preserves every geometry assertion and configures the reference scale
+range explicitly. Error cases compare complete heading/detail text and computed
+color. Native ownership/admission adaptations have independent assertions.
+
+Local acceptance on 2026-11-13 uses implementation `5fdd4bda` and has ten new
+cases, sixteen browser passes in
+15.52 seconds, 343 concentrated passes in 14.93 seconds and 86 independent
+notebook/CPU/tensor passes in 8.86 seconds, with zero skips. Existing concentrated
+and integration warnings number eight and two respectively. Strict typing of
+the two changed Python files, Black, Ruff, Compiler scope, architecture,
+internal IR and protected API checks pass. Exporter coverage remains 46/46
+statements and 12/14 branches, 97% combined. A real-HTTP, form-triggered error-panel
+screenshot with the retained MultiAnd graph has been visually inspected. Its
+settled graph uses the deterministic test clock.
+
+Evidence prefix for this batch is `g2-score-loading-`. Browser clocks are
+controlled for deterministic completion. Python coverage measures the exporter
+and dependency projection, while JavaScript behavior is checked through DOM
+assertions without an instrumented coverage percentage.
 
 ## Separate resource accounts
 
