@@ -67,7 +67,9 @@ def test_program_matches_canonical_transport_and_is_fresh(canonical: bool) -> No
 @pytest.mark.parametrize(
     "damage", ["program", "fingerprint", "decision", "extension", "schema", "compiler"]
 )
-def test_program_reader_preserves_complete_validation_diagnostics(damage: str) -> None:
+def test_program_reader_preserves_complete_validation_diagnostics(
+    damage: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     plan = _plan()
     payload: dict[str, Any] = plan.to_dict()
     if damage == "program":
@@ -91,6 +93,15 @@ def test_program_reader_preserves_complete_validation_diagnostics(damage: str) -
         assert actual.value.reason_code == reference.value.reason_code
         assert str(actual.value) == str(reference.value)
 
+    def must_not_execute(*args: Any, **kwargs: Any) -> None:
+        pytest.fail("a damaged plan reached numerical execution")
+
+    monkeypatch.setattr("flagquantum.runtime.execution.run_native", must_not_execute)
+    with pytest.raises(ExecutionPlanContractError) as execution_error:
+        fq.run(changed)
+    assert execution_error.value.reason_code == reference.value.reason_code
+    assert str(execution_error.value) == str(reference.value)
+
 
 def test_native_plan_validation_remains_separate_from_circuit_reading() -> None:
     plan = fq.plan(IsingBraidProgram().exchange(1))
@@ -105,3 +116,64 @@ def test_native_plan_validation_remains_separate_from_circuit_reading() -> None:
         plan_program(plan)
     assert str(actual.value) == str(reference.value)
     assert plan.to_json() == before
+
+
+def test_matrix_plan_bounds_validation_before_kernel_launch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from collections.abc import Mapping
+
+    from flagquantum.runtime import execution, execution_plan_contract
+
+    matrix = torch.eye(8, dtype=torch.complex128).roll(1, dims=0)
+    circuit = fq.Circuit(3, dtype=torch.complex128).any(0, 1, 2, matrix=matrix)
+    plan = fq.plan(circuit, options=fq.ExecutionOptions(mode="statevector"))
+    original_validation = execution_plan_contract._validate_plan_payload
+    original_run = execution.run_native
+    validations = 0
+    before_kernel: list[int] = []
+
+    def count_validation(
+        payload: Mapping[str, Any], *, compiler_identity: Mapping[str, str]
+    ) -> dict[str, Any]:
+        nonlocal validations
+        validations += 1
+        return original_validation(payload, compiler_identity=compiler_identity)
+
+    def observe_kernel(*args: Any, **kwargs: Any) -> Any:
+        before_kernel.append(validations)
+        return original_run(*args, **kwargs)
+
+    monkeypatch.setattr(
+        execution_plan_contract, "_validate_plan_payload", count_validation
+    )
+    monkeypatch.setattr(execution, "run_native", observe_kernel)
+    result = fq.run(plan)
+
+    assert len(before_kernel) == 1
+    assert 1 <= before_kernel[0] <= 2
+    torch.testing.assert_close(result.state, matrix[:, 0].reshape(1, -1))
+    assert result.plan is plan
+
+
+def test_repeated_execution_refreshes_backend_availability(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.runtime import backend_registry, execution
+
+    plan = _plan()
+    first = fq.run(plan)
+    assert first.plan is plan
+
+    def unavailable(name: str, *, refresh: bool = False) -> Any:
+        assert refresh
+        raise KeyError(name)
+
+    def must_not_execute(*args: Any, **kwargs: Any) -> None:
+        pytest.fail("an unavailable backend reached numerical execution")
+
+    monkeypatch.setattr(backend_registry, "get_backend_capabilities", unavailable)
+    monkeypatch.setattr(execution, "run_native", must_not_execute)
+    with pytest.raises(ExecutionPlanContractError) as captured:
+        fq.run(plan)
+    assert captured.value.reason_code == "backend_unavailable"
