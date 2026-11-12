@@ -13,6 +13,7 @@ from .bit_encoding import bit_value_domain
 from .bounded_integer_values import bounded_integer_domain
 from .classical_register_metadata import value_register_metadata
 from .finite_field_metadata import resolve_finite_field_encoding
+from .finite_field_polynomial_metadata import resolve_finite_field_polynomial_encoding
 from .fixed_point_encoding import fixed_point_domain
 from .integer_values import integer_word_domain
 from .montgomery_values import montgomery_value_domain
@@ -30,6 +31,8 @@ def register_classical_domain(register: Register) -> Iterable[object]:
     evaluation; this adapter does not expand executable Program admission.
     """
     kind = register.dtype.encoding
+    if kind == "finite_field_polynomial":
+        return resolve_finite_field_polynomial_encoding(register.dtype).get_domain()
     if kind == "finite_field":
         return resolve_finite_field_encoding(register.dtype).get_domain()
     width, parameters = value_register_metadata(register)

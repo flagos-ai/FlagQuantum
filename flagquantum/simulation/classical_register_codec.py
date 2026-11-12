@@ -19,6 +19,7 @@ from .bounded_integer_encoding import (
 )
 from .classical_register_metadata import concrete_register_metadata
 from .finite_field_metadata import resolve_finite_field_encoding
+from .finite_field_polynomial_metadata import resolve_finite_field_polynomial_encoding
 from .fixed_point_encoding import (
     fixed_point_array_from_bits,
     fixed_point_array_to_bits,
@@ -45,8 +46,12 @@ def decode_register_bits(register: Register, bits: NDArray[Any]) -> object:
     are flattened, while arrays use the existing dtype-specific array codec.
     Metadata support here does not admit that type into executable Program IR.
     """
-    if register.dtype.encoding == "finite_field":
-        field = resolve_finite_field_encoding(register.dtype)
+    if register.dtype.encoding in {"finite_field", "finite_field_polynomial"}:
+        field = (
+            resolve_finite_field_polynomial_encoding(register.dtype)
+            if register.dtype.encoding == "finite_field_polynomial"
+            else resolve_finite_field_encoding(register.dtype)
+        )
         return (
             field.from_bits_array(bits)
             if register.shape
@@ -95,6 +100,10 @@ def encode_register_bits(register: Register, values: NDArray[Any]) -> NDArray[np
     that behavior, NumPy result inference, empty-array failures and dtype errors.
     Montgomery values remain stored raw words; no residue conversion occurs.
     """
+    if register.dtype.encoding == "finite_field_polynomial":
+        return resolve_finite_field_polynomial_encoding(register.dtype).to_bits_array(
+            values
+        )
     if register.dtype.encoding == "finite_field":
         return resolve_finite_field_encoding(register.dtype).to_bits_array(values)
     width, parameters = concrete_register_metadata(register)

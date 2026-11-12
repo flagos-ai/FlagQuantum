@@ -15,6 +15,7 @@ from typing import Any, cast
 import numpy as np
 from numpy.typing import NDArray
 
+from ..core.ir.program.registers import RegisterType, TypeParameter
 from ..core.value_math import SymbolicInt
 from .finite_field_encoding import FiniteFieldEncoding
 from .value_encoding import decode_value_array, encode_value_array
@@ -36,6 +37,25 @@ class FiniteFieldPolynomialEncoding:
     def bitsize(self) -> SymbolicInt:
         """Return coefficient width times degree plus one without coercion."""
         return self.field.bitsize * (self.degree + 1)
+
+    def register_type(self, *, classical: bool = False) -> RegisterType:
+        """Project numerical declaration into existing neutral register metadata.
+
+        Reuse the field projection so polynomial/coefficient-field identity stays
+        with its existing owner. This does not admit a polynomial Program port.
+        """
+        field_type = self.field.register_type()
+        parameters: tuple[tuple[str, TypeParameter], ...] = (
+            (("storage", "classical"),) if classical else ()
+        )
+        parameters += (("polynomial_degree", self.degree),) + field_type.parameters
+        width = self.bitsize
+        return RegisterType(
+            "finite_field_polynomial",
+            0 if classical else width,
+            width if classical else 0,
+            parameters,
+        )
 
     def get_domain(self) -> Iterable[Any]:
         """Yield source Cartesian coefficient order, including leading zeros."""

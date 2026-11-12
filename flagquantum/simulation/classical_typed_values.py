@@ -34,6 +34,7 @@ from .classical_registers import (
 )
 from .finite_field_encoding import FiniteFieldEncoding
 from .finite_field_metadata import resolve_finite_field_encoding
+from .finite_field_polynomial_metadata import resolve_finite_field_polynomial_encoding
 from .fixed_point_encoding import validate_fixed_point_array, validate_fixed_point_value
 from .ones_complement_encoding import (
     validate_ones_complement_array,
@@ -56,6 +57,16 @@ def bind_typed_register_values(
     Scalar Expr bypass and post-distribution validation stay in the shared owner.
     """
     kind = register.dtype.encoding
+    if kind == "finite_field_polynomial":
+        polynomial = resolve_finite_field_polynomial_encoding(register.dtype)
+        return bind_classical_register_values(
+            register.name,
+            values,
+            partial(polynomial.assert_valid_val, debug_str=register.name),
+            partial(polynomial.assert_valid_val_array, debug_str=register.name),
+            shape=register.shape,
+            resolve_distribution=resolve_distribution,
+        )
     if kind == "finite_field":
         encoding = field_encoding or resolve_finite_field_encoding(register.dtype)
         return bind_field_register_values(
@@ -132,6 +143,10 @@ def collect_typed_register_value(
     """
     kind = register.dtype.encoding
     classical = ("storage", "classical") in register.dtype.parameters
+    if kind == "finite_field_polynomial":
+        return collect_classical_register_value(
+            assignments, register.shape, lambda shape: np.empty(shape, dtype=object)
+        )
     if kind == "finite_field":
         if classical:
             return collect_classical_register_value(
