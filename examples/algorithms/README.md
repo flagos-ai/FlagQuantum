@@ -370,3 +370,14 @@ and 1.0000001488 respectively and retain particle number 2. This is bounded
 full-JW circuit-angle training, not coefficient differentiation, a general
 convergence guarantee or scalability evidence. See the
 [training golden path](../../docs/development/FERMION_SPINLESS.md#training-golden-path).
+
+
+[`fermion_parity_discovery.py`](fermion_parity_discovery.py), run with
+`python -m examples.algorithms.fermion_parity_discovery`, discovers diagonal
+symmetries of a two-site Hubbard model. An explicit total-parity candidate
+restricts discovery to the constraint fixed by N=2, then the existing reduction
+and native measurement consumer give even-sector energy -0.8284271247 on three
+qubits. Even parity includes N=0 and N=4; this is not an exact number projection.
+Dense reduced-state diagonalization is bounded correctness inspection, not a
+scalable solver. See the
+[discovery guide](../../docs/development/FERMION_PARITY_DISCOVERY.md).
