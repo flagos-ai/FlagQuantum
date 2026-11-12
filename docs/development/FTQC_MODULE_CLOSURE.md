@@ -247,3 +247,11 @@ dispatch with an explicit example binding existing suppliers. Split/join and
 through-identity nodes share Simulation bit-wiring logic. Source-wide provider
 coverage and notebook parent closure remain open; no additional parent file is
 closed by this cleanup.
+
+## Classical-vector test dependency cleanup
+
+The [shared scenario checks](COMPONENT_CLASSICAL_VECTORS.md#shared-scenario-checks)
+move reusable observation/contraction helpers out of a collected test module.
+All 85 affected collection IDs and original assertions survive. Product code
+and source-module acceptance decisions are unchanged; this cleanup adds no new
+capability checkbox or closed parent file.

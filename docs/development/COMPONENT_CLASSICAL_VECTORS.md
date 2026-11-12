@@ -143,3 +143,34 @@ intermediates. All 13 original notebook code cells execute in the reference
 environment. [Native component drawing](COMPONENT_REGISTER_SCORE.md) now covers the original
 closed examples and expanded Add through 32 bits. Automatic provider composition
 remains open; the source files are not marked closed on those cases alone.
+
+## Shared scenario checks
+
+`tests/unit/component_vector_checks.py` owns the test-only `tracked_flank`
+observation helper and explicit `contract` helper. Classical-vector, Add,
+component-score and original-example scenarios import it directly instead of
+importing these helpers from a collected test module. The helper imports no
+other test modules and contains no collected scenarios. Other scenario-specific
+fixtures remain in their existing owners; this is not a claim that every
+cross-test dependency has been removed.
+
+The observation helper forwards explicit evaluator, entry and wrapper-name
+options to the real Compiler constructor. The numerical helper keeps the
+existing basis-vector and register-tensor suppliers and Simulation contraction.
+Callback connections and results are typed; no `Any` is needed in either helper.
+The Add append scenario now checks that its evaluator inputs are integers before
+calling the existing integer action, rather than relying on `Any` to pass typing.
+No production program, decomposition, physical instruction, resource model,
+source implementation or public API is changed.
+
+Local verification: all 85 affected cases pass without skips. Before/after ordered
+collection IDs, parameterization/decorators and all original assertions are
+preserved. Exactly one scenario body gains the typed evaluator input check;
+this is not a claim that every scenario AST is identical. Strict typing of five
+files, Black, Ruff, Compiler scope, architecture, IR and protected API checks pass.
+Five relevant pinned source blobs remain unchanged; nine existing reference
+numerical warnings remain visible. Evidence prefix: `g2-vector-checks-`.
+
+This refactor adds no acceptance scenario or completed source file. The previous
+600-second default-suite timeout remains unresolved and was not repeated for a
+test-helper relocation; no full-suite pass is claimed.
