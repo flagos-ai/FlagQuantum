@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **54/213**.
+Validated local Notebook workflows: **55/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -188,7 +188,7 @@ Validated local Notebook workflows: **54/213**.
 | `algorithms/quantum_linear_solvers/vqls/vqls_with_lcu` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/main.py) | pending |
 | `algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_for_matrix/main.py) | pending |
 | `algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/main.py) | pending |
-| `algorithms/quantum_primitives/gqsp/gqsp` | notebook_workflow | [Native program](algorithms/quantum_primitives/gqsp/main.py) | pending |
+| `algorithms/quantum_primitives/gqsp/gqsp` | notebook_workflow | [Native program](algorithms/quantum_primitives/gqsp/overview/main.py) | validated |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation_helpers` | python_unclassified | Pending | pending |
 | `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/hadamard_test/overview/main.py) | validated |
