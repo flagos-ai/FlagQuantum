@@ -268,3 +268,11 @@ resolves the 55 diagnostics recorded in the previous fixture cleanup. The same
 original assertions and decorators remain. This is a test-only maintenance
 result, with no additional source-file closure or resource-model claim. The
 previous default-suite timeout remains unresolved.
+
+The [canonical basis recipe query](ADDITION_TENSOR_PROVIDERS.md#read-basis-recipes-from-canonical-definitions)
+removes the external value side table from the native 5-/32-bit closed Add
+notebook checks. Compiler recognizes only its exact integer-vector definitions;
+Simulation continues to supply their numerical tensors. This extends the
+existing Q-0897 composition acceptance without closing the source-wide notebook
+or provider parent files. Source data, physical decompositions, measured branch
+semantics and resource models are unchanged.

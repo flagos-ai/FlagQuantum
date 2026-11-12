@@ -84,3 +84,60 @@ The bounded default smoke/unit run reached about 82% and timed out after 600
 seconds. It did not produce a complete result or failure set, so this is not a
 full-suite pass or a verified baseline-only failure claim. The prior seven
 recorded baseline failures remain unresolved. The timeout was not rerun.
+
+## Read basis recipes from canonical definitions
+
+The explicit Add composition now accepts `vectors=None`. Compiler's
+`component_basis_vectors.integer_basis_function_data` reads the unsigned value
+and state/effect direction from the existing function definition. It recognizes
+only an exact `integer_basis_function` body, including the scalar `val` port,
+clean allocation/release, split/join order, X operands, SSA returns and all other
+function fields. It compares the complete definition with the constructor's
+canonical result. Names do not encode values. Changed phases, dirty lifetimes,
+permutations, extra operations and noncanonical SSA are not silently accepted.
+
+Simulation continues to own all numerical vector data and contractions. This
+Compiler query neither executes numerical code nor imports Simulation. The
+example composes its results with the existing immutable provider mapping;
+`vectors={...}` remains an explicit caller-owned choice, and `{}` does not enable
+discovery. No process-global registry or new Core metadata is introduced.
+
+```python
+from flagquantum.compiler.registers.component_classical_vectors import flank_component_with_classical_vectors
+
+closed = flank_component_with_classical_vectors(
+    record, {"a": 1, "b": 2}, {"a": 1, "b": 3}
+)
+providers = addition_tensor_providers(closed, None, like)
+selected, _ = expand_components_for_tensor(
+    closed, providers.has_custom_tensor, "classical_vectors", full_flatten=False
+)
+order = tuple(i for i, _, _ in iter_component_calls(selected, "classical_vectors"))
+result = contract_component_tensors(
+    selected, order, providers.supply, like, "classical_vectors"
+)
+assert abs(result.item() - 1) < 2e-12
+```
+
+The original native 5-/32-bit closed Add checks now call the real flank factory
+and read their recipes directly, with no constructor interception or external
+value table. Their correct and incorrect output overlaps remain one and zero.
+This closes that concrete composition gap, not source-wide provider discovery:
+other primitives still require declared suppliers, equivalent noncanonical
+functions are not recognized, and the notebook's open-port presentation and
+planner-speed differences remain open. Actual primitive counts, feedback,
+workspace and source resource estimates are unchanged. G3 is not entered.
+
+Local acceptance for this extension: 145 new cases; 8,657 concentrated cases
+pass with one existing Graphviz rendering skip. Two final refusal cases were
+added afterward and pass in the final 264-case coverage run; the concentrated
+suite was not repeated for those test-only additions. All integer values at
+widths 1 through 5 are compared against unchanged upstream IntState/IntEffect
+complex tensors in both directions. Eighteen noncanonical definition mutations,
+renaming, explicit-mapping precedence and missing/untyped supplier refusal are
+covered. Existing complete Add matrices, entangled amplitudes, measured branches,
+zero work, gate/feedback/resource comparisons and append trajectories pass.
+The 84-case CPU/TN integration run passes. Strict typing, Black and Ruff pass
+all five changed Python files; scope, architecture, internal IR, protected API
+and both executable documentation blocks pass. Six fixed source blobs match the
+immutable inventory. Evidence prefix: `g2-basis-recipes-`.
