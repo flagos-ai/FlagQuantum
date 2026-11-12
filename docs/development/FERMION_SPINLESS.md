@@ -110,7 +110,7 @@ construction and complete upstream OpenFermion API compatibility are outside
 this slice. No accelerator, distributed, performance or capacity claim follows.
 Implementation merged in #1154; separate Integration-owned experimental
 capability registration merged in #1155. The current checked baseline and
-proposed training composition are recorded in the
+merged training composition (#1159) are recorded in the
 [migration plan](OPENFERMION_NATIVE_MIGRATION.md#proposed-next-pr-sequence).
-The proposed optimization-loop example is not part of this delivered model slice;
-the existing gradient/optimizer scenario does not establish general convergence.
+The training composition above is available separately from model construction;
+its fixed optimization runs do not establish general convergence.
