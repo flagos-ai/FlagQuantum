@@ -5,6 +5,7 @@
 
 """Export instance-level register dependencies with explicit Graphviz ports."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from html import escape
 from itertools import zip_longest
@@ -71,6 +72,13 @@ def _instance_table(step: RegisterStep, ports: dict[str, str]) -> str:
 
 def export_register_graph_dot(score: RegisterScore) -> str:
     """Export a left-to-right graph with one node for each operation instance."""
+    return _export_register_graph_dot(score, lambda edge: f'label="{edge.width}"')
+
+
+def _export_register_graph_dot(
+    score: RegisterScore, attributes: Callable[[RegisterConnection], str]
+) -> str:
+    """Share instance/port geometry across explicit edge presentations."""
     ports = {line.register: f"p{i}" for i, line in enumerate(score.lines)}
     lines = ["digraph registers {", "  rankdir=LR;"]
     for prefix, boundary in (("in", -1), ("out", len(score.columns))):
@@ -94,6 +102,6 @@ def export_register_graph_dot(score: RegisterScore) -> str:
         target = (
             f"out_{port}:w" if edge.consumer is None else f"n{edge.consumer}:{port}:w"
         )
-        lines.append(f'  {source} -> {target} [label="{edge.width}"];')
+        lines.append(f"  {source} -> {target} [{attributes(edge)}];")
     lines.append("}")
     return "\n".join(lines) + "\n"
