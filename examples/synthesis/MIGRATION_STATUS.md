@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **63/213**.
+Validated local Notebook workflows: **64/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -403,7 +403,7 @@ Validated local Notebook workflows: **63/213**.
 | `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | validated |
 | `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | [Native program](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/main.py) | validated |
-| `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/main.py) | pending |
+| `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt_example` | notebook_workflow | Pending | pending |
