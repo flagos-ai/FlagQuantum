@@ -4,7 +4,6 @@ import json
 from pathlib import Path
 from typing import cast
 
-import numpy as np
 import pytest
 import torch
 
@@ -12,14 +11,24 @@ import flagquantum as fq
 from examples.synthesis.algorithms.amplitude_amplification_and_estimation.oblivious_amplitude_amplification.comparisons.circuit import (
     reference_circuit,
 )
-from examples.synthesis.algorithms.amplitude_amplification_and_estimation.oblivious_amplitude_amplification.overview import (
-    main as oaa,
-)
 from examples.synthesis.algorithms.amplitude_amplification_and_estimation.oblivious_amplitude_amplification.physics import (
     AMPLITUDES,
 )
 from examples.synthesis.compare_states import compare_states
 from tests.integration.synthesis_notebook_support import execute_code_cells
+
+try:
+    import numpy as np
+
+    from examples.synthesis.algorithms.amplitude_amplification_and_estimation.oblivious_amplitude_amplification.overview import (
+        main as oaa,
+    )
+except ModuleNotFoundError as error:
+    if error.name != "numpy":
+        raise
+    pytest.skip(
+        "This complete Notebook workflow requires NumPy.", allow_module_level=True
+    )
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

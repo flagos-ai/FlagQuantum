@@ -5,17 +5,26 @@ from math import cos
 from pathlib import Path
 from typing import cast
 
-import numpy as np
 import pytest
 import torch
 
 from examples.synthesis.compare_states import compare_states
 from examples.synthesis.functions.qsvt.comparisons.circuit import reference_circuit
 from examples.synthesis.functions.qsvt.main import PHASES, main
-from examples.synthesis.functions.qsvt.overview import main as qsvt
 from flagquantum import synth
 from flagquantum.errors import PlanningError
 from tests.integration.synthesis_notebook_support import execute_code_cells
+
+try:
+    import numpy as np
+
+    from examples.synthesis.functions.qsvt.overview import main as qsvt
+except ModuleNotFoundError as error:
+    if error.name != "numpy":
+        raise
+    pytest.skip(
+        "This complete Notebook workflow requires NumPy.", allow_module_level=True
+    )
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
