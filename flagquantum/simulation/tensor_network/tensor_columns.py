@@ -5,10 +5,9 @@
 
 """Identify the first axis supported on a single column at explicit tolerance."""
 
-from math import isfinite
-from numbers import Real
-
 import torch
+
+from .tensor_structure import _tensor_support
 
 
 def find_tensor_column(
@@ -27,27 +26,7 @@ def find_tensor_column(
     Meta tensors, nonfinite data and integer/bool data are explicitly refused.
     This leaves reference backend-specific NaN behavior outside admission.
     """
-    if (
-        isinstance(atol, bool)
-        or not isinstance(atol, Real)
-        or not isfinite(atol)
-        or atol < 0
-    ):
-        raise ValueError("column tolerance must be a finite nonnegative real number")
-    if tensor.is_meta:
-        raise ValueError("column detection requires tensor values, not meta data")
-    if tensor.dtype not in {
-        torch.float32,
-        torch.float64,
-        torch.complex64,
-        torch.complex128,
-    }:
-        raise ValueError("column detection requires supported floating or complex data")
-    data = tensor.detach()
-    if not bool(torch.isfinite(data).all()):
-        raise ValueError("column detection requires finite tensor values")
-    # Reference Numba compares a dtype-sized magnitude against a float64 atol.
-    active = data.abs().to(torch.float64) > atol
+    active = _tensor_support(tensor, atol)
     for axis, size in enumerate(tensor.shape):
         if not size:
             continue

@@ -5,7 +5,6 @@
 
 """Group open-system register axes on the existing numerical tensor network."""
 
-from collections import Counter
 from collections.abc import Mapping, Sequence
 
 import torch
@@ -15,10 +14,9 @@ from .conjugate_pairs import conjugate_pair_labels
 from .models import TensorNetworkNode
 from .path_search import _contract_nodes_greedy
 from .register_axis_groups import (
-    group_register_outer_indices,
     register_tensor_label_groups,
 )
-from .register_tensor_indices import register_tensor_outer_indices
+from .register_tensor_indices import register_contraction_groups
 
 
 def register_superoperator_label_groups(
@@ -45,10 +43,14 @@ def contract_register_superoperator(
     signature: Signature,
     incoming: Mapping[str, tuple[tuple[int, ...], ...]],
     outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+    *,
+    output_groups: tuple[tuple[int, ...], ...] | None = None,
 ) -> torch.Tensor:
     """Contract doubled nodes as a scalar, density/effect matrix, or channel.
 
     Nodes already contain conjugate-pair labels and any explicit trace merges.
+    Capture register_contraction_groups before explicit simplification and pass
+    output_groups here to retain protected outputs that become hyperedges.
     Reuse the native greedy contraction engine without normalization, discard
     discovery, reset, or Quimb simplification. At least one node is required,
     including an explicit scalar node for an all-scalar network. PyTorch retains
@@ -57,18 +59,13 @@ def contract_register_superoperator(
     """
     if not nodes:
         raise ValueError("register contraction requires at least one tensor node")
-    descriptors = register_tensor_outer_indices(
-        signature, incoming, outgoing, superoperator=True
-    )
-    counts = Counter(label for node in nodes for label in node.labels)
-    groups = group_register_outer_indices(
+    groups = register_contraction_groups(
+        nodes,
         signature,
-        {
-            index: label
-            for label, index in descriptors.items()
-            if isinstance(index, tuple) and counts[label] == 1
-        },
+        incoming,
+        outgoing,
         superoperator=True,
+        output_groups=output_groups,
     )
     result, _ = _contract_nodes_greedy(
         nodes, tuple(label for group in groups for label in group)

@@ -5,11 +5,16 @@
 
 """Describe external register tensor indices without renaming execution edges."""
 
-from collections.abc import Mapping
+from collections import Counter
+from collections.abc import Mapping, Sequence
 
 from ...core.ir.program.signatures import Signature
 from .conjugate_pairs import conjugate_pair_labels
-from .register_axis_groups import register_tensor_label_groups
+from .models import TensorNetworkNode
+from .register_axis_groups import (
+    group_register_outer_indices,
+    register_tensor_label_groups,
+)
 
 
 def register_tensor_outer_indices(
@@ -64,3 +69,39 @@ def register_tensor_outer_indices(
                             else (register.name, index, bit, group)
                         )
     return result
+
+
+def register_contraction_groups(
+    nodes: Sequence[TensorNetworkNode],
+    signature: Signature,
+    incoming: Mapping[str, tuple[tuple[int, ...], ...]],
+    outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+    *,
+    superoperator: bool = False,
+    output_groups: tuple[tuple[int, ...], ...] | None = None,
+) -> tuple[tuple[int, ...], ...]:
+    """Capture actual external groups before simplification, or validate a capture.
+
+    The default requires single-occurrence external edges, preserving the dense
+    protocol's missing-axis failures. Pass that captured tuple to contraction
+    after simplification: protected outputs can then be hyperedges. A supplied
+    capture must still match the signature, bindings and present output labels;
+    it cannot rename, reorder or fabricate register axes.
+    """
+    descriptors = register_tensor_outer_indices(
+        signature, incoming, outgoing, superoperator=superoperator
+    )
+    counts = Counter(label for node in nodes for label in node.labels)
+    groups = group_register_outer_indices(
+        signature,
+        {
+            index: label
+            for label, index in descriptors.items()
+            if isinstance(index, tuple)
+            and (counts[label] == 1 if output_groups is None else counts[label] > 0)
+        },
+        superoperator=superoperator,
+    )
+    if output_groups is not None and output_groups != groups:
+        raise ValueError("captured output groups must match the register bindings")
+    return groups

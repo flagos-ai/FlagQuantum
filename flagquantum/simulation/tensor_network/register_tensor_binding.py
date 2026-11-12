@@ -5,7 +5,6 @@
 
 """Bind dense register tensors to existing integer-labeled contraction nodes."""
 
-from collections import Counter
 from collections.abc import Mapping, Sequence
 
 import torch
@@ -14,10 +13,9 @@ from ...core.ir.program.signatures import Signature
 from .models import TensorNetworkNode
 from .path_search import _contract_nodes_greedy
 from .register_axis_groups import (
-    group_register_outer_indices,
     register_tensor_label_groups,
 )
-from .register_tensor_indices import register_tensor_outer_indices
+from .register_tensor_indices import register_contraction_groups
 
 
 def bind_register_tensor(
@@ -47,9 +45,13 @@ def contract_register_tensors(
     signature: Signature,
     incoming: Mapping[str, tuple[tuple[int, ...], ...]],
     outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+    *,
+    output_groups: tuple[tuple[int, ...], ...] | None = None,
 ) -> torch.Tensor:
     """Contract existing nodes and group output/input axes to a dense result.
 
+    Capture register_contraction_groups before explicit simplification and pass
+    output_groups here to retain protected outputs that become hyperedges.
     Reuse the existing greedy contraction implementation; do not build a second
     executor. Pure-state outputs are scalar, vector or matrix, omitting empty
     bit groups as the original protocol does. This finite pure-state slice does
@@ -59,15 +61,12 @@ def contract_register_tensors(
     """
     if not nodes:
         raise ValueError("register contraction requires at least one tensor node")
-    descriptors = register_tensor_outer_indices(signature, incoming, outgoing)
-    counts = Counter(label for node in nodes for label in node.labels)
-    groups = group_register_outer_indices(
+    groups = register_contraction_groups(
+        nodes,
         signature,
-        {
-            index: label
-            for label, index in descriptors.items()
-            if isinstance(index, tuple) and counts[label] == 1
-        },
+        incoming,
+        outgoing,
+        output_groups=output_groups,
     )
     labels = tuple(label for group in groups for label in group)
     result, _ = _contract_nodes_greedy(nodes, labels)
