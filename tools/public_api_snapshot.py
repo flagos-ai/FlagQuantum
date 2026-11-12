@@ -1074,40 +1074,17 @@ def _validate_authorized_synthesis_classical(contract: Any) -> list[str]:
     return errors
 
 
-def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
-    """Protect the user-authorized UP-01 successor without rewriting predecessors."""
-    import flagquantum as fq
-    from flagquantum import synth
-    from flagquantum.services import synthesis
+_SYNTH_JOINT_SIGNATURES: dict[str, str] = {
+    "unitary": "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+}
 
-    path = ROOT / "contracts/synthesis-python-program-v1-candidate.json"
-    reviewed_hash = "5f500166f026674faa66744ef33d17bc67edc6a16f695ff891769785e1cf6a5e"
-    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
-        return ["reviewed Python program contract changed"]
-    expected = json.loads(path.read_text())
-    if not isinstance(contract, dict) or json.dumps(
-        contract, sort_keys=True
-    ) != json.dumps(expected, sort_keys=True):
-        return ["Python program admission differs from its reviewed scope"]
-    errors = []
-    if (
-        hashlib.sha256((ROOT / contract["proposal"]).read_bytes()).hexdigest()
-        != contract["proposal_sha256"]
-    ):
-        errors.append("reviewed Python program proposal changed")
-    for filename, digest in contract["historical_contracts_sha256"].items():
-        if hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() != digest:
-            errors.append("Python program must preserve historical synthesis contracts")
-    if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
-        errors.append("Python program export delta exceeds authorization")
-    exports = _SYNTH_ACTIVE_EXPORTS
-    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
-        errors.append("Python program namespace differs from its reviewed scope")
-    if any(
-        getattr(synth, name, None) is not getattr(synthesis, name, None)
-        for name in exports
-    ):
-        errors.append("Python program facade must reuse Services symbols")
+
+def _validate_synthesis_phase_and_cleanup() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     phase_contract = json.loads(
         (ROOT / "contracts/synthesis-python-phase-up02-candidate.json").read_text()
     )
@@ -1145,6 +1122,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native program cleanup differs from its UP-03 authorization")
+    return errors
+
+
+def _validate_synthesis_quantization_and_reset() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     quantized_contract = json.loads(
         (
             ROOT / "contracts/synthesis-native-quantized-expressions-candidate.json"
@@ -1195,6 +1179,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.RESET)) != reset_signature
     ):
         errors.append("native RESET differs from its authorized channel contract")
+    return errors
+
+
+def _validate_synthesis_gates_and_control() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
@@ -1256,6 +1247,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native pair gates differ from their authorization")
+    return errors
+
+
+def _validate_synthesis_transforms_and_preparation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     transform_contract = json.loads(
         (ROOT / "contracts/synthesis-python-transforms-up06-candidate.json").read_text()
     )
@@ -1310,16 +1308,18 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native catalog operations differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_storage() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     joint_contract = json.loads(
         (ROOT / "contracts/synthesis-native-joint-storage-candidate.json").read_text()
     )
-    joint_signatures = {
-        "unitary": "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
-        "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
-        "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
-    }
     if (
-        joint_contract.get("expanded_signatures") != joint_signatures
+        joint_contract.get("expanded_signatures") != _SYNTH_JOINT_SIGNATURES
         or joint_contract.get("implementation_authorized") is not True
         or joint_contract.get("release_authorized") is not False
         or joint_contract.get("authorization_record")
@@ -1329,7 +1329,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         ).is_file()
         or any(
             str(inspect.signature(getattr(synth, name))) != signature
-            for name, signature in joint_signatures.items()
+            for name, signature in _SYNTH_JOINT_SIGNATURES.items()
         )
     ):
         errors.append("joint native storage differs from its authorized admission")
@@ -1355,7 +1355,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         ).is_file()
         or any(
             not callable(function := getattr(synth, name, None))
-            or str(inspect.signature(function)) != joint_signatures[name]
+            or str(inspect.signature(function)) != _SYNTH_JOINT_SIGNATURES[name]
             for name, signature in inplace_signatures.items()
         )
     ):
@@ -1375,6 +1375,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.drop)) != hidden_contract["signatures"]["drop"]
     ):
         errors.append("native hidden storage differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_qpe() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     matrix_qpe_contract = json.loads(
         (ROOT / "contracts/synthesis-native-matrix-qpe-candidate.json").read_text()
     )
@@ -1422,6 +1429,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         != rotation_table_contract["signatures"]["select_rotation"]
     ):
         errors.append("native rotation tables differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_views_and_unitary() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     views = json.loads(
         (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
     )
@@ -1482,9 +1496,16 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         type(matrix_admission.get("implementation_authorized")) is not bool
         or type(matrix_admission.get("release_authorized")) is not bool
         or not (ROOT / matrix_admission["authorization_record"]).is_file()
-        or str(inspect.signature(synth.unitary)) != joint_signatures["unitary"]
+        or str(inspect.signature(synth.unitary)) != _SYNTH_JOINT_SIGNATURES["unitary"]
     ):
         errors.append("native unitary operation differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_modular_exponentiation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     modular_admission = json.loads(
         (ROOT / "contracts/synthesis-native-modular-exp-candidate.json").read_text()
     )
@@ -1505,6 +1526,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.modular_exp)) != modular_signature
     ):
         errors.append("native modular exponentiation differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_pauli_evolution() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     evolution_admission = json.loads(
         (ROOT / "contracts/synthesis-native-evolution-candidate.json").read_text()
     )
@@ -1584,6 +1612,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native Pauli views differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_numeric_interpretation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     numeric_admission = json.loads(
         (ROOT / "contracts/synthesis-native-exact-numbers-candidate.json").read_text()
     )
@@ -1625,6 +1660,53 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native numeric interpretation differs from its authorized scope")
+    return errors
+
+
+def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
+    """Protect the user-authorized UP-01 successor without rewriting predecessors."""
+    import flagquantum as fq
+    from flagquantum import synth
+    from flagquantum.services import synthesis
+
+    path = ROOT / "contracts/synthesis-python-program-v1-candidate.json"
+    reviewed_hash = "5f500166f026674faa66744ef33d17bc67edc6a16f695ff891769785e1cf6a5e"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
+        return ["reviewed Python program contract changed"]
+    expected = json.loads(path.read_text())
+    if not isinstance(contract, dict) or json.dumps(
+        contract, sort_keys=True
+    ) != json.dumps(expected, sort_keys=True):
+        return ["Python program admission differs from its reviewed scope"]
+    errors = []
+    if (
+        hashlib.sha256((ROOT / contract["proposal"]).read_bytes()).hexdigest()
+        != contract["proposal_sha256"]
+    ):
+        errors.append("reviewed Python program proposal changed")
+    for filename, digest in contract["historical_contracts_sha256"].items():
+        if hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() != digest:
+            errors.append("Python program must preserve historical synthesis contracts")
+    if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
+        errors.append("Python program export delta exceeds authorization")
+    exports = _SYNTH_ACTIVE_EXPORTS
+    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
+        errors.append("Python program namespace differs from its reviewed scope")
+    if any(
+        getattr(synth, name, None) is not getattr(synthesis, name, None)
+        for name in exports
+    ):
+        errors.append("Python program facade must reuse Services symbols")
+    errors.extend(_validate_synthesis_phase_and_cleanup())
+    errors.extend(_validate_synthesis_quantization_and_reset())
+    errors.extend(_validate_synthesis_gates_and_control())
+    errors.extend(_validate_synthesis_transforms_and_preparation())
+    errors.extend(_validate_synthesis_storage())
+    errors.extend(_validate_synthesis_qpe())
+    errors.extend(_validate_synthesis_views_and_unitary())
+    errors.extend(_validate_synthesis_modular_exponentiation())
+    errors.extend(_validate_synthesis_pauli_evolution())
+    errors.extend(_validate_synthesis_numeric_interpretation())
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),

@@ -23,6 +23,19 @@ def dense_qpe(matrix: torch.Tensor, preparation: torch.Tensor, bits: int) -> fq.
     return circuit.any(*range(bits), matrix=inverse / math.sqrt(1 << bits))
 
 
+def amplitude_preparation(amplitudes: tuple[float, ...]) -> torch.Tensor:
+    """Map the zero basis state to normalized real amplitudes by reflection."""
+    identity = torch.eye(len(amplitudes), dtype=torch.complex128)
+    vector = torch.tensor(amplitudes, dtype=torch.complex128)
+    delta = identity[:, 0] - vector
+    norm = float(delta.abs().square().sum())
+    return (
+        identity
+        if norm < 1e-28
+        else identity - 2 * torch.outer(delta, delta.conj()) / norm
+    )
+
+
 def probability_preparation(probabilities: tuple[float, ...]) -> torch.Tensor:
     """Construct prefix-conditioned rotations, including all nonzero columns."""
     dimension = len(probabilities)

@@ -7887,7 +7887,7 @@
       ],
       "workflow_status": "pending",
       "native_program": {
-        "path": "examples/synthesis/tutorials/technology_demonstrations/qpe/qpe_for_unitary_matrix/main.py",
+        "path": "examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/main.py",
         "scope": "Quantum program only; complete Notebook workflow remains pending."
       },
       "kind": "notebook_workflow"

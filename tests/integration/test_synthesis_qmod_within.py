@@ -20,8 +20,8 @@ from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers
 from tests.integration.test_construction_register_execution import _check
-from tests.integration.test_synthesis_register_workflow import check_state
 from tests.register_program_cases import Registers
+from tests.synthesis_workflow_helpers import check_state
 from tools.synthesis_compiler_examples.local_registers.main import (
     local_composition,
 )

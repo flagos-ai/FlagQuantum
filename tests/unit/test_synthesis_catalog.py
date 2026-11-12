@@ -104,6 +104,36 @@ def test_complete_catalog_preserves_sources_and_generated_navigation() -> None:
     assert CATALOG.is_file()
 
 
+@pytest.mark.parametrize("replacement", ["qpe", "missing_qpe"])
+def test_inventory_rejects_missing_or_case_mismatched_native_program(
+    monkeypatch: pytest.MonkeyPatch, replacement: str
+) -> None:
+    inventory = CATALOG.parent / "native_library_inventory.json"
+    original_read = Path.read_text
+
+    def read_text(
+        path: Path, encoding: str | None = None, errors: str | None = None
+    ) -> str:
+        text = original_read(path, encoding=encoding, errors=errors)
+        if path == inventory:
+            data = json.loads(text)
+            group = next(
+                group
+                for group in data["groups"]
+                if group["id"]
+                == "tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix"
+            )
+            group["native_program"]["path"] = group["native_program"]["path"].replace(
+                "/QPE/", f"/{replacement}/"
+            )
+            return json.dumps(data)
+        return text
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    with pytest.raises(ValueError, match="missing or case-mismatched native program"):
+        render(load_catalog())
+
+
 @pytest.mark.parametrize(
     "source",
     [

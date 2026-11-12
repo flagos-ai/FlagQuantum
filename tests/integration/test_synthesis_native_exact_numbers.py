@@ -19,7 +19,7 @@ from flagquantum.compiler._construction.frontend_python import _QuantumFunction
 from flagquantum.compiler._construction.lowering import schedule_arithmetic
 from flagquantum.compiler._construction.register_profile import verify_register_program
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python_program import program_definition
 from tools.synthesis_catalog import load_catalog
 

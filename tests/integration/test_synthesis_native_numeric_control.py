@@ -14,7 +14,7 @@ from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 RELATIONS = {"<": lt, "<=": le, ">": gt, ">=": ge, "==": eq, "!=": ne}

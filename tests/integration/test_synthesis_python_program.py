@@ -14,7 +14,7 @@ from examples.synthesis.tutorials.composition.python_program.main import main
 from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python_program import program_definition
 
 pytestmark = pytest.mark.integration
