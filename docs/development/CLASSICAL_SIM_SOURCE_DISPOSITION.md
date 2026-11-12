@@ -70,10 +70,12 @@ not measured primitive counts.
 
 ## Remaining parent boundaries
 
-Q-0882 and Q-0883 remain open. A complete original-test-to-native replacement
-matrix, notebook disposition and remaining foreign lazy-decomposition failure
-paths still need acceptance evidence. Source-only execution of the original
-tests is not that replacement matrix. Numerical codecs can support types that
+Q-0882 and Q-0883 remain open. The subsequent
+[original-test replacement matrix](CLASSICAL_SIM_TEST_MATRIX.md) accounts for
+all 19 original test functions, with native numerical execution and explicit
+representation differences. Notebook disposition and remaining foreign
+lazy-decomposition failure paths still need acceptance evidence. Source-only
+execution of the original tests is not native replacement. Numerical codecs can support types that
 Core executable graph admission excludes; this document does not expand Core.
 
 Input distributions use native sentinel ID -1; source fixed-input handling may

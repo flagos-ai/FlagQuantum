@@ -451,3 +451,12 @@ format/scope/architecture/IR/API and two examples pass. State coverage97%;
 original notebook and native replacement matrix remain distinct acceptance work.
 Q-0882/Q-0883 remain open; no new ID or physical primitive.
 20 closed/1260 open/390 active,1184 records remain unchanged.
+
+Classical simulator test matrix: all19 original test functions are mapped in
+[the complete matrix](CLASSICAL_SIM_TEST_MATRIX.md);22 original parameter cases
+execute unchanged assertions against native entries, six functions retain
+explicit parallel representation checks. Test commit `f6076c45`;34 new/1591
+related/84 CPU-TN/28 original source-only checks pass, strict1 and quality gates.
+Q-0881 reference notebook is restored byte-for-byte; its12-code/13-Markdown
+asset migration remains open. Q-0882/Q-0883 are not closed by test counts.
+No new ID:20 closed/1260 open/390 active,1184 records remain unchanged.
