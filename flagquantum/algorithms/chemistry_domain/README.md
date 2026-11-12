@@ -88,3 +88,31 @@ The complete scenario blocks OpenFermion, Cirq, PySCF and SciPy imports in a fre
 interpreter; h5py and NumPy are confined to file production/reading and PyTorch's
 existing optimizer initialization. The same test is selected by the existing
 optional HDF5 CI lane; no new dependency, training API or runtime is introduced.
+
+## Frozen-core training golden path
+
+Run `python -m examples.algorithms.fermion_active_space_training` for a bounded
+CPU example using synthetic static integrals, not an ab initio calculation. It
+freezes occupied spatial orbital 1, keeps orbitals `(2, 0)` in that order and
+discards empty orbital 3. The remaining occupied orbital is first, matching the
+existing two-electron UCCSD reference. An arbitrary active ordering must not be
+passed to that ansatz without checking its reference occupation.
+
+The unchanged composition is `select_active_space` -> `fermion_hamiltonian` ->
+Jordan-Wigner encoding -> `uccsd_ansatz` -> `fq.run` -> PyTorch Adam. The example
+performs 24 updates and lowers the energy from approximately -3.3726869663 to
+-3.7347567967 Ha with two active electrons. Nuclear, pre-existing core and newly
+frozen-core constants are already included in the observable; do not add them
+to its expectation again. Integrals and the selection are static; only circuit
+angles are differentiated, with the existing float32 angle ingestion.
+
+Run `python -m pytest tests/integration/test_fermion_active_space_training.py -q`
+after changing this workflow. The test lifts the four-mode UCCSD state into the
+original eight-mode Fock space with fermionic permutation signs and compares
+energy, gradients and all 24 optimizer updates against direct creation/annihilation
+action. It also checks finite differences, normalization, frozen occupancy and
+the particle sector, and runs the example while blocking external science SDKs.
+The dense reference is an exponential-cost correctness oracle, not an execution
+backend. Dropping virtual orbitals and fixing core occupancy defines a projection;
+the projected energy is not the unrestricted full-space ground energy. This
+evidence does not expand capability maturity or certify scalable training.
