@@ -342,3 +342,18 @@ source paths reuse existing pair-step conversion/profiling/execution; matching
 peaks and distinct FLOP/native-cost conventions are verified. There is no new
 capability ID or parent closure: 1,184 records, 19 closed and 1,261 open remain.
 Whole 18-cell notebook and original index/layout asset review remain open.
+
+The [complete tensor notebook audit](TENSOR_SIMULATION_NOTEBOOK.md) now closes
+Q-0885 as a concrete repository asset: all 18 original code cells and all 18
+native cells execute, all 18 Markdown cells and kernel/empty-output/attachment
+metadata are disposed, and five native figures are rendered and visually
+reviewed. Original numerical code remains unchanged; only the original optional
+drawing boundary is intercepted because Graphviz is unavailable. Native integer
+edge inspection and Matplotlib layouts are explicit adaptations, not foreign
+object or pixel equivalence. Nine complete complex arrays and exact leaves,
+selection, diagnostics and profile accounting pass. Counts are now **20 closed,
+1,260 open parents**, **390 active**, with **1,184 capability records unchanged**.
+The related 1,945 tests and 84 CPU/TN tests pass; strict checks cover the new test
+file. Existing physical/measurement/workspace evidence is preserved by those
+regressions. Other source-wide tensor/optimizer interfaces and the prior default
+suite timeout remain open. G3 and integration-PR merge are not authorized here.

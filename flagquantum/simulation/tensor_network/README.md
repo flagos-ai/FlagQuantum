@@ -281,3 +281,14 @@ MultiAnd instance IDs and inspect the existing native contraction profile. The
 explain atomic tensor stopping rules, imported-path comparisons, shape-only
 planning and why arithmetic estimates, physical gates and process RAM are
 separate quantities. No new planner or execution representation is introduced.
+
+### Complete tensor notebook
+
+Run all cells in
+[`tensor_simulation.ipynb`](../../../examples/notebooks/tensor_simulation.ipynb)
+for CNOT, rectangular And, MultiAnd inspection/custom selection, explicit custom
+matrix binding, Bell expansion/refusal, and zero initialization. All 18 workflows
+reuse the owners above. The [whole-source audit](../../../docs/development/TENSOR_SIMULATION_NOTEBOOK.md)
+records exact reference execution, five native figures, register/work ownership,
+resource units and presentation differences. It closes the concrete notebook
+asset without claiming the full external optimizer or renderer interface.
