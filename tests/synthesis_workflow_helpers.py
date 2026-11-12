@@ -5,6 +5,7 @@ from typing import TypeVar
 
 import torch
 
+import flagquantum as fq
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.selection import Constraints, ConstructionBudget
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
@@ -15,6 +16,36 @@ from flagquantum.services.synthesis import Program
 
 MEMORY = 512 * 1024**2
 Values = TypeVar("Values", bound=tuple[int, ...])
+
+
+def check_program_equivalence(first: Program, second: Program) -> None:
+    """Compare owned amplitudes across decompositions with different scratch."""
+    assert first.registers == second.registers
+
+    def logical_state(program: Program) -> torch.Tensor:
+        row = program.selection.selected
+        assert row is not None and row.target is not None and row.arithmetic is not None
+        # Retained hidden registers can carry semantic state (e.g. Brownian row
+        # indices). Only decomposition scratch has a clean-zero obligation.
+        owned_width = program.circuit.n_wires - row.arithmetic.peak_workspace
+        outputs = tuple(
+            row.target.layout.physical_of(wire) for wire in range(owned_width)
+        )
+        workspace = tuple(
+            wire for wire in range(program.circuit.n_wires) if wire not in outputs
+        )
+        state = fq.run(program).statevector()
+        view = (
+            state.reshape((2,) * program.circuit.n_wires)
+            .permute(*outputs, *workspace)
+            .reshape(1 << len(outputs), -1)
+        )
+        assert float(view[:, 1:].abs().square().sum()) < 1e-24
+        return view[:, 0].clone()
+
+    torch.testing.assert_close(
+        logical_state(first), logical_state(second), atol=1e-12, rtol=0
+    )
 
 
 def native(

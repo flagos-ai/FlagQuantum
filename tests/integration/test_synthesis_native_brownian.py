@@ -225,8 +225,7 @@ def test_incomplete_discard_environment_and_independent_input_budget_refuse() ->
 @pytest.mark.parametrize(
     "max_qubits,max_workspace,max_operations,memory_limit_bytes",
     [
-        (22, None, None, None),
-        (None, 1, None, None),
+        (20, None, None, None),
         (None, None, 1402, None),
         (None, None, None, 1024**2),
     ],
@@ -312,3 +311,12 @@ def test_marker_alias_resolves_by_identity_and_host_body_is_never_executed() -> 
     assert dict(program.numeric_probabilities(fq.run(program))) == {
         (Fraction(25, 256),): 1.0
     }
+
+
+def test_scratch_free_brownian_preserves_the_complete_state() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(main)
+    constrained = synth.synthesize(main, max_workspace=0, max_qubits=21)
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

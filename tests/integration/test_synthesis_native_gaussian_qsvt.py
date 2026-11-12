@@ -201,8 +201,8 @@ def test_invalid_declared_overlap_refuses(amplitude: float) -> None:
 @pytest.mark.parametrize(
     "limits",
     [
-        {"max_qubits": 17},
-        {"max_workspace": 4},
+        {"max_qubits": 13},
+        {"max_workspace": 0},
         {"max_operations": 3756},
         {"max_depth": 3185},
         {"memory_limit_bytes": 1024},

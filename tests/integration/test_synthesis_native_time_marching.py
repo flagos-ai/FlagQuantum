@@ -279,8 +279,7 @@ def test_invalid_phases_refuse(even: tuple[float, ...], odd: tuple[float, ...]) 
 @pytest.mark.parametrize(
     "limits",
     [
-        {"max_qubits": 12},
-        {"max_workspace": 0},
+        {"max_qubits": 11},
         {"max_operations": 100},
         {"max_depth": 100},
         {"memory_limit_bytes": 1024},
@@ -294,3 +293,19 @@ def test_resource_budgets_refuse(limits: Limits) -> None:
         synth.synthesize(
             native.main, classical_inputs=native.classical_inputs(), **limits
         )
+
+
+def test_scratch_free_time_marching_preserves_the_complete_state() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(
+        native.main, classical_inputs=native.classical_inputs()
+    )
+    constrained = synth.synthesize(
+        native.main,
+        classical_inputs=native.classical_inputs(),
+        max_workspace=0,
+        max_qubits=12,
+    )
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

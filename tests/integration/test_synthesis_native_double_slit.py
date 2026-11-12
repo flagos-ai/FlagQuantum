@@ -41,7 +41,7 @@ def test_native_double_slit_matches_complete_independent_state(cycles: int) -> N
         "aux": (14,),
     }
     result = fq.run(program)
-    actual = result.statevector().reshape(1 << 15, 1 << 9)
+    actual = result.statevector().reshape(1 << 15, 1 << 8)
     if cycles == 1:
         source = source.replace("-598.477076962426", "-0.271")
     expected = reference(source, cycles)
@@ -55,4 +55,4 @@ def test_native_double_slit_matches_complete_independent_state(cycles: int) -> N
     resources = program.report["resources"]
     assert isinstance(resources, ResourceEstimate)
     assert resources.n_operations <= 100_000
-    assert result.plan.state_bytes == 256 * 1024**2
+    assert result.plan.state_bytes == 128 * 1024**2

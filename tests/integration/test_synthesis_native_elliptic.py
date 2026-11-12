@@ -231,8 +231,8 @@ def test_unproved_source_seed_refuses(seed: tuple[int, int]) -> None:
 @pytest.mark.parametrize(
     "limits",
     [
-        {"max_qubits": 14},
-        {"max_workspace": 2},
+        {"max_qubits": 11},
+        {"max_workspace": 0},
         {"max_operations": 100},
         {"max_depth": 100},
         {"memory_limit_bytes": 1024},

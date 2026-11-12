@@ -34,7 +34,15 @@ rule uses 563, retaining the 174-gate gain from its identity exemption. The
 ordinary seeded control remains 771 versus 763. Across the 1200 entangled
 programs, maximum raw state difference is `1.46e-15`. Resource pin changes
 reflect these measured costs of the precision fix; they are not relaxed gates
-for the previous approximate fold. The three-gate cross-machine spread remains.
+for the previous approximate fold. The CI Linux/libm lane measures a strict-rule count of 710 and a length-3
+mean of 1.5613. The precision guard compares float64 reconstruction against a
+threshold of eight unit ulps, so last-bit transcendental differences change
+admission. Performance contracts bound the mean within 0.01 gate and the strict
+legal count within 30 gates of the local reading. These bounds retain the
+required reduction and the minimum 150-gate identity-exemption gain. Numerical
+exactness tolerances remain unchanged. The zero-polar U3 control population
+measures 176 gates locally and 179 in CI; both identity policies and both rotation
+merge settings must still agree exactly on that population.
 
 Pinned original Qmod resource rows remain historical baselines. Fresh replay
 records observed resource differences separately; for example the qDRIFT guide

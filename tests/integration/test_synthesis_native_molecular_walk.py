@@ -127,8 +127,8 @@ def test_invalid_axis_is_rejected(axis: str) -> None:
 @pytest.mark.parametrize(
     ("limits", "error_type"),
     [
-        ({"max_qubits": 15}, synth.SynthesisError),
-        ({"max_workspace": 2}, synth.SynthesisError),
+        ({"max_qubits": 14}, synth.SynthesisError),
+        ({"max_workspace": 1}, synth.SynthesisError),
         ({"max_operations": 18_933}, synth.SynthesisError),
         ({"memory_limit_bytes": 1024}, PlanningError),
     ],

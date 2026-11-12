@@ -213,8 +213,7 @@ def test_invalid_overlap_refuses(success: float) -> None:
 @pytest.mark.parametrize(
     "limits",
     [
-        {"max_qubits": 7},
-        {"max_workspace": 1},
+        {"max_qubits": 5},
         {"max_operations": 2398},
         {"max_depth": 2045},
         {"memory_limit_bytes": 1024},
@@ -228,3 +227,19 @@ def test_resource_budgets_refuse(limits: Limits) -> None:
         synth.synthesize(
             native.main, classical_inputs=native.classical_inputs(), **limits
         )
+
+
+def test_scratch_free_exponential_preserves_the_complete_state() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(
+        native.main, classical_inputs=native.classical_inputs()
+    )
+    constrained = synth.synthesize(
+        native.main,
+        classical_inputs=native.classical_inputs(),
+        max_workspace=0,
+        max_qubits=6,
+    )
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

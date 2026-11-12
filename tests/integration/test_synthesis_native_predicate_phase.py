@@ -74,14 +74,14 @@ def test_direct_and_explicit_local_preserve_phase_under_measured_budgets() -> No
     scoped_resources = programs[1].report["resources"]
     assert isinstance(direct_resources, ResourceEstimate)
     assert isinstance(scoped_resources, ResourceEstimate)
-    assert direct_resources.n_qubits == 9
+    assert direct_resources.n_qubits == 6
     assert scoped_resources.n_qubits == 6
-    synth.synthesize(direct, source_format="qmod", max_qubits=9)
+    synth.synthesize(direct, source_format="qmod", max_qubits=6)
     synth.synthesize(scoped, source_format="qmod", max_qubits=6)
     with pytest.raises(synth.SynthesisError):
         synth.synthesize(scoped, source_format="qmod", max_qubits=5)
     with pytest.raises(synth.SynthesisError):
-        synth.synthesize(direct, source_format="qmod", max_qubits=8)
+        synth.synthesize(direct, source_format="qmod", max_qubits=5)
 
 
 def test_predicate_phase_is_visible_in_interference() -> None:

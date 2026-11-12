@@ -13,12 +13,13 @@ from tests.integration.test_synthesis_native_exact_numbers import definition
 pytestmark = pytest.mark.integration
 
 
-def _repeated_entry() -> _QuantumFunction:
+def _repeated_entry(*, interleave: bool = False) -> _QuantumFunction:
     return definition(
         "repetitions:int,x:Output[QNum[4]],target:Output[QBit]",
         "allocate(x)\nallocate(target)\nhadamard_transform(x)\n"
         "hadamard_transform(target)\nRZ(0.37,target)\n"
-        "for iteration in range(repetitions):\n    mark(x,target)",
+        "for iteration in range(repetitions):\n    mark(x,target)"
+        + ("\n    RZ(0.037,target)" if interleave else ""),
         "@qfunc\ndef mark(x:QNum,target:QBit):\n"
         "    control((x==0)|(x==1)|(x==2)|(x==3)|(x==4),lambda:X(target))\n",
     )
@@ -63,11 +64,12 @@ def test_reused_definition_preserves_complete_repeated_interference(
 
 
 def test_definition_reuse_does_not_override_operation_budget() -> None:
+    # Interleave a noncommuting rotation so even repetitions cannot cancel.
     with pytest.raises(synth.SynthesisError, match="operations|budget"):
         synth.synthesize(
-            _repeated_entry(),
+            _repeated_entry(interleave=True),
             classical_inputs={"repetitions": 254},
-            max_operations=1000,
+            max_operations=512,
         )
 
 

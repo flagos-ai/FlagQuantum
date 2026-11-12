@@ -173,8 +173,7 @@ def test_invalid_control_views_and_callbacks_refuse(body: str, diagnostic: str) 
 @pytest.mark.parametrize(
     "budget",
     [
-        {"max_workspace": 3},
-        {"max_qubits": 11},
+        {"max_qubits": 7},
         {"max_operations": 1},
         {"max_depth": 1},
         {"memory_limit_bytes": 1},
@@ -194,3 +193,14 @@ def test_uninitialized_target_and_control_refuse() -> None:
         )
         with pytest.raises(ValueError, match="width|initialized"):
             synth.synthesize(entry)
+
+
+def test_scratch_free_array_control_preserves_the_complete_state() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(definition("control(c,lambda:X(t))", 7))
+    constrained = synth.synthesize(
+        definition("control(c,lambda:X(t))", 7), max_workspace=0, max_qubits=8
+    )
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

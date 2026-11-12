@@ -71,9 +71,7 @@ def test_invalid_precision_refuses() -> None:
         tanh.build_program(slopes=(1.0, 0.9, 0.8125, 0.625))
 
 
-@pytest.mark.parametrize(
-    "kind", ["qubits", "workspace", "operations", "depth", "memory"]
-)
+@pytest.mark.parametrize("kind", ["qubits", "operations", "depth", "memory"])
 def test_actual_resource_budgets_refuse(kind: str) -> None:
     classical: dict[str, float | list[float]] = {
         "slopes": list(tanh.SLOPES),
@@ -83,9 +81,7 @@ def test_actual_resource_budgets_refuse(kind: str) -> None:
     }
     with pytest.raises((synth.SynthesisError, PlanningError)):
         if kind == "qubits":
-            synth.synthesize(tanh.main, classical_inputs=classical, max_qubits=8)
-        elif kind == "workspace":
-            synth.synthesize(tanh.main, classical_inputs=classical, max_workspace=0)
+            synth.synthesize(tanh.main, classical_inputs=classical, max_qubits=7)
         elif kind == "operations":
             synth.synthesize(tanh.main, classical_inputs=classical, max_operations=1)
         elif kind == "depth":
@@ -94,3 +90,17 @@ def test_actual_resource_budgets_refuse(kind: str) -> None:
             synth.synthesize(
                 tanh.main, classical_inputs=classical, memory_limit_bytes=16
             )
+
+
+def test_scratch_free_tanh_preserves_the_independent_state() -> None:
+    classical = {
+        "slopes": list(tanh.SLOPES),
+        "intercepts": list(tanh.INTERCEPTS),
+        "initial": 0,
+        "repeats": 1,
+    }
+    program = synth.synthesize(
+        tanh.main, classical_inputs=classical, max_workspace=0, max_qubits=8
+    )
+    assert program.report["workspace_qubits"] == 0
+    check(program, fq.run(reference_circuit()).statevector())
