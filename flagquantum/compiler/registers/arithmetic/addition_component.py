@@ -38,6 +38,19 @@ def addition_component_program(
         or not 1 <= left_width <= right_width
     ):
         raise ValueError("Add widths must be positive integers with left <= right")
+    if right_width == 1:
+        word = RegisterType("uint", 1)
+        signature = Signature((Register("a", word), Register("b", word)))
+        cnot = _bit_function(
+            "add_cx",
+            (Register("ctrl", word), Register("target", word)),
+            CircuitIR(2, (Instruction("cx", (0, 1)),)),
+        )
+        builder = ComponentProgramBuilder(signature, (cnot,), name=name)
+        output = builder.call_dict(
+            "add_cx", {"ctrl": builder.inputs["a"], "target": builder.inputs["b"]}
+        )
+        return builder.finalize({"a": output["ctrl"], "b": output["target"]})
     bit = RegisterType("bit", 1)
     ctrl = (Register("ctrl", bit, (2,)),)
     compute = control_predicate_program(
