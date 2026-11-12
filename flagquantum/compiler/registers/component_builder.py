@@ -56,9 +56,7 @@ class ComponentProgramBuilder:
         self._name = name
         self._functions: dict[str, FunctionRecord] = {}
         for function in functions:
-            if function.name == name or function.name in self._functions:
-                raise ValueError(f"conflicting component definition {function.name!r}")
-            self._functions[function.name] = function
+            self.define(function)
         declaration = FunctionRecord(name, (), registers=self._registers)
         register_port_types(declaration, RegisterSide.LEFT)
         self._next_index = 0
@@ -71,6 +69,16 @@ class ComponentProgramBuilder:
             for value in self.inputs.values()
             for binding in np.asarray(value).flat
         )
+
+    def define(self, function: FunctionRecord) -> None:
+        """Add one definition before its first call; reject name replacement.
+
+        This uses the constructor's same conflict rule. Port checks remain at
+        call time and full-body verification remains at finalization.
+        """
+        if function.name == self._name or function.name in self._functions:
+            raise ValueError(f"conflicting component definition {function.name!r}")
+        self._functions[function.name] = function
 
     def _new_value(self) -> ValueRef:
         value = ValueRef("entry", self._next_index, "register")
