@@ -33,12 +33,12 @@ Existing native records remain the shared representation.
 | `_update_assign_from_vals` | Native component projection maps THRU outputs to predecessor lifetimes and creates fresh RIGHT display identities. Core validation owns array signatures. Foreign array-value shape diagnostics remain open. |
 | `_binst_assign_line`, nested `_in_vals` | Native component projection consumes the selected call's operands/results, retains THRU identity and retires LEFT lifetimes through the shared layout. |
 | `_cbloq_musical_score`, nested `_f_vals` | `component_register_score` projects the selected Core graph; `layout_register_score` owns dependency generations and output lifetimes. Existing `register_program_score` separately projects verified register constructions. Foreign graph-manager replacement remains open. |
-| `WireSymbol.draw`, `adjoint`, `json_dict` | Existing `SymbolClass` and attribute dictionaries supply the six glyph classes. `_draw_port` owns drawing. Arbitrary symbol subclasses and generic symbol adjoint dispatch remain open. |
-| `_text_adjoint` | Source dagger add/remove behavior has no shared native symbol transform yet and remains open. |
-| `TextBox.draw`, `adjoint` | `_draw_port` draws the round box. Automatic dagger transformation remains open. |
-| `Text.draw`, `adjoint` | `_draw_text` preserves text and font size. Automatic dagger transformation remains open. |
-| `RarrowTextBox.draw`, `adjoint` | `_draw_port` draws the right arrow. Native LEFT ports select it explicitly. Generic adjoint arrow switching remains open. |
-| `LarrowTextBox.draw`, `adjoint` | `_draw_port` draws the left arrow. Native RIGHT ports select it explicitly. Generic adjoint arrow switching remains open. |
+| `WireSymbol.draw`, `adjoint`, `json_dict` | Existing `SymbolClass` and attribute dictionaries supply the six glyph classes. `_draw_port` owns drawing. `adjoint_wire_symbol` now transforms all six admitted record classes. Arbitrary foreign symbol subclasses remain open. |
+| `_text_adjoint` | `adjoint_wire_symbol` now preserves the exact source dagger add/remove and `strip` behavior. |
+| `TextBox.draw`, `adjoint` | `_draw_port` draws the round box. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
+| `Text.draw`, `adjoint` | `_draw_text` preserves text and font size. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
+| `RarrowTextBox.draw`, `adjoint` | `_draw_port` draws the right arrow. Native LEFT ports select it explicitly. `adjoint_wire_symbol` switches directional boxes and retains their text. |
+| `LarrowTextBox.draw`, `adjoint` | `_draw_port` draws the left arrow. Native RIGHT ports select it explicitly. `adjoint_wire_symbol` switches directional boxes and retains their text. |
 | `Circle.draw` | `_draw_port` preserves filled/open circles, radius and color. |
 | `ModPlus.draw` | `_draw_port` preserves the addition marker, font and transparent box. |
 | `directional_text_box` | `_port_symbol` selects through/left/right box styles for admitted native ports. Source enum error behavior and a standalone foreign helper remain outside that surface. |
@@ -105,9 +105,9 @@ and source analytical models retain their distinct accounting layers.
 
 Q-0749 closes for the complete two-function original test file after both real
 source tests and the native equivalents pass. Q-0747 remains open for the
-reservation/subclass, symbol-adjoint and foreign protocol boundaries listed
+reservation/subclass and foreign protocol boundaries listed
 above. The accepted Q-0745 notebook and Q-0749 tests do not imply those missing
-implementation extensions are available. Q-0744/Q-0746 Javascript animation also
+implementation extensions are available. The builtin glyph adjoint follow-up is documented in [REGISTER_SCORE_SYMBOL_ADJOINT.md](REGISTER_SCORE_SYMBOL_ADJOINT.md). Q-0744/Q-0746 Javascript animation also
 remains separately open.
 
 Run the source-backed local comparison in the locked environment.
