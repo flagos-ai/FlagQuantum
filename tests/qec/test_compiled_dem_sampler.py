@@ -374,9 +374,9 @@ def test_embedded_adapter_preserves_record_buffers_and_replay_bytes(
     observables = torch.tensor([[1], [0]], dtype=dtype)
     errors = torch.tensor([[2], [1]] if packed else [[0, 1], [1, 0]], dtype=dtype)
     raw = (
-        bytearray(detectors.numpy().tobytes()),
-        bytearray(observables.numpy().tobytes()),
-        bytearray(errors.numpy().tobytes()) if return_errors else None,
+        bytearray(detectors.flatten().tolist()),
+        bytearray(observables.flatten().tolist()),
+        bytearray(errors.flatten().tolist()) if return_errors else None,
     )
     native = _native_dem_double(monkeypatch, raw)
     stream = adapter._EmbeddedStream("detector D8", 7, (9, 1, 2))
@@ -393,7 +393,7 @@ def test_embedded_adapter_preserves_record_buffers_and_replay_bytes(
         native.prepare_dem.return_value,
         2,
         packed,
-        bytearray(replay.numpy().tobytes()),
+        bytearray(replay.flatten().tolist()),
         packed_replay,
         return_errors,
     )
@@ -478,21 +478,25 @@ def test_sdk_adapter_owns_results_and_binds_file_streams(
     o = torch.tensor([[True], [False]])
     e = torch.zeros((2, num_errors), dtype=torch.bool)
     sampler = SimpleNamespace(
-        sample=Mock(
-            return_value=(d.numpy(), o.numpy(), e.numpy() if return_errors else None)
-        ),
+        sample=Mock(return_value=(d, o, e if return_errors else None)),
         sample_write=Mock(),
     )
     sdk = _sdk_dem_double(monkeypatch, sampler)
     stream = adapter._SdkStream("detector D1", 7, (2, 1, num_errors))
     replay = torch.ones((2, num_errors), dtype=torch.bool)
+    # Keep the SDK double independent of NumPy; conformance covers real arrays.
+    sdk_replay = replay.clone()
+    to_numpy = Mock(return_value=sdk_replay)
+    monkeypatch.setattr(replay, "numpy", to_numpy)
     records = stream.sample(2, packed=False, errors=replay, return_errors=return_errors)
+    to_numpy.assert_called_once_with()
     sdk.DetectorErrorModel.assert_called_once_with("detector D1")
     sdk.DetectorErrorModel.return_value.compile_sampler.assert_called_once_with(seed=7)
     call = sampler.sample.call_args
     assert call is not None and call.args == (2,)
     assert call.kwargs["bit_packed"] is False
     assert call.kwargs["return_errors"] is return_errors
+    assert call.kwargs["recorded_errors_to_replay"] is sdk_replay
     assert call.kwargs["recorded_errors_to_replay"].tolist() == replay.tolist()
     assert torch.equal(records[0], d) and torch.equal(records[1], o)
     d.zero_()
@@ -516,9 +520,10 @@ def test_sdk_adapter_owns_results_and_binds_file_streams(
         replay_err_in_file="in" if num_errors else None,
         replay_err_in_format="r8",
     )
-    sampler.sample.return_value = (records[0].numpy(), records[1].numpy(), None)
+    sampler.sample.return_value = (records[0], records[1], None)
     stream.sample(2, packed=False, errors=None, return_errors=False)
     assert sampler.sample.call_args.kwargs["recorded_errors_to_replay"] is None
+    to_numpy.assert_called_once_with()
 
 
 def test_sdk_adapter_rejects_version_before_preparing(
