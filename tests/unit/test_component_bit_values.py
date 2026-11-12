@@ -307,7 +307,7 @@ def test_measurement_float_equivalent_fixed_values_keep_phase_and_complex_branch
 def test_bit_dispatch_reuses_shared_traversal_and_existing_validators(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import flagquantum.simulation.component_classical_state as owner
+    import flagquantum.simulation.classical_typed_values as owner
     from flagquantum.simulation.bit_encoding import (
         validate_bit_array,
         validate_bit_value,
@@ -315,6 +315,7 @@ def test_bit_dispatch_reuses_shared_traversal_and_existing_validators(
     from flagquantum.simulation.classical_registers import (
         bind_classical_register_values,
     )
+    from flagquantum.simulation.component_classical_state import ComponentClassicalState
 
     bind = Mock(wraps=bind_classical_register_values)
     monkeypatch.setattr(owner, "bind_classical_register_values", bind)
@@ -324,7 +325,7 @@ def test_bit_dispatch_reuses_shared_traversal_and_existing_validators(
         lambda *args, **kwargs: pytest.fail("integer validator"),
     )
     value = np.array([0.0, 1.0])
-    result = owner.ComponentClassicalState(
+    result = ComponentClassicalState(
         identity_record((2,)), (0,), {"x": value}, lambda f, v: v
     ).simulate()
     np.testing.assert_array_equal(result["x"], [0, 1])

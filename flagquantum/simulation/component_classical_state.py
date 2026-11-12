@@ -18,19 +18,12 @@ from ..core.ir.program import (
 from ..core.ir.program.registers import Register, RegisterType
 from ..core.ir.program.signatures import Signature
 from .binary_field_encoding import resolve_binary_field_encoding
-from .bit_encoding import validate_bit_array, validate_bit_value
 from .classical_action import evaluate_classical_action
 from .classical_distributions import ClassicalDistribution, draw_classical_value
-from .classical_field_registers import (
-    bind_field_register_values,
-    collect_field_register_value,
-)
 from .classical_measurement import MeasurementOutcomePhase, assert_unit_classical_phase
-from .classical_registers import (
-    bind_classical_register_values,
-    bind_integer_register_values,
-    bind_opaque_register_values,
-    collect_integer_register_value,
+from .classical_typed_values import (
+    bind_typed_register_values,
+    collect_typed_register_value,
 )
 from .classical_updates import commit_classical_outputs, commit_phased_classical_outputs
 from .finite_field_encoding import FiniteFieldEncoding
@@ -197,39 +190,12 @@ class ComponentClassicalState:
             )
 
         for register in registers:
-            if register.dtype.encoding == "finite_field":
-                bound = bind_field_register_values(
-                    register.name,
-                    values,
-                    self._fields[register.dtype],
-                    shape=register.shape,
-                    resolve_distribution=resolve,
-                )
-            elif register.dtype.encoding == "opaque":
-                bound = bind_opaque_register_values(
-                    register.name,
-                    values,
-                    shape=register.shape,
-                    resolve_distribution=resolve,
-                )
-            elif register.dtype.encoding == "bit":
-                bound = bind_classical_register_values(
-                    register.name,
-                    values,
-                    validate_bit_value,
-                    validate_bit_array,
-                    shape=register.shape,
-                    resolve_distribution=resolve,
-                )
-            else:
-                bound = bind_integer_register_values(
-                    register.name,
-                    values,
-                    register.bitsize,
-                    shape=register.shape,
-                    signed=register.dtype.encoding == "signed",
-                    resolve_distribution=resolve,
-                )
+            bound = bind_typed_register_values(
+                register,
+                values,
+                field_encoding=self._fields.get(register.dtype),
+                resolve_distribution=resolve,
+            )
             for index, value in bound.items():
                 self.assignments[next(refs)] = value
                 self._outcomes[register.name, index] = value
@@ -243,19 +209,9 @@ class ComponentClassicalState:
             assignments = {
                 index: self.assignments[next(refs)] for index in register.all_idxs()
             }
-            if register.dtype.encoding == "finite_field":
-                value = collect_field_register_value(
-                    assignments,
-                    self._fields[register.dtype],
-                    shape=register.shape,
-                )
-            else:
-                value = collect_integer_register_value(
-                    assignments,
-                    register.bitsize,
-                    shape=register.shape,
-                    signed=register.dtype.encoding == "signed",
-                )
+            value = collect_typed_register_value(
+                register, assignments, field_encoding=self._fields.get(register.dtype)
+            )
             outputs[register.name] = value
         return outputs
 
