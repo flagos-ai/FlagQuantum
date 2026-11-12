@@ -1,8 +1,10 @@
-"""Real optional upstream operators checked against independent matrix action."""
+"""Real optional upstream inputs checked against independent matrix action."""
 
 from __future__ import annotations
 
 import itertools
+import pathlib
+import typing
 from collections.abc import Callable
 from importlib import import_module
 
@@ -26,6 +28,9 @@ from flagquantum.ecosystem.openfermion import (
 )
 from flagquantum.observables.fermion import FermionOperator, FermionTerm
 from tests.unit.fermion.oracles import fock_matrix
+
+if typing.TYPE_CHECKING:
+    from openfermion import MolecularData as OpenMolecularData
 
 of = pytest.importorskip("openfermion")
 # NumPy is required by the installed upstream package; a broken install must fail.
@@ -75,6 +80,206 @@ def test_all_short_ordered_words_and_complex_round_trips() -> None:
                 ),
             )
             assert source.terms == before
+
+
+@pytest.fixture
+def molecular_data_source(tmp_path: pathlib.Path) -> OpenMolecularData:
+    from flagquantum.algorithms.chemistry_domain.problem import from_native_molecule
+    from flagquantum.algorithms.molecular import create_molecular_hamiltonian
+
+    geometry = [("H", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, 0.7414))]
+    native = from_native_molecule(create_molecular_hamiltonian(geometry))
+    source = of.MolecularData(
+        geometry, "sto-3g", 1, filename=str(tmp_path / "molecule")
+    )
+    source.n_orbitals = native.n_orbitals
+    source.n_qubits = native.n_modes
+    source.one_body_integrals = native.one_body.numpy().copy()
+    source.two_body_integrals = native.two_body.permute(0, 2, 3, 1).numpy().copy()
+    source.nuclear_repulsion = native.nuclear_repulsion
+    source.hf_energy = native.reference_energy
+    return source
+
+
+def test_molecular_data_matches_upstream_hamiltonian_and_file_input(
+    molecular_data_source: OpenMolecularData,
+) -> None:
+    from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+    from flagquantum.ecosystem.chemistry.molecular_hdf5 import read_molecular_hdf5
+
+    source = molecular_data_source
+    problem = from_openfermion_molecular_data(source)
+    source.save()
+    file_problem = read_molecular_hdf5(source.filename + ".hdf5")
+    torch.testing.assert_close(problem.one_body, file_problem.one_body)
+    torch.testing.assert_close(problem.two_body, file_problem.two_body)
+    assert problem.energy_offset == file_problem.energy_offset
+    assert problem.reference_energy == file_problem.reference_energy
+    assert problem.reference_occupation == file_problem.reference_occupation
+    native = fermion_hamiltonian(problem)
+    torch.testing.assert_close(
+        fock_matrix(native, 4),
+        torch.tensor(
+            of.get_sparse_operator(source.get_molecular_hamiltonian()).toarray()
+        ),
+    )
+    encodings: tuple[Encoding, ...] = ("jordan_wigner", "parity", "bravyi_kitaev")
+    for encoding in encodings:
+        encoded = encode_fermion(native, n_modes=4, encoding=encoding)
+        circuit = fq.Circuit(4, dtype=torch.complex128, device="cpu")
+        for q, bit in enumerate(encoded.reference_bits(problem.reference_occupation)):
+            if bit:
+                circuit.x(q)
+        result = fq.run(
+            circuit, outputs=[fq.expectation(to_observable(encoded.operator))]
+        )
+        assert float(
+            torch.as_tensor(result.expectation()).reshape(-1)[0]
+        ) == pytest.approx(-1.1166843871, abs=1e-8)
+    source.one_body_integrals[:] = float("nan")
+    source.two_body_integrals[:] = float("nan")
+    torch.testing.assert_close(problem.one_body, file_problem.one_body)
+    torch.testing.assert_close(problem.two_body, file_problem.two_body)
+
+
+@pytest.mark.parametrize("dtype", ["float32", "int64", ">f8"])
+def test_molecular_data_numeric_storage_and_owned_native_dtype(
+    molecular_data_source: OpenMolecularData,
+    dtype: str,
+) -> None:
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+
+    source = molecular_data_source
+    source.one_body_integrals = source.one_body_integrals.astype(dtype)
+    source.two_body_integrals = source.two_body_integrals.astype(dtype)
+    source.hf_energy = None
+    source.n_qubits = None
+    problem = from_openfermion_molecular_data(source)
+    assert problem.one_body.dtype == problem.two_body.dtype == torch.float64
+    assert problem.one_body.device.type == "cpu"
+    assert problem.reference_energy is None and problem.n_modes == 4
+    assert float(problem.one_body[0, 0]) == float(source.one_body_integrals[0, 0])
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("n_orbitals", 0),
+        ("n_orbitals", 33),
+        ("n_orbitals", True),
+        ("n_electrons", 1),
+        ("n_electrons", 6),
+        ("n_electrons", 2.0),
+        ("multiplicity", 3),
+        ("multiplicity", True),
+        ("n_qubits", 3),
+        ("nuclear_repulsion", float("inf")),
+        ("hf_energy", float("nan")),
+        ("nuclear_repulsion", 0.5j),
+        ("hf_energy", False),
+    ],
+)
+def test_molecular_data_corrupted_metadata(
+    molecular_data_source: OpenMolecularData,
+    field: str,
+    value: object,
+) -> None:
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+
+    setattr(molecular_data_source, field, value)
+    with pytest.raises((TypeError, ValueError)):
+        from_openfermion_molecular_data(molecular_data_source)
+
+
+@pytest.mark.parametrize("field", ["one_body_integrals", "two_body_integrals"])
+@pytest.mark.parametrize("dtype", ["bool", "complex128", "object"])
+def test_molecular_data_unsupported_integral_storage(
+    molecular_data_source: OpenMolecularData,
+    field: str,
+    dtype: str,
+) -> None:
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+
+    array = getattr(molecular_data_source, field)
+    setattr(molecular_data_source, field, array.astype(dtype))
+    with pytest.raises(ValueError, match="real integral tensor"):
+        from_openfermion_molecular_data(molecular_data_source)
+
+
+def test_molecular_data_missing_cache_never_reads_a_file(
+    molecular_data_source: OpenMolecularData,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+
+    def forbidden(name: str) -> None:
+        raise AssertionError("object conversion must never load integrals from a file")
+
+    source = molecular_data_source
+    monkeypatch.setattr(source, "get_from_file", forbidden)
+    assert from_openfermion_molecular_data(source).n_modes == 4
+    source.one_body_integrals = None
+    with pytest.raises(TypeError, match="cached dense"):
+        from_openfermion_molecular_data(source)
+
+
+def test_molecular_data_rejects_invalid_tensor_values_and_symmetry(
+    molecular_data_source: OpenMolecularData,
+) -> None:
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+
+    source = molecular_data_source
+    source.one_body_integrals[0, 1] += 0.3
+    with pytest.raises(ValueError, match="symmetric"):
+        from_openfermion_molecular_data(source)
+    source.one_body_integrals[0, 1] -= 0.3
+    source.two_body_integrals[0, 0, 0, 1] += 0.3
+    with pytest.raises(ValueError, match="symmetry"):
+        from_openfermion_molecular_data(source)
+    source.two_body_integrals[:] = float("nan")
+    with pytest.raises(ValueError, match="finite"):
+        from_openfermion_molecular_data(source)
+
+
+def test_molecular_data_numpy_integer_metadata_and_boolean_rejection(
+    molecular_data_source: OpenMolecularData,
+) -> None:
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+
+    source = molecular_data_source
+    integer = source.one_body_integrals.astype("int64")[0, 0]
+    source.n_orbitals = type(integer)(2)
+    source.n_electrons = type(integer)(2)
+    source.n_qubits = type(integer)(4)
+    source.multiplicity = type(integer)(1)
+    assert from_openfermion_molecular_data(source).n_modes == 4
+    source.multiplicity = source.one_body_integrals.astype("bool")[0, 0]
+    with pytest.raises(TypeError, match="multiplicity"):
+        from_openfermion_molecular_data(source)
+
+
+def test_molecular_data_rejects_wrong_external_type() -> None:
+    from flagquantum.ecosystem.chemistry.molecular_data import (
+        from_openfermion_molecular_data,
+    )
+
+    with pytest.raises(TypeError, match="MolecularData"):
+        from_openfermion_molecular_data(of.FermionOperator())
 
 
 def test_pauli_complex_sum_against_upstream_matrix_and_independent_factors() -> None:
