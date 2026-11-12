@@ -1125,3 +1125,5 @@ where the idle slots are a workspace that the inverse routing SWAPs clean.
 [Implementation details](IMPLEMENTATION.md) document stage ownership and
 migration constraints. [Testing policy](../../docs/development/TESTING.md)
 defines the additional checks for each change.
+
+[Classical vector wrappers](../../docs/development/COMPONENT_CLASSICAL_VECTORS.md) construct typed integer preparations/effects around an existing component, using the existing Program builder and an explicit classical evaluator callback; numerical contraction remains in Simulation.

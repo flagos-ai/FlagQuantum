@@ -220,3 +220,5 @@ Concrete register domains and the default truth-table connection reuse existing 
 [Polynomial numerical metadata](FINITE_FIELD_POLYNOMIAL_METADATA.md) connects concrete declarations to shared domain, codec, binding and collection owners; Core executable admission remains unchanged.
 
 [Integer basis tensor suppliers](REGISTER_BASIS_VECTORS.md) provide arbitrary unsigned kets/effects on existing labels and replace the zero supplier implementation; Compiler retains physical preparation and graph construction.
+
+[Classical vector graph construction](COMPONENT_CLASSICAL_VECTORS.md) composes existing typed ownership, integer loading and numerical vector suppliers. Its explicit evaluator boundary keeps Compiler independent of Simulation; wider source dtype and failure interfaces remain open.
