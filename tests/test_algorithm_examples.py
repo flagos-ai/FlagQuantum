@@ -126,6 +126,7 @@ SCRIPTS = (
     "fermion_parity_discovery",
     "fermion_parity_training",
     "fermion_pauli_discovery",
+    "fermion_pauli_training",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -146,6 +147,11 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_pauli_training": (
+        "Only the circuit angle is trainable",
+        "does not select a ground sector or particle number",
+        "not a general convergence, coefficient-gradient or scalability claim",
+    ),
     "fermion_pauli_discovery": (
         "not select a ground sector or particle number",
         "not a scalable solver",
@@ -2102,3 +2108,21 @@ def test_pauli_discovery_example_measures_explicit_mixed_axis_sector() -> None:
     )
     assert float(_labelled(output, "Lifted eigenvector residual")) < 1e-12
     _assert_premise("fermion_pauli_discovery", output)
+
+
+def test_pauli_training_example_optimizes_the_explicit_joint_sector() -> None:
+    output = _run("fermion_pauli_training")
+    assert "Selected Y0 and X1Z2 eigenvalues: +1, -1" in output
+    assert "Register: 3 -> 1 qubits" in output
+    initial = float(_labelled(output, "Initial energy"))
+    final = float(_labelled(output, "Final energy"))
+    assert final < initial - 1
+    assert final == pytest.approx(-0.1 - 1.16**0.5, abs=1e-8)
+    assert float(
+        _labelled(output, "Analytic selected-sector minimum")
+    ) == pytest.approx(-0.1 - 1.16**0.5, abs=1e-9)
+    assert float(_labelled(output, "Gradient residual")) < 1e-9
+    assert float(_labelled(output, "Parameter update")) > 1
+    assert float(_labelled(output, "Lifted energy residual")) < 1e-12
+    assert float(_labelled(output, "Joint-sector residual")) < 1e-12
+    _assert_premise("fermion_pauli_training", output)

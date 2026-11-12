@@ -1,6 +1,6 @@
 # Explicit Pauli-sector circuit training
 
-## Scope before implementation
+## Scope and ownership
 
 Algorithms composes existing native Pauli discovery, explicit stabilizer
 reduction, one-qubit circuit preparation, `fq.run` expectations and PyTorch
@@ -50,8 +50,29 @@ the global ground state. This is not an automatic full-register ansatz transform
 coefficient/SCF differentiation or a maturity promotion. Existing discovery's
 catalog entry remains experimental with unsupported coefficient gradients.
 
-The planned shortest contributor path is
-`python -m examples.algorithms.fermion_pauli_training`, followed by
-`python -m pytest tests/integration/test_fermion_pauli_training.py -q`.
-These files will be added by the implementation commit; this scope record does
-not claim they already exist.
+## Contributor path
+
+Run the supported workflow and its focused tests:
+
+```bash
+python -m examples.algorithms.fermion_pauli_training
+python -m pytest tests/integration/test_fermion_pauli_training.py -q
+```
+
+The fixed example starts at theta=1.7 and takes 120 SGD steps of size 0.1.
+The recorded CPU run lowers energy from 0.1678214299 to -1.1770329614.
+The selected-sector minimum is -0.1-sqrt(1.16), approximately -1.1770329614.
+Its finite-difference gradient residual was 6.528e-12, parameter change
+1.8220958840 radians, lifted energy residual 4.441e-16 and joint-sector residual
+zero. These residuals may vary by platform; this is one fixed bounded run, not a
+general convergence guarantee.
+The CLI reports initial/final energy, a finite-difference gradient residual,
+parameter change and static lifted energy/joint-sector residuals. Changing the
+initial angle is a typical contributor edit. The tests independently build
+Y eigenstates and conditional X eigenstates in the physical register; they do
+not use production matrix conversion, reduction or Clifford lowering as their
+reference. Discovered generators can be replaced with signed supplied words
+without changing the preparation/measurement consumer.
+
+The earlier scope was committed before implementation. Full Linux PR checks
+and any later mainline acceptance remain separate from local checks.
