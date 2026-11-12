@@ -276,3 +276,11 @@ Simulation continues to supply their numerical tensors. This extends the
 existing Q-0897 composition acceptance without closing the source-wide notebook
 or provider parent files. Source data, physical decompositions, measured branch
 semantics and resource models are unchanged.
+
+The [unitary register tensor bridge](REGISTER_UNITARY_TENSORS.md) adds the
+PyTorch direction-projection path for the original gate-to-tensor chain, reusing
+one zero-slice constructor with the raw NumPy owner. Complex phase and gradients
+survive explicit provider composition and physical append execution. It extends
+Q-0893's projection evidence without closing that source parent or the foreign
+gate/provider/notebook parents. Actual primitive gates and the locked QEC model's
+rotation estimates remain separate.
