@@ -3,7 +3,11 @@
 ## Current delivery status
 
 The current checked main baseline is
-`e09b68e7add135dbc42f6bf677e00a611cfd463e` on November 12, 2026.
+`b9ad91149e7098218250286e9185f774aaf3dbf5` on November 13, 2026 (UTC+08:00).
+General commuting Pauli discovery and its experimental registration are merged
+in #1166 and #1167. The runtime materialization repair #1168 merged first.
+The preceding parity-training baseline was
+`e09b68e7add135dbc42f6bf677e00a611cfd463e`.
 The preceding Z-discovery registration baseline was
 `fc1df0e64da7a8087d5a64b58a439f23f1be515f`.
 The earlier spinless training baseline was
@@ -72,7 +76,8 @@ certification or accelerator/distributed support.
 The coverage audit [#1158](https://github.com/flagos-ai/FlagQuantum/pull/1158)
 and spinless training composition
 [#1159](https://github.com/flagos-ai/FlagQuantum/pull/1159) are merged.
-The actual current baseline passed 161 focused scientific, native-isolation,
+The spinless training baseline `f073a800f040f8b8a667fa19397d1ceb14794200`
+passed 161 focused scientific, native-isolation,
 training, documentation and capability tests, six spinless CLI/inventory checks,
 generated-documentation and dependency-policy validation, and
 [Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43217014837).
@@ -171,9 +176,10 @@ percentage of OpenFermion compatibility. Module paths are relative to
 | Orbital decomposition and preparation | `algorithms/fermion/decomposition.py`, `preparation.py`, `lowering.py` | `unit/fermion/test_preparation.py` | Static CPU Slater determinants and Gaussian vacua; no full excited Gaussian basis transform |
 | Fermionic Fourier basis change | `algorithms/fermion/fourier.py`, `lowering.py` | `unit/fermion/test_fourier.py` | Power-of-two widths; adjacent circuit has O(n**2) factors; no FFT speedup claim |
 | Low-rank and controlled evolution | `algorithms/fermion/low_rank.py`, `evolution.py` | `unit/fermion/test_evolution.py`, `test_controlled_evolution.py` | Real spatial closed-shell order-1/2 formulas, static factors, scalar-time gradients, unreduced JW |
-| Explicit symmetry sectors | `algorithms/fermion/symmetry.py`, `stabilizer.py` | `unit/fermion/test_symmetry.py`, `test_stabilizer.py` | Supplied sectors/generators; no discovery or automatic ansatz tapering; lifting is bounded inspection |
+| Explicit symmetry sectors | `algorithms/fermion/symmetry.py`, `stabilizer.py` | `unit/fermion/test_symmetry.py`, `test_stabilizer.py` | Explicit eigenvalues for supplied or discovered commuting generators; no automatic sector selection or ansatz tapering; lifting is bounded inspection |
+| Symmetry discovery | `algorithms/fermion/symmetry.py`, `stabilizer.py` | `unit/fermion/test_parity_discovery.py`, `test_pauli_discovery.py`, independent projector integration tests | Exact static coefficients; general discovery returns a maximum-size commuting subgroup, not the full centralizer; no particle-number or ground-sector inference |
 | Real orbital-angle gradients | `algorithms/chemistry_domain/orbital_rotation.py` | `unit/fermion/test_orbital_rotation.py` | Real CPU orbital parameters; static snapshot boundary unchanged |
-| Training composition | Existing circuit/ansatz, observable and PyTorch interfaces | Hubbard, periodic Hubbard, spinless, FCIDUMP, active-space and object-replacement training scenarios | Circuit-angle optimization only; no separate fermion solver or general convergence guarantee |
+| Training composition | Existing circuit/ansatz, observable and PyTorch interfaces | Hubbard, periodic Hubbard, spinless, FCIDUMP, active-space, object-replacement and explicit parity-sector training scenarios | Circuit-angle optimization only; no separate fermion solver or general convergence guarantee |
 | Native dependency isolation | Native modules and explicit ecosystem boundaries | `integration/test_native_fermion_isolation.py`, fresh-process example scenarios | Native workflows need no OpenFermion/Cirq; optional interoperability may install them |
 
 Upstream adaptations retain their license and attribution in
@@ -194,12 +200,12 @@ records rather than an outstanding queue or approval for additional work.
 | Combined-main acceptance | Main `f073a800f040f8b8a667fa19397d1ceb14794200` | 161 related tests, six CLI/inventory checks, documentation/dependency validation and Main smoke passed; see current delivery status |
 
 At the spinless closeout, no further implementation slice was selected. The
-later diagonal-discovery delivery and current explicit-sector training follow-up
-are recorded at the end of this plan. Each future proposal must name its user
-workflow, owning domain, failure boundary and independent acceptance evidence
-before implementation.
+later diagonal discovery, explicit parity-sector training and general Pauli
+discovery deliveries are recorded at the end of this plan. Each future proposal
+must name its user workflow, owning domain, failure boundary and independent
+acceptance evidence before implementation.
 
-Keep future arbitrary-graph models, symmetry discovery/matched encoded ansatz,
+Keep future arbitrary-graph models, automatic matched encoded ansatz,
 coefficient/SCF gradients and accelerator/distributed qualification as separate
 proposals with their own requirements and evidence. None is a prerequisite for
 the bounded spinless training path. Each proposal must reuse existing native
@@ -656,8 +662,9 @@ tests, three CLI/inventory checks and Main smoke run 43234849277. These are
 bounded CPU correctness results, not complete upstream or scalability evidence.
 The [discovery guide](FERMION_PARITY_DISCOVERY.md) records candidate-span
 semantics, encoded-qubit conventions and explicit sector ownership. Earlier
-statements excluding automatic discovery refer to their original delivery scope;
-Z-only discovery is now available, while general X/Y discovery remains a gap.
+statements excluding automatic discovery refer to their original delivery scope.
+General X/Y/Z discovery was still a gap at that recorded revision; its later
+delivery is recorded below.
 
 The follow-up merged in #1163 and composes that existing static boundary with reduced-angle
 training in `python -m examples.algorithms.fermion_parity_training`. A fixed
@@ -682,9 +689,52 @@ maximum-size independent commuting subgroup instead. Candidate spans are binary
 modulo scalar phases, and sectors for returned positive words remain explicit.
 Algorithms owns implementation, replacement tests and the executable
 `python -m examples.algorithms.fermion_pauli_discovery` workflow. Capability
-registration is a separate Integration-owned change after that implementation.
-This stage is not yet recorded as merged. Existing reduction and Stable Core
-contracts remain unchanged; no new dependency, result type or runtime is added.
+registration merged separately in Integration-owned #1167 after #1166.
+Existing reduction and Stable Core contracts remain unchanged; discovery adds
+no dependency, result type or runtime implementation.
 The earlier general-X/Y discovery gaps refer to their original delivery scope.
 Automatic sector selection, matched-ansatz transformation, coefficient/SCF
 gradients and accelerator/distributed qualification remain separate gaps.
+
+
+### Merged delivery and actual-main acceptance
+
+| Delivery | Actual merge revision | Acceptance |
+| --- | --- | --- |
+| Runtime execution-plan materialization repair [#1168](https://github.com/flagos-ai/FlagQuantum/pull/1168) | `dfa6829f64e185a6c5cfe7e512bcefb6871b0ad6` | Current-head full CI passed; actual main passed 15 materialization/dynamic replay tests and Main smoke run 43288614889 |
+| General Pauli discovery [#1166](https://github.com/flagos-ai/FlagQuantum/pull/1166) | `40c3e8a2c7e20d76b0e34052bf9336277fb8782d` | Full CI run 43289088073 passed; actual main passed 57 discovery/runtime tests, the API baseline, runnable example and Main smoke run 43298938014 |
+| Experimental capability registration [#1167](https://github.com/flagos-ai/FlagQuantum/pull/1167) | `b9ad91149e7098218250286e9185f774aaf3dbf5` | Current-head CI run 43299388218, attempt 2, passed; final-main acceptance is detailed below |
+
+On actual final main `b9ad91149e7098218250286e9185f774aaf3dbf5`, 81 focused
+Pauli discovery, integration, runtime materialization, dynamic replay, capability
+maturity and experimental-documentation tests passed. Capability maturity,
+documentation source-of-truth `--check`, the public API baseline and
+[Main smoke run 43308800001](https://github.com/flagos-ai/FlagQuantum/actions/runs/43308800001)
+also passed. The overlapping earlier selections are not additive.
+
+Reproduce the supported user workflow:
+
+```bash
+python -m examples.algorithms.fermion_pauli_discovery
+```
+
+It discovers Y0 and X1Z2, explicitly chooses +1/-1, reduces three qubits to one
+and measures -1.1770329614, matching the analytic selected-sector energy. The
+recorded lifted eigenvector residual was 2.776e-17 and may vary by platform.
+This example uses bounded dense diagonalization and lifting for inspection; it
+does not infer a ground sector or establish scalability.
+
+The first #1167 CI attempt passed every test and coverage partition plus coverage
+aggregation, but GitHub could not acquire a hosted macOS ARM runner for the
+Python 3.10 wheel job. That job had no executed steps and was cancelled; the
+final gate correctly failed. A job-specific retry acquired a runner and passed
+wheel construction, tests, content verification and the downstream gate. No
+source, test selection, timeout or CI runner configuration was weakened. The
+earlier failed attempt remains a failure, rather than scientific acceptance.
+
+This completes the selected general-discovery stage. Its capability remains
+experimental with static coefficients and `single_device_fast_path` CPU scope.
+Automatic sector selection, general matched-ansatz transformation, coefficient/
+SCF gradients, full OpenFermion parity and accelerator/distributed qualification
+remain separate work. This closeout introduces no implementation or maturity
+promotion and does not itself select or authorize another feature or merge.
