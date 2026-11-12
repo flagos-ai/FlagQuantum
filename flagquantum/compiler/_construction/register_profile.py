@@ -443,6 +443,8 @@ def verify_register_program(
     order. Gates address numeric bit indices (zero is least significant).
     Compute initializes a fresh destination using a verified arithmetic function;
     repeated actual inputs borrow one register and do not copy quantum state.
+    Indexed Pauli controls may share a backing Value with their target only when
+    the control bit is outside every target support position.
     Phase calls borrow initialized values without changing basis values or roles.
     Uncompute makes unchanged directly computed storage fresh, retaining ownership.
     Local storage must be released fresh before return and cannot escape as output.

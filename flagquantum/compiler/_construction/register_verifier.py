@@ -479,7 +479,7 @@ def _verify_body(
                         op,
                     )
             elif op.name == "qreg.pauli_rotation":
-                checked_support(
+                support = checked_support(
                     op.attributes["support"], register_width(destination), op
                 )
                 angle = op.attributes["angle"]
@@ -511,13 +511,14 @@ def _verify_body(
                 if controlled:
                     index = op.attributes["control_index"]
                     if (
-                        arguments[0] == destination
-                        or type(index) is not int
+                        type(index) is not int
                         or not 0 <= index < register_width(arguments[0])
+                        or arguments[0] == destination
+                        and any(bit == index for bit, _ in support)
                     ):
                         _fail(
                             "register.pauli",
-                            "Pauli control requires a disjoint register and bounded index",
+                            "Pauli control requires a bounded index disjoint from target support",
                             op,
                         )
                 changed = (destination,)

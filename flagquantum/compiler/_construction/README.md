@@ -1210,3 +1210,20 @@ print(dict(program.probabilities(result, registers=("word",))))
 
 The named outcomes are `(3,)` and `(4,)`, each with probability `0.5`.
 All indices refer to logical register bits, not physical circuit wires.
+
+
+Generic pure unitary helper callbacks use the same exact raw-scalar location
+boundary. A writable slice or composed view may share its backing Value with a
+control only when all writable actual locations exclude the selector bit.
+Computed-predicate dependencies retain the whole-register protection above.
+The existing lifecycle verifier still checks every captured callback, including
+nested helpers, Const roles, initialization and closed scratch.
+
+The private `qreg.pauli_rotation` profile admits a control in the same backing
+Value only when its bounded index is outside every target support position.
+This extends the earlier whole-register refusal: physical overlap still fails,
+and there is no public API or operation-schema change. Independent full-operator
+comparisons cover each Pauli axis, multiple-axis support and controlled identity
+phase. `tests/integration/test_synthesis_native_controlled_helper_borrows.py`
+checks all small basis inputs, complex coherence, branch scalar phases, actual
+selector overlap, repeated writable aliases, Output escape and resource limits.
