@@ -86,6 +86,7 @@ _PAGE = """<!doctype html>
 <title>Register musical score</title>
 <style>
 body { font: 14px system-ui, sans-serif; margin: 1rem; }
+#score-bounds input { width: 7rem; }
 #score-container { overflow-x: auto; margin-top: 1rem; }
 svg { display: block; }
 text { text-anchor: middle; dominant-baseline: middle; fill: black; }
@@ -104,6 +105,15 @@ text { text-anchor: middle; dominant-baseline: middle; fill: black; }
     <option value="fixed">Fixed with numeric axes</option>
   </select>
 </label>
+<form id="score-bounds">
+  Fixed score bounds
+  <label>X start <input id="score-x-start" type="number" step="any" required></label>
+  <label>X end <input id="score-x-end" type="number" step="any" required></label>
+  <label>Y start <input id="score-y-start" type="number" step="any" required></label>
+  <label>Y end <input id="score-y-end" type="number" step="any" required></label>
+  <button type="submit">Apply bounds</button>
+  <button id="score-fit" type="button">Fit selected view</button>
+</form>
 <form id="score-load">
   <label>Score JSON URL <input id="score-url" type="text" required></label>
   <button type="submit">Load score</button>
@@ -121,6 +131,40 @@ const styleSelector = document.getElementById("score-style");
 const fixedStyle = () => styleSelector.value === "fixed";
 const namespace = "http://www.w3.org/2000/svg";
 let loadVersion = 0;
+let manualDomains = null;
+const boundInputs = ["x-start", "x-end", "y-start", "y-end"].map(
+  name => document.getElementById(`score-${name}`));
+
+function scoreDomains(data) {
+  return manualDomains || [[-2, data.max_x + 2], [0, data.max_y + 1]];
+}
+
+function validateDomains(domains) {
+  const [[x0, x1], [y0, y1]] = domains;
+  const width = (x1 - x0) * 55 + 40 + 30 + 6 + 6;
+  const height = (y1 - y0) * 42 + 30 + 6 + 20 + 6;
+  if (![x0, x1, y0, y1].every(value => Number.isFinite(value) && Math.abs(value) <= Number.MAX_SAFE_INTEGER) ||
+      ![width, height].every(Number.isFinite) || width <= 0 || height <= 0) {
+    throw new RangeError("Bounds must have finite safe coordinate magnitudes and positive canvas dimensions");
+  }
+  // Preflight tick admission before changing either the current bounds or view.
+  axisTicks(x0, x1, width / 80);
+  axisTicks(y0, y1, height / 50);
+}
+
+function applyBounds(event) {
+  event.preventDefault();
+  const values = boundInputs.map(input => input.valueAsNumber);
+  const domains = [values.slice(0, 2), values.slice(2, 4)];
+  try {
+    validateDomains(domains);
+    manualDomains = domains;
+    styleSelector.value = "fixed";
+    render();
+  } catch (error) {
+    showScoreError("Invalid score bounds", String(error));
+  }
+}
 
 function validateScore(data) {
   const numbers = (row, fields) => fields.every(key => Number.isFinite(row?.[key]));
@@ -151,6 +195,7 @@ function validateScore(data) {
       new Set(data.vlines.map(row => row.x)).size !== data.vlines.length) {
     throw new TypeError("Invalid musical score line record");
   }
+  if (fixedStyle()) validateDomains(scoreDomains(data));
 }
 
 function showScoreError(message, details) {
@@ -305,31 +350,38 @@ function updatePort(group, port) {
 // Linear 1/2/5 ticks use geometric midpoints, as in the test-pinned D3 axes.
 // Integer tick indices avoid repeated floating-point addition.
 function axisTicks(start, stop, count) {
+  if (stop < start) return axisTicks(stop, start, count).reverse();
   const raw = (stop - start) / count;
   const power = 10 ** Math.floor(Math.log10(raw));
   const error = raw / power;
   const factor = error >= Math.sqrt(50) ? 10 : error >= Math.sqrt(10) ? 5
     : error >= Math.sqrt(2) ? 2 : 1;
   const step = factor * power;
-  const precision = Math.max(0, -Math.floor(Math.log10(step)));
+  const precision = start === stop ? 0 : Math.min(20, Math.max(0, -Math.floor(Math.log10(step))));
   const format = new Intl.NumberFormat("en-US", {
     minimumFractionDigits: precision, maximumFractionDigits: precision
   });
-  const ticks = [];
-  for (let i = Math.ceil(start / step); i <= Math.floor(stop / step); i++) {
-    const value = Number((i * step).toFixed(precision));
-    ticks.push({value, text: format.format(value).replace("-", "−")});
+  const label = value => ({value,
+    text: format.format(Number(value.toFixed(precision)) === 0 ? 0 : value).replace("-", "−")});
+  if (start === stop) return [label(start)];
+  const reciprocal = step < 1 ? Math.round(1 / step) : 0;
+  const first = Math.ceil(reciprocal ? start * reciprocal : start / step);
+  const last = Math.floor(reciprocal ? stop * reciprocal : stop / step);
+  if (!Number.isSafeInteger(first) || !Number.isSafeInteger(last) || last - first >= 20000) {
+    throw new RangeError("Bounds require unsafe tick indices or more than 20000 ticks per axis");
   }
-  return ticks;
+  if (last < first && count >= 0.5 && count < 2) return axisTicks(start, stop, count * 2);
+  return Array.from({length: Math.max(0, last - first + 1)}, (_, i) =>
+    label(reciprocal ? (first + i) / reciprocal : (first + i) * step));
 }
 
-function drawAxes(width, height, maxX, maxY, x, y) {
+function drawAxes(width, height, domains, x, y) {
   axes.replaceChildren();
   if (!fixedStyle()) return;
   const offset = window.devicePixelRatio > 1 ? 0 : 0.5;
   for (const [isX, start, stop, count, scale, transform] of [
-    [true, -2, maxX + 2, width / 80, x, `translate(0,${height - 30})`],
-    [false, 0, maxY + 1, height / 50, y, "translate(40,0)"]
+    [true, ...domains[0], width / 80, x, `translate(0,${height - 30})`],
+    [false, ...domains[1], height / 50, y, "translate(40,0)"]
   ]) {
     const axis = element(axes, "g", {class: "score-axis", transform, fill: "none",
       "font-size": 10, "font-family": "sans-serif", "text-anchor": isX ? "middle" : "end"});
@@ -348,6 +400,12 @@ function drawAxes(width, height, maxX, maxY, x, y) {
   }
 }
 
+function linearPosition(value, start, stop, first, last) {
+  if (stop < start) return linearPosition(value, stop, start, last, first);
+  const fraction = start === stop ? 0.5 : (value - start) / (stop - start);
+  return first * (1 - fraction) + last * fraction;
+}
+
 function render() {
   cancelAnimationFrame(frame);
   tweens = [];
@@ -356,15 +414,16 @@ function render() {
     size, (port.symb_attributes.text || "").length * 7 + 14
   ), 55);
   const fixed = fixedStyle();
-  // The source HTML sets domains manually. Native bounds include one free lane
-  // and two trailing columns, and are recomputed for each selected/imported view.
-  const x = column => fixed ? 46 + (column + 2) * 55 : (column + 2) * cell;
-  const y = lane => (fixed ? 26 : 32) + lane * 42;
-  const baseline = y(data.max_y + 1);
-  const width = fixed ? (data.max_x + 4) * 55 + 82 : x(data.max_x + 1);
-  const height = fixed ? (data.max_y + 1) * 42 + 62 : y(data.max_y) + 28;
+  const domains = scoreDomains(data);
+  const [[x0, x1], [y0, y1]] = domains;
+  if (!manualDomains) boundInputs.forEach((input, i) => {input.value = domains.flat()[i];});
+  const width = fixed ? (x1 - x0) * 55 + 40 + 30 + 6 + 6 : (data.max_x + 3) * cell;
+  const height = fixed ? (y1 - y0) * 42 + 30 + 6 + 20 + 6 : 32 + data.max_y * 42 + 28;
+  const x = column => fixed ? linearPosition(column, x0, x1, 46, width - 36) : (column + 2) * cell;
+  const y = lane => fixed ? linearPosition(lane, y1, y0, height - 36, 26) : 32 + lane * 42;
+  const baseline = y(fixed ? y1 : data.max_y + 1);
   svg.setAttribute("class", fixed ? "fixed-score" : "");
-  drawAxes(width, height, data.max_x, data.max_y, x, y);
+  drawAxes(width, height, domains, x, y);
   for (const [name, value] of Object.entries({width, height, viewBox: `0 0 ${width} ${height}`})) {
     svg.setAttribute(name, value);
   }
@@ -440,6 +499,11 @@ function render() {
 
 selector.addEventListener("change", render);
 styleSelector.addEventListener("change", render);
+document.getElementById("score-bounds").addEventListener("submit", applyBounds);
+document.getElementById("score-fit").addEventListener("click", () => {
+  manualDomains = null;
+  render();
+});
 document.getElementById("score-load").addEventListener("submit", event => {
   event.preventDefault();
   loadScore(document.getElementById("score-url").value);

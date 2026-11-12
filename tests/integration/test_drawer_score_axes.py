@@ -73,9 +73,14 @@ def run_fixed_page(
     *,
     source: str | None = None,
     pixel_ratio: int = 1,
+    domains: tuple[tuple[float, float], tuple[float, float]] | None = None,
 ) -> Any:
     """Use source domains directly, without changing its scale ranges."""
     native = source is None
+    selected_domains = domains or (
+        (-2, original["max_x"] + 2),
+        (0, original["max_y"] + 1),
+    )
     prelude = "<script>" + CLOCK + "</script>"
     if native:
         page = export_register_score_html(original).replace(
@@ -83,16 +88,25 @@ def run_fixed_page(
         )
         page = page.replace("<script>", prelude + "<script>", 1)
         initialize = "advance(0);"
+        if domains is not None:
+            initialize += (
+                "boundInputs.forEach((input,i) => {input.value = "
+                + json.dumps(domains)
+                + ".flat()[i];});"
+                + "document.getElementById('score-bounds').dispatchEvent(new Event('submit', {cancelable:true}));advance(750);"
+            )
     else:
         page = (
             '<html><body><div id="content"></div>'
             + prelude
-            + f"<script>const xDomain = [-2,{original['max_x'] + 2}];"
-            + f"const yDomain = [0,{original['max_y'] + 1}];</script><script>"
+            + f"<script>const xDomain = {json.dumps(selected_domains[0])};"
+            + f"const yDomain = {json.dumps(selected_domains[1])};</script><script>"
             + str(source)
             + "</script></body></html>"
         )
         initialize = f"draw({json.dumps(original)});"
+        if domains is not None:
+            initialize += "advance(750);"
     script = (
         '<pre id="result"></pre><script>'
         + f"const native = {json.dumps(native)};\n"
