@@ -316,3 +316,12 @@ side tables and adds DOT/Matplotlib presentations without numerical execution.
 Full 18-cell notebook acceptance remains open. Checked capabilities rise to
 1,183 (1,182 current plus one historical); parents remain 19 closed and 1,261
 open. No resource-estimate, physical-gate or performance claim changes here.
+
+The [source-ordered conjunction provider](CONJUNCTION_TENSORS.md) accepts
+Q-0545.05 and extends the existing Q-0885 notebook dependency evidence with real
+And/MultiAnd composition. Exact five-axis leaves, all two-to-four-control
+activation patterns, complete complex isometries and every small erasure history
+pass. Existing compiler emitters and physical/model accounting remain separate.
+Capabilities rise to 1,184 (1,183 current plus one historical); full parents
+remain 19 closed and 1,261 open. Bell/custom-provider composition and the complete
+18-cell notebook remain open; no G3 or performance acceptance is implied.

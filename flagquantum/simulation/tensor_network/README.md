@@ -253,3 +253,13 @@ owner; directional split/join ports use its caller-declared bit correspondence.
 The [factorized Add composition](../../../docs/development/ADDITION_TENSOR_PROVIDERS.md)
 replaces test-only dispatch with the existing exact-name provider mapping and
 native CNOT/AND/basis/wiring suppliers, without adding automatic discovery.
+
+### Source-ordered conjunction leaves
+
+`conjunction.conjunction_tensor_node` supplies the original five-axis And data
+in both target directions. It allocates no labels and does not execute measured
+erasure. The [ladder workflow](../../../docs/development/CONJUNCTION_TENSORS.md)
+composes real predicate bodies through explicit providers, with complete matrices,
+physical append and every small erasure history checked against locked source.
+Prefix outputs stay logically live until explicit cleanup; they are not scratch
+claimed zero at forward exit.
