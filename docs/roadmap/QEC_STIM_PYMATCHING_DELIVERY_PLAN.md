@@ -1109,3 +1109,16 @@ FTS-02/R04/M0-M5 remain unchanged. No research, performance, threshold or comple
 parity claim is added. Next: publish this qualified candidate, complete its
 actual-main acceptance, then propose arbitrary-data file writing and review the
 remaining pinned upstream inventory.
+
+## Caller-owned shot-data writing candidate — 2026-11-11
+
+The user approved the 27-path writer package under proposal SHA-256
+`b22e6af76b65abd4a93ff97e9825197f83fe815b509b226f33b65b2818eeba83`.
+It adds `write_shot_data_file` for CPU bool and packed uint8 tensors across the
+six locked Stim 1.16.0 encodings, reusing the current 96-file embedded closure.
+Fake and source conformance have passed, including fixed bytes and the SDK
+replacement route. The embedded build, no-SDK wheel verifier, installed
+profiles, broad smoke/unit and integration tiers, final-head example and PR
+publication remain pending. No merge is authorized. The existing 64 MiB
+principal estimate and 1 GiB output estimate remain request guards, not RSS
+claims. FTS-02/R04/M0-M5 and research status do not advance.

@@ -9,9 +9,12 @@
 #include <limits>
 #include <memory>
 #include <stdexcept>
+#include <string>
 
 #include "stim/circuit/circuit.h"
+#include "stim/io/measure_record_writer.h"
 #include "stim/io/measure_record_reader.h"
+#include "stim/mem/simd_bit_table.h"
 #include "stim/simulators/frame_simulator_util.h"
 #include "stim/simulators/error_analyzer.h"
 #include "stim/simulators/measurements_to_detection_events.h"
@@ -22,6 +25,53 @@ namespace {
 
 constexpr char capsule_name[] = "flagquantum.embedded_stim_sampler";
 constexpr size_t width = stim::MAX_BITWORD_WIDTH;
+static_assert(width <= 1024, "the reviewed shot-data estimate assumes SIMD width <= 1024");
+
+size_t checked_add(size_t left, size_t right) {
+    if (right > std::numeric_limits<size_t>::max() - left) {
+        throw std::invalid_argument("Shot data size overflow.");
+    }
+    return left + right;
+}
+
+size_t checked_mul(size_t left, size_t right) {
+    if (left && right > std::numeric_limits<size_t>::max() / left) {
+        throw std::invalid_argument("Shot data size overflow.");
+    }
+    return left * right;
+}
+
+size_t rounded_simd(size_t value) {
+    return checked_mul(checked_add(value, 1023) / 1024, 1024);
+}
+
+size_t shot_principal_bytes(size_t shots, size_t columns, bool packed) {
+    const size_t stride = packed ? checked_add(columns, 7) / 8 : columns;
+    const size_t scratch = checked_mul(
+        checked_mul(rounded_simd(columns), rounded_simd(std::max<size_t>(shots, 64))), 2) / 8;
+    const size_t transposed = checked_mul(rounded_simd(columns), 2) / 8;
+    return checked_add(checked_add(checked_mul(shots, stride), scratch),
+                       checked_add(transposed, 65536));
+}
+
+size_t shot_output_bound(size_t shots, size_t columns, stim::SampleFormat format) {
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_B8) {
+        return checked_mul(shots, checked_add(columns, 7) / 8);
+    }
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_PTB64) {
+        if (shots % 64) throw std::invalid_argument("ptb64 shots must be a multiple of 64.");
+        return checked_mul(checked_mul(shots / 64, columns), 8);
+    }
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_01 ||
+        format == stim::SampleFormat::SAMPLE_FORMAT_R8) {
+        return checked_mul(shots, checked_add(columns, 1));
+    }
+    const size_t digits = std::to_string(columns - 1).size();
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_HITS) {
+        return checked_mul(shots, std::max<size_t>(1, checked_mul(columns, digits + 1)));
+    }
+    return checked_mul(shots, checked_add(5, checked_mul(columns, digits + 2)));
+}
 
 struct Sampler {
     stim::Circuit circuit;
@@ -118,6 +168,108 @@ stim::SampleFormat parse_format(const char *format) {
     if (strcmp(format, "dets") == 0) return stim::SampleFormat::SAMPLE_FORMAT_DETS;
     if (strcmp(format, "ptb64") == 0) return stim::SampleFormat::SAMPLE_FORMAT_PTB64;
     throw std::invalid_argument("Unknown sample file format.");
+}
+
+PyObject *write_shot_records(PyObject *, PyObject *args) {
+    PyObject *data;
+    Py_ssize_t shots_arg, nm_arg, nd_arg, no_arg;
+    const char *path, *format;
+    int packed;
+    if (!PyArg_ParseTuple(args, "Onpssnnn", &data, &shots_arg, &packed, &path,
+                          &format, &nm_arg, &nd_arg, &no_arg)) {
+        return nullptr;
+    }
+    try {
+        if (!PyByteArray_Check(data)) {
+            throw std::invalid_argument("Shot data must be an owned bytearray.");
+        }
+        if (shots_arg < 0 || nm_arg < 0 || nd_arg < 0 || no_arg < 0 ||
+            nm_arg > PY_SSIZE_T_MAX - nd_arg ||
+            nm_arg + nd_arg > PY_SSIZE_T_MAX - no_arg) {
+            throw std::invalid_argument("Invalid shot data dimensions.");
+        }
+        const size_t shots = size_t(shots_arg);
+        const size_t nm = size_t(nm_arg), nd = size_t(nd_arg), no = size_t(no_arg);
+        if ((nm == 0 && nd + no == 0) || (nm != 0 && (nd != 0 || no != 0))) {
+            throw std::invalid_argument("Invalid measurement, detector and observable sections.");
+        }
+        const size_t columns = nm + nd + no;
+        const auto output_format = parse_format(format);
+        const size_t stride = packed ? (columns + 7) / 8 : columns;
+        const size_t expected = checked_mul(shots, stride);
+        if (expected > size_t(PY_SSIZE_T_MAX) ||
+            PyByteArray_Size(data) != Py_ssize_t(expected)) {
+            throw std::invalid_argument("Shot data byte length disagrees with its dimensions.");
+        }
+        if (shot_principal_bytes(shots, columns, packed != 0) > 64 * 1024 * 1024) {
+            throw std::invalid_argument("Shot data principal payload exceeds the 64 MiB limit.");
+        }
+        if (shot_output_bound(shots, columns, output_format) > 1024ULL * 1024 * 1024) {
+            throw std::invalid_argument("Shot data output exceeds the 1 GiB limit.");
+        }
+        const auto *input = reinterpret_cast<const uint8_t *>(PyByteArray_AsString(data));
+        if (input == nullptr) return nullptr;
+        if (packed && columns % 8) {
+            const uint8_t mask = uint8_t(255 ^ ((1u << (columns % 8)) - 1));
+            for (size_t shot = 0; shot < shots; ++shot) {
+                if (input[shot * stride + stride - 1] & mask) {
+                    throw std::invalid_argument("Shot data has nonzero packed padding bits.");
+                }
+            }
+        } else if (!packed) {
+            for (size_t index = 0; index < expected; ++index) {
+                if (input[index] > 1) {
+                    throw std::invalid_argument("Dense shot data contains a nonbinary value.");
+                }
+            }
+        }
+
+        errno = 0;
+        FILE *raw_file = fopen(path, "wb");
+        if (raw_file == nullptr) {
+            throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                    "Could not open staged shot-data output");
+        }
+        std::unique_ptr<FILE, decltype(&fclose)> file(raw_file, fclose);
+        stim::simd_bits<width> reference(0);
+        for (size_t offset = 0; offset < shots; offset += 64) {
+            const size_t block_shots = std::min<size_t>(64, shots - offset);
+            stim::simd_bit_table<width> table(columns, block_shots);
+            for (size_t column = 0; column < columns; ++column) {
+                for (size_t shot = 0; shot < block_shots; ++shot) {
+                    const size_t source_row = offset + shot;
+                    const bool value = packed
+                        ? ((input[source_row * stride + column / 8] >> (column % 8)) & 1) != 0
+                        : input[source_row * stride + column] != 0;
+                    table[column][shot] = value;
+                }
+            }
+            const char first = nm == 0 ? 'D' : 'M';
+            const char second = nm == 0 ? 'L' : 'M';
+            stim::write_table_data(raw_file, block_shots, columns, reference, table,
+                                   output_format, first, second, nm + nd);
+            if (ferror(raw_file)) {
+                throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                        "Failed writing staged shot data");
+            }
+        }
+        if (fflush(raw_file) != 0 || ferror(raw_file)) {
+            throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                    "Failed flushing staged shot data");
+        }
+        FILE *closed = file.release();
+        if (fclose(closed) != 0) {
+            throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                    "Failed closing staged shot data");
+        }
+        Py_RETURN_NONE;
+    } catch (const std::system_error &error) {
+        PyErr_SetString(PyExc_OSError, error.what());
+        return nullptr;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_ValueError, error.what());
+        return nullptr;
+    }
 }
 
 PyObject *write_measurements(PyObject *args, bool select_format) {
@@ -593,6 +745,7 @@ PyObject *read_shot_reader(PyObject *, PyObject *args) {
 }
 
 PyMethodDef methods[] = {
+    {"write_shot_records", write_shot_records, METH_VARARGS, nullptr},
     {"open_shot_reader", open_shot_reader, METH_VARARGS, nullptr},
     {"scan_shot_reader", scan_shot_reader, METH_VARARGS, nullptr},
     {"read_shot_reader", read_shot_reader, METH_VARARGS, nullptr},

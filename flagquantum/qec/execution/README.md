@@ -188,3 +188,13 @@ Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
 checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
 for byte and numerical conformance. The ten-minute user path is
 `python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.
+
+## Write caller-owned shot data
+
+The approved writing candidate adds `write_shot_data_file` beside the two
+readers. QEC owns the public signature; Simulation validates one owned bounded
+copy, chooses the pinned SDK or embedded codec, validates staged output and
+publishes without replacement. Run `python -m examples.qec.shot_file_encoding`
+with Stim 1.16.0 or an embedded build. Fake, fixed-byte and installed
+acceptance are tracked in the proposal; no memory-mapped, append or streaming
+writer is included.

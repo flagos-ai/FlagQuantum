@@ -122,6 +122,7 @@ from flagquantum.qec.execution.measurement_conversion import (
 from flagquantum.qec.execution.shot_data import (
     iter_shot_data_file,
     read_shot_data_file,
+    write_shot_data_file,
 )
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
@@ -218,6 +219,7 @@ pytestmark = pytest.mark.unit
 ENTRIES = (
     read_shot_data_file,
     iter_shot_data_file,
+    write_shot_data_file,
     CompiledDetectorSampler,
     fq.Circuit.compile_detector_sampler,
     fq.Circuit.detector_error_model,
