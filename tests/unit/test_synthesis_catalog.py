@@ -234,14 +234,19 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 26
+    assert len(validated) == 28
     for operation in ("or", "xor"):
         assert (
             f"functions/function_usage_examples/arithmetic/bitwise_{operation}/bitwise_{operation}_example",
             f"examples/synthesis/functions/arithmetic/bitwise_{operation}/overview/main.py",
         ) in validated
+    for operation in ("comparator", "negation"):
+        assert (
+            f"functions/function_usage_examples/arithmetic/{operation}/{operation}_example",
+            f"examples/synthesis/functions/arithmetic/{operation}/overview/main.py",
+        ) in validated
     rendered = render(catalog)
-    assert "**26/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**28/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

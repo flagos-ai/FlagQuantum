@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **26/213**.
+Validated local Notebook workflows: **28/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -319,7 +319,7 @@ Validated local Notebook workflows: **26/213**.
 | `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_example` | notebook_workflow | [Native program](functions/arithmetic/bitwise_xor/overview/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/bitwise_xor/bitwise_xor_integer_example` | quantum_program | [Native program](functions/arithmetic/bitwise_xor/bitwise_xor_integer_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/comparator/comparator_2vars_example` | quantum_program | [Native program](functions/arithmetic/comparator/comparator_2vars_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/comparator/comparator_example` | notebook_workflow | Pending | pending |
+| `functions/function_usage_examples/arithmetic/comparator/comparator_example` | notebook_workflow | [Native program](functions/arithmetic/comparator/overview/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/comparator/comparator_integer_example` | quantum_program | [Native program](functions/arithmetic/comparator/comparator_integer_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/extremum/extremum_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/extremum/maximum_float_example` | quantum_program | [Native program](functions/arithmetic/extremum/maximum_float_example/main.py) | pending |
@@ -330,7 +330,7 @@ Validated local Notebook workflows: **26/213**.
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/multiplication/multiplication_float_example` | quantum_program | [Native program](functions/arithmetic/multiplication/multiplication_float_example/main.py) | pending |
-| `functions/function_usage_examples/arithmetic/negation/negation_example` | notebook_workflow | [Native program](functions/arithmetic/negation/negation_example/main.py) | pending |
+| `functions/function_usage_examples/arithmetic/negation/negation_example` | notebook_workflow | [Native program](functions/arithmetic/negation/overview/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_example` | notebook_workflow | Pending | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_float_example/main.py) | pending |

@@ -2,7 +2,6 @@
 
 import importlib
 import json
-import linecache
 from collections.abc import Callable
 from fractions import Fraction
 from pathlib import Path
@@ -13,6 +12,7 @@ import pytest
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
+from tests.integration.synthesis_notebook_support import execute_code_cells
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -25,27 +25,7 @@ def test_notebook_cells_preserve_both_original_examples(
     directory = (
         ROOT / f"examples/synthesis/functions/arithmetic/bitwise_{operation}/overview"
     )
-    notebook = json.loads((directory / "walkthrough.ipynb").read_text())
-    assert notebook["nbformat"] == 4
-    namespace: dict[str, object] = {"__name__": __name__}
-    executed = 0
-    for index, cell in enumerate(notebook["cells"]):
-        if cell["cell_type"] != "code":
-            continue
-        source = "".join(cell["source"])
-        filename = f"{directory}/walkthrough.ipynb:cell-{index}"
-        assert filename not in linecache.cache
-        linecache.cache[filename] = (
-            len(source),
-            None,
-            source.splitlines(keepends=True),
-            filename,
-        )
-        try:
-            exec(compile(source, filename, "exec"), namespace)
-        finally:
-            linecache.cache.pop(filename)
-        executed += 1
+    namespace, executed = execute_code_cells(directory / "walkthrough.ipynb")
     assert executed == 5
     assert namespace["register_probabilities"] == {(4, 5, answer): 1.0}
     assert namespace["literal_probabilities"] == {(4, 7): 1.0}
