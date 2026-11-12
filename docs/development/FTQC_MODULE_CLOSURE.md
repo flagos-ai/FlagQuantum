@@ -496,3 +496,18 @@ The source's stale-phase assertions, global debug-state lookup and unavailable
 C[CZ] resource decomposition remain explicit, so Q-0879 stays open. No new ID;
 22 closed/1258 open/391 active,1184 capability records remain. Next Q-0898 whole
 classical/tensor cross-check source audit; do not repeat its closed test assets.
+
+
+### Classical-vector source failure audit (2026-11-12)
+
+All three Q-0898 functions and dependencies have native ownership dispositions in
+CLASSICAL_VECTOR_SOURCE_AUDIT.md. Commit 405f8802 corrects scalar array-effect
+refusal before definition or word consumption, including empty shapes. Twenty-five
+new cases, 2365 concentrated and 84 CPU-TN checks pass; strict2 and all quality
+gates pass, helper coverage100%, six frozen blobs match. The measured Add
+consumer covers64 inputs/16 histories, complex amplitudes, work zero and append.
+No new primitive/workspace; emitted wrapper X0–11 and source model Clifford6 are
+separate. Source empty automatic evaluation and wider constructor acceptance,
+foreign protocols and executable admission keep Q-0898 open. No new capability
+ID:22 closed/1258 open/391 active,1184 records. Next Q-0736 classical assignment
+graph audit, retaining existing Simulation/Drawer ownership.
