@@ -325,3 +325,12 @@ pass. Existing compiler emitters and physical/model accounting remain separate.
 Capabilities rise to 1,184 (1,183 current plus one historical); full parents
 remain 19 closed and 1,261 open. Bell/custom-provider composition and the complete
 18-cell notebook remain open; no G3 or performance acceptance is implied.
+
+The [Bell/custom-tensor workflow](BELL_TENSOR_WORKFLOW.md) extends Q-0885's
+existing dependency evidence through direct PlusState/ZeroState/CNOT preparation,
+H/CNOT unitary, explicit zero initialization and unchanged original MyCNOT/Bell
+notebook definitions. Dense/factored suppliers share the consumer and physical
+program; missing unflattened suppliers fail. Counts remain 1,184 capabilities
+and 19 closed / 1,261 open parents. Complete notebook, custom MultiAnd flattening
+and contraction-info acceptance remain open; this composition adds no duplicate
+capability record.

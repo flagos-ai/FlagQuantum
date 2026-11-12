@@ -263,3 +263,12 @@ composes real predicate bodies through explicit providers, with complete matrice
 physical append and every small erasure history checked against locked source.
 Prefix outputs stay logically live until explicit cleanup; they are not scratch
 claimed zero at forward exit.
+
+### Bell composition and explicit custom tensors
+
+The [Bell workflow](../../../docs/development/BELL_TENSOR_WORKFLOW.md) composes
+existing root expansion, explicit providers and zero-state initialization. Run
+`examples/algorithms/bell_tensor_workflow.py` for direct state preparation and the
+unitary-to-state path. Swap dense CNOT and COPY/XOR data without changing the
+consumer or physical program. Unexpanded roots without providers fail explicitly;
+owned prepared outputs remain live, and no physical scratch is claimed clean.
