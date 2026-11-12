@@ -986,3 +986,5 @@ The example performs bounded file conversion, not sampling or a research study.
 
 - `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build and PyMatching required).
 - `qec/shot_file_encoding.py`: write caller-owned Torch shot rows in Stim-compatible formats and read them back (Stim 1.16.0 extra or embedded build required).
+
+- `qec/compiled_dem_sampler.py`: record and replay canonical error columns, write bounded detector/error files, and decode packed batches; expected `shots 64 batches 4 logical_failures 0` (embedded build or Stim 1.16.0, plus PyMatching).

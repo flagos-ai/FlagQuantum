@@ -54,7 +54,7 @@ from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from enum import Enum
 from numbers import Integral, Real
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import torch
 
@@ -78,6 +78,9 @@ from flagquantum.qec.dem.text import (
     _parse_stim_text,
 )
 from flagquantum.qec.noise import PhenomenologicalNoise
+
+if TYPE_CHECKING:
+    from ..execution.dem_sampling import CompiledDemSampler
 
 
 class DemMergeRule(str, Enum):
@@ -524,6 +527,26 @@ class DetectorErrorModel:
         return self._marginal_rates(
             self.num_observables, lambda error: error.observables
         )
+
+    def compile_sampler(self, *, seed: int | None = None) -> CompiledDemSampler:
+        """Prepare bounded independent-mechanism sampling and error replay.
+
+        Error columns follow this model's canonical ``errors`` tuple. Stated
+        error IDs refuse rather than losing their mutually exclusive semantics;
+        use the existing ``dem_sampling`` route for those models. Preparation
+        accepts the existing optional Stim 1.16.0 SDK or embedded build.
+
+        Examples:
+            >>> from importlib.util import find_spec
+            >>> from flagquantum.qec import DemError, DetectorErrorModel
+            >>> if find_spec("stim") is not None:
+            ...     model = DetectorErrorModel(1, 0, (DemError(1.0, (0,)),))
+            ...     rows, _, _ = model.compile_sampler(seed=7).sample(2)
+            ...     assert rows.tolist() == [[True], [True]]
+        """
+        from ..execution.dem_sampling import _compile
+
+        return _compile(self, seed)
 
     def dem_sampling(self, *, shots: int, seed: int | None = None) -> DemSample:
         """Sample ``shots`` shots by XORing the signatures that fired.

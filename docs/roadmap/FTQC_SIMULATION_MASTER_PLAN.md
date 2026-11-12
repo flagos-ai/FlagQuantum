@@ -1172,3 +1172,25 @@ profiles, broad smoke/unit and integration tiers, final-head example and PR
 publication remain pending. No merge is authorized. The existing 64 MiB
 principal estimate and 1 GiB output estimate remain request guards, not RSS
 claims. FTS-02/R04/M0-M5 and research status do not advance.
+
+## Approved native DEM sampling delivery (2026-11-12)
+
+PR #1152 is merged as `39b16b446733c215a14c59332bcf69c350f62069`.
+Actual-main source acceptance passed 345 tests with one expected SDK-only skip,
+using accepted binaries rather than a fresh main wheel. The next approved
+32-path bundle adds reusable independent-DEM sampling, error recording/replay
+and six-format streamed files. It reuses two unchanged Stim 1.16.0 templates
+(98 source files, 37 translation units). The approved compatibility amendment
+adds one existing test path, bringing implementation scope to 33 paths.
+macOS arm64 offline wheel/sdist and
+installed native acceptance passed: core 79 passed/1 expected SDK-only skip,
+SDK profile 80 passed. Complete smoke/unit passed 19,971 tests
+(172 skipped); integration passed 7,459 (279 skipped).
+No Stim Python package is present in the accepted core installation; real
+`prepare_dem`, `sample_dem` and `write_dem` calls were recorded. Existing
+exclusive-group `dem_sampling` and rejection rules remain. Final-head example
+and PR publication are the remaining delivery steps; merge is not authorized.
+See [the approved implementation proposal](../development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md).
+Full upstream DEM text/REPEAT compatibility, categorical native sampling,
+Pauli/Tableau/FlipSimulator algebra, mixed non-Clifford routing and platform
+expansion remain explicit gaps. No maturity or full-parity claim is promoted.

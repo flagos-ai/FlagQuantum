@@ -112,6 +112,8 @@ from flagquantum.qec.adapters.stim import (
 )
 from flagquantum.qec.decoders.batch import decode_batch
 from flagquantum.qec.decoders.matching_graph import MatchingGraph
+from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.execution.dem_sampling import CompiledDemSampler
 from flagquantum.qec.execution.detector_sampling import CompiledDetectorSampler
 from flagquantum.qec.execution.experiments import run_memory_experiment
 from flagquantum.qec.execution.measurement_conversion import (
@@ -217,6 +219,8 @@ pytestmark = pytest.mark.unit
 # figures a caller takes from one run rather than a second execution.
 
 ENTRIES = (
+    DetectorErrorModel.compile_sampler,
+    CompiledDemSampler,
     read_shot_data_file,
     iter_shot_data_file,
     write_shot_data_file,
@@ -391,6 +395,16 @@ def test_every_module_with_examples_is_covered() -> None:
         == Path(batch_owner.__file__).resolve()
     )
     covered.add(batch_owner.__name__)
+    dem_entry = DetectorErrorModel.compile_sampler
+    assert dem_entry in ENTRIES
+    dem_owner = importlib.import_module("flagquantum.qec.dem.model")
+    assert dem_owner.__file__ is not None
+    assert dem_owner.DetectorErrorModel.compile_sampler is dem_entry
+    assert (
+        Path(dem_entry.__code__.co_filename).resolve()
+        == Path(dem_owner.__file__).resolve()
+    )
+    covered.add(dem_owner.__name__)
     # Historical pickle modules differ from physical owners after relocation.
     # Map only existing executable entries, checking their actual source files.
     for entry, owner_name in (
