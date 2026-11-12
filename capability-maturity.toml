@@ -2333,6 +2333,25 @@ limitations = "At least three sites, finite static real coefficients and interle
 focused_tests = "tests/unit/fermion/test_hubbard_ring.py"
 integration_tests = "tests/integration/test_fermion_hubbard_ring.py"
 development_artifact = "docs/development/FERMION_HUBBARD_RING.md"
+[capabilities.spinless_fermion_chain_ring]
+title = "Spinless t-V chains and rings"
+summary = "Construct static spinless nearest-neighbor models in native fermionic algebra and measure the same two-particle state through three encodings."
+category = "simulation_and_training"
+user_goals = ["Build spinless chains and rings with one mode per site and unshifted neighboring density interactions", "Measure fixed-particle states through JW, parity and BK encoding"]
+public_apis = ["flagquantum.algorithms.fermion.hubbard.spinless_fermion_chain", "flagquantum.algorithms.fermion.hubbard.spinless_fermion_ring"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/development/FERMION_SPINLESS.md"
+documentation = "docs/development/FERMION_SPINLESS.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "One mode per site, finite static real t/V/mu and unshifted nearest-neighbor densities only. Open chains allow one site; rings require at least three and count each closing hopping/density bond once. Explicit encoding width is n_sites, including zero operators. No coefficient gradients, arbitrary graphs, twisted phases, particle-hole convention, automatic ansatz or model solver. Circuit-angle gradients in the composed execution scenario do not differentiate static Hamiltonian coefficients. The three-site example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish accelerator, distributed, performance, capacity or full upstream model compatibility. Native workflows require neither OpenFermion nor Cirq."
+focused_tests = "tests/unit/fermion/test_spinless.py"
+integration_tests = "tests/integration/test_spinless_fermion.py"
+development_artifact = "docs/development/FERMION_SPINLESS.md"
+
 [capabilities.openfermion_operator_conversion]
 title = "Optional OpenFermion operator conversion"
 summary = "Convert external fermionic and Pauli operators at an explicit optional ecosystem boundary, then use native operator consumers."

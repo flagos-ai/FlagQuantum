@@ -407,6 +407,8 @@ This catalog is generated from the machine-validated
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Build spinless chains and rings with one mode per site and unshifted neighboring density interactions | Spinless t-V chains and rings | Experimental | [Read guide](../../docs/development/FERMION_SPINLESS.md) |
+| Measure fixed-particle states through JW, parity and BK encoding | Spinless t-V chains and rings | Experimental | [Read guide](../../docs/development/FERMION_SPINLESS.md) |
 | Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Reuse populated molecular integrals without implicit file access | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
@@ -1538,6 +1540,20 @@ Construct a static periodic ring in native fermionic algebra and reuse the exist
 - **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
+
+### Spinless t-V chains and rings
+
+Construct static spinless nearest-neighbor models in native fermionic algebra and measure the same two-particle state through three encodings.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.spinless_fermion_chain`, `flagquantum.algorithms.fermion.hubbard.spinless_fermion_ring`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_SPINLESS.md)
+- **Documentation:** [guide](../../docs/development/FERMION_SPINLESS.md)
+- **Known boundary:** One mode per site, finite static real t/V/mu and unshifted nearest-neighbor densities only. Open chains allow one site; rings require at least three and count each closing hopping/density bond once. Explicit encoding width is n_sites, including zero operators. No coefficient gradients, arbitrary graphs, twisted phases, particle-hole convention, automatic ansatz or model solver. Circuit-angle gradients in the composed execution scenario do not differentiate static Hamiltonian coefficients. The three-site example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish accelerator, distributed, performance, capacity or full upstream model compatibility. Native workflows require neither OpenFermion nor Cirq.
 
 
 ## Distributed execution
