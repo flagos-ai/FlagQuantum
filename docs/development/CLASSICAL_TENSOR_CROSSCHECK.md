@@ -1,5 +1,9 @@
 # Native classical/tensor cross-check composition
 
+The later [complete notebook workflow](CLASSICAL_TENSOR_NOTEBOOK.md) closes the
+concrete 13-cell notebook replacement left open by this batch. Generic provider
+and foreign-interface coverage remain separate open work.
+
 The original Qualtran v0.7.0 `xcheck_classical_quimb` examples compose input
 integer kets, a real component, output effects, tensor selection and contraction.
 This example uses existing FlagQuantum owners for that complete numerical path.
