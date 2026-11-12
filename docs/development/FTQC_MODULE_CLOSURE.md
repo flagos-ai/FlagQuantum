@@ -471,3 +471,16 @@ pass, strict2 and quality gates. Native value-table plotting and the bounded
 exact fixed-point sample are explicit adaptations, not general QFxp support.
 Q-0882/Q-0883 remain open. Current total: 21 closed/1259 open/390 active,
 1184 capability records (1183 current plus 1 historical). Next Q-0884.
+
+The [complete superoperator notebook](SUPEROPERATOR_NOTEBOOK.md) closes Q-0884:
+all 28 cells (13 code/15 Markdown), metadata and six figures are disposed.
+Unchanged original code and independent native code agree on complete complex
+states/channels; every coin/dilation/discard tensor and axis connection matches.
+The physical H-CZ-H isometry, both measured branches, clean consumed carriers,
+spectator and ordinary append pass. Implementation `37922753`; 6 new/277
+related/84 CPU-TN checks, strict2 and quality gates pass; six frozen blobs match.
+Helper coverage reaches98% with its standalone example. Diagram layout and
+physical materialization are explicit adaptations; analytical QEC models and
+emitted primitives remain separate. No protocol implementation parent closes.
+Current total:22 closed/1258 open/390 active,1184 capability records unchanged.
+Next Q-0879 complete MBUC notebook audit, after restoring its frozen reference.
