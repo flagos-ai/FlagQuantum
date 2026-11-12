@@ -527,3 +527,18 @@ drawing adds no gates or work and leaves the bound physical program identical.
 23 closed/1257 open/392 active,1186 capability records. Next Q-0741 Graphviz
 notebook: restore the frozen source before whole-cell audit, retaining existing
 Simulation/Drawer ownership. No G3/merge/default-timeout retry.
+
+
+### Graphviz notebook signature and executable paths (2026-11-12)
+
+Q-0741's21 cells/13code are dispositioned; unchanged source and native notebook
+execute independently. Commit1fbfdecb adds standalone signature drawing without
+executable placeholders; all original100/200-bit and opposite-side shaped ports
+remain. Split/3X/Join connections and complete complex matrix/spectator-zero/
+append pass. Twelve new/2931 related/84 CPU-TN checks, strict3 and quality gates
+pass; final focused coverage of both owners100%, six frozen blobs match. Nine
+SVGs and two PNGs inspected. ActualX3 and source syntheticT300 are separate.
+The original default/pretty style demonstration is adapted to SVG/DOT, so Q-0741
+remains open for that capability.23 closed/1257 open/393 active,1187 records;
+next complete that style distinction using existing renderer ownership. No G3,
+merge or repeated historical default timeout.
