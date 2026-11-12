@@ -27,8 +27,8 @@ from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.simulation.tensor_network.component_tensor_nodes import (
-    component_tensor_nodes_with_labels,
+from flagquantum.simulation.tensor_network.component_dense import (
+    contract_component_tensors_with_labels,
 )
 from flagquantum.simulation.tensor_network.component_tensor_providers import (
     ComponentTensorProviders,
@@ -40,7 +40,6 @@ from flagquantum.simulation.tensor_network.register_tensor import (
 )
 from flagquantum.simulation.tensor_network.register_tensor_binding import (
     bind_register_tensor,
-    contract_register_tensors,
 )
 from flagquantum.simulation.tensor_network.register_zero_state import (
     register_zero_state_nodes,
@@ -170,11 +169,8 @@ def contract_bell_program(
         record, providers.has_custom_tensor, entry, full_flatten=full_flatten
     )
     order = tuple(i for i, _, _ in iter_component_calls(selected, "tensor_root"))
-    nodes, incoming, outgoing = component_tensor_nodes_with_labels(
+    return contract_component_tensors_with_labels(
         selected, order, providers.supply, like, "tensor_root"
-    )
-    return contract_register_tensors(
-        nodes, Signature(selected.functions[0].registers or ()), incoming, outgoing
     )
 
 

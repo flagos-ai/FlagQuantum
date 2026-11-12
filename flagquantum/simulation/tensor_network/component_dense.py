@@ -12,7 +12,10 @@ import torch
 from ...core.ir.program import FunctionRecord, ProgramRecord
 from ...core.ir.program.signatures import Signature
 from .component_superoperator_nodes import component_superoperator_nodes
-from .component_tensor_nodes import component_tensor_nodes
+from .component_tensor_nodes import (
+    component_tensor_nodes,
+    component_tensor_nodes_with_labels,
+)
 from .models import TensorNetworkNode
 from .register_superoperator_binding import contract_register_superoperator
 from .register_tensor_binding import contract_register_tensors
@@ -50,6 +53,46 @@ def contract_component_tensors(
     occurs. Dense output storage is exponential in the declared live bit axes.
     """
     nodes, incoming, outgoing = component_tensor_nodes(
+        record, order, supply, like, entry
+    )
+    function = next(function for function in record.functions if function.name == entry)
+    assert function.registers is not None
+    return contract_register_tensors(
+        nodes,
+        Signature(function.registers),
+        incoming,
+        outgoing,
+        simplification_atol=simplification_atol,
+    )
+
+
+def contract_component_tensors_with_labels(
+    record: ProgramRecord,
+    order: tuple[int, ...],
+    supply: Callable[
+        [
+            FunctionRecord,
+            Mapping[str, tuple[tuple[int, ...], ...]],
+            Mapping[str, tuple[tuple[int, ...], ...]],
+            Callable[[], int],
+        ],
+        Iterable[TensorNetworkNode | int],
+    ],
+    like: torch.Tensor,
+    entry: str = "main",
+    *,
+    simplification_atol: float | None = None,
+) -> torch.Tensor:
+    """Contract pure leaves that need fresh internal numerical labels.
+
+    This is the dense counterpart of component_tensor_nodes_with_labels. That
+    existing owner supplies collision-free labels to factorized providers and
+    retains SSA/port validation and pure-state discard refusal. Compiler still
+    owns root selection and visitation order. Reuse the same register consumer,
+    with optional explicit width policy and unchanged default autograd behavior.
+    No physical wires, new graph, provider registry or fallback are introduced.
+    """
+    nodes, incoming, outgoing = component_tensor_nodes_with_labels(
         record, order, supply, like, entry
     )
     function = next(function for function in record.functions if function.name == entry)

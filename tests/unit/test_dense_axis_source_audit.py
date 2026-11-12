@@ -26,7 +26,11 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def native_dense(
-    network: Any, signature: Any, superoperator: bool = False
+    network: Any,
+    signature: Any,
+    superoperator: bool = False,
+    *,
+    simplification_atol: float | None = None,
 ) -> NDArray[Any]:
     """Replace only source quimb_to_dense, retaining the original graph and tests."""
     assert not superoperator  # The complete original file contains pure-state tests.
@@ -53,7 +57,11 @@ def native_dense(
             }
         )
     return contract_register_tensors(
-        nodes, native_signature(signature), bindings[0], bindings[1]
+        nodes,
+        native_signature(signature),
+        bindings[0],
+        bindings[1],
+        simplification_atol=simplification_atol,
     ).numpy()
 
 
@@ -67,12 +75,19 @@ def native_dense(
         "test_bloq_stop_flattening",
     ],
 )
+@pytest.mark.parametrize("simplification_atol", [None, 1e-12])
 def test_complete_original_tests_with_native_numerical_replacement(
-    monkeypatch: pytest.MonkeyPatch, name: str
+    monkeypatch: pytest.MonkeyPatch, name: str, simplification_atol: float | None
 ) -> None:
+    from functools import partial
+
     from qualtran.simulation.tensor import _dense, _dense_test
 
-    monkeypatch.setattr(_dense, "quimb_to_dense", native_dense)
+    monkeypatch.setattr(
+        _dense,
+        "quimb_to_dense",
+        partial(native_dense, simplification_atol=simplification_atol),
+    )
     original: Callable[[], None] = getattr(_dense_test, name)
     original()
 
