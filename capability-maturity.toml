@@ -2329,7 +2329,7 @@ quick_start = "flagquantum/ecosystem/README.md"
 documentation = "docs/development/OPENFERMION_OBJECT_INTEROP.md"
 level = "experimental"
 owner = "Ecosystem maintainers"
-limitations = "Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence."
+limitations = "Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. This entry covers only the four fermionic/Pauli converters; InteractionOperator import and MolecularData input have separate capability entries. No circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence."
 focused_tests = "tests/unit/test_openfermion_conversion.py"
 integration_tests = "tests/integration/test_openfermion_interop.py"
 development_artifact = "flagquantum/ecosystem/README.md"
@@ -2352,3 +2352,22 @@ limitations = "One-way import of already populated OpenFermion 1.7.1 MolecularDa
 focused_tests = "tests/unit/test_molecular_data_boundary.py"
 integration_tests = "tests/integration/test_molecular_data_isolation.py"
 development_artifact = "flagquantum/ecosystem/chemistry/README.md"
+
+[capabilities.openfermion_interaction_import]
+title = "OpenFermion interaction operator input"
+summary = "Import finite number-conserving spin-orbital tensor coefficients into the existing native fermionic algebra for encoding, measurement and circuit-angle training consumers."
+category = "deployment_and_extension"
+user_goals = ["Migrate an existing InteractionOperator without pruning small coefficients", "Replace external operator input while preserving native encoding and UCCSD training consumers"]
+public_apis = ["flagquantum.ecosystem.openfermion.from_openfermion_interaction"]
+runtime_modes = ["not_applicable"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "not_applicable"
+quick_start = "docs/development/OPENFERMION_OBJECT_INTEROP.md"
+documentation = "docs/development/OPENFERMION_OBJECT_INTEROP.md"
+level = "experimental"
+owner = "Ecosystem maintainers"
+limitations = "One-way import of actual OpenFermion 1.7.1 InteractionOperator objects with a finite scalar constant and dense numeric real or complex NumPy arrays of matching (n,n) and (n,n,n,n) shapes, including n=0. Two-body values multiply a-dagger[p] a-dagger[q] a[r] a[s] directly; no half factor, integral permutation or Hermiticity assumption is applied. This is spin-orbital operator input, not spatial molecular integrals. Native ladder algebra owns signs and canonicalization. Validation reads O(n^4) entries; native storage follows nonzero canonical terms, and external arrays are not retained. Consumer register width is explicit. No reverse tensor export, coefficient gradients, upstream execution, circuits or complete upstream compatibility. Hermitian observable validation and circuit-angle training remain native consumer responsibilities. OpenFermion and its transitive packages are separately installed only at this optional boundary; native execution requires neither OpenFermion nor Cirq. No production, accelerator or scalability claim."
+focused_tests = "tests/unit/test_openfermion_conversion.py"
+integration_tests = "tests/integration/test_openfermion_interop.py"
+development_artifact = "docs/development/OPENFERMION_OBJECT_INTEROP.md"
