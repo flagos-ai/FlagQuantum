@@ -38,6 +38,7 @@ from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
 from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
 from flagquantum.algorithms.fermion.preparation import prepare_slater
 from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
+from flagquantum.algorithms.fermion.symmetry import discover_z_parities
 from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
@@ -305,6 +306,7 @@ ENTRIES = (
     fermi_hubbard_chain,
     fermionic_fourier_transform,
     reduce_stabilizers,
+    discover_z_parities,
     PyMatchingDecoder.decode_batch,
     PyMatchingGraphDecoder,
     MatchingGraph,
