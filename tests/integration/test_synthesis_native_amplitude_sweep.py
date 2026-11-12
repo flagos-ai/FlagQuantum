@@ -1,5 +1,6 @@
 """Reproduce the full preparation Notebook locally without a compression claim."""
 
+import importlib
 import json
 from pathlib import Path
 
@@ -8,22 +9,20 @@ import torch
 
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
-from examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep import (
-    plot_sweep,
-    run_sweep,
-    source_amplitudes,
-)
 from flagquantum.compiler import ResourceEstimate
 
 pytestmark = pytest.mark.integration
 np = pytest.importorskip("numpy")
+workflow = importlib.import_module(
+    "examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep"
+)
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def test_complete_256_amplitude_ten_bound_workflow_against_independent_circuit(
     tmp_path: Path,
 ) -> None:
-    vector = torch.tensor(source_amplitudes(), dtype=torch.complex128)
+    vector = torch.tensor(workflow.source_amplitudes(), dtype=torch.complex128)
     difference = -vector.clone()
     difference[0] += 1
     matrix = torch.eye(256, dtype=torch.complex128) - (
@@ -32,7 +31,7 @@ def test_complete_256_amplitude_ten_bound_workflow_against_independent_circuit(
         / torch.vdot(difference, difference)
     )
     reference = fq.Circuit(8, dtype=torch.complex128).any(*range(8), matrix=matrix)
-    points = run_sweep()
+    points = workflow.run_sweep()
     assert len(points) == 10
     np.testing.assert_allclose(
         [p.bound for p in points], np.linspace(0, 0.3, 10), atol=0, rtol=0
@@ -51,14 +50,14 @@ def test_complete_256_amplitude_ten_bound_workflow_against_independent_circuit(
     # Exact preparation must honestly report its lack of bound-dependent savings.
     assert len({(p.depth, p.cx_count) for p in points}) == 1
     figure = tmp_path / "preparation_bounds.png"
-    plot_sweep(points, figure)
+    workflow.plot_sweep(points, figure)
     assert figure.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
 
 
 def test_source_generator_keeps_eight_qubits_seed_and_signed_mean_centered_data() -> (
     None
 ):
-    amplitudes = np.asarray(source_amplitudes())
+    amplitudes = np.asarray(workflow.source_amplitudes())
     assert amplitudes.shape == (256,)
     x = np.linspace(-1, 1, 256)
     trend = np.polynomial.polynomial.polyval(x, [0.6, -0.4, 0.8, -0.3])
