@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 74
+    assert len(validated) == 75
+    assert (
+        "applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph",
+        "examples/synthesis/applications/optimization/max_induced_k_color_subgraph/overview/main.py",
+    ) in validated
     assert (
         "applications/optimization/integer_linear_programming/integer_linear_programming",
         "examples/synthesis/applications/optimization/integer_linear_programming/overview/main.py",
@@ -425,7 +429,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**74/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**75/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
