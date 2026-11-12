@@ -95,3 +95,44 @@ error interfaces are not certified, and this batch does not start G3.
 Local verification: 31 new cases; 4137 concentrated cases plus two appended original-X scenarios and 84 CPU/TN tests passed. Strict typing of five files, Black, Ruff, Compiler scope, architecture, internal IR and API checks passed. Integer basis construction (26 statements/8 branches) and flank construction (72/30) each have 100% coverage. Twelve source blobs matched the inventory.
 
 Bounded default smoke/unit: `7 failed, 22385 passed, 300 skipped, 1048 warnings in 210.84s (0:03:30)`. All observed failures are in the seven-case baseline; this is not a green full suite. Evidence prefix: `g2-classical-vector-flank-`.
+
+
+## Original source examples through native graphs
+
+The unchanged upstream `test_xgate`, `test_cnot`, `test_toffoli` and
+`test_add` now run with only their flank factory replaced by the native graph
+constructor and existing numerical suppliers. The replacement retains real
+executable child bodies. Original Add remains `Add(QUInt(5))`; its complete
+1024-by-1024 tensor agrees with the native matrix. X also retains its mismatched
+output effect with overlap zero.
+
+Bound physical gates, operands and measurement feedback match the existing
+source decomposition. Arbitrary complex logical inputs entangled with a spectator
+agree on every forward measurement branch, with all work bits zero. Add has
+16 forward branches; all 16 inverse branches restore the input from one verified
+forward branch. This is not a claim of explicitly executing all 256 history pairs.
+Closed original inputs also restore the pool on every branch and in four
+`circuit.append(op)` trajectories per example.
+
+| Example | Actual body primitives | Extra preparation/effect X | Source body model | Source closed model | Peak qubits |
+|---|---|---|---|---|---|
+| X | X: 1 | 1 | Clifford: 1 | Clifford: 3 | 1 |
+| CNOT | CX: 1 | 3 | Clifford: 1 | Clifford: 5 | 2 |
+| Toffoli | CCX: 1 | 5 | Toffoli: 1 | Toffoli: 1, Clifford: 6 | 3 |
+| Add(5) | H: 12, T: 8, T-adjoint: 8, CX: 45, S: 4, measurement: 4, conditional CZ: 4, reset: 4 | 6 | AND: 4, Clifford: 25, measurement: 4 | AND: 4, Clifford: 29, measurement: 4 | 14 |
+
+Counts are deliberately separate abstraction levels. Atomic CCX is not certified
+as a fully lowered zero-T operation. The source model charges one Clifford per
+integer vector, irrespective of popcount. The physical effect still requires a
+valid clean-release promise.
+
+This batch adds 16 tests: 4155 concentrated, 1398 coverage-run and 84 CPU/TN
+checks pass. Strict typing of six files, formatting, scope, architecture, IR and
+API checks pass. Six relevant source blobs match the pinned inventory. Upstream
+Add tensor contraction emits three autoray matrix-multiplication warnings;
+they are retained and the complete finite matrix comparison passes. The default
+suite was not rerun for this tests-only batch; its prior baseline above remains.
+Evidence prefix: `g2-classical-vector-source-examples-`.
+
+The source notebook test remains unverified, so Q-0899 is not closed. Wider
+symbolic/foreign dtype and diagnostic interfaces keep Q-0898 open.

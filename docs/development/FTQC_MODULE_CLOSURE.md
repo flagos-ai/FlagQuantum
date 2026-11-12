@@ -222,3 +222,5 @@ Concrete register domains and the default truth-table connection reuse existing 
 [Integer basis tensor suppliers](REGISTER_BASIS_VECTORS.md) provide arbitrary unsigned kets/effects on existing labels and replace the zero supplier implementation; Compiler retains physical preparation and graph construction.
 
 [Classical vector graph construction](COMPONENT_CLASSICAL_VECTORS.md) composes existing typed ownership, integer loading and numerical vector suppliers. Its explicit evaluator boundary keeps Compiler independent of Simulation; wider source dtype and failure interfaces remain open.
+
+The original X, CNOT, Toffoli and five-bit Add classical/tensor examples now run through native executable graph replacements; complete matrices, complex measurement branches, work cleanup and separate resource accounts pass. Q-0899 remains open for its notebook test; Q-0898 retains source-wide dtype and diagnostic gaps. See [Classical vector graph construction](COMPONENT_CLASSICAL_VECTORS.md).
