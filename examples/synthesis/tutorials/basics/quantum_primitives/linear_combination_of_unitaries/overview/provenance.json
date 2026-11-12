@@ -1,0 +1,33 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "7927bd0923baddf6e2513b8082852e15eee575514f259829c62a72ee67461159",
+  "git_blob_sha1": "91f3441521b850f54dd9106d3a7fbc11bedfc348",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "sha256": "b3d9232606e4ba3492e016b5e51101e48547339b7e9529838a29fc669cbdeb1a"
+    },
+    {
+      "index": 11,
+      "sha256": "cc9e6a8eacfc0e4b74f7d5bedbb7dddbe9b9fb7b7192d56f683046885b4b7d99"
+    },
+    {
+      "index": 13,
+      "sha256": "ff1e88c7108660e4e4691462a3e42ebc5b558f29c22f46fded60c52ad449f6a2"
+    },
+    {
+      "index": 15,
+      "sha256": "5af493d5f69bd523bb70d1504055780d95fa373db4c70a94c216cfbd62c84cac"
+    },
+    {
+      "index": 18,
+      "sha256": "cf2cc9564a744a7a83c989364dcd2f580ecf2b2df3d74e5a6ef448e1c7edb5b0"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_primitives.linear_combination_of_unitaries.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_lcu_evolution_notebooks.py",
+  "scope": "Retain both original construction stages, two controller/data bits, probabilities [0.5,0.25,0.25,0], coherent SELECT of identity/QFT/inverse QFT and within/apply uncomputation. Exact loading satisfies the original 0.01 error allowance. Local resource summaries replace graphical cloud display; named probabilities add a local inspection. No arbitrary-input loading-unitary equivalence or hardware resource comparison is claimed.",
+  "native_semantic_adaptations": "Retain both original construction stages, two controller/data bits, probabilities [0.5,0.25,0.25,0], coherent SELECT of identity/QFT/inverse QFT and within/apply uncomputation. Exact loading satisfies the original 0.01 error allowance. Local resource summaries replace graphical cloud display; named probabilities add a local inspection. No arbitrary-input loading-unitary equivalence or hardware resource comparison is claimed."
+}

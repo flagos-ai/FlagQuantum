@@ -50,6 +50,7 @@ Native FlagQuantum programs currently available:
 
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
+- [overview](hamiltonian_simulation/hamiltonian_simulation_guide/overview/README.md)
 - [overview](quantum_primitives/hadamard_test/overview/README.md)
 - [overview](quantum_primitives/swap_test/overview/README.md)
 

@@ -242,7 +242,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 43
+    assert len(validated) == 45
     for operation in ("or", "xor"):
         assert (
             f"functions/function_usage_examples/arithmetic/bitwise_{operation}/bitwise_{operation}_example",
@@ -319,8 +319,19 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         ),
     ):
         assert (group, path) in validated
+    for group, path in (
+        (
+            "tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries",
+            "examples/synthesis/tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/main.py",
+        ),
+        (
+            "algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide",
+            "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview/main.py",
+        ),
+    ):
+        assert (group, path) in validated
     rendered = render(catalog)
-    assert "**43/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**45/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

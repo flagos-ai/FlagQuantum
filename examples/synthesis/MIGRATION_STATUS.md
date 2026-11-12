@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **43/213**.
+Validated local Notebook workflows: **45/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -166,7 +166,7 @@ Validated local Notebook workflows: **43/213**.
 | `algorithms/foundational/deutsch_jozsa/deutsch_jozsa` | notebook_workflow | [Native program](algorithms/foundational/deutsch_jozsa/main.py) | validated |
 | `algorithms/foundational/quantum_teleportation/quantum_teleportation` | notebook_workflow | [Native program](algorithms/foundational/quantum_teleportation/main.py) | pending |
 | `algorithms/foundational/simon/simon` | notebook_workflow | [Native program](algorithms/foundational/simon/main.py) | pending |
-| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/main.py) | pending |
+| `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview/main.py) | validated |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_qdrift/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter` | quantum_program | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/hamiltonian_simulation_guide_trotter/main.py) | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp` | notebook_workflow | Pending | pending |
@@ -390,7 +390,7 @@ Validated local Notebook workflows: **43/213**.
 | `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | [Native program](tutorials/basics/qmci_pi_estimation/main.py) | pending |
 | `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/main.py) | pending |
 | `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/main.py) | validated |
-| `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/main.py) | pending |
+| `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/main.py) | validated |
 | `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | [Native program](tutorials/basics/quantumwalk_complex_network/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part1/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/controlled_rotation/main.py) | pending |
