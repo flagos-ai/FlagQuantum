@@ -27,13 +27,13 @@ from flagquantum.drawer.register_score_data import (
 )
 from flagquantum.drawer.register_score_html import export_register_score_html
 from flagquantum.drawer.register_score_mpl import draw_register_score
-from tests.unit.component_vector_checks import tracked_flank
-from tests.unit.test_classical_vector_source_examples import (
+from tests.unit.classical_vector_fixtures import (
     KINDS,
     evaluate,
     example,
     original_inputs,
 )
+from tests.unit.component_vector_checks import tracked_flank
 from tests.unit.test_component_tensor_nodes import fixture
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
