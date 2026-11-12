@@ -236,8 +236,9 @@ inherited raw failures and separate primitive/model accounts.
 `register_axis_groups.py` owns declared port order and grouping of actual external
 register edges. Pure and mixed contraction reuse it after selecting exposed node
 edges; `register_tensor_indices.py` remains the existing diagnostic side table.
-The owner creates no graph, wires or quantum operations. Source width-triggered
-Quimb simplification remains an explicit gap. See the [dense axis source audit](../../../docs/development/DENSE_AXIS_SOURCE_AUDIT.md)
+The owner creates no graph, wires or quantum operations. The explicit
+[source width policy](../../../docs/development/TENSOR_WIDTH_POLICY.md) is
+available through the existing register and component consumers. See the [dense axis source audit](../../../docs/development/DENSE_AXIS_SOURCE_AUDIT.md)
 for the complete original-test numerical replacement and contributor check.
 
 The [tensor protocol source audit](../../../docs/development/TENSOR_PROTOCOL_SOURCE_AUDIT.md)
@@ -302,8 +303,10 @@ contractions without increasing rank. The [bounded example](../../../examples/al
 reduces three tensors to one before the same register consumer. See the
 [source audit](../../../docs/development/TENSOR_RANK_SIMPLIFICATION.md) for
 version pinning, pair-order evidence, scalar ownership and gradients. This is
-explicit preprocessing; the complete source width-triggered squeeze/ADCR policy
-remains open and is not silently substituted into default register contraction.
+explicit preprocessing; the complete width-triggered squeeze/ADCR policy is
+opt-in through `simplification_atol`, preserving default training gradients.
+The [dense entry disposition](../../../docs/development/DENSE_ENTRY_DISPOSITION.md)
+maps all four source functions and the fresh-label factorized-provider entry.
 
 ### Protected squeezing and explicit column reduction
 

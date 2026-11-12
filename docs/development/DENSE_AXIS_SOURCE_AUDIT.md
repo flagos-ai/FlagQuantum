@@ -103,3 +103,11 @@ Use the locked reference environment for source tests. Production grouping only
 consumes native signatures and existing edge descriptors. Keep optional foreign
 network simplification outside this shared axis-order owner until its numerical,
 failure and resource behavior is independently audited.
+
+## Follow-up: 2026-11-12
+
+The historical open-width row above is superseded by `TENSOR_WIDTH_POLICY.md`
+and `DENSE_ENTRY_DISPOSITION.md`: the explicit reported-width/ADCR policy and
+fresh-label dense composition are implemented. The five original test bodies
+also pass with explicit tolerance. Native default training semantics, source
+defects and foreign flattening boundaries remain explicit; Q-0887 stays open.

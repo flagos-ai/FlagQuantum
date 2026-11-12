@@ -418,3 +418,9 @@ closure remain open, with unchanged capability and parent counts.
 Width acceptance: 43 new / 2,395 related / 84 CPU-TN pass; strict7 and
 width/full-loop/example86 statements24 branches100%. Implementation `73816a0d`.
 No parent closure: 20 closed / 1,260 open / 390 active; 1,184 capability records.
+
+Dense entry acceptance: 30 new / 2,425 related / 84 CPU-TN pass; strict4
+and format/scope/architecture/IR/API/example. Implementation `84e51b4c`. All four
+source functions have explicit disposition, but source defects/default-gradient
+differences retain Q-0887 open. Counts remain20 closed/1260 open/390 active,
+1184 capability records. Next: Q-0889 whole-file flatten disposition.
