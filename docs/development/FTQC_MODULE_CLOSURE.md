@@ -230,3 +230,12 @@ sequence with the existing physical forward/exact-adjoint emitters. The original
 32-bit notebook scalar contracts through native numerical suppliers with 32-element
 peak intermediates. Native notebook drawing/provider composition remains open;
 original notebook execution is recorded separately from native replacement.
+
+## Core graph drawing slice
+
+[Component register scores](COMPONENT_REGISTER_SCORE.md) now connect existing
+Core typed calls to the existing drawer. Original notebook closed diagrams and
+expanded Add through 32 bits have matching geometry and explicit glyph suppliers;
+native identifiers and open-boundary text differ. Q-0747/Q-0749/Q-0897 remain
+partial: source-wide drawing and automatic numerical provider composition are
+not closed by these cases. The fixed 17-file closure total is unchanged.

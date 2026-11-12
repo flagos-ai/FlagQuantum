@@ -140,5 +140,6 @@ symbolic/foreign dtype and diagnostic interfaces keep Q-0898 open.
 The [factorized addition graph](ADDITION_COMPONENTS.md) now supports the original
 notebook's five-/32-bit closed numerical examples with bounded tensor inputs and
 intermediates. All 13 original notebook code cells execute in the reference
-environment. Native drawing replacement and automatic provider composition remain
-open; the source files are not marked closed on reference execution alone.
+environment. [Native component drawing](COMPONENT_REGISTER_SCORE.md) now covers the original
+closed examples and expanded Add through 32 bits. Automatic provider composition
+remains open; the source files are not marked closed on those cases alone.

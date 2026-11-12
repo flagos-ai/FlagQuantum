@@ -288,3 +288,11 @@ Path("multi-and.html").write_text(export_register_score_html(data), encoding="ut
 figure, _ = draw_register_score(data)
 figure.savefig("multi-and.svg")
 ```
+
+## Typed component scores
+
+`component_score.component_register_score` projects existing Core typed calls into
+the register-score layout without executing or decomposing them. Optional step
+styles and wire-symbol suppliers belong to presentation. See the executable
+[component score workflow](../../docs/development/COMPONENT_REGISTER_SCORE.md)
+for ordering, lifetime ownership, locked-source comparisons and current limits.

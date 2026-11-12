@@ -85,8 +85,10 @@ of their popcounts. Measurements and physical work are not replaced by logical
 resource estimates. The single-bit source model's negative Clifford count remains
 an existing source exception.
 
-The original notebook's native drawing replacement and automatic tensor-provider
-composition remain open. Q-0897/Q-0899 are not marked fully closed solely because
+The [native component score](COMPONENT_REGISTER_SCORE.md) now reproduces the
+notebook's closed example diagrams and expanded Add geometry through 32 bits.
+Open-boundary native identity/dtype text differs explicitly. Automatic
+tensor-provider composition remains open. Q-0897/Q-0899 are not marked fully closed solely because
 the original notebook or its native numerical cases pass. G3 is not started.
 
 Evidence prefix: `g2-addition-component-`; original notebook execution:
