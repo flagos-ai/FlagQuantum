@@ -405,6 +405,8 @@ This catalog is generated from the machine-validated
 | Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 | Build a spinful open chain with explicit hopping, interaction and chemical potential | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Reuse populated molecular integrals without implicit file access | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
@@ -1522,6 +1524,20 @@ Construct an open-chain Hamiltonian in the native fermionic algebra and measure 
 - **Start:** [quick example](../../examples/algorithms/fermion_hubbard.py)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_CHAIN.md)
 - **Known boundary:** Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency.
+
+### Spinful Fermi-Hubbard periodic ring
+
+Construct a static periodic ring in native fermionic algebra and reuse the existing measurement example with --periodic.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_ring`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
+- **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
 
 
 ## Distributed execution
