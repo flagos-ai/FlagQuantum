@@ -65,6 +65,7 @@ Native FlagQuantum programs currently available:
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
 - [overview](technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/README.md)
 - [overview](technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview/README.md)
+- [overview](technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview/README.md)
 - [overview](technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/README.md)
 - [overview](technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/README.md)
 - [overview](technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/README.md)
