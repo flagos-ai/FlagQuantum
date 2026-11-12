@@ -228,3 +228,22 @@ See [the scope and conventions](../../../docs/development/FERMION_PAULI_DISCOVER
 Symbolic discovery depends on native algebra and shared binary elimination;
 it owns no optimizer, runtime, adapter, dense solver or automatic sector choice.
 This is experimental local CPU behavior with static coefficients.
+
+
+## Explicit mixed-axis sector training composition
+
+Run `python -m examples.algorithms.fermion_pauli_training` to replace bounded
+eigenstate preparation with an ordinary one-qubit RY circuit and PyTorch SGD.
+The model is static; callers explicitly choose Y0=+1 and X1Z2=-1 before training.
+Only the reduced circuit angle participates in autograd. After optimization,
+`lift_stabilizer_state` inspects the selected full-register state under
+`torch.no_grad()`; its static-input contract remains unchanged.
+
+Change the initial angle and run
+`python -m pytest tests/integration/test_fermion_pauli_training.py -q`.
+Independent three-qubit product states and analytic energies verify all four
+joint sectors, either sign of the static coupling, gradients, optimizer steps
+and replacement of discovered generators with supplied signed words. See the
+[training scope](../../../docs/development/FERMION_PAULI_TRAINING.md).
+No automatic ansatz transform, ground-sector inference, coefficient gradients,
+new solver, runtime or capability promotion is introduced.

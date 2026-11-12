@@ -394,3 +394,14 @@ the selected-sector analytic minimum -0.1-sqrt(1.16), and lifting checks the
 original eigenvector residual below 1e-12. Dense state preparation is bounded
 inspection. Discovery chooses no sector, particle number or ground state, and
 returns a commuting subgroup rather than an anticommuting centralizer basis.
+
+
+[`fermion_pauli_training.py`](fermion_pauli_training.py), run with
+`python -m examples.algorithms.fermion_pauli_training`, trains a float64 RY angle
+in the explicitly selected Y0=+1, X1Z2=-1 joint sector of the same fixed model.
+Native one-qubit expectations feed 120 PyTorch SGD steps, without a dense
+eigensolver or reference-state preparation. Static full-register lifting checks
+the final energy and both generator eigenvalues under `torch.no_grad()`; it is
+not a differentiable lifting API. Only circuit angles are trainable. See the
+[training scope](../../docs/development/FERMION_PAULI_TRAINING.md) for independent
+gradient/sector tests and the bounded CPU qualification.
