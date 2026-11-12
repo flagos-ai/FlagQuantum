@@ -407,6 +407,8 @@ This catalog is generated from the machine-validated
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Discover a basis of diagonal symmetries of a native encoded operator | Diagonal fermion Z2 symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PARITY_DISCOVERY.md) |
+| Restrict discovery to an explicit candidate parity span and choose sector eigenvalues separately | Diagonal fermion Z2 symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PARITY_DISCOVERY.md) |
 | Build spinless chains and rings with one mode per site and unshifted neighboring density interactions | Spinless t-V chains and rings | Experimental | [Read guide](../../docs/development/FERMION_SPINLESS.md) |
 | Measure fixed-particle states through JW, parity and BK encoding | Spinless t-V chains and rings | Experimental | [Read guide](../../docs/development/FERMION_SPINLESS.md) |
 | Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
@@ -1540,6 +1542,20 @@ Construct a static periodic ring in native fermionic algebra and reuse the exist
 - **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
+
+### Diagonal fermion Z2 symmetry discovery
+
+Discover independent encoded Z symmetries and feed explicit sectors into the existing native parity reduction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.symmetry.discover_z_parities`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_PARITY_DISCOVERY.md)
+- **Documentation:** [guide](../../docs/development/FERMION_PARITY_DISCOVERY.md)
+- **Known boundary:** Z-only encoded Pauli symmetries, exact canonical static coefficients and explicit register width only. Optional independent candidate words restrict discovery to their binary product span; identity is omitted. Qubit labels are encoded indices, not occupation modes. Discovery chooses no eigenvalues: particle number N fixes only total parity (-1)**N, not exact particle number or other symmetry sectors. No automatic number-conservation proof, ground-sector selection, general X/Y discovery, matched tapered ansatz, coefficient gradients or full upstream compatibility. Symbolic discovery constructs no Fock matrices; the two-site example uses bounded exponential-cost reduced-state diagonalization for correctness inspection. Native discovery requires neither OpenFermion nor Cirq. No accelerator, distributed, performance or capacity claim.
 
 ### Spinless t-V chains and rings
 
