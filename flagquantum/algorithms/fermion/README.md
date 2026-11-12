@@ -192,3 +192,18 @@ explicit-total-parity path, then change a hopping term and run
 `python -m pytest tests/unit/fermion/test_parity_discovery.py tests/integration/test_fermion_parity_discovery.py -q`.
 See the [discovery scope](../../../docs/development/FERMION_PARITY_DISCOVERY.md)
 for encoded-index conventions, exact coefficients and unsupported X/Y discovery.
+
+
+## Explicit parity-sector training composition
+
+Run `python -m examples.algorithms.fermion_parity_training` for the ten-minute
+path from a fixed pairing Hamiltonian through total-parity discovery, explicit
++1 selection, reduced-register angle training and lifted-state inspection.
+Change the static pairing coefficient and run
+`python -m pytest tests/integration/test_fermion_parity_training.py -q`.
+The tests replace JW with parity and BK without changing the training consumer,
+and check energies and gradients against an independent occupation-space matrix.
+Symbolic discovery/reduction remain static: they own no optimizer, runtime or
+trainable-coefficient conversion. This experimental CPU example trains one
+circuit angle, not model coefficients or an automatic matched tapered ansatz.
+The selected sector contains N=0 and N=2; it is not an exact-number projection.
