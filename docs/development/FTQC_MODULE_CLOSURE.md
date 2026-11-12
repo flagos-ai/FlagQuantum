@@ -618,3 +618,24 @@ The current ledger has29 closed/1251 open/387 active parents and1187 capability
 records. Earlier totals above are dated historical batch snapshots. Q-0747's
 Python protocol and Q-0748's original JSON asset remain open. The full default-suite
 timeout remains recorded. G3 acceptance remains a separate stage.
+
+
+### Context-aware score coordinates (2026-11-13)
+
+Implementation `13f92bdf` extends the existing Drawer lane owner with source-like
+call/register/element context through `new_y_for`. The default delegates to the
+established no-argument `new_y`. Source method naming is adapted to preserve
+existing subclasses. Scalar None and array tuple indices, reservations, empty
+arrays, THRU retention, graph identity and full Add geometry match the unchanged
+locked source through a replacement highest/lowest-lane policy.
+
+Twenty-four new cases pass, with 367 concentrated and 86 independent integration
+cases, zero skips. Strict2 and formatting/scope/architecture/IR/API pass. The lane
+owner has 100% coverage of 57 statements and 22 branches. Evidence and the runnable
+example are in REGISTER_SCORE_RESERVATIONS.md under `g2-score-coordinates-`.
+There are zero added physical primitives, work wires or measurements. Actual
+execution and source analytical accounts remain separate.
+
+Q-0747 remains open for partial-line observations and general foreign protocols.
+Counts remain 29 closed/1251 open/387 active parents and 1187 capability records.
+The existing full-default timeout remains recorded in the ledger.
