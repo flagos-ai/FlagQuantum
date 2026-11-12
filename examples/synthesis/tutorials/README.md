@@ -53,6 +53,7 @@ Native FlagQuantum programs currently available:
 ## Validated local Notebook workflows
 
 - [entanglement](basics/entanglement/README.md)
+- [overview](basics/grover_graph_coloring/overview/README.md)
 - [prepare_state](basics/prepare_state/README.md)
 - [overview](basics/quantum_primitives/hadamard_test_tutorial/overview/README.md)
 - [overview](basics/quantum_primitives/linear_combination_of_unitaries/overview/README.md)

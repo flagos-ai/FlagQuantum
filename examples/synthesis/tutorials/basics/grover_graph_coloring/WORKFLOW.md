@@ -27,3 +27,6 @@ unchanged source after logical register mapping, and enforce actual budgets.
 
 Classical application analysis and complete Notebook workflows are tracked
 separately. This acceptance is local CPU quantum-program correctness only.
+
+See the [complete native Notebook workflow](overview/README.md) for retained
+classical postprocessing, sampling, plots and acceptance criteria.

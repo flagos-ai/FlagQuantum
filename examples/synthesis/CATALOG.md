@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **45/213**.
+Validated local Notebook workflows: **47/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -62,6 +62,7 @@ Validated local Notebook workflows:
 
 - [bernstein_vazirani](algorithms/foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](algorithms/foundational/deutsch_jozsa/README.md)
+- [overview](algorithms/foundational/simon/overview/README.md)
 - [overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview/README.md)
 - [overview](algorithms/quantum_primitives/hadamard_test/overview/README.md)
 - [overview](algorithms/quantum_primitives/swap_test/overview/README.md)
@@ -298,6 +299,7 @@ Validated local Notebook workflows:
 Validated local Notebook workflows:
 
 - [entanglement](tutorials/basics/entanglement/README.md)
+- [overview](tutorials/basics/grover_graph_coloring/overview/README.md)
 - [prepare_state](tutorials/basics/prepare_state/README.md)
 - [overview](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/README.md)
 - [overview](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/README.md)
