@@ -11,6 +11,9 @@ import numpy as np
 import pytest
 import torch
 
+from examples.algorithms.classical_tensor_crosscheck import (
+    contract_classical_crosscheck,
+)
 from flagquantum.compiler.registers.arithmetic.addition import add_adjoint_ir
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program import ProgramRecord
@@ -54,14 +57,7 @@ def test_unmodified_original_test_with_native_flank_replacement(
 
     def replacement(bloq: Any, in_vals: Any, out_vals: Any = None) -> Any:
         assert bloq == source
-        native, vectors = tracked_flank(
-            monkeypatch,
-            record,
-            in_vals,
-            out_vals,
-            evaluate=lambda values: evaluate(kind, values),
-        )
-        result = contract(native, vectors, native_matrix(kind))
+        result = contract_classical_crosscheck(kind, in_vals, out_vals)
         calls.append(result)
         return SimpleNamespace(tensor_contract=lambda: result.detach().numpy())
 
