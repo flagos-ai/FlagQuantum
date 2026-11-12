@@ -334,3 +334,11 @@ program; missing unflattened suppliers fail. Counts remain 1,184 capabilities
 and 19 closed / 1,261 open parents. Complete notebook, custom MultiAnd flattening
 and contraction-info acceptance remain open; this composition adds no duplicate
 capability record.
+
+The [instance/contraction-info workflow](CONJUNCTION_CONTRACTION.md) extends
+Q-0885's existing dependency evidence with original MultiAnd occurrence IDs,
+logical atomic-leaf stopping and explicit native profile inspection. Imported
+source paths reuse existing pair-step conversion/profiling/execution; matching
+peaks and distinct FLOP/native-cost conventions are verified. There is no new
+capability ID or parent closure: 1,184 records, 19 closed and 1,261 open remain.
+Whole 18-cell notebook and original index/layout asset review remain open.

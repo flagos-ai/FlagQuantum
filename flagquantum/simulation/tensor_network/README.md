@@ -272,3 +272,12 @@ existing root expansion, explicit providers and zero-state initialization. Run
 unitary-to-state path. Swap dense CNOT and COPY/XOR data without changing the
 consumer or physical program. Unexpanded roots without providers fail explicitly;
 owned prepared outputs remain live, and no physical scratch is claimed clean.
+
+### Contraction information after logical instance selection
+
+Run `examples/algorithms/conjunction_contraction.py` to retain the original
+MultiAnd instance IDs and inspect the existing native contraction profile. The
+[workflow and cost conventions](../../../docs/development/CONJUNCTION_CONTRACTION.md)
+explain atomic tensor stopping rules, imported-path comparisons, shape-only
+planning and why arithmetic estimates, physical gates and process RAM are
+separate quantities. No new planner or execution representation is introduced.
