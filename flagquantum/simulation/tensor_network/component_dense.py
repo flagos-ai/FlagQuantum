@@ -31,13 +31,17 @@ def contract_component_tensors(
     ],
     like: torch.Tensor,
     entry: str = "main",
+    *,
+    simplification_atol: float | None = None,
 ) -> torch.Tensor:
     """Wire and contract a selected pure-state graph to a scalar/vector/matrix.
 
     Compiler already owns root wrapping, full/partial selection and call order.
     Reuse component_tensor_nodes for validation, SSA wiring and idle identities,
     then contract_register_tensors for output/input grouping and contraction.
-    Supplier exceptions, dtype/device behavior and autograd are unchanged.
+    Explicit simplification_atol forwards the source-default width policy to
+    that consumer; None retains the unsimplified autograd path.
+    Supplier exceptions, dtype/device behavior and retained autograd are unchanged.
     Classical ports retain the pure graph's explicit refusal. An empty network
     raises ValueError; a scalar result requires an explicit scalar tensor node.
     Integer trace requests fail at supply with guidance to the mixed entry;
@@ -51,7 +55,11 @@ def contract_component_tensors(
     function = next(function for function in record.functions if function.name == entry)
     assert function.registers is not None
     return contract_register_tensors(
-        nodes, Signature(function.registers), incoming, outgoing
+        nodes,
+        Signature(function.registers),
+        incoming,
+        outgoing,
+        simplification_atol=simplification_atol,
     )
 
 
@@ -69,6 +77,8 @@ def contract_component_superoperator(
     ],
     like: torch.Tensor,
     entry: str = "main",
+    *,
+    simplification_atol: float | None = None,
 ) -> torch.Tensor:
     """Wire, conjugate-double, trace and contract a selected mixed graph.
 
@@ -76,7 +86,8 @@ def contract_component_superoperator(
     discard protocol. Reuse its validation and graph construction, followed by
     contract_register_superoperator's right-forward/backward then left-forward/
     backward grouping. Return a scalar, density/effect matrix or full channel.
-    Empty networks are refused; scalar tensors and source-unsupported direct
+    Explicit simplification_atol forwards the width policy; None preserves
+    the unsimplified autograd path. Empty networks are refused; scalar tensors and source-unsupported direct
     input trace effects keep their existing, explicitly documented semantics.
     Supplier and trace/contraction errors propagate without retry or fallback.
     No Compiler traversal, backend selection, physical reset or resource model
@@ -88,5 +99,9 @@ def contract_component_superoperator(
     function = next(function for function in record.functions if function.name == entry)
     assert function.registers is not None
     return contract_register_superoperator(
-        nodes, Signature(function.registers), incoming, outgoing
+        nodes,
+        Signature(function.registers),
+        incoming,
+        outgoing,
+        simplification_atol=simplification_atol,
     )

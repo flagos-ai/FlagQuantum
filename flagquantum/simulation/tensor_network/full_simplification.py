@@ -6,10 +6,13 @@
 """Explicit default ADCR fixed point over existing native simplification owners."""
 
 from collections.abc import Sequence
+from math import isfinite
+from numbers import Real
 
 import torch
 
 from .column_reduction import reduce_tensor_columns
+from .contraction_width import tensor_contraction_width
 from .diagonal_reduction import gauge_tensor_antidiagonals, reduce_tensor_diagonals
 from .models import TensorNetworkNode
 from .rank_simplification import simplify_tensor_ranks
@@ -81,3 +84,30 @@ def simplify_tensor_network(
         previous = counts
         counts = (len(active), len({label for node in active for label in node.labels}))
     return active
+
+
+def simplify_wide_tensor_network(
+    nodes: Sequence[TensorNetworkNode],
+    output_labels: Sequence[int],
+    *,
+    atol: float,
+) -> tuple[TensorNetworkNode, ...]:
+    """Apply default ADCR only when the locked-default planner width exceeds 12.
+
+    This explicit entry accepts support-dependent simplification and its
+    tolerance/ambient-gradient boundaries. Width comes from the same optional
+    Cotengra planner as the locked source, without inspecting numerical values.
+    Capture register output groups before calling. No physical operation,
+    normalization or default training policy is introduced.
+    """
+    if (
+        isinstance(atol, bool)
+        or not isinstance(atol, Real)
+        or not isfinite(atol)
+        or atol < 0
+    ):
+        raise ValueError("structure tolerance must be a finite nonnegative real number")
+    _, outputs = _simplification_axes(nodes, output_labels)
+    if tensor_contraction_width(nodes) > 12:
+        return simplify_tensor_network(nodes, outputs, atol=atol)
+    return tuple(nodes)

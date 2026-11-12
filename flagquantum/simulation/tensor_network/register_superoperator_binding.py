@@ -11,6 +11,7 @@ import torch
 
 from ...core.ir.program.signatures import Signature
 from .conjugate_pairs import conjugate_pair_labels
+from .full_simplification import simplify_wide_tensor_network
 from .models import TensorNetworkNode
 from .path_search import _contract_nodes_greedy
 from .register_axis_groups import (
@@ -45,14 +46,19 @@ def contract_register_superoperator(
     outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
     *,
     output_groups: tuple[tuple[int, ...], ...] | None = None,
+    simplification_atol: float | None = None,
 ) -> torch.Tensor:
     """Contract doubled nodes as a scalar, density/effect matrix, or channel.
 
     Nodes already contain conjugate-pair labels and any explicit trace merges.
     Capture register_contraction_groups before explicit simplification and pass
     output_groups here to retain protected outputs that become hyperedges.
+    A non-None simplification_atol explicitly enables the source-default width
+    >12 ADCR policy after capturing groups. It requires optional Cotengra and
+    accepts support-dependent tolerance/ambient-gradient changes. None retains
+    the existing unsimplified path, including arbitrary trainable entries.
     Reuse the native greedy contraction engine without normalization, discard
-    discovery, reset, or Quimb simplification. At least one node is required,
+    discovery or reset. At least one node is required,
     including an explicit scalar node for an all-scalar network. PyTorch retains
     dtype, device and autograd. Dense channel storage grows as 16**n for n bits
     on each side; this helper does not provide a memory-capacity guarantee.
@@ -67,6 +73,12 @@ def contract_register_superoperator(
         superoperator=True,
         output_groups=output_groups,
     )
+    if simplification_atol is not None:
+        nodes = simplify_wide_tensor_network(
+            nodes,
+            tuple(label for group in groups for label in group),
+            atol=simplification_atol,
+        )
     result, _ = _contract_nodes_greedy(
         nodes, tuple(label for group in groups for label in group)
     )

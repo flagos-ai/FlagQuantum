@@ -10,6 +10,7 @@ from collections.abc import Mapping, Sequence
 import torch
 
 from ...core.ir.program.signatures import Signature
+from .full_simplification import simplify_wide_tensor_network
 from .models import TensorNetworkNode
 from .path_search import _contract_nodes_greedy
 from .register_axis_groups import (
@@ -47,16 +48,21 @@ def contract_register_tensors(
     outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
     *,
     output_groups: tuple[tuple[int, ...], ...] | None = None,
+    simplification_atol: float | None = None,
 ) -> torch.Tensor:
     """Contract existing nodes and group output/input axes to a dense result.
 
     Capture register_contraction_groups before explicit simplification and pass
     output_groups here to retain protected outputs that become hyperedges.
+    A non-None simplification_atol explicitly enables the source-default width
+    >12 ADCR policy after capturing groups. It requires optional Cotengra and
+    accepts support-dependent tolerance/ambient-gradient changes. None retains
+    the existing unsimplified path, including arbitrary trainable entries.
     Reuse the existing greedy contraction implementation; do not build a second
     executor. Pure-state outputs are scalar, vector or matrix, omitting empty
     bit groups as the original protocol does. This finite pure-state slice does
     not implement superoperator grouping, automatic component flattening, or
-    a Quimb simplification policy. At least one node is required, including an
+    external Quimb objects. At least one node is required, including an
     explicit scalar node for a scalar-only network.
     """
     if not nodes:
@@ -68,6 +74,12 @@ def contract_register_tensors(
         outgoing,
         output_groups=output_groups,
     )
+    if simplification_atol is not None:
+        nodes = simplify_wide_tensor_network(
+            nodes,
+            tuple(label for group in groups for label in group),
+            atol=simplification_atol,
+        )
     labels = tuple(label for group in groups for label in group)
     result, _ = _contract_nodes_greedy(nodes, labels)
     return result.reshape(tuple(1 << len(group) for group in groups))
