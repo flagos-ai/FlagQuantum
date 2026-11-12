@@ -2,8 +2,11 @@
 
 ## Current delivery status
 
-The latest merged-baseline audit is main `ffb6e7de71b9b9c9e172b20ecbc49ac04f14a0c5`
-on November 12, 2026. The initial selected migration and EXT01–EXT08 are merged.
+The current checked main baseline is
+`9d1f5f34b9eae002f1c0e74714c2cb8e00bc1080` on November 12, 2026.
+This is selected-workflow coverage, not complete OpenFermion API compatibility.
+The earlier merged-baseline audit was
+`ffb6e7de71b9b9c9e172b20ecbc49ac04f14a0c5`. The initial selected migration and EXT01–EXT08 are merged.
 The later delivery audit #1133, training/input/object compositions #1137–#1144,
 InteractionOperator registration #1146 and frozen-core training proof #1147 are
 also merged. The follow-up queue below preserves its earlier checked-revision
@@ -12,7 +15,7 @@ status; it is historical and no longer an outstanding merge queue.
 Periodic spinful Hubbard assembly merged in [#1150](https://github.com/flagos-ai/FlagQuantum/pull/1150),
 with separate experimental capability registration in
 [#1151](https://github.com/flagos-ai/FlagQuantum/pull/1151).
-The exact combined main revision above passed 143 focused scientific, native
+That earlier `ffb6e7de` combined main revision passed 143 focused scientific, native
 isolation, training, capability and documentation tests, both periodic/open-chain
 examples and [Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43161089138).
 These results qualify that revision and bounded CPU correctness only.
@@ -28,16 +31,36 @@ The ring training example lowers energy from 3.4853161208 to -2.6945627040
 in 60 Adam steps, with each spin population one. It does not reach the analytic
 ground energy -3.1231056256 and makes no general convergence claim.
 
-The current delivery slice adds spinless t-V chains and rings, reusing native
-fermion algebra, encodings and execution. It lives on its review branch until
-merged. Each site owns one mode, the unshifted interaction is V*n_i*n_j on each
+Spinless t-V chains and rings merged in
+[#1154](https://github.com/flagos-ai/FlagQuantum/pull/1154), with separate
+experimental capability registration in
+[#1155](https://github.com/flagos-ai/FlagQuantum/pull/1155).
+Each site owns one mode, the unshifted interaction is V*n_i*n_j on each
 neighboring bond, and coefficients remain static finite real numbers. The
-[spinless golden path](FERMION_SPINLESS.md) includes independent occupation-bit
+[spinless golden path](FERMION_SPINLESS.md) covers independent occupation-bit
 matrices, free spectra, closing-bond signs, density terms and an actual circuit
-angle gradient/optimizer update. Its shortest workflow is
-`python -m examples.algorithms.fermion_spinless [--periodic]`.
-Algorithm implementation and Integration-owned capability registration remain
-separate PRs; neither changes Stable Core or introduces a solver/dependency.
+angle gradient/optimizer update. Its shortest workflows are:
+
+```bash
+python -m examples.algorithms.fermion_spinless
+python -m examples.algorithms.fermion_spinless --periodic
+```
+
+At three sites, t=1, V=2, mu=0 and N=2, the chain and ring measure
+-0.7320508076 and 1.0000000000 respectively through JW, parity and BK.
+Dense eigenstate preparation remains an exponential correctness inspection.
+The exact current baseline passed 235 related tests, seven spinless/Hubbard
+CLI/inventory checks, both spinless examples and
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43203085504).
+The reviewed capability head passed all 233 full Linux CI jobs on
+[run 43195279000, attempt 2](https://github.com/flagos-ai/FlagQuantum/actions/runs/43195279000/attempts/2).
+Its first attempt failed while resolving an artifact action after the affected
+coverage shard passed 210 tests; the targeted rerun completed successfully.
+[#1156](https://github.com/flagos-ai/FlagQuantum/pull/1156) separately increased
+the native chemistry CI install budget after earlier optional-download timeouts;
+those cancelled runs remain failures, not passing scientific evidence.
+These results establish bounded CPU correctness, not full mainline scientific
+certification or accelerator/distributed support.
 
 Arbitrary graphs, coefficient gradients, automatic matched encoded/tapered
 ansatz construction, accelerator and distributed migration evidence remain
@@ -109,6 +132,57 @@ algebra dependencies. See the local
 [fermion domain README](../../flagquantum/algorithms/fermion/README.md),
 [chemistry domain README](../../flagquantum/algorithms/chemistry_domain/README.md)
 and [input adapter README](../../flagquantum/ecosystem/chemistry/README.md).
+
+## Selected-scope coverage and remaining gaps
+
+This table reconciles the delivered plan at the current checked baseline. It is
+not an exhaustive inventory of upstream symbols, a source-line comparison or a
+percentage of OpenFermion compatibility. Module paths are relative to
+`flagquantum/`; representative tests are relative to `tests/`.
+
+| Responsibility | Authoritative implementation | Representative evidence | Explicit boundary |
+| --- | --- | --- | --- |
+| Fermion and Pauli values | `observables/fermion.py`, `core/algebra/pauli.py` | `unit/fermion/test_encoding.py`, `unit/test_openfermion_native_boundary.py` | No upstream objects or execution policy in algebra |
+| JW, parity and BK encodings | `algorithms/fermion/encoding.py` | `unit/fermion/test_encoding.py`, three-encoding energy examples | Explicit register width and occupation mapping; no automatic matched ansatz |
+| Static molecular snapshots and active spaces | `algorithms/chemistry_domain` | `unit/fermion/test_chemistry.py`, `integration/test_fermion_active_space_training.py` | No geometry, SCF or supplied-integral gradients |
+| File, driver and populated object input | `ecosystem/chemistry` | FCIDUMP/HDF5 tests and molecular input replacement scenarios | Real closed-shell spatial data; PySCF/h5py remain optional adapters; no implicit solver |
+| Optional upstream operator conversion | `ecosystem/openfermion.py` | `unit/test_openfermion_conversion.py`, `integration/test_openfermion_interop.py` | FermionOperator/QubitOperator import/export and InteractionOperator import; no circuit conversion |
+| Static spinful and spinless chains/rings | `algorithms/fermion/hubbard.py` | `unit/fermion/test_hubbard*.py`, `unit/fermion/test_spinless.py` | No arbitrary graphs, twisted phases or coefficient gradients |
+| Orbital decomposition and preparation | `algorithms/fermion/decomposition.py`, `preparation.py`, `lowering.py` | `unit/fermion/test_preparation.py` | Static CPU Slater determinants and Gaussian vacua; no full excited Gaussian basis transform |
+| Fermionic Fourier basis change | `algorithms/fermion/fourier.py`, `lowering.py` | `unit/fermion/test_fourier.py` | Power-of-two widths; adjacent circuit has O(n**2) factors; no FFT speedup claim |
+| Low-rank and controlled evolution | `algorithms/fermion/low_rank.py`, `evolution.py` | `unit/fermion/test_evolution.py`, `test_controlled_evolution.py` | Real spatial closed-shell order-1/2 formulas, static factors, scalar-time gradients, unreduced JW |
+| Explicit symmetry sectors | `algorithms/fermion/symmetry.py`, `stabilizer.py` | `unit/fermion/test_symmetry.py`, `test_stabilizer.py` | Supplied sectors/generators; no discovery or automatic ansatz tapering; lifting is bounded inspection |
+| Real orbital-angle gradients | `algorithms/chemistry_domain/orbital_rotation.py` | `unit/fermion/test_orbital_rotation.py` | Real CPU orbital parameters; static snapshot boundary unchanged |
+| Training composition | Existing circuit/ansatz, observable and PyTorch interfaces | Hubbard, periodic Hubbard, FCIDUMP, active-space and object-replacement training scenarios | Circuit-angle optimization only; no separate fermion solver or general convergence guarantee |
+| Native dependency isolation | Native modules and explicit ecosystem boundaries | `integration/test_native_fermion_isolation.py`, fresh-process example scenarios | Native workflows need no OpenFermion/Cirq; optional interoperability may install them |
+
+Upstream adaptations retain their license and attribution in
+`third_party/openfermion/`, pinned to
+`34adf3196cd566f4ca53893f868753786797ae2a`. The provenance record covers the
+selected adaptations; it does not certify all upstream code as migrated.
+
+## Proposed next PR sequence
+
+The next recommended slice is a bounded spinless chain/ring training composition.
+The existing spinless tests already prove a circuit-angle gradient and optimizer
+step. The proposed example extends that evidence into a readable optimization
+loop without adding a model family, solver, dependency or Stable Core export.
+The following entries are proposals, not implemented capabilities or merge
+approval.
+
+| Order | Owner and scope | Acceptance boundary | Dependency |
+| --- | --- | --- | --- |
+| 1: spinless training composition | Algorithms: example, scenario tests and local guide | Same fixed-particle circuit consumer accepts chain/ring producers; independent occupation reference, finite-difference angle gradient, optimizer update, sector preservation, closing-bond sensitivity and native dependency isolation; report achieved energy without assuming ground-state convergence | Existing merged model, encoding and execution interfaces |
+| 2: capability registration, if support scope changes | Integration: authoritative catalog and generated limitations only | Register exactly the verified CPU profile; preserve static-coefficient and scalability limitations; generate and validate documentation | Reviewed implementation/evidence from PR 1; omit if no catalog boundary changes |
+| 3: combined-main acceptance | Algorithms: verify the actual merged tree and reconcile this plan | Run focused scientific, CLI and isolation checks on the combined commit; keep full Linux qualification in CI and retain failed-run history | Merged implementation and any required registration |
+
+Keep future arbitrary-graph models, symmetry discovery/matched encoded ansatz,
+coefficient/SCF gradients and accelerator/distributed qualification as separate
+proposals with their own requirements and evidence. None is a prerequisite for
+the bounded spinless training path. Each proposal must reuse existing native
+values and keep adapters, mathematics, circuit construction and execution in
+their owning domains. A new horizontal abstraction requires a demonstrated
+replacement through an existing boundary, not speculative extension points.
 
 ## Historical post-merge boundary audit
 
