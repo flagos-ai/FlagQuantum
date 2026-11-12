@@ -8,6 +8,8 @@ This audit covers Qualtran v0.7.0 at
 | `qualtran/drawing/musical_score.py` | `3863bb66cdba17c4654657e275a8485d94b8da75` |
 | `qualtran/drawing/musical_score_test.py` | `db35be86a8fc4c1f3dc25b4154a89776ec519565` |
 | `qualtran/drawing/musical_score.ipynb` | `7205fa53b168a8b0de5429345dc25d2081979446` |
+| `qualtran/drawing/musical_score.html` | `8731aa90a752d4fd252ea931f0527266da0c3934` |
+| `qualtran/drawing/musical_score.js` | `ead9b24fc77b0a772e05f18280a734ddf65ee3a1` |
 
 The native owners are `drawer/register_score.py`, `component_score.py`,
 `register_score_data.py`, `register_score_mpl.py` and the shared heap owner
@@ -59,6 +61,15 @@ to use existing dataclasses, Core signatures/values and Python graph/heap
 utilities. Matplotlib remains an optional rendering dependency. No parallel graph
 IR, foreign runtime adapter, symbol hierarchy or new production dependency is
 added by this audit. Existing native owners retain source copyright notices.
+
+The HTML template and all thirteen JavaScript functions now have a complete
+ownership table in REGISTER_SCORE_ANIMATION.md. The existing offline renderer
+implements keyed enter/update/exit with the source's 750 ms cubic-in-out timing.
+Real Chrome comparisons execute the unchanged source script and pinned test-only
+D3, explicitly aligning coordinate ranges. Source axes, fixed sizing, styling,
+click logging and HTTP/error-panel behavior remain whole-file differences.
+Q-0744 and Q-0746 therefore remain open. The ordinary append and numerical paths
+continue through their existing owners.
 
 ## Complete original test matrix
 
