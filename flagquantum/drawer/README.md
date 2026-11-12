@@ -296,3 +296,13 @@ the register-score layout without executing or decomposing them. Optional step
 styles and wire-symbol suppliers belong to presentation. See the executable
 [component score workflow](../../docs/development/COMPONENT_REGISTER_SCORE.md)
 for ordering, lifetime ownership, locked-source comparisons and current limits.
+
+## Tensor-network incidence inspection
+
+`tensor_network.tensor_index_occurrences`, `export_tensor_network_dot` and
+`draw_tensor_network` consume existing Simulation tensor nodes and optional
+register-index names. They preserve each tensor axis, including trace axes,
+hyperedges and scalar vertices, without reading numerical data or contracting.
+See the [executable workflow and source comparisons](../../docs/development/TENSOR_NETWORK_INSPECTION.md).
+DOT export needs no external tool; plotting returns a caller-owned Matplotlib
+figure. This is topology inspection, with no Quimb layout/performance claim.

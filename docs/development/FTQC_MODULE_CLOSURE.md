@@ -308,3 +308,11 @@ accepts Q-0231.04 and extends existing Q-0891 wiring evidence, bringing checked
 capability records to 1,182 (1,181 current plus one historical). Complete parent
 closure remains 19 accepted and 1,261 open. Node counts, physical CX counts and
 source QEC models are measured separately; no performance parity is inferred.
+
+The [native tensor incidence view](TENSOR_NETWORK_INSPECTION.md) accepts the
+bounded Q-0885.01 inspection dependency, preserving every source CNOT tensor-axis
+connection and friendly/structured outer name. Drawer consumes existing nodes and
+side tables and adds DOT/Matplotlib presentations without numerical execution.
+Full 18-cell notebook acceptance remains open. Checked capabilities rise to
+1,183 (1,182 current plus one historical); parents remain 19 closed and 1,261
+open. No resource-estimate, physical-gate or performance claim changes here.
