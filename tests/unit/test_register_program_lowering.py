@@ -37,7 +37,7 @@ def packed_circuit(
         ValueRef("entry", index, "register") for index in range(len(widths))
     )
     next_index = len(arguments)
-    operands = []
+    operands: list[ValueRef] = []
     operations = []
     for value, width in zip(arguments, widths, strict=True):
         bits = tuple(
@@ -104,7 +104,9 @@ def packed_circuit(
 
 @pytest.mark.parametrize("widths", [(3,), (1, 2), (0, 3, 0), (1, 1, 1)])
 @pytest.mark.parametrize("depth", [1, 3])
-def test_packed_words_and_calls_restore_the_exact_existing_gate_graph(widths, depth):
+def test_packed_words_and_calls_restore_the_exact_existing_gate_graph(
+    widths: tuple[int, ...], depth: int
+) -> None:
     circuit = CircuitIR(
         3, (Instruction("h", (0,)), Instruction("cx", (0, 2)), Instruction("t", (1,)))
     )
@@ -121,14 +123,14 @@ def test_packed_words_and_calls_restore_the_exact_existing_gate_graph(widths, de
     assert restored.canonical_payload == circuit.to_dict()
 
 
-def test_deep_register_call_chain_reuses_the_finite_stack_inliner():
+def test_deep_register_call_chain_reuses_the_finite_stack_inliner() -> None:
     circuit = CircuitIR(1, (Instruction("x", (0,)),))
     expanded = lower_register_program(packed_circuit(circuit, (0, 1), 1300))
     assert expanded.functions[0].blocks[0] == explicit_block(circuit)
 
 
 @pytest.mark.parametrize("width", [0, 1, 3])
-def test_register_rebindings_emit_no_physical_operation(width):
+def test_register_rebindings_emit_no_physical_operation(width: int) -> None:
     function = word_function(width)
     expanded = lower_register_program(ProgramRecord((function,)))
     block = expanded.functions[0].blocks[0]
@@ -139,7 +141,9 @@ def test_register_rebindings_emit_no_physical_operation(width):
 
 @pytest.mark.parametrize("shape", [(), (2,), (2, 3), (0, 2)])
 @pytest.mark.parametrize("width", [0, 2])
-def test_array_elements_lower_in_declared_row_major_order(shape, width):
+def test_array_elements_lower_in_declared_row_major_order(
+    shape: tuple[int, ...], width: int
+) -> None:
     register = Register("words", RegisterType("uint", width), shape)
     values = tuple(
         ValueRef("entry", index, "register")
@@ -158,7 +162,7 @@ def test_array_elements_lower_in_declared_row_major_order(shape, width):
     )
 
 
-def test_output_permutation_is_retained_and_cannot_hide_behind_payload():
+def test_output_permutation_is_retained_and_cannot_hide_behind_payload() -> None:
     function = word_function(3)
     block = function.blocks[0]
     split, join = block.operations
@@ -175,7 +179,9 @@ def test_output_permutation_is_retained_and_cannot_hide_behind_payload():
     assert program_to_circuit(lowered).state == "unsupported_with_diagnostics"
 
 
-def test_invalid_zero_width_ownership_and_unreachable_types_fail_before_erasure():
+def test_invalid_zero_width_ownership_and_unreachable_types_fail_before_erasure() -> (
+    None
+):
     function = word_function(0)
     block = function.blocks[0]
     changed = replace(function, blocks=(replace(block, return_values=()),))
@@ -189,7 +195,9 @@ def test_invalid_zero_width_ownership_and_unreachable_types_fail_before_erasure(
         lower_register_program(ProgramRecord((function, bad)))
 
 
-def test_primitive_parameters_and_measurement_feedback_survive_packed_boundary():
+def test_primitive_parameters_and_measurement_feedback_survive_packed_boundary() -> (
+    None
+):
     from flagquantum.dynamic import DynamicCircuit
 
     circuit = DynamicCircuit(2)
@@ -267,8 +275,8 @@ def test_primitive_parameters_and_measurement_feedback_survive_packed_boundary()
 @pytest.mark.parametrize("consumer", ["add", "xor_qrom"])
 @pytest.mark.parametrize("factory_created", [False, True])
 def test_existing_append_consumer_accepts_packed_rebinding_replacement(
-    monkeypatch, consumer, factory_created
-):
+    monkeypatch: pytest.MonkeyPatch, consumer: str, factory_created: bool
+) -> None:
     from flagquantum.compiler.registers.arithmetic import addition
     from flagquantum.compiler.registers.lookup.qrom_table import QromTable
     from tests.unit.test_register_bindings import (
@@ -290,6 +298,7 @@ def test_existing_append_consumer_accepts_packed_rebinding_replacement(
         expanded = lower_register_program(hierarchy)
         restored = program_to_circuit(expanded)
         assert restored.state == "supported_exact", restored.diagnostics
+        assert restored.canonical_payload is not None
         result = CircuitIR.from_dict(restored.canonical_payload)
         assert result.instructions == gates
         seen.append(hierarchy)
@@ -308,8 +317,8 @@ def test_existing_append_consumer_accepts_packed_rebinding_replacement(
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("permutation", [(0, 1, 2), (2, 0, 1)])
 def test_rebound_output_matches_original_source_complex_tensor_with_spectator(
-    permutation,
-):
+    permutation: tuple[int, ...],
+) -> None:
     import numpy as np
     import torch
     from qualtran import BloqBuilder, QAny, Side, Signature
@@ -358,6 +367,7 @@ def test_rebound_output_matches_original_source_complex_tensor_with_spectator(
         locations.update(
             (after, wire) for after, wire in zip(op.results, wires, strict=True)
         )
+    assert body.return_values is not None
     output = tuple(physical[locations[value]] for value in body.return_values)
     assert output == tuple(physical[index] for index in permutation)
     rows = torch.arange(1, 17, dtype=torch.float64)
