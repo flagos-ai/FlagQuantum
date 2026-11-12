@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
-from heapq import heappop, heappush
+from math import prod
 
 from ..compiler._construction.register_expansion import expand_register_calls
 from ..compiler._construction.register_profile import (
@@ -19,6 +19,9 @@ from ..compiler._construction.register_profile import (
 )
 from ..compiler._hybrid.model import HybridProgram, ValueId
 from ..compiler.registers.control.multi_control import multi_and_stages
+from ..core.ir.program.register_types import opaque_register_type
+from ..core.ir.program.registers import Register, RegisterSide
+from .register_lanes import RegisterLaneManager
 
 
 @dataclass(frozen=True)
@@ -27,6 +30,7 @@ class RegisterStep:
 
     A register appearing on both sides keeps its lane. Output-only registers
     obtain lanes before input-only lanes are released.
+    Optional Core metadata retains array grouping for allocation callbacks.
     """
 
     name: str
@@ -34,6 +38,8 @@ class RegisterStep:
     outputs: tuple[str, ...] = ()
     gate: str | None = None
     control_values: tuple[int, int] | None = None
+    input_registers: tuple[Register, ...] = ()
+    output_registers: tuple[Register, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -67,14 +73,56 @@ class RegisterScore:
     output_generation: int
 
 
+def _register_groups(
+    keys: Sequence[str],
+    registers: Sequence[Register],
+    widths: Mapping[str, int],
+    through: Sequence[str] = (),
+) -> tuple[tuple[Register, tuple[str, ...]], ...]:
+    """Retain Core array grouping, synthesizing scalar metadata for plain layouts."""
+    if not registers:
+        return tuple(
+            (Register(key, opaque_register_type(widths[key])), (key,)) for key in keys
+        )
+    groups = []
+    offset = 0
+    for register in registers:
+        size = prod(register.shape)
+        elements = tuple(keys[offset : offset + size])
+        if len(elements) != size or any(
+            widths[key] != register.bitsize for key in elements
+        ):
+            raise ValueError(
+                "Score register metadata must match element widths and counts"
+            )
+        if sum(key in through for key in elements) not in (0, size):
+            raise ValueError("Score register metadata cannot partially retain an array")
+        groups.append((register, elements))
+        offset += size
+    if offset != len(keys):
+        raise ValueError("Score register metadata must cover every element")
+    return tuple(groups)
+
+
 def layout_register_score(
-    widths: Mapping[str, int], inputs: Sequence[str], steps: Sequence[RegisterStep]
+    widths: Mapping[str, int],
+    inputs: Sequence[str],
+    steps: Sequence[RegisterStep],
+    *,
+    lane_manager: RegisterLaneManager | None = None,
+    input_registers: Sequence[Register] = (),
+    output_registers: Sequence[Register] = (),
+    outputs: Sequence[str] | None = None,
 ) -> RegisterScore:
     """Lay out a register graph, with initial registers at sequential column -1.
 
     Registers still live after all steps end at the output boundary. Register
     identities are single-use across lifetimes. Independent operations share
     a dependency generation; lanes are assigned in sequential display order.
+    A caller-owned lane_manager can reserve display lanes. Core register
+    metadata preserves per-register predicate and per-element hook cadence.
+    Plain layouts synthesize scalar opaque metadata from their declared widths.
+    Explicit outputs preserve final signature order for release callbacks.
     """
     if any(type(width) is not int or width < 1 for width in widths.values()):
         raise ValueError("Register widths must be positive integers")
@@ -109,36 +157,55 @@ def layout_register_score(
         1 + max((generations[index] for index in active.values()), default=-1),
     )
 
-    live = {key: (lane, -1) for lane, key in enumerate(inputs)}
-    available: list[int] = []
-    lane_count = len(live)
+    initial = _register_groups(inputs, input_registers, widths)
+    groups = tuple(
+        (
+            _register_groups(step.inputs, step.input_registers, widths, step.outputs),
+            _register_groups(step.outputs, step.output_registers, widths, step.inputs),
+        )
+        for step in steps
+    )
+    final_keys = tuple(active) if outputs is None else tuple(outputs)
+    if len(set(final_keys)) != len(final_keys) or set(final_keys) != set(active):
+        raise ValueError("Score outputs must retain every live register exactly once")
+    final = _register_groups(final_keys, output_registers, widths)
+    manager = RegisterLaneManager() if lane_manager is None else lane_manager
+    live: dict[str, tuple[int, int]] = {}
+    for register, keys in initial:
+        for key, lane in zip(keys, manager.new("input", register), strict=True):
+            live[key] = (lane, -1)
     columns = []
     lines = []
     for sequence, index in enumerate(key for key in generations if key >= 0):
         step = steps[index]
-        for key in step.outputs:
-            if key in live:
+        left, right = groups[index]
+        for register, keys in right:
+            if (keys and keys[0] in live) or (
+                not keys and register.side == RegisterSide.THRU
+            ):
                 continue
-            if available:
-                lane = heappop(available)
-            else:
-                lane = lane_count
-                lane_count += 1
-            live[key] = (lane, sequence)
+            for key, lane in zip(keys, manager.new(index, register), strict=True):
+                live[key] = (lane, sequence)
         lanes = tuple(
             dict.fromkeys(live[key][0] for key in (*step.inputs, *step.outputs))
         )
         columns.append(RegisterColumn(step, sequence, generations[index], lanes, index))
-        for key in step.inputs:
-            if key not in step.outputs:
-                lane, start = live.pop(key)
-                lines.append(RegisterLine(key, widths[key], lane, start, sequence))
-                heappush(available, lane)
+        for register, keys in left:
+            if not set(keys).intersection(step.outputs):
+                released = []
+                for key in keys:
+                    lane, start = live.pop(key)
+                    lines.append(RegisterLine(key, widths[key], lane, start, sequence))
+                    released.append(lane)
+                manager.free(index, register, tuple(released))
 
-    lines.extend(
-        RegisterLine(key, widths[key], lane, start, len(steps))
-        for key, (lane, start) in live.items()
-    )
+    for register, keys in final:
+        released = []
+        for key in keys:
+            lane, start = live.pop(key)
+            lines.append(RegisterLine(key, widths[key], lane, start, len(steps)))
+            released.append(lane)
+        manager.free("output", register, tuple(released))
     lines.sort(key=lambda line: (line.lane, line.start))
     return RegisterScore(tuple(columns), tuple(lines), output_generation)
 

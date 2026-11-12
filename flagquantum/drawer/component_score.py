@@ -11,6 +11,7 @@ from ..compiler.registers.component_graph import _call_entry
 from ..core.ir.program import FunctionRecord, ProgramRecord, ValueRef
 from ..core.ir.program.registers import Register, RegisterSide
 from ..core.ir.program.signatures import Signature
+from .register_lanes import RegisterLaneManager
 from .register_score import RegisterScore, RegisterStep, layout_register_score
 
 
@@ -38,6 +39,7 @@ def component_register_score(
     entry: str = "main",
     *,
     style: Callable[[FunctionRecord, RegisterStep], RegisterStep] | None = None,
+    lane_manager: RegisterLaneManager | None = None,
 ) -> RegisterScore:
     """Display an already selected typed-call graph without executing its bodies.
 
@@ -47,6 +49,9 @@ def component_register_score(
     fresh lanes before LEFT ports release theirs. Array elements retain row-major
     order. Existing layout, HTML and Matplotlib renderers consume the result.
     Callers may style a step but must preserve its input/output identities.
+    A caller-owned lane_manager receives native register metadata and original
+    call ordinals, retaining one predicate check per fresh register and one hook
+    per allocated or released element. Boundary locations are input and output.
 
     No decomposition, primitive execution, tensor supply or backend selection
     occurs. Finite one-block logical quantum graphs are admitted by the existing
@@ -96,11 +101,24 @@ def component_register_score(
                 widths[name] = int(register.bitsize)
             known[value] = name
             output_names.append(name)
-        step = RegisterStep(function.name, input_names, tuple(output_names))
+        step = RegisterStep(
+            function.name,
+            input_names,
+            tuple(output_names),
+            input_registers=tuple(signature.lefts()),
+            output_registers=tuple(signature.rights()),
+        )
         if style is not None:
             styled = style(function, step)
             if styled.inputs != step.inputs or styled.outputs != step.outputs:
                 raise ValueError("component score styling cannot change connectivity")
+            if (
+                styled.input_registers != step.input_registers
+                or styled.output_registers != step.output_registers
+            ):
+                raise ValueError(
+                    "component score styling cannot change register metadata"
+                )
             step = styled
         steps.append(step)
         live.difference_update(input_names)
@@ -110,4 +128,13 @@ def component_register_score(
         raise ValueError(
             "component score outputs must retain every live register exactly once"
         )
-    return layout_register_score(widths, inputs, steps)
+    signature = Signature(root.registers)
+    return layout_register_score(
+        widths,
+        inputs,
+        steps,
+        lane_manager=lane_manager,
+        input_registers=tuple(signature.lefts()),
+        output_registers=tuple(signature.rights()),
+        outputs=returned,
+    )
