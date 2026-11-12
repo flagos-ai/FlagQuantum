@@ -1,7 +1,6 @@
 """Factorized Add graphs preserve the source gates and bounded tensor example."""
 
 from collections import Counter
-from collections.abc import Callable, Mapping
 from dataclasses import replace
 from itertools import product
 from typing import Any
@@ -9,6 +8,7 @@ from typing import Any
 import pytest
 import torch
 
+from examples.algorithms.factorized_addition_tensors import addition_tensor_providers
 from flagquantum.compiler.registers.arithmetic.addition import add_ir
 from flagquantum.compiler.registers.arithmetic.addition_component import (
     addition_component_program,
@@ -19,17 +19,9 @@ from flagquantum.compiler.registers.component_tensor_expansion import (
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program import (
-    FunctionRecord,
-    ProgramRecord,
     verify_program_record,
 )
-from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.simulation.classical_addition import register_add_classical_values
-from flagquantum.simulation.classical_and import and_classical_values
-from flagquantum.simulation.classical_controlled_bits import cnot_classical_values
-from flagquantum.simulation.tensor_network.classical_action_tensor import (
-    classical_action_tensor,
-)
 from flagquantum.simulation.tensor_network.component_dense import (
     contract_component_tensors,
 )
@@ -40,98 +32,12 @@ from flagquantum.simulation.tensor_network.contraction import (
     _contract_nodes_with_slicing_plan,
     _cotengra_slicing_plan,
 )
-from flagquantum.simulation.tensor_network.models import TensorNetworkNode
-from flagquantum.simulation.tensor_network.register_axis_groups import (
-    register_tensor_label_groups,
-)
-from flagquantum.simulation.tensor_network.register_basis_vectors import (
-    register_basis_vector_nodes,
-)
-from flagquantum.simulation.tensor_network.register_tensor_binding import (
-    bind_register_tensor,
-)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_component_classical_vectors import tracked_flank
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
-Connections = Mapping[str, tuple[tuple[int, ...], ...]]
-
-
-def tensor_supplier(
-    vectors: dict[str, tuple[int, bool]],
-) -> Callable[
-    [FunctionRecord, Connections, Connections], tuple[TensorNetworkNode, ...]
-]:
-    like = torch.empty((), dtype=torch.complex128)
-    # Enumerate only a two-control primitive; never a whole n-bit Add matrix.
-    from flagquantum.core.ir.program.registers import (
-        Register,
-        RegisterSide,
-        RegisterType,
-    )
-
-    bit = RegisterType("bit", 1)
-    and_sig = Signature(
-        (Register("ctrl", bit, (2,)), Register("target", bit, side=RegisterSide.RIGHT))
-    )
-    compute = torch.as_tensor(
-        classical_action_tensor(
-            and_sig,
-            lambda **values: tuple(and_classical_values(values["ctrl"]).values()),
-            operation_name="and",
-        ),
-        dtype=like.dtype,
-    ).reshape(8, 4)
-    cnot_sig = Signature((Register("ctrl", bit), Register("target", bit)))
-    cnot = torch.as_tensor(
-        classical_action_tensor(
-            cnot_sig,
-            lambda **values: cnot_classical_values(values["ctrl"], values["target"]),
-            operation_name="cx",
-        ),
-        dtype=like.dtype,
-    )
-
-    def supply(
-        function: FunctionRecord, incoming: Connections, outgoing: Connections
-    ) -> tuple[TensorNetworkNode, ...]:
-        sig = Signature(function.registers or ())
-        if function.name in vectors:
-            value, state = vectors[function.name]
-            return register_basis_vector_nodes(
-                sig, outgoing if state else incoming, {"val": value}, like, state=state
-            )
-        matrix = {
-            "add_cx": cnot,
-            "add_and": compute,
-            "add_and_adjoint": compute.mH,
-        }.get(function.name)
-        if matrix is not None:
-            return (bind_register_tensor(matrix, sig, incoming, outgoing),)
-        assert all(
-            op.opcode in {"split_register", "join_register"}
-            for op in function.blocks[0].operations
-        )
-        right, left = register_tensor_label_groups(sig, incoming, outgoing)
-        return tuple(
-            TensorNetworkNode(
-                torch.eye(2, dtype=like.dtype), (output_label, input_label)
-            )
-            for output_label, input_label in zip(right, left, strict=True)
-        )
-
-    return supply
-
-
-def selected_graph(
-    record: ProgramRecord, vectors: dict[str, tuple[int, bool]], entry: str
-) -> tuple[ProgramRecord, tuple[int, ...]]:
-    selected, _ = expand_components_for_tensor(
-        record, lambda name: name != "main", entry, full_flatten=False
-    )
-    return selected, tuple(i for i, _, _ in iter_component_calls(selected, entry))
 
 
 @pytest.mark.parametrize(
@@ -193,9 +99,15 @@ def test_full_factorized_matrix_complex_entanglement_all_measurement_branches(
     from qualtran.bloqs.arithmetic import Add
 
     graph = addition_component_program(left, right)
-    selected, order = selected_graph(graph, {}, "main")
+    providers = addition_tensor_providers(
+        graph, {}, torch.empty((), dtype=torch.complex128)
+    )
+    selected, _ = expand_components_for_tensor(
+        graph, providers.has_custom_tensor, full_flatten=False
+    )
+    order = tuple(i for i, _, _ in iter_component_calls(selected))
     actual = contract_component_tensors(
-        selected, order, tensor_supplier({}), torch.empty((), dtype=torch.complex128)
+        selected, order, providers.supply, torch.empty((), dtype=torch.complex128)
     )
     expected = torch.as_tensor(
         Add(QUInt(left), QUInt(right)).tensor_contract(), dtype=torch.complex128
@@ -242,8 +154,14 @@ def test_original_notebook_closed_inputs_use_only_factorized_native_tensors(
     graph = addition_component_program(width)
     outputs = {"a": a, "b": (a + b + int(not valid)) % (1 << width)}
     closed, vectors = tracked_flank(monkeypatch, graph, {"a": a, "b": b}, outputs)
-    selected, order = selected_graph(closed, vectors, "classical_vectors")
-    supply = tensor_supplier(vectors)
+    providers = addition_tensor_providers(
+        closed, vectors, torch.empty((), dtype=torch.complex128)
+    )
+    selected, _ = expand_components_for_tensor(
+        closed, providers.has_custom_tensor, "classical_vectors", full_flatten=False
+    )
+    order = tuple(i for i, _, _ in iter_component_calls(selected, "classical_vectors"))
+    supply = providers.supply
     like = torch.empty((), dtype=torch.complex128)
     nodes, incoming, outgoing = component_tensor_nodes(
         selected, order, supply, like, "classical_vectors"
