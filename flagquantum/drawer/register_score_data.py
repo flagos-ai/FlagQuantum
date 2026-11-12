@@ -59,6 +59,33 @@ class MusicalScoreData(TypedDict):
     vlines: list[ScoreVerticalLine]
 
 
+def adjoint_wire_symbol(
+    symbol: SymbolClass, attributes: dict[str, str | int | bool]
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Return the locked-source adjoint glyph with caller-owned attributes.
+
+    Text and round boxes toggle a trailing dagger. The source removes all
+    leading/trailing daggers when the text ends in a dagger. Directional boxes
+    exchange arrow direction while retaining their text. Other glyphs retain
+    their presentation. Invalid text attributes raise TypeError.
+
+    Examples:
+        >>> adjoint_wire_symbol("TextBox", {"text": "S"})
+        ('TextBox', {'text': 'S†'})
+    """
+    result = dict(attributes)
+    if symbol in {"Text", "TextBox"}:
+        text = result["text"]
+        if not isinstance(text, str):
+            raise TypeError("text wire symbols require string text")
+        result["text"] = text.strip("†") if text.endswith("†") else text + "†"
+    if symbol == "RarrowTextBox":
+        return "LarrowTextBox", result
+    if symbol == "LarrowTextBox":
+        return "RarrowTextBox", result
+    return symbol, result
+
+
 def _port_symbol(
     step: RegisterStep, register: str, side: PortSide
 ) -> tuple[SymbolClass, dict[str, str | int | bool]]:

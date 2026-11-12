@@ -15,6 +15,7 @@ from flagquantum.drawer.register_score_data import (
     SymbolClass,
     WireSymbolSupplier,
     _port_symbol,
+    adjoint_wire_symbol,
     register_score_data,
 )
 
@@ -42,7 +43,10 @@ def symbols(
         assert side is not None
         if step.name in vectors:
             value, state = vectors[step.name]
-            return ("LarrowTextBox" if state else "RarrowTextBox"), {"text": str(value)}
+            attributes: dict[str, str | int | bool] = {"text": str(value)}
+            if state:
+                return "LarrowTextBox", attributes
+            return adjoint_wire_symbol("LarrowTextBox", attributes)
         if step.name == "main" and kind in {"xgate", "cnot", "toffoli"}:
             gate = {"xgate": "x", "cnot": "cx", "toffoli": "ccx"}[kind]
             return _port_symbol(replace(step, gate=gate), register, side)
