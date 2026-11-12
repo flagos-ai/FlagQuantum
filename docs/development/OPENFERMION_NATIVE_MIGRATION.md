@@ -3,7 +3,9 @@
 ## Current delivery status
 
 The current checked main baseline is
-`fc1df0e64da7a8087d5a64b58a439f23f1be515f` on November 12, 2026.
+`e09b68e7add135dbc42f6bf677e00a611cfd463e` on November 12, 2026.
+The preceding Z-discovery registration baseline was
+`fc1df0e64da7a8087d5a64b58a439f23f1be515f`.
 The earlier spinless training baseline was
 `f073a800f040f8b8a667fa19397d1ceb14794200`; its evidence below remains
 bound to that revision.
@@ -657,12 +659,32 @@ semantics, encoded-qubit conventions and explicit sector ownership. Earlier
 statements excluding automatic discovery refer to their original delivery scope;
 Z-only discovery is now available, while general X/Y discovery remains a gap.
 
-The current follow-up composes that existing static boundary with reduced-angle
+The follow-up merged in #1163 and composes that existing static boundary with reduced-angle
 training in `python -m examples.algorithms.fermion_parity_training`. A fixed
 two-mode pairing model explicitly selects even parity and trains one reduced
 qubit. Independent occupation-space energy/gradient checks and JW/parity/BK
 replacement tests accompany the example. It changes no Stable Core API,
 dependency, runtime, symbolic gradient support or capability maturity level.
-It is review-stage work until its PR and actual-main acceptance are recorded.
-General matched-ansatz transformation, automatic sector selection, coefficient
+Actual main `e09b68e7add135dbc42f6bf677e00a611cfd463e` passed 459 related
+tests (one optional-dependency module skipped), three CLI/inventory checks, the
+public API baseline and Main smoke run 43247474492. These results remain bounded
+local CPU correctness evidence. General matched-ansatz transformation, automatic
+sector selection, coefficient
 and SCF gradients, and accelerator/distributed qualification remain separate gaps.
+
+
+## Current stage: general commuting Pauli discovery
+
+[The stage scope](FERMION_PAULI_DISCOVERY.md) extends the existing stabilizer
+producer with X/Y/Z discovery in an explicit encoded register. A general
+centralizer may anticommute internally; discovery returns a deterministic
+maximum-size independent commuting subgroup instead. Candidate spans are binary
+modulo scalar phases, and sectors for returned positive words remain explicit.
+Algorithms owns implementation, replacement tests and the executable
+`python -m examples.algorithms.fermion_pauli_discovery` workflow. Capability
+registration is a separate Integration-owned change after that implementation.
+This stage is not yet recorded as merged. Existing reduction and Stable Core
+contracts remain unchanged; no new dependency, result type or runtime is added.
+The earlier general-X/Y discovery gaps refer to their original delivery scope.
+Automatic sector selection, matched-ansatz transformation, coefficient/SCF
+gradients and accelerator/distributed qualification remain separate gaps.

@@ -171,6 +171,20 @@ def _binary_rows(
     return tuple(work[: len(pivots)]), tuple(pivots)
 
 
+def _binary_nullspace(rows: Sequence[int], width: int) -> tuple[int, ...]:
+    reduced, pivots = _binary_rows(rows, width)
+    solutions = []
+    for free in range(width):
+        if free in pivots:
+            continue
+        vector = 1 << free
+        for row, pivot in zip(reduced, pivots, strict=True):
+            if row & (1 << free):
+                vector |= 1 << pivot
+        solutions.append(vector)
+    return tuple(solutions)
+
+
 def discover_z_parities(
     encoded: EncodedOperator,
     *,
@@ -225,15 +239,8 @@ def discover_z_parities(
         equations.append(
             sum(((x & word).bit_count() % 2) << i for i, word in enumerate(basis))
         )
-    rows, pivots = _binary_rows(equations, len(basis))
     solutions = []
-    for free in range(len(basis)):
-        if free in pivots:
-            continue
-        combination = 1 << free
-        for row, pivot in zip(rows, pivots, strict=True):
-            if row & (1 << free):
-                combination |= 1 << pivot
+    for combination in _binary_nullspace(equations, len(basis)):
         word = 0
         for i, candidate_mask in enumerate(basis):
             if combination & (1 << i):

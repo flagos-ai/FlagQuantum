@@ -207,3 +207,24 @@ Symbolic discovery/reduction remain static: they own no optimizer, runtime or
 trainable-coefficient conversion. This experimental CPU example trains one
 circuit angle, not model coefficients or an automatic matched tapered ansatz.
 The selected sector contains N=0 and N=2; it is not an exact-number projection.
+
+
+## Commuting X/Y/Z symmetry discovery
+
+`stabilizer.discover_pauli_symmetries` discovers a deterministic maximum-size
+independent commuting set of positive Pauli words in an explicit encoded
+register. The full centralizer can contain anticommuting pairs; it is not returned
+as if every member defined a joint sector. Independent signed candidates can
+restrict the binary search span; signs and scalar product phases are discarded.
+Choose eigenvalues for the returned positive words explicitly and pass them to
+the unchanged `reduce_stabilizers` consumer. General discovery need not choose
+the same commuting subgroup as diagonal discovery unless candidates restrict it.
+
+Run `python -m examples.algorithms.fermion_pauli_discovery` for the ten-minute
+path: discover Y0 and X1Z2, choose +1/-1, reduce three qubits to one, measure
+-1.1770329614 and inspect its lifted residual. Change a static coefficient, then
+run `python -m pytest tests/unit/fermion/test_pauli_discovery.py tests/integration/test_fermion_pauli_discovery.py -q`.
+See [the scope and conventions](../../../docs/development/FERMION_PAULI_DISCOVERY.md).
+Symbolic discovery depends on native algebra and shared binary elimination;
+it owns no optimizer, runtime, adapter, dense solver or automatic sector choice.
+This is experimental local CPU behavior with static coefficients.
