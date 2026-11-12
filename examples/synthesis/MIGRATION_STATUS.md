@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **35/213**.
+Validated local Notebook workflows: **39/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -336,7 +336,7 @@ Validated local Notebook workflows: **35/213**.
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_float_example/main.py) | pending |
 | `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | [Native program](functions/mcx/mcx_example/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | [Native program](functions/grover_operator/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | [Native program](functions/grover_operator/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | [Native program](functions/linear_pauli_rotations/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | Pending | pending |
@@ -351,12 +351,12 @@ Validated local Notebook workflows: **35/213**.
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_exponential_state/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_partial_uniform_state/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_trimmed_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_trimmed_state/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle` | quantum_program | [Native program](functions/data_encoding/encode_in_angle/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch` | quantum_program | [Native program](functions/data_encoding/encode_on_bloch/main.py) | pending |
-| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding` | notebook_workflow | [Native program](functions/data_encoding/variational_data_encoding/overview/main.py) | validated |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | [Native program](functions/hamiltonian_evolution/qdrift/overview/main.py) | validated |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter` | notebook_workflow | [Native program](functions/hamiltonian_evolution/suzuki_trotter/main.py) | validated |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes` | quantum_program | [Native program](functions/state_preparation/example_prepare_amplitudes/main.py) | pending |
@@ -401,7 +401,7 @@ Validated local Notebook workflows: **35/213**.
 | `tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator` | notebook_workflow | [Native program](tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/main.py) | pending |
 | `tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix` | notebook_workflow | [Native program](tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/main.py) | pending |
 | `tutorials/technology_demonstrations/approximated_state_preparation/approximated_state_preparation` | notebook_workflow | [Native program](tutorials/technology_demonstrations/approximated_state_preparation/main.py) | validated |
-| `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/main.py) | pending |
+| `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | [Native program](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/main.py) | validated |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/main.py) | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example` | notebook_workflow | Pending | pending |

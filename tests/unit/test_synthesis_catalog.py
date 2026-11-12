@@ -242,7 +242,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 35
+    assert len(validated) == 39
     for operation in ("or", "xor"):
         assert (
             f"functions/function_usage_examples/arithmetic/bitwise_{operation}/bitwise_{operation}_example",
@@ -281,8 +281,27 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         ),
     ):
         assert (group, path) in validated
+    for group, path in (
+        (
+            "functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator",
+            "examples/synthesis/functions/grover_operator/overview/main.py",
+        ),
+        (
+            "tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions",
+            "examples/synthesis/tutorials/technology_demonstrations/arithmetic_expressions/overview/main.py",
+        ),
+        (
+            "functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding",
+            "examples/synthesis/functions/data_encoding/variational_data_encoding/overview/main.py",
+        ),
+        (
+            "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state",
+            "examples/synthesis/functions/state_preparation/prepare_partial_uniform_state/overview/main.py",
+        ),
+    ):
+        assert (group, path) in validated
     rendered = render(catalog)
-    assert "**35/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**39/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

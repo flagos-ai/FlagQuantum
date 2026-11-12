@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **35/213**.
+Validated local Notebook workflows: **39/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -225,12 +225,15 @@ Validated local Notebook workflows:
 - [overview](functions/arithmetic/subtraction/overview/README.md)
 - [overview](functions/mcx/mcx_example/overview/README.md)
 - [exact_amplitude_amplification](functions/amplitude_amplification/exact_amplitude_amplification/README.md)
+- [overview](functions/grover_operator/overview/README.md)
 - [hadamard_transform](functions/hadamard_transform/README.md)
 - [overview](functions/linear_pauli_rotations/overview/README.md)
 - [qft](functions/qft/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [overview](functions/state_preparation/prepare_exponential_state/overview/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
+- [overview](functions/state_preparation/prepare_partial_uniform_state/overview/README.md)
+- [overview](functions/data_encoding/variational_data_encoding/overview/README.md)
 - [overview](functions/hamiltonian_evolution/qdrift/overview/README.md)
 - [suzuki_trotter](functions/hamiltonian_evolution/suzuki_trotter/README.md)
 - [prepare_state_and_amplitudes](functions/state_preparation/prepare_state_and_amplitudes/README.md)
@@ -295,4 +298,5 @@ Validated local Notebook workflows:
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
+- [overview](tutorials/technology_demonstrations/arithmetic_expressions/overview/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)

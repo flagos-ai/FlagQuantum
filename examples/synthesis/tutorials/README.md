@@ -57,6 +57,7 @@ Native FlagQuantum programs currently available:
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 - [approximated_state_preparation](technology_demonstrations/approximated_state_preparation/README.md)
+- [overview](technology_demonstrations/arithmetic_expressions/overview/README.md)
 - [auxiliary_management](technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)
 
 ## Additional FlagQuantum teaching examples

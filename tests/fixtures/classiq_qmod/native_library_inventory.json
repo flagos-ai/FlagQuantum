@@ -6464,12 +6464,33 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
+      "workflow_status": "validated",
       "native_program": {
-        "path": "examples/synthesis/functions/grover_operator/main.py",
-        "scope": "Quantum program only; the associated Notebook workflow remains pending."
+        "path": "examples/synthesis/functions/grover_operator/overview/main.py",
+        "scope": "Retain two two-bit values, the complete predicate, two Grover iterations and width objective. Execute locally, draw 1000 seeded host samples from exact probabilities, and annotate each sampled row with the predicate. Native x/y names replace source structure fields; no cloud or optimizer-equivalence claim."
       },
-      "kind": "notebook_workflow"
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator.ipynb",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "ba0508213d094790fa9d98ecba1b41668709b901",
+        "original_sha256": "00d7112a8b69eec3766cdaf0aa4c1de5dcb29e7868180669a09f847558e0c0cf",
+        "reviewed_code_cells": [
+          {
+            "index": 3,
+            "sha256": "5cfe2872f260ea92af55b3de03f5dabf5ea221c28723412d5f0a1e50222adf5d"
+          },
+          {
+            "index": 5,
+            "sha256": "643c85bbd368df7c0f03194295e8f3d540d0ba47663298484ac59d68112c06cd"
+          }
+        ],
+        "scope": "Retain two two-bit values, the complete predicate, two Grover iterations and width objective. Execute locally, draw 1000 seeded host samples from exact probabilities, and annotate each sampled row with the predicate. Native x/y names replace source structure fields; no cloud or optimizer-equivalence claim.",
+        "native_entrypoint": "examples.synthesis.functions.grover_operator.overview.main",
+        "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+        "native_notebook": "examples/synthesis/functions/grover_operator/overview/walkthrough.ipynb",
+        "native_semantic_adaptations": "Retain two two-bit values, the complete predicate, two Grover iterations and width objective. Execute locally, draw 1000 seeded host samples from exact probabilities, and annotate each sampled row with the predicate. Native x/y names replace source structure fields; no cloud or optimizer-equivalence claim."
+      }
     },
     {
       "id": "functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform",
@@ -6905,9 +6926,49 @@
           "kind": "notebook"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/functions/state_preparation/prepare_partial_uniform_state/overview/main.py",
+        "scope": "Retain both original four-/five-qubit domains [0,3) and [2,8), both sampling stages and both bar plots. Use fresh allocated outputs and 1000 seeded samples from exact local probabilities. This certifies fresh-input states, not arbitrary-input in-place unitary equivalence."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state.ipynb",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "7167afb734aac83005a68b0dd47099d511f71a67",
+        "original_sha256": "fbe17e1da6eec3573ad0d7a13a3db5f3732e5ee2984b183e1d4ad21363f997a3",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "fa67c1796abe8dee885c077693d12b02f7eb3636a6ba0432eddc062c31e56860"
+          },
+          {
+            "index": 3,
+            "sha256": "3c75bc31b6e4a8ffaf795fa8ce33214b07382d6be0ad7b51eb16f69ac0d20058"
+          },
+          {
+            "index": 4,
+            "sha256": "00c7e35cc9db8526fda5ebb08a083421a9e074b927dd2de24e886865633bb337"
+          },
+          {
+            "index": 7,
+            "sha256": "44453c7ac748039ab29f36148b5e495f23d161602e257b49b49762443d40983f"
+          },
+          {
+            "index": 8,
+            "sha256": "3c75bc31b6e4a8ffaf795fa8ce33214b07382d6be0ad7b51eb16f69ac0d20058"
+          },
+          {
+            "index": 9,
+            "sha256": "49170ece73567106749ce2b705c293d641085de8e14e9af31e68b198026d94f1"
+          }
+        ],
+        "scope": "Retain both original four-/five-qubit domains [0,3) and [2,8), both sampling stages and both bar plots. Use fresh allocated outputs and 1000 seeded samples from exact local probabilities. This certifies fresh-input states, not arbitrary-input in-place unitary equivalence.",
+        "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_partial_uniform_state.overview.main",
+        "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+        "native_notebook": "examples/synthesis/functions/state_preparation/prepare_partial_uniform_state/overview/walkthrough.ipynb",
+        "native_semantic_adaptations": "Retain both original four-/five-qubit domains [0,3) and [2,8), both sampling stages and both bar plots. Use fresh allocated outputs and 1000 seeded samples from exact local probabilities. This certifies fresh-input states, not arbitrary-input in-place unitary equivalence."
+      }
     },
     {
       "id": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state",
@@ -6992,9 +7053,41 @@
           "kind": "notebook"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/functions/data_encoding/variational_data_encoding/overview/main.py",
+        "scope": "Retain both four-feature angle and seven-feature Bloch stages, including the odd Bloch tail. Introduce two explicitly labeled nonzero demonstration bindings per stage and execute locally. The original declares symbolic inputs; these concrete values are not attributed to the source."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding.ipynb",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "0929a853500c1a4c3d85b052e577b22482d545a1",
+        "original_sha256": "c3b9c7635e843d2de587d7ac2459584759cfaa548e2e3976ad084539beeab665",
+        "reviewed_code_cells": [
+          {
+            "index": 4,
+            "sha256": "656600437e9f189d12dcddd9c8a5523f11f49e7e27cebd5e6632486512db0885"
+          },
+          {
+            "index": 5,
+            "sha256": "e4dfd76888891f8c56ebe37803c4368361d4579c73e5831cea9b684f5c31592a"
+          },
+          {
+            "index": 10,
+            "sha256": "6b807f35fab3a5b5cb4bbf82b09df78be1f2fbe84038b3a1f5a1e97629a27518"
+          },
+          {
+            "index": 11,
+            "sha256": "e4dfd76888891f8c56ebe37803c4368361d4579c73e5831cea9b684f5c31592a"
+          }
+        ],
+        "scope": "Retain both four-feature angle and seven-feature Bloch stages, including the odd Bloch tail. Introduce two explicitly labeled nonzero demonstration bindings per stage and execute locally. The original declares symbolic inputs; these concrete values are not attributed to the source.",
+        "native_entrypoint": "examples.synthesis.functions.data_encoding.variational_data_encoding.overview.main",
+        "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+        "native_notebook": "examples/synthesis/functions/data_encoding/variational_data_encoding/overview/walkthrough.ipynb",
+        "native_semantic_adaptations": "Retain both four-feature angle and seven-feature Bloch stages, including the odd Bloch tail. Introduce two explicitly labeled nonzero demonstration bindings per stage and execute locally. The original declares symbolic inputs; these concrete values are not attributed to the source."
+      }
     },
     {
       "id": "functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift",
@@ -8261,12 +8354,37 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
+      "workflow_status": "validated",
       "native_program": {
-        "path": "examples/synthesis/tutorials/technology_demonstrations/arithmetic_expressions/main.py",
-        "scope": "Quantum program only; complete Notebook workflow pending."
+        "path": "examples/synthesis/tutorials/technology_demonstrations/arithmetic_expressions/overview/main.py",
+        "scope": "Retain the complete arithmetic predicate and all eight coherent inputs. Compare depth-objective synthesis under both original 10- and 12-qubit budgets, named readout, resource summaries and 1000 seeded local samples. Resource summaries replace graphical circuit display; no identical-candidate or optimality claim."
       },
-      "kind": "notebook_workflow"
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions.ipynb",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "2d68118e7b2aae757f94fbca34606dc3e18cad9a",
+        "original_sha256": "3344cc4ee431a4bf496e3be9a08d3b996f970f73a5480b11a34ad47985e302e2",
+        "reviewed_code_cells": [
+          {
+            "index": 3,
+            "sha256": "d94eda5f85fc90f7f8e0cb29206783b4506cbf8b6513f253d726dd9923d480c6"
+          },
+          {
+            "index": 6,
+            "sha256": "e57b416826216ea536e27d6216aeedb951f0610a0089d118a88c8cd49805a247"
+          },
+          {
+            "index": 8,
+            "sha256": "5a80c414064a20ac2902f4dd2329bd0b8ab3baaef438bcbee44846120e27945b"
+          }
+        ],
+        "scope": "Retain the complete arithmetic predicate and all eight coherent inputs. Compare depth-objective synthesis under both original 10- and 12-qubit budgets, named readout, resource summaries and 1000 seeded local samples. Resource summaries replace graphical circuit display; no identical-candidate or optimality claim.",
+        "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.arithmetic_expressions.overview.main",
+        "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+        "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/arithmetic_expressions/overview/walkthrough.ipynb",
+        "native_semantic_adaptations": "Retain the complete arithmetic predicate and all eight coherent inputs. Compare depth-objective synthesis under both original 10- and 12-qubit budgets, named readout, resource summaries and 1000 seeded local samples. Resource summaries replace graphical circuit display; no identical-candidate or optimality claim."
+      }
     },
     {
       "id": "tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management",
