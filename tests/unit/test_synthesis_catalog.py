@@ -242,7 +242,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 31
+    assert len(validated) == 35
     for operation in ("or", "xor"):
         assert (
             f"functions/function_usage_examples/arithmetic/bitwise_{operation}/bitwise_{operation}_example",
@@ -262,8 +262,27 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
             f"functions/function_usage_examples/arithmetic/{operation}/{source_name}",
             f"examples/synthesis/functions/arithmetic/{operation}/overview/main.py",
         ) in validated
+    for group, path in (
+        (
+            "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state",
+            "examples/synthesis/functions/state_preparation/prepare_exponential_state/overview/main.py",
+        ),
+        (
+            "functions/function_usage_examples/mcx/mcx_example",
+            "examples/synthesis/functions/mcx/mcx_example/overview/main.py",
+        ),
+        (
+            "functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift",
+            "examples/synthesis/functions/hamiltonian_evolution/qdrift/overview/main.py",
+        ),
+        (
+            "functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations",
+            "examples/synthesis/functions/linear_pauli_rotations/overview/main.py",
+        ),
+    ):
+        assert (group, path) in validated
     rendered = render(catalog)
-    assert "**31/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**35/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

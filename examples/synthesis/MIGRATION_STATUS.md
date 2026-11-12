@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **31/213**.
+Validated local Notebook workflows: **35/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -334,11 +334,11 @@ Validated local Notebook workflows: **31/213**.
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_2vars_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_2vars_example/main.py) | pending |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_example` | notebook_workflow | [Native program](functions/arithmetic/subtraction/overview/main.py) | validated |
 | `functions/function_usage_examples/arithmetic/subtraction/subtraction_float_example` | quantum_program | [Native program](functions/arithmetic/subtraction/subtraction_float_example/main.py) | pending |
-| `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | [Native program](functions/mcx/mcx_example/main.py) | pending |
+| `functions/function_usage_examples/mcx/mcx_example` | notebook_workflow | [Native program](functions/mcx/mcx_example/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/amplitude_amplification/exact_amplitude_amplification` | notebook_workflow | [Native program](functions/amplitude_amplification/exact_amplitude_amplification/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | [Native program](functions/grover_operator/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | [Native program](functions/linear_pauli_rotations/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | [Native program](functions/linear_pauli_rotations/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1` | quantum_program | [Native program](functions/qct_qst/qct_qst_type1/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2` | quantum_program | [Native program](functions/qct_qst/qct_qst_type2/main.py) | pending |
@@ -349,7 +349,7 @@ Validated local Notebook workflows: **31/213**.
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | [Native program](functions/qpe/qpe_flexible/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | [Native program](functions/qsvt/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_exponential_state/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_exponential_state/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_partial_uniform_state` | notebook_workflow | Pending | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state` | quantum_program | [Native program](functions/state_preparation/prepare_uniform_interval_state/main.py) | pending |
@@ -357,7 +357,7 @@ Validated local Notebook workflows: **31/213**.
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_in_angle` | quantum_program | [Native program](functions/data_encoding/encode_in_angle/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch` | quantum_program | [Native program](functions/data_encoding/encode_on_bloch/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding` | notebook_workflow | Pending | pending |
-| `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | [Native program](functions/hamiltonian_evolution/qdrift/main.py) | pending |
+| `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/qdrift/qdrift` | notebook_workflow | [Native program](functions/hamiltonian_evolution/qdrift/overview/main.py) | validated |
 | `functions/qmod_library_reference/qmod_core_library/hamiltonian_evolution/suzuki_trotter/suzuki_trotter` | notebook_workflow | [Native program](functions/hamiltonian_evolution/suzuki_trotter/main.py) | validated |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_amplitudes` | quantum_program | [Native program](functions/state_preparation/example_prepare_amplitudes/main.py) | pending |
 | `functions/qmod_library_reference/qmod_core_library/prepare_state_and_amplitudes/example_prepare_state` | quantum_program | [Native program](functions/state_preparation/example_prepare_state/main.py) | pending |
