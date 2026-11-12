@@ -7,21 +7,17 @@ from typing import Any
 
 import pytest
 
+from examples.algorithms.classical_tensor_scores import style, symbols
 from flagquantum.compiler.registers.arithmetic.addition_component import (
     addition_component_program,
 )
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.component_gate_function import bit_gate_function
-from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.drawer.component_score import component_register_score
-from flagquantum.drawer.register_score import RegisterStep
 from flagquantum.drawer.register_score_data import (
     MusicalScoreData,
-    PortSide,
     SymbolClass,
-    WireSymbolSupplier,
-    _port_symbol,
     export_register_score_json,
     register_score_data,
 )
@@ -37,54 +33,6 @@ from tests.unit.component_vector_checks import tracked_flank
 from tests.unit.test_component_tensor_nodes import fixture
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
-
-
-def style(function: FunctionRecord, step: RegisterStep) -> RegisterStep:
-    gate = {"add_cx": "cx", "add_and": "and", "add_and_adjoint": "and"}.get(
-        function.name
-    )
-    return replace(step, gate=gate, control_values=(1, 1) if gate == "and" else None)
-
-
-def symbols(
-    record: ProgramRecord, vectors: dict[str, tuple[int, bool]], kind: str | None = None
-) -> WireSymbolSupplier:
-    functions = {f.name: f for f in record.functions}
-
-    def supply(
-        step: RegisterStep, register: str | None, side: PortSide | None
-    ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
-        if register is None:
-            return "Text", {
-                "text": "X" if step.name == "main" and kind == "xgate" else "",
-                "fontsize": 10,
-            }
-        assert side is not None
-        if step.name in vectors:
-            value, state = vectors[step.name]
-            return ("LarrowTextBox" if state else "RarrowTextBox"), {"text": str(value)}
-        if step.name == "main" and kind in {"xgate", "cnot", "toffoli"}:
-            gate = {"xgate": "x", "cnot": "cx", "toffoli": "ccx"}[kind]
-            return _port_symbol(replace(step, gate=gate), register, side)
-        if step.name == "main" and kind == "add":
-            return "TextBox", {"text": "a" if register == step.inputs[0] else "a+b"}
-        function = functions[step.name]
-        if all(
-            op.opcode in {"split_register", "join_register"}
-            for op in function.blocks[0].operations
-        ):
-            ports = Signature(function.registers or ())
-            selected = ports.lefts() if side == "LEFT" else ports.rights()
-            names = step.inputs if side == "LEFT" else step.outputs
-            indexed = [(reg, idx) for reg in selected for idx in reg.all_idxs()]
-            reg, index = indexed[names.index(register)]
-            text = "[" + ", ".join(map(str, index)) + "]" if reg.shape else " "
-            return ("RarrowTextBox" if side == "LEFT" else "LarrowTextBox"), {
-                "text": text
-            }
-        return _port_symbol(step, register, side)
-
-    return supply
 
 
 def assert_source_geometry(actual: MusicalScoreData, expected: Any) -> None:
