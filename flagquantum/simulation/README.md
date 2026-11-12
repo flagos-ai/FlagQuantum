@@ -920,3 +920,7 @@ Concrete register domains and the default truth-table connection reuse existing 
 [Polynomial numerical metadata](../../docs/development/FINITE_FIELD_POLYNOMIAL_METADATA.md) connects concrete declarations to shared domain, codec, binding and collection owners; Core executable admission remains unchanged.
 
 [Integer basis tensor suppliers](../../docs/development/REGISTER_BASIS_VECTORS.md) provide arbitrary unsigned kets/effects on existing labels and replace the zero supplier implementation; Compiler retains physical preparation and graph construction.
+
+Explicit [A/D tensor preprocessing](../../docs/development/TENSOR_DIAGONAL_REDUCTION.md)
+uses the existing register consumers with output groups captured before simplification.
+See `examples/algorithms/tensor_diagonal_reduction.py` for the numerical golden path.

@@ -383,3 +383,15 @@ related and 84 CPU/TN passing tests; new numerical owners/example cover 96
 statements and 28 branches at 100%, and strict checks cover seven Python files.
 A/D and complete default policy remain open. Counts remain 20 closed / 1,260
 open parents, 390 active and 1,184 capability records. No G3 or merge is performed.
+
+The [A/D dependency](TENSOR_DIAGONAL_REDUCTION.md) extends Q-0887.03 with
+source-ordered antidiagonal gauge and diagonal reduction, sharing finite support
+with C and preserving captured register output groups through hyperedge creation.
+Repeated-index upstream gauge defects, tolerance errors and ambient-gradient
+boundaries remain explicit. Fixed-point composition and full width triggering
+remain open; no duplicate capability record or parent closure is added.
+
+A/D acceptance: 146 new / 2,292 related / 84 CPU-TN tests pass; strict checks
+cover eight changed Python files, and new numerical owners plus example cover
+122 statements and 40 branches at 100%. Implementation `051cde78`. Counts stay
+20 closed / 1,260 open / 390 active parents and 1,184 capability records.
