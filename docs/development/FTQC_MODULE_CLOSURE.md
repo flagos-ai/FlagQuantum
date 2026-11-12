@@ -542,3 +542,27 @@ The original default/pretty style demonstration is adapted to SVG/DOT, so Q-0741
 remains open for that capability.23 closed/1257 open/393 active,1187 records;
 next complete that style distinction using existing renderer ownership. No G3,
 merge or repeated historical default timeout.
+
+### Graphviz notebook style and signature groups (2026-11-12)
+
+Q-0741 is accepted after implementation075aade6 completes its default/compact
+views. The shared renderer retains geometry and accepts explicit signature-table
+presentation. Original group order, local multidimensional labels, directional
+row spans, compact headers and edge attributes match unchanged source tables.
+Both styles retain every port and connection. All21 cells/13code execute, with
+ten native SVGs and two composite-style PNGs inspected.
+
+Thirty focused cases, including18 additional cases, pass. Coverage across three
+owners is100% for141 statements/46 branches. The concentrated graph/typed-call
+regression passes1713 tests in82.60seconds with eight parser warnings;84 CPU/TN
+tests pass in16.80seconds with two warnings. Strict4, formatting, scope,
+architecture, multi-level IR and protected API checks pass. Six frozen blobs
+remain unchanged. ActualX3 and synthetic source modelT300 remain separate;
+drawing adds zero gates, work qubits and measurements. Native Atom and boundary
+lifetime naming are documented adaptations.
+
+The ledger has24 closed/1256 open/392 active parents and1187 capability records.
+Q-0742's generic foreign/subclass/typed drawing surface remains open. The next
+batch audits Q-0743's complete source test file. An overly broad preliminary
+selection was stopped and excluded from these acceptance totals. The historical
+default timeout remains recorded. Evidence uses `g2-graph-styles-`.
