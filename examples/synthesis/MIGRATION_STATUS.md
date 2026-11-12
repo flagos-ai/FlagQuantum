@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **51/213**.
+Validated local Notebook workflows: **52/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -339,7 +339,7 @@ Validated local Notebook workflows: **51/213**.
 | `functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator` | notebook_workflow | [Native program](functions/grover_operator/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform` | notebook_workflow | [Native program](functions/hadamard_transform/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations` | notebook_workflow | [Native program](functions/linear_pauli_rotations/overview/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | Pending | pending |
+| `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst` | notebook_workflow | [Native program](functions/qct_qst/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type1` | quantum_program | [Native program](functions/qct_qst/qct_qst_type1/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_qst_type2` | quantum_program | [Native program](functions/qct_qst/qct_qst_type2/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2` | quantum_program | [Native program](functions/qct_qst/qct_type2/main.py) | pending |

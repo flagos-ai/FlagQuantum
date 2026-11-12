@@ -77,6 +77,7 @@ Native FlagQuantum programs currently available:
 - [overview](grover_operator/overview/README.md)
 - [hadamard_transform](hadamard_transform/README.md)
 - [overview](linear_pauli_rotations/overview/README.md)
+- [overview](qct_qst/overview/README.md)
 - [qft](qft/README.md)
 - [overview](qpe/overview/README.md)
 - [prepare_bell_state](state_preparation/prepare_bell_state/README.md)
