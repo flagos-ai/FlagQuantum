@@ -299,3 +299,12 @@ parent closure total to 19 and leaves 1,261 open; the 1,181 checked capability
 records do not change. General provider/foreign-interface implementations,
 planner performance and the default-suite timeout remain open. Earlier counts
 in batch narratives above are historical snapshots, not the live total.
+
+The [factored controlled-NOT leaves](FACTORIZED_CONTROLLED_NOT.md) add the
+source COPY/XOR recipe and expose the existing pure graph's internal-label
+allocator to explicitly declared suppliers. The recovered Q-0885 notebook blob
+is now available for further audit; its complete workflow remains open. This
+accepts Q-0231.04 and extends existing Q-0891 wiring evidence, bringing checked
+capability records to 1,182 (1,181 current plus one historical). Complete parent
+closure remains 19 accepted and 1,261 open. Node counts, physical CX counts and
+source QEC models are measured separately; no performance parity is inferred.
