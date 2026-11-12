@@ -108,3 +108,54 @@ uses persistent dependency paths after its old temporary paths disappeared.
 Implementation commit `075aade6` completes this follow-up. The ledger has24
 accepted parents,1256 open parents and392 active parents, with1187 capability
 records. The next batch audits the complete source Graphviz test file.
+
+## Complete upstream test-file disposition
+
+Q-0743 covers the three functions in locked `graphviz_test.py`, Git blob
+`28e17f850887d55af6472cd6574d006285397401`. The original file executes as
+four cases, including its actual `execute_notebook('graphviz')` call. A temporary
+Jupyter kernel specification selects the locked Python environment. The source
+notebook and its execution helper are unmodified.
+
+| Source test | Native responsibility and evidence |
+| --- | --- |
+| `test_assign_ids` | Original assertions execute unchanged. Native graph checks seven unique node IDs, thirteen declared endpoints and every edge reference. Local ports are unique within each table. |
+| `test_graphviz`, both styles | The same original function code object runs with native fixture construction and a test-only view. Its node/subgraph/edge counts, real SVG bytes, XML prefix and IPython display assertions remain intact. |
+| `test_notebook` | The original helper launches a real source kernel. A separate integration test launches a native kernel, executes all thirteen code cells, validates ten SVG outputs and retains the source notebook bytes. |
+
+The test-only view exposes inspection methods on actual native DOT. Its graph
+and SVG methods consume the supplied DOT. The view belongs entirely to the test boundary. Q-0742 tracks the generic
+production class/protocol admission that remains open.
+
+Source ID spelling and its five unused group reservations are deliberately
+adapted. The source allocator has five instance identities, five group identities
+and thirteen endpoint identities. Native drawing uses five instance identities
+and thirteen qualified endpoint identities. The two boundary endpoints are also
+DOT nodes. The source prefix assertions run on the source allocator; native
+integrity assertions run directly on native declarations. This disposition
+accepts equivalent drawing identity responsibilities with the allocator
+representation differences recorded explicitly.
+
+The native integration test uses a separate kernel with reference imports
+refused. It checks sequential execution counts1–13 and ten actual SVG display
+messages. Executed outputs are written to a temporary evidence notebook while
+the tracked notebook stays byte-for-byte equal. Kernel communication requires
+local loopback sockets. The initial sandbox bind refusal is retained, followed
+by the successful permission-scoped run.
+
+Q-0743 is accepted for this complete test-file disposition. Four new local cases
+pass, plus the four unchanged original cases in7.75seconds (one source
+collection warning). Thirty-four focused cases pass in12.75seconds with eight
+parser warnings and100% coverage across the same three production owners
+(141 statements,46 branches). Drawer regression passes214 tests in13.17seconds
+with eight warnings. The85-case CPU/TN/notebook integration passes in11.38seconds
+with two warnings. Strict typing covers both new test files. Black, Ruff, scope,
+architecture, multi-level IR and protected API checks pass. Eight frozen source
+blobs, including the original test and notebook helper, are unchanged. Evidence
+uses `g2-graph-source-` in the reference workspace.
+
+Actual parallel instructions remain X3 and the upstream synthetic model remains
+T300. This batch adds test coverage and contributes zero physical instructions,
+work qubits and measurements. The full complex matrix, spectator-zero and normal
+append checks are included in the focused graph notebook regression. The
+historical default-suite timeout remains recorded.

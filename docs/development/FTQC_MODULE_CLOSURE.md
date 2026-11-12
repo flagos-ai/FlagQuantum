@@ -566,3 +566,30 @@ Q-0742's generic foreign/subclass/typed drawing surface remains open. The next
 batch audits Q-0743's complete source test file. An overly broad preliminary
 selection was stopped and excluded from these acceptance totals. The historical
 default timeout remains recorded. Evidence uses `g2-graph-styles-`.
+
+### Complete Graphviz tests and independent kernels (2026-11-12)
+
+Q-0743 is accepted through test commit7b0de0c0. All three source functions are
+mapped. Four unchanged original cases execute, including the real notebook
+helper and kernel. The original parameterized drawing assertion code object
+also runs on native construction for both styles. Native declarations validate
+seven unique DOT nodes, thirteen qualified endpoints and every edge reference.
+The five source group-ID reservations are intentionally omitted by the native
+representation and documented in GRAPHVIZ_NOTEBOOK.md.
+
+The native notebook executes in a separate kernel with reference imports
+refused, thirteen sequential code cells and ten SVG messages. Four new cases,
+34 focused/214 Drawer regression/85 CPU-TN-notebook integration cases pass.
+Focused coverage of the three existing owners remains100% (141 statements,
+46 branches). Strict2, Black/Ruff/scope/architecture/IR/API checks pass. Eight
+source blobs are unchanged. Initial loopback socket sandbox failures and their
+successful permission-scoped reruns are retained. ActualX3, synthetic modelT300
+and the zero-instruction drawing/test contribution remain separate.
+
+The ledger has25 closed/1255 open/391 active parents and1187 capability records.
+Q-0742's general drawing class/protocol scope remains open. The next batch
+completes Q-0745's notebook container using the accepted score owners. Its exact
+source blob7205fa53b168a8b0de5429345dc25d2081979446 has been restored and verified,
+with seven cells/three code cells. Its relative JSON dump must run in a temporary
+output directory to preserve frozen reference assets. Evidence uses
+`g2-graph-source-`; the historical default-suite timeout remains recorded.
