@@ -8,7 +8,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from typing import Literal, TypedDict
 
 from .register_score import RegisterScore, RegisterStep
@@ -17,6 +17,10 @@ SymbolClass = Literal[
     "Text", "TextBox", "RarrowTextBox", "LarrowTextBox", "Circle", "ModPlus"
 ]
 PortSide = Literal["LEFT", "RIGHT", "THRU"]
+WireSymbolSupplier = Callable[
+    [RegisterStep, str | None, PortSide | None],
+    tuple[SymbolClass, dict[str, str | int | bool]],
+]
 
 
 class ScorePort(TypedDict):
@@ -64,9 +68,11 @@ def _port_symbol(
                 "filled": bool(step.control_values[step.inputs.index(register)])
             }
         return ("LarrowTextBox" if side == "RIGHT" else "RarrowTextBox"), {"text": "∧"}
-    if step.gate == "cx" and side == "THRU" and len(step.inputs) == 2:
-        if register == step.inputs[0]:
+    if step.gate in {"cx", "ccx"} and side == "THRU" and len(step.inputs) in {2, 3}:
+        if register != step.inputs[-1]:
             return "Circle", {"filled": True}
+        return "ModPlus", {}
+    if step.gate == "x" and side == "THRU":
         return "ModPlus", {}
     if step.name == "qreg.control_h" and (register,) == step.inputs[:1]:
         return "Circle", {"filled": True}
@@ -80,12 +86,19 @@ def _port_symbol(
 
 
 def register_score_data(
-    score: RegisterScore, *, classical: Collection[str] = ()
+    score: RegisterScore,
+    *,
+    classical: Collection[str] = (),
+    wire_symbol: WireSymbolSupplier | None = None,
 ) -> MusicalScoreData:
     """Create source-compatible glyph records with one symbol per through port.
 
     Native register constructions are quantum. The optional classical set
     marks named lines when projecting a mixed register graph into the score.
+    An explicit wire_symbol callback supplies port glyphs and the connector label
+    (register=None, side=None), analogous to the source per-component protocol.
+    It receives display identities only and cannot alter geometry or execution.
+    Connector symbols must be Text with text and fontsize attributes.
     """
     classical_names = set(classical)
     unknown = classical_names - {line.register for line in score.lines}
@@ -138,7 +151,11 @@ def register_score_data(
                 side_of_port = "THRU" if register in step.outputs else "LEFT"
             else:
                 side_of_port = "RIGHT"
-            glyph, attributes = _port_symbol(step, register, side_of_port)
+            glyph, attributes = (
+                _port_symbol(step, register, side_of_port)
+                if wire_symbol is None
+                else wire_symbol(step, register, side_of_port)
+            )
             ports.append(
                 {
                     "symb_cls": glyph,
@@ -152,16 +169,35 @@ def register_score_data(
         if column.lanes:
             title = (
                 ""
-                if step.gate in {"cx", "and"}
+                if step.gate in {"cx", "ccx", "and"}
                 or step.name in {"qreg.local", "qreg.release"}
-                else step.gate or step.name.removeprefix("qreg.")
+                else (
+                    "X"
+                    if step.gate == "x"
+                    else step.gate or step.name.removeprefix("qreg.")
+                )
             )
+            label: ScoreLabel = {"text": title, "fontsize": 10}
+            if wire_symbol is not None:
+                symbol, attributes = wire_symbol(step, None, None)
+                if (
+                    symbol != "Text"
+                    or not isinstance(attributes.get("text"), str)
+                    or type(attributes.get("fontsize")) is not int
+                ):
+                    raise ValueError(
+                        "connector wire symbols require Text with text and fontsize"
+                    )
+                label = {
+                    "text": str(attributes["text"]),
+                    "fontsize": int(attributes["fontsize"]),
+                }
             connectors.append(
                 {
                     "x": column.sequence,
                     "top_y": max(column.lanes),
                     "bottom_y": min(column.lanes),
-                    "label": {"text": title, "fontsize": 10},
+                    "label": label,
                 }
             )
 
