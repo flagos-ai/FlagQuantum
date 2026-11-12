@@ -321,3 +321,9 @@ composes squeeze/C/R before the same register consumer. Read the
 before applying C: support choices can discard small terms and ambient gradients
 of zero entries. No default training path is changed; A/D and full-policy
 integration remain open.
+
+The [complete flatten source disposition](../../../docs/development/TENSOR_FLATTEN_SOURCE_DISPOSITION.md)
+explains why explicit provider declarations replace Python method reflection,
+which source decomposition errors retain leaves, and why native materialized
+graphs propagate classifier failures instead of running a foreign lazy factory.
+Use existing Compiler expansion and Simulation suppliers for this workflow.

@@ -424,3 +424,9 @@ and format/scope/architecture/IR/API/example. Implementation `84e51b4c`. All fou
 source functions have explicit disposition, but source defects/default-gradient
 differences retain Q-0887 open. Counts remain20 closed/1260 open/390 active,
 1184 capability records. Next: Q-0889 whole-file flatten disposition.
+
+Flatten disposition: 23 new / 2,502 related / 84 CPU-TN pass; strict1
+and format/scope/architecture/IR/API/example. Acceptance `e6ad2789`. All two
+source functions and delegated error semantics have explicit disposition;
+foreign reflection/lazy callback boundaries retain Q-0889 open. No new
+production layer or capability ID;20 closed/1260 open/390 active,1184 records.

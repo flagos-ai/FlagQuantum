@@ -135,3 +135,11 @@ python -m pytest tests/unit/test_tensor_protocol_source_audit.py \
 Run the source-backed checks in the locked reference environment. For a normal
 production change, edit the existing owner rather than adding a second copy of
 the protocol under an upstream package name.
+
+## Follow-up: complete flatten implementation disposition
+
+See `TENSOR_FLATTEN_SOURCE_DISPOSITION.md` for all two source functions,
+qualified-name wrapper behavior, full/partial lazy decomposition exception
+cross product, native materialized-graph replacement and remaining differences.
+The original test mapping above remains valid. Q-0889 remains open; this audit
+does not introduce foreign lazy factories or method reflection into native IR.
