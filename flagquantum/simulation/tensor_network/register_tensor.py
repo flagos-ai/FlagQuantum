@@ -9,11 +9,13 @@ import math
 from typing import cast
 
 import numpy as np
+import torch
 from numpy.typing import NDArray
 
-from ...core.ir.program.registers import Register
+from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from .register_tensor_data import (
+    _zero_projection_indices,
     project_register_tensor,
     register_identity_data,
     register_word_shape,
@@ -78,6 +80,37 @@ def register_tensor_from_matrix(
     )
     assert result.shape == target_shape
     return result
+
+
+def register_tensor_from_unitary(
+    unitary: torch.Tensor, signature: Signature
+) -> torch.Tensor:
+    """Project a caller-supplied full unitary without losing phase or autograd.
+
+    This is the PyTorch path for the pinned gate-to-tensor protocol: reshape all
+    declared words as THRU, select output zero for LEFT and input zero for RIGHT,
+    and preserve output-before-input, row-major/MSB order. The caller obtains the
+    full unitary from the existing numerical owner or supplies its own tensor;
+    this function does not discover decompositions or check matrix unitarity.
+
+    Classical ports, nonfinite register widths/shapes and mismatched matrix size
+    are refused. Data retains its dtype/device and gradient graph. A projection
+    is neither reset nor trace and is not normalized. Storage is exponential in
+    all declared bits; no larger matrix is allocated here.
+    """
+    register_tensor_shape(signature)
+    if any(register.dtype.classical_bits for register in signature):
+        raise ValueError("unitary register tensors require quantum ports")
+    projection = _projection_signature(signature)
+    thru = Signature(
+        Register(reg.name, reg.dtype, reg.shape, RegisterSide.THRU)
+        for reg in projection
+    )
+    shape = register_tensor_shape(thru)
+    dimension = math.prod(shape[: len(shape) // 2])
+    if unitary.shape != (dimension, dimension):
+        raise ValueError("unitary shape does not match the complete register signature")
+    return unitary.reshape(shape)[_zero_projection_indices(projection, shape)]
 
 
 def register_identity_tensor(signature: Signature) -> DenseRegisterTensor:

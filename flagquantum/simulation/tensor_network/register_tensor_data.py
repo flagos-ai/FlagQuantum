@@ -83,11 +83,20 @@ def project_register_tensor(
         Register(reg.name, reg.dtype, reg.shape, RegisterSide.THRU) for reg in signature
     )
     shape = register_word_shape(thru)
-    count = len(shape) // 2
     # NumPy owns rejection of raw symbolic/nonintegral dimensions at this
     # external boundary. Do not coerce them or preempt its original errors.
     reshape: Callable[..., NDArray[Any]] = matrix.reshape
     data = reshape(shape)
+    result: NDArray[Any] | np.generic = data[_zero_projection_indices(signature, shape)]
+    assert result.shape == register_word_shape(signature)
+    return result
+
+
+def _zero_projection_indices(
+    signature: Signature, shape: tuple[SymbolicReal, ...]
+) -> tuple[int | slice, ...]:
+    """Share absent-port zero slices between NumPy and PyTorch inspection."""
+    count = len(shape) // 2
     indices: list[int | slice] = [slice(size) for size in shape]
     position = 0
     for reg in signature:
@@ -101,9 +110,7 @@ def project_register_tensor(
                 position += 1
         if reg.side == RegisterSide.THRU:
             position += int(np.prod(reg.shape))
-    result: NDArray[Any] | np.generic = data[tuple(indices)]
-    assert result.shape == register_word_shape(signature)
-    return result
+    return tuple(indices)
 
 
 def register_identity_data(signature: Signature) -> NDArray[Any] | np.generic:
