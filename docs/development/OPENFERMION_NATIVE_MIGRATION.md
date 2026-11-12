@@ -3,9 +3,12 @@
 ## Current delivery status
 
 The current checked main baseline is
-`b9ad91149e7098218250286e9185f774aaf3dbf5` on November 13, 2026 (UTC+08:00).
-General commuting Pauli discovery and its experimental registration are merged
-in #1166 and #1167. The runtime materialization repair #1168 merged first.
+`2ab457f3067accf7629a4dcac3a60f0bd11b3f59` on November 13, 2026 (UTC+08:00).
+General commuting Pauli discovery, its experimental registration and explicit
+mixed-axis sector training are merged in #1166, #1167 and #1170. Documentation
+closeout #1169 merged before #1170. The runtime materialization repair #1168
+merged first. The bounded H2 training composition described below is on a review
+branch and is not yet an accepted main capability.
 The preceding parity-training baseline was
 `e09b68e7add135dbc42f6bf677e00a611cfd463e`.
 The preceding Z-discovery registration baseline was
@@ -179,7 +182,7 @@ percentage of OpenFermion compatibility. Module paths are relative to
 | Explicit symmetry sectors | `algorithms/fermion/symmetry.py`, `stabilizer.py` | `unit/fermion/test_symmetry.py`, `test_stabilizer.py` | Explicit eigenvalues for supplied or discovered commuting generators; no automatic sector selection or ansatz tapering; lifting is bounded inspection |
 | Symmetry discovery | `algorithms/fermion/symmetry.py`, `stabilizer.py` | `unit/fermion/test_parity_discovery.py`, `test_pauli_discovery.py`, independent projector integration tests | Exact static coefficients; general discovery returns a maximum-size commuting subgroup, not the full centralizer; no particle-number or ground-sector inference |
 | Real orbital-angle gradients | `algorithms/chemistry_domain/orbital_rotation.py` | `unit/fermion/test_orbital_rotation.py` | Real CPU orbital parameters; static snapshot boundary unchanged |
-| Training composition | Existing circuit/ansatz, observable and PyTorch interfaces | Hubbard, periodic Hubbard, spinless, FCIDUMP, active-space, object-replacement and explicit parity-sector training scenarios | Circuit-angle optimization only; no separate fermion solver or general convergence guarantee |
+| Training composition | Existing circuit/ansatz, observable and PyTorch interfaces | Hubbard, periodic Hubbard, spinless, FCIDUMP, active-space, object-replacement, explicit parity-sector and mixed-axis Pauli-sector training scenarios | Circuit-angle optimization only; no separate fermion solver or general convergence guarantee |
 | Native dependency isolation | Native modules and explicit ecosystem boundaries | `integration/test_native_fermion_isolation.py`, fresh-process example scenarios | Native workflows need no OpenFermion/Cirq; optional interoperability may install them |
 
 Upstream adaptations retain their license and attribution in
@@ -738,3 +741,42 @@ Automatic sector selection, general matched-ansatz transformation, coefficient/
 SCF gradients, full OpenFermion parity and accelerator/distributed qualification
 remain separate work. This closeout introduces no implementation or maturity
 promotion and does not itself select or authorize another feature or merge.
+
+## Merged mixed-axis sector training
+
+Documentation closeout #1169 merged as
+`01dbf7ddb88e553f68b35b4a5eb490a8d9e3cb15`; explicit mixed-axis training #1170
+merged as `2ab457f3067accf7629a4dcac3a60f0bd11b3f59`. Refreshed-head full CI
+run 43322279268 passed. Actual final main passed 95 focused scientific,
+documentation and capability tests plus six CLI/inventory checks, the public
+API baseline, capability checker, documentation consistency and 1,417-file
+link audit. Main smoke run 43330343697 passed. These overlapping selections
+must not be added to historical counts as distinct scientific coverage.
+
+```bash
+python -m examples.algorithms.fermion_pauli_training
+```
+
+The fixed example lowers energy from 0.1678214299 to -1.1770329614. Its recorded
+gradient residual was 6.528e-12, lifted energy residual 4.441e-16 and joint-sector
+residual zero. Residuals may vary by platform. Only the reduced circuit angle
+is trained; lifting remains static. See the
+[training scope](FERMION_PAULI_TRAINING.md).
+
+## Review branch: bounded H2 spin-sector training
+
+The [H2 scope](FERMION_H2_SECTOR_TRAINING.md) was committed before implementation.
+This review branch composes the existing FCIDUMP fixture, native molecular/JW
+values, candidate-restricted spin-parity discovery, explicit -1/-1 reduction,
+two-qubit RY/CX preparation, native expectations and PyTorch SGD:
+
+```bash
+python -m examples.algorithms.fermion_h2_sector_training
+```
+
+The bounded run lowers energy from -1.0649609749 to -1.1372701747 Ha and keeps
+one electron in each spin block. Independent occupation-space tests verify
+gradients, optimizer updates, sector support and file/native producer replacement.
+This is review-branch evidence, not final-main acceptance. The composition adds
+no production API, scientific dependency or maturity promotion. Automatic sector
+inference, general transformed ansatzes and coefficient/SCF gradients remain gaps.

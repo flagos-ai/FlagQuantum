@@ -247,3 +247,19 @@ and replacement of discovered generators with supplied signed words. See the
 [training scope](../../../docs/development/FERMION_PAULI_TRAINING.md).
 No automatic ansatz transform, ground-sector inference, coefficient gradients,
 new solver, runtime or capability promotion is introduced.
+
+## Explicit molecular spin-sector training composition
+
+Run `python -m examples.algorithms.fermion_h2_sector_training` for the ten-minute
+FCIDUMP-to-training path. Fixed H2 integrals pass through native JW encoding,
+candidate-restricted spin-parity discovery and explicit -1/-1 selection. An
+ordinary two-qubit RY/CX circuit and PyTorch SGD reach -1.1372701747 Ha.
+Change the initial angle, then run
+`python -m pytest tests/integration/test_fermion_h2_sector_training.py -q`.
+The tests replace file input with the native molecular producer without changing
+the training consumer and compare gradients and updates with independent Fock
+states. For this two-orbital fixture only, the selected parities fix one alpha
+and one beta electron. Static lifting inspects the optimized state outside
+autograd. The example owns composition; symbolic reduction owns no training,
+input adapter or automatic ansatz transformation. See the
+[H2 training scope](../../../docs/development/FERMION_H2_SECTOR_TRAINING.md).

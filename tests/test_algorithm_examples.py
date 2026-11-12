@@ -127,6 +127,7 @@ SCRIPTS = (
     "fermion_parity_training",
     "fermion_pauli_discovery",
     "fermion_pauli_training",
+    "fermion_h2_sector_training",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -147,6 +148,11 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_h2_sector_training": (
+        "Only the reduced circuit angle is trainable",
+        "discovery does not infer sectors or transform UCCSD",
+        "not a scalable solver",
+    ),
     "fermion_pauli_training": (
         "Only the circuit angle is trainable",
         "does not select a ground sector or particle number",
@@ -2126,3 +2132,24 @@ def test_pauli_training_example_optimizes_the_explicit_joint_sector() -> None:
     assert float(_labelled(output, "Lifted energy residual")) < 1e-12
     assert float(_labelled(output, "Joint-sector residual")) < 1e-12
     _assert_premise("fermion_pauli_training", output)
+
+
+def test_h2_sector_training_example_preserves_both_spin_populations() -> None:
+    output = _run("fermion_h2_sector_training")
+    assert "Selected alpha/beta parity eigenvalues: -1, -1" in output
+    assert "Register: 4 -> 2 qubits" in output
+    initial = float(_labelled(output, "Initial energy").removesuffix(" Ha"))
+    final = float(_labelled(output, "Final energy").removesuffix(" Ha"))
+    assert final < initial - 0.07
+    assert final == pytest.approx(-1.1372701747, abs=1e-9)
+    assert float(
+        _labelled(output, "Analytic determinant-pair minimum").removesuffix(" Ha")
+    ) == pytest.approx(final, abs=1e-10)
+    assert float(_labelled(output, "Gradient residual")) < 1e-9
+    assert float(_labelled(output, "Parameter update")) > 0.4
+    assert float(_labelled(output, "Alpha particles")) == pytest.approx(1, abs=1e-12)
+    assert float(_labelled(output, "Beta particles")) == pytest.approx(1, abs=1e-12)
+    assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-12)
+    assert float(_labelled(output, "Lifted energy residual")) < 1e-12
+    assert float(_labelled(output, "Joint-sector residual")) < 1e-12
+    _assert_premise("fermion_h2_sector_training", output)

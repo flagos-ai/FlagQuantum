@@ -5,7 +5,8 @@
 Algorithms owns this bounded composition of existing molecular input, native
 JW encoding, candidate-restricted symmetry discovery, explicit stabilizer
 reduction, ordinary circuit preparation, `fq.run` expectations and PyTorch SGD.
-The implementation paths below are planned until the implementation commit lands.
+The scope was committed before implementation; this feature branch now
+implements the paths below.
 There is no new production API, solver, contract, dependency or capability entry.
 
 Use the existing H2 STO-3G FCIDUMP fixture at 0.7414 angstrom, with two spatial
@@ -47,22 +48,31 @@ Static integrals, geometry, SCF and symbolic reduction remain nondifferentiable.
 
 ## Delivery and contributor path
 
-Implement `examples/algorithms/fermion_h2_sector_training.py` and scientific
-scenarios in `tests/integration/test_fermion_h2_sector_training.py`. Register the
-actual source and CLI output in the existing algorithm example inventory, link
-the workflow from the fermion README, and reconcile the migration plan with
-the merged Pauli training stage before recording this new slice.
+`examples/algorithms/fermion_h2_sector_training.py` implements the composition;
+`tests/integration/test_fermion_h2_sector_training.py` owns independent scientific
+scenarios. The existing algorithm example inventory tests its source and CLI,
+and the fermion README links the workflow. The migration plan distinguishes the
+already merged Pauli training stage from this review branch.
 
-The shortest planned workflow and focused verification are:
+The shortest supported workflow and focused verification are:
 
 ```bash
 python -m examples.algorithms.fermion_h2_sector_training
 python -m pytest tests/integration/test_fermion_h2_sector_training.py -q
 ```
 
-The fixed H2 energy should reach approximately -1.1372701747 Ha, with particle
-number 2 and one electron in each spin block. Record actual initial/final energy,
-angle change, gradient residual and static lifted-state residuals after execution.
+The recorded 120-step SGD run (initial theta=0.2, learning rate 0.2) lowers energy
+from -1.0649609749 to -1.1372701747 Ha. Particle number is 2, with one electron in
+each spin block. The angle changes by 0.4261362654 radians; finite-difference
+gradient residual is 8.786e-13, lifted energy residual 2.220e-16 and joint-sector
+residual zero. Residuals may vary across platforms.
+
+Local review passed 66 related discovery/training scientific cases (including
+the six new molecular cases) and seven selected CLI/inventory cases. The six new
+cases passed again after the final formatting adjustment. Ruff, strict mypy on
+the two new Python modules, Black 24.1 and 26.5, the public API baseline,
+documentation consistency, the 1,418-file local-link audit and Algorithms path
+ownership checks passed. These are focused checks, not a full-suite claim.
 The classification is experimental CPU `single_device_fast_path`. Linux broad
 checks belong to PR CI; local checks stay focused. This composition makes no
 general convergence, larger-molecule, accelerator, distributed or scalability
