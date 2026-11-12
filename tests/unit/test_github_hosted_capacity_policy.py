@@ -184,7 +184,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         definition = _document("ci.yml")["jobs"][job]
-        assert definition["timeout-minutes"] == 30
+        assert definition["timeout-minutes"] == (60 if job == "cpu-runtime" else 30)
         assert definition["needs"] == "prepare-source"
         download = next(
             step

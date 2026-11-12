@@ -795,7 +795,9 @@ jobs:
     permissions:
       contents: read
       packages: read
-    timeout-minutes: 30
+    # Run 43178562378 reached 82% of 11,554 integration tests at 30 minutes.
+    # Keep the full selection and reserve time for the two launcher proofs.
+    timeout-minutes: 60
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
