@@ -89,11 +89,19 @@ body { font: 14px system-ui, sans-serif; margin: 1rem; }
 #score-container { overflow-x: auto; margin-top: 1rem; }
 svg { display: block; }
 text { text-anchor: middle; dominant-baseline: middle; fill: black; }
+.fixed-score { font: initial; max-width: 100%; height: auto; }
+.score-axis text { text-anchor: inherit; dominant-baseline: auto; fill: currentColor; }
 </style>
 <label>Column view
   <select id="score-view">
     <option value="sequential">Sequential</option>
     <option value="dependency">Dependency</option>
+  </select>
+</label>
+<label>Score style
+  <select id="score-style">
+    <option value="adaptive">Adaptive</option>
+    <option value="fixed">Fixed with numeric axes</option>
   </select>
 </label>
 <form id="score-load">
@@ -109,6 +117,8 @@ __SCORE_RECORDS__
 const views = JSON.parse(document.getElementById("score-records").textContent);
 const selector = document.getElementById("score-view");
 const container = document.getElementById("score-container");
+const styleSelector = document.getElementById("score-style");
+const fixedStyle = () => styleSelector.value === "fixed";
 const namespace = "http://www.w3.org/2000/svg";
 let loadVersion = 0;
 
@@ -208,7 +218,7 @@ function portGlyph(svg, port, x, y) {
     return group;
   }
   group.addEventListener("click", event => console.log(event, ports.get(`${kind},${port.ident}`).data));
-  const w = Math.max(22, attrs.text.length * 3.5 + 6);
+  const w = fixedStyle() ? 22 : Math.max(22, attrs.text.length * 3.5 + 6);
   if (kind === "TextBox") {
     element(group, "rect", {x: -w, y: -14, width: 2 * w, height: 28,
       fill: "white", stroke: "black"});
@@ -216,7 +226,7 @@ function portGlyph(svg, port, x, y) {
     const outline = kind === "RarrowTextBox"
       ? `${-w},-14 ${w-7},-14 ${w},0 ${w-7},14 ${-w},14`
       : `${-w},0 ${7-w},-14 ${w},-14 ${w},14 ${7-w},14`;
-    element(group, "polygon", {points: outline, fill: "white", stroke: "black"});
+    element(group, "polygon", {x: -w, y: -14, points: outline, fill: "white", stroke: "black"});
   }
   label(group, 0, 0, attrs.text, attrs.fontsize || 12);
   return group;
@@ -224,6 +234,7 @@ function portGlyph(svg, port, x, y) {
 
 // Keyed joins and cubic-in-out timing follow the frozen source's D3 transitions.
 const svg = element(container, "svg", {role: "img", "aria-label": "Register musical score"});
+const axes = element(svg, "g", {class: "score-axes"});
 const horizontal = new Map();
 const vertical = new Map();
 const captions = new Map();
@@ -273,17 +284,67 @@ function updatePort(group, port) {
   } else if (port.symb_cls !== "ModPlus") {
     const text = group.querySelector("text");
     text.textContent = attrs.text;
-    text.setAttribute("font-size", attrs.fontsize || 12);
-    const w = Math.max(22, attrs.text.length * 3.5 + 6);
+    if (fixedStyle()) text.removeAttribute("font-size");
+    else text.setAttribute("font-size", attrs.fontsize || 12);
+    const w = fixedStyle() ? 22 : Math.max(22, attrs.text.length * 3.5 + 6);
     const rect = group.querySelector("rect");
     if (rect) {
       rect.setAttribute("x", -w);
       rect.setAttribute("width", 2 * w);
     }
     const polygon = group.querySelector("polygon");
-    if (polygon) polygon.setAttribute("points", port.symb_cls === "RarrowTextBox"
-      ? `${-w},-14 ${w-7},-14 ${w},0 ${w-7},14 ${-w},14`
-      : `${-w},0 ${7-w},-14 ${w},-14 ${w},14 ${7-w},14`);
+    if (polygon) {
+      polygon.setAttribute("x", -w);
+      polygon.setAttribute("points", port.symb_cls === "RarrowTextBox"
+        ? `${-w},-14 ${w-7},-14 ${w},0 ${w-7},14 ${-w},14`
+        : `${-w},0 ${7-w},-14 ${w},-14 ${w},14 ${7-w},14`);
+    }
+  }
+}
+
+// Linear 1/2/5 ticks use geometric midpoints, as in the test-pinned D3 axes.
+// Integer tick indices avoid repeated floating-point addition.
+function axisTicks(start, stop, count) {
+  const raw = (stop - start) / count;
+  const power = 10 ** Math.floor(Math.log10(raw));
+  const error = raw / power;
+  const factor = error >= Math.sqrt(50) ? 10 : error >= Math.sqrt(10) ? 5
+    : error >= Math.sqrt(2) ? 2 : 1;
+  const step = factor * power;
+  const precision = Math.max(0, -Math.floor(Math.log10(step)));
+  const format = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: precision, maximumFractionDigits: precision
+  });
+  const ticks = [];
+  for (let i = Math.ceil(start / step); i <= Math.floor(stop / step); i++) {
+    const value = Number((i * step).toFixed(precision));
+    ticks.push({value, text: format.format(value).replace("-", "−")});
+  }
+  return ticks;
+}
+
+function drawAxes(width, height, maxX, maxY, x, y) {
+  axes.replaceChildren();
+  if (!fixedStyle()) return;
+  const offset = window.devicePixelRatio > 1 ? 0 : 0.5;
+  for (const [isX, start, stop, count, scale, transform] of [
+    [true, -2, maxX + 2, width / 80, x, `translate(0,${height - 30})`],
+    [false, 0, maxY + 1, height / 50, y, "translate(40,0)"]
+  ]) {
+    const axis = element(axes, "g", {class: "score-axis", transform, fill: "none",
+      "font-size": 10, "font-family": "sans-serif", "text-anchor": isX ? "middle" : "end"});
+    const ticks = axisTicks(start, stop, count);
+    // The source y scale has a reversed domain and preserves that tick order.
+    if (!isX) ticks.reverse();
+    for (const {value, text} of ticks) {
+      const tick = element(axis, "g", {class: "tick", opacity: 1,
+        transform: isX ? `translate(${scale(value) + offset},0)`
+          : `translate(0,${scale(value) + offset})`});
+      element(tick, "line", {stroke: "currentColor", [isX ? "y2" : "x2"]: isX ? 6 : -6});
+      const node = element(tick, "text", {fill: "currentColor",
+        [isX ? "y" : "x"]: isX ? 9 : -9, dy: isX ? "0.71em" : "0.32em"});
+      node.textContent = text;
+    }
   }
 }
 
@@ -294,11 +355,16 @@ function render() {
   const cell = data.soqs.reduce((size, port) => Math.max(
     size, (port.symb_attributes.text || "").length * 7 + 14
   ), 55);
-  const x = column => (column + 2) * cell;
-  const y = lane => 32 + lane * 42;
+  const fixed = fixedStyle();
+  // The source HTML sets domains manually. Native bounds include one free lane
+  // and two trailing columns, and are recomputed for each selected/imported view.
+  const x = column => fixed ? 46 + (column + 2) * 55 : (column + 2) * cell;
+  const y = lane => (fixed ? 26 : 32) + lane * 42;
   const baseline = y(data.max_y + 1);
-  const width = x(data.max_x + 1);
-  const height = y(data.max_y) + 28;
+  const width = fixed ? (data.max_x + 4) * 55 + 82 : x(data.max_x + 1);
+  const height = fixed ? (data.max_y + 1) * 42 + 62 : y(data.max_y) + 28;
+  svg.setAttribute("class", fixed ? "fixed-score" : "");
+  drawAxes(width, height, data.max_x, data.max_y, x, y);
   for (const [name, value] of Object.entries({width, height, viewBox: `0 0 ${width} ${height}`})) {
     svg.setAttribute(name, value);
   }
@@ -306,7 +372,7 @@ function render() {
     d => element(svg, "line", {class: "h", x1: x(d.seq_x_start), x2: x(d.seq_x_start),
       y1: y(d.y), y2: y(d.y)}),
     (node, d) => {
-      node.setAttribute("stroke", d.flavor === "HLineFlavor.CLASSICAL" ? "blue" : "black");
+      node.setAttribute("stroke", fixed ? "lightblue" : d.flavor === "HLineFlavor.CLASSICAL" ? "blue" : "black");
       transition(node, {x1: x(d.seq_x_start), x2: x(d.seq_x_end), y1: y(d.y), y2: y(d.y)});
     },
     (node, d, remove) => transition(node, {x2: x(d.seq_x_start)}, remove)
@@ -318,7 +384,7 @@ function render() {
     (node, d, remove) => transition(node, {y2: y(d.bottom_y)}, remove)
   );
   const caption = d => typeof d.label === "string" ? d.label : d.label.text;
-  join(captions, data.vlines.filter(d => caption(d)), d => d.x,
+  join(captions, data.vlines.filter(d => !fixed && caption(d)), d => d.x,
     d => {
       const node = label(svg, x(d.x), y(d.bottom_y) - 22, caption(d), 11);
       node.setAttribute("opacity", 0);
@@ -373,6 +439,7 @@ function render() {
 }
 
 selector.addEventListener("change", render);
+styleSelector.addEventListener("change", render);
 document.getElementById("score-load").addEventListener("submit", event => {
   event.preventDefault();
   loadScore(document.getElementById("score-url").value);
