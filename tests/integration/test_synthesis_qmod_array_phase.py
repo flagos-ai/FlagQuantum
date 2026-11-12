@@ -73,5 +73,9 @@ def test_single_element_phase(condition: str) -> None:
 
 
 def test_array_phase_honors_workspace_budget() -> None:
-    with pytest.raises(synth.SynthesisError):
-        synth.synthesize(SOURCE, max_workspace=0)
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(SOURCE)
+    constrained = synth.synthesize(SOURCE, max_workspace=0)
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

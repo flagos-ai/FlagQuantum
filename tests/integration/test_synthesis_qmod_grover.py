@@ -143,8 +143,7 @@ def test_exact_large_and_negative_integer_constants() -> None:
 @pytest.mark.parametrize(
     "constraint,value",
     [
-        ("max_qubits", 6),
-        ("max_workspace", 1),
+        ("max_qubits", 4),
         ("max_operations", 100),
         ("max_depth", 100),
         ("memory_limit_bytes", 1024),
@@ -217,3 +216,15 @@ def test_nested_checked_oracle_calls_and_integer_specialization() -> None:
     torch.testing.assert_close(
         fq.run(program).statevector().reshape(-1), expected, atol=1e-12, rtol=0
     )
+
+
+def test_scratch_free_max_cut_preserves_the_complete_state() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    path = FIXTURES / "grover_max_cut.qmod"
+    unconstrained = _synthesize(path, classical_inputs={"r": 2})
+    constrained = _synthesize(
+        path, classical_inputs={"r": 2}, max_workspace=0, max_qubits=5
+    )
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)
