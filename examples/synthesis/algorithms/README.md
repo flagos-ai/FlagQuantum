@@ -48,6 +48,7 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
+- [hybrid_qnn_for_subset_majority](machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
 

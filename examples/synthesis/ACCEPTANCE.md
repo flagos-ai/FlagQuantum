@@ -66,6 +66,21 @@ completion audit. Earlier timeouts, failed assertions and incomplete audits are
 retained separately rather than overwritten. Remote integration CI remains a
 subsequent gate.
 
+## Subsequent subset-majority workflow acceptance
+
+After the quantum-only acceptance above, the subset-majority QNN completed its
+local training workflow. The original data split, architecture, pinned checkpoint,
+MSE, SGD and rounded-label evaluation are retained. Exact CPU complex128 readout
+and float64 classical tensors explicitly replace the original 4096-shot/float32
+path. The current inventory therefore records **25/213** local workflows; the
+historical 24/213 figure above describes the earlier run.
+
+See the [workflow guide](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/WORKFLOW.md)
+for reproduction, independent gradient/update checks and actual metrics. The
+30-epoch scratch run does not exceed the held-out constant-zero accuracy
+baseline; its completed training is not convergence evidence. No other Notebook
+workflow or maturity status is promoted by this addition.
+
 ## Reproduce a comparison
 
 Use each case's comparison command from the [catalog](CATALOG.md), for example:

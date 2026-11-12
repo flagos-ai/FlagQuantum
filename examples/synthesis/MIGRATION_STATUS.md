@@ -7,11 +7,11 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **24/213**.
+Validated local Notebook workflows: **25/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
-| `algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority` | notebook_workflow | [Native program](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/main.py) | pending |
+| `algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority` | notebook_workflow | [Native program](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/main.py) | validated |
 | `algorithms/QML/qgan/qgan_bars_and_strips` | notebook_workflow | [Native program](algorithms/machine_learning/qgan/qgan_bars_and_strips/main.py) | pending |
 | `algorithms/QML/qsvm/qsvm` | notebook_workflow | [Native program](algorithms/machine_learning/qsvm/main.py) | pending |
 | `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/main.py) | pending |
