@@ -55,15 +55,23 @@ def test_coherent_modulo_and_nested_arithmetic_under_both_schedules(
 
 
 @pytest.mark.parametrize(
-    "expression",
-    ["a%0", "a%3", "a%b", "a%(-2)", "a%2.0", "a%True", "a%(2**2)", f"a%{1<<257}"],
+    "expression,diagnostic",
+    [
+        ("a%0", "power of two"),
+        ("a%3", "power of two"),
+        ("a%b", "power of two"),
+        ("a%(-2)", r"program\.numeric\.modulo"),
+        ("a%2.0", r"program\.numeric\.precision"),
+        ("a%True", "power of two"),
+        ("a%(2**2)", "power of two"),
+        (f"a%{1<<257}", "power of two"),
+    ],
 )
-def test_unsupported_divisors_fail_closed(tmp_path: Path, expression: str) -> None:
+def test_unsupported_divisors_fail_closed(
+    tmp_path: Path, expression: str, diagnostic: str
+) -> None:
     entry = definition(tmp_path, "a |= 2\nb |= 1\nres |= " + expression, (2, 2))
-    with pytest.raises(
-        HybridVerificationError,
-        match="program.expression" if expression == "a%(-2)" else "power of two",
-    ):
+    with pytest.raises(HybridVerificationError, match=diagnostic):
         synth.synthesize(entry)
 
 
