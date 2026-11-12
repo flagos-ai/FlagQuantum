@@ -406,3 +406,15 @@ open. Counts and capability IDs are unchanged.
 ADCR acceptance: 60 added / 2,352 related / 84 CPU-TN tests pass; strict7,
 new loop/example57 statements12 branches100%. Implementation `0f1dbb2b`.
 The source width planner and complete automatic entry remain open.
+
+The [width planning dependency](TENSOR_WIDTH_POLICY.md) extends Q-0887.03 by
+reusing existing optional Cotengra at the locked source-default greedy boundary.
+Explicit simplification_atol selects ADCR above reported width12 with groups
+captured first, through the same register/component consumers. Source singleton
+raw-size defect and all inherited gradient/source differences remain explicit.
+Default consumers remain unsimplified; full default-entry policy and parent
+closure remain open, with unchanged capability and parent counts.
+
+Width acceptance: 43 new / 2,395 related / 84 CPU-TN pass; strict7 and
+width/full-loop/example86 statements24 branches100%. Implementation `73816a0d`.
+No parent closure: 20 closed / 1,260 open / 390 active; 1,184 capability records.

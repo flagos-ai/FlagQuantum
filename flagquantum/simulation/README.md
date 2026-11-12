@@ -929,3 +929,9 @@ The explicit [ADCR fixed-point loop](../../docs/development/TENSOR_FIXED_POINT.m
 reuses those owners with run-local cache and ordered-neighbor state. Its golden
 path is `examples/algorithms/tensor_fixed_point.py`; automatic width planning
 and default training integration remain outside this slice.
+
+The [width policy](../../docs/development/TENSOR_WIDTH_POLICY.md) reuses optional
+Cotengra for shape-only locked-default greedy width. Internal register/component
+dense consumers accept explicit `simplification_atol`; default None retains
+unsimplified training. Run `examples/algorithms/tensor_width_policy.py` for both
+sides of the real threshold and retained complex phase gradients.
