@@ -252,6 +252,15 @@ class ComponentClassicalState:
 
         def assign(values: Mapping[str, object]) -> None:
             self._assign(signature.rights(), operation.results, values)
+            if (
+                self._phased
+                and isinstance(contribution, MeasurementOutcomePhase)
+                and (contribution.register, contribution.index) not in self._outcomes
+            ):
+                raise ValueError(
+                    "measurement phase requires a current output: "
+                    f"{contribution.register}{contribution.index}"
+                )
 
         if self._phased:
             self.phase = commit_phased_classical_outputs(
