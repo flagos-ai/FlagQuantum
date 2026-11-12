@@ -111,12 +111,14 @@ SCRIPTS = (
     "fermion_energy",
     "fermion_chemistry",
     "fermion_fcidump",
+    "fermion_fcidump_training",
     "fermion_hdf5",
     "fermion_fourier",
     "fermion_tapering",
     "fermion_controlled_evolution",
     "fermion_orbital_rotation",
     "fermion_hubbard",
+    "fermion_hubbard_training",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -137,6 +139,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_hubbard_training": (
+        "unreduced JW order",
+        "not gatewise number conservation or a scalable many-body solver",
+    ),
     "fermion_orbital_rotation": (
         "real CPU orbital rotations",
         "not geometry gradients or SCF",
@@ -157,6 +163,10 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     "fermion_fcidump": (
         "real closed-shell FCIDUMP integrals",
         "not the correlated ground energy",
+    ),
+    "fermion_fcidump_training": (
+        "UCCSD angles are float32",
+        "not a general convergence or scalability claim",
     ),
     "fermion_hdf5": ("real closed-shell file integrals", "not a computed ground state"),
     "fermion_energy": ("exact statevector simulation", "no sampling or hardware noise"),
@@ -1767,6 +1777,24 @@ def test_fermion_fcidump_example_measures_the_input_reference() -> None:
     _assert_premise("fermion_fcidump", output)
 
 
+def test_fcidump_training_recovers_the_small_molecular_correlation_energy() -> None:
+    output = _run("fermion_fcidump_training")
+    determinant = float(_labelled(output, "Reference determinant").split()[0])
+    initial = float(_labelled(output, "Initial energy").split()[0])
+    final = float(_labelled(output, "Final energy").split()[0])
+    reference = float(_labelled(output, "Dense N=2 energy").split()[0])
+    assert determinant == pytest.approx(-1.1166843871, abs=1e-9)
+    assert reference == pytest.approx(-1.1372701747, abs=1e-9)
+    assert final < initial - 1e-3
+    assert final < determinant - 0.02
+    assert -1e-8 <= final - reference < 1e-6
+    assert float(_labelled(output, "Gradient norm")) > 1e-2
+    assert float(_labelled(output, "Gradient residual")) < 1e-6
+    assert float(_labelled(output, "Parameter update norm")) > 0.1
+    assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-7)
+    _assert_premise("fermion_fcidump_training", output)
+
+
 def test_the_example_directory_is_covered_and_indexed() -> None:
     scripts = sorted(path.name for path in EXAMPLES.glob("*.py"))
     expected = sorted(f"{name}.py" for name in SCRIPTS)
@@ -1915,3 +1943,15 @@ def test_fermion_hubbard_measures_two_particle_ground_state() -> None:
         assert float(energy) == pytest.approx(-0.8284271247, abs=1e-9)
         assert float(particles) == pytest.approx(2, abs=1e-6)
     _assert_premise("fermion_hubbard", output)
+
+
+def test_fermion_hubbard_training_lowers_energy_with_valid_gradients() -> None:
+    output = _run("fermion_hubbard_training")
+    assert float(_labelled(output, "Initial energy")) > 3
+    assert float(_labelled(output, "Gradient norm")) > 1
+    assert float(_labelled(output, "Gradient residual")) < 1e-8
+    reference = float(_labelled(output, "Analytic N=2 energy"))
+    final = float(_labelled(output, "Final energy"))
+    assert -1e-9 <= final - reference < 1e-5
+    assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
+    _assert_premise("fermion_hubbard_training", output)

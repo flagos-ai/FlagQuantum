@@ -23,6 +23,7 @@ def test_native_import_and_measurement_with_upstream_blocked() -> None:
         import flagquantum as fq
         from flagquantum.ecosystem.openfermion import (
             from_openfermion_fermion, from_openfermion_qubit,
+            from_openfermion_interaction,
             to_openfermion_fermion, to_openfermion_qubit,
         )
         from flagquantum.observables.fermion import FermionOperator, number, jordan_wigner
@@ -32,6 +33,7 @@ def test_native_import_and_measurement_with_upstream_blocked() -> None:
         assert float(value.expectation().reshape(-1)[0]) == 1
         for call, source in (
             (from_openfermion_fermion, None), (from_openfermion_qubit, None),
+            (from_openfermion_interaction, None),
             (to_openfermion_fermion, FermionOperator()),
             (to_openfermion_qubit, PauliOperator()),
         ):
