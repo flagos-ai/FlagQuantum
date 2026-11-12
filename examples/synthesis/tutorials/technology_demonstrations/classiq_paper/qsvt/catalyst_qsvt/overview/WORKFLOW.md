@@ -5,8 +5,9 @@
 | 2: reflection, block encoding, projectors, QSVT and device declaration | Composable native qfunc, checked arithmetic, exact phase polynomial, adjoint and ten explicit logical wires |
 | 4: six data bits, degree three, four phases, CX/RZ/RY/RX decomposition, qjit and MLIR count | Same quantum workload; an explicitly different local exact CX/U3 pipeline with actual instruction counts, width, depth and monotonic durations |
 
-The entire source is commented. The declaration `wires=size+3` supplies nine
-wires for size six, while `qsvt_aux=size+3` addresses wire nine, the tenth wire.
+The entire source is commented. Its device declaration supplies size plus three
+bits: nine for size six. Its auxiliary index is also size plus three, so index
+nine addresses a tenth bit.
 The native program explicitly allocates ten logical wires. It reconstructs the
 stated circuit with that correction; it does not claim unchanged foreign SDK
 execution or certification of qjit/MLIR behavior.
