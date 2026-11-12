@@ -169,3 +169,15 @@ respectively at t=1, V=2, mu=0 and N=2. See the
 for independent occupation action, boundary signs, free spectra, density bonds,
 encodings and native gradients. Dense state preparation remains a bounded CPU
 inspection tool; no coefficient-gradient or scalability claim is introduced.
+
+For spinless training, run
+`python -m examples.algorithms.fermion_spinless_training` and add `--periodic`
+to replace only the static producer. Existing single excitations prepare N=2 in
+three full JW modes, and native expectations feed 160 PyTorch Adam steps on two
+float64 circuit angles. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_spinless_training.py -q` to
+check occupation-matrix energies, finite-difference gradients, closing bonds,
+particle-sector support and native dependency isolation. See the
+[training golden path](../../../docs/development/FERMION_SPINLESS.md#training-golden-path)
+for expected values and the zero-hopping stationary case. This example adds no
+solver or model API and makes no coefficient-gradient or scalability claim.

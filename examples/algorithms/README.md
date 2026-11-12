@@ -360,3 +360,13 @@ particle number 2. One mode represents each site; the nearest-neighbor V term
 uses unshifted densities. Dense reference preparation has exponential inspection
 cost and makes no many-body scalability claim. See the
 [spinless contributor guide](../../docs/development/FERMION_SPINLESS.md).
+
+[`fermion_spinless_training.py`](fermion_spinless_training.py), run with
+`python -m examples.algorithms.fermion_spinless_training [--periodic]`, trains
+two real circuit angles for the three-site N=2 chain or ring. It reuses native
+single-excitation circuits and PyTorch Adam, with no reference-state
+diagonalization. The fixed 160-step CPU runs reach approximately -0.7320507169
+and 1.0000001488 respectively and retain particle number 2. This is bounded
+full-JW circuit-angle training, not coefficient differentiation, a general
+convergence guarantee or scalability evidence. See the
+[training golden path](../../docs/development/FERMION_SPINLESS.md#training-golden-path).
