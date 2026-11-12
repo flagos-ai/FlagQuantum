@@ -45,6 +45,21 @@ class RegisterLaneManager:
         self._next_lane += 1
         return lane
 
+    def new_y_for(
+        self,
+        location: LaneLocation,
+        register: Register,
+        index: tuple[int, ...] | None = None,
+    ) -> int:
+        """Allocate a lane with the source register-element context.
+
+        Scalar allocation receives None and array allocation receives its
+        row-major index. Overrides own selection from the available heap.
+        The default delegates to new_y, retaining existing allocation policies.
+        Reservations use new_y directly because they have no element context.
+        """
+        return self.new_y()
+
     def reserve_n(self, n: int, until: ReleasePredicate) -> None:
         """Hold the next n lanes until a later allocation satisfies until.
 
@@ -85,7 +100,7 @@ class RegisterLaneManager:
         self.unreserve(location, register)
         lanes = []
         for index in register.all_idxs():
-            lanes.append(self.new_y())
+            lanes.append(self.new_y_for(location, register, index or None))
             self.maybe_reserve(location, register, index)
         return tuple(lanes)
 
