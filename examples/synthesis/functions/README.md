@@ -80,6 +80,7 @@ Native FlagQuantum programs currently available:
 - [overview](qct_qst/overview/README.md)
 - [qft](qft/README.md)
 - [overview](qpe/overview/README.md)
+- [overview](qsvt/overview/README.md)
 - [prepare_bell_state](state_preparation/prepare_bell_state/README.md)
 - [overview](state_preparation/prepare_exponential_state/overview/README.md)
 - [prepare_ghz_state](state_preparation/prepare_ghz_state/README.md)

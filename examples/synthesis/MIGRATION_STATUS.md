@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **52/213**.
+Validated local Notebook workflows: **53/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -347,7 +347,7 @@ Validated local Notebook workflows: **52/213**.
 | `functions/qmod_library_reference/classiq_open_library/qft/qft` | notebook_workflow | [Native program](functions/qft/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | [Native program](functions/qpe/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | [Native program](functions/qpe/qpe_flexible/main.py) | pending |
-| `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | [Native program](functions/qsvt/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | [Native program](functions/qsvt/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_exponential_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_exponential_state/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_ghz_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_ghz_state/main.py) | validated |

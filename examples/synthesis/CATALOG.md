@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **52/213**.
+Validated local Notebook workflows: **53/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -237,6 +237,7 @@ Validated local Notebook workflows:
 - [overview](functions/qct_qst/overview/README.md)
 - [qft](functions/qft/README.md)
 - [overview](functions/qpe/overview/README.md)
+- [overview](functions/qsvt/overview/README.md)
 - [prepare_bell_state](functions/state_preparation/prepare_bell_state/README.md)
 - [overview](functions/state_preparation/prepare_exponential_state/overview/README.md)
 - [prepare_ghz_state](functions/state_preparation/prepare_ghz_state/README.md)
