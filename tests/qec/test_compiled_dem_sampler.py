@@ -7,6 +7,8 @@ import json
 import os
 import pickle
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 import torch
@@ -15,6 +17,7 @@ from flagquantum.errors import CapabilityError
 from flagquantum.qec import DemError, DetectorErrorModel
 from flagquantum.qec.execution import dem_sampling as owner
 from flagquantum.simulation.stabilizer import _dem_sampling as adapter
+from flagquantum.simulation.stabilizer import engine
 
 pytestmark = pytest.mark.unit
 
@@ -340,3 +343,238 @@ def test_dimensions_and_output_bytes_refuse_before_engine(
     with pytest.raises(CapabilityError, match="1 GiB"):
         sampler.sample_write(2**30, det_out_file=tmp_path / "d", obs_out_file=None)
     assert not fake.calls
+
+
+def _native_dem_double(
+    monkeypatch: pytest.MonkeyPatch, result: object
+) -> SimpleNamespace:
+    native = SimpleNamespace(
+        prepare_dem=Mock(return_value=object()),
+        sample_dem=Mock(return_value=result),
+        write_dem=Mock(),
+    )
+    monkeypatch.setattr(adapter, "import_module", Mock(return_value=native))
+    return native
+
+
+@pytest.mark.parametrize("packed", [False, True])
+@pytest.mark.parametrize("packed_replay", [False, True])
+@pytest.mark.parametrize("return_errors", [False, True])
+def test_embedded_adapter_preserves_record_buffers_and_replay_bytes(
+    monkeypatch: pytest.MonkeyPatch,
+    packed: bool,
+    packed_replay: bool,
+    return_errors: bool,
+) -> None:
+    dtype = torch.uint8 if packed else torch.bool
+    detectors = torch.tensor(
+        [[1, 1], [0, 1]] if packed else [[1] + [0] * 7 + [1], [0] * 8 + [1]],
+        dtype=dtype,
+    )
+    observables = torch.tensor([[1], [0]], dtype=dtype)
+    errors = torch.tensor([[2], [1]] if packed else [[0, 1], [1, 0]], dtype=dtype)
+    raw = (
+        bytearray(detectors.numpy().tobytes()),
+        bytearray(observables.numpy().tobytes()),
+        bytearray(errors.numpy().tobytes()) if return_errors else None,
+    )
+    native = _native_dem_double(monkeypatch, raw)
+    stream = adapter._EmbeddedStream("detector D8", 7, (9, 1, 2))
+    replay = torch.tensor(
+        [[2], [1]] if packed_replay else [[0, 1], [1, 0]],
+        dtype=torch.uint8 if packed_replay else torch.bool,
+    )
+    before = replay.clone()
+    actual_d, actual_o, actual_e = stream.sample(
+        2, packed=packed, errors=replay, return_errors=return_errors
+    )
+    native.prepare_dem.assert_called_once_with("detector D8", 7)
+    native.sample_dem.assert_called_once_with(
+        native.prepare_dem.return_value,
+        2,
+        packed,
+        bytearray(replay.numpy().tobytes()),
+        packed_replay,
+        return_errors,
+    )
+    assert torch.equal(actual_d, detectors) and torch.equal(actual_o, observables)
+    assert actual_d.dtype == dtype and actual_o.dtype == dtype
+    if return_errors:
+        assert actual_e is not None and torch.equal(actual_e, errors)
+        assert actual_e.dtype == dtype
+    else:
+        assert actual_e is None
+    assert torch.equal(replay, before)
+    stream.sample_write(2, ("d", "o", "e"), ("b8", "01", "hits"), "in", "r8")
+    native.write_dem.assert_called_once_with(
+        native.prepare_dem.return_value,
+        2,
+        "d",
+        "b8",
+        "o",
+        "01",
+        "e",
+        "hits",
+        "in",
+        "r8",
+    )
+
+
+@pytest.mark.parametrize("packed", [False, True])
+def test_embedded_adapter_preserves_zero_width_columns(
+    monkeypatch: pytest.MonkeyPatch, packed: bool
+) -> None:
+    native = _native_dem_double(monkeypatch, (bytearray(), bytearray(), bytearray()))
+    stream = adapter._EmbeddedStream("", None, (0, 0, 0))
+    d, o, e = stream.sample(3, packed=packed, errors=None, return_errors=True)
+    assert e is not None
+    for records in (d, o, e):
+        assert records.shape == (3, 0)
+        assert records.dtype == (torch.uint8 if packed else torch.bool)
+    native.sample_dem.assert_called_once_with(
+        native.prepare_dem.return_value, 3, packed, None, False, True
+    )
+
+
+@pytest.mark.parametrize(
+    "result,message",
+    [
+        ([], "invalid embedded DEM sample result"),
+        ((bytearray(),), "invalid embedded DEM sample result"),
+        ((b"\x00", bytearray(b"\x00"), None), "invalid embedded DEM output buffer"),
+        ((bytearray(), bytearray(b"\x00"), None), "invalid embedded DEM output buffer"),
+        (
+            (bytearray(b"\x00"), bytearray(b"\x00"), bytearray(b"\x00")),
+            "unexpected embedded error result",
+        ),
+    ],
+)
+def test_embedded_adapter_rejects_malformed_native_records(
+    monkeypatch: pytest.MonkeyPatch, result: object, message: str
+) -> None:
+    _native_dem_double(monkeypatch, result)
+    stream = adapter._EmbeddedStream("", None, (1, 1, 1))
+    with pytest.raises(CapabilityError, match=message):
+        stream.sample(1, packed=False, errors=None, return_errors=False)
+
+
+def _sdk_dem_double(
+    monkeypatch: pytest.MonkeyPatch, sampler: object, version: str = "1.16.0"
+) -> SimpleNamespace:
+    model = SimpleNamespace(compile_sampler=Mock(return_value=sampler))
+    sdk = SimpleNamespace(
+        __version__=version, DetectorErrorModel=Mock(return_value=model)
+    )
+    monkeypatch.setattr(engine, "_stim", Mock(return_value=sdk))
+    return sdk
+
+
+@pytest.mark.parametrize("return_errors", [False, True])
+@pytest.mark.parametrize("num_errors", [0, 2])
+def test_sdk_adapter_owns_results_and_binds_file_streams(
+    monkeypatch: pytest.MonkeyPatch, return_errors: bool, num_errors: int
+) -> None:
+    d = torch.tensor([[True, False], [False, True]])
+    o = torch.tensor([[True], [False]])
+    e = torch.zeros((2, num_errors), dtype=torch.bool)
+    sampler = SimpleNamespace(
+        sample=Mock(
+            return_value=(d.numpy(), o.numpy(), e.numpy() if return_errors else None)
+        ),
+        sample_write=Mock(),
+    )
+    sdk = _sdk_dem_double(monkeypatch, sampler)
+    stream = adapter._SdkStream("detector D1", 7, (2, 1, num_errors))
+    replay = torch.ones((2, num_errors), dtype=torch.bool)
+    records = stream.sample(2, packed=False, errors=replay, return_errors=return_errors)
+    sdk.DetectorErrorModel.assert_called_once_with("detector D1")
+    sdk.DetectorErrorModel.return_value.compile_sampler.assert_called_once_with(seed=7)
+    call = sampler.sample.call_args
+    assert call is not None and call.args == (2,)
+    assert call.kwargs["bit_packed"] is False
+    assert call.kwargs["return_errors"] is return_errors
+    assert call.kwargs["recorded_errors_to_replay"].tolist() == replay.tolist()
+    assert torch.equal(records[0], d) and torch.equal(records[1], o)
+    d.zero_()
+    o.zero_()
+    e.fill_(True)
+    assert records[0].tolist() == [[True, False], [False, True]]
+    assert records[1].tolist() == [[True], [False]]
+    if return_errors:
+        assert records[2] is not None and not bool(records[2].any())
+    else:
+        assert records[2] is None
+    stream.sample_write(2, ("d", None, "e"), ("b8", "01", "hits"), "in", "r8")
+    sampler.sample_write.assert_called_once_with(
+        2,
+        det_out_file="d",
+        det_out_format="b8",
+        obs_out_file=None,
+        obs_out_format="01",
+        err_out_file="e",
+        err_out_format="hits",
+        replay_err_in_file="in" if num_errors else None,
+        replay_err_in_format="r8",
+    )
+    sampler.sample.return_value = (records[0].numpy(), records[1].numpy(), None)
+    stream.sample(2, packed=False, errors=None, return_errors=False)
+    assert sampler.sample.call_args.kwargs["recorded_errors_to_replay"] is None
+
+
+def test_sdk_adapter_rejects_version_before_preparing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sdk = _sdk_dem_double(monkeypatch, object(), "1.15.0")
+    with pytest.raises(CapabilityError, match="requires Stim 1.16.0"):
+        adapter._SdkStream("", None, (0, 0, 0))
+    sdk.DetectorErrorModel.assert_not_called()
+
+
+@pytest.mark.parametrize("missing", ["sample", "sample_write"])
+def test_sdk_adapter_rejects_incomplete_sampler(
+    monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    sampler = SimpleNamespace(sample=Mock(), sample_write=Mock())
+    setattr(sampler, missing, None)
+    _sdk_dem_double(monkeypatch, sampler)
+    with pytest.raises(CapabilityError, match="invalid Stim DEM sampler"):
+        adapter._SdkStream("", None, (0, 0, 0))
+
+
+@pytest.mark.parametrize("result", [[], (None,)])
+def test_sdk_adapter_rejects_malformed_result(
+    monkeypatch: pytest.MonkeyPatch, result: object
+) -> None:
+    sampler = SimpleNamespace(sample=Mock(return_value=result), sample_write=Mock())
+    _sdk_dem_double(monkeypatch, sampler)
+    stream = adapter._SdkStream("", None, (1, 1, 1))
+    with pytest.raises(CapabilityError, match="invalid SDK DEM sample result"):
+        stream.sample(1, packed=False, errors=None, return_errors=False)
+
+
+@pytest.mark.parametrize("embedded", [False, True])
+def test_dem_backend_selection_does_not_prepare_the_other_backend(
+    monkeypatch: pytest.MonkeyPatch, embedded: bool
+) -> None:
+    monkeypatch.setattr(Path, "is_file", lambda self: embedded)
+    sdk, native = Mock(), Mock()
+    monkeypatch.setattr(adapter, "_SdkStream", sdk)
+    monkeypatch.setattr(adapter, "_EmbeddedStream", native)
+    chosen, unused = (native, sdk) if embedded else (sdk, native)
+    assert adapter.prepare("detector D0", 7, (1, 0, 0)) is chosen.return_value
+    chosen.assert_called_once_with("detector D0", 7, (1, 0, 0))
+    unused.assert_not_called()
+
+
+def test_missing_embedded_extension_preserves_cause_without_sdk_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(Path, "is_file", lambda self: True)
+    missing = ImportError("controlled missing embedded extension")
+    native, sdk = Mock(side_effect=missing), Mock()
+    monkeypatch.setattr(adapter, "_EmbeddedStream", native)
+    monkeypatch.setattr(adapter, "_SdkStream", sdk)
+    with pytest.raises(CapabilityError, match="extension is unavailable") as caught:
+        adapter.prepare("", None, (0, 0, 0))
+    assert caught.value.__cause__ is missing
+    sdk.assert_not_called()
