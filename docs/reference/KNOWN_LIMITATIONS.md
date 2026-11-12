@@ -1578,3 +1578,20 @@ integral storage and is not a scalability claim. Differentiable tensors must
 remain outside the static `MolecularProblem` snapshot path. See
 [the stage contract](../development/FERMION_ORBITAL_GRADIENTS.md) and run
 `python -m examples.algorithms.fermion_orbital_rotation`.
+
+## Scalar-view controlled modular updates
+
+Direct raw one-bit controls and zero/one equality or inequality on one-bit QNum
+views can guard a single-update helper whose raw unsigned target is physically
+disjoint. Static slices and explicit least-significant-first target compositions
+may share the selector's owning register when they exclude its bit. Nested
+helper aliases preserve this location check. Computed predicates retain the
+conservative whole-register mutation refusal; this change does not permit
+arbitrary read/write overlap or dirty workspace. Negative Const selectors retain
+the checked computed path instead of being flipped. Numeric formats,
+initialization, ownership, expansion and actual resource budgets remain checked.
+
+The focused integration tests exhaust all 32 inputs for each of 96 combinations
+of control spelling, target layout, offset and helper nesting. Independent
+complex-amplitude Circuit checks include absolute phase and zero hidden work.
+This compiler slice alone does not certify an additional original or Notebook.

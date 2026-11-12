@@ -179,8 +179,12 @@ def capture_increment_call(
     assert isinstance(statement, ast.AugAssign) and isinstance(
         statement.target, ast.Name
     )
+    # Computed predicates borrow complete source Values; a direct selector
+    # borrows one physical bit, including through nested helper aliases.
+    direct_scalar = condition_inputs == (predicate[0],)
     if statement.target.id != ports[0].name or any(
-        value in condition_inputs for value, _ in target
+        (value, bit) == predicate if direct_scalar else value in condition_inputs
+        for value, bit in target
     ):
         _error(
             owner.source,

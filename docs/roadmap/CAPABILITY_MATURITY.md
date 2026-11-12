@@ -739,3 +739,15 @@ matrix powers and Fourier references cover quantum counting, Grover-operator
 QPE and nonzero coherent inputs. Nested phase-only helpers and adjoints have
 separate complex-state tests. This does not admit general QPE scratch, change
 the 4096 expanded-effect ceiling or establish native Vlasov acceptance.
+
+## Scalar-view modular control borrowing
+
+Maturity: `development_evidence`, local `single_device_fast_path`. Direct raw
+scalar controls borrow one physical bit rather than the entire owning Value
+while a single-update modular helper mutates disjoint target locations. One-bit
+zero/one comparisons are recognized before predicate-view expansion. Computed
+predicates preserve conservative whole-register borrowing.
+`tests/integration/test_synthesis_native_disjoint_increment.py` checks 3,072
+basis cases, 96 independent complex coherent states, hidden-work cleanup,
+nested aliases and five overlap refusals. No complete Notebook, original-corpus
+coverage increase, resource optimality or hardware claim follows from this slice.

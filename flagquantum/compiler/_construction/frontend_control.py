@@ -63,20 +63,6 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         )
     condition, callback = node.args
     assert isinstance(callback, ast.Lambda)
-    view_width = None
-    if is_composite_predicate(condition) and has_predicate_views(owner, condition):
-        condition, view_width = predicate_views(owner, condition)
-    numeric_condition = has_numeric_reads(owner, condition)
-    numeric_predicate = needs_numeric(owner, condition) and is_composite_predicate(
-        condition
-    )
-    if numeric_condition and not is_composite_predicate(condition):
-        _error(
-            owner.source,
-            condition,
-            "program.numeric",
-            "numeric reads in controls require an explicit bounded comparison",
-        )
     callback_function = (
         owner.resolve_callable(callback.body.func)
         if isinstance(callback.body, ast.Call)
@@ -119,6 +105,23 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         and any(port.role == "inout" for port in program_ports(operation))
         and all(port.role in {"const", "inout"} for port in program_ports(operation))
     )
+    negative_selector = False
+    if increment or composable:
+        condition, negative_selector = scalar_comparison(owner, condition)
+    view_width = None
+    if is_composite_predicate(condition) and has_predicate_views(owner, condition):
+        condition, view_width = predicate_views(owner, condition)
+    numeric_condition = has_numeric_reads(owner, condition)
+    numeric_predicate = needs_numeric(owner, condition) and is_composite_predicate(
+        condition
+    )
+    if numeric_condition and not is_composite_predicate(condition):
+        _error(
+            owner.source,
+            condition,
+            "program.numeric",
+            "numeric reads in controls require an explicit bounded comparison",
+        )
     if operation is unitary:
         capture_controlled_unitary(owner, condition, body)
         return
@@ -189,9 +192,6 @@ def capture_control(owner: _Body, node: ast.Call) -> None:
         capture_polynomial_phase(owner, expression, angle, body, condition=condition)
         return
 
-    negative_selector = False
-    if increment or composable:
-        condition, negative_selector = scalar_comparison(owner, condition)
     if negative_selector:
         selector, index = gate_target(owner, condition)
         owner.emit("qreg.gate", node, (selector,), gate="x", index=index)

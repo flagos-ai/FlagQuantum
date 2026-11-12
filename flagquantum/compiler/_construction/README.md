@@ -1166,3 +1166,47 @@ certify numerical execution or suppress unsupported gates.
 Run `python -m pytest tests/integration/test_synthesis_native_predicate_truth.py -q`.
 The full double-slit native/Circuit/mathematical acceptance is in
 `tests/integration/test_synthesis_native_double_slit.py`.
+
+### Scalar controls on disjoint raw-word views
+
+Single-update modular helpers accept a direct initialized raw scalar selector
+and disjoint target bit locations, including a slice of the same QNum or an
+explicit little-endian composition across registers. Zero/one comparisons on a
+one-bit view are recognized before general predicate-view normalization; negative
+selectors retain writable-storage checks. The increment capture compares actual
+bit locations for direct controls. Computed predicates still borrow their complete
+input Values and reject mutation of any such register. No public API or effect
+schema changes. Numeric, Const, initialization, alias and Output escape checks
+remain authoritative. Run
+`python -m pytest tests/integration/test_synthesis_native_disjoint_increment.py -q`
+for exhaustive small-domain, complex-coherence, cleanup and refusal acceptance.
+
+A user can coherently update the high bits while borrowing only the low bit:
+
+```python
+from typing import Annotated
+
+import flagquantum as fq
+from flagquantum.synth import H, Output, QNum, allocate, control, qfunc, synthesize
+
+
+@qfunc
+def increment(word: QNum) -> None:
+    word += 1
+
+
+@qfunc
+def main(word: Output[Annotated[QNum, 3]]) -> None:
+    allocate(word)
+    word ^= 2
+    H(word[0])
+    control(word[0] == 0, lambda: increment(word[1:3]))
+
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("word",))))
+```
+
+The named outcomes are `(3,)` and `(4,)`, each with probability `0.5`.
+All indices refer to logical register bits, not physical circuit wires.
