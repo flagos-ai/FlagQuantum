@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import Counter
 from dataclasses import replace
 from itertools import product
+from typing import Any
 
 import numpy as np
 import pytest
@@ -14,6 +15,7 @@ from flagquantum.compiler.registers.component_builder import ComponentProgramBui
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import Operation, ProgramRecord, ValueRef
+from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.measurement_checks import forced_branch
@@ -34,7 +36,9 @@ def release_then_allocate(width: int, dirty: bool, free_dirty: bool) -> ProgramR
             ]
         )
     )
-    reversed_input = builder.join(builder.split(builder.inputs["input"])[::-1])
+    input_binding = builder.inputs["input"]
+    assert isinstance(input_binding, RegisterBinding)
+    reversed_input = builder.join(builder.split(input_binding)[::-1])
     builder.free(reversed_input, dirty=free_dirty)
     output = builder.allocate(width, dirty=dirty)
     return builder.finalize({"out": output})
@@ -61,12 +65,12 @@ def test_preowned_input_matches_original_manager_reuse(
         allow_workspace_outputs=True,
     )
     assert bound.outputs == (inputs[::-1],)
+    assert not Counter(gate.name for gate in bound.circuit.instructions)
     assert bound.circuit.instructions == ()
     assert [(event.kind, event.wires, event.dirty) for event in bound.events] == [
         ("free", inputs[::-1], free_dirty),
         ("allocate", inputs[::-1], dirty),
     ]
-    assert not Counter(gate.name for gate in bound.circuit.instructions)
     with pytest.raises(ValueError, match="ownership transfer"):
         bind_register_program(
             release_then_allocate(width, dirty, free_dirty),
@@ -103,7 +107,8 @@ def test_live_returned_adopted_input_needs_no_workspace_output_policy(
         ((1, False), [3, False]),
     ],
 )
-def test_invalid_input_ownership_is_rejected_before_binding(ownership: object) -> None:
+def test_invalid_input_ownership_is_rejected_before_binding(ownership: Any) -> None:
+    # Invalid API inputs intentionally cross the runtime validation boundary.
     record = release_then_allocate(1, False, False)
     with pytest.raises(ValueError, match="input ownership"):
         bind_register_program(
@@ -144,7 +149,9 @@ def test_mixed_adopted_and_allocated_words_return_to_origin_pools() -> None:
         )
     )
     work = builder.allocate(1, dirty=True)
-    input_bits = builder.split(builder.inputs["input"])
+    input_binding = builder.inputs["input"]
+    assert isinstance(input_binding, RegisterBinding)
+    input_bits = builder.split(input_binding)
     mixed = builder.join([input_bits[0], *builder.split(work)])
     builder.free(mixed, dirty=False)
     builder.free(builder.join(input_bits[1:]), dirty=True)
@@ -198,7 +205,9 @@ def test_released_input_restores_complex_joint_state_and_exact_resource_counts(
         ),
         definitions,
     )
-    bits = builder.split(builder.inputs["input"])
+    input_binding = builder.inputs["input"]
+    assert isinstance(input_binding, RegisterBinding)
+    bits = builder.split(input_binding)
     first, second = builder.call_tuple(
         "cnot_pair", {"word0": bits[0], "word1": bits[1]}
     )
@@ -354,7 +363,9 @@ def test_adopted_input_release_after_measured_and_matches_both_source_branches(
     state = torch.zeros(16, dtype=torch.complex128)
     for controls in range(4 if dirty else 1):
         for spectator in range(2):
-            state[(controls << 2) | spectator] = complex(controls + 1, spectator - 2)
+            state[(controls << 2) | spectator] = torch.tensor(
+                complex(controls + 1, spectator - 2), dtype=state.dtype
+            )
     state /= state.norm()
     for outcome in (0, 1):
         actual = forced_branch(state, bound.circuit.instructions, (outcome,))

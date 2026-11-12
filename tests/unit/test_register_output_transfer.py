@@ -6,6 +6,7 @@ from collections import Counter
 from collections.abc import Iterable
 from dataclasses import replace
 from itertools import product
+from typing import Any
 
 import numpy as np
 import pytest
@@ -15,6 +16,7 @@ from flagquantum.compiler.registers.component_builder import ComponentProgramBui
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program import ProgramRecord
+from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.measurement_checks import forced_branch
@@ -39,6 +41,8 @@ def output_program(
         elif reverse and operation is work_join:
             operation = replace(operation, operands=operation.operands[::-1])
         operations.append(operation)
+    assert block.return_values is not None
+    assert main.registers is not None
     main = replace(
         main,
         blocks=(
@@ -141,15 +145,15 @@ def test_returned_work_preserves_source_complex_joint_state_and_permutation(
     events = []
 
     class Manager(cirq.SimpleQubitManager):
-        def qalloc(self, n: int, dim: int = 2) -> list[cirq.LineQubit]:
+        def qalloc(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             assert n == dim == 2
             events.append("allocate")
             return list(cirq.LineQubit.range(2))
 
-        def qborrow(self, n: int, dim: int = 2) -> list[cirq.LineQubit]:
+        def qborrow(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             return self.qalloc(n, dim)
 
-        def qfree(self, qubits: Iterable[cirq.LineQubit]) -> None:
+        def qfree(self, qubits: Iterable[cirq.Qid]) -> None:
             events.append("free")
 
     source, inputs = BloqBuilder.from_signature(
@@ -272,9 +276,11 @@ def test_output_transfer_keeps_all_add_measurement_branches_and_clean_work() -> 
     expected = torch.zeros_like(state)
     for word in range(32):
         amplitude = complex(word % 5 - 2, word % 3 - 1)
-        state[word << 2] = amplitude
+        state[word << 2] = torch.tensor(amplitude, dtype=state.dtype)
         left, right = word >> 3, word & 7
-        expected[((left << 3) | ((left + right) & 7)) << 2] = amplitude
+        expected[((left << 3) | ((left + right) & 7)) << 2] = torch.tensor(
+            amplitude, dtype=expected.dtype
+        )
     expected /= state.norm()
     state /= state.norm()
     assert Counter(gate.name for gate in bound.circuit.instructions) == Counter(
@@ -290,7 +296,8 @@ def test_output_transfer_keeps_all_add_measurement_branches_and_clean_work() -> 
 
 
 @pytest.mark.parametrize("policy", [None, 0, 1, "yes", np.bool_(True)])
-def test_transfer_policy_requires_a_builtin_boolean(policy: object) -> None:
+def test_transfer_policy_requires_a_builtin_boolean(policy: Any) -> None:
+    # Invalid API inputs intentionally cross the runtime validation boundary.
     with pytest.raises(ValueError, match="built-in boolean"):
         bind_register_program(ProgramRecord(()), (), allow_workspace_outputs=policy)
 
@@ -306,7 +313,9 @@ def test_joined_input_and_allocated_output_keep_each_physical_wire(dirty: bool) 
         )
     )
     work = builder.allocate(dirty=dirty)
-    out = builder.join([*builder.split(work), *builder.split(builder.inputs["data"])])
+    data_binding = builder.inputs["data"]
+    assert isinstance(data_binding, RegisterBinding)
+    out = builder.join([*builder.split(work), *builder.split(data_binding)])
     bound = bind_register_program(
         builder.finalize({"out": out}),
         ((2,),),
@@ -330,7 +339,9 @@ def test_output_permission_keeps_unmanaged_input_release_diagnostic(
             ]
         )
     )
-    builder.free(builder.inputs["data"], dirty=dirty)
+    data_binding = builder.inputs["data"]
+    assert isinstance(data_binding, RegisterBinding)
+    builder.free(data_binding, dirty=dirty)
     with pytest.raises(ValueError, match="caller input wires"):
         bind_register_program(
             builder.finalize({}), ((0,),), allow_workspace_outputs=True

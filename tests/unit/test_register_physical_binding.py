@@ -24,6 +24,7 @@ from flagquantum.core.ir.program import (
     ValueRef,
     verify_program_record,
 )
+from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.measurement_checks import forced_branch
@@ -131,28 +132,35 @@ def test_source_lifetimes_preserve_entangled_dirty_work_and_clean_zero(
     work = builder.allocate(dtype=RegisterType("uint", 1), dirty=dirty)
     data = builder.inputs["data"]
     for _ in range(2):
-        data, work = builder.call_tuple("cnot", {"word0": data, "word1": work})
+        data, next_work = builder.call_tuple("cnot", {"word0": data, "word1": work})
+        assert isinstance(next_work, RegisterBinding)
+        work = next_work
     builder.free(work, dirty=free_dirty)
     native = builder.finalize({"data": data})
     bound = bind_register_program(
         native, ((0,),), clean=() if dirty else (1,), borrowed=(1,) if dirty else ()
     )
 
-    events = []
+    events: list[tuple[str, tuple[int, ...], bool]] = []
 
     class Manager(cirq.SimpleQubitManager):
-        def qalloc(self, n: int, dim: int = 2) -> list[cirq.LineQubit]:
+        def qalloc(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             assert n == 1 and dim == 2
             events.append(("allocate", (1,), False))
             return [cirq.LineQubit(1)]
 
-        def qborrow(self, n: int, dim: int = 2) -> list[cirq.LineQubit]:
+        def qborrow(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             assert n == 1 and dim == 2
             events.append(("allocate", (1,), True))
             return [cirq.LineQubit(1)]
 
-        def qfree(self, qubits: Iterable[cirq.LineQubit]) -> None:
-            events.append(("free", tuple(q.x for q in qubits), free_dirty))
+        def qfree(self, qubits: Iterable[cirq.Qid]) -> None:
+            wires_list = []
+            for qubit in qubits:
+                assert isinstance(qubit, cirq.LineQubit)
+                wires_list.append(qubit.x)
+            wires = tuple(wires_list)
+            events.append(("free", wires, free_dirty))
 
     source, inputs = BloqBuilder.from_signature(SourceSignature.build(data=1))
     source_data, source_work = inputs["data"], source.allocate(
@@ -248,17 +256,21 @@ def test_actual_builder_schedule_matches_original_connection_order(
     source_events = []
 
     class Manager(cirq.SimpleQubitManager):
-        def qalloc(self, n: int, dim: int = 2) -> list[cirq.LineQubit]:
+        def qalloc(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             assert dim == 2
             wires = tuple(available.pop() for _ in range(n))
             source_events.append(("allocate", wires))
             return [cirq.LineQubit(wire) for wire in wires]
 
-        def qborrow(self, n: int, dim: int = 2) -> list[cirq.LineQubit]:
+        def qborrow(self, n: int, dim: int = 2) -> list[cirq.Qid]:
             return self.qalloc(n, dim)
 
-        def qfree(self, qubits: Iterable[cirq.LineQubit]) -> None:
-            wires = tuple(qubit.x for qubit in qubits)
+        def qfree(self, qubits: Iterable[cirq.Qid]) -> None:
+            wires_list = []
+            for qubit in qubits:
+                assert isinstance(qubit, cirq.LineQubit)
+                wires_list.append(qubit.x)
+            wires = tuple(wires_list)
             available.extend(reversed(wires))
             source_events.append(("free", wires))
 
@@ -289,7 +301,9 @@ def test_zero_width_lifetimes_and_output_bit_permutation(width: int) -> None:
     builder.free(builder.join(builder.split(empty)))
     work = builder.allocate(width)
     builder.free(work)
-    data = builder.join(builder.split(builder.inputs["data"])[::-1])
+    data_binding = builder.inputs["data"]
+    assert isinstance(data_binding, RegisterBinding)
+    data = builder.join(builder.split(data_binding)[::-1])
     bound = bind_register_program(
         builder.finalize({"data": data}), ((4, 2, 0),), clean=(1, 3, 5)
     )
@@ -327,7 +341,7 @@ def test_repeated_measurement_reset_and_parity_have_fresh_classical_slots() -> N
     leaf = explicit_block(dynamic.to_ir())
     measured = next(op.results[-1] for op in leaf.operations if op.opcode == "measure")
     one, parity = ValueRef("entry", 100, "bool"), ValueRef("entry", 101, "bool")
-    operations = []
+    operations: list[Operation] = []
     for op in leaf.operations:
         if op.opcode == "x":
             operations.extend(
@@ -431,7 +445,9 @@ def test_binding_profile_and_ownership_diagnostics() -> None:
     builder = ComponentProgramBuilder(
         Signature([Register("data", RegisterType("opaque", 1), side=RegisterSide.LEFT)])
     )
-    builder.free(builder.inputs["data"])
+    data_binding = builder.inputs["data"]
+    assert isinstance(data_binding, RegisterBinding)
+    builder.free(data_binding)
     with pytest.raises(ValueError, match="caller input"):
         bind_register_program(builder.finalize({}), ((0,),))
     builder = ComponentProgramBuilder(
@@ -544,7 +560,9 @@ def test_repeated_private_workspace_calls_schedule_before_expansion_and_reuse_po
     )
     data = builder.inputs["data"]
     for _ in range(2):
-        data = builder.call("lifetime", {"data": data})
+        returned = builder.call("lifetime", {"data": data})
+        assert isinstance(returned, RegisterBinding)
+        data = returned
     bound = bind_register_program(builder.finalize({"data": data}), ((2,),), clean=(0,))
     assert [(event.kind, event.wires) for event in bound.events] == [
         ("allocate", (0,)),
