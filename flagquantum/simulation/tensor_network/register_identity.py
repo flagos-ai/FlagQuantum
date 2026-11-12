@@ -37,9 +37,29 @@ def register_identity_nodes(
     """
     if not signature.thru_registers_only:
         raise ValueError("identity placeholders require direct-through ports")
+    return register_bit_wiring_nodes(signature, incoming, outgoing, like)
+
+
+def register_bit_wiring_nodes(
+    signature: Signature,
+    incoming: Mapping[str, tuple[tuple[int, ...], ...]],
+    outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+    like: torch.Tensor,
+) -> tuple[TensorNetworkNode, ...]:
+    """Factor a declared bit-preserving rebind into binary identities.
+
+    Unlike direct-through placeholders, port names, widths and shapes may differ
+    across sides. Signature order supplies the explicit bit correspondence:
+    row-major words, then MSB-first bits. This is a wiring promise supplied by
+    the caller, not inference from a component name or body. Unequal bit counts
+    or reused labels are refused. Empty wiring emits no nodes.
+    No whole-word matrix, physical gate or work allocation is created.
+    """
     groups = register_tensor_label_groups(signature, incoming, outgoing)
     if not groups:
         return ()
+    if len(groups) != 2 or len(groups[0]) != len(groups[1]):
+        raise ValueError("bit wiring requires equal input and output bit counts")
     right, left = groups
     labels = (*right, *left)
     if len(set(labels)) != len(labels):
