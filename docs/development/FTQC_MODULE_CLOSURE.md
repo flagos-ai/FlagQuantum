@@ -218,3 +218,5 @@ Concrete register domains and the default truth-table connection reuse existing 
 [Finite-field polynomial codecs](FINITE_FIELD_POLYNOMIAL_ENCODING.md) reuse existing field and array numerical owners; polynomial layouts and gate emission remain in Compiler, and Core admission is unchanged.
 
 [Polynomial numerical metadata](FINITE_FIELD_POLYNOMIAL_METADATA.md) connects concrete declarations to shared domain, codec, binding and collection owners; Core executable admission remains unchanged.
+
+[Integer basis tensor suppliers](REGISTER_BASIS_VECTORS.md) provide arbitrary unsigned kets/effects on existing labels and replace the zero supplier implementation; Compiler retains physical preparation and graph construction.
