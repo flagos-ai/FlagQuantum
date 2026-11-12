@@ -916,3 +916,5 @@ Concrete register domains and the default truth-table connection reuse existing 
 [Symbolic numerical metadata](../../docs/development/CLASSICAL_SYMBOLIC_METADATA.md) reaches existing binding, collection and domain owners while binary codecs retain concrete admission.
 
 [Finite-field polynomial codecs](../../docs/development/FINITE_FIELD_POLYNOMIAL_ENCODING.md) reuse existing field and array numerical owners; polynomial layouts and gate emission remain in Compiler, and Core admission is unchanged.
+
+[Polynomial numerical metadata](../../docs/development/FINITE_FIELD_POLYNOMIAL_METADATA.md) connects concrete declarations to shared domain, codec, binding and collection owners; Core executable admission remains unchanged.

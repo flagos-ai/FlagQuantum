@@ -31,9 +31,9 @@ Construction and width remain lazy. Negative and symbolic degrees are not
 normalized. Domain iteration, reshape, polynomial construction and array type
 inference retain their source failures and diagnostics. Coefficient conversion
 methods do not add a degree or length guard. Odd fields retain invalid binary
-word failures rather than reducing them modulo the field order. Native metadata
-projection and integration into generic register codecs/binding remain future
-work; this numerical object alone does not authorize a polynomial Program port.
+word failures rather than reducing them modulo the field order. The subsequent [numerical metadata connection](FINITE_FIELD_POLYNOMIAL_METADATA.md)
+projects concrete declarations into generic domains, codecs and binding.
+This numerical object alone does not authorize a polynomial Program port.
 
 ## Verification and resource accounting
 
@@ -58,7 +58,7 @@ coherent circuit has one deterministic branch, so there are no measurement
 histories to enumerate. Numerical codecs and coefficient conversion emit zero
 primitives. No odd-characteristic physical decomposition is claimed.
 
-G2 remains open, including polynomial Core metadata and source-wide register
+G2 remains open, including executable polynomial graph ports and source-wide register
 integration. The source files are unchanged; G3 is not started.
 
 Local checks: 79 new cases, 3886 concentrated regressions, 84 CPU/TN tests and two original upstream polynomial tests passed. Strict typing of two Python files, Black, Ruff, Simulation scope, architecture, internal IR and API checks passed. New codec coverage is 100% (50 statements, 10 branches). Nine locked source blobs matched the inventory.
