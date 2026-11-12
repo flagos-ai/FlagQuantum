@@ -242,7 +242,19 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 60
+    assert len(validated) == 63
+    assert (
+        "tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk",
+        "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/main.py",
+    ) in validated
+    assert (
+        "tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk",
+        "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/main.py",
+    ) in validated
+    assert (
+        "tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk",
+        "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/main.py",
+    ) in validated
     assert (
         "tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk",
         "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/main.py",
@@ -397,7 +409,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**60/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**63/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

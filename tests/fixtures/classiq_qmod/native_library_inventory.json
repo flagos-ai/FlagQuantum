@@ -9477,9 +9477,33 @@
           "kind": "notebook"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/main.py",
+        "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests CX/RZ/RY/RX then counts CNOT text in a jitted MLIR string. We count actual executable CX instructions instead. No qjit, Lightning runtime or MLIR-text timing equivalence is claimed."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk.ipynb",
+        "original_sha256": "94f3f637c91932f554826f1aac94c5b624ba0114f08e65156d5a65007e64b8a0",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "e8f8572ebb6a78fe138f99066c5043668b7ff7942545ac673db987f80dfc1760"
+          },
+          {
+            "index": 3,
+            "sha256": "183e42533eee81a7c5748fc6c0e268d0c9a48c02ac384276b1deb47788dc37e2"
+          }
+        ],
+        "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests CX/RZ/RY/RX then counts CNOT text in a jitted MLIR string. We count actual executable CX instructions instead. No qjit, Lightning runtime or MLIR-text timing equivalence is claimed.",
+        "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.quantum_walk.pennylane_catalyst_discrete_quantum_walk.overview.main",
+        "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/walkthrough.ipynb",
+        "acceptance_test": "tests/integration/test_synthesis_walk_reference_notebooks.py",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "197fcb1c7e85855895a0ef4731fc7451a9b25d6a",
+        "native_semantic_adaptations": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests CX/RZ/RY/RX then counts CNOT text in a jitted MLIR string. We count actual executable CX instructions instead. No qjit, Lightning runtime or MLIR-text timing equivalence is claimed. Preserve the original loop indentation: X(x[0]) occurs inside all five MCX iterations. This is a reversible permutation, but differs from modular increment on 32 of 64 positions. Do not silently replace it with arithmetic increment. CX/RZ/RY/RX. Exact logical phase uses one final RZ on an existing clean zero work qubit. Its cost is included; the transform is an isometry with zero input/output work, not an identity for dirty work."
+      }
     },
     {
       "id": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk",
@@ -9492,9 +9516,29 @@
           "kind": "notebook"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/main.py",
+        "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests U/CX with Qiskit optimization level 3. We replace that private optimization pipeline with a bounded FlagQuantum decomposition; no optimization-level or timing equivalence is claimed."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk.ipynb",
+        "original_sha256": "b252ee7111a534da5a8fb7c91784a918926336c6ee29565850d2442b96bfeb38",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "0278d6396d036b2720183920dd6abc2c78118bb727c2f9e581bbffe6038b2fe2"
+          }
+        ],
+        "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests U/CX with Qiskit optimization level 3. We replace that private optimization pipeline with a bounded FlagQuantum decomposition; no optimization-level or timing equivalence is claimed.",
+        "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.quantum_walk.qiskit_discrete_quantum_walk.overview.main",
+        "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/walkthrough.ipynb",
+        "acceptance_test": "tests/integration/test_synthesis_walk_reference_notebooks.py",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "a2ebc550a44a91209e2c30d333bf0907463043cd",
+        "native_semantic_adaptations": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source requests U/CX with Qiskit optimization level 3. We replace that private optimization pipeline with a bounded FlagQuantum decomposition; no optimization-level or timing equivalence is claimed. The source shift is modular increment. Coin=1 applies increment; coin=0 applies its inverse. The logical value is six-bit unsigned, with source array index zero as the low bit. CX/U3. U3 is the three-angle U gate. All explicit conversion rules preserve absolute phase."
+      }
     },
     {
       "id": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk",
@@ -9507,9 +9551,33 @@
           "kind": "notebook"
         }
       ],
-      "workflow_status": "pending",
-      "native_program": null,
-      "kind": "notebook_workflow"
+      "workflow_status": "validated",
+      "native_program": {
+        "path": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/main.py",
+        "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source calls Tket box decomposition, synthesis and an Aer backend. We report actual FlagQuantum CX/U3 costs instead of claiming the unspecified Aer/Tket basis or private pass equivalence."
+      },
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk.ipynb",
+        "original_sha256": "3d00a2d93fd4ead9a288159780b9264e25294fede81b3de447297996233dea25",
+        "reviewed_code_cells": [
+          {
+            "index": 2,
+            "sha256": "4770e4ec5d042a0a5f96b2ca2e1287ba03931ddb80912dd0ae866d6c5ae31427"
+          },
+          {
+            "index": 3,
+            "sha256": "e23fe60750d70ec8c6bd44fb7231f2a44263ac3d9569cbdba81a85fdc5c8c2e9"
+          }
+        ],
+        "scope": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source calls Tket box decomposition, synthesis and an Aer backend. We report actual FlagQuantum CX/U3 costs instead of claiming the unspecified Aer/Tket basis or private pass equivalence.",
+        "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.classiq_paper.quantum_walk.tket_discrete_quantum_walk.overview.main",
+        "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/walkthrough.ipynb",
+        "acceptance_test": "tests/integration/test_synthesis_walk_reference_notebooks.py",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "git_blob_sha1": "f3441ebedf849cd1dd538b6d8e736f6da2f6aabc",
+        "native_semantic_adaptations": "Complete native counterpart of an originally commented source Notebook: six position bits and coin, exact original control/shift semantics, actual target-basis resource counts, observed local durations, named readout, independent Circuit full-state and all128-column checks. The source calls Tket box decomposition, synthesis and an Aer backend. We report actual FlagQuantum CX/U3 costs instead of claiming the unspecified Aer/Tket basis or private pass equivalence. The source shift is modular increment. Coin=1 applies increment; coin=0 applies its inverse. The logical value is six-bit unsigned, with source array index zero as the low bit. CX/U3. U3 is the three-angle U gate. All explicit conversion rules preserve absolute phase."
+      }
     },
     {
       "id": "tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle",

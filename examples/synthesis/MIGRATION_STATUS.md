@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **60/213**.
+Validated local Notebook workflows: **63/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -408,9 +408,9 @@ Validated local Notebook workflows: **60/213**.
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt_example` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/main.py) | validated |
-| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk` | notebook_workflow | Pending | pending |
-| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk` | notebook_workflow | Pending | pending |
-| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/main.py) | validated |
+| `tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle` | notebook_workflow | [Native program](tutorials/technology_demonstrations/discrete_quantum_walk_circle/main.py) | pending |
 | `tutorials/technology_demonstrations/fault_tolerance_engine_end_to_end/fault_tolerance_engine_end_to_end` | notebook_workflow | Pending | pending |
 | `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hamiltonian_evolution/main.py) | pending |
