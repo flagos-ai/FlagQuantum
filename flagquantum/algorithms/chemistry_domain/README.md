@@ -42,3 +42,49 @@ External driver replacement requires changing only the producer: pass a
 MolecularProblem returned by ecosystem.chemistry.pyscf.build_molecular_problem to
 the same active-space, encoding and energy consumers. Orbital labels survive
 selection, and reference_occupied records occupations after arbitrary reordering.
+
+## Input replacement during circuit training
+
+Native integrals, `fcidump.read_fcidump` and
+`molecular_hdf5.read_molecular_hdf5` all produce `MolecularProblem`. The training
+consumer uses its static integrals, electron count and explicit occupation
+convention; it does not need an external file object or optional reference
+energy. For a two-orbital, two-electron problem, continue the native workflow
+above with this existing UCCSD/PyTorch composition:
+
+```python
+import torch
+import flagquantum as fq
+from flagquantum.algorithms.chemistry import uccsd_ansatz
+from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+from flagquantum.algorithms.fermion.encoding import encode_fermion
+from flagquantum.algorithms.fermion.observables import to_observable
+
+encoded = encode_fermion(fermion_hamiltonian(problem), n_modes=4, encoding="jordan_wigner")
+observable = to_observable(encoded.operator)
+angles = torch.tensor([0.1, -0.07, 0.2], dtype=torch.float32, requires_grad=True)
+optimizer = torch.optim.Adam([angles], lr=0.05)
+for _ in range(120):
+    optimizer.zero_grad()
+    circuit = uccsd_ansatz(4, 2, angles, dtype=torch.complex128, device="cpu")
+    loss = fq.run(circuit, outputs=[fq.expectation(observable)]).expectation().sum()
+    loss.backward()
+    optimizer.step()
+```
+
+Replacing only the `problem` producer with either file reader preserves the
+consumer. The H2 scenario at 0.7414 angstrom reaches approximately
+-1.1372701747 Ha with one particle of each spin. FCIDUMP's undivided constant
+and HDF5's nuclear constant enter once through native assembly. Missing optional
+HF energies do not change the objective. UCCSD angle ingestion remains float32,
+even with a complex128 state; this evidence is a bounded CPU/full-JW trajectory,
+not general convergence, geometry/SCF gradients or scalable training.
+
+With `flagquantum[chemistry-hdf5]` installed, run
+`python -m pytest tests/integration/test_molecular_hdf5_isolation.py -k training -q`.
+It compares all 121 energy evaluations, initial gradients and optimized angles
+after replacing the input producer, then checks final spin-sector support.
+The complete scenario blocks OpenFermion, Cirq, PySCF and SciPy imports in a fresh
+interpreter; h5py and NumPy are confined to file production/reading and PyTorch's
+existing optimizer initialization. The same test is selected by the existing
+optional HDF5 CI lane; no new dependency, training API or runtime is introduced.
