@@ -35,7 +35,7 @@ than changing the assertion to pretend foreign object identity exists natively.
 | `test_step` | Parallel: the same test compares each call's complete output assignments and last position. The source first visits LeftDangle; a native step visits the first actual call. Finalize and exhausted iteration remain inspectable. |
 | `test_add_ints_unsigned` | Original body: `test_original_exhaustive_add_assertions_with_native_arithmetic`, widths 1–4, all operand pairs. Existing `add_integer_values` supplies arithmetic. |
 | `test_add_ints_signed` | Original body: same replacement, widths 2–4 and all signed operand pairs. |
-| `test_notebook` | Open under **Q-0881**, `qualtran/simulation/classical_sim.ipynb`. Its missing reference has been restored byte-for-byte (blob `9f99d7e8d86996c40fddf84c275993571a9ed883`): 25 cells, 12 code and 13 Markdown. Native cell/asset replacement remains future work; Q-0884 is the separate supertensor notebook. |
+| `test_notebook` | Subsequent [Q-0881 asset migration](CLASSICAL_SIMULATION_NOTEBOOK.md) executes all12 original and12 native code cells, disposes13 Markdown cells and renders the native value table. Reference blob9f99d7e8 remains unchanged; Q-0884 is the separate supertensor notebook. |
 | `test_multidimensional_classical_sim_for_dtypes` | Original body: `test_original_multidimensional_assertions_with_native_numerical_codecs`, all six original 5-bit types and complete domains. Original action assertions still check element types. Native typed bind/collect owners supply numerical arrays; this is not wider executable graph admission. |
 | `test_multidimensional_classical_sim_for_large_int` | Original body: same codec entry with exact QInt(100) values, including negative and greater-than-64-bit values, retaining object storage. |
 | `test_multidimensional_classical_sim_for_gqf` | Original body: same codec entry with GF(4), retaining its field array subclass and element identity. Existing binary-field graph tests separately prove executable paths. |
@@ -83,13 +83,12 @@ in their original evidence and are rerun without changing those emitters.
 
 ## Remaining acceptance work
 
-Q-0883 remains open: the notebook test has no complete native asset replacement,
-and the wider typed numerical cases do not establish executable IR admission.
+Q-0883 remains open: wider typed numerical cases do not establish executable IR
+admission, and parallel tests retain explicit representation differences.
 Q-0882 retains the source/native empty-array and input-sentinel differences and
 foreign lazy-decomposition boundaries listed in
 [the source disposition](CLASSICAL_SIM_SOURCE_DISPOSITION.md). An explicit
-matrix removes missing accounting, not these actual boundaries. Q-0881 will
-receive its own notebook audit; Q-0885's accepted tensor notebook is not repeated.
+matrix removes missing accounting, not these actual boundaries. Q-0881 now has its complete separate notebook audit; Q-0885's accepted tensor notebook is not repeated.
 No test count alone closes a parent, and G3 remains unstarted.
 
 Local acceptance: **34 new cases**, **1,591 related tests in 32.77 s**

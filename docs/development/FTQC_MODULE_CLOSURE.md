@@ -460,3 +460,14 @@ related/84 CPU-TN/28 original source-only checks pass, strict1 and quality gates
 Q-0881 reference notebook is restored byte-for-byte; its12-code/13-Markdown
 asset migration remains open. Q-0882/Q-0883 are not closed by test counts.
 No new ID:20 closed/1260 open/390 active,1184 records remain unchanged.
+
+The [complete classical simulation notebook](CLASSICAL_SIMULATION_NOTEBOOK.md)
+closes Q-0881: all 25 cells (12 code/13 Markdown), metadata and assets have
+explicit native disposition. Original 12 code cells and native 12 code cells
+execute independently; per-call Add outputs and the physical two-bit consumer
+match, including both unnormalized measurement branches and clean workspace.
+Implementation `ce8bc24a`; 6 new/1622 related/84 CPU-TN/28 unchanged source tests
+pass, strict2 and quality gates. Native value-table plotting and the bounded
+exact fixed-point sample are explicit adaptations, not general QFxp support.
+Q-0882/Q-0883 remain open. Current total: 21 closed/1259 open/390 active,
+1184 capability records (1183 current plus 1 historical). Next Q-0884.
