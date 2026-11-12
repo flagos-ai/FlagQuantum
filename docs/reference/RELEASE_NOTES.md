@@ -17,6 +17,12 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add an approved candidate `write_shot_data_file` entry for caller-owned CPU
+  bool and packed uint8 shot tables in six Stim 1.16.0 formats. It reuses the
+  existing SDK or embedded source closure, validates a bounded owned copy, and
+  publishes without replacing a destination. Native and installed acceptance
+  are pending; no complete Stim parity claim is made.
+
 - Add a private ordered predicate-phase action to the fresh-register Compiler
   profile. It borrows initialized basis values without consuming references,
   reuses existing exact prefix/adjoint cleanup and shares workspace with later

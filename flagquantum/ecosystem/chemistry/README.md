@@ -55,3 +55,121 @@ The default orbital budget is 32 before dense tensor reads. The reference fills
 the first NELEC/2 orbitals; arbitrary occupations are not inferred from the file.
 No amplitudes, density matrices, complex/open-shell data or writing are supported.
 See the [format contract](../../../docs/development/MOLECULAR_HDF5_INPUT_PR.md).
+
+
+## Populated MolecularData objects
+
+`molecular_data.from_openfermion_molecular_data(source)` is a separate,
+experimental one-way import for existing in-memory OpenFermion 1.7.1 objects.
+Install the existing `openfermion` extra only in the interoperability environment.
+It returns the same owned MolecularProblem as the other inputs; encoding,
+active-space formulas and measurement consumers remain unchanged. No registry,
+Stable Core export, dependency manifest or native algorithm is extended.
+
+This accepts real closed-shell spatial integrals, multiplicity 1, integer
+metadata, and a default positive budget of 32 spatial orbitals. Optional
+`n_qubits` must equal twice the orbital count; optional `hf_energy` is retained.
+The reference fills the first n_electrons/2 spatial orbitals. Nuclear repulsion
+enters once and core_energy is zero. Cached upstream two-body `(ps|qr)` values
+become native chemist `(pq|rs)` values without a half-factor. Numeric dense
+integer/real NumPy arrays, including nonnative byte order, are converted to
+owned CPU float64 tensors. MolecularProblem remains authoritative for finite
+values, closed-shell electron counts and integral permutation symmetries.
+
+Both integral arrays must already be populated. The adapter reads upstream
+1.7.1's integral cache fields explicitly because its public properties may
+perform implicit file reads on cache misses. Missing caches fail; this entry
+never invokes `load`, `save`, a driver or an upstream calculation. Use the
+existing HDF5 reader for files. Complex/open-shell/spin-orbital coefficients,
+amplitudes, density matrices, arbitrary reference occupations and tensor
+export are outside this boundary. Dense integral copies require O(n**4) memory
+in addition to the already allocated source arrays and native snapshots.
+
+A shortest supported import/measurement path in the optional environment:
+
+```python
+import numpy as np
+import openfermion
+import torch
+import flagquantum as fq
+from flagquantum.ecosystem.chemistry.molecular_data import from_openfermion_molecular_data
+from flagquantum.algorithms.chemistry_domain.problem import fermion_hamiltonian
+from flagquantum.algorithms.fermion.encoding import encode_fermion
+from flagquantum.algorithms.fermion.observables import to_observable
+
+old = openfermion.MolecularData(
+    [("H", (0, 0, 0)), ("H", (0, 0, 0.7))], "sto-3g", 1
+)
+old.n_orbitals, old.n_qubits = 2, 4
+old.nuclear_repulsion = 0.5
+old.one_body_integrals = np.diag([-1.0, -0.2])
+old.two_body_integrals = np.zeros((2, 2, 2, 2))
+old.two_body_integrals[0, 0, 0, 0] = 0.6
+problem = from_openfermion_molecular_data(old)
+encoded = encode_fermion(fermion_hamiltonian(problem), n_modes=4, encoding="jordan_wigner")
+result = fq.run(
+    fq.Circuit(4).x(0).x(1), outputs=[fq.expectation(to_observable(encoded.operator))]
+)
+assert abs(float(torch.as_tensor(result.expectation()).reshape(-1)[0]) + 0.9) < 1e-6
+```
+
+The illustrative integrals are supplied explicitly; this does not run RHF or
+assert that they were computed for the listed geometry. For a typical change,
+edit this adapter and its rejection/replacement tests, then run:
+
+```bash
+python -m pytest tests/unit/test_molecular_data_boundary.py tests/integration/test_molecular_data_isolation.py -q
+python -m pytest tests/unit/test_openfermion_conversion.py -k molecular_data -q
+python tools/check_architecture.py
+python tools/check_dependency_policy.py
+```
+
+The native boundary tests run without NumPy or OpenFermion. Real-upstream tests
+compare actual MolecularData objects and saved HDF5 files through the unchanged
+native consumer, check upstream Hamiltonian matrices and all three encodings,
+mutate source arrays, and forbid implicit file loading. The existing optional
+workflow executes them on Python 3.10 and 3.12; fakes alone do not establish
+upstream compatibility. Linux broad tiers remain CI's responsibility.
+
+## Native UCCSD after object import
+
+Continue the populated-object example with the existing four-mode, two-electron
+UCCSD circuit and a PyTorch optimizer. Only the input conversion uses upstream;
+the same native observable and training loop consume either MolecularProblem.
+
+```python
+from flagquantum.algorithms.chemistry import uccsd_ansatz
+
+hamiltonian = to_observable(encoded.operator)
+angles = torch.tensor([0.1, -0.07, 0.2], dtype=torch.float32, requires_grad=True)
+optimizer = torch.optim.SGD([angles], lr=0.2)
+for _ in range(24):
+    optimizer.zero_grad()
+    circuit = uccsd_ansatz(4, 2, angles, dtype=torch.complex128, device="cpu")
+    loss = fq.run(circuit, outputs=[fq.expectation(hamiltonian)]).expectation().reshape(())
+    loss.backward()
+    optimizer.step()
+assert angles.grad is not None and torch.isfinite(angles.grad).all()
+```
+
+This is local CPU training of circuit angles on static integrals. It supplies no
+SCF, geometry/integral gradients, encoded/tapered ansatz or convergence guarantee.
+The illustrative integrals above have a reference determinant energy of -0.9 Ha;
+they are not the computed H2 integrals. The independent H2 replacement scenario
+in `test_molecular_data_replacement_preserves_native_uccsd_training` compares
+24 native/imported energy, gradient and parameter-update steps, checks a nonzero
+gradient against finite differences, and verifies the final energy against an
+upstream dense matrix. It destroys the external arrays before training and
+checks state normalization and the two-particle sector. Run it explicitly with:
+
+```bash
+python -m pytest tests/unit/test_openfermion_conversion.py::test_molecular_data_replacement_preserves_native_uccsd_training -q
+```
+
+Ecosystem maintainers own this migration aid. OpenFermion remains a separately
+installed Apache-2.0 dependency; its NumPy, h5py and Cirq dependencies stop at the
+optional environment. No upstream source is copied. The existing optional
+provider loader is reused; algorithms never import the adapter. The replacement
+boundary is MolecularProblem, demonstrated by the existing HDF5 reader without
+consumer changes. The adapter can be removed while experimental when in-memory
+old-object migration demand ends; it introduces no permanent compatibility shim.

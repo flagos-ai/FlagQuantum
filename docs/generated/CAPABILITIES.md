@@ -405,8 +405,14 @@ This catalog is generated from the machine-validated
 | Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 | Build a spinful open chain with explicit hopping, interaction and chemical potential | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
+| Reuse populated molecular integrals without implicit file access | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
+| Replace external molecular input while preserving native Hamiltonian and measurement consumers | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
+| Migrate an existing InteractionOperator without pruning small coefficients | OpenFermion interaction operator input | Experimental | [Read guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md) |
+| Replace external operator input while preserving native encoding and UCCSD training consumers | OpenFermion interaction operator input | Experimental | [Read guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md) |
 
 ## Build and compile
 
@@ -1482,14 +1488,14 @@ Run native complex PyTorch simulation, gradients, hybrid training, noise, TEBD, 
 Sample reference-normalized detector flips and derive an exact DEM from one bounded native Clifford source and explicit measurement maps.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`, `flagquantum.qec.execution.measurement_conversion.CompiledMeasurementsToDetectionEventsConverter.convert_file`, `flagquantum.qec.execution.shot_data.read_shot_data_file`, `flagquantum.qec.execution.shot_data.iter_shot_data_file`
+- **Public API:** `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`, `flagquantum.qec.execution.measurement_conversion.CompiledMeasurementsToDetectionEventsConverter.convert_file`, `flagquantum.qec.execution.shot_data.read_shot_data_file`, `flagquantum.qec.execution.shot_data.iter_shot_data_file`, `flagquantum.qec.execution.shot_data.write_shot_data_file`
 - **Runtime modes:** `stabilizer`
 - **Hardware:** `cpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../examples/qec/native_detector_sampling.py)
 - **Documentation:** [guide](../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md)
-- **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
+- **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Caller-owned shot-data writing is approved and under implementation: CPU dense bool or packed uint8, six Stim 1.16.0 formats, 64 MiB principal payload and 1 GiB output bounds, no destination replacement; installed acceptance is pending. Selected PTB64 conversion output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
 
 ### Real orbital-parameter gradients
 
@@ -1518,6 +1524,20 @@ Construct an open-chain Hamiltonian in the native fermionic algebra and measure 
 - **Start:** [quick example](../../examples/algorithms/fermion_hubbard.py)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_CHAIN.md)
 - **Known boundary:** Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency.
+
+### Spinful Fermi-Hubbard periodic ring
+
+Construct a static periodic ring in native fermionic algebra and reuse the existing measurement example with --periodic.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_ring`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
+- **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
 
 
 ## Distributed execution
@@ -1943,7 +1963,35 @@ Convert external fermionic and Pauli operators at an explicit optional ecosystem
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick-start guide](../../flagquantum/ecosystem/README.md)
 - **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
-- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
+- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. This entry covers only the four fermionic/Pauli converters; InteractionOperator import and MolecularData input have separate capability entries. No circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
+
+### Populated OpenFermion molecular data input
+
+Import cached real spatial integrals from an existing OpenFermion MolecularData object into the native MolecularProblem consumed by active-space and encoded measurement workflows.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.chemistry.molecular_data.from_openfermion_molecular_data`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick-start guide](../../flagquantum/ecosystem/chemistry/README.md)
+- **Documentation:** [guide](../../flagquantum/ecosystem/chemistry/README.md)
+- **Known boundary:** One-way import of already populated OpenFermion 1.7.1 MolecularData objects only. Real dense closed-shell spatial integrals, multiplicity one and lowest-orbital reference occupations only. The adapter reads cached integral fields without implicit loading, runs no electronic-structure calculation and retains no upstream arrays. The default budget is 32 spatial orbitals before integral copies; dense O(n^4) storage remains required. No file discovery, writing, complex/open-shell or spin-orbital input, geometry/integral gradients, amplitudes, density matrices or full upstream compatibility. OpenFermion and its transitive dependencies are separately installed only for this optional boundary; native chemistry does not require OpenFermion or Cirq. No production or scalability claim.
+
+### OpenFermion interaction operator input
+
+Import finite number-conserving spin-orbital tensor coefficients into the existing native fermionic algebra for encoding, measurement and circuit-angle training consumers.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.openfermion.from_openfermion_interaction`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick-start guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Known boundary:** One-way import of actual OpenFermion 1.7.1 InteractionOperator objects with a finite scalar constant and dense numeric real or complex NumPy arrays of matching (n,n) and (n,n,n,n) shapes, including n=0. Two-body values multiply a-dagger[p] a-dagger[q] a[r] a[s] directly; no half factor, integral permutation or Hermiticity assumption is applied. This is spin-orbital operator input, not spatial molecular integrals. Native ladder algebra owns signs and canonicalization. Validation reads O(n^4) entries; native storage follows nonzero canonical terms, and external arrays are not retained. Consumer register width is explicit. No reverse tensor export, coefficient gradients, upstream execution, circuits or complete upstream compatibility. Hermitian observable validation and circuit-angle training remain native consumer responsibilities. OpenFermion and its transitive packages are separately installed only at this optional boundary; native execution requires neither OpenFermion nor Cirq. No production, accelerator or scalability claim.
 
 
 ## Validated public performance claims

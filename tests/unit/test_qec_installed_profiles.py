@@ -29,6 +29,7 @@ from tools.qec_installed_smoke import (
     _exercise_matching_graph,
     _exercise_packed_predictions,
     _exercise_sdk_weights,
+    _exercise_shot_data_writing,
     _exercise_shot_file_reading,
     _exercise_stim_conversion,
     _exercise_stim_experiment,
@@ -60,6 +61,11 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     assert (_exercise_shot_file_reading(profile) is not None) == (
         available[0] or _embedded_profile()
     )
+    writing = _exercise_shot_data_writing(profile)
+    assert (writing is not None) == (available[0] or _embedded_profile())
+    if writing is not None:
+        assert writing["formats"] == ["01", "b8", "r8", "ptb64", "hits", "dets"]
+        assert writing["shots_per_format"] == 64 and writing["exact_bytes"] is True
     records = _exercise(profile)
     assert len(records) == (4 if available[0] else 0)
     for record in records:
@@ -716,4 +722,8 @@ def test_file_conversion_profile_failure_is_not_silently_skipped(
 def test_new_shot_reader_keeps_dependency_free_import() -> None:
     from flagquantum.qec.execution import shot_data
 
-    assert shot_data.__all__ == ("read_shot_data_file", "iter_shot_data_file")
+    assert shot_data.__all__ == (
+        "read_shot_data_file",
+        "iter_shot_data_file",
+        "write_shot_data_file",
+    )

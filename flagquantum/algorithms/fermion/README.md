@@ -88,6 +88,17 @@ interferometer and `python -m pytest tests/unit/fermion/test_controlled_evolutio
 -q` for independent full-branch, phase, convergence and gradient references.
  That profile is unreduced JW/CPU only and makes no routing or hardware claim.
 
+For file-to-training composition, run
+`python -m examples.algorithms.fermion_fcidump_training`. The example composes
+the existing FCIDUMP adapter, fermionic Hamiltonian assembly, full JW encoding,
+UCCSD circuit and native runtime with PyTorch Adam. It accepts only two orbitals
+and two electrons and uses a small dense N=2 energy as an inspection reference.
+It owns no parser, ansatz or solver implementation. UCCSD angles remain float32;
+geometry/SCF gradients and scalable optimization are not implied. Run
+`python -m pytest tests/integration/test_fermion_fcidump_training.py -q` to check
+file/native producer replacement, gradients, particle-sector support, invalid
+inputs and execution without external quantum or chemistry SDKs.
+
 For the delivered stages, file-input workflows and planned extension boundaries,
 see the [migration status](../../../docs/development/OPENFERMION_NATIVE_MIGRATION.md#current-delivery-status).
 The initial PR description and its CI counts are historical records; the status
@@ -110,3 +121,51 @@ occupation-bit and analytic sector references before changing assembly. The
 [EXT01 contract](../../../docs/development/FERMION_HUBBARD_CHAIN.md) records
 validation and unsupported boundaries. Always encode with explicit
 `n_modes=2*n_sites`, including the zero Hamiltonian.
+
+For a training composition, run
+`python -m examples.algorithms.fermion_hubbard_training`. It uses the same static
+Hamiltonian with ordinary circuit angles, native CPU expectations and PyTorch
+Adam; it adds no domain solver or trainable Hamiltonian coefficients. Its
+four-mode JW preparation keeps one particle of each spin after each completed
+preparation, rather than after every gate. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_hubbard_training.py -q` to check
+sector support, finite-difference gradients and an optimizer update. The analytic
+two-site energy is an inspection reference, not a many-body performance claim.
+
+The same `hubbard.py` module also owns the experimental static
+`fermi_hubbard_ring` constructor for periodic cycles of at least three sites. It
+reuses the chain assembly and adds one closing bond per spin; native algebra
+retains the occupation-dependent fermionic sign. Run the existing consumer with
+`python -m examples.algorithms.fermion_hubbard --periodic` for a three-site N=2
+reference energy of -3.1231056256 at t=1, U=4, mu=0 through JW, parity and BK.
+See the [ring scope and contributor path](../../../docs/development/FERMION_HUBBARD_RING.md)
+and run `python -m pytest tests/unit/fermion/test_hubbard_ring.py
+tests/integration/test_fermion_hubbard_ring.py -q` after changing this behavior.
+One/two-site cycles are refused, coefficients remain static, and the dense
+reference remains a bounded correctness oracle.
+
+For the bounded periodic training composition, run
+`python -m examples.algorithms.fermion_hubbard_ring_training`. Existing six-mode
+UCCSD and PyTorch Adam optimize circuit angles for the three-site ring with
+one up and one down particle. No dense reference state, domain solver or runtime
+change is needed. Run
+`python -m pytest tests/integration/test_fermion_hubbard_ring_training.py -q`
+for independent lattice energies, finite-difference gradients, spin-sector
+preservation, closing-bond sensitivity and dependency isolation. See the
+[training golden path](../../../docs/development/FERMION_HUBBARD_RING.md#training-golden-path)
+for float32 angle precision and bounded CPU scope.
+
+The same model module owns experimental `spinless_fermion_chain` and
+`spinless_fermion_ring`: one mode per site, minus-t hopping, unshifted
+nearest-neighbor V interaction and minus-mu population. They return existing
+fermion values and own no solver or runtime. Open chains allow one site; rings
+require at least three. Static validation reuses the existing scalar and count
+boundaries. Encode with explicit `n_modes=n_sites`, including zero operators.
+Run `python -m examples.algorithms.fermion_spinless` and add `--periodic` to
+replace only the model producer; three encodings measure -0.7320508076 or 1.0
+respectively at t=1, V=2, mu=0 and N=2. See the
+[spinless golden path](../../../docs/development/FERMION_SPINLESS.md) and run
+`python -m pytest tests/unit/fermion/test_spinless.py tests/integration/test_spinless_fermion.py -q`
+for independent occupation action, boundary signs, free spectra, density bonds,
+encodings and native gradients. Dense state preparation remains a bounded CPU
+inspection tool; no coefficient-gradient or scalability claim is introduced.

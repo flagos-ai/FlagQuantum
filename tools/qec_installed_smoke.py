@@ -648,6 +648,35 @@ def _exercise_shot_file_reading(profile: str) -> list[list[int]] | None:
         return [[0], [1]]
 
 
+def _exercise_shot_data_writing(profile: str) -> dict[str, object] | None:
+    """Exercise all public shot-data encodings in an installed profile."""
+    import torch
+
+    from flagquantum.qec.execution.shot_data import write_shot_data_file
+
+    if not PROFILES[profile][0] and not _embedded_profile():
+        return None
+    witnesses: dict[Literal["01", "b8", "r8", "ptb64", "hits", "dets"], bytes] = {
+        "01": b"111\n" * 64,
+        "b8": b"\x07" * 64,
+        "r8": b"\x00\x00\x00\x00" * 64,
+        "ptb64": b"\xff" * 24,
+        "hits": b"0,1,2\n" * 64,
+        "dets": b"shot D0 D1 D2\n" * 64,
+    }
+    with TemporaryDirectory() as directory:
+        for encoding, expected in witnesses.items():
+            path = Path(directory) / encoding
+            write_shot_data_file(
+                data=torch.ones((64, 3), dtype=torch.bool),
+                path=path,
+                format=encoding,
+                num_detectors=3,
+            )
+            assert path.read_bytes() == expected
+    return {"formats": list(witnesses), "shots_per_format": 64, "exact_bytes": True}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -685,6 +714,7 @@ def main() -> int:
         json.dumps(
             {
                 "shot_file_reading": _exercise_shot_file_reading(args.profile),
+                "shot_data_writing": _exercise_shot_data_writing(args.profile),
                 "profile": args.profile,
                 "package": flagquantum.__file__,
                 "python": sys.version.split()[0],

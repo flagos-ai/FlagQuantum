@@ -1306,3 +1306,17 @@ RSS and caller-retained batches. Zero stored columns are refused. See
 [the approved proposal](../development/QEC_SHOT_DATA_READING_PROPOSAL.md) for
 exact budgets, API mapping and remaining parity gaps. Native and installed
 acceptance are pending for this candidate.
+
+## Write caller-owned shot data candidate
+
+`write_shot_data_file(*, data, path, format, num_measurements=None,
+num_detectors=None, num_observables=None)` writes CPU `torch.bool` rows or
+little-endian bit-packed CPU `torch.uint8` rows in `01`, `b8`, `r8`, `ptb64`,
+`hits`, or `dets`. Specify measurement columns alone, or detector and observable
+columns; measurements cannot be combined with D/L columns. Nonzero packed
+padding and incomplete PTB64 groups are refused. Existing files and symlinks are
+never replaced. The candidate limits principal payload to 64 MiB and estimated
+output to 1 GiB; neither is a process RSS bound. SDK mode uses Stim 1.16.0;
+embedded mode calls the locked native writer and fails closed if unavailable.
+Installed acceptance is pending. See the
+[approved proposal](../development/QEC_SHOT_DATA_WRITING_PROPOSAL.md).

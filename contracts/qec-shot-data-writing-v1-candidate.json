@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "status": "approved_pending_implementation",
+  "approval": {
+    "authority": "Explicit user approval, 2026-11-11",
+    "proposal_sha256": "b22e6af76b65abd4a93ff97e9825197f83fe815b509b226f33b65b2818eeba83"
+  },
+  "owner": "integration",
+  "classification": "single_device_fast_path",
+  "namespace": "flagquantum.qec.execution.shot_data",
+  "exports": [
+    "write_shot_data_file"
+  ],
+  "signature": "(*, data: torch.Tensor, path: str | os.PathLike[str], format: Literal[\"01\", \"b8\", \"r8\", \"ptb64\", \"hits\", \"dets\"], num_measurements: int | None = None, num_detectors: int | None = None, num_observables: int | None = None) -> None",
+  "formats": [
+    "01",
+    "b8",
+    "r8",
+    "ptb64",
+    "hits",
+    "dets"
+  ],
+  "limits": {
+    "principal_payload_bytes": 67108864,
+    "output_bytes": 1073741824,
+    "native_batch_shots": 64,
+    "maximum_simd_width": 1024
+  },
+  "estimator": "S*Q + 2*A(C)*A(max(S,64))/8 + 2*A(C)/8 + 65536; A(x)=1024*ceil(x/1024)",
+  "semantics": [
+    "CPU dense strided bool or uint8 input; dtype determines packing",
+    "M-only or D/L columns; M mixed with D/L refused",
+    "At least one dimension specified, positive total columns; zero shots allowed",
+    "Nonzero packed padding refused",
+    "ptb64 requires shots divisible by 64",
+    "Owned bounded input copy; no concurrent caller writes during copy",
+    "Existing destinations and symlinks refused; staged no-replace publication",
+    "Broken embedded profile never falls back to SDK; optional fallback pinned to Stim 1.16.0",
+    "Payload cap is not a process RSS bound"
+  ],
+  "replacement": "Same public writer consumer with fake/native/SDK, with exact file bytes and refusal/cleanup checks",
+  "upstream_files": 96
+}
