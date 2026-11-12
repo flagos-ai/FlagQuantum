@@ -16,7 +16,16 @@ def run_example() -> None:
             Path(__file__).with_name("source.qmod"), classical_inputs={"params": params}
         )
         compare_states(
-            program, reference_circuit(params), ("a", "b", "c", "sa", "sb", "sc")
+            program,
+            reference_circuit(params),
+            (
+                "v.x[0]",
+                "v.x[1]",
+                "v.x[2]",
+                "v.source_supply_rule_0_slack_var",
+                "v.source_supply_rule_1_slack_var",
+                "v.source_supply_rule_2_slack_var",
+            ),
         )
 
 
