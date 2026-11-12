@@ -322,3 +322,14 @@ open chain with `fermi_hubbard_chain`, prepares a fixed-N=2 dense reference and
 measures energy -0.8284271247 and particle number 2 through JW, parity and BK.
 The dense inspection and state preparation have exponential cost; this example
 makes no many-body scalability claim.
+
+[`fermion_active_space_training.py`](fermion_active_space_training.py), run with
+`python -m examples.algorithms.fermion_active_space_training`, freezes occupied
+orbital 1, retains `(2, 0)` and discards virtual orbital 3 in explicitly synthetic
+static integrals. Existing native UCCSD and PyTorch Adam lower the projected energy
+from approximately -3.3726869663 to -3.7347567967 Ha in 24 updates. The two active
+electrons use an occupied-first reference; constants enter the observable once.
+This is bounded CPU training of a fixed-occupancy projection, not an ab initio
+calculation or unrestricted full-space ground energy. See the
+[chemistry domain golden path](../../flagquantum/algorithms/chemistry_domain/README.md#frozen-core-training-golden-path)
+for the independent projection/gradient checks and static-input limitations.

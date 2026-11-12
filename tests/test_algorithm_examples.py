@@ -112,6 +112,7 @@ SCRIPTS = (
     "fermion_chemistry",
     "fermion_fcidump",
     "fermion_fcidump_training",
+    "fermion_active_space_training",
     "fermion_hdf5",
     "fermion_fourier",
     "fermion_tapering",
@@ -139,6 +140,11 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_active_space_training": (
+        "synthetic static integrals",
+        "fixed-occupancy projection",
+        "UCCSD angles are float32",
+    ),
     "fermion_hubbard_training": (
         "unreduced JW order",
         "not gatewise number conservation or a scalable many-body solver",
@@ -1793,6 +1799,21 @@ def test_fcidump_training_recovers_the_small_molecular_correlation_energy() -> N
     assert float(_labelled(output, "Parameter update norm")) > 0.1
     assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-7)
     _assert_premise("fermion_fcidump_training", output)
+
+
+def test_active_space_training_lowers_the_projected_energy() -> None:
+    output = _run("fermion_active_space_training")
+    assert _labelled(output, "Active orbital labels") == "(2, 0)"
+    assert _labelled(output, "Frozen orbitals") == "(1,)"
+    assert _labelled(output, "Discarded virtual orbitals") == "(3,)"
+    assert _number(output, "Active electrons") == 2
+    initial = float(_labelled(output, "Initial energy").split()[0])
+    final = float(_labelled(output, "Final energy").split()[0])
+    assert initial == pytest.approx(-3.3726869663, abs=1e-8)
+    assert final == pytest.approx(-3.7347567967, abs=1e-6)
+    assert final < initial - 0.3
+    assert _number(output, "Gradient norm") > 0.1
+    _assert_premise("fermion_active_space_training", output)
 
 
 def test_the_example_directory_is_covered_and_indexed() -> None:
