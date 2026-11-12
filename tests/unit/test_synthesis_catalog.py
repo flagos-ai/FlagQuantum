@@ -242,7 +242,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 39
+    assert len(validated) == 43
     for operation in ("or", "xor"):
         assert (
             f"functions/function_usage_examples/arithmetic/bitwise_{operation}/bitwise_{operation}_example",
@@ -300,8 +300,27 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         ),
     ):
         assert (group, path) in validated
+    for group, path in (
+        (
+            "algorithms/quantum_primitives/hadamard_test/hadamard_test",
+            "examples/synthesis/algorithms/quantum_primitives/hadamard_test/overview/main.py",
+        ),
+        (
+            "tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial",
+            "examples/synthesis/tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/main.py",
+        ),
+        (
+            "algorithms/quantum_primitives/swap_test/swap_test",
+            "examples/synthesis/algorithms/quantum_primitives/swap_test/overview/main.py",
+        ),
+        (
+            "functions/qmod_library_reference/classiq_open_library/qpe/qpe",
+            "examples/synthesis/functions/qpe/overview/main.py",
+        ),
+    ):
+        assert (group, path) in validated
     rendered = render(catalog)
-    assert "**39/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**43/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

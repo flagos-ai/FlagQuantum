@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **39/213**.
+Validated local Notebook workflows: **43/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -191,9 +191,9 @@ Validated local Notebook workflows: **39/213**.
 | `algorithms/quantum_primitives/gqsp/gqsp` | notebook_workflow | [Native program](algorithms/quantum_primitives/gqsp/main.py) | pending |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_primitives/gradient_estimation/gradient_estimation_helpers` | python_unclassified | Pending | pending |
-| `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/hadamard_test/main.py) | pending |
+| `algorithms/quantum_primitives/hadamard_test/hadamard_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/hadamard_test/overview/main.py) | validated |
 | `algorithms/quantum_primitives/quantum_oracle_sketching_boolean/quantum_oracle_sketching_boolean` | notebook_workflow | Pending | pending |
-| `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/swap_test/main.py) | pending |
+| `algorithms/quantum_primitives/swap_test/swap_test` | notebook_workflow | [Native program](algorithms/quantum_primitives/swap_test/overview/main.py) | validated |
 | `algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/adapt_vqe/main.py) | pending |
 | `algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian` | notebook_workflow | Pending | pending |
 | `algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation` | notebook_workflow | [Native program](algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/main.py) | pending |
@@ -345,7 +345,7 @@ Validated local Notebook workflows: **39/213**.
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qct_type2` | quantum_program | [Native program](functions/qct_qst/qct_type2/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qct_qst/qst_type2` | quantum_program | [Native program](functions/qct_qst/qst_type2/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qft/qft` | notebook_workflow | [Native program](functions/qft/main.py) | validated |
-| `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | [Native program](functions/qpe/main.py) | pending |
+| `functions/qmod_library_reference/classiq_open_library/qpe/qpe` | notebook_workflow | [Native program](functions/qpe/overview/main.py) | validated |
 | `functions/qmod_library_reference/classiq_open_library/qpe/qpe_flexible` | quantum_program | [Native program](functions/qpe/qpe_flexible/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/qsvt/qsvt` | notebook_workflow | [Native program](functions/qsvt/main.py) | pending |
 | `functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_bell_state` | notebook_workflow | [Native program](functions/state_preparation/prepare_bell_state/main.py) | validated |
@@ -389,7 +389,7 @@ Validated local Notebook workflows: **39/213**.
 | `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | [Native program](tutorials/basics/prepare_state/main.py) | validated |
 | `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | [Native program](tutorials/basics/qmci_pi_estimation/main.py) | pending |
 | `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/main.py) | pending |
-| `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/main.py) | pending |
+| `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/main.py) | validated |
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/main.py) | pending |
 | `tutorials/basic_tutorials/quantumwalk_complex_network/quantumwalk_complex_network` | notebook_workflow | [Native program](tutorials/basics/quantumwalk_complex_network/main.py) | pending |
 | `tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1` | notebook_workflow | [Native program](tutorials/basics/quantum_programming/qmod_tutorial_part1/main.py) | pending |
