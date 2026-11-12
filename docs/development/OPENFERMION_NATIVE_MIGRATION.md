@@ -2,6 +2,39 @@
 
 ## Current delivery status
 
+The latest merged-baseline audit is main `ffb6e7de71b9b9c9e172b20ecbc49ac04f14a0c5`
+on November 12, 2026. The initial selected migration and EXT01–EXT08 are merged.
+The later delivery audit #1133, training/input/object compositions #1137–#1144,
+InteractionOperator registration #1146 and frozen-core training proof #1147 are
+also merged. The follow-up queue below preserves its earlier checked-revision
+status; it is historical and no longer an outstanding merge queue.
+
+Periodic spinful Hubbard assembly merged in [#1150](https://github.com/flagos-ai/FlagQuantum/pull/1150),
+with separate experimental capability registration in
+[#1151](https://github.com/flagos-ai/FlagQuantum/pull/1151).
+The exact combined main revision above passed 143 focused scientific, native
+isolation, training, capability and documentation tests, both periodic/open-chain
+examples and [Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43161089138).
+These results qualify that revision and bounded CPU correctness only.
+
+The current delivery slice composes the existing ring constructor, JW encoding,
+UCCSD and PyTorch optimization in
+`python -m examples.algorithms.fermion_hubbard_ring_training`. It is a branch
+workflow until this change merges. It adds no solver or stable API: model
+coefficients stay static, circuit angles use the existing float32 UCCSD boundary,
+and execution stays CPU `single_device_fast_path`. Its independent two-particle
+lattice reference, spin-sector checks, finite differences and actual optimizer
+updates verify the closing bond through the training consumer. See the
+[ring training golden path](FERMION_HUBBARD_RING.md#training-golden-path).
+
+After this slice, arbitrary graphs, spinless variants, coefficient gradients,
+automatic matched encoded/tapered ansatz construction, accelerator and
+distributed migration evidence remain separate possible extensions. They are
+not unfinished units of the completed initial migration. No automatic merge
+approval or capability promotion follows from this plan.
+
+## Historical delivery audit
+
 Status checked on November 12, 2026, against main revision
 `98ea298bd7de9b0e8d0f905adc6b333aa1aadaed` (the merge of #1125). This is a
 selected native scientific workflow, not complete OpenFermion API compatibility.
@@ -65,7 +98,7 @@ algebra dependencies. See the local
 [chemistry domain README](../../flagquantum/algorithms/chemistry_domain/README.md)
 and [input adapter README](../../flagquantum/ecosystem/chemistry/README.md).
 
-## Post-merge boundary audit and next delivery
+## Historical post-merge boundary audit
 
 This audit inspected package metadata, the dependency policy, scientific module
 imports, the stage contracts and existing scenario tests at the checked main
@@ -96,7 +129,7 @@ with arbitrary upstream versions or types.
 | Encodings and sectors | Three operator encodings and explicitly supplied stabilizer sectors | Automatic symmetry discovery and automatically matched encoded/tapered ansatz synthesis |
 | Execution | Bounded local CPU scientific correctness and native dependency isolation | Migrated-workflow accelerator, distributed training, performance and capacity claims |
 
-## Follow-up delivery queue
+## Historical follow-up delivery queue
 
 The following work is implemented on review branches and remains **unmerged**
 at the checked main revision. A green branch is not a mainline capability.
@@ -132,7 +165,7 @@ and both real upstream endpoints passed. Those branch results do not certify
 a later combined tree. Historical initial-batch numerical records below remain
 bound to their original revisions.
 
-## Next acceptance round
+## Historical acceptance sequence
 
 The next round consolidates these proven paths before adding another external
 object type, model family or solver abstraction:
