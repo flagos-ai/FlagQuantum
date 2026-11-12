@@ -639,3 +639,30 @@ execution and source analytical accounts remain separate.
 Q-0747 remains open for partial-line observations and general foreign protocols.
 Counts remain 29 closed/1251 open/387 active parents and 1187 capability records.
 The existing full-default timeout remains recorded in the ledger.
+
+
+### Partial score lane lifecycle (2026-11-13)
+
+Implementation `9b273636` ports open/close interval observations into the shared
+Drawer lane manager. Immutable geometric segments are visible before and after
+source-equivalent allocation, finish and release callbacks. Existing semantic
+layout records supply register identities and word widths. The native cursor
+integrates per-position source coordinates. Textual flavor values preserve
+canonical quantum/classical and zero-width classical metadata.
+
+The original source runs with a partial-line-dependent reservation policy and
+custom coordinate policy. Add1–32 and scalar/vector/matrix/empty arrays match
+all observations and complete geometry. Invalid-release preflight is an explicit
+native adaptation, with the source's partial mutation reproduced in tests.
+49 new/114 focused/416 concentrated/86 independent integration cases pass with
+zero skips. Strict3 and formatting/scope/architecture/IR/API pass. Lane coverage
+is 82 statements/26 branches at 100%, with combined lane/layout coverage97%.
+Initial callback-keyword and Add(1) test-expectation failures are retained and
+fixed. Evidence uses `g2-score-lifetimes-` and the runnable example is in
+REGISTER_SCORE_RESERVATIONS.md.
+
+Q-0747 remains open for general foreign/wire-symbol admission. Q-0748 retains
+its independent original JSON asset boundary. Counts remain29 closed/1251 open/
+387 active parents and1187 capability records. Added physical gates, work and
+measurements are zero. Actual primitives and source models have separate
+accounts. The existing full-default timeout remains recorded.

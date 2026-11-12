@@ -2,8 +2,9 @@
 
 ## Ownership and interface
 
-`drawer/register_lanes.py` owns the existing minimum-lane heap and reservations.
-`register_score.py` owns dependency columns and completed lifetimes.
+`drawer/register_lanes.py` owns the minimum-lane heap, reservations and geometric
+open/closed intervals. `register_score.py` owns dependency columns, register
+identities and word widths over completed lifetimes.
 `component_score.py` projects validated Core calls and retains their native
 register grouping. Core register objects are reused as presentation metadata.
 Simulation owns complex amplitudes and measurement execution.
@@ -70,9 +71,8 @@ source can partially consume or release its heap on those failures. These error
 transactions are deliberate native adaptations, tested separately from parity.
 
 Hook exceptions propagate. A fresh manager provides an independent retry.
-External callback-owned state retains its usual caller ownership. Foreign
-`LineManager` objects and hooks inspecting source partial `HLine` sets remain
-open protocol boundaries. Native subclasses support `maybe_reserve` and the
+External callback-owned state retains its usual caller ownership. Foreign `LineManager` objects remain an open protocol boundary. Native hooks
+can inspect geometric open/closed intervals through `hlines`. Native subclasses support `maybe_reserve` and the
 context-aware `new_y_for` hook documented below.
 
 Grouped metadata must cover every element, agree with word widths, and preserve
@@ -112,8 +112,7 @@ separate layers.
 | Added by display reservation | Zero primitives, physical work wires, measurements or feedback |
 
 Reserved display lanes contribute spacing. Physical storage continues to follow
-the bound operation. Q-0747 remains open for its general foreign protocol and
-custom partial-line behavior and general foreign protocols. Javascript animation remains a
+the bound operation. Q-0747 remains open for its general foreign and wire-symbol protocol boundaries. Javascript animation remains a
 separate dependency. Evidence uses the prefix `g2-score-reservations-`.
 
 Local acceptance on 2026-11-13 uses implementation commit `153637f2`.
@@ -196,5 +195,107 @@ Evidence uses `g2-score-coordinates-`.
 Coordinate selection adds zero physical primitives, work wires, measurements or
 feedback. Existing execution regressions retain their amplitude, work-restoration
 and append checks. The actual MultiAnd and source-model accounts above continue
-separately. Q-0747 remains open for partial-line observations and general foreign
-protocols. The distinct native hook name is an explicit integration adaptation.
+separately. Q-0747 remains open for general foreign and wire-symbol protocol boundaries.
+Partial-line observations are accepted in the lifecycle section below. The distinct native hook name is an explicit integration adaptation.
+
+
+## Partial horizontal-line lifecycle
+
+`RegisterLaneManager.hlines` stores immutable `LaneSegment` values with the
+source geometric fields `y`, `seq_x_start`, `seq_x_end` and `flavor`. An open
+segment has `seq_x_end=None`. The flavor uses the source's textual quantum or
+classical value. Canonical Core metadata also preserves the classical identity
+of zero-width classical words. The existing completed `RegisterLine` carries
+register identity and word width for the layout and its rendering consumers.
+These records serve the callback observation and semantic layout responsibilities.
+
+The layout sets the manager's `seq_x` cursor to -1 at inputs, to the current
+sequential column before each operation and to the output column at final
+release. Direct manager callers set this cursor explicitly. Its initial value
+is zero. The cursor integrates the source's per-position coordinates into the
+native allocation entry points.
+
+Allocation evaluates release predicates once per register, selects each lane,
+adds its open interval and calls `maybe_reserve`. Array elements follow row-major
+order. Release returns each lane to the heap, calls `finish_hline` to replace the
+unique open interval with a closed value, then invokes `maybe_reserve`. Closed
+values persist when that same lane is reused. A saved callback snapshot retains
+its original immutable values. Coordinate policies see the state before the new
+interval opens. Reservations allocate spacing without creating intervals.
+
+Callbacks can inspect the interval collection to choose reservations and their
+release predicates. The layout owns the cursor, while the manager owns interval
+membership. Callbacks preserve those ownership boundaries. Each independent
+layout owns a fresh manager.
+
+```python
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.drawer.register_lanes import (
+    LaneLocation,
+    LaneSegment,
+    RegisterLaneManager,
+)
+from flagquantum.drawer.register_score import layout_register_score
+
+
+class ObservedIntervals(RegisterLaneManager):
+    def __init__(self) -> None:
+        super().__init__()
+        self.snapshots: list[frozenset[LaneSegment]] = []
+
+    def maybe_reserve(
+        self, location: LaneLocation, register: Register, index: tuple[int, ...]
+    ) -> None:
+        self.snapshots.append(frozenset(self.hlines))
+
+
+manager = ObservedIntervals()
+score = layout_register_score({"q": 1}, ("q",), (), lane_manager=manager)
+assert manager.snapshots == [
+    frozenset({LaneSegment(0, -1)}),
+    frozenset({LaneSegment(0, -1, 0)}),
+]
+assert score.lines[0].end == 0
+```
+
+The original source blob remains
+`3863bb66cdba17c4654657e275a8485d94b8da75`. Implementation `9b273636`
+compares every coordinate, allocation hook, reservation predicate and
+before/after-finish snapshot using actual source `LineManager` methods.
+Add widths 1, 2, 3, 5, 16 and 32 cover ordinary reservations and a replacement
+policy driven by partial intervals. Source Add(1) has no allocation after its
+inputs, so its newly reserved spacing gets no later predicate evaluation.
+Scalar/vector/matrix/empty arrays, quantum/classical/zero-width metadata,
+same-lane reuse and immutable saved snapshots have direct source comparisons.
+Completed manager geometry also matches every line in the native score.
+
+Invalid `free` calls have an explicit native preflight. Element count mismatch,
+duplicate lanes and missing/ambiguous open intervals fail before any release.
+The source can partially mutate its heap and intervals for these malformed
+calls. All three failure classes execute against the original source in tests,
+and the native valid retry restores the complete pool. Missing or ambiguous
+`finish_hline` calls reject atomically in both implementations. Exceptions from
+caller hooks propagate, with a fresh manager providing an independent retry.
+
+There are 49 new cases, 114 focused passes in 1.88 seconds, 416 concentrated
+passes in 15.23 seconds and 86 independent notebook/CPU/tensor passes in
+8.27 seconds, with zero skips. The concentrated and integration sets report
+eight and two existing warnings. Strict typing of three Python files, Black,
+Ruff, scope, architecture, internal IR and protected API checks pass. The lane
+owner covers all 82 statements and 26 branches. Combined lane/layout coverage
+is 97% across 244 statements and 88 branches. Uncovered paths are existing
+layout validation and implicit-borrow branches.
+
+Evidence uses `g2-score-lifetimes-`. Initial test-harness failures for the source
+`idx` keyword and the Add(1) predicate expectation are retained. Both are fixed
+in the accepted tests. Production and reference implementations were compared
+through the same original methods throughout.
+
+Geometric observation adds zero physical gates, work wires, measurement or
+feedback. Existing exact-adjoint, all-branch amplitude/work-restoration and
+append regressions run with the concentrated set, alongside independent CPU/TN
+execution. The actual primitive and source-model accounts in the resource table
+above stay separately reported. Classical and zero-width metadata tests exercise
+the manager directly. Component graph admission continues to have its documented
+quantum-only boundary. Q-0747 remains open for general foreign and wire-symbol
+protocol admission. Q-0748's original JSON asset is tracked independently.

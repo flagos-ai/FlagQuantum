@@ -31,7 +31,7 @@ Existing native records remain the shared representation.
 | `HLine.json_dict` | `RegisterLine` stores lifetimes; `ScoreHorizontalLine` serializes completed lines with source flavor spelling. Partial foreign line records remain internal to the source manager. |
 | `LineManager.__init__`, `new_y` | `RegisterLaneManager` owns the shared minimum-lane heap consumed by `layout_register_score`. Native capacity grows with the graph. The source defaults to 100 lines. Context-aware source `new_y` dispatch is owned by native `new_y_for`, delegating to existing no-argument policies by default. |
 | `LineManager.reserve_n`, `unreserve`, `maybe_reserve` | Native `RegisterLaneManager` now implements ordered reservations and the `maybe_reserve` subclass hook; Core grouping preserves once-per-register predicate cadence and per-element hooks. See REGISTER_SCORE_RESERVATIONS.md for finite-capacity parity and failure adaptations. |
-| `LineManager.new`, `finish_hline`, `free` | Existing native layout allocates fresh RIGHT lanes before freeing LEFT lanes and closes lifetimes at consumption or final output. `_ports` flattens shaped register elements in row-major order. Native reservation callbacks now cover these boundaries. Context-aware coordinate overrides now match source allocation order and full geometry. Source partial-HLine inspection remains open. |
+| `LineManager.new`, `finish_hline`, `free` | Existing native layout allocates fresh RIGHT lanes before freeing LEFT lanes and closes lifetimes at consumption or final output. `_ports` flattens shaped register elements in row-major order. Native reservation callbacks now cover these boundaries. Context-aware coordinate overrides now match source allocation order and full geometry. Native geometric open/closed intervals now expose every source allocation/release observation through `hlines` and `finish_hline`; cursor and malformed-release preflight adaptations are documented. |
 | `_get_in_vals` | `component_register_score` resolves existing Core SSA values through its `known` mapping and `_ports` iterator. No foreign Soquet map is introduced. |
 | `_update_assign_from_vals` | Native component projection maps THRU outputs to predecessor lifetimes and creates fresh RIGHT display identities. Core validation owns array signatures. Foreign array-value shape diagnostics remain open. |
 | `_binst_assign_line`, nested `_in_vals` | Native component projection consumes the selected call's operands/results, retains THRU identity and retires LEFT lifetimes through the shared layout. |
@@ -127,9 +127,11 @@ and source analytical models retain their distinct accounting layers.
 
 Q-0749 closes for the complete two-function original test file after both real
 source tests and the native equivalents pass. Q-0747 remains open for the
-general foreign and partial-line inspection protocol boundaries listed above.
-Context-aware coordinate selection is accepted through native `new_y_for`,
-including scalar None, array indices and replacement heap policies. Native reservation and subclass hooks are documented in
+general foreign and wire-symbol protocol admission boundaries listed above.
+Context-aware coordinate selection and partial-line lifecycle observations are
+accepted through `new_y_for`, `hlines` and `finish_hline`. Native cursor placement,
+textual flavor representation and malformed-release preflight have explicit
+dispositions in REGISTER_SCORE_RESERVATIONS.md. Native reservation and subclass hooks are documented in
 [REGISTER_SCORE_RESERVATIONS.md](REGISTER_SCORE_RESERVATIONS.md). The accepted Q-0745 notebook and Q-0749 tests do not imply those missing
 implementation extensions are available. The builtin glyph adjoint follow-up is documented in [REGISTER_SCORE_SYMBOL_ADJOINT.md](REGISTER_SCORE_SYMBOL_ADJOINT.md). The Q-0744/Q-0746 HTML and JavaScript assets close after the complete browser
 and manual-domain audit in REGISTER_SCORE_ANIMATION.md. The original example
