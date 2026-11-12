@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'flagquantum/ecosystem/openfermion.py'
+      - 'flagquantum/ecosystem/chemistry/molecular_data.py'
       - 'flagquantum/observables/fermion.py'
       - 'flagquantum/core/algebra/pauli.py'
       - 'tests/unit/test_openfermion_conversion.py'

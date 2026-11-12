@@ -2,27 +2,30 @@
 
 ## Current delivery status
 
-Status checked on November 11, 2026, against main revision
-`504dc460f34f745db67566597cd69a94e345c298`. This is a selected native scientific
-workflow, not complete OpenFermion API compatibility. The initial PR01–PR16
-units below describe internal responsibilities delivered by one initial PR;
+Status checked on November 12, 2026, against main revision
+`98ea298bd7de9b0e8d0f905adc6b333aa1aadaed` (the merge of #1125). This is a
+selected native scientific workflow, not complete OpenFermion API compatibility.
+The initial PR01–PR16 units below describe internal responsibilities delivered by one initial PR;
 they are not sixteen outstanding pull requests.
 
 | Scope | Delivery | Status at the checked revision | Shortest workflow |
 | --- | --- | --- | --- |
 | Initial selected migration | [#1109](https://github.com/flagos-ai/FlagQuantum/pull/1109) | Merged | `python -m examples.algorithms.fermion_chemistry` |
+| EXT01: spinful Fermi-Hubbard open chain | [#1124](https://github.com/flagos-ai/FlagQuantum/pull/1124) | Merged; static open chains | `python -m examples.algorithms.fermion_hubbard` |
 | EXT02: real closed-shell FCIDUMP input | [#1110](https://github.com/flagos-ai/FlagQuantum/pull/1110) | Merged | `python -m examples.algorithms.fermion_fcidump` |
 | EXT03: MolecularData HDF5 input | [#1115](https://github.com/flagos-ai/FlagQuantum/pull/1115) | Merged; optional h5py | `python -m examples.algorithms.fermion_hdf5` |
 | EXT04: fermionic Fourier circuit | [#1118](https://github.com/flagos-ai/FlagQuantum/pull/1118) | Merged | `python -m examples.algorithms.fermion_fourier` |
+| EXT05: optional OpenFermion operator conversion | [#1125](https://github.com/flagos-ai/FlagQuantum/pull/1125) | Merged; separately installed upstream | [Conversion guide](OPENFERMION_OBJECT_INTEROP.md) |
 | EXT06: explicit Pauli stabilizer sector | [#1119](https://github.com/flagos-ai/FlagQuantum/pull/1119) | Merged | `python -m examples.algorithms.fermion_tapering` |
 | EXT07: controlled low-rank evolution | [#1121](https://github.com/flagos-ai/FlagQuantum/pull/1121) | Merged | `python -m examples.algorithms.fermion_controlled_evolution` |
-| EXT08: real orbital-parameter gradients | [#1122](https://github.com/flagos-ai/FlagQuantum/pull/1122) | Open; absent from this main revision | See the PR's branch-specific example |
+| EXT08: real orbital-parameter gradients | [#1122](https://github.com/flagos-ai/FlagQuantum/pull/1122) | Merged; real CPU orbital parameters | `python -m examples.algorithms.fermion_orbital_rotation` |
 
-EXT01 (additional model Hamiltonians) and EXT05 (optional OpenFermion object
-conversion) remain demand-driven extensions. Neither is a prerequisite for
-these native workflows. A model extension must specify one physical model and
-reuse existing algebra. Object conversion belongs at an optional adapter
-boundary and must not become a production dependency.
+All eight numbered extension slices now have a merged delivery. EXT01 delivers
+one spinful open-chain model, not a general model library; EXT05 delivers two
+operator types, not the upstream object model. Completion of these slices does
+not establish complete OpenFermion compatibility or promote experimental
+capabilities to production maturity. The #1123 documentation reconciliation is
+also merged; this audit supersedes its checked-revision status table only.
 
 The following initial-batch records and CI counts retain their original scope.
 Later extensions and commits require their own evidence. The original branch
@@ -38,6 +41,9 @@ was OpenFermion `34adf3196cd566f4ca53893f868753786797ae2a`.
 | Static molecular data and active spaces | `algorithms.chemistry_domain` | `MolecularProblem` owns static snapshots |
 | PySCF, FCIDUMP and HDF5 input | `ecosystem.chemistry` | External data becomes `MolecularProblem` immediately |
 | Encodings and operator-sector reduction | `algorithms.fermion.encoding`, `symmetry`, `stabilizer` | Encoded/reduced operator contracts remain explicit |
+| Static model Hamiltonians | `algorithms.fermion.hubbard` | Returns existing canonical fermion values; owns no solver |
+| Real orbital-parameter gradients | `algorithms.chemistry_domain.orbital_rotation` | Tensor rotation and determinant objective; static snapshots remain separate |
+| Optional external operator conversion | `ecosystem.openfermion` | Foreign objects stop at existing native fermion/Pauli values |
 | Static orbital mathematics | `algorithms.fermion.decomposition`, `fourier`, `low_rank` | Mathematical plans do not own execution |
 | Preparation and evolution circuits | `algorithms.fermion.preparation`, `lowering`, `evolution` | Ordinary circuits are executed by existing `fq.run` |
 
@@ -49,11 +55,117 @@ Routing and low-rank evolution retain separate responsibilities.
 
 Core/native fermionic workflows require neither OpenFermion nor Cirq. The
 repository still offers `cirq-core` through optional Cirq interoperability
-extras. Optional PySCF and h5py dependencies stop at their input adapters; they
-are not native algebra dependencies. See the local
+extras. The separately installed `openfermion==1.7.1` extra is excluded from
+core, `all`, and `interop-all`; upstream may bring Cirq transitively when that
+explicit extra is installed. This migration removes the native science path's
+need for Cirq, not the independently maintained optional Cirq adapter. Optional
+PySCF and h5py dependencies stop at their input adapters; they are not native
+algebra dependencies. See the local
 [fermion domain README](../../flagquantum/algorithms/fermion/README.md),
 [chemistry domain README](../../flagquantum/algorithms/chemistry_domain/README.md)
 and [input adapter README](../../flagquantum/ecosystem/chemistry/README.md).
+
+## Post-merge boundary audit and next delivery
+
+This audit inspected package metadata, the dependency policy, scientific module
+imports, the stage contracts and existing scenario tests at the checked main
+revision. Reproduce the native boundary check without installing upstream:
+
+```bash
+python -m pytest tests/integration/test_native_fermion_isolation.py tests/integration/test_openfermion_interop.py tests/unit/test_openfermion_native_boundary.py -q
+python tools/check_dependency_policy.py
+python -m examples.algorithms.fermion_hubbard
+python -m examples.algorithms.fermion_orbital_rotation
+```
+
+The first isolation scenario blocks OpenFermion, Cirq, PySCF, h5py, NumPy and
+SciPy in a fresh interpreter while executing native chemistry, encodings,
+preparation, evolution, Fourier, sector reduction, orbital-gradient and Hubbard
+workflows. The adapter scenario also imports the conversion module without
+loading upstream and checks the missing-dependency error on explicit calls.
+Provider replacement tests cover native conversion semantics and object
+ownership. They complement the real OpenFermion 1.7.1 tests in
+`.github/workflows/openfermion-interop.yml`; they do not prove compatibility
+with arbitrary upstream versions or types.
+
+| Remaining boundary | Delivered evidence | Work still outside that evidence |
+| --- | --- | --- |
+| Model Hamiltonians | One static spinful open chain, independent occupation-bit and analytic references | Periodic boundaries, arbitrary graphs, spinless variants and trainable coefficients |
+| External objects | Explicit FermionOperator/QubitOperator conversion to existing native values | MolecularData object conversion, InteractionOperator and circuit conversion; HDF5 file input already exists separately |
+| Differentiation | Native scalar-time evolution gradients and real orbital-angle determinant gradients | Geometry, SCF, supplied-integral and static decomposition gradients |
+| Encodings and sectors | Three operator encodings and explicitly supplied stabilizer sectors | Automatic symmetry discovery and automatically matched encoded/tapered ansatz synthesis |
+| Execution | Bounded local CPU scientific correctness and native dependency isolation | Migrated-workflow accelerator, distributed training, performance and capacity claims |
+
+## Follow-up delivery queue
+
+The following work is implemented on review branches and remains **unmerged**
+at the checked main revision. A green branch is not a mainline capability.
+The earlier recommendation for a native variational-training composition has
+been implemented by the first row; it is no longer a proposal awaiting code.
+All rows retain bounded local CPU scope and experimental maturity.
+
+| Delivery | Responsibility | Review artifact and shortest branch-specific verification | Dependency |
+| --- | --- | --- | --- |
+| Native Hubbard training | Compose existing circuits, observable conversion and PyTorch optimization | [#1137](https://github.com/flagos-ai/FlagQuantum/pull/1137); `python -m examples.algorithms.fermion_hubbard_training` | Existing main APIs |
+| FCIDUMP UCCSD training | Replace the chemistry input and reuse the existing UCCSD circuit | [#1138](https://github.com/flagos-ai/FlagQuantum/pull/1138); `python -m examples.algorithms.fermion_fcidump_training` | Existing main input and ansatz APIs |
+| Molecular input replacement | Prove native, FCIDUMP and HDF5 inputs preserve training consumers | [#1139](https://github.com/flagos-ai/FlagQuantum/pull/1139); use its focused replacement/isolation commands | Existing main APIs; optional h5py for file comparison |
+| InteractionOperator input | Convert an external spin-orbital tensor operator to native fermionic algebra; verify UCCSD replacement | [#1140](https://github.com/flagos-ai/FlagQuantum/pull/1140); `python -m pytest tests/unit/test_openfermion_conversion.py -k interaction -q` | Existing optional OpenFermion boundary |
+| Molecular object CI routing | Trigger real upstream qualification when the molecular object adapter changes | [#1141](https://github.com/flagos-ai/FlagQuantum/pull/1141) | Integration-owned prerequisite for #1142 |
+| Populated MolecularData input | Convert cached real closed-shell spatial integrals to MolecularProblem without implicit loading | [#1142](https://github.com/flagos-ai/FlagQuantum/pull/1142); `python -m pytest tests/unit/test_openfermion_conversion.py -k molecular_data -q` | #1141 first |
+| Molecular object capability registration | Register experimental scope and generate catalog/limitations | [#1143](https://github.com/flagos-ai/FlagQuantum/pull/1143); `python tools/check_capability_maturity.py` and `python tools/docs_source_of_truth.py --check` | Stacked on #1142 |
+| Molecular object training replacement | Compare 24 native/imported UCCSD energy, gradient and optimizer-update steps | [#1144](https://github.com/flagos-ai/FlagQuantum/pull/1144); `python -m pytest tests/unit/test_openfermion_conversion.py -k molecular_data_replacement -q` | Stacked on #1142; independent of #1143 |
+
+Commands in this table require the named PR's checkout until it merges.
+Do not present the examples or adapters as available on the checked main.
+The optional object tests require separately installed OpenFermion 1.7.1;
+they belong to the dedicated upstream lane, not native coverage. That upstream
+installation may include Cirq, while native chemistry and training remain
+independent. MolecularData HDF5 input already on main is a file reader, not the
+new in-memory object adapter. Neither adapter calls an upstream solver.
+
+Each review retains its exact head, CI links, scientific scope and failure
+history. For example, #1144 corrected an extra integration marker that selected
+an upstream-dependent scenario into native coverage; its corrected head is
+`614cbe74dd7d7ae0ea0bf50218cc1fbcfb11ff53`. Its full Linux run
+[43058554427](https://github.com/flagos-ai/FlagQuantum/actions/runs/43058554427)
+and both real upstream endpoints passed. Those branch results do not certify
+a later combined tree. Historical initial-batch numerical records below remain
+bound to their original revisions.
+
+## Next acceptance round
+
+The next round consolidates these proven paths before adding another external
+object type, model family or solver abstraction:
+
+1. Review and merge the independent native training/input compositions and the
+   operator converter. Merge #1141 before #1142. After #1142 merges, retarget
+   #1143 and #1144 to main; neither sibling requires the other. Recheck conflicts
+   and run the checks for the actual target. This plan grants no merge approval.
+2. Verify the resulting main revision with the existing native examples,
+   dependency-isolation scenarios and replacement tests. Record the actual
+   integration commit; do not add passing counts from different branches.
+   Linux default, runtime and coverage verification remain CI-owned.
+3. Keep the current ownership boundaries: Ecosystem ends at native values;
+   chemistry owns static integrals and active spaces; algorithms owns ansatz
+   composition; runtime executes ordinary FlagQuantum IR. No solver, registry,
+   compatibility contract or second gradient implementation is needed.
+4. Reconcile the authoritative capability entries against the combined code.
+   Integration-owned capability changes remain separate from domain work;
+   #1143 records only MolecularData input and does not silently widen the
+   operator-only capability. InteractionOperator scope needs its own accurate
+   registration when admitted. Do not change Stable Core snapshots for this.
+5. Keep unsupported breadth explicit: arbitrary upstream objects/circuits,
+   geometry/SCF/supplied-integral gradients, automatic symmetry discovery,
+   matched parity/BK/tapered ansatz synthesis and migrated-workflow accelerator
+   or distributed claims require separate requirements and evidence. Do not
+   label them unfinished pieces of the already merged selected migration.
+
+The shortest existing mainline scientific path remains
+`python -m examples.algorithms.fermion_chemistry`; its native H2 reference
+measures -1.1166843871 Ha through three encodings. After the training PRs merge,
+their examples extend the same path to parameter updates. Dense reference
+matrices establish bounded correctness, not performance, general optimizer
+convergence, accelerator support or scalability.
 
 ## Initial-batch delivery units
 
@@ -118,6 +230,9 @@ present the concrete compatibility options.
 | Module | Owns | Verified scope |
 | --- | --- | --- |
 | core.algebra.pauli | Complex canonical Pauli values | Standard library, no circuit or tensor dependency |
+| algorithms.fermion.hubbard | Static spinful open-chain model | Explicit interleaved spins, unshifted U, finite real coefficients |
+| ecosystem.openfermion | Optional external operator conversion | FermionOperator/QubitOperator only; lazy upstream dependency |
+| algorithms.chemistry_domain.orbital_rotation | Differentiable integral rotation and determinant contraction | Real CPU orbital parameters; static source integrals |
 | algorithms.fermion.encoding | General operator and occupation encoding | JW, prefix parity, Fenwick BK; explicit idle width |
 | algorithms.fermion.observables | Hermitian measurement boundary | Complex values validated before native Observable conversion |
 | algorithms.fermion.symmetry | Selected diagonal parity sectors | Independent encoded Z products; affine state embedding |
@@ -372,3 +487,19 @@ Ha/rad, agreeing with central finite differences. One step of size 0.05 lowers
 it to -1.0618547836 Ha. This is a determinant objective, not correlated energy,
 geometry differentiation or a converged SCF calculation. The fresh-interpreter
 isolation test also executes this example with external science SDKs blocked.
+
+## EXT01 and EXT05: delivered narrow extensions
+
+The [Hubbard contract](FERMION_HUBBARD_CHAIN.md) defines static open-chain
+assembly in `algorithms.fermion.hubbard`. Its example measures the same two-site
+N=2 reference through JW, parity and BK: energy -0.8284271247 with particle
+number 2. Dense diagonalization and arbitrary-state preparation are bounded
+inspection tools, not a scalable solver or training result.
+
+The [operator conversion contract](OPENFERMION_OBJECT_INTEROP.md) defines the
+optional ecosystem boundary. Conversion retains ordered contractions, complex
+coefficients, identity and zero terms; exported mutable dictionaries do not
+alias native values. It does not add an upstream execution backend. Install
+`flagquantum[openfermion]` only when the explicit external-object workflow is
+needed. Native algorithms and the isolated core environment require neither
+OpenFermion nor Cirq.
