@@ -96,6 +96,10 @@ text { text-anchor: middle; dominant-baseline: middle; fill: black; }
     <option value="dependency">Dependency</option>
   </select>
 </label>
+<form id="score-load">
+  <label>Score JSON URL <input id="score-url" type="text" required></label>
+  <button type="submit">Load score</button>
+</form>
 <div id="score-container"></div>
 <script id="score-records" type="application/json">
 __SCORE_RECORDS__
@@ -106,6 +110,72 @@ const views = JSON.parse(document.getElementById("score-records").textContent);
 const selector = document.getElementById("score-view");
 const container = document.getElementById("score-container");
 const namespace = "http://www.w3.org/2000/svg";
+let loadVersion = 0;
+
+function validateScore(data) {
+  const numbers = (row, fields) => fields.every(key => Number.isFinite(row?.[key]));
+  if (!numbers(data, ["max_x", "max_y"]) || data.max_x < 0 || data.max_y < 0 ||
+      ![data.soqs, data.hlines, data.vlines].every(Array.isArray)) {
+    throw new TypeError("Invalid musical score dimensions or record arrays");
+  }
+  const kinds = new Set(["Circle", "ModPlus", "Text", "TextBox", "LarrowTextBox", "RarrowTextBox"]);
+  const identities = new Set();
+  for (const port of data.soqs) {
+    const attrs = port?.symb_attributes;
+    const key = `${port?.symb_cls},${port?.ident}`;
+    if (!numbers(port, ["seq_x", "y"]) || !kinds.has(port.symb_cls) ||
+        typeof port.ident !== "string" || identities.has(key) || !attrs ||
+        typeof attrs !== "object" || Array.isArray(attrs) ||
+        (attrs.text !== undefined && typeof attrs.text !== "string") ||
+        (port.symb_cls !== "Circle" && port.symb_cls !== "ModPlus" && typeof attrs.text !== "string") ||
+        (attrs.fontsize !== undefined && (!Number.isFinite(attrs.fontsize) || attrs.fontsize < 0)) ||
+        (attrs.filled !== undefined && typeof attrs.filled !== "boolean")) {
+      throw new TypeError("Invalid musical score glyph record");
+    }
+    identities.add(key);
+  }
+  if (!data.hlines.every(row => numbers(row, ["y", "seq_x_start", "seq_x_end"])) ||
+      !data.vlines.every(row => numbers(row, ["x", "top_y", "bottom_y"]) &&
+        (typeof row.label === "string" || typeof row.label?.text === "string")) ||
+      new Set(data.hlines.map(row => `${row.y},${row.seq_x_start}`)).size !== data.hlines.length ||
+      new Set(data.vlines.map(row => row.x)).size !== data.vlines.length) {
+    throw new TypeError("Invalid musical score line record");
+  }
+}
+
+function showScoreError(message, details) {
+  const alert = document.createElement("div");
+  alert.setAttribute("role", "alert");
+  const heading = document.createElement("h3");
+  heading.style.color = "red";
+  heading.textContent = message;
+  const paragraph = document.createElement("p");
+  paragraph.textContent = details;
+  alert.append(heading, paragraph);
+  container.appendChild(alert);
+}
+
+async function loadScore(filename) {
+  const version = ++loadVersion;
+  try {
+    const response = await fetch(filename);
+    if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
+    const data = await response.json();
+    if (version !== loadVersion) return false;
+    validateScore(data);
+    views.sequential = data;
+    // Imported source JSON carries no precomputed, collision-free dependency view.
+    delete views.dependency;
+    selector.querySelector('option[value="dependency"]').disabled = true;
+    selector.value = "sequential";
+    render();
+    return true;
+  } catch (error) {
+    if (version === loadVersion) showScoreError(`Error loading '${filename}': ${error}`,
+      "Make sure the file exists and make sure you're serving this page from `python -m http.server` instead of from a file");
+    return false;
+  }
+}
 
 function element(parent, name, attributes = {}) {
   const node = document.createElementNS(namespace, name);
@@ -137,6 +207,7 @@ function portGlyph(svg, port, x, y) {
     element(group, "path", {d: "M 0 -7 l 0 14 M -7 0 l 14 0", stroke: "black"});
     return group;
   }
+  group.addEventListener("click", event => console.log(event, ports.get(`${kind},${port.ident}`).data));
   const w = Math.max(22, attrs.text.length * 3.5 + 6);
   if (kind === "TextBox") {
     element(group, "rect", {x: -w, y: -14, width: 2 * w, height: 28,
@@ -302,6 +373,10 @@ function render() {
 }
 
 selector.addEventListener("change", render);
+document.getElementById("score-load").addEventListener("submit", event => {
+  event.preventDefault();
+  loadScore(document.getElementById("score-url").value);
+});
 render();
 </script>
 </html>
