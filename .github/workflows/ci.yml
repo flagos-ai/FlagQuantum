@@ -797,9 +797,13 @@ jobs:
     permissions:
       contents: read
       packages: read
-    # Run 43178562378 reached 82% of 11,554 integration tests at 30 minutes.
-    # Keep the full selection and reserve time for the two launcher proofs.
+    # Run 43187409331 reached 99% at 60 minutes. Partition the full selection
+    # with the existing deterministic planner; run both launcher proofs once.
     timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -885,10 +889,12 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci_tier.py pr-runtime
+        run: python tools/ci_tier.py pr-runtime --shard-count 4 --shard-index ${{ matrix.shard }}
       - name: Prove native distributed runtime does not require JAX
+        if: matrix.shard == 0
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
       - name: Run the launched distributed tests under a real launcher
+        if: matrix.shard == 0
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}

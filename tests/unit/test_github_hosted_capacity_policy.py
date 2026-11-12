@@ -328,6 +328,11 @@ def test_python_312_required_check_aggregates_parallel_suites() -> None:
 
 
 def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
+    job = _document("ci.yml")["jobs"]["cpu-runtime"]
+    assert job["strategy"] == {
+        "fail-fast": False,
+        "matrix": {"shard": [0, 1, 2, 3]},
+    }
     expensive_steps = [
         step
         for step in _steps("ci.yml", "cpu-runtime")
@@ -335,6 +340,16 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         or "torchrun" in str(step.get("run", ""))
     ]
     assert len(expensive_steps) == 3
+    runtime = next(
+        step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
+    )
+    assert runtime["run"] == (
+        "python tools/ci_tier.py pr-runtime --shard-count 4 "
+        "--shard-index ${{ matrix.shard }}"
+    )
+    for step in expensive_steps:
+        if "torchrun" in step["run"]:
+            assert step["if"] == "matrix.shard == 0"
 
 
 def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:
