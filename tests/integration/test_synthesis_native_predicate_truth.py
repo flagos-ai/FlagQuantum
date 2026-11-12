@@ -111,7 +111,8 @@ def test_dense_predicate_keeps_the_existing_mapped_gate_ceiling() -> None:
 
 
 def _definition() -> _QuantumFunction:
-    return program_definition("""
+    return program_definition(
+        """
 from flagquantum.synth import R, RZ, X, control, phase
 @qfunc
 def main(x: Output[QNum[4]], y: Output[QNum[4]], target: Output[QBit]) -> None:
@@ -129,7 +130,8 @@ def main(x: Output[QNum[4]], y: Output[QNum[4]], target: Output[QBit]) -> None:
         | ((x[1:4] != 2) & (x[1:4] != 5) & (y[1:4] == 3)),
         lambda: X(target),
     )
-""")
+""",
+    )
 
 
 def test_complete_portfolio_uses_checked_predicates_within_original_bounds() -> None:

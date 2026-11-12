@@ -43,7 +43,8 @@ def _emit(
                     indices=(control[1], target[0][1]),
                 )
     for _ in range(abs(offset)):
-        for bit in (range(width) if offset < 0 else reversed(range(width))):
+        bits = range(width) if offset < 0 else reversed(range(width))
+        for bit in bits:
             selected = (() if control is None else (control,)) + tuple(
                 target[lower] for lower in range(bit)
             )
