@@ -146,7 +146,8 @@ def test_wrong_parameter_count_is_refused(shape: tuple[int, ...]) -> None:
 def test_both_training_workflows_without_external_science_sdks() -> None:
     # PyTorch optimizer initialization can load NumPy through Dynamo. Native
     # algebra and the nontraining example retain their stronger no-NumPy test.
-    script = textwrap.dedent("""
+    script = textwrap.dedent(
+        """
         import importlib.abc
         import sys
         blocked = {"openfermion", "openfermionpyscf", "cirq", "pyscf", "scipy", "h5py"}
@@ -160,7 +161,8 @@ def test_both_training_workflows_without_external_science_sdks() -> None:
         main()
         main(periodic=True)
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
-        """)
+        """,
+    )
     result = subprocess.run(
         [sys.executable, "-c", script],
         cwd=Path(__file__).resolve().parents[2],
