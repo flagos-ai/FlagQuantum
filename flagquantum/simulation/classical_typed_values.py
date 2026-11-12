@@ -24,7 +24,7 @@ from .classical_field_registers import (
     bind_field_register_values,
     collect_field_register_value,
 )
-from .classical_register_metadata import concrete_register_metadata
+from .classical_register_metadata import value_register_metadata
 from .classical_registers import (
     bind_classical_register_values,
     bind_integer_register_values,
@@ -48,9 +48,10 @@ def bind_typed_register_values(
     field_encoding: FiniteFieldEncoding | None = None,
     resolve_distribution: Callable[[ClassicalDistribution], object] | None = None,
 ) -> dict[tuple[int, ...], object]:
-    """Dispatch concrete dtype validation; shared binding owns shape and sampling.
+    """Dispatch dtype validation; shared binding owns shape and sampling.
 
-    This is numerical metadata composition, not executable IR admission. A field
+    Widths and value parameters may remain symbolic. This numerical metadata
+    composition does not widen executable IR admission. A field
     override is already resolved by the caller, which owns metadata matching.
     Scalar Expr bypass and post-distribution validation stay in the shared owner.
     """
@@ -64,7 +65,7 @@ def bind_typed_register_values(
             shape=register.shape,
             resolve_distribution=resolve_distribution,
         )
-    width, parameters = concrete_register_metadata(register)
+    width, parameters = value_register_metadata(register)
     if kind == "opaque":
         return bind_opaque_register_values(
             register.name,
@@ -138,7 +139,7 @@ def collect_typed_register_value(
             )
         encoding = field_encoding or resolve_finite_field_encoding(register.dtype)
         return collect_field_register_value(assignments, encoding, shape=register.shape)
-    width, parameters = concrete_register_metadata(register)
+    width, parameters = value_register_metadata(register)
     if kind not in {
         "opaque",
         "bit",

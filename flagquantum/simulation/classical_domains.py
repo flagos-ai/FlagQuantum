@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from ..core.ir.program.registers import Register
 from .bit_encoding import bit_value_domain
 from .bounded_integer_values import bounded_integer_domain
-from .classical_register_metadata import concrete_register_metadata
+from .classical_register_metadata import value_register_metadata
 from .finite_field_metadata import resolve_finite_field_encoding
 from .fixed_point_encoding import fixed_point_domain
 from .integer_values import integer_word_domain
@@ -26,12 +26,13 @@ def register_classical_domain(register: Register) -> Iterable[object]:
     fixed point yields stored integers, and Montgomery omits zero when a modulus
     is declared. Opaque words have no unambiguous domain. Shapes do not change a
     dtype's scalar domain; the truth-table owner separately refuses array inputs.
-    This finite metadata adapter does not expand executable Program admission.
+    Symbolic widths and parameters reach their existing numerical owners without
+    evaluation; this adapter does not expand executable Program admission.
     """
     kind = register.dtype.encoding
     if kind == "finite_field":
         return resolve_finite_field_encoding(register.dtype).get_domain()
-    width, parameters = concrete_register_metadata(register)
+    width, parameters = value_register_metadata(register)
     if kind == "opaque":
         raise TypeError("Ambiguous domain for an opaque register. Use a specific type.")
     if kind == "bit":

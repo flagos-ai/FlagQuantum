@@ -138,7 +138,7 @@ def test_unknown_encoding_and_symbolic_metadata_fail_without_fallback() -> None:
     dtype, _ = pair("uint")
     with pytest.raises(ValueError, match="no native classical domain"):
         register_classical_domain(Register("x", replace(dtype, encoding="unknown")))
-    with pytest.raises(ValueError, match="concrete nonnegative"):
+    with pytest.raises(TypeError):
         register_classical_domain(
             Register("x", replace(dtype, quantum_bits=Symbol("n")))
         )
