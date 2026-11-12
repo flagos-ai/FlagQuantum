@@ -122,6 +122,7 @@ SCRIPTS = (
     "fermion_hubbard_training",
     "fermion_hubbard_ring_training",
     "fermion_spinless",
+    "fermion_spinless_training",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -142,6 +143,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_spinless_training": (
+        "only circuit angles are trainable",
+        "not a general convergence, coefficient-gradient or scalability claim",
+    ),
     "fermion_spinless": (
         "exponential inspection cost",
         "not a many-body scalability claim",
@@ -2023,3 +2028,21 @@ def test_spinless_example_measures_two_particle_sector(
     for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
         assert f"{encoding} energy: {expected:.10f}; particles: 2.000000" in output
     _assert_premise("fermion_spinless", output)
+
+
+@pytest.mark.parametrize("args,reference", [((), 1 - 3**0.5), (("--periodic",), 1.0)])
+def test_spinless_training_example_lowers_energy_in_the_two_particle_sector(
+    args: tuple[str, ...], reference: float
+) -> None:
+    output = _run("fermion_spinless_training", *args)
+    initial = float(_labelled(output, "Initial energy"))
+    final = float(_labelled(output, "Final energy"))
+    assert final < initial - 1
+    assert -1e-10 <= final - reference < 1e-5
+    assert float(_labelled(output, "Analytic N=2 ground energy")) == pytest.approx(
+        reference, abs=1e-9
+    )
+    assert float(_labelled(output, "Gradient residual")) < 1e-9
+    assert float(_labelled(output, "Parameter update norm")) > 0.1
+    assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
+    _assert_premise("fermion_spinless_training", output)
