@@ -31,7 +31,7 @@ from flagquantum.simulation.tensor_network.classical_action_tensor import (
 from tests.unit.component_vector_checks import contract, tracked_flank
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
-from tests.unit.test_register_physical_binding import allocated_circuit
+from tests.unit.register_binding_fixtures import allocated_circuit
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]

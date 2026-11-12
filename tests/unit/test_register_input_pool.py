@@ -17,7 +17,7 @@ from flagquantum.core.ir.program import Operation, ProgramRecord, ValueRef
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.measurement_checks import forced_branch
-from tests.unit.test_register_physical_binding import allocated_circuit
+from tests.unit.register_binding_fixtures import allocated_circuit
 from tests.unit.test_register_program_lowering import packed_circuit
 
 pytestmark = pytest.mark.unit
