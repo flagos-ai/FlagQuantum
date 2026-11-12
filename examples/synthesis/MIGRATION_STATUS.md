@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **73/213**.
+Validated local Notebook workflows: **74/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -254,7 +254,7 @@ Validated local Notebook workflows: **73/213**.
 | `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | [Native program](applications/logistics/vehicle_routing_problem/main.py) | pending |
 | `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/main.py) | pending |
 | `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | [Native program](applications/optimization/electric_grid_optimization/main.py) | pending |
-| `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/main.py) | pending |
+| `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/overview/main.py) | validated |
 | `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | [Native program](applications/optimization/kidney_exchange/kidney_exchange_problem/main.py) | pending |
 | `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | [Native program](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/main.py) | pending |
 | `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/overview/main.py) | validated |
