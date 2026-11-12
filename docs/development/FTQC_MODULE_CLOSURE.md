@@ -484,3 +484,15 @@ physical materialization are explicit adaptations; analytical QEC models and
 emitted primitives remain separate. No protocol implementation parent closes.
 Current total:22 closed/1258 open/390 active,1184 capability records unchanged.
 Next Q-0879 complete MBUC notebook audit, after restoring its frozen reference.
+
+The [measurement-uncomputation notebook](MEASUREMENT_UNCOMPUTATION_NOTEBOOK.md)
+has complete23-cell disposition, ten unchanged original and ten native code-cell
+executions, and source/native every-call values and phase checks. Implementation
+`98117c39` reuses existing exact AND adjoint and phased SSA owners. Corrected and
+naive emitted streams, both unnormalized complex branches, consumed-target zero,
+spectator entanglement and append pass. Seven new/1629 related/84 CPU-TN checks,
+strict2 and quality gates pass; six frozen blobs match; helper97% with example.
+The source's stale-phase assertions, global debug-state lookup and unavailable
+C[CZ] resource decomposition remain explicit, so Q-0879 stays open. No new ID;
+22 closed/1258 open/391 active,1184 capability records remain. Next Q-0898 whole
+classical/tensor cross-check source audit; do not repeat its closed test assets.
