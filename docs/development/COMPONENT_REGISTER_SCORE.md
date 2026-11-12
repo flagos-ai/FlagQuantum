@@ -90,3 +90,13 @@ and incomplete-live-return refusals are not exercised in this coverage run. The
 Add graph has 100% coverage (53 statements, 12 branches). Five source blobs
 match the fixed inventory. No default full-suite rerun was required for this
 slice; its previous seven recorded baseline failures remain unresolved.
+
+## Lane reservation follow-up
+
+The projection now accepts a native `lane_manager` and retains original Core
+register groups on each display step. Final signature order is preserved for
+release callbacks. Styles must retain that grouping as well as connectivity.
+The shared heap supports ordered release predicates and per-element subclass
+hooks through initial inputs, fresh RIGHT arrays, consumed LEFT arrays and final
+outputs. See [REGISTER_SCORE_RESERVATIONS.md](REGISTER_SCORE_RESERVATIONS.md) for
+source cadence, finite heap parity, failure handling and foreign protocol limits.

@@ -10,7 +10,8 @@ This audit covers Qualtran v0.7.0 at
 | `qualtran/drawing/musical_score.ipynb` | `7205fa53b168a8b0de5429345dc25d2081979446` |
 
 The native owners are `drawer/register_score.py`, `component_score.py`,
-`register_score_data.py` and `register_score_mpl.py`. Compiler owns the selected
+`register_score_data.py`, `register_score_mpl.py` and the shared heap owner
+`register_lanes.py`. Compiler owns the selected
 component graph and validation. Drawer owns display coordinates, lifetime
 projection, symbols and serialization. Simulation continues to own numerical
 execution. This is a `single_device_fast_path` audit and test batch.
@@ -26,9 +27,9 @@ Existing native records remain the shared representation.
 | `RegPosition.json_dict` | `RegisterColumn` stores sequential and generation coordinates; `ScorePort` stores exported coordinates. Plain dictionaries provide serialization. |
 | `HLineFlavor.from_qcdtype` | `register_score_data(classical=...)` explicitly marks classical display identities. Automatic foreign dtype inspection and its unknown-type fallback are outside native admission. |
 | `HLine.json_dict` | `RegisterLine` stores lifetimes; `ScoreHorizontalLine` serializes completed lines with source flavor spelling. Partial foreign line records remain internal to the source manager. |
-| `LineManager.__init__`, `new_y` | `layout_register_score` uses the existing minimum-lane heap. Native capacity grows with the graph. The source defaults to 100 lines. |
-| `LineManager.reserve_n`, `unreserve`, `maybe_reserve` | Custom reservation predicates and subclass hooks remain open. No equivalent extension is claimed. |
-| `LineManager.new`, `finish_hline`, `free` | Existing native layout allocates fresh RIGHT lanes before freeing LEFT lanes and closes lifetimes at consumption or final output. `_ports` flattens shaped register elements in row-major order. Custom source manager behavior remains open. |
+| `LineManager.__init__`, `new_y` | `RegisterLaneManager` owns the shared minimum-lane heap consumed by `layout_register_score`. Native capacity grows with the graph. The source defaults to 100 lines. |
+| `LineManager.reserve_n`, `unreserve`, `maybe_reserve` | Native `RegisterLaneManager` now implements ordered reservations and the `maybe_reserve` subclass hook; Core grouping preserves once-per-register predicate cadence and per-element hooks. See REGISTER_SCORE_RESERVATIONS.md for finite-capacity parity and failure adaptations. |
+| `LineManager.new`, `finish_hline`, `free` | Existing native layout allocates fresh RIGHT lanes before freeing LEFT lanes and closes lifetimes at consumption or final output. `_ports` flattens shaped register elements in row-major order. Native reservation callbacks now cover these boundaries. Source partial-HLine inspection and new-coordinate overrides remain open. |
 | `_get_in_vals` | `component_register_score` resolves existing Core SSA values through its `known` mapping and `_ports` iterator. No foreign Soquet map is introduced. |
 | `_update_assign_from_vals` | Native component projection maps THRU outputs to predecessor lifetimes and creates fresh RIGHT display identities. Core validation owns array signatures. Foreign array-value shape diagnostics remain open. |
 | `_binst_assign_line`, nested `_in_vals` | Native component projection consumes the selected call's operands/results, retains THRU identity and retires LEFT lifetimes through the shared layout. |
@@ -47,7 +48,7 @@ Existing native records remain the shared representation.
 | `VLine.json_dict` | `ScoreVerticalLine` and `ScoreLabel` retain connector geometry, text and font size. |
 | `MusicalScoreData.json_dict` | Existing typed `MusicalScoreData` is a plain mapping with the source JSON field names. |
 | `_make_ident` | Existing native identity strings name logical lane lifetimes and the original operation ordinal. Foreign instance/Soquet identity spelling is explicitly adapted. |
-| `get_musical_score_data` | Native component projection, layout and score-data extraction form the equivalent admitted call chain. Generic foreign Bloqs, custom line managers and source-wide wire-symbol protocols remain open. |
+| `get_musical_score_data` | Native component projection, layout and score-data extraction form the equivalent admitted call chain. Native lane-reservation managers are supported. Generic foreign Bloqs, foreign line managers and source-wide wire-symbol protocols remain open. |
 | `draw_musical_score` | `draw_register_score` preserves sequential geometry, sizing, colors, glyph order and axes. Seven direct glyph render cases supplement existing whole-score pixel comparisons. |
 | `MusicalScoreEncoder.default` | `export_register_score_json` serializes the existing plain records through the standard JSON encoder. Foreign object type dispatch is owned by the reference test boundary. |
 | `dump_musical_score` | Existing JSON export plus caller-owned `Path.write_text`, demonstrated by the accepted native notebook. File ownership stays with the caller. |
@@ -105,8 +106,9 @@ and source analytical models retain their distinct accounting layers.
 
 Q-0749 closes for the complete two-function original test file after both real
 source tests and the native equivalents pass. Q-0747 remains open for the
-reservation/subclass and foreign protocol boundaries listed
-above. The accepted Q-0745 notebook and Q-0749 tests do not imply those missing
+general foreign, partial-line inspection and custom-coordinate protocol boundaries listed
+above. Native reservation and subclass hooks are documented in
+[REGISTER_SCORE_RESERVATIONS.md](REGISTER_SCORE_RESERVATIONS.md). The accepted Q-0745 notebook and Q-0749 tests do not imply those missing
 implementation extensions are available. The builtin glyph adjoint follow-up is documented in [REGISTER_SCORE_SYMBOL_ADJOINT.md](REGISTER_SCORE_SYMBOL_ADJOINT.md). Q-0744/Q-0746 Javascript animation also
 remains separately open.
 
