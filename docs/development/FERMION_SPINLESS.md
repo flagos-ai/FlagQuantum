@@ -66,17 +66,6 @@ and actual optimizer update check that interaction and closing hopping reach
 execution correctly. Both examples run in a fresh interpreter while blocking
 OpenFermion, Cirq, PySCF, SciPy, h5py and NumPy.
 
-## Limits and delivery split
-
-Verification is bounded CPU `single_device_fast_path`. Static coefficients do
-not acquire gradients because circuit angles are differentiated. Arbitrary
-graphs, magnetic/twisted phases, particle-hole conventions, automatic ansatz
-construction and complete upstream OpenFermion API compatibility are outside
-this slice. No accelerator, distributed, performance or capacity claim follows.
-Capability registration and generated limitations belong to a separate
-Integration-owned PR after implementation; this domain PR does not promote
-capability maturity or change the spinful model entries.
-
 ## Training golden path
 
 ```bash
@@ -111,3 +100,14 @@ SGD update must vanish rather than satisfy an artificial energy-descent claim.
 Both workflows also run in a fresh interpreter blocking OpenFermion, Cirq,
 PySCF, SciPy and h5py. Optimizer initialization may load NumPy through PyTorch;
 the algebra and nontraining example retain the stronger no-NumPy isolation test.
+
+## Limits and delivery split
+
+Verification is bounded CPU `single_device_fast_path`. Static coefficients do
+not acquire gradients because circuit angles are differentiated. Arbitrary
+graphs, magnetic/twisted phases, particle-hole conventions, automatic ansatz
+construction and complete upstream OpenFermion API compatibility are outside
+this slice. No accelerator, distributed, performance or capacity claim follows.
+Capability registration and generated limitations belong to a separate
+Integration-owned PR after implementation; this domain PR does not promote
+capability maturity or change the spinful model entries.
