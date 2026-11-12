@@ -333,3 +333,12 @@ This is bounded CPU training of a fixed-occupancy projection, not an ab initio
 calculation or unrestricted full-space ground energy. See the
 [chemistry domain golden path](../../flagquantum/algorithms/chemistry_domain/README.md#frozen-core-training-golden-path)
 for the independent projection/gradient checks and static-input limitations.
+
+The existing Hubbard example also accepts
+`python -m examples.algorithms.fermion_hubbard --periodic`. It replaces only the
+model producer with a three-site spinful ring, retaining the encoding, explicit
+state mapping and measurement consumer. At t=1, U=4, mu=0 the N=2 energy is
+-3.1231056256 and the measured particle number is 2 in all three encodings.
+The constructor counts each ring bond once and rejects fewer than three sites.
+See the [periodic-ring scope](../../docs/development/FERMION_HUBBARD_RING.md);
+dense reference preparation has exponential inspection cost.

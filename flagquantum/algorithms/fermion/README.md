@@ -131,3 +131,15 @@ preparation, rather than after every gate. Change the initial angles and run
 `python -m pytest tests/integration/test_fermion_hubbard_training.py -q` to check
 sector support, finite-difference gradients and an optimizer update. The analytic
 two-site energy is an inspection reference, not a many-body performance claim.
+
+The same `hubbard.py` module also owns the experimental static
+`fermi_hubbard_ring` constructor for periodic cycles of at least three sites. It
+reuses the chain assembly and adds one closing bond per spin; native algebra
+retains the occupation-dependent fermionic sign. Run the existing consumer with
+`python -m examples.algorithms.fermion_hubbard --periodic` for a three-site N=2
+reference energy of -3.1231056256 at t=1, U=4, mu=0 through JW, parity and BK.
+See the [ring scope and contributor path](../../../docs/development/FERMION_HUBBARD_RING.md)
+and run `python -m pytest tests/unit/fermion/test_hubbard_ring.py
+tests/integration/test_fermion_hubbard_ring.py -q` after changing this behavior.
+One/two-site cycles are refused, coefficients remain static, and the dense
+reference remains a bounded correctness oracle.
