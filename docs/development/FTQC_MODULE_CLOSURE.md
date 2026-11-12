@@ -58,7 +58,9 @@ closes Q-0754, Q-0755, Q-0756 and Q-0761, including two explicitly inspected
 namespace-only assets. The [register tensor original test file](REGISTER_TENSOR_SOURCE_AUDIT.md)
 (Q-0894) and the [dense original test numerical replacement](DENSE_AXIS_SOURCE_AUDIT.md)
 (Q-0888), plus the [tensor protocol original tests and namespace assets](TENSOR_PROTOCOL_SOURCE_AUDIT.md)
-(Q-0880, Q-0886, Q-0890, Q-0896), bring the total to **17 closed files and 1,263 open files**. These file
+(Q-0880, Q-0886, Q-0890, Q-0896), followed by the
+[complete classical/tensor notebook and five-function test audit](CLASSICAL_TENSOR_NOTEBOOK.md)
+(Q-0897, Q-0899), bring the total to **19 closed files and 1,261 open files**. These file
 counts are not a functional completion percentage or an effort estimate. Some open modules
 already have accepted partial capabilities; many require full audit.
 
@@ -284,3 +286,16 @@ survive explicit provider composition and physical append execution. It extends
 Q-0893's projection evidence without closing that source parent or the foreign
 gate/provider/notebook parents. Actual primitive gates and the locked QEC model's
 rotation estimates remain separate.
+
+
+The [complete native notebook workflow](CLASSICAL_TENSOR_NOTEBOOK.md) closes the
+concrete Q-0897 notebook asset and Q-0899 original test file after full audit.
+The original 13 code cells execute through native boundary adapters; a native
+13-cell notebook independently renders five diagrams and contracts the original
+Add(32) input. Nine Markdown cells, source attribution, kernel metadata and the
+absence of stored output assets are accounted for. All five original tests run
+unchanged, with corrected same-process import isolation. This raises the live
+parent closure total to 19 and leaves 1,261 open; the 1,181 checked capability
+records do not change. General provider/foreign-interface implementations,
+planner performance and the default-suite timeout remain open. Earlier counts
+in batch narratives above are historical snapshots, not the live total.
