@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **66/213**.
+Validated local Notebook workflows: **67/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -404,7 +404,7 @@ Validated local Notebook workflows: **66/213**.
 | `tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions` | notebook_workflow | [Native program](tutorials/technology_demonstrations/arithmetic_expressions/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management` | notebook_workflow | [Native program](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/main.py) | validated |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/classiq_qsvt/overview/main.py) | validated |
-| `tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example` | notebook_workflow | Pending | pending |
+| `tutorials/technology_demonstrations/classiq_paper/qsvt/pennylane_cat_qsvt_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/catalyst_qsvt/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/qiskit_qsvt/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/qsvt/tket_qsvt/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/classiq_discrete_quantum_walk/overview/main.py) | validated |
