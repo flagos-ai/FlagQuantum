@@ -1816,6 +1816,19 @@ def test_active_space_training_lowers_the_projected_energy() -> None:
     _assert_premise("fermion_active_space_training", output)
 
 
+def test_periodic_hubbard_uses_the_existing_measurement_consumer() -> None:
+    output = _run("fermion_hubbard", "--periodic")
+    expected = (2 - 68**0.5) / 2
+    assert _number(output, "Analytic N=2 energy") == pytest.approx(expected, abs=1e-9)
+    assert _number(output, "Dense N=2 energy") == pytest.approx(expected, abs=1e-9)
+    for encoding in ("jordan_wigner", "parity", "bravyi_kitaev"):
+        value = _labelled(output, f"{encoding} energy")
+        energy, particles = value.split("; particles: ")
+        assert float(energy) == pytest.approx(expected, abs=1e-9)
+        assert float(particles) == pytest.approx(2, abs=1e-9)
+    _assert_premise("fermion_hubbard", output)
+
+
 def test_the_example_directory_is_covered_and_indexed() -> None:
     scripts = sorted(path.name for path in EXAMPLES.glob("*.py"))
     expected = sorted(f"{name}.py" for name in SCRIPTS)

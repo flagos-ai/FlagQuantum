@@ -1,4 +1,4 @@
-"""Spinful open-chain Hamiltonians in the native fermionic algebra."""
+"""Spinful chain and ring Hamiltonians in the native fermionic algebra."""
 
 from __future__ import annotations
 
@@ -63,3 +63,41 @@ def fermi_hubbard_chain(
                 hop = create(mode) * annihilate(mode + 2)
                 terms.extend((-t * (hop + hop.dagger())).terms)
     return FermionOperator(tuple(terms))
+
+
+def fermi_hubbard_ring(
+    n_sites: int, *, t: float = 1.0, u: float = 0.0, mu: float = 0.0
+) -> FermionOperator:
+    """Build a periodic spinful Hubbard Hamiltonian with each bond counted once.
+
+    Reuses the open-chain terms and adds hopping between sites n_sites-1 and 0.
+    Modes 2*i and 2*i+1 carry up and down spin. The interaction is unshifted.
+    Assembly is symbolic and allocates no dense arrays.
+
+    Args:
+        n_sites: At least three sites, defining a cycle without self/duplicate bonds.
+        t: Finite static real hopping amplitude; hopping has coefficient -t.
+        u: Finite static real onsite interaction.
+        mu: Finite static real chemical potential, subtracted from population.
+
+    Raises:
+        TypeError: An input is bool, complex, tensor or otherwise the wrong type.
+        ValueError: Fewer than three sites or a nonfinite coefficient is supplied.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum.algorithms.fermion.encoding import encode_fermion
+        >>> from flagquantum.algorithms.fermion.observables import to_observable
+        >>> operator = fermi_hubbard_ring(3, u=4.0, mu=1.0)
+        >>> encoded = encode_fermion(operator, n_modes=6, encoding="jordan_wigner")
+        >>> circuit = fq.Circuit(6).x(0).x(1)
+        >>> result = fq.run(circuit, outputs=[fq.expectation(to_observable(encoded.operator))])
+        >>> float(result.expectation().reshape(-1)[0])
+        2.0
+    """
+    n_sites = count(n_sites, "n_sites", minimum=3)
+    operator = fermi_hubbard_chain(n_sites, t=t, u=u, mu=mu)
+    for spin in (0, 1):
+        hop = create(2 * (n_sites - 1) + spin) * annihilate(spin)
+        operator = operator - t * (hop + hop.dagger())
+    return operator
