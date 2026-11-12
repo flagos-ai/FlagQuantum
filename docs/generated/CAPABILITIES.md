@@ -407,6 +407,8 @@ This catalog is generated from the machine-validated
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Discover independent commuting X/Y/Z symmetries of a native Pauli operator | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
+| Restrict the binary candidate span and choose returned positive-generator eigenvalues explicitly | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
 | Discover a basis of diagonal symmetries of a native encoded operator | Diagonal fermion Z2 symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PARITY_DISCOVERY.md) |
 | Restrict discovery to an explicit candidate parity span and choose sector eigenvalues separately | Diagonal fermion Z2 symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PARITY_DISCOVERY.md) |
 | Build spinless chains and rings with one mode per site and unshifted neighboring density interactions | Spinless t-V chains and rings | Experimental | [Read guide](../../docs/development/FERMION_SPINLESS.md) |
@@ -1542,6 +1544,20 @@ Construct a static periodic ring in native fermionic algebra and reuse the exist
 - **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
+
+### Commuting Pauli symmetry discovery
+
+Discover a deterministic independent commuting subgroup of encoded Pauli symmetries and select joint sectors with existing native reduction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.stabilizer.discover_pauli_symmetries`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_PAULI_DISCOVERY.md)
+- **Documentation:** [guide](../../docs/development/FERMION_PAULI_DISCOVERY.md)
+- **Known boundary:** Exact canonical static native Pauli coefficients and an explicit encoded-qubit width only. Returns a deterministic maximum-size independent commuting subgroup, not the full potentially anticommuting centralizer or every conserved observable. Independent signed candidates restrict their binary span modulo scalar phases; signs are discarded and the output basis can contain products. Eigenvalues must be chosen explicitly for returned positive words. No unique chemically preferred choice, particle-number inference, automatic ground-sector selection or matched-ansatz transform. Symbolic discovery allocates no dense state; the three-qubit example uses bounded dense diagonalization, native measurement and lifting solely for correctness inspection. No coefficient/SCF gradients, external quantum/chemistry dependency, full upstream compatibility, accelerator/distributed qualification, performance or capacity claim. Existing Z-only discovery and reduction contracts are unchanged.
 
 ### Diagonal fermion Z2 symmetry discovery
 
