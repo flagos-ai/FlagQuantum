@@ -171,6 +171,23 @@ def crosscheck_providers(
     return ComponentTensorProviders(dict.fromkeys(("main", *vectors), supply))
 
 
+def prepare_classical_crosscheck(
+    kind: str,
+    inputs: Mapping[str, object],
+    outputs: Mapping[str, object] | None = None,
+    *,
+    width: int = 5,
+) -> ProgramRecord:
+    """Prepare the closed typed graph without selecting numerical suppliers."""
+    record = crosscheck_program(kind, width)
+    return flank_component_with_classical_vectors(
+        record,
+        inputs,
+        outputs,
+        evaluate=lambda values: crosscheck_values(kind, values, width),
+    )
+
+
 def contract_classical_crosscheck(
     kind: str,
     inputs: Mapping[str, object],
@@ -184,13 +201,7 @@ def contract_classical_crosscheck(
     Add performance, use its documented explicit cotengra path instead. The
     returned scalar is a complex amplitude, not a normalized probability.
     """
-    record = crosscheck_program(kind, width)
-    closed = flank_component_with_classical_vectors(
-        record,
-        inputs,
-        outputs,
-        evaluate=lambda values: crosscheck_values(kind, values, width),
-    )
+    closed = prepare_classical_crosscheck(kind, inputs, outputs, width=width)
     like = torch.empty((), dtype=torch.complex128)
     providers = crosscheck_providers(closed, kind, like)
     selected, _ = expand_components_for_tensor(
