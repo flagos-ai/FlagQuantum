@@ -52,6 +52,11 @@ def test_native_user_library_contains_no_importer_sources_or_calls() -> None:
 
 def test_expanded_inventory_separates_quantum_and_workflow_acceptance() -> None:
     data = json.loads((CATALOG.parent / "native_library_inventory.json").read_text())
+    catalog_paths = {
+        case["native_example"].casefold(): case["native_example"]
+        for case in load_catalog()["cases"]
+        if case["native_example"]
+    }
     assert set(data["categories"]) == {
         "algorithms",
         "applications",
@@ -86,7 +91,10 @@ def test_expanded_inventory_separates_quantum_and_workflow_acceptance() -> None:
                 json.loads(provenance.with_name("provenance.json").read_text()) == proof
             )
         if group["native_program"]:
-            assert (ROOT / group["native_program"]["path"]).is_file()
+            native_path = group["native_program"]["path"]
+            assert (ROOT / native_path).is_file()
+            if native_path.casefold() in catalog_paths:
+                assert native_path == catalog_paths[native_path.casefold()]
 
 
 def test_complete_catalog_preserves_sources_and_generated_navigation() -> None:
