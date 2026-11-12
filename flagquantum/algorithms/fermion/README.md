@@ -143,3 +143,14 @@ and run `python -m pytest tests/unit/fermion/test_hubbard_ring.py
 tests/integration/test_fermion_hubbard_ring.py -q` after changing this behavior.
 One/two-site cycles are refused, coefficients remain static, and the dense
 reference remains a bounded correctness oracle.
+
+For the bounded periodic training composition, run
+`python -m examples.algorithms.fermion_hubbard_ring_training`. Existing six-mode
+UCCSD and PyTorch Adam optimize circuit angles for the three-site ring with
+one up and one down particle. No dense reference state, domain solver or runtime
+change is needed. Run
+`python -m pytest tests/integration/test_fermion_hubbard_ring_training.py -q`
+for independent lattice energies, finite-difference gradients, spin-sector
+preservation, closing-bond sensitivity and dependency isolation. See the
+[training golden path](../../../docs/development/FERMION_HUBBARD_RING.md#training-golden-path)
+for float32 angle precision and bounded CPU scope.

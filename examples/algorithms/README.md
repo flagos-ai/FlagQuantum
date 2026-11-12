@@ -342,3 +342,12 @@ state mapping and measurement consumer. At t=1, U=4, mu=0 the N=2 energy is
 The constructor counts each ring bond once and rejects fewer than three sites.
 See the [periodic-ring scope](../../docs/development/FERMION_HUBBARD_RING.md);
 dense reference preparation has exponential inspection cost.
+
+[`fermion_hubbard_ring_training.py`](fermion_hubbard_ring_training.py), run with
+`python -m examples.algorithms.fermion_hubbard_ring_training`, composes the
+three-site Hubbard ring with existing six-mode UCCSD and 60 PyTorch Adam updates.
+It reports initial/final energy, gradient residual, parameter movement and one
+particle of each spin. The analytic ground energy -3.1231056256 is an inspection
+lower bound, not a convergence promise. Angles remain float32, coefficients
+remain static, and verification is bounded CPU/full JW. This example adds no
+solver, accelerator or distributed claim.

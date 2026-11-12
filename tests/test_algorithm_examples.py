@@ -120,6 +120,7 @@ SCRIPTS = (
     "fermion_orbital_rotation",
     "fermion_hubbard",
     "fermion_hubbard_training",
+    "fermion_hubbard_ring_training",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -140,6 +141,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_hubbard_ring_training": (
+        "UCCSD angles are float32",
+        "not a general convergence, coefficient-gradient or scalability claim",
+    ),
     "fermion_active_space_training": (
         "synthetic static integrals",
         "fixed-occupancy projection",
@@ -1989,3 +1994,14 @@ def test_fermion_hubbard_training_lowers_energy_with_valid_gradients() -> None:
     assert -1e-9 <= final - reference < 1e-5
     assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
     _assert_premise("fermion_hubbard_training", output)
+
+
+def test_fermion_hubbard_ring_training_lowers_energy() -> None:
+    output = _run("fermion_hubbard_ring_training")
+    assert (
+        float(_labelled(output, "Final energy"))
+        < float(_labelled(output, "Initial energy")) - 1
+    )
+    assert float(_labelled(output, "Up particles")) == pytest.approx(1, abs=1e-7)
+    assert float(_labelled(output, "Down particles")) == pytest.approx(1, abs=1e-7)
+    _assert_premise("fermion_hubbard_ring_training", output)
