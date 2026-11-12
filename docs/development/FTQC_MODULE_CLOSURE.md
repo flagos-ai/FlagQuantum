@@ -261,3 +261,10 @@ continue that cleanup through finite call graphs, private workspace and locked
 classical-vector examples. Six moved functions and 241 existing scenarios retain
 their implementation/collection contracts. Wider strict typing has 55 confirmed
 unchanged baseline diagnostics; this refactor closes no additional source file.
+
+The [binding-test type closure](COMPONENT_CLASSICAL_VECTORS.md#binding-test-type-closure)
+resolves the 55 diagnostics recorded in the previous fixture cleanup. The same
+14-file surface passes strict typing and the same 241 existing cases pass;
+original assertions and decorators remain. This is a test-only maintenance
+result, with no additional source-file closure or resource-model claim. The
+previous default-suite timeout remains unresolved.

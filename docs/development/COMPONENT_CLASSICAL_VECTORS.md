@@ -211,3 +211,27 @@ is introduced to hide them.
 This construction-fixture cleanup adds no acceptance scenario, capability
 checkbox or closed parent file. The previous default-suite 600-second timeout
 remains unresolved and was not repeated. Evidence prefix: `g2-fixture-chain-`.
+
+### Binding-test type closure
+
+The follow-up type cleanup resolves all 55 diagnostics recorded above. The same
+14-file surface now passes strict mypy, Black and Ruff. The six affected test
+modules use explicit optional-return checks, scalar `RegisterBinding` checks,
+typed operation collections and Cirq's `Qid` manager contract. Manager release
+callbacks check `LineQubit` before reading its coordinate. Complex test-state
+entries use tensors with the existing complex dtype. The repeated-lifetime test
+still exercises `builder.call`; no execution path is replaced to satisfy typing.
+
+Two negative API tests deliberately accept `Any` at the invalid-input boundary:
+non-boolean output-transfer policy and malformed ownership declarations. Their
+original parameter sets and runtime exception assertions remain intact. These
+annotations do not loosen production interfaces. No cast or type-ignore is added.
+
+All original assertions and decorators are retained; new narrowing assertions
+make existing fixture assumptions explicit. The same 241 ordered collection IDs
+pass with no skips and the three existing reference numerical warnings. Nine
+locked source blobs remain unchanged. Architecture, internal IR and protected
+API checks pass. This test-only cleanup changes no emitted primitive gates,
+measurement feedback, workspace ownership or source resource model. It adds no
+capability checkbox or closed source parent. The earlier 600-second default-suite
+timeout remains open. Evidence prefix: `g2-binding-types-`.
