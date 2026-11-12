@@ -1,6 +1,7 @@
 """Factorized Add graphs preserve the source gates and bounded tensor example."""
 
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import replace
 from itertools import product
 from typing import Any
@@ -32,8 +33,8 @@ from flagquantum.simulation.tensor_network.contraction import (
     _contract_nodes_with_slicing_plan,
     _cotengra_slicing_plan,
 )
+from tests.unit.component_vector_checks import tracked_flank
 from tests.unit.measurement_checks import forced_branch
-from tests.unit.test_component_classical_vectors import tracked_flank
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
@@ -199,19 +200,15 @@ def test_original_append_path_executes_the_factorized_closed_graph(
     from flagquantum.dynamic import DynamicCircuit
     from flagquantum.runtime.dynamic.execution import run_dynamic
 
+    def evaluate(values: Mapping[str, object]) -> Mapping[str, object]:
+        a, b = values["a"], values["b"]
+        assert isinstance(a, int) and isinstance(b, int)
+        return dict(
+            zip(("a", "b"), register_add_classical_values(a, b, width), strict=True)
+        )
+
     graph = addition_component_program(width)
-    closed, _ = tracked_flank(
-        monkeypatch,
-        graph,
-        {"a": 2, "b": 3},
-        evaluate=lambda values: dict(
-            zip(
-                ("a", "b"),
-                register_add_classical_values(values["a"], values["b"], width),
-                strict=True,
-            )
-        ),
-    )
+    closed, _ = tracked_flank(monkeypatch, graph, {"a": 2, "b": 3}, evaluate=evaluate)
     total = 3 * width - 1
     bound = bind_register_program(
         closed, (), entry="classical_vectors", clean=tuple(range(total))

@@ -2,7 +2,6 @@
 
 from collections.abc import Mapping
 from dataclasses import replace
-from typing import Any
 
 import numpy as np
 import pytest
@@ -14,73 +13,15 @@ from flagquantum.compiler.registers.component_classical_vectors import (
 from flagquantum.compiler.registers.component_graph import iter_component_calls
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program import (
-    FunctionRecord,
     ProgramRecord,
     verify_program_record,
 )
 from flagquantum.core.ir.program.registers import RegisterType
-from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.simulation.tensor_network.component_dense import (
-    contract_component_tensors,
-)
-from flagquantum.simulation.tensor_network.register_basis_vectors import (
-    register_basis_vector_nodes,
-)
-from flagquantum.simulation.tensor_network.register_tensor_binding import (
-    bind_register_tensor,
-)
+from tests.unit.component_vector_checks import contract, tracked_flank
 from tests.unit.test_component_bit_values import identity_record
 from tests.unit.test_component_zero_initialization import phase_fixture
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
-
-
-def tracked_flank(
-    monkeypatch: pytest.MonkeyPatch,
-    record: ProgramRecord,
-    inputs: Mapping[str, object],
-    outputs: Mapping[str, object] | None = None,
-    **kwargs: Any,
-) -> tuple[ProgramRecord, dict[str, tuple[int, bool]]]:
-    import flagquantum.compiler.registers.component_classical_vectors as module
-    from flagquantum.compiler.registers.component_basis_vectors import (
-        integer_basis_function,
-    )
-
-    seen: dict[str, tuple[int, bool]] = {}
-
-    def factory(
-        name: str, dtype: RegisterType, value: int, *, state: bool = True
-    ) -> FunctionRecord:
-        seen[name] = value, state
-        return integer_basis_function(name, dtype, value, state=state)
-
-    monkeypatch.setattr(module, "integer_basis_function", factory)
-    return (
-        flank_component_with_classical_vectors(record, inputs, outputs, **kwargs),
-        seen,
-    )
-
-
-def contract(
-    record: ProgramRecord, vectors: dict[str, tuple[int, bool]], child: torch.Tensor
-) -> torch.Tensor:
-    def supply(function: FunctionRecord, incoming: Any, outgoing: Any) -> Any:
-        sig = Signature(function.registers or ())
-        if function.name in vectors:
-            value, state = vectors[function.name]
-            return register_basis_vector_nodes(
-                sig, outgoing if state else incoming, {"val": value}, child, state=state
-            )
-        assert function.name == "main"
-        return (bind_register_tensor(child, sig, incoming, outgoing),)
-
-    positions = tuple(
-        i for i, _, _ in iter_component_calls(record, "classical_vectors")
-    )
-    return contract_component_tensors(
-        record, positions, supply, child, "classical_vectors"
-    )
 
 
 @pytest.mark.parametrize("width", [1, 2])
