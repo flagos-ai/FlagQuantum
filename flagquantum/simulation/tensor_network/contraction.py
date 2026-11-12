@@ -48,11 +48,10 @@ def _slice_nodes(
         tensor = node.tensor
         labels = list(node.labels)
         for label, value in assignments.items():
-            if label not in labels:
-                continue
-            axis = labels.index(label)
-            tensor = tensor.select(axis, int(value))
-            labels.pop(axis)
+            while label in labels:
+                axis = labels.index(label)
+                tensor = tensor.select(axis, int(value))
+                labels.pop(axis)
         sliced_nodes.append(
             TensorNetworkNode(
                 tensor=tensor,

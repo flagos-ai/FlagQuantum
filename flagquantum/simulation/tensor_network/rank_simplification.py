@@ -15,7 +15,7 @@ from math import isqrt
 import torch
 
 from .models import TensorNetworkNode
-from .path_search import _label_dims
+from .simplification_axes import _simplification_axes
 from .stages import einsum_pair_by_labels, einsum_reorder_by_labels
 
 
@@ -42,25 +42,15 @@ def simplify_tensor_ranks(
     dtype/device and invalid search budgets raise ValueError. This is the R
     dependency, not a replacement for the source's complete ADCR policy.
     """
-    if not nodes:
-        raise ValueError("rank simplification requires at least one tensor node")
+    dims, outputs = _simplification_axes(nodes, output_labels)
     if type(max_combinations) is not int or max_combinations < 1:
         raise ValueError("rank simplification requires a positive integer budget")
-    dims = _label_dims(nodes)
     if any(
         node.tensor.dtype != nodes[0].tensor.dtype
         or node.tensor.device != nodes[0].tensor.device
         for node in nodes
     ):
         raise ValueError("rank simplification requires one dtype and device")
-    counts = Counter(label for node in nodes for label in node.labels)
-    outputs = (
-        tuple(label for label, count in counts.items() if count == 1)
-        if output_labels is None
-        else tuple(output_labels)
-    )
-    if len(set(outputs)) != len(outputs) or any(label not in dims for label in outputs):
-        raise ValueError("rank simplification outputs must be distinct existing labels")
 
     active: dict[int, TensorNetworkNode] = {}
     scalars: list[torch.Tensor] = []
