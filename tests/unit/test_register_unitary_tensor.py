@@ -211,11 +211,11 @@ def test_actual_phase_bearing_component_provider_and_append_path(
     import flagquantum as fq
     from examples.algorithms.binary_field_arithmetic import FieldOperation
     from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+    from flagquantum.compiler.registers.component_gate_function import bit_gate_function
     from flagquantum.compiler.registers.component_graph import iter_component_calls
     from flagquantum.compiler.registers.component_tensor_expansion import (
         expand_components_for_tensor,
     )
-    from flagquantum.compiler.registers.control.component_predicate import _bit_function
     from flagquantum.compiler.registers.register_binding import bind_register_program
     from flagquantum.core.ir import CircuitIR, Instruction
     from flagquantum.core.ir.program import FunctionRecord
@@ -239,7 +239,7 @@ def test_actual_phase_bearing_component_provider_and_append_path(
     )
     bit = RegisterType("bit", 1)
     signature = Signature((Register("a", bit), Register("b", bit)))
-    leaf = _bit_function("phase_leaf", tuple(signature), ir)
+    leaf = bit_gate_function("phase_leaf", tuple(signature), ir)
     builder = ComponentProgramBuilder(signature, (leaf,))
     graph = builder.finalize(builder.call_dict(leaf.name, builder.inputs))
     unitary = get_unitary(ir, dtype=torch.complex128)

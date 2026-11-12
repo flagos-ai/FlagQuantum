@@ -19,10 +19,10 @@ from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from .component_builder import BindingCollection, ComponentProgramBuilder
 from .component_expansion import _has_call_decomposition
+from .component_gate_function import bit_gate_function
 from .component_graph import _call_entry, _collections, _elements
 from .component_schedule import local_operation_order
 from .control.component_predicate import (
-    _bit_function,
     control_predicate_program,
     validate_control_ports,
 )
@@ -284,7 +284,7 @@ def control_component_via_predicate(
             )
     elif patterns[0].bits() == (0,):
         definitions.append(
-            _bit_function(
+            bit_gate_function(
                 prefix + "x",
                 (Register("q", quantum_bit_type()),),
                 CircuitIR(1, (Instruction("x", (0,)),)),

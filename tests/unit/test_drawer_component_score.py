@@ -11,7 +11,7 @@ from flagquantum.compiler.registers.arithmetic.addition_component import (
     addition_component_program,
 )
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
-from flagquantum.compiler.registers.control.component_predicate import _bit_function
+from flagquantum.compiler.registers.component_gate_function import bit_gate_function
 from flagquantum.core.ir.program import FunctionRecord, ProgramRecord
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.drawer.component_score import component_register_score
@@ -123,7 +123,7 @@ def test_atomic_shapes_and_through_lanes_match_original(kind: str) -> None:
     from tests.unit.test_classical_action_tensor import signature_from_source
 
     signature = signature_from_source(source.signature)
-    leaf = _bit_function("primitive", tuple(signature), emitted)
+    leaf = bit_gate_function("primitive", tuple(signature), emitted)
     builder = ComponentProgramBuilder(signature, (leaf,))
     record = builder.finalize(builder.call_dict("primitive", builder.inputs))
     gate = {"xgate": "x", "cnot": "cx", "toffoli": "ccx"}[kind]

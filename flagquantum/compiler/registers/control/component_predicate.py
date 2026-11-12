@@ -5,67 +5,22 @@
 
 """Give the existing predicate emitter directional typed ports and lifetimes."""
 
-from dataclasses import replace
 from math import prod
 
 import numpy as np
 
 from ....core.ir import CircuitIR
-from ....core.ir.program import FunctionRecord, Operation, ProgramRecord, ValueRef
-from ....core.ir.program.lowering import _lower_instructions
+from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
+from ..component_gate_function import bit_gate_function
 from ..component_graph import _namespace_helpers
 from .control_predicate import ControlRegister
 from .multi_control import multi_and_ir
-
-
-def _bit_function(
-    name: str, registers: tuple[Register, ...], circuit: CircuitIR
-) -> FunctionRecord:
-    """Wrap the shared primitive lowering in one-bit THRU element ports."""
-    block = _lower_instructions(circuit, explicit_returns=True)
-    offset = 1 + max(
-        value.index
-        for value in (
-            *block.arguments,
-            *(v for op in block.operations for v in op.results),
-        )
-    )
-    inputs = tuple(
-        ValueRef("entry", offset + i, "register") for i in range(circuit.n_wires)
-    )
-    outputs = tuple(
-        ValueRef("entry", offset + circuit.n_wires + i, "register")
-        for i in range(circuit.n_wires)
-    )
-    assert block.return_values is not None
-    operations = (
-        *(
-            Operation("split_register", (word,), (bit,))
-            for word, bit in zip(inputs, block.arguments, strict=True)
-        ),
-        *block.operations,
-        *(
-            Operation(
-                "join_register", (bit,), (word,), register_type=quantum_bit_type()
-            )
-            for bit, word in zip(block.return_values, outputs, strict=True)
-        ),
-    )
-    return FunctionRecord(
-        name,
-        (
-            replace(
-                block, arguments=inputs, operations=operations, return_values=outputs
-            ),
-        ),
-        registers=registers,
-    )
 
 
 def validate_control_ports(
@@ -130,7 +85,7 @@ def control_predicate_program(
         classical_bits=tuple(range(count - 1)) if uncompute else (),
         uncompute=uncompute,
     )
-    leaf = _bit_function(
+    leaf = bit_gate_function(
         "gates",
         (Register("bits", quantum_bit_type(), (2 * count - 1,)),),
         CircuitIR(2 * count - 1, gates),

@@ -13,7 +13,8 @@ from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import ComponentProgramBuilder
-from ..control.component_predicate import _bit_function, control_predicate_program
+from ..component_gate_function import bit_gate_function
+from ..control.component_predicate import control_predicate_program
 from ..control.control_predicate import ControlRegister
 from .addition_structure import addition_components
 
@@ -41,7 +42,7 @@ def addition_component_program(
     if right_width == 1:
         word = RegisterType("uint", 1)
         signature = Signature((Register("a", word), Register("b", word)))
-        cnot = _bit_function(
+        cnot = bit_gate_function(
             "add_cx",
             (Register("ctrl", word), Register("target", word)),
             CircuitIR(2, (Instruction("cx", (0, 1)),)),
@@ -59,7 +60,7 @@ def addition_component_program(
     erase = control_predicate_program(
         ctrl, (ControlRegister(1, (1, 1)),), name="add_and_adjoint", uncompute=True
     )
-    cnot = _bit_function(
+    cnot = bit_gate_function(
         "add_cx",
         (Register("ctrl", bit), Register("target", bit)),
         CircuitIR(2, (Instruction("cx", (0, 1)),)),
