@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from typing import TYPE_CHECKING
 
 from .register_score_data import MusicalScoreData, ScorePort
@@ -29,7 +30,8 @@ def _draw_text(ax: Axes, x: float, y: float, text: str, fontsize: int) -> None:
     )
 
 
-def _draw_port(ax: Axes, port: ScorePort) -> None:
+def draw_register_score_port(ax: Axes, port: ScorePort) -> None:
+    """Draw one builtin glyph using the record's sequential x and positive row y."""
     x, y = port["seq_x"], -port["y"]
     symbol = port["symb_cls"]
     attributes = port["symb_attributes"]
@@ -71,8 +73,16 @@ def draw_register_score(
     unit_to_inches: float = 0.8,
     max_width: float = 10.0,
     max_height: float = 8.0,
+    port_drawer: Callable[[Axes, ScorePort], None] | None = None,
 ) -> tuple[Figure, Axes]:
-    """Draw the sequential view of the score and return the caller-owned figure."""
+    """Draw the sequential score and return the caller-owned figure.
+
+    port_drawer replaces drawing for every port, including boundary labels, in
+    record order. It may delegate builtin glyphs to draw_register_score_port.
+    Coordinates retain the record's positive row convention. The callback owns
+    its custom presentation and treats the supplied record as read-only.
+    Callback failures close the incomplete figure and propagate unchanged.
+    """
     from matplotlib import pyplot as plt
 
     width = unit_to_inches * (data["max_x"] + 3.0)
@@ -99,8 +109,13 @@ def draw_register_score(
         label = connector["label"]
         if label["text"]:
             _draw_text(ax, x, 0.5 - bottom, label["text"], label["fontsize"])
-    for port in data["soqs"]:
-        _draw_port(ax, port)
+    draw_port = draw_register_score_port if port_drawer is None else port_drawer
+    try:
+        for port in data["soqs"]:
+            draw_port(ax, port)
+    except BaseException:
+        plt.close(fig)
+        raise
 
     ax.set_xlim(-2, data["max_x"] + 1)
     ax.set_ylim(-data["max_y"] - 0.5, 1)
