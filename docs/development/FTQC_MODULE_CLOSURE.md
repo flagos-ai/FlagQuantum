@@ -1354,3 +1354,42 @@ One-bit CAdd's model Clifford -2 and Add's unequal-width formula boundaries
 remain explicit. This binding adds zero physical gates, work or measurements.
 Constant-add lifetimes, general register bindings, symbolic fallback
 underestimation and dtype-specific bookkeeping cache identity remain open.
+
+## G2-ADDK-WIDTH allocated constant-word resource connections
+
+`registers/arithmetic/constant_addition_width.py` composes existing Allocate,
+XorK, Always(Add), XorK and Free identities through width connections. The
+target is a caller-owned big-endian through word, the allocated constant word
+stays live across Add, and the shared Add child owns carries. The exact adjoint
+loads the same constant and changes Add direction. Existing arithmetic recipes
+supply normalized constants and Always identities. Gate overrides retain the
+available lifetime decomposition. See
+[the interface and evidence](CONSTANT_ADDITION_RESOURCE_WIDTH.md).
+
+Full normalized source cache values and insertion order cover three encodings,
+both directions, negative constants, widths one through five/eight, and
+Sympy/symbolic width and constant dispatch. Seeded allocation/free, load, Add,
+Always, AND/erase and Clifford peaks check bystanders. There are 120 full-DOT
+comparisons across five aggregations and three depths. Zero-width failures,
+invalid-constant partial caches and retry, clean allocation/free atoms and
+unsupported layouts have separate tests. Six frozen source blobs pass.
+
+Acceptance passed 378 focused tests in 2.00 seconds, 5,642 concentrated tests
+in 83.82 seconds and 87 integration tests in 11.62 seconds, without skips.
+The new owner has 24 statements and 12 branches with full coverage. The width
+dispatcher has full statement/branch coverage. Eleven measured modules have
+99 percent combined coverage. Strict typing covers four changed files.
+Formatting, scope, architecture, internal IR, protected API, nine Drawer
+doctests and the Markdown example pass. Concentrated/integration runs report
+1,112/two existing warnings. Existing execution tests retain primitive/feedback
+order, complete complex amplitudes, entangled spectators, all small measurement
+branches, clean work and append workflows.
+
+Physical AddK(3,2), either direction, emits X2/CX21/H6/T4/Tdg4/S2/measurement2/
+conditionalCZ2/reset2, with five work qubits and two classical slots. The source
+model separately declares AND2/Clifford13/measurement2/width8. AddK(1,0) retains
+the source Clifford -3 formula beside its actual CX1 stream. This binding adds
+zero physical gates, work and measurements. Allocation/free and split/join
+cache keys normalize dtype to scalar width. Arbitrary dtype-specific seeded
+cache identity, dirty/array allocation, controlled constant-add, general
+register bindings and symbolic fallback underestimation remain open.
