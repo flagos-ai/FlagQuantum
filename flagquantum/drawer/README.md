@@ -436,3 +436,11 @@ select the source rectangular title/detail label. Complete properties replace
 default labels and styles. Only visible nodes receive presentation callbacks.
 [CALL_GRAPH_NODE_PROPERTIES.md](../../docs/development/CALL_GRAPH_NODE_PROPERTIES.md)
 contains the runnable example and unchanged-source comparisons.
+
+Approximate exchange and fanout now use native automatic connection widths.
+The shared Compiler projection preserves idle-wire liveness, split/join views
+and direction-specific fanout identities. Width and QEC caches retain their
+independent visitation. See
+[APPROXIMATE_SWAP_WIDTH.md](../../docs/development/APPROXIMATE_SWAP_WIDTH.md)
+for the modern/legacy Fanout accounting difference, source fallback and
+`python -m pytest tests/unit/test_approximate_swap_width.py -q`.

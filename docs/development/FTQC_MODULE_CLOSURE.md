@@ -1213,3 +1213,33 @@ and 87 integration tests without skips. Strict typing over four files, format,
 scope, architecture, IR and API checks passed. Both new connection owners and
 the shared resource width binding have 100% statement and branch coverage in
 the concentrated run. Nine Drawer doctests and the Markdown example passed.
+
+## G2-APPROXIMATE-WIDTH approximate exchange and fanout connections
+
+Q-0734.09 adds native approximate controlled-swap and fanout width bindings.
+The emitter and width owner share the literal exchange segments. The shared
+through-wire projection serves both owners through the existing connection
+scheduler. Split/join views, child-local peaks and idle bystanders follow the
+unchanged source. Complete cache values and insertion order cover concrete,
+Sympy integer and symbolic widths in both directions. Ninety full-DOT source
+width-table comparisons cover five aggregations and three display depths.
+Three frozen source blobs are verified. See
+[the ownership and acceptance details](APPROXIMATE_SWAP_WIDTH.md).
+
+The source generic fanout adjoint expands to CNOTs for QEC costing while its
+forward direction is one Clifford in modern mode. Native keys now retain that
+direction. Drawer handles cost-cache rows outside the terminal display graph.
+Legacy category counting and terminal T remain independently checked. Source
+zero-width RuntimeError maps to native admission ValueError. Symbolic fallback
+can underestimate workspace. Added physical gates, work and measurements are
+zero. Existing literal primitive order, full complex amplitudes, measurement
+branches, clean workspace and append workflows pass the execution regression.
+
+Local acceptance passed 194 focused tests, 1,957 concentrated tests and 87
+integration tests without skips. Strict typing over all 11 changed Python
+files, formatting, scope, architecture, internal IR, API, nine doctests and the
+Markdown example passed. Three new owners have 100 percent statement and branch
+coverage, as does the shared resource width dispatcher. Combined measured
+coverage is 98 percent. Arithmetic and general register-program automatic width
+bindings remain open under Q-0734. Other recorded foreign, distribution,
+browser and historical test boundaries retain their status.

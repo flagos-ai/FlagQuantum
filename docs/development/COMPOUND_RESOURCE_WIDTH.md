@@ -83,6 +83,7 @@ and measurements. Executed exact Fredkin remains CX8/H2/T4/Tdg3 with zero work
 and measurements. The QEC model's four-T equivalent and the terminal seven-T
 count retain their distinct accounting.
 
-Approximate CSwap width still requires fanout identity and adjoint binding.
+Approximate CSwap width and fanout adjoint binding were subsequently added in
+[APPROXIMATE_SWAP_WIDTH.md](APPROXIMATE_SWAP_WIDTH.md).
 Its existing explicit width-provider workflow remains supported. Automatic
 arithmetic and general register-program bindings remain open under Q-0734.
