@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 79
+    assert len(validated) == 80
+    assert (
+        "algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority",
+        "examples/synthesis/algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/overview/main.py",
+    ) in validated
     assert (
         "tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide",
         "examples/synthesis/tutorials/basics/qml/overview/main.py",
@@ -445,7 +449,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**79/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**80/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

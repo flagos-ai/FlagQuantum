@@ -48,6 +48,7 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
+- [overview](machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/overview/README.md)
 - [overview](amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/README.md)
 - [overview](amplitude_amplification_and_estimation/qmc_user_defined/overview/README.md)
 - [overview](amplitude_amplification_and_estimation/quantum_counting/overview/README.md)
