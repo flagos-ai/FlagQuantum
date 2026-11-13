@@ -192,15 +192,20 @@ constructors keep their separate interfaces and capability entries.
 
 Run `python -m examples.algorithms.fermion_hubbard_graph` for a four-site star
 with a down-spin spectator and a trainable up-spin determinant pair. It uses
-ordinary CPU JW expectations and SGD without dense eigenstate preparation.
+ordinary CPU expectations and SGD without dense eigenstate preparation. JW is
+the default; `--encoding parity` and `--encoding bravyi_kitaev` select matched
+preparations of the same two physical determinants. Complete amplitudes and
+angle derivatives are verified independently. This manually specified pair is
+not a general ansatz transform. See the
+[encoding replacement scope](../../../docs/development/FERMION_HUBBARD_GRAPH_ENCODINGS.md).
 Change an edge and run
 `python -m pytest tests/unit/fermion/test_hubbard_graph.py tests/integration/test_fermion_hubbard_graph.py -q`.
 The [graph scope](../../../docs/development/FERMION_HUBBARD_GRAPH.md) records
 independent occupation matrices, encoding/producer replacement and the analytic
 nonlocal-hop gradient. Coefficients are static uniform real numbers; weighted or
 complex bonds, flux, coefficient gradients and accelerator/distributed evidence
-are outside this profile. Graph catalog registration remains a separate
-Integration change; no existing entry gains a broader support claim here.
+are outside this profile. Graph catalog registration landed separately in #1175;
+this encoding example extension does not change its registered metadata.
 
 
 Diagonal symmetry discovery lives in `symmetry.discover_z_parities`. It returns

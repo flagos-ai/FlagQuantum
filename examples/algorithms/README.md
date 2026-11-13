@@ -338,8 +338,11 @@ dense reference preparation has exponential inspection cost.
 
 [`fermion_hubbard_graph.py`](fermion_hubbard_graph.py), run with
 `python -m examples.algorithms.fermion_hubbard_graph`, builds a four-site star
-from explicit edges and trains a fixed determinant pair through native CPU JW
-expectations and PyTorch SGD. A down-spin spectator reverses the nonlocal-hop
+from explicit edges and trains a fixed determinant pair through native CPU
+expectations and PyTorch SGD. Select `--encoding parity` or
+`--encoding bravyi_kitaev` to replace its encoding and explicitly matched pair
+preparation while keeping the same measurement and optimization loop. JW remains
+the default; this is not a general ansatz conversion. A down-spin spectator reverses the nonlocal-hop
 sign. Only the circuit angle is trainable; no dense eigenstate is prepared and
 the pair minimum is not the full graph ground energy. See the
 [graph contributor path](../../docs/development/FERMION_HUBBARD_GRAPH.md).
