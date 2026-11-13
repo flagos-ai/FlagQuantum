@@ -8,8 +8,12 @@
 import shutil
 import subprocess
 from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
+from dataclasses import fields
+from math import isclose
 from pathlib import Path
 from tempfile import TemporaryDirectory
+
+import numpy as np
 
 from ..compiler._component_trace.call_graph import Node, _build_call_graph
 from ..compiler._component_trace.resource_generalization import (
@@ -83,8 +87,31 @@ def _keep_small_resource(call: ResourceCall) -> bool:
     )
 
 
+def _resource_arg(value: object) -> str:
+    if isinstance(value, tuple):
+        return str(len(value))
+    if isinstance(value, np.ndarray):
+        return str(value.shape)
+    if isinstance(value, ResourceCall):
+        return _resource_title(value)
+    if isinstance(value, float):
+        if isclose(value, 0, rel_tol=0, abs_tol=1e-8):
+            value = 0
+        return f"{value:0.2g}"
+    return str(value)
+
+
 def _resource_title(call: ResourceCall) -> str:
-    return call.name if isinstance(call, ComponentCost) else str(call)
+    if isinstance(call, ComponentCost):
+        return call.name
+    if type(call).__str__ is not object.__str__:
+        return str(call)
+    arguments = "".join(
+        f"[{_resource_arg(getattr(call, field.name))}]"
+        for field in fields(call)
+        if field.init
+    )
+    return type(call).__name__ + arguments
 
 
 def _concrete_count(value: SymbolicInt) -> int:
@@ -106,9 +133,9 @@ def iter_resource_flame_graph_data(
     computed independently of keep and max_depth. The default keep predicate
     retains binary conjunctions, Toffoli, Fredkin and controlled Z powers.
     Known compound keys expand using the shared Compiler recipes. Explicit
-    declarations override those recipes. Component names provide native titles,
-    other keys use str unless
-    title is supplied. Counts must be concrete nonnegative Python integers.
+    declarations override those recipes. Component names provide native titles.
+    Other keys use compact native constructor fields unless title is supplied.
+    Counts must be concrete nonnegative Python integers.
     Files and output buffering belong to the caller.
     """
     costs: dict[ResourceCall, SymbolicInt] = {}

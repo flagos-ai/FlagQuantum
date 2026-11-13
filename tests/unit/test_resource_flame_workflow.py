@@ -59,7 +59,7 @@ def test_native_precision_workflow_multiple_roots_and_depth() -> None:
     rows = list(
         iter_resource_flame_graph_data(root, tdg, declared_calls=calls, max_depth=0)
     )
-    assert rows == ["Root(T:94)\t94", f"{tdg}(T:1)\t1"]
+    assert rows == ["Root(T:94)\t94", "PhaseCall[t][True](T:1)\t1"]
     assert list(iter_resource_flame_graph_data()) == []
     assert (
         sum(
