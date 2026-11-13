@@ -17,6 +17,19 @@ coefficient and run `python -m pytest tests/unit/fermion -q` to verify a change.
 Dense matrix helpers are explicitly bounded inspection tools. They do not
 establish large-system capacity, distributed training or accelerator support.
 
+`density.py` owns experimental one-body density observables and measured tensor
+assembly, with gamma[p,q] = <a†p aq>. It imports no execution code: consumers
+request the returned Hermitian observables through ordinary `fq.run` and pass
+`result.expectations` to `one_body_density`. The output is an ordinary complex
+PyTorch tensor with circuit-parameter gradients. Full JW/parity/BK registers
+require matching preparations supplied by the caller. Run
+`python -m examples.algorithms.fermion_one_body_density --encoding parity`,
+then change a one-body coefficient and run
+`python -m pytest tests/unit/fermion/test_density.py tests/integration/test_fermion_one_body_density.py -q`.
+The example reports particle number 1, energy 0.4520082847 and angle gradient
+-0.5016897975. See the [scope](../../../docs/development/FERMION_ONE_BODY_DENSITY.md)
+for ordering, O(n**2) measurement/output costs and unsupported boundaries.
+
 Modules are split by numerical responsibility: decomposition.py returns adjacent
 orbital matrices without importing Circuit; lowering.py lifts them to JW gates;
 preparation.py creates Slater determinants and canonical Gaussian vacua.

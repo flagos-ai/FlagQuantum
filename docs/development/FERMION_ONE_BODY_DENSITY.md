@@ -30,7 +30,7 @@ for p in ascending order, emit n[p], then for each q>p emit
 There are exactly n_modes**2 real expectation values. The assembler
 `one_body_density(values, n_modes=...)` consumes that order and fills the lower
 triangle by complex conjugation. Its result has shape (n_modes, n_modes).
-It validates the count and finite real scalar CPU tensors with one common
+It validates the count and finite real single-element CPU tensors with one common
 float32/float64 dtype; it never detaches gradients, clips eigenvalues,
 normalizes particle number or projects noisy data onto physical constraints.
 Hermiticity is imposed by the measurement design, not an independent noise test.
@@ -66,6 +66,29 @@ python -m examples.algorithms.fermion_one_body_density --encoding parity
 python -m pytest tests/unit/fermion/test_density.py tests/integration/test_fermion_one_body_density.py -q
 ```
 
-This document first records implementation scope; the example and acceptance
-results are recorded after implementation. Capability registration remains a
-separate Integration change after scientific acceptance.
+The example reports particle number 1, energy 0.4520082847, angle gradient
+-0.5016897975 and a direct-energy residual below 1e-12 for all three encodings.
+Its preparation uses X/RY/CX/S gates without dense state loading. The test-only
+occupation oracle and complex unitary completion are bounded to four modes;
+they are not part of the normal execution path. Capability registration remains
+a separate Integration change after scientific acceptance.
+
+## Local verification
+
+On macOS CPU, the density unit/integration tests and selected example checks pass
+47 cases; the existing encoding, fermion-algebra, dependency-isolation and public
+API candidate checks pass another 71 cases:
+
+```bash
+python -m pytest tests/unit/fermion/test_density.py tests/integration/test_fermion_one_body_density.py tests/test_algorithm_examples.py -k 'density or covered_and_indexed' -q
+python -m pytest tests/unit/fermion/test_encoding.py tests/unit/test_observables_fermion.py tests/integration/test_native_fermion_isolation.py tests/unit/test_public_api_candidate.py -q
+```
+
+The density tests include a planner refusal for an observable wider than its
+circuit. They do not claim detection of mislabeled same-width states. Import
+blocking covers OpenFermion, Cirq and external chemistry/science SDKs in a fresh
+process for every encoding. Normal example execution refuses eigensolver use.
+Strict module typing, Ruff, Black, architecture boundaries, protected API
+baseline, generated-document consistency, repository language and local Markdown
+links also pass. This records local scientific evidence; Linux CI and the full
+default tier are recorded independently in the PR rather than inferred here.
