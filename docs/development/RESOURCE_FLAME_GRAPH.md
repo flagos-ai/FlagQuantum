@@ -147,7 +147,9 @@ rotation costs require child declarations. This prevents aggregate rotation
 counts from losing their synthesis precision. Symbolic queries remain available,
 while folded-data rendering admits concrete nonnegative Python integers.
 Raw numeric multiplicities are validated before graph aggregation can coerce
-booleans. Arithmetic and other compound keys require their explicit callee rows.
+booleans. Arithmetic and unsupported compound keys require explicit callee rows. Known
+compound resource families now reuse the shared Compiler decomposition owner,
+as recorded below.
 
 ```python
 from flagquantum.compiler._component_trace.resource_generalization import (
@@ -222,3 +224,96 @@ and QEC default Fredkin4T remain separately reported. The native mixture model
 is 2*7 + 3*25 + 5 = 94T. Drawing adds zero gates, work qubits or measurements.
 Existing complex-amplitude, measurement-branch, work-zero and circuit.append
 regressions pass. The historical full-default 600-second timeout stays open.
+
+
+## Compound-resource integration contract
+
+Compiler resource_decomposition now owns the existing typed QEC recipes. QEC category evaluation keeps its existing terminal
+boundary, override priority and diagnostics. Full terminal-T costing and Drawer
+visibility consume the same compound callees with their own terminal boundary. The explicit-only resource generalization and selected-call owners
+retain their established declaration semantics.
+
+The supported automatic compound families are register swaps, approximate
+swaps, merged and register-controlled Fredkins, multi-control conjunctions,
+controlled Z powers/rotations, predicate controls, partitions and repeated calls.
+Their keys, parameters, control polarities and adjoint flags remain unchanged.
+These are model declarations with no qubit allocation or execution. Existing
+primitive/work/measurement owners retain physical ownership. Explicit rows
+replace automatic recipes, including an explicit empty row. Unsupported
+compound calls must raise through the existing decomposition admission path.
+Full costs are independent of displayed keep/depth cutoffs. Tests compare native roots directly with source roots, without copying source
+declaration rows or costs into the native producer. Native display names remain an explicit
+presentation adaptation.
+
+
+### Automatic compound acceptance
+
+Implementation ef820936 extracts the existing QEC callee recipes into
+Compiler resource_decomposition.decomposed_resource_callees. QEC category
+costing consumes that owner directly, and terminal_t_cost selects its own
+terminal boundary before invoking the same recipes. Drawer uses that terminal
+traversal for visibility as well as full costs. The former private
+_qec_callees implementation is removed and its test consumer is migrated.
+Explicit-only selected-call/generalization traversals retain their behavior.
+
+```python
+from flagquantum.compiler._component_trace.resource_generalization import (
+    ConjunctionCall, ControlledSwapCall, ControlledZPowerCall,
+)
+from flagquantum.compiler._component_trace.terminal_t_cost import query_terminal_t_cost
+from flagquantum.drawer.flame_graph import iter_resource_flame_graph_data
+
+roots = (
+    ControlledSwapCall(10),
+    ControlledZPowerCall(0.125, precision=1e-4),
+    ConjunctionCall((0, 1, 0, 1)),
+)
+assert [query_terminal_t_cost(root) for root in roots] == [70, 29, 12]
+rows = list(iter_resource_flame_graph_data(*roots, max_depth=0))
+assert [int(row.split("\t")[1]) for row in rows] == [70, 29, 12]
+```
+
+The previous commit 7f8eda94 returned zero for these three undeclared compound
+roots. A retained negative-baseline diagnostic executes that exact previous
+module and proves zero versus native/source 70, 29 and 12. This corrects an
+integration omission in the native precision query. The locked source remains
+unchanged. Controlled Z precision1e-8 produces 44T for exponent0.125, while
+precision1e-4 produces 29T. Controlled Rz angle0.3 and precision1e-4 gives 52T.
+Exact register CSwap and approximate CSwap retain distinct 7n and 4n models.
+
+Acceptance adds 148 cases, including 17 native/source root pairs under four
+depth cutoffs and both default/full keep policies, for 136 ordered-row
+comparisons. Native roots require no copied source callee rows or cost maps.
+Tests cover exact/approximate and adjoint swaps, multi-And directions and
+polarities, CZ powers, controlled Rz precision splitting, merged and controlled
+register Fredkins, predicates, partitions, symbolic expressions, explicit
+replacement/empty rows, cycle detection and unsupported compounds. Invalid
+control values and widths preserve the shared recipe errors. Seven original
+source blobs match the immutable inventory.
+
+Final local checks pass 148 focused cases in 1.73 seconds with 484 source
+deprecation warnings, 1151 concentrated cases in 40.16 seconds with 1084 warnings
+and 86 independent integration cases in 36.86 seconds with two existing warnings.
+All runs have zero skips. Strict typing covers six changed Python files. Black,
+Ruff, Compiler scope, architecture, internal IR and API checks pass. The shared
+recipe owner covers 68 statements and 46 branches at 100 percent. QEC costing
+and Drawer flame owners also cover 100 percent. Combined coverage across those
+three owners and terminal costs is 99 percent over 256 statements and 126
+branches, retaining two existing terminal error paths as uncovered. Focused
+test-only annotation/import errors were corrected before acceptance, with logs
+retained under g2-flame-auto-.
+
+Physical emission remains separately measured by existing Fredkin, merged
+control, adjoint and measurement tests. A merged Fredkin emits 11T and one
+measurement, matching the locked terminal model's 4+7+0. Both measured branches
+retain complete complex amplitudes and clean work. The exact bitwise Fredkin
+still emits CX8/H2/T4/Tdg3 with no work or measurements. QEC default Fredkin4T,
+terminal Fredkin7T and approximate swap4n remain distinct estimates. This batch
+changes graph/cost composition and adds zero physical gates/work/measurements.
+The ordinary circuit.append path remains covered by existing regressions.
+
+Foreign naming reflection, licensed renderer distribution, browser interaction,
+the historical QFT expectation and general foreign/serialized-symbol admission
+remain open. The renderer's CDDL asset distribution would touch the protected
+package/license manifest and requires its own integration change. No package
+or dependency edits are included in this batch. Evidence uses g2-flame-auto-.

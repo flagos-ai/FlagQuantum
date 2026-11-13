@@ -382,3 +382,12 @@ executable, with a timeout and cleanup on every exit path. Callers own persisten
 files. Run `python -m pytest tests/unit/test_resource_flame_workflow.py tests/unit/test_drawer_flame_svg.py -q` in the locked reference environment.
 RESOURCE_FLAME_GRAPH.md records the native naming/executable adaptations,
 reference asset identities and pending interactive browser inspection.
+
+
+Automatic compound roots now use the same Compiler decomposition recipes as
+QEC costing. Exact/approximate register swaps, conjunctions, controlled phases,
+controlled rotations and predicate wrappers retain full precision costs under
+visible cutoffs. Run `python -m pytest
+tests/unit/test_resource_flame_decomposition.py -q` for 148 source-backed cases.
+RESOURCE_FLAME_GRAPH.md records the corrected previous zero-cost witnesses and
+separate physical/terminal/QEC resource conventions.

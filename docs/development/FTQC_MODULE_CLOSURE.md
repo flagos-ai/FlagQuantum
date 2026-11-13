@@ -955,3 +955,31 @@ are 30 accepted, 1250 open, 388 active and 1191 capability records, including on
 historical record. Resource evidence separates primitive Fredkin CX8/H2/T4/Tdg3
 from terminal7T/QEC4T models, with zero added drawing gates/work/measurements.
 Evidence uses g2-flame-composed- and g2-flame-workflow-.
+
+
+### G2 automatic compound resource costing
+
+Implementation ef820936 replaces the QEC-local callee implementation with
+Compiler resource_decomposition. QEC costing and precise terminal/display
+traversal share the existing recipes, preserving separate terminal boundaries.
+Automatic swap, conjunction, controlled phase/rotation and predicate roots now
+compute their full costs without copied source declarations. Negative-baseline
+execution proves prior zeros for CSwap10, CZPow0.125/eps1e-4 and MultiAnd4,
+corrected to source-equivalent 70T, 29T and 12T.
+
+Acceptance adds 148 tests. Seventeen source root pairs times four cutoffs and
+two keep policies give 136 exact row comparisons. Seven source blobs match.
+There are 1151 concentrated and 86 independent integration passes with zero
+skips. Strict six-file typing, format, Compiler scope, architecture, IR and API
+checks pass. Shared recipes cover 68 statements and 46 branches at 100 percent.
+QEC and Drawer owners also cover 100 percent, with combined four-owner coverage
+99 percent. Existing exact primitive, merged-control measurement branches,
+complex amplitudes, work-zero and append checks pass. Terminal Fredkin7T,
+QEC default4T and actual CX8/H2/T4/Tdg3 remain separate, while merged Fredkin
+emits11T/measure1 and its terminal model gives4+7+0.
+
+This extends Q-0739 with accepted child Q-0739.04. Whole-file parents remain
+open, with 30 accepted, 1250 open, 388 active and 1192 capability records,
+including one historical record. Foreign names, renderer distribution requiring
+protected packaging changes, browser interaction, historical QFT expectations
+and general foreign admission remain explicit gaps. Evidence uses g2-flame-auto-.
