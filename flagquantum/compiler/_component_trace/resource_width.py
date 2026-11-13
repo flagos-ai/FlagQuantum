@@ -21,6 +21,7 @@ from ..registers.arithmetic.out_of_place_addition_width import (
 )
 from ..registers.bits.bitwise_width import BITWISE_WIDTH_OPERATIONS, bitwise_width
 from ..registers.bits.controlled_constant_width import controlled_constant_width
+from ..registers.bits.controlled_xor_width import controlled_xor_width
 from ..registers.bits.fanout_width import fanout_width
 from ..registers.control.multi_and_width import multi_and_width
 from ..registers.primitives.controlled_swap_width import controlled_swap_width
@@ -93,6 +94,8 @@ def query_resource_logical_width(
             and node.operation == "controlled_xor_constant"
         ):
             return controlled_constant_width(node, child)
+        if isinstance(node, ArithmeticCall) and node.operation == "controlled_xor":
+            return controlled_xor_width(node, child)
         if isinstance(node, ConjunctionCall):
             return multi_and_width(node, child)
         if isinstance(node, ControlledSwapCall):
@@ -148,6 +151,7 @@ def query_resource_logical_width(
             "constant_add",
             "controlled_constant_add",
             "controlled_xor_constant",
+            "controlled_xor",
         ):
             return tuple(arithmetic_callees(node).items())
         if isinstance(node, ConjunctionCall):
@@ -173,6 +177,8 @@ def query_resource_logical_width(
 
 
 def _signature_width(node: ResourceCall) -> SymbolicInt:
+    if isinstance(node, ArithmeticCall) and node.operation == "controlled_xor":
+        return 2 * node.widths[0] + 1
     if isinstance(node, ArithmeticCall) and node.operation == "out_of_place_add":
         return 3 * node.widths[0] + int(node.include_most_significant_bit)
     if isinstance(node, ArithmeticCall) and node.operation in {"add", "controlled_add"}:
