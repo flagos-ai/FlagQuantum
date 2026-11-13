@@ -1543,3 +1543,20 @@ remains 32 closed and 1,248 open, with 387 active parents and 1,210 accepted
 capability records, including one historical record. General register/control
 width, dtype-specific seeds, dirty/array allocation and symbolic fallback remain
 open alongside the recorded historical failures.
+
+## G2-FILE-HAMMING whole-file disposition
+
+Q-0199 `arithmetic/hamming_weight_test.py` closes. Both original functions and
+all five parameter cases run unchanged, and their cost, count and round-trip
+assertions have native mappings. The source file Q-0198 remains open for the
+recorded Q-0198.02 empty-junk adjoint boundary. Its full class, field, properties,
+methods and dependencies are audited against existing implementation evidence.
+See [the complete definition/test matrix](HAMMING_WEIGHT_FILE_AUDIT.md).
+
+The batch adds one complete-file closure. The fixed inventory now has 33 closed,
+1,247 open and 387 active parents. Capability subitem totals remain 1,210.
+Concentrated regression passes 422 tests with zero skips, plus strict typing,
+formatting, scope, architecture, internal IR, protected API and the normal
+append example. Prior production-path regression/integration evidence is reused.
+The next complete-file batch is Q-0174 addition and Q-0175 original addition
+tests, with closure-critical direct dependencies selected after auditing them.
