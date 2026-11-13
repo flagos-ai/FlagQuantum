@@ -444,3 +444,10 @@ independent visitation. See
 [APPROXIMATE_SWAP_WIDTH.md](../../docs/development/APPROXIMATE_SWAP_WIDTH.md)
 for the modern/legacy Fanout accounting difference, source fallback and
 `python -m pytest tests/unit/test_approximate_swap_width.py -q`.
+
+Addition presentation is owned by `addition_symbols.py`. Its callback plugs into
+`register_score_data` with explicit `add`, `out_of_place_add` and `constant_add`
+display steps. It preserves source port directions and sum labels. The catalog
+in `examples/algorithms/addition_catalog.py` and the register-addition notebook
+compose existing Core metadata, Compiler declarations and Drawer rendering.
+Execution continues through the existing addition append examples.
