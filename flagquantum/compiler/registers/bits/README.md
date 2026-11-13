@@ -36,3 +36,8 @@ record source self-adjoint child identities and symbolic fallback limits.
 atomic Toffolis to through-wire connections. Zero control reuses the shared
 control-flip wrapper with both words live. See
 [the interface and evidence](../../../../docs/development/CONTROLLED_XOR_RESOURCE_WIDTH.md).
+
+`hamming_weight_width.py` binds count-tree logical junk/output creation and
+adjoint consumption. The gate emitter and width graph share the tree and six-step
+compression sequence. See [the interface and evidence](../../../../docs/development/HAMMING_WEIGHT_RESOURCE_WIDTH.md).
+Run `python -m pytest tests/unit/test_hamming_weight_resource_width.py tests/unit/test_hamming_weight.py -q`.

@@ -1496,3 +1496,22 @@ Three-bit words emit atomic CCX3 and optionally X2, with work0/measurement0.
 The model separately returns Toffoli3, Clifford0/2, peak7 and default T equivalent12.
 Initial symbolic-view fixture construction and resource-report method diagnostics
 were corrected and rerun.
+
+## G2 Hamming count-tree width acceptance
+
+Implementation `b780407a` binds Hamming logical output creation and generic
+adjoint consumption to recursive width queries and Drawer. Gate emission and
+width construction share tree traversal and the six-step compression sequence.
+Five immutable source blobs, full normalized caches/order, seeded child peaks,
+14 complete weighted graph comparisons and 120 full DOT comparisons pass.
+Python zero/one source failures and existing native one-bit execution are
+recorded separately. Acceptance passed 237 new tests, 8,646 concentrated tests
+and 87 real-kernel/CPU integration tests, with zero skips. Strict typing covers
+seven changed files. Width owner, shared structures, compressor and dispatcher
+have full statement/branch coverage. The 22 measured modules total 99 percent.
+See [the interface, resources and limits](HAMMING_WEIGHT_RESOURCE_WIDTH.md).
+The ledger adds Q-0734.17 while keeping its parent open. Full-file disposition
+remains 32 closed and 1,248 open, with 387 active parents and 1,210 accepted
+capability records, including one historical record. General register/control
+width, dtype-specific seeds, dirty/array allocation and symbolic fallback remain
+open alongside the recorded historical failures.
