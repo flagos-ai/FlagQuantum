@@ -297,6 +297,12 @@ The caller supplies the painter again after loading portable JSON. A runnable
 example and source pixel comparisons are in
 [REGISTER_SCORE_SYMBOL_ADJOINT.md](../../docs/development/REGISTER_SCORE_SYMBOL_ADJOINT.md).
 
+Connector label presentation uses `label_drawer(ax, connector)` on the same
+renderer. Delegate ordinary Text labels to `draw_register_score_label`. Nonempty
+labels run after their connector line and before every port. The Matplotlib
+label position is `(connector["x"], 0.5 - connector["bottom_y"])`. The linked
+symbol guide includes an executable label-painter example and source comparisons.
+
 ## Typed component scores
 
 `component_score.component_register_score` projects existing Core typed calls into

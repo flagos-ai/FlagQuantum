@@ -300,3 +300,102 @@ dispatch. Q-0748's original JSON asset remains independently open.
 ```bash
 python -m pytest tests/unit/test_drawer_custom_symbols.py -q
 ```
+
+
+## Replacing connector label painting
+
+Implementation `c1f92dc7` adds `label_drawer(ax, connector)` to the same sequential
+renderer. It receives the existing ScoreVerticalLine and its Text label mapping.
+The shared `draw_register_score_label` owns builtin Text presentation. Callers
+can mix custom label artists with delegation to that owner. Labels and ports
+use separate callbacks over their existing records.
+
+All horizontal lines are drawn first. Each vertical connector is then drawn,
+followed immediately by its nonempty label. All port drawing follows the complete
+connector pass. Empty text skips the label callback, while whitespace text invokes
+it. A callback sees the original connector object as a borrowed read-only value.
+The source dispatch passes x and `bottom_y - 0.5` to the label's draw method.
+Matplotlib uses the negated row, `0.5 - bottom_y`. For bottom row zero, the label
+is above the wire at y=0.5. False-valued callable objects work in both callback
+positions.
+
+```python
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+
+from flagquantum.drawer.register_score import RegisterStep, layout_register_score
+from flagquantum.drawer.register_score_data import ScoreVerticalLine, register_score_data
+from flagquantum.drawer.register_score_mpl import (
+    draw_register_score,
+    draw_register_score_label,
+)
+
+
+def paint_label(ax: Axes, connector: ScoreVerticalLine) -> None:
+    label = connector["label"]
+    if label["text"] == "pair":
+        ax.text(
+            connector["x"],
+            0.5 - connector["bottom_y"],
+            label["text"],
+            fontsize=label["fontsize"],
+            rotation=-12,
+            ha="center",
+            va="center",
+            bbox={"boxstyle": "round,pad=0.25", "fc": "lightyellow"},
+        )
+    else:
+        draw_register_score_label(ax, connector)
+
+
+score = layout_register_score(
+    {"a": 1, "b": 1},
+    ("a", "b"),
+    (RegisterStep("pair", ("a", "b"), ("a", "b")),),
+)
+figure, axes = draw_register_score(register_score_data(score), label_drawer=paint_label)
+assert axes.figure is figure
+plt.close(figure)
+```
+
+A caller-defined source Text subclass overrides label draw while retaining its
+ordinary text/fontsize record. The unchanged source renderer executes that
+method. Native custom and delegated builtin labels independently match every
+Agg pixel at default, width-limited and height-limited sizes, covering bottom
+rows zero, two and five. The complete event list also compares coordinates,
+text and the number of already-drawn line collections. It verifies label order,
+skipped empty text, invoked whitespace text and both later boundary port calls.
+The native painter receives the exact original connector objects, and JSON
+records remain equal before and after rendering. A completed PNG was inspected.
+
+The local label painter is supplied again for custom appearance after loading
+portable records. Label JSON retains text and fontsize. Connector callbacks now
+share the existing incomplete-figure cleanup with port callbacks. RuntimeError
+and KeyboardInterrupt stop label and port traversal, close the native figure
+and propagate the same exception object. The source retains its unfinished
+figure on both failures, which the tests reproduce and clean up explicitly.
+A subsequent native rendering retries from fresh figure state. Empty native
+scores return a caller-owned figure without invoking label callbacks.
+
+Eleven new cases and focused cases pass in 1.92 seconds. Concentrated regression
+passes 514 cases in 19.09 seconds with eight existing parser warnings.
+Independent notebook/CPU/TN integration passes 86 cases in 9.58 seconds with two
+existing warnings. No tests skip. Strict typing of two files, Black, Ruff, scope,
+architecture, multi-level IR and protected API checks pass. All 63 statements
+and 18 branches in the Matplotlib score owner are covered. The original source
+blob remains `3863bb66cdba17c4654657e275a8485d94b8da75`.
+
+Evidence uses `g2-score-custom-labels-`. The first test fixture emitted an
+ObservedPort class name from its observer subclass. It now explicitly exports
+the same portable Text fallback as its builtin presentation. That initial
+failure log is retained. No reference file was changed. This batch is a
+`single_device_fast_path` presentation extension. Existing exact-adjoint,
+full-amplitude, forced-branch, work-restoration and ordinary `circuit.append(op)`
+regressions pass. Added physical gates, work and measurements are zero.
+MUSICAL_SCORE_SOURCE_AUDIT.md retains separate actual primitive and analytical
+model accounts. Q-0747 remains open for general foreign and arbitrary serialized
+symbol-class admission. Q-0748's original JSON asset remains independently open.
+
+```bash
+python -m pytest tests/unit/test_drawer_custom_labels.py -q
+```

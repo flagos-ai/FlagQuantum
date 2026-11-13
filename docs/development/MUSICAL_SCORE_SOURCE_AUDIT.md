@@ -36,7 +36,7 @@ Existing native records remain the shared representation.
 | `_update_assign_from_vals` | Native component projection maps THRU outputs to predecessor lifetimes and creates fresh RIGHT display identities. Core validation owns array signatures. Foreign array-value shape diagnostics remain open. |
 | `_binst_assign_line`, nested `_in_vals` | Native component projection consumes the selected call's operands/results, retains THRU identity and retires LEFT lifetimes through the shared layout. |
 | `_cbloq_musical_score`, nested `_f_vals` | `component_register_score` projects the selected Core graph; `layout_register_score` owns dependency generations and output lifetimes. Existing `register_program_score` separately projects verified register constructions. Foreign graph-manager replacement remains open. |
-| `WireSymbol.draw`, `adjoint`, `json_dict` | Existing `SymbolClass` and attribute dictionaries supply the six glyph classes. `draw_register_score_port` owns drawing. `adjoint_wire_symbol` transforms all six admitted record classes. `port_drawer` replaces local port painting and delegates builtins to the same owner. A custom source subclass with portable fallback JSON matches native Agg pixels. Foreign objects/arbitrary serialized names and custom connector-label drawing remain open. |
+| `WireSymbol.draw`, `adjoint`, `json_dict` | Existing `SymbolClass` and attribute dictionaries supply the six glyph classes. `draw_register_score_port` owns drawing. `adjoint_wire_symbol` transforms all six admitted record classes. `port_drawer` replaces local port painting and delegates builtins to the same owner. A custom source subclass with portable fallback JSON matches native Agg pixels. Native label_drawer also replaces connector Text painting with source cadence and half-row coordinates, delegating builtins through draw_register_score_label. Foreign objects and arbitrary serialized names remain open. |
 | `_text_adjoint` | `adjoint_wire_symbol` now preserves the exact source dagger add/remove and `strip` behavior. |
 | `TextBox.draw`, `adjoint` | `draw_register_score_port` draws the round box. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
 | `Text.draw`, `adjoint` | `_draw_text` preserves text and font size. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
@@ -47,7 +47,7 @@ Existing native records remain the shared representation.
 | `directional_text_box` | `_port_symbol` selects through/left/right box styles for admitted native ports. Source enum error behavior and a standalone foreign helper remain outside that surface. |
 | `_soq_to_symb` | Native `register_wire_symbol` receives the original Core register and element index, with scalar `()` and connector `(None, None)`. Source adjacency groups and input/output invocation cadence include the discarded second THRU symbol. Metadata synthesis and hand-authored final-order fallback are documented in REGISTER_SCORE_SYMBOL_ADJOINT.md. Arbitrary foreign glyph subclasses remain open. |
 | `SoqData.json_dict` | `ScorePort` stores symbol, coordinates and identity together. |
-| `VLine.json_dict` | `ScoreVerticalLine` and `ScoreLabel` retain connector geometry, text and font size. |
+| `VLine.json_dict` | `ScoreVerticalLine` and `ScoreLabel` retain connector geometry, text and font size. label_drawer consumes these same records for local custom label draw dispatch, with portable Text fallback. |
 | `MusicalScoreData.json_dict` | Existing typed `MusicalScoreData` is a plain mapping with the source JSON field names. |
 | `_make_ident` | Existing native identity strings name logical lane lifetimes and the original operation ordinal. Foreign instance/Soquet identity spelling is explicitly adapted. |
 | `get_musical_score_data` | Native component projection, layout and score-data extraction follow the admitted chain. Native lane managers and typed register callbacks preserve source adjacency ordering and final signature order. General foreign Bloq/manager/glyph admission and source record protocols remain open. |
@@ -138,7 +138,10 @@ source encoder. Full-score UTF-8/newline formatting retains its native policy.
 Local custom port painting now has source-backed acceptance through port_drawer,
 including record order, false-valued callables and builtin delegation. Native
 callback failure cleanup is explicit. General foreign class/serialized-name
-admission and custom connector-label drawing remain open.
+admission remain open. Custom connector label dispatch is now accepted through
+label_drawer, including half-row coordinates and the complete line/label/port
+sequence. Callback exceptions share native incomplete-figure cleanup, with the
+source retained-figure behavior directly tested.
 Context-aware coordinate selection and partial-line lifecycle observations are
 accepted through `new_y_for`, `hlines` and `finish_hline`. Native cursor placement,
 textual flavor representation and malformed-release preflight have explicit

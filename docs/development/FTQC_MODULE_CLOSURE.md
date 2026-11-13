@@ -747,3 +747,33 @@ original JSON asset and historical default-suite timeout stay open. Counts remai
 physical gates, work and measurements are zero. Existing amplitudes, branch
 work restoration and append regressions pass. Actual primitives and source
 analytical estimates retain separate accounts.
+
+
+### Native connector label painters (2026-11-13)
+
+Implementation `c1f92dc7` adds label_drawer over the existing ScoreVerticalLine
+and Text label mapping. Shared builtin label drawing remains in the Matplotlib
+owner. Each nonempty label follows its connector, before all ports. Source
+half-row coordinates, whitespace/empty admission and false-valued callables are
+accepted. Custom source Text subclass dispatch matches independent native Agg
+pixels at three size limits and bottom rows zero/two/five. The full event list
+compares labels, ports and already-drawn line collections. The PNG was inspected.
+
+11 new/focused cases in 1.92 seconds, 514 concentrated cases in 19.09 seconds
+and 86 independent integration cases in 9.58 seconds pass with zero skips and
+eight/two existing warnings. Strict2, formatting, scope, architecture, IR and API
+checks pass. Matplotlib score coverage is 63 statements and 18 branches at 100%.
+The initial observer-fixture serialized-class failure is corrected by its
+explicit portable Text fallback and retained. Source files are unchanged.
+Evidence uses `g2-score-custom-labels-`, with an executable example in
+REGISTER_SCORE_SYMBOL_ADJOINT.md and a Drawer README entry.
+
+RuntimeError and KeyboardInterrupt share native incomplete-figure cleanup and
+preserve exception identity. The source retained-figure behavior is reproduced.
+Retry and empty-graph ownership pass. Custom appearance uses the local painter
+again after loading portable Text records. Q-0747 remains open for general foreign
+and arbitrary serialized symbol-class admission. Q-0748's original JSON asset
+and historical default-suite timeout stay open. Counts remain 29 closed,
+1251 open, 387 active parents and 1187 capability records. Added physical gates,
+work and measurements are zero. Existing amplitude, all-branch work restoration
+and append regressions pass. Actual primitives and source models stay separate.
