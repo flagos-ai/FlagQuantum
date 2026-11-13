@@ -23,6 +23,8 @@ from ..registers.bits.bitwise_width import BITWISE_WIDTH_OPERATIONS, bitwise_wid
 from ..registers.bits.controlled_constant_width import controlled_constant_width
 from ..registers.bits.controlled_xor_width import controlled_xor_width
 from ..registers.bits.fanout_width import fanout_width
+from ..registers.bits.hamming_weight import hamming_weight_resource_widths
+from ..registers.bits.hamming_weight_width import hamming_weight_width
 from ..registers.control.multi_and_width import multi_and_width
 from ..registers.primitives.controlled_swap_width import controlled_swap_width
 from ..registers.primitives.relative_controlled_swap_width import (
@@ -96,6 +98,8 @@ def query_resource_logical_width(
             return controlled_constant_width(node, child)
         if isinstance(node, ArithmeticCall) and node.operation == "controlled_xor":
             return controlled_xor_width(node, child)
+        if isinstance(node, ArithmeticCall) and node.operation == "hamming_weight":
+            return hamming_weight_width(node, child)
         if isinstance(node, ConjunctionCall):
             return multi_and_width(node, child)
         if isinstance(node, ControlledSwapCall):
@@ -152,6 +156,7 @@ def query_resource_logical_width(
             "controlled_constant_add",
             "controlled_xor_constant",
             "controlled_xor",
+            "hamming_weight",
         ):
             return tuple(arithmetic_callees(node).items())
         if isinstance(node, ConjunctionCall):
@@ -177,6 +182,9 @@ def query_resource_logical_width(
 
 
 def _signature_width(node: ResourceCall) -> SymbolicInt:
+    if isinstance(node, ArithmeticCall) and node.operation == "hamming_weight":
+        junk, output = hamming_weight_resource_widths(node.widths[0])
+        return smax(node.widths[0], node.widths[0] + junk + output)
     if isinstance(node, ArithmeticCall) and node.operation == "controlled_xor":
         return 2 * node.widths[0] + 1
     if isinstance(node, ArithmeticCall) and node.operation == "out_of_place_add":

@@ -10,6 +10,7 @@ from ....core.ir import Instruction
 from ..._component_trace.symbolic_math import SymbolicInt, bit_length
 from .bit_compression import compress_three_bits_ir
 from .bitwise import xor_ir
+from .hamming_weight_structure import hamming_weight_stages
 
 
 def hamming_weight_resource_widths(
@@ -73,37 +74,19 @@ def hamming_weight_ir(
         raise ValueError(
             f"Hamming weight requires {c} distinct nonnegative classical slots"
         )
-    # Preserve the source little-endian traversal and reversed-junk pop order.
-    x, available = list(source[::-1]), list(junk[::-1])
     blocks: list[tuple[Instruction, ...]] = []
     used = 0
-
-    def compress(a: int, b: int, carry_in: int, carry_out: int) -> None:
-        nonlocal used
-        blocks.append(
-            compress_three_bits_ir(
-                a,
-                b,
-                carry_in,
-                carry_out,
-                erase_bit=classical_bits[used] if adjoint else None,
-            )
-        )
-        used += 1
-
-    for result in reversed(output):
-        y = []
-        for i in range(0, len(x) - 2, 2):
-            anc = available.pop()
-            y.append(anc)
-            compress(x[i], x[i + 1], x[i + 2], anc)
-        if len(x) % 2:
-            blocks.append(xor_ir((x[-1],), (result,)))
+    for kind, wires in hamming_weight_stages(source, junk, output):
+        if kind == "cx":
+            blocks.append(xor_ir((wires[0],), (wires[1],)))
         else:
-            anc = available.pop()
-            compress(x[-2], x[-1], result, anc)
-            y.append(anc)
-        x = y
+            blocks.append(
+                compress_three_bits_ir(
+                    *wires,
+                    erase_bit=classical_bits[used] if adjoint else None,
+                )
+            )
+            used += 1
     if adjoint:
         blocks.reverse()
     return tuple(g for block in blocks for g in block)

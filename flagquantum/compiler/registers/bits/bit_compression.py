@@ -10,6 +10,7 @@ from collections.abc import Callable, Iterable
 
 from ....core.ir import Instruction
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
+from .bit_compression_structure import compression_components
 from .bitwise import _validate_wires
 
 
@@ -17,23 +18,18 @@ def compress_three_bits_ir(
     a: int, b: int, total: int, carry: int, *, erase_bit: int | None = None
 ) -> tuple[Instruction, ...]:
     """Replace total by a XOR b XOR total and write carry into a clean qubit."""
+    components = compression_components(a, b, total, carry)
     if erase_bit is not None:
-        return (
-            Instruction("cx", (b, total)),
-            Instruction("cx", (a, carry)),
-            Instruction("cx", (a, b)),
-            *and_uncompute_ir(b, total, carry, erase_bit),
-            Instruction("cx", (a, total)),
-            Instruction("cx", (a, b)),
-        )
-    return (
-        Instruction("cx", (a, b)),
-        Instruction("cx", (a, total)),
-        *and_compute_ir(b, total, carry),
-        Instruction("cx", (a, b)),
-        Instruction("cx", (a, carry)),
-        Instruction("cx", (b, total)),
-    )
+        components = tuple(reversed(components))
+    gates: list[Instruction] = []
+    for kind, wires in components:
+        if kind == "cx":
+            gates.append(Instruction("cx", wires))
+        elif erase_bit is None:
+            gates.extend(and_compute_ir(wires[0], wires[1], wires[2]))
+        else:
+            gates.extend(and_uncompute_ir(wires[0], wires[1], wires[2], erase_bit))
+    return tuple(gates)
 
 
 def weighted_columns_xor_ir(
