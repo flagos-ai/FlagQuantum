@@ -882,3 +882,22 @@ regressions pass. Drawing adds zero gates, work or measurements. Measured and
 analytical resource accounts remain separate. Evidence uses g2-score-default-.
 Q-0747 remains open for general foreign/serialized-symbol admission. Counts
 remain 30 accepted, 1250 open, 386 active parents and 1187 capability records.
+
+
+### G2 connection-seeded score traversal follow-up
+
+Implementation `27be2062` shares connection encounter order between root lane
+placement and ordered symbol records. Input/output boundaries participate in
+source topological traversal. The reverse-root baseline and idle input boundary
+failures expose the previously uncovered cases. Frozen source remains unchanged.
+Acceptance passes 130 focused, 788 concentrated, 86 independent integration and
+14 browser cases without skips, plus strict three-file typing, formatting,
+Compiler scope, architecture, IR and protected API checks. Four owners cover
+486/492 statements and 185/192 branches, 98% combined. Full amplitudes, all
+observed measurement branches, clean work, primitive instructions and ordinary
+append regressions pass. Drawing adds zero gates/work/measurements, while actual
+primitive counts and analytical source estimates remain separately reported.
+Evidence uses g2-score-roots-. Native names/boundary text and isolated zero-port
+insertion order are explicit adaptations. General foreign/serialized-symbol
+admission keeps Q-0747 open. Counts remain 30 accepted, 1250 open, 386 active
+parents and 1187 capability records.

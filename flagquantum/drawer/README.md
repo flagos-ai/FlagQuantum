@@ -352,3 +352,11 @@ callbacks retain precedence. Run
 `python -m pytest tests/unit/test_drawer_default_symbols.py -q` in the locked
 reference environment. COMPONENT_REGISTER_SCORE.md records native naming
 adaptations and remaining foreign graph/serialized-symbol boundaries.
+
+
+Independent allocation roots now follow first connection encounter order.
+The same helper orders geometry and portable glyph traversal, including idle
+input boundaries at their source topological position. Run
+`python -m pytest tests/unit/test_drawer_root_order.py -q` in the locked reference
+environment for 130 cases. COMPONENT_REGISTER_SCORE.md records the native naming
+and isolated zero-port insertion adaptations plus remaining admission gaps.

@@ -208,3 +208,16 @@ Agg buffers, same-named directional ports, empty arrays and compatibility paths.
 Both source blobs are verified. COMPONENT_REGISTER_SCORE.md records counts,
 resource separation and native naming adaptations. General foreign protocols and
 arbitrary serialized-symbol names remain independently open.
+
+
+Connection-seeded root follow-up `27be2062` corrects independent allocation
+ordering through the unchanged composite_bloq.py graph-construction chain.
+Both boundary nodes participate in the same topological traversal. In particular,
+an idle input boundary can follow allocation roots. A shared private helper
+keeps geometry, typed callback cadence and portable glyph ordering aligned.
+The 130 new cases compare source order directly, including four exact Agg
+buffers with only boundary text adapted. Source blobs match the immutable
+inventory. Disconnected zero-port calls retain native insertion order because
+the source frozenset supplies no stable equivalent. COMPONENT_REGISTER_SCORE.md
+records acceptance counts, initial failures, resource separation and remaining
+foreign graph/serialized-symbol boundaries.

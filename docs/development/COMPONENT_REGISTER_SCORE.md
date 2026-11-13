@@ -221,9 +221,9 @@ python -m pytest tests/unit/test_drawer_mixed_score.py \
 
 Implementation `0054242d` extends the existing adjacency reconstruction to both
 boundary nodes. Connections retain original consumer-call order within each
-neighbor group. Visible records follow LeftDangle outgoing groups, existing
-component visitation with predecessor then successor groups, and RightDangle
-incoming groups. The first THRU glyph is retained while both typed callback
+neighbor group. The later connection-seeded traversal correction below places
+both boundaries in source topological order. Each component retains predecessor
+then successor groups. The first THRU glyph is retained while both typed callback
 invocations still run. Display-identity callbacks retain their existing single
 visible-port invocation and connector cadence. Geometry, portable record fields
 and native identities use the existing owners. The change belongs entirely to
@@ -341,3 +341,48 @@ metadata. Q-0747 remains open for general foreign graph/dtype and arbitrary
 serialized-symbol admission. Native function names and boundary
 labels remain explicit naming adaptations. Source-specific overrides continue
 through the existing caller-supplied style and symbol boundaries.
+
+
+## Connection-seeded root traversal
+
+Implementation `27be2062` follows the locked `_create_binst_graph` connection
+insertion chain. Independent roots take their order from the first connection
+that encounters them, including final output connections in signature order.
+Original call ordinals retain identity. The shared private ordering helper serves
+both sequential lane placement and portable symbol records, preventing the two
+presentation paths from developing different traversal rules. An idle input
+boundary can follow allocation roots in source topological traversal. It therefore
+participates as an ordinary graph node instead of being emitted first.
+
+The 130 new cases exercise the native ComponentProgramBuilder entry point.
+Independent Prepare calls are consumed in ten root permutations or returned
+directly, with widths one through three and an optional idle input. The matrix
+checks 120 complete ordered geometry/glyph records, six stateful typed-callback
+event sequences and four exact Agg buffers. Source methods remain unchanged.
+Only boundary text is adapted for pixel comparisons. The immutable inventory
+checks both composite_bloq.py and musical_score.py blobs. The old producer fails
+the reverse-root ordinal comparison. Initial fixture rejection of zero-width
+basis preparation and the first idle-boundary ordering failure are retained in
+the evidence logs. Existing zero-width preparation admission is unchanged.
+
+Local acceptance passes 130 focused cases in 2.21 seconds, 788 concentrated in
+24.80 seconds, 86 independent integration in 10.61 seconds and 14 browser cases
+in 21.28 seconds, with no skips. Concentrated and integration runs report eight
+and two existing warnings respectively. Strict typing covers the three changed
+Python files. Black, Ruff, Compiler scope, architecture, internal IR and public
+API checks pass. Four presentation owners cover 486/492 statements and 185/192
+branches, 98% combined. Test import formatting and a missing list annotation
+were corrected before acceptance. Evidence uses `g2-score-roots-`.
+
+Physical gate, operand, feedback, full complex-amplitude, measurement-branch,
+clean-work, exact-adjoint and ordinary append regressions continue to pass.
+Presentation adds zero physical gates, work bits or measurements. Measured
+H1/measurement1/classical_xor1 remains separate from the source MeasureX model
+of measurement1/Clifford0/T-equivalent0. Source Parity has no analytical model.
+
+Native function names and boundary labels remain naming adaptations. Isolated
+zero-port calls use original call order as the insertion tie-break. The source
+obtains those disconnected nodes from a frozenset, so source-identical ordering
+for those nodes is not claimed. General foreign graph/dtype and arbitrary
+serialized-symbol admission remain open under Q-0747. Core classical integer
+execution and the historical full-default timeout retain their separate status.
