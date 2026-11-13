@@ -66,11 +66,16 @@ class RegisterLine:
 
 @dataclass(frozen=True)
 class RegisterScore:
-    """Operation placement plus horizontal register lifetimes."""
+    """Operation placement, lifetimes and final signature identity order.
+
+    output_order retains the final connection order for symbol callbacks.
+    Hand-authored scores may omit it to use completed-line order.
+    """
 
     columns: tuple[RegisterColumn, ...]
     lines: tuple[RegisterLine, ...]
     output_generation: int
+    output_order: tuple[str, ...] = ()
 
 
 def _register_groups(
@@ -78,11 +83,21 @@ def _register_groups(
     registers: Sequence[Register],
     widths: Mapping[str, int],
     through: Sequence[str] = (),
+    *,
+    side: RegisterSide = RegisterSide.THRU,
 ) -> tuple[tuple[Register, tuple[str, ...]], ...]:
     """Retain Core array grouping, synthesizing scalar metadata for plain layouts."""
     if not registers:
         return tuple(
-            (Register(key, opaque_register_type(widths[key])), (key,)) for key in keys
+            (
+                Register(
+                    key,
+                    opaque_register_type(widths[key]),
+                    side=RegisterSide.THRU if key in through else side,
+                ),
+                (key,),
+            )
+            for key in keys
         )
     groups = []
     offset = 0
@@ -211,7 +226,7 @@ def layout_register_score(
             released.append(lane)
         manager.free("output", register, tuple(released))
     lines.sort(key=lambda line: (line.lane, line.start))
-    return RegisterScore(tuple(columns), tuple(lines), output_generation)
+    return RegisterScore(tuple(columns), tuple(lines), output_generation, final_keys)
 
 
 def multi_and_register_score(values: tuple[int, ...]) -> RegisterScore:
