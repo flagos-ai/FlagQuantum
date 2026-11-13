@@ -25,11 +25,6 @@ from flagquantum.compiler._component_trace.call_graph import (
     symbolic_call_graph,
 )
 from flagquantum.compiler._component_trace.cost_query import _query_cost
-from flagquantum.compiler._component_trace.gate_budget import t_and_ccz_budget
-from flagquantum.compiler._component_trace.qec_gate_cost import (
-    QECGateCost,
-    query_qec_gate_cost,
-)
 from flagquantum.compiler._component_trace.resource_generalization import (
     ConjunctionCall,
     ResourceCall,
@@ -41,6 +36,7 @@ from flagquantum.compiler._component_trace.terminal_t_cost import (
 )
 from flagquantum.drawer.call_graph import (
     export_call_graph_dot,
+    export_resource_call_graph_dot,
     format_call_graph_markdown,
 )
 
@@ -141,8 +137,6 @@ def native_annotated_dot(
     """
     root, declarations = declared_example()
     graph = symbolic_call_graph(root, declarations, max_depth=max_depth)
-    costs: dict[ResourceCall, QECGateCost] = {}
-    query_qec_gate_cost(root, declared_calls=declarations, cache=costs)
     widths: dict[ResourceCall, int] = {}
 
     def width(node: ResourceCall, child: Callable[[ResourceCall], int]) -> int:
@@ -150,29 +144,13 @@ def native_annotated_dot(
         return max([node.qubits, *(child(c) for c in declarations.get(node, {}))])
 
     _query_cost(root, width, 0, lambda node: node, widths, None)
-    annotations = {}
-    for node, cost in costs.items():
-        assert all(
-            value == 0
-            for value in (
-                cost.clifford,
-                cost.rotation,
-                cost.toffoli,
-                cost.cswap,
-                cost.and_bloq,
-                cost.measurement,
-            )
-        )
-        record = {"Qubits": str(widths[node])}
-        if cost.t:
-            record["Ts"] = str(cost.t)
-        if aggregate:
-            budget = t_and_ccz_budget(cost)
-            record["Ts"] = str(budget["n_t"])
-            record["CCZs"] = str(budget["n_ccz"])
-        annotations[node] = record
-    return graph, export_call_graph_dot(
-        graph.root, graph.direct_calls, title=reference_title, annotations=annotations
+    return graph, export_resource_call_graph_dot(
+        root,
+        declared_calls=declarations,
+        logical_width=widths.__getitem__,
+        max_depth=max_depth,
+        aggregation="t_and_ccz" if aggregate else "factored",
+        title=reference_title,
     )
 
 
