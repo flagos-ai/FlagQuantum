@@ -1180,3 +1180,36 @@ Sympy zero dispatch. Unsupported identities fail explicitly. Conjunction,
 controlled-swap, arithmetic and general-register automatic binding remain open
 under Q-0734, alongside the documented foreign, distribution, browser and
 historical test boundaries.
+
+## G2-COMPOUND-WIDTH conjunction and exact exchange connections
+
+Q-0734.08 adds native conjunction and exact controlled-swap width bindings.
+The domain owners reuse the existing And-stage generator and connection-width
+scheduler. Forward prefix ownership, reversed adjoint connections, split/join
+word boundaries and sequential control threading are explicit. Complete width
+caches match the unchanged source across every binary polarity for two through
+five controls and both directions. Exact exchanges cover concrete and symbolic
+widths. Seven families across five aggregations and three display depths give
+105 full-DOT width-table comparisons. Three source Git blobs are checked.
+See [the interfaces and evidence](COMPOUND_RESOURCE_WIDTH.md).
+
+The source exact CSwap collapses its self-adjoint identity. Native root keys
+retain the existing direction field, using identical child gates and width
+connections. Unknown control counts retain source fallback behavior. Seeded
+larger child costs verify bystander accounting. Zero-width source failure is
+retained as a native admission ValueError. Added primitive gates, physical work
+qubits and measurements are zero. Existing primitive streams, complex
+amplitudes, measurement branches, workspace cleanup and append workflows are
+covered separately by the concentrated execution regression.
+
+Approximate exchange remains open for fanout identity and adjoint binding.
+Arithmetic and general register-program bindings remain open under Q-0734.
+Fallback underestimation, foreign admission, renderer distribution, browser
+interaction and historical QFT/default-suite failures retain their documented
+status.
+
+Local acceptance passed 144 focused tests, 1,705 concentrated regression tests
+and 87 integration tests without skips. Strict typing over four files, format,
+scope, architecture, IR and API checks passed. Both new connection owners and
+the shared resource width binding have 100% statement and branch coverage in
+the concentrated run. Nine Drawer doctests and the Markdown example passed.
