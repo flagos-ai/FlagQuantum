@@ -788,3 +788,14 @@ The [workflow](../../examples/synthesis/tutorials/technology_demonstrations/hard
 uses independent truth-permutation states, nonzero-target XOR and clean-work
 checks. General symbolic controls, arbitrary dirty workspace allocation and
 unsupported named bases remain outside this increment.
+
+## Native unsigned register updates
+
+Maturity: `development_evidence`. Disjoint initialized raw QNum sources can be
+added to or subtracted from writable accumulators modulo their declared width.
+Static slices preserve logical low-bit ordering; source Const borrows retain
+their values. Independent full-domain permutation and complex-state tests live
+in `tests/integration/test_synthesis_register_addition.py`. Existing compiler
+MCX workspace and budget checks remain authoritative. Signed/fractional words,
+compound addends, aliasing and two-register controlled helpers remain outside
+this profile. This primitive does not itself credit a complete Notebook.

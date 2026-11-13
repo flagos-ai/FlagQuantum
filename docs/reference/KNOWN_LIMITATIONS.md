@@ -1144,8 +1144,9 @@ offsets in -256..256 with modular wraparound at its declared width. Plain
 all-inout helpers and coherent calls to a helper containing exactly one update
 use existing checked indexed-X effects. Zero offsets retain initialization
 checks. Conditions and target storage must be disjoint; predicate controls keep
-their eight-input-bit limit. Numeric formats, arrays, partial/permuted words,
-quantum offsets and arbitrary controlled mutable helpers refuse. The native
+their eight-input-bit limit. Numeric formats, direct array targets and arbitrary controlled mutable helpers
+refuse. The later register-update extension below admits disjoint static slices
+and raw quantum addends. The native
 two-dimensional walk retains five-bit position words, the signed original coin
 and its retained quantum environment. Full complex-state acceptance does not
 claim resource parity, complete Notebook coverage or acceptance of QLBM's
@@ -1639,3 +1640,15 @@ full-state tests compare Circuit preparation plus an independent basis-index
 permutation, avoiding an exponentially large dense MCX matrix. Larger MCX
 Notebooks, proprietary backend choices and CX-specific optimization need their
 own acceptance and are not credited by this demonstration.
+
+## Native register modular addition and subtraction
+
+Initialized raw unsigned QNum words now admit `target += source` and
+`target -= source`, including static disjoint helper views and packed source views. Direct indexed
+augmented assignment retains its existing refusal.
+Source storage is preserved, Const reads are allowed and target-width modular
+wraparound is explicit. Signed/fractional storage, quantum expressions as
+addends, overlap, uninitialized storage and Const writes refuse. Two-register
+controlled helper updates remain unsupported. The existing indexed-X lowering
+owns compiler workspace and budgets; no optimality or resource-parity claim
+follows. See the [semantic contract](../api-changes/FQ-SYNTH-NATIVE-REGISTER-ADDITION-20261113.md).
