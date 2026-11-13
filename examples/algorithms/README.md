@@ -347,6 +347,16 @@ sign. Only the circuit angle is trainable; no dense eigenstate is prepared and
 the pair minimum is not the full graph ground energy. See the
 [graph contributor path](../../docs/development/FERMION_HUBBARD_GRAPH.md).
 
+[`fermion_one_body_density.py`](fermion_one_body_density.py), run with
+`python -m examples.algorithms.fermion_one_body_density --encoding parity`,
+measures a complex one-particle density tensor and reconstructs energy
+0.4520082847 with angle gradient -0.5016897975. JW and BK use the same
+measurement/tensor consumer with explicitly matched preparations. The native
+density module owns observables and assembly only; execution stays with
+`fq.run`. Exact CPU expectations retain circuit-angle gradients without
+OpenFermion or Cirq. Statevector memory remains exponential. See the
+[density contributor path](../../docs/development/FERMION_ONE_BODY_DENSITY.md).
+
 [`fermion_hubbard_ring_training.py`](fermion_hubbard_ring_training.py), run with
 `python -m examples.algorithms.fermion_hubbard_ring_training`, composes the
 three-site Hubbard ring with existing six-mode UCCSD and 60 PyTorch Adam updates.

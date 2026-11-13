@@ -35,6 +35,7 @@ from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
 )
+from flagquantum.algorithms.fermion.density import one_body_density_observables
 from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
 from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
 from flagquantum.algorithms.fermion.preparation import prepare_slater
@@ -314,6 +315,7 @@ ENTRIES = (
     pauli_readout,
     prepare_slater,
     fermi_hubbard_chain,
+    one_body_density_observables,
     fermionic_fourier_transform,
     reduce_stabilizers,
     discover_pauli_symmetries,

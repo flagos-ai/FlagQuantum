@@ -123,6 +123,7 @@ SCRIPTS = (
     "fermion_hubbard_training",
     "fermion_hubbard_ring_training",
     "fermion_hubbard_graph",
+    "fermion_one_body_density",
     "fermion_spinless",
     "fermion_spinless_training",
     "fermion_parity_discovery",
@@ -150,6 +151,10 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_one_body_density": (
+        "single_device_fast_path",
+        "Statevector storage remains exponential",
+    ),
     "fermion_hubbard_graph": ("fixed determinant pair", "single_device_fast_path"),
     "fermion_h2_sector_training": (
         "Only the reduced circuit angle is trainable",
@@ -1873,6 +1878,16 @@ def test_periodic_hubbard_uses_the_existing_measurement_consumer() -> None:
         assert float(energy) == pytest.approx(expected, abs=1e-9)
         assert float(particles) == pytest.approx(2, abs=1e-9)
     _assert_premise("fermion_hubbard", output)
+
+
+def test_fermion_one_body_density_reconstructs_energy() -> None:
+    output = _run("fermion_one_body_density")
+    assert _number(output, "Particle number") == pytest.approx(1.0, abs=1e-10)
+    assert _number(output, "One-body energy") == pytest.approx(
+        0.25 + 0.45 * math.cos(0.6) - 0.3 * math.sin(0.6), abs=1e-10
+    )
+    assert _number(output, "Direct energy residual") < 1e-12
+    _assert_premise("fermion_one_body_density", output)
 
 
 def test_the_example_directory_is_covered_and_indexed() -> None:
