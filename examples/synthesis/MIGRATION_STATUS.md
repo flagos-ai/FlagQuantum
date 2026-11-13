@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **85/213**.
+Validated local Notebook workflows: **86/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -175,7 +175,7 @@ Validated local Notebook workflows: **85/213**.
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_utils` | python_unclassified | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/main.py) | validated |
 | `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Native program](algorithms/metrology/classical_shadow_tomography/overview/main.py) | validated |
-| `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/discrete_log/main.py) | pending |
+| `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/discrete_log/overview/main.py) | validated |
 | `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/hidden_shift/overview/main.py) | validated |
 | `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/shor/main.py) | pending |

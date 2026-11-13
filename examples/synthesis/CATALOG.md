@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **85/213**.
+Validated local Notebook workflows: **86/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -72,6 +72,7 @@ Validated local Notebook workflows:
 - [overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_guide/overview/README.md)
 - [overview](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/README.md)
 - [overview](algorithms/metrology/classical_shadow_tomography/overview/README.md)
+- [overview](algorithms/number_theory_and_cryptography/discrete_log/overview/README.md)
 - [overview](algorithms/number_theory_and_cryptography/hidden_shift/overview/README.md)
 - [overview](algorithms/quantum_phase_estimation/qpe_for_matrix/overview/README.md)
 - [overview](algorithms/quantum_primitives/gqsp/overview/README.md)
