@@ -407,6 +407,8 @@ This catalog is generated from the machine-validated
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Build a spinful model from explicit undirected edges, including branching and disconnected graphs | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
+| Reuse native encodings and train a bounded determinant pair with an independently verified spectator sign | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Discover independent commuting X/Y/Z symmetries of a native Pauli operator | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
 | Restrict the binary candidate span and choose returned positive-generator eigenvalues explicitly | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
 | Discover a basis of diagonal symmetries of a native encoded operator | Diagonal fermion Z2 symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PARITY_DISCOVERY.md) |
@@ -1544,6 +1546,20 @@ Construct a static periodic ring in native fermionic algebra and reuse the exist
 - **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
+
+### Spinful Fermi-Hubbard explicit graph
+
+Assemble a static simple-graph Hamiltonian in native fermionic algebra and compose it with existing encodings, measurement and circuit-angle training.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_graph`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_hubbard_graph.py)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_GRAPH.md)
+- **Known boundary:** Explicit finite undirected simple graphs with uniform static real t, U and mu and interleaved spins only. Empty graphs and isolated sites are valid; self edges, duplicate/reversed edges and invalid endpoints are refused even at zero hopping. Supply explicit encoding width 2*n_sites. No weighted/complex edges, flux, coefficient gradients, general encoded ansatz transformation or graph solver. Independent small occupation matrices and three-encoding checks establish bounded correctness. The CPU JW training example optimizes one manually specified determinant pair without dense eigenstate preparation; its minimum -1.6 is not the graph ground energy. Only the circuit angle is differentiable. No accelerator, distributed, scalability or full upstream compatibility claim; no OpenFermion or Cirq dependency.
 
 ### Commuting Pauli symmetry discovery
 
