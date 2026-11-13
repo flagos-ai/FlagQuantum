@@ -5,8 +5,11 @@
 The selected native migration, EXT01-EXT08, molecular input/training follow-ups,
 symmetry discovery and bounded graph training are delivered. Do not treat that
 completion as full OpenFermion compatibility. The next recommended scientific
-slice is **fermionic one-body density measurement and energy reconstruction**,
-followed by two-body density measurement only after the smaller path is proven.
+slice at that audit baseline was **fermionic one-body density measurement and
+energy reconstruction**. That slice subsequently merged in #1179; see the
+[merged acceptance](FERMION_ONE_BODY_DENSITY.md#merged-implementation-acceptance).
+The separate experimental registration records the executed one-body scope.
+Two-body density measurement remains the next proposed scientific slice.
 Do not start another model example merely to expand the migration count.
 
 This audit examines FlagQuantum main
@@ -133,6 +136,25 @@ consume and builds on existing authoritative algebra/measurement boundaries.
 It avoids making general circuit transformation or a new solver a prerequisite.
 The measured-density path must not allocate a full-state dense oracle in normal
 execution; independent dense references belong to bounded tests only.
+
+## Delivery update after the pinned audit
+
+The tables above retain their audited baseline and proposed acceptance criteria.
+Steps B/C subsequently landed in #1179, merged at
+`8f71c80fd0732feeb74d25a71b9ad9b21ab3ad9f`. On the actual merged sources,
+118 density/docstring/encoding/algebra/isolation/API tests and the protected
+API baseline passed; exact-commit Main smoke passed. The final PR head passed
+239 CI checks with three conditional skips. The one-body density module reuses
+native observables and tensors, with execution owned by the existing runtime.
+It requires explicit matched full-register JW/parity/BK preparation and supports
+complex CPU density assembly with circuit-parameter gradients. It adds no
+OpenFermion/Cirq dependency, new RDM class or execution implementation.
+
+Step D is delivered by the separate Integration experimental registration.
+Step E remains proposed: this registration does not implement two-body density,
+full molecular energy reconstruction or measured-data constraint projection.
+The upstream inventory and its hashes still refer to the original audit pin;
+neither root import count nor this delivery update implies full compatibility.
 
 ## Deferred branches and admission criteria
 
