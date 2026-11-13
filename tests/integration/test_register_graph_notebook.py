@@ -25,6 +25,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("binary_field_polynomial_addition", 7, 2, 0),
         ("binary_field_polynomial_add_constant", 7, 2, 0),
         ("field_polynomial_views", 6, 2, 0),
+        ("binary_field_multiplication", 32, 14, 0),
     ],
 )
 def test_register_graph_notebook_kernel_without_reference_imports(
