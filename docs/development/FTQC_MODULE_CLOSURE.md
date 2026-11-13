@@ -10,6 +10,34 @@ not live acceptance decisions or an assertion that unlisted behavior is absent.
 Unavailable reference assets remain open; differing blobs cannot certify an
 unchanged upstream comparison. G3 integration acceptance remains separate.
 
+## Batch execution unit
+
+The user confirmed this execution rule on November 13, 2026. Organize each batch
+around complete upstream source files and the direct dependencies required for
+their closure. Fix parent IDs, definition inventory, original test assets,
+native ownership and closure conditions before implementation. Reuse accepted
+implementation and verification evidence. Implement each missing module in an
+independent commit, then run concentrated regression and synchronize ledgers,
+stage overview and PR evidence once at batch end.
+
+Record remaining boundaries together with affected parents, reproducible
+evidence, impact, owner and resolution condition. Preserve original acceptance
+requirements for upstream defects and protected interfaces. Existing failures
+can reuse their evidence until relevant code, inputs or environment change.
+Each batch must state a closure decision for every selected parent, with
+concrete remaining work for open files. Reports lead with complete files closed
+and remaining gaps, followed by commits and verification scope. Capability
+subitems continue to index evidence within the fixed 1,280-file inventory.
+
+The next batch is Q-0198 `arithmetic/hamming_weight.py` and Q-0199
+`arithmetic/hamming_weight_test.py`, including only closure-critical And, Xor,
+generic adjoint and QubitCount dependencies. Reuse the completed Hamming stream,
+complex-amplitude, resource and width evidence. Audit every definition and
+original test assertion, retain the open Q-0198.02 boundary, and state each
+file's closure outcome. Q-0174 addition and its original tests are the next
+candidate. The prior queue of individual arithmetic-root width additions is
+superseded by this whole-file batch. This rule change closes zero source files.
+
 ## Module closure criteria
 
 1. Audit the whole source file: functions, classes, methods, properties, constants,
