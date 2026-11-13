@@ -289,6 +289,14 @@ figure, _ = draw_register_score(data)
 figure.savefig("multi-and.svg")
 ```
 
+Custom Matplotlib port presentation uses `draw_register_score(data,
+port_drawer=paint)`. The callback receives an Axes and the existing ScorePort
+record for every port. Delegate ordinary glyphs to `draw_register_score_port`.
+Records keep positive row y coordinates, with Matplotlib using their negation.
+The caller supplies the painter again after loading portable JSON. A runnable
+example and source pixel comparisons are in
+[REGISTER_SCORE_SYMBOL_ADJOINT.md](../../docs/development/REGISTER_SCORE_SYMBOL_ADJOINT.md).
+
 ## Typed component scores
 
 `component_score.component_register_score` projects existing Core typed calls into

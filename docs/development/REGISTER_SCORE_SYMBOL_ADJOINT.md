@@ -200,3 +200,103 @@ tracked independently.
 ```bash
 python -m pytest tests/unit/test_drawer_register_symbols.py -q
 ```
+
+
+## Replacing native port painting
+
+Implementation `1247d5fe` exposes the existing builtin painting function as
+`draw_register_score_port`. The sequential renderer accepts an optional
+`port_drawer(ax, port)` callable. The renderer invokes it once for each port in
+record order, including boundary labels, after horizontal lines and connectors.
+The supplied ScorePort retains its original identity, attributes and coordinates.
+Its y value denotes a positive row. A painter uses `-port["y"]` for Matplotlib
+coordinates and treats the borrowed record as read-only. The painter can delegate
+ordinary glyphs to the same builtin owner. Explicit builtin replacement and the
+default renderer produce identical pixels for all six classes and both Circle
+polarities. Callable objects with false truth values are supported.
+
+```python
+from matplotlib import pyplot as plt
+from matplotlib.axes import Axes
+
+from flagquantum.drawer.register_score import RegisterStep, layout_register_score
+from flagquantum.drawer.register_score_data import ScorePort, register_score_data
+from flagquantum.drawer.register_score_mpl import (
+    draw_register_score,
+    draw_register_score_port,
+)
+
+
+def paint(ax: Axes, port: ScorePort) -> None:
+    if port["symb_cls"] == "TextBox":
+        ax.text(
+            port["seq_x"],
+            -port["y"],
+            str(port["symb_attributes"]["text"]),
+            ha="center",
+            va="center",
+            rotation=15,
+            bbox={"boxstyle": "round4", "fc": "lightyellow", "ec": "purple"},
+        )
+    else:
+        draw_register_score_port(ax, port)
+
+
+score = layout_register_score(
+    {"q": 1}, ("q",), (RegisterStep("R", ("q",), ("q",)),)
+)
+data = register_score_data(score)
+figure, axes = draw_register_score(data, port_drawer=paint)
+assert axes.figure is figure
+plt.close(figure)
+```
+
+This is a `single_device_fast_path` presentation extension. The source reference
+constructs a caller-defined WireSymbol subclass and executes the unchanged
+`draw_musical_score` dispatch. Its custom `draw` method paints a rotated badge.
+Its `json_dict` exports a TextBox fallback. The native painter independently
+constructs the same artists, delegates ordinary labels/markers to the shared
+builtin owner and matches every Agg pixel at default, width-limited and
+height-limited sizes. Captions, classical lines, axis limits, return ownership
+and exact custom draw coordinates also match. The completed PNG was inspected.
+
+The custom painter remains a local rendering argument. The six-class portable
+JSON representation carries its builtin fallback. Reopening exported JSON or
+HTML uses that fallback. The caller supplies its painter again for the custom
+Matplotlib appearance. Foreign symbol objects and arbitrary serialized class
+names retain their separate admission boundary. Source default WireSymbol
+adjoint returns the custom instance itself, which the test preserves. Custom
+inverse presentation stays supplier-owned alongside the existing builtin glyph
+adjoint helper. Connector labels retain the existing Text drawing path.
+
+Painter exceptions stop further port calls, close the incomplete native figure
+and propagate the same exception object. A new rendering call retries with fresh
+figure state. The original source propagates the exception and retains its
+unfinished figure. Both behaviors execute in the failure test, with source
+figures explicitly cleaned up by that test. This cleanup is a native ownership
+adaptation. Empty native records invoke no port painter and return a caller-owned
+figure. Renderers depend on the existing score records and optional Matplotlib.
+
+Fifteen new cases pass. The concentrated regression passes 503 cases in
+16.72 seconds with eight existing parser warnings. Independent notebook/CPU/TN
+integration passes 86 cases in 9.14 seconds with two existing warnings. No cases
+skip. Strict typing of two files, Black, Ruff, scope, architecture, multi-level
+IR and protected API checks pass. All 60 statements and 18 branches in the
+Matplotlib score owner are covered. The original musical-score blob remains
+`3863bb66cdba17c4654657e275a8485d94b8da75`. Evidence uses
+`g2-score-custom-symbols-`. The first strict check identified four unannotated
+Agg method calls in tests. The test-only optional backend boundary is now explicit,
+and the initial failure log is retained. Production callbacks retain precise
+Axes and ScorePort types.
+
+Existing exact-adjoint and execution regressions preserve complex amplitudes,
+forced measurement branches, work restoration and normal `circuit.append(op)`
+use. Added physical gates, work, measurements and feedback are zero. Actual
+primitive counts and source analytical estimates retain their separate accounts
+in MUSICAL_SCORE_SOURCE_AUDIT.md. Q-0747 stays open for general foreign
+admission, arbitrary serialized symbol classes and custom connector-label draw
+dispatch. Q-0748's original JSON asset remains independently open.
+
+```bash
+python -m pytest tests/unit/test_drawer_custom_symbols.py -q
+```

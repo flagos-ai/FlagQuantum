@@ -718,3 +718,32 @@ Counts remain 29 closed, 1251 open, 387 active parents and 1187 capability recor
 Added physical gates, work and measurements are zero. Existing amplitude,
 all-branch work restoration and append regressions pass. Physical primitives
 and source analytical models remain separately reported.
+
+
+### Native custom port painters (2026-11-13)
+
+Implementation `1247d5fe` exposes the existing builtin port painter for reuse and
+adds an optional renderer-local replacement callback. Record-order invocation,
+positive row coordinates, boundary ports, builtin delegation and false-valued
+callables are accepted. A custom source WireSymbol subclass with portable TextBox
+fallback matches every native Agg pixel at three size limits. Source generic
+custom adjoint identity is preserved. Custom inverse presentation stays supplier-
+owned. Callback failures close incomplete native figures, with the source's
+retained figure behavior directly reproduced and explicitly adapted.
+
+15 new cases, 503 concentrated cases in 16.72 seconds and 86 independent
+integration cases in 9.14 seconds pass with zero skips and eight/two existing
+warnings. Strict2, formatting, scope, architecture, IR and API checks pass.
+Matplotlib score coverage is 60 statements and 18 branches at 100%. The initial
+strict failure at unannotated test-only Agg methods is corrected and retained.
+The PNG was inspected. Evidence uses `g2-score-custom-symbols-`, with a runnable
+example in REGISTER_SCORE_SYMBOL_ADJOINT.md and a Drawer README entry.
+
+Portable JSON uses the existing six glyph classes, with the custom painter
+supplied again for local appearance. Q-0747 remains open for foreign admission,
+arbitrary serialized symbol names and custom connector-label drawing. Q-0748's
+original JSON asset and historical default-suite timeout stay open. Counts remain
+29 closed, 1251 open, 387 active parents and 1187 capability records. Added
+physical gates, work and measurements are zero. Existing amplitudes, branch
+work restoration and append regressions pass. Actual primitives and source
+analytical estimates retain separate accounts.

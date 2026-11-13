@@ -36,14 +36,14 @@ Existing native records remain the shared representation.
 | `_update_assign_from_vals` | Native component projection maps THRU outputs to predecessor lifetimes and creates fresh RIGHT display identities. Core validation owns array signatures. Foreign array-value shape diagnostics remain open. |
 | `_binst_assign_line`, nested `_in_vals` | Native component projection consumes the selected call's operands/results, retains THRU identity and retires LEFT lifetimes through the shared layout. |
 | `_cbloq_musical_score`, nested `_f_vals` | `component_register_score` projects the selected Core graph; `layout_register_score` owns dependency generations and output lifetimes. Existing `register_program_score` separately projects verified register constructions. Foreign graph-manager replacement remains open. |
-| `WireSymbol.draw`, `adjoint`, `json_dict` | Existing `SymbolClass` and attribute dictionaries supply the six glyph classes. `_draw_port` owns drawing. `adjoint_wire_symbol` now transforms all six admitted record classes. Arbitrary foreign symbol subclasses remain open. |
+| `WireSymbol.draw`, `adjoint`, `json_dict` | Existing `SymbolClass` and attribute dictionaries supply the six glyph classes. `draw_register_score_port` owns drawing. `adjoint_wire_symbol` transforms all six admitted record classes. `port_drawer` replaces local port painting and delegates builtins to the same owner. A custom source subclass with portable fallback JSON matches native Agg pixels. Foreign objects/arbitrary serialized names and custom connector-label drawing remain open. |
 | `_text_adjoint` | `adjoint_wire_symbol` now preserves the exact source dagger add/remove and `strip` behavior. |
-| `TextBox.draw`, `adjoint` | `_draw_port` draws the round box. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
+| `TextBox.draw`, `adjoint` | `draw_register_score_port` draws the round box. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
 | `Text.draw`, `adjoint` | `_draw_text` preserves text and font size. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
-| `RarrowTextBox.draw`, `adjoint` | `_draw_port` draws the right arrow. Native LEFT ports select it explicitly. `adjoint_wire_symbol` switches directional boxes and retains their text. |
-| `LarrowTextBox.draw`, `adjoint` | `_draw_port` draws the left arrow. Native RIGHT ports select it explicitly. `adjoint_wire_symbol` switches directional boxes and retains their text. |
-| `Circle.draw` | `_draw_port` preserves filled/open circles, radius and color. |
-| `ModPlus.draw` | `_draw_port` preserves the addition marker, font and transparent box. |
+| `RarrowTextBox.draw`, `adjoint` | `draw_register_score_port` draws the right arrow. Native LEFT ports select it explicitly. `adjoint_wire_symbol` switches directional boxes and retains their text. |
+| `LarrowTextBox.draw`, `adjoint` | `draw_register_score_port` draws the left arrow. Native RIGHT ports select it explicitly. `adjoint_wire_symbol` switches directional boxes and retains their text. |
+| `Circle.draw` | `draw_register_score_port` preserves filled/open circles, radius and color. |
+| `ModPlus.draw` | `draw_register_score_port` preserves the addition marker, font and transparent box. |
 | `directional_text_box` | `_port_symbol` selects through/left/right box styles for admitted native ports. Source enum error behavior and a standalone foreign helper remain outside that surface. |
 | `_soq_to_symb` | Native `register_wire_symbol` receives the original Core register and element index, with scalar `()` and connector `(None, None)`. Source adjacency groups and input/output invocation cadence include the discarded second THRU symbol. Metadata synthesis and hand-authored final-order fallback are documented in REGISTER_SCORE_SYMBOL_ADJOINT.md. Arbitrary foreign glyph subclasses remain open. |
 | `SoqData.json_dict` | `ScorePort` stores symbol, coordinates and identity together. |
@@ -135,7 +135,10 @@ RightDangle exception are documented in REGISTER_SCORE_SYMBOL_ADJOINT.md.
 Partial and completed geometric record serialization is now accepted through
 LaneSegment.json_dict. Nested records and all six glyph classes match the original
 source encoder. Full-score UTF-8/newline formatting retains its native policy.
-General foreign class admission remains open.
+Local custom port painting now has source-backed acceptance through port_drawer,
+including record order, false-valued callables and builtin delegation. Native
+callback failure cleanup is explicit. General foreign class/serialized-name
+admission and custom connector-label drawing remain open.
 Context-aware coordinate selection and partial-line lifecycle observations are
 accepted through `new_y_for`, `hlines` and `finish_hline`. Native cursor placement,
 textual flavor representation and malformed-release preflight have explicit
