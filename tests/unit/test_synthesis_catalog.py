@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 82
+    assert len(validated) == 83
+    assert (
+        "algorithms/search_and_optimization/grover/grover",
+        "examples/synthesis/algorithms/search_and_optimization/grover/grover/overview/main.py",
+    ) in validated
     assert (
         "algorithms/metrology/classical_shadow_tomography",
         "examples/synthesis/algorithms/metrology/classical_shadow_tomography/overview/main.py",
@@ -457,7 +461,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**82/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**83/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
