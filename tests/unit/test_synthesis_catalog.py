@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 103
+    assert len(validated) == 104
+    assert (
+        "algorithms/quantum_primitives/gradient_estimation/gradient_estimation",
+        "examples/synthesis/algorithms/quantum_primitives/gradient_estimation/overview/main.py",
+    ) in validated
     assert (
         "tutorials/workshops/hhl_workshop/hhl_workshop",
         "examples/synthesis/tutorials/workshops/hhl_workshop/overview/main.py",
@@ -541,7 +545,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**103/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**104/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

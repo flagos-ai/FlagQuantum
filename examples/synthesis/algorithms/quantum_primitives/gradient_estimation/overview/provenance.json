@@ -1,0 +1,103 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/gradient_estimation/gradient_estimation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f937290ad45126c1829158aad0f614ab12be01a39fd36ee3bccfaa7e9ba2d270",
+  "git_blob_sha1": "006871c13b7ccd9740fb0d72fb40a627ef11631a",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "5fe3b4de3beeb4882ba5081ab229158610d42bc19ca0866e7806da525e56e6de",
+      "native_code_cell": 1,
+      "stage": "Native imports and explicit classical model/readout helpers"
+    },
+    {
+      "index": 13,
+      "sha256": "55d8d887726eae91f4ba59be131f3cd6f1316ac3d222ae10f0994bb5fae3c591",
+      "native_code_cell": 3,
+      "stage": "Original six-qubit auxiliary experiment and independent modular-add comparison"
+    },
+    {
+      "index": 15,
+      "sha256": "597811a62c01ca86bb9a420d6b73fc1cddd764fd8e36d287fa2b6b6a27d6267b",
+      "native_code_cell": 5,
+      "stage": "Actual eight-row auxiliary phase table and plot"
+    },
+    {
+      "index": 20,
+      "sha256": "0bc96ef867c179bb624dbf4881cf093c9c98ec2f2c5efb4860c8a79e1b13250f",
+      "native_code_cell": 7,
+      "stage": "Source linear phase oracle,full-state comparison,table and plot"
+    },
+    {
+      "index": 24,
+      "sha256": "275be32356fc83b87ff30ce156f84811c0d67737325be3707be57a1176000ecf",
+      "native_code_cell": 8,
+      "stage": "Original l=2 quadratic phase experiment"
+    },
+    {
+      "index": 26,
+      "sha256": "a4cba22750c072027efa61c8c090e3d902dd06473f6dd3c270a332022f9e754b",
+      "native_code_cell": 9,
+      "stage": "Original l=0.2 quadratic phase experiment"
+    },
+    {
+      "index": 30,
+      "sha256": "39e0c81d746cabd9b2146944f0210c04a7d027bc7d7c2fc147c3de334e2bb78d",
+      "native_code_cell": 11,
+      "stage": "Visible native gradient qfuncs and actual readout pipeline"
+    },
+    {
+      "index": 33,
+      "sha256": "0ad2e9354f5077e51c41892476b4c916b8cb8a7d3aae6f7e2094ea0fe41b03b2",
+      "native_code_cell": 12,
+      "stage": "Negative linear gradient,actual counts,success and two-panel plot"
+    },
+    {
+      "index": 35,
+      "sha256": "01fccedb69ffdf4342de581492dd1ad516b5ad315ecac2208e3fe66e018555d5",
+      "native_code_cell": 13,
+      "stage": "Off-grid linear gradient and observed histogram"
+    },
+    {
+      "index": 39,
+      "sha256": "96fe6bb64c5e031294e0693afaebc4cdff5cba58d1c490259657c5683f22280f",
+      "native_code_cell": 14,
+      "stage": "Original small-window quadratic success above90percent"
+    },
+    {
+      "index": 41,
+      "sha256": "1c9703069c477298ee6da3c0f492fc683f317f043480f3f4cd8c3a75be6f6fd8",
+      "native_code_cell": 15,
+      "stage": "Original large-window quadratic success below50percent"
+    },
+    {
+      "index": 44,
+      "sha256": "85ad1b299d1b734e0bf6d2ae3dd01e5f51f0c9b0d6c16c28b5ad51f1c0e6a5e3",
+      "native_code_cell": 17,
+      "stage": "All17original m values,actual samples and success-rate plot"
+    },
+    {
+      "index": 46,
+      "sha256": "df15e4c13128bf10a8755c8e8a90ddb2b8cf001b926e58adc43929bf1a4d03e9",
+      "native_code_cell": 19,
+      "stage": "All9original l values,actual samples and success-rate plot"
+    },
+    {
+      "index": 49,
+      "sha256": "f2a27b063090a23b28dc14775fa0d288c59194c0dd5488424741f403d7898c21",
+      "native_code_cell": 21,
+      "stage": "Original six-qubit two-dimensional gradient and joint actual success"
+    }
+  ],
+  "reviewed_dependencies": [
+    {
+      "path": "algorithms/quantum_primitives/gradient_estimation/gradient_estimation_helpers.py",
+      "sha256": "71f199f5becbf7a990808b36631af6d0d27f17a8e6f5eeda8e8c11b80a2ae6a9",
+      "git_blob_sha1": "a53df9ae0b98860164bde1e4975c3a5e48bffb5c"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_gradient_estimation_notebook.py",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.gradient_estimation.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_primitives/gradient_estimation/overview/walkthrough.ipynb",
+  "scope": "Complete14source code stages and source helper semantics. Preserve signed3-bit coordinates,3-bit signed fractional auxiliary,all17m and9l values,original coefficients and source strict success thresholds. Actual auxiliary modular-add kickback uses nested Fourier construction;basis preparation uses an amplitude vector. No fractional bit-view or direct fractional += support claimed. Native polynomial qfunc helpers replace fixed callbacks and x/y named ports replace two QNum array elements;no generic QCallable/QArray-of-QNum API claim. Independent absolute Circuit states,actual sampling,phase unwrapping,all source plots and complete2Djoint gradient. No compiler/publicAPI/dependency/source-importer/frozen216change,hardware,speedup,scalability or optimality claim."
+}
