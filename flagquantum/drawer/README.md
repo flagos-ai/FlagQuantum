@@ -391,3 +391,11 @@ visible cutoffs. Run `python -m pytest
 tests/unit/test_resource_flame_decomposition.py -q` for 148 source-backed cases.
 RESOURCE_FLAME_GRAPH.md records the corrected previous zero-cost witnesses and
 separate physical/terminal/QEC resource conventions.
+
+
+Default resource flame titles now use compact native constructor fields,
+recursing through existing resource wrappers. Component names and custom string
+methods retain precedence. Tuple lengths, array shapes and two-digit float
+formatting follow the frozen source rules. The explicit title callback controls
+application labels. Run `python -m pytest tests/unit/test_resource_flame_labels.py -q`
+for naming, default-path row parity and collision/format validation.

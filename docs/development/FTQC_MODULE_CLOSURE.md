@@ -983,3 +983,32 @@ open, with 30 accepted, 1250 open, 388 active and 1192 capability records,
 including one historical record. Foreign names, renderer distribution requiring
 protected packaging changes, browser interaction, historical QFT expectations
 and general foreign admission remain explicit gaps. Evidence uses g2-flame-auto-.
+
+## G2 concise resource flame labels
+
+Implementation dcd3011f completes the default native naming path through the
+existing resource dataclasses and Drawer title callback. Source tuple, ndarray,
+float and nested-name rules are exercised directly against frozen helpers.
+Native class and constructor names remain an explicit presentation adaptation.
+Component names and custom strings retain precedence. Generated arithmetic
+fields are excluded. Colliding compact titles retain distinct resource keys.
+
+Acceptance adds 61 cases, with 106 focused, 1212 concentrated and 86 independent
+integration passes, zero skips, strict typing of three files, format, scope,
+architecture, IR and protected API checks. Drawer coverage is 93 statements and
+38 branches at 100 percent. Combined resource owner coverage is 99 percent.
+Two source blobs, the exact prior-head verbose-label witness and four executable
+documentation examples pass. Evidence uses g2-flame-label-.
+
+Drawing adds zero primitive gates, work wires or measurements. The concentrated
+suite retains exact Fredkin complex-amplitude and measured merged-Fredkin
+branch/work cleanup verification with physical counts and model estimates in
+separate accounting. The source metadata fixtures test reflection only.
+Sixteen actual source CSwap root/depth paths compare ordered rows after explicit
+native name substitution at the reference boundary.
+
+Q-0739.05 is accepted. Parent counts are 30 accepted, 1250 open and 388 active,
+with 1193 capability records, comprising 1192 current and one historical.
+Q-0739 retains foreign admission, licensed renderer distribution and interactive
+inspection. The historical QFT assertion and full-default timeout remain open.
+The next asset is Q-0738, the call-graph drawing notebook, using existing owners.

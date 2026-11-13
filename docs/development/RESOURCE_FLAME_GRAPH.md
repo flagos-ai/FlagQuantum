@@ -52,8 +52,8 @@ these four source blobs before comparisons.
 
 | Source definition | Native ownership and current disposition |
 | --- | --- |
-| _pretty_arg | Stable caller-supplied title replaces foreign field reflection. Source-specific tuple, ndarray and float display remains pending. |
-| _pretty_name | Native names arrive through the existing title callback convention. Tests use source names at the reference boundary for exact row comparisons. Automatic foreign reflection remains pending. |
+| _pretty_arg | Native argument formatting matches source tuple length, ndarray shape, nested records, two-significant-digit floats and the 1e-8 near-zero threshold. |
+| _pretty_name | Native dataclass constructor fields provide automatic compact labels. Component names and explicit custom strings retain precedence. Foreign custom gate spellings remain caller-supplied titles. |
 | _t_counts_for_bloq | Compiler query_terminal_t_cost traverses existing resource declarations and caches full-subtree precision-sensitive terminal costs. Visibility cutoffs are independent. Exclusive T-bearing aggregate costs require explicit calls. |
 | _keep_if_small | Native default keep recognizes binary ConjunctionCall, FixedTCall and ControlledZPowerCall. Existing keep=None and max_depth retain their source visibility semantics. |
 | _is_leaf_node | A node with no positive-cost successors emits one row, including a zero-cost root. A single positive T/T-adjoint child collapses through is_t_gate. |
@@ -172,9 +172,9 @@ assert rows == ["THC lookup(T:94)\t94"]
 # svg = render_flame_graph_svg(iter(rows), executable="/path/to/flamegraph.pl")
 ```
 
-Component names supply default native titles. Other resource keys use their
-native string representations. A title callback controls presentation without
-introducing foreign field reflection. Default visible leaves match the source's
+Component names supply default native titles. Other resource keys use compact
+native constructor-field labels. A title callback controls application-specific
+presentation. Default visible leaves match the source's
 And, Toffoli, TwoBitCSwap and CZPow class policy through native resource keys.
 The renderer returns SVG bytes and callers own persistent output paths.
 The executable is explicit, with no vendored dependency or asset discovery.
@@ -317,3 +317,72 @@ the historical QFT expectation and general foreign/serialized-symbol admission
 remain open. The renderer's CDDL asset distribution would touch the protected
 package/license manifest and requires its own integration change. No package
 or dependency edits are included in this batch. Evidence uses g2-flame-auto-.
+
+
+## Native concise label ownership
+
+Drawer formats the existing resource dataclasses at the default title boundary.
+ComponentCost keeps its declared name. Other native keys retain their native
+class name and append constructor-field arguments in declaration order. Fields
+with init=False are excluded. Explicit custom string methods retain precedence.
+Tuples display their length, arrays their shape, nested resource keys recurse,
+and floating arguments use two significant digits with the source near-zero
+threshold of 1e-8. Symbolic arguments retain their expression text.
+
+This is presentation data with no register allocation, bit ordering, quantum
+outputs or work-wire ownership. Compiler resource identities remain the graph
+keys. Compact labels can collide, as in the source tuple-length convention.
+They never replace graph identity. Explicit title callbacks retain ownership of
+application labels. Native class names and constructor fields intentionally
+follow FlagQuantum records, so foreign custom gate spellings require a title
+callback. Foreign objects are outside the native convenience entry boundary.
+
+
+### Concise label acceptance
+
+The default native workflow requires no title callback.
+
+```python
+from flagquantum.compiler._component_trace.resource_generalization import ControlledSwapCall
+from flagquantum.drawer.flame_graph import iter_resource_flame_graph_data
+
+rows = list(iter_resource_flame_graph_data(ControlledSwapCall(3)))
+assert rows == [
+    "ControlledSwapCall[3][False][False](T:21);FixedTCall[fredkin](T:7)\t7"
+] * 3
+```
+
+There are 61 new cases. Twenty-six argument cases call the unmodified source
+_pretty_arg, including both nextafter neighbors of the near-zero threshold,
+NaN, infinities, ndarray shapes and symbolic expressions. Thirteen display-only
+metadata fixtures call source _pretty_name with native field names. These
+fixtures exercise naming reflection and declare no gate decomposition. Sixteen
+actual CSwap root/depth pairs compare complete ordered rows after explicit
+source/native name substitution at the test boundary. Native costs and rows are
+computed independently. Custom strings, component names, nested wrappers,
+excluded generated arithmetic fields, label collisions and frame-separator
+rejection are covered. Both source naming modules retain their frozen Git blobs.
+
+The accepted run passes 106 focused cases in 1.89 seconds, 1212 concentrated
+cases in 32.38 seconds and 86 independent notebook/CPU/TN integration cases in
+11.22 seconds. There are zero skips. Focused and concentrated runs expose 248
+and 1112 warnings respectively, predominantly source deprecations. Integration
+retains two existing warnings. Strict typing of three files, Black, Ruff, team
+scope, architecture, IR and protected API checks pass. The Drawer owner covers
+all 93 statements and 38 branches. Combined resource owners retain 99 percent
+coverage with two existing terminal-cost error paths uncovered.
+
+The retained baseline executes the exact previous Drawer module and confirms
+verbose repr versus automatic compact output, with the same model cost21.
+The naming example and existing documented resource examples execute locally.
+Initial test metadata fixtures needed a concrete source signature and keyword
+fields because Bloq.adjoint is inherited. Ruff also caught a missing strict zip
+argument. Each failure log is retained under g2-flame-label-.
+
+This display layer adds zero primitive gates, work wires or measurements.
+Existing exact Fredkin execution and measured merged-Fredkin branch regressions
+remain in the concentrated suite. Their measured primitive counts and terminal
+or QEC estimates remain separate in the preceding accounting sections.
+The native class/constructor naming adaptation is explicit. General foreign
+admission, licensed renderer packaging, interactive browser inspection and the
+historical QFT expectation remain open under their existing parent records.
