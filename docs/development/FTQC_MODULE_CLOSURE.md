@@ -1068,3 +1068,22 @@ Q-0735 closes with Q-0735.03. Q-0734 remains open for its generic implementation
 and factory scope. Counts are 32 accepted, 1248 open and 387 active, with 1195
 capability records, 1194 current and one historical.
 The next batch audits remaining Q-0734 definitions against existing owners.
+
+
+## G2-CALL-COST shared cost-table formatting
+
+Q-0734.03 adds shared metric-row formatting and connects the existing concrete
+modeled graph entry. Concrete GateCost and symbolic QECGateCost use existing
+Compiler aggregation budgets. All source definitions have an owner/disposition
+map in CALL_GRAPH_COST_DATA.md. Generic factory admission and arbitrary subclass
+properties retain the open Q-0734 parent.
+
+62 focused, 1310 concentrated and 87 independent integration cases pass with
+zero skips. Both changed Python files pass strict typing, Black and Ruff.
+Compiler scope, architecture, IR and protected API checks pass. Example/Drawer
+coverage is 100/94 percent, 95 percent combined. Two frozen blobs are verified.
+Initial mapping-key annotation diagnostics and native error/warning/layout
+adaptations are recorded. Formatting adds zero gates, work wires and
+measurements. Existing full-branch amplitude, cleanup and append checks pass.
+Counts remain 32 accepted parents, 1248 open and 387 active. The new child brings
+capability records to 1196, comprising 1195 current and one historical.

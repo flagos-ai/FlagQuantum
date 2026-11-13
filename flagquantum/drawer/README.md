@@ -417,3 +417,9 @@ source-only executions. Test-boundary HTML presentation and declared-width
 fixture adaptations are documented in
 [CALL_GRAPH_SOURCE_TESTS.md](../../docs/development/CALL_GRAPH_SOURCE_TESTS.md).
 Generic production factory admission retains its separate scope.
+
+Existing concrete modeled call graphs and caller-supplied symbolic cost tables
+share `format_call_graph_cost_data`. It accepts existing Compiler metric keys,
+preserves annotation order and warns for unknown metrics. The source definition
+map, runnable example, native adaptations and acceptance evidence are recorded
+in [CALL_GRAPH_COST_DATA.md](../../docs/development/CALL_GRAPH_COST_DATA.md).
