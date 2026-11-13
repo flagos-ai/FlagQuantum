@@ -10,25 +10,29 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import warnings
 from collections.abc import Callable, Mapping
 from dataclasses import asdict
 from graphlib import TopologicalSorter
 from html import escape
-from typing import Literal
+from typing import Literal, TypeVar
 
 from ..compiler._component_trace.call_graph import Node, modeled_call_graph
 from ..compiler._component_trace.cost_query import (
     GATE_COST,
     PEAK_LOGICAL_QUBITS,
-    query_component_cost,
+    query_component_costs,
 )
 from ..compiler._component_trace.gate_budget import (
     beverland_gate_budget,
     legacy_gate_budget,
     t_and_ccz_budget,
 )
+from ..compiler._component_trace.qec_gate_cost import QECGateCost
 from ..compiler._component_trace.resource_model import ComponentCost, GateCost
 from ..compiler._component_trace.symbolic_math import SymbolicInt
+
+Metric = TypeVar("Metric")
 
 GateAggregation = Literal["factored", "total_t", "t_and_ccz", "beverland", "legacy"]
 
@@ -133,7 +137,9 @@ def export_call_graph_dot(
     return "\n".join(lines) + "\n"
 
 
-def _gate_annotations(gates: GateCost, aggregation: GateAggregation) -> dict[str, str]:
+def _gate_annotations(
+    gates: GateCost | QECGateCost, aggregation: GateAggregation
+) -> dict[str, str]:
     labels = {
         "t": "Ts",
         "n_t": "Ts",
@@ -150,7 +156,8 @@ def _gate_annotations(gates: GateCost, aggregation: GateAggregation) -> dict[str
     if aggregation == "factored":
         counts = {key: value for key, value in asdict(gates).items() if value}
     elif aggregation == "total_t":
-        counts = {"t": gates.total_t_count()}
+        budget = t_and_ccz_budget(gates)
+        counts = {"t": budget["n_t"] + 4 * budget["n_ccz"]}
     elif aggregation == "t_and_ccz":
         counts = t_and_ccz_budget(gates)
     elif aggregation == "beverland":
@@ -162,6 +169,46 @@ def _gate_annotations(gates: GateCost, aggregation: GateAggregation) -> dict[str
     return {labels.get(key, key): str(value) for key, value in counts.items()}
 
 
+def format_call_graph_cost_data(
+    cost_data: Mapping[Node, Mapping[Metric, object]],
+    *,
+    aggregation: GateAggregation = "factored",
+) -> dict[Node, dict[str, str]]:
+    """Format existing Compiler metric rows for native graph annotations.
+
+    GATE_COST accepts concrete GateCost or symbolic QECGateCost values.
+    PEAK_LOGICAL_QUBITS values use their declared string representation.
+    Unknown metrics emit UserWarning and retain their string key and value.
+    Metric and annotation insertion order is preserved. Invalid gate values
+    raise TypeError. The input table remains caller-owned.
+
+    Examples:
+        >>> root = ComponentCost("Root", 3, GateCost(t=2))
+        >>> costs = query_component_costs(root, (PEAK_LOGICAL_QUBITS, GATE_COST))
+        >>> format_call_graph_cost_data(costs)[root]
+        {'Qubits': '3', 'Ts': '2'}
+    """
+    result = {}
+    for node, metrics in cost_data.items():
+        record = {}
+        for metric, value in metrics.items():
+            if metric is PEAK_LOGICAL_QUBITS:
+                record["Qubits"] = str(value)
+            elif metric is GATE_COST:
+                if not isinstance(value, (GateCost, QECGateCost)):
+                    raise TypeError(
+                        "Gate cost annotations require GateCost or QECGateCost"
+                    )
+                record.update(_gate_annotations(value, aggregation))
+            else:
+                warnings.warn(
+                    f"Unknown cost metric {metric}", UserWarning, stacklevel=2
+                )
+                record[str(metric)] = str(value)
+        result[node] = record
+    return result
+
+
 def export_modeled_call_graph_dot(
     component: ComponentCost,
     *,
@@ -170,14 +217,8 @@ def export_modeled_call_graph_dot(
 ) -> str:
     """Annotate a depth-limited graph using costs from the full component model."""
     graph = modeled_call_graph(component, max_depth=max_depth)
-    gates: dict[ComponentCost, GateCost] = {}
-    widths: dict[ComponentCost, int] = {}
-    query_component_cost(component, GATE_COST, cache=gates)
-    query_component_cost(component, PEAK_LOGICAL_QUBITS, cache=widths)
-    annotations = {
-        node: {"Qubits": str(widths[node]), **_gate_annotations(cost, aggregation)}
-        for node, cost in gates.items()
-    }
+    costs = query_component_costs(component, (PEAK_LOGICAL_QUBITS, GATE_COST))
+    annotations = format_call_graph_cost_data(costs, aggregation=aggregation)
     return export_call_graph_dot(
         graph.root,
         graph.direct_calls,
