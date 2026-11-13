@@ -263,3 +263,12 @@ and one beta electron. Static lifting inspects the optimized state outside
 autograd. The example owns composition; symbolic reduction owns no training,
 input adapter or automatic ansatz transformation. See the
 [H2 training scope](../../../docs/development/FERMION_H2_SECTOR_TRAINING.md).
+
+Use `--encoding parity` or `--encoding bravyi_kitaev` with the same example to
+replace encoding and its bounded preparation while retaining the expectation
+and optimizer consumer. Physical spin-parity operators are encoded before
+discovery. The explicitly supplied (1,1,0,0) reference fixes signs for returned
+positive representatives; these signs need not equal the physical -1/-1 labels.
+Independent occupation permutations verify the physical state, gradients and
+updates across file/native inputs and all three encodings. This is a manually
+specified determinant pair, not automatic full-register ansatz transformation.

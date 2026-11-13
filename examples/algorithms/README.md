@@ -409,8 +409,11 @@ gradient/sector tests and the bounded CPU qualification.
 [`fermion_h2_sector_training.py`](fermion_h2_sector_training.py), run with
 `python -m examples.algorithms.fermion_h2_sector_training`, reads the fixed H2
 FCIDUMP fixture and explicitly selects odd alpha/beta spin parities. The register
-shrinks from four qubits to two; a manually specified RY/CX determinant pair
-feeds native expectations and 120 PyTorch SGD steps. Energy falls from
+shrinks from four qubits to two; a manually specified determinant pair feeds
+native expectations and 120 PyTorch SGD steps. The default JW preparation uses
+RY/CX; `--encoding parity` and `--encoding bravyi_kitaev` prepare the same physical
+pair with RY on the other reduced wire. Candidate symmetries, representative signs
+and population observables use the selected convention. Energy falls from
 -1.0649609749 to -1.1372701747 Ha, with exactly one electron per spin block in
 this two-orbital fixture. Only the circuit angle is trainable. Static lifting
 checks the final state; this is no larger-molecule or scalability qualification.

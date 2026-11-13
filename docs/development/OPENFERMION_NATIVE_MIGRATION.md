@@ -3,12 +3,13 @@
 ## Current delivery status
 
 The current checked main baseline is
-`2ab457f3067accf7629a4dcac3a60f0bd11b3f59` on November 13, 2026 (UTC+08:00).
+`bd054faa02f5b3c5de82f97b5b9f7b19ad47ba7b` on November 13, 2026 (UTC+08:00).
 General commuting Pauli discovery, its experimental registration and explicit
 mixed-axis sector training are merged in #1166, #1167 and #1170. Documentation
 closeout #1169 merged before #1170. The runtime materialization repair #1168
-merged first. The bounded H2 training composition described below is on a review
-branch and is not yet an accepted main capability.
+merged first. The bounded JW H2 training composition merged in #1171 and passed
+actual-main acceptance below. The next three-encoding extension has its scope
+recorded before implementation; it is separate from that accepted delivery.
 The preceding parity-training baseline was
 `e09b68e7add135dbc42f6bf677e00a611cfd463e`.
 The preceding Z-discovery registration baseline was
@@ -763,10 +764,10 @@ residual zero. Residuals may vary by platform. Only the reduced circuit angle
 is trained; lifting remains static. See the
 [training scope](FERMION_PAULI_TRAINING.md).
 
-## Review branch: bounded H2 spin-sector training
+## Merged bounded H2 spin-sector training
 
 The [H2 scope](FERMION_H2_SECTOR_TRAINING.md) was committed before implementation.
-This review branch composes the existing FCIDUMP fixture, native molecular/JW
+The merged workflow composes the existing FCIDUMP fixture, native molecular/JW
 values, candidate-restricted spin-parity discovery, explicit -1/-1 reduction,
 two-qubit RY/CX preparation, native expectations and PyTorch SGD:
 
@@ -777,6 +778,31 @@ python -m examples.algorithms.fermion_h2_sector_training
 The bounded run lowers energy from -1.0649609749 to -1.1372701747 Ha and keeps
 one electron in each spin block. Independent occupation-space tests verify
 gradients, optimizer updates, sector support and file/native producer replacement.
-This is review-branch evidence, not final-main acceptance. The composition adds
+The composition adds
 no production API, scientific dependency or maturity promotion. Automatic sector
 inference, general transformed ansatzes and coefficient/SCF gradients remain gaps.
+
+Actual main `bd054faa02f5b3c5de82f97b5b9f7b19ad47ba7b` passed 90 focused
+scientific/capability/documentation tests and seven CLI/inventory tests, the API
+baseline, capability checker, documentation consistency and 1,419-file link
+audit. Main smoke 43342082153 passed. Concurrent QEC #1157 changed the combined
+tree, so full actual-main CI 43342446759 was run independently: all 236 jobs
+passed on attempt one, including coverage aggregation and the final gate.
+The original PR head passed full CI 43333357231 and 239 cross-workflow checks
+with three conditional skips. These selections are not additive coverage counts.
+
+The next [encoding replacement scope](FERMION_H2_SECTOR_TRAINING.md#encoding-replacement-scope-before-implementation)
+extends this same molecular training consumer to parity and BK on a branch cut
+from main `e087f51b01f412132d3bf575953d7202f2bc3fc2`. It plans independent
+physical-state, gradient and update equivalence, without a production API or
+automatic matched-ansatz claim. Its scope is recorded before implementation;
+the preceding acceptance belongs to the merged JW workflow only.
+
+The review branch implements this replacement in the existing example via
+`--encoding parity` and `--encoding bravyi_kitaev`. It encodes the physical
+spin-parity candidates, evaluates returned positive-generator signs using the
+explicit reference, and prepares the same determinant pair in its corresponding
+reduced basis. Independent Fock/occupation tests compare energies, gradients,
+updates and exact populations across all three encodings and file/native input.
+This is review-branch implementation, not a new actual-main acceptance or an
+automatic matched-ansatz feature. The default JW workflow remains supported.
