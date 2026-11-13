@@ -925,3 +925,33 @@ cost mismatch behavior is recorded alongside separate physical and modeled
 resource counts. Drawing adds zero gates/work/measurements. Counts remain 30
 accepted and 1250 open, with 388 active and 1189 capability records. Q-0740 remains
 open for its QFT expectation disposition. Evidence uses g2-flame-data-.
+
+
+### G2 resource flame convenience and rendering
+
+Compiler query_terminal_t_cost reuses existing resource declarations, recursive
+caches and terminal precision costs. Drawer iter_resource_flame_graph_data
+composes full costs, visibility depth, native titles and source-equivalent leaf
+recognition for ordered roots. render_flame_graph_svg streams UTF-8 data to an
+explicit executable, closes input before execution and removes temporary state
+on success, timeout, process failure and generator failure.
+
+Acceptance adds 53 cases. The four source examples match rows with four depth
+cutoffs and both keep policies. Actual CSwap SVG matches untouched source output
+after normalizing only Perl hash-dependent nonoverlapping frame order. Three
+reference asset blobs match inventory. There are 961 concentrated and 86
+independent integration passes without skips. Strict four-file typing, format,
+Compiler scope, architecture, IR and API checks pass. Drawer flame coverage is
+73 statements and 24 branches at 100 percent. Combined terminal/Drawer coverage
+is 98 percent. A native 94-T SVG example executes.
+
+Native titles, concrete rendering admission, caller-owned persistent files and
+explicit executables are recorded adaptations. Exclusive T-bearing aggregates
+require explicit callee declarations. Browser file-protocol preview was blocked,
+so interactive inspection remains open alongside foreign name reflection,
+asset distribution and the QFT historical expectation discrepancy. Q-0739.02
+and Q-0739.03 are accepted subitems. Whole-source parents remain open. Counts
+are 30 accepted, 1250 open, 388 active and 1191 capability records, including one
+historical record. Resource evidence separates primitive Fredkin CX8/H2/T4/Tdg3
+from terminal7T/QEC4T models, with zero added drawing gates/work/measurements.
+Evidence uses g2-flame-composed- and g2-flame-workflow-.

@@ -373,3 +373,12 @@ source definition table and separate primitive/model counts are in
 Run `python -m pytest tests/unit/test_drawer_flame_graph.py -q` with the locked
 reference environment for exact source row-order comparisons. Caller-supplied
 native names and explicit T-terminal recognition replace source class reflection.
+
+
+`iter_resource_flame_graph_data` now composes native declarations with full
+precision-sensitive terminal costs and source-equivalent default visible leaves.
+`render_flame_graph_svg` streams those rows into an explicit local FlameGraph
+executable, with a timeout and cleanup on every exit path. Callers own persistent
+files. Run `python -m pytest tests/unit/test_resource_flame_workflow.py tests/unit/test_drawer_flame_svg.py -q` in the locked reference environment.
+RESOURCE_FLAME_GRAPH.md records the native naming/executable adaptations,
+reference asset identities and pending interactive browser inspection.
