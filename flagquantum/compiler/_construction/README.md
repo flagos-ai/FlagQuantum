@@ -162,6 +162,16 @@ current qubits. Only inverse-cleaned allocations return to the zero pool.
 This is a deterministic heuristic, not a general free/drop operation or optimal
 pebbling. The private `schedule_arithmetic` diagnostic includes peak workspace
 and compute/cleanup events; `lower_arithmetic` still returns CircuitIR.
+Candidates classify every emitted instruction in ordered, disjoint half-open
+`instruction_spans` that cover the circuit, including external XOR writes,
+copies, phase markers and phase inverses. Each schedule event also records its
+own half-open instruction bounds; these event bounds intentionally overlap the
+classification spans because they group instructions by value lifecycle. The
+`ownership_transitions` record value and scratch acquisition/release boundaries,
+including scratch retained across the paired terminal XOR events.
+`replay_allocation_trace` checks coverage, event spans, physical-wire ownership,
+final workspace cleanup and the reported peak workspace without changing the
+candidate circuit.
 
 Run `python -m tools.synthesis_compiler_examples.workspace.main`, then
 `tests/team/compiler/test_construction_scheduling.py` and

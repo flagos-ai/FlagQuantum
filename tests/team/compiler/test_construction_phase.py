@@ -6,7 +6,10 @@ import pytest
 
 from flagquantum.compiler._construction.bindings import verify_bindings
 from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import schedule_arithmetic
+from flagquantum.compiler._construction.lowering import (
+    replay_allocation_trace,
+    schedule_arithmetic,
+)
 from flagquantum.compiler._construction.selection import (
     ConstructionBudget,
     select_arithmetic,
@@ -59,6 +62,7 @@ def build(strategy="retain", *, max_operations=100_000):
 @pytest.mark.parametrize("strategy", ["retain", "recompute"])
 def test_literal_inverse_of_the_same_prefix_and_mirrored_allocation_events(strategy):
     candidate = build(strategy)
+    assert replay_allocation_trace(candidate).peak_workspace == candidate.peak_workspace
     gates = candidate.circuit.instructions
     middle = len(gates) // 2
     assert gates[middle].name == "z"
@@ -67,8 +71,13 @@ def test_literal_inverse_of_the_same_prefix_and_mirrored_allocation_events(strat
     events = candidate.events
     split = len(events) // 2
     for before, after in zip(events[:split], reversed(events[split:]), strict=True):
+        expected_start = len(gates) - before.instruction_stop
+        expected_stop = len(gates) - before.instruction_start
         assert after == replace(
-            before, action="uncompute" if before.action == "compute" else "compute"
+            before,
+            action="uncompute" if before.action == "compute" else "compute",
+            instruction_start=expected_start,
+            instruction_stop=expected_stop,
         )
     assert sum(e.operation_count for e in events) + 1 == len(gates)
     live = set()
@@ -100,6 +109,7 @@ def test_direct_input_predicate_needs_no_work_or_value_target():
     )
     assert result.circuit.instructions == (Instruction("z", (0,)),)
     assert result.peak_workspace == 0 and result.events == ()
+    assert replay_allocation_trace(result).peak_workspace == 0
 
 
 def test_wide_return_value_target_unknown_mode_and_zero_obligations_are_refused():
