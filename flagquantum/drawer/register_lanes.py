@@ -31,6 +31,15 @@ class LaneSegment:
         "HLineFlavor.QUANTUM"
     )
 
+    def json_dict(self) -> dict[str, int | str | None]:
+        """Return independent source-format fields, retaining an unfinished end."""
+        return {
+            "y": self.y,
+            "seq_x_start": self.seq_x_start,
+            "seq_x_end": self.seq_x_end,
+            "flavor": self.flavor,
+        }
+
 
 class RegisterLaneManager:
     """Own a score's lane heap, reservations and geometric interval lifecycle.
