@@ -10,11 +10,11 @@ from __future__ import annotations
 from collections.abc import Hashable
 from typing import Literal
 
-from sympy import ceiling, log
+from sympy import ceiling
 
 from ..._component_trace.call_graph import SymbolicCallGraph, symbolic_call_graph
 from ..._component_trace.resource_generalization import CliffordCall, FixedTCall
-from ..._component_trace.symbolic_math import SymbolicInt, smax
+from ..._component_trace.symbolic_math import SymbolicInt, log2, smax
 from .field_multiplication import _product, _validate_field
 from .linear_resource_model import source_binary_linear_resource_formula
 
@@ -88,7 +88,7 @@ def field_multiplication_gate_model(
         return {CliffordCall("cz", 2): width**2}
     if not isinstance(width, int):
         if algorithm == "karatsuba":
-            return {TOFFOLI: width ** (log(3) / log(2)), CX: width**2}
+            return {TOFFOLI: width ** log2(3), CX: width**2}
         return {TOFFOLI: width**2, CX: 3 * width * (2 if plus_equal_prod else 1)}
     if modulus is None:
         raise ValueError("Concrete field models require an explicit modulus")

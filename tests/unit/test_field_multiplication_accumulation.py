@@ -138,7 +138,9 @@ def test_original_polynomial_power_cost_assertions(log_width: int) -> None:
 
 
 def test_accumulation_and_model_admission() -> None:
-    from sympy import Symbol, log
+    from math import log2
+
+    from sympy import Symbol
 
     from flagquantum.compiler._component_trace.resource_generalization import (
         CliffordCall,
@@ -157,7 +159,7 @@ def test_accumulation_and_model_admission() -> None:
         CX: 6 * m,
     }
     assert field_multiplication_gate_model(m, algorithm="karatsuba") == {
-        TOFFOLI: m ** (log(3) / log(2)),
+        TOFFOLI: m ** log2(3),
         CX: m**2,
     }
     assert field_multiplication_gate_model(m, algorithm="erasure") == {
