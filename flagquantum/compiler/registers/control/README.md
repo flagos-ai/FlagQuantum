@@ -100,3 +100,11 @@ Run `tests/unit/test_bookkeeping_component_control.py` and
 all small measured branches, exact adjoints, complex joint states, independent
 source costs and `circuit.append(op)` execution. An output deliberately retained
 for its caller can be entangled; only the internally erased work must be zero.
+
+`single_zero_control_width.py` owns X/positive-child/X width connections for
+single-control constant arithmetic and XOR. Aggregate word edges preserve
+symbolic widths and caller bystanders. The existing scheduler and recursive
+query own visitation and caching. Run
+`python -m pytest tests/unit/test_controlled_constant_resource_width.py -q`.
+[The interface and evidence](../../../../docs/development/CONTROLLED_CONSTANT_RESOURCE_WIDTH.md)
+record the concrete and symbolic acceptance boundaries.

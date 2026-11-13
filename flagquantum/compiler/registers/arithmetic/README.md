@@ -39,3 +39,8 @@ See [the interface and acceptance](../../../../docs/development/CONTROLLED_ADDIT
 Constant-add connected resource widths live in `constant_addition_width.py`.
 The owner composes allocation, XorK, Always(Add), unload and release.
 See [the interface and acceptance](../../../../docs/development/CONSTANT_ADDITION_RESOURCE_WIDTH.md).
+
+Controlled constant-add widths extend `constant_addition_width.py`, preserving
+control liveness across Always(Add). Controlled XorK belongs to the bits owner,
+and both polarities share the single-zero-control width owner.
+See [the interface and acceptance](../../../../docs/development/CONTROLLED_CONSTANT_RESOURCE_WIDTH.md).

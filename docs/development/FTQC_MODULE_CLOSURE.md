@@ -1393,3 +1393,49 @@ zero physical gates, work and measurements. Allocation/free and split/join
 cache keys normalize dtype to scalar width. Arbitrary dtype-specific seeded
 cache identity, dirty/array allocation, controlled constant-add, general
 register bindings and symbolic fallback underestimation remain open.
+
+
+## G2-CADDK-WIDTH single-control constant resource connections
+
+Controlled XorK owns CNOT/view width connections in
+`registers/bits/controlled_constant_width.py`. Controlled AddK extends the
+existing constant-word owner and threads caller control around Always(Add).
+`registers/control/single_zero_control_width.py` provides the shared
+X/positive-child/X connection model, including symbolic aggregate words.
+Both controls and targets remain caller-owned through registers. Add owns
+carries. The exact inverse loads the same constant and changes Add direction.
+See [the interface and evidence](CONTROLLED_CONSTANT_RESOURCE_WIDTH.md).
+
+Both operations, both control polarities/directions, three encodings, negative
+constants, widths one through five/eight and Python/Sympy/symbolic dispatch
+match complete normalized source cache values and order. Seeded view, load,
+allocation/free, Add, Always, AND/erase and Clifford peaks cover bystanders.
+Unused positive-control X seeds stay cached without affecting width. The
+480 full-DOT comparisons cover five aggregations and three depths. Zero/range
+failures preserve source-equivalent partial caches and permit retry. Eight
+frozen source blobs pass. Native root direction can remain explicit while
+self-adjoint XorK child keys use source-canonical direction.
+
+Acceptance passed 1,342 focused tests in 4.04 seconds, 6,951 concentrated tests
+in 106.26 seconds and 87 integration tests in 14.69 seconds, without skips.
+The controlled-XorK owner has 30 statements/10 branches, zero-control wrapper
+13/six, extended constant-add owner31/16, all with full coverage. The dispatcher
+also has full statement/branch coverage. Thirteen measured modules have
+99 percent combined coverage. Strict typing covers seven changed files.
+Formatting, scope, architecture, internal IR, protected API, nine Drawer
+doctests and the Markdown example pass. Concentrated/integration runs report
+1,112/two existing warnings. Initial unused-cache seed expectations and a test
+fixture's implicit import were corrected and rerun.
+
+Controlled XorK source gates, models and coherent complex target/control/
+spectator states pass for both polarities, and double append restores input.
+Existing controlled AddK tests retain exact source primitive/feedback streams,
+all small measurement histories, full complex amplitudes and clean work.
+Controlled AddK(3,2) in either direction emits CX23/H6/T4/Tdg4/S2/measurement2/
+conditionalCZ2/reset2 with work5/classical2. Control zero adds X2. The source
+model independently returns AND2/Clifford13/measurement2/width9 for positive
+control and Clifford15 for zero control. Controlled XorK(3,2) emits CX1 and
+optional X2 with no work or measurements. Width binding adds zero physical
+gates, workspace and measurements. Dtype-to-width normalization, limited
+scalar allocations/casts, symbolic fallback underestimation, general control
+shapes and general register bindings remain open.

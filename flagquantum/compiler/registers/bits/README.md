@@ -24,3 +24,10 @@ All words remain caller-owned and no workspace is allocated. Run
 cache/order, symbolic fallback, signed range and source-width DOT comparisons.
 [BITWISE_RESOURCE_WIDTH.md](../../../../docs/development/BITWISE_RESOURCE_WIDTH.md)
 records native identity normalization and execution/resource evidence.
+
+`controlled_constant_width.py` reuses controlled XorK emission and the shared
+single-zero-control lifetime wrapper. Both directions and polarities keep the
+caller control/target live without workspace. Run
+`python -m pytest tests/unit/test_controlled_constant_resource_width.py tests/unit/test_controlled_bitwise.py -q`.
+[The interface and evidence](../../../../docs/development/CONTROLLED_CONSTANT_RESOURCE_WIDTH.md)
+record source self-adjoint child identities and symbolic fallback limits.
