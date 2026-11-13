@@ -341,3 +341,63 @@ The browser renderer emits presentation records only.
 | Source adjoint model | Clifford5 and measurement3 |
 | Physical storage | Four controls and three work/output wires, source peak seven |
 | Added by animation | Zero primitives, physical work wires, measurements or feedback |
+
+
+## Original JSON asset acceptance
+
+Q-0748 is accepted by implementation/test commit `11facf75`. The original
+`musical_score_example.json` is retained byte for byte as
+`tests/fixtures/register_score/example.json`, with source and Apache-2.0
+attribution beside it. It has 4,681 bytes and Git blob
+`b5ed08cad72ae69d275fc89b90337b7dc4daf3a8`, matching the fixed inventory for
+Qualtran v0.7.0 commit `bcb17bb25360ed68ce3bc084645db3e929799389`.
+The prior generated reference files have blob
+`6253c8e4b4405560df866d6dd2581ba0b3f9cd4f`. The tests retain both inputs.
+
+The original asset has 20 ports, seven horizontal lines without flavor fields,
+three string-valued And labels and both control polarities. Native JSON export
+and embedded sequential records retain every field, value, identity and order.
+The offline dependency view separately projects columns from -1,0,1,2,3 to
+-1,1,2,3,4 while retaining the original glyph and label records. Export leaves
+its input and fixture bytes intact. Its inline viewer requires no network.
+
+The actual frozen HTML loads the exact asset over HTTP through its relative
+JSON path. Only the D3 CDN location and deterministic test clock/probe are
+adapted. Native fixed-style offline export matches the source SVG geometry,
+axes, fonts, outlines and horizontal strokes. The native HTTP form also imports
+the original bytes unchanged and matches source geometry after the existing
+explicit source scale configuration for native adaptive spacing. The imported
+record equals the original mapping. The source JavaScript retains connector
+label data without painting label text, and this browser behavior is preserved.
+Matplotlib's structured flavor/Text-label input remains a separate boundary.
+The native dependency view, controls and offline page organization retain their
+previously documented ownership. A settled fixed-style screenshot was inspected.
+
+Four new cases are accepted, comprising two unit cases and two original-asset
+parameters in existing browser scenarios. The complete browser set passes 55
+cases in 55.48 seconds. Concentrated regression passes 516 cases in 23.52 seconds
+with eight existing warnings. Independent notebook/CPU/TN integration passes
+86 cases in 8.44 seconds with two existing warnings. No cases skip. Strict typing
+of three changed Python files, Black, Ruff, team scope, architecture, internal IR
+and protected API checks pass. HTML-exporter coverage is 46/46 statements and
+12/14 branches, 97% combined. JavaScript coverage is represented by DOM behavior
+assertions. The first unit expectation incorrectly equated dependency and
+sequential columns. The corrected full projection passes, with its failure log
+retained. Reference source bytes remain unchanged.
+
+This presentation-only batch adds zero physical primitives, work wires or
+measurements. Existing gate-order, full-complex-amplitude, forced-branch,
+work-restoration and ordinary append regressions pass. The separate resource
+table above continues to describe the executable MultiAnd consumer. No circuit
+execution is inferred from loading JSON. Evidence uses `g2-score-asset-`.
+Q-0747 general foreign and arbitrary serialized-symbol admission remains open,
+as does the recorded full-default-suite 600-second timeout.
+
+```bash
+python -m pytest tests/unit/test_drawer_score_asset.py -q
+python -m pytest tests/integration/test_drawer_score_domains.py \
+    tests/integration/test_drawer_score_loading.py -k original -q
+```
+
+The browser command needs the frozen source assets, pinned D3 and a configured
+`FLAGQUANTUM_CHROME`. The unit command uses the checked-in fixture alone.

@@ -149,7 +149,10 @@ dispositions in REGISTER_SCORE_RESERVATIONS.md. Native reservation and subclass 
 [REGISTER_SCORE_RESERVATIONS.md](REGISTER_SCORE_RESERVATIONS.md). The accepted Q-0745 notebook and Q-0749 tests do not imply those missing
 implementation extensions are available. The builtin glyph adjoint follow-up is documented in [REGISTER_SCORE_SYMBOL_ADJOINT.md](REGISTER_SCORE_SYMBOL_ADJOINT.md). The Q-0744/Q-0746 HTML and JavaScript assets close after the complete browser
 and manual-domain audit in REGISTER_SCORE_ANIMATION.md. The original example
-JSON asset Q-0748 remains a separate parent.
+JSON asset Q-0748 is accepted separately with exact blob identity, direct
+source-HTML loading, native offline export and HTTP import. See the original
+asset acceptance section in REGISTER_SCORE_ANIMATION.md. Q-0747 general foreign
+and arbitrary serialized-symbol admission remains open.
 
 Run the source-backed local comparison in the locked environment.
 

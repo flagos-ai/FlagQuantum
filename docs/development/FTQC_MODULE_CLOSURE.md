@@ -777,3 +777,29 @@ and historical default-suite timeout stay open. Counts remain 29 closed,
 1251 open, 387 active parents and 1187 capability records. Added physical gates,
 work and measurements are zero. Existing amplitude, all-branch work restoration
 and append regressions pass. Actual primitives and source models stay separate.
+
+
+### Original score JSON asset (2026-11-13)
+
+Q-0748 closes with `11facf75`. The unmodified 4,681-byte fixture has original
+Git blob b5ed08cad72ae69d275fc89b90337b7dc4daf3a8, distinct from generated
+6253c8e4b4405560df866d6dd2581ba0b3f9cd4f outputs. Source attribution is retained.
+Every field survives sequential export and HTTP import. The dependency view has
+its explicit column projection. Frozen HTML relative loading, fixed SVG geometry,
+fonts, axes and outlines compare directly in real Chrome. The completed screenshot
+was inspected. Source JS does not paint connector-label text. Native page/control,
+adaptive-spacing and Matplotlib record boundaries remain explicit.
+
+Four new cases, 55 browser cases in 55.48 seconds, 516 concentrated cases in
+23.52 seconds and 86 integration cases in 8.44 seconds pass with zero skips.
+Existing warning counts are eight and two. Strict3/Black/Ruff/scope/architecture/
+IR/API checks pass. HTML owner has 46 statements and 12/14 branches covered,
+97% combined, with DOM assertions for JS. The initial dependency-column
+expectation failure was corrected and retained. Evidence uses g2-score-asset-.
+
+The ledger now has 30 closed, 1250 open and 386 active parents. Capability
+records remain 1187, extending Q-0748.01. Q-0747 general foreign/serialized-symbol
+admission and the historical 600-second default-suite timeout remain open.
+The asset adds zero physical gates, work or measurements. Existing gate-order,
+complex-amplitude, all-branch work restoration and append regressions pass.
+Actual primitive and source-model costs remain in their separate resource table.

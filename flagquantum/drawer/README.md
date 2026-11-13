@@ -320,3 +320,12 @@ hyperedges and scalar vertices, without reading numerical data or contracting.
 See the [executable workflow and source comparisons](../../docs/development/TENSOR_NETWORK_INSPECTION.md).
 DOT export needs no external tool; plotting returns a caller-owned Matplotlib
 figure. This is topology inspection, with no Quimb layout/performance claim.
+
+
+The original browser example is checked in at
+`tests/fixtures/register_score/example.json`, with source attribution alongside.
+Its byte identity, pre-flavor horizontal lines and string connector labels are
+accepted through native JSON/HTML export and the browser HTTP form. Run
+`python -m pytest tests/unit/test_drawer_score_asset.py -q` for the offline check.
+REGISTER_SCORE_ANIMATION.md records frozen HTML/browser comparison and the
+separate structured Matplotlib boundary.
