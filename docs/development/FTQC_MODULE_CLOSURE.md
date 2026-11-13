@@ -692,3 +692,29 @@ Counts remain 29 closed, 1251 open, 387 active parents and 1187 capability recor
 Added physical gates, work and measurements are zero. Existing amplitude,
 all-branch work restoration and append regressions pass. Physical primitives
 and source analytical models remain separately reported.
+
+
+### Partial lane record serialization (2026-11-13)
+
+Implementation `329e0a64` adds source-format json_dict to existing immutable
+LaneSegment. Open endpoints export null, closed endpoints retain their integer
+coordinates and both flavor strings match the source. Each mapping owns its
+values. Native mapping conversion uses the standard JSON encoder. Complete score
+records retain their existing integer-endpoint and UTF-8/newline policies.
+Source RegPosition, SoqData, VLine, all six glyph classes and complete score
+records are directly compared through the original encoder. Scalar/vector/matrix/
+empty arrays and quantum/classical/zero-width release snapshots round-trip.
+
+40 new/focused cases in 1.24 seconds, 488 concentrated cases in 16.89 seconds and
+86 independent integration cases in 8.97 seconds pass with zero skips and eight/
+two existing warnings. Strict2, formatting, scope, architecture, IR and API checks
+pass. Lane coverage is 84 statements and 26 branches at 100%. The initial test
+hash transcription failure is corrected and retained. Evidence uses
+`g2-score-records-`, with a runnable example in REGISTER_SCORE_RESERVATIONS.md.
+
+Q-0747 remains open for general foreign graph/dtype/manager/glyph admission.
+Q-0748's original JSON asset and historical default-suite timeout stay open.
+Counts remain 29 closed, 1251 open, 387 active parents and 1187 capability records.
+Added physical gates, work and measurements are zero. Existing amplitude,
+all-branch work restoration and append regressions pass. Physical primitives
+and source analytical models remain separately reported.

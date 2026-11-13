@@ -28,7 +28,7 @@ Existing native records remain the shared representation.
 | --- | --- |
 | `RegPosition.json_dict` | `RegisterColumn` stores sequential and generation coordinates; `ScorePort` stores exported coordinates. Plain dictionaries provide serialization. |
 | `HLineFlavor.from_qcdtype` | `register_score_data(classical=...)` explicitly marks classical display identities. Automatic foreign dtype inspection and its unknown-type fallback are outside native admission. |
-| `HLine.json_dict` | `RegisterLine` stores lifetimes; `ScoreHorizontalLine` serializes completed lines with source flavor spelling. Native immutable LaneSegment records expose partial geometry through the shared manager; generic foreign record admission remains open. |
+| `HLine.json_dict` | Existing immutable `LaneSegment.json_dict` serializes partial and closed geometry, preserving null endpoints and textual flavor. `RegisterLine` retains semantic lifetimes and `ScoreHorizontalLine` completed rendering data. Native mappings use the standard JSON encoder. Foreign object admission remains separate. See REGISTER_SCORE_RESERVATIONS.md. |
 | `LineManager.__init__`, `new_y` | `RegisterLaneManager` owns the shared minimum-lane heap consumed by `layout_register_score`. Native capacity grows with the graph. The source defaults to 100 lines. Context-aware source `new_y` dispatch is owned by native `new_y_for`, delegating to existing no-argument policies by default. |
 | `LineManager.reserve_n`, `unreserve`, `maybe_reserve` | Native `RegisterLaneManager` now implements ordered reservations and the `maybe_reserve` subclass hook; Core grouping preserves once-per-register predicate cadence and per-element hooks. See REGISTER_SCORE_RESERVATIONS.md for finite-capacity parity and failure adaptations. |
 | `LineManager.new`, `finish_hline`, `free` | Existing native layout allocates fresh RIGHT lanes before freeing LEFT lanes and closes lifetimes at consumption or final output. `_ports` flattens shaped register elements in row-major order. Native reservation callbacks now cover these boundaries. Context-aware coordinate overrides now match source allocation order and full geometry. Native geometric open/closed intervals now expose every source allocation/release observation through `hlines` and `finish_hline`; cursor and malformed-release preflight adaptations are documented. |
@@ -132,6 +132,10 @@ Typed native register callbacks now match ordered source invocation events and
 stateful glyphs, including THRU output effects and reordered final bindings.
 Metadata synthesis, hand-authored final-order fallback and the source all-empty
 RightDangle exception are documented in REGISTER_SCORE_SYMBOL_ADJOINT.md.
+Partial and completed geometric record serialization is now accepted through
+LaneSegment.json_dict. Nested records and all six glyph classes match the original
+source encoder. Full-score UTF-8/newline formatting retains its native policy.
+General foreign class admission remains open.
 Context-aware coordinate selection and partial-line lifecycle observations are
 accepted through `new_y_for`, `hlines` and `finish_hline`. Native cursor placement,
 textual flavor representation and malformed-release preflight have explicit

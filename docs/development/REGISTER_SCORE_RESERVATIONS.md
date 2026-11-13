@@ -299,3 +299,73 @@ above stay separately reported. Classical and zero-width metadata tests exercise
 the manager directly. Component graph admission continues to have its documented
 quantum-only boundary. Q-0747 remains open for general foreign and wire-symbol
 protocol admission. Q-0748's original JSON asset is tracked independently.
+
+
+## Serializing partial and completed geometric intervals
+
+Implementation `329e0a64` ports source `HLine.json_dict` into the existing
+`LaneSegment` record. Its four fields retain insertion order and source spelling.
+An open interval exports `seq_x_end=None`, which standard JSON encodes as `null`.
+Quantum and classical flavors retain their existing textual values. Every call
+returns a fresh dictionary, so editing or saving a snapshot preserves the
+immutable geometric record and later manager state.
+
+```python
+import json
+
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.register_types import quantum_bit_type
+from flagquantum.drawer.register_lanes import RegisterLaneManager
+
+manager = RegisterLaneManager()
+manager.seq_x = -1
+register = Register("q", quantum_bit_type())
+lanes = manager.new("input", register)
+partial = next(iter(manager.hlines)).json_dict()
+assert json.loads(json.dumps(partial))["seq_x_end"] is None
+manager.seq_x = 3
+manager.free("output", register, lanes)
+complete = next(iter(manager.hlines)).json_dict()
+assert complete["seq_x_end"] == 3
+assert partial["seq_x_end"] is None
+```
+
+The native record becomes an ordinary mapping before JSON encoding. This keeps
+serialization in the existing record and standard-library owners. Source foreign
+object dispatch stays at the reference test boundary. Completed score data keeps
+its existing integer endpoints. Partial snapshots use the geometric record's
+method separately from completed rendering data. Existing complete score export
+retains UTF-8 text, indentation and its trailing newline. Tests compare parsed
+full-score content with the source encoder, whose default text escaping and final
+newline differ. Partial geometric dictionaries also match exact source JSON text.
+
+Forty new cases cover open/closed and negative/zero endpoints, mapping ownership,
+scalar/vector/matrix/empty shapes, quantum/classical/zero-width metadata and
+before/after-release snapshots. Nested snapshot mappings round-trip against the
+original source encoder. Complete SoqData/RegPosition, VLine/Text and score records
+are compared for all six glyph classes and both Circle polarities, including
+Unicode text and nondefault caption font size.
+
+The frozen source blob remains
+`3863bb66cdba17c4654657e275a8485d94b8da75`. Focused tests pass 40 cases in
+1.24 seconds. Concentrated regression passes 488 cases in 16.89 seconds with
+eight existing warnings. Independent notebook/CPU/TN integration passes 86 cases
+in 8.97 seconds with two existing warnings. No tests skip. Strict typing of two
+files, Black, Ruff, team scope, architecture, multi-level IR and protected API
+checks pass. The lane owner covers all 84 statements and 26 branches.
+
+Evidence uses `g2-score-records-`. The first focused attempt rejected a mistyped
+expected source hash. The corrected hash matches the unchanged source bytes,
+and the failure log is retained. Source release consumes endpoint coordinates
+from RegPosition, while native release consumes the existing manager cursor.
+Tests advance the source positions and native cursor to the same endpoint.
+Existing adjoint and execution regressions cover full amplitudes, forced
+measurement branches, work restoration and normal `circuit.append(op)` use.
+Added physical primitives, work and measurements are zero. The resource table
+above retains separate actual and analytical accounts. Q-0747 stays open for
+general foreign graph/dtype/manager/glyph admission. Q-0748's original JSON asset
+remains independently open.
+
+```bash
+python -m pytest tests/unit/test_drawer_lane_serialization.py -q
+```
