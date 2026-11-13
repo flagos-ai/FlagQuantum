@@ -1243,3 +1243,36 @@ coverage, as does the shared resource width dispatcher. Combined measured
 coverage is 98 percent. Arithmetic and general register-program automatic width
 bindings remain open under Q-0734. Other recorded foreign, distribution,
 browser and historical test boundaries retain their status.
+
+## G2-BITWISE-WIDTH arithmetic bitwise connection bindings
+
+Q-0734.10 adds automatic logical widths for XOR, constant XOR and bitwise NOT.
+The register owner reuses the existing bitwise emitters, OnEach and shared
+through-wire connection projection. Both XOR words and each unary word retain
+caller ownership in big-endian order. No work or classical slots are allocated.
+The pinned source self-adjoint operations keep unchanged child identities while
+the native root retains its existing direction field. Width-only split/join
+keys normalize dtype identities at the comparison boundary, one dtype per query.
+Mixed-dtype bookkeeping cache identity remains outside the measured scope.
+
+Complete source-cache values and insertion order cover three encodings, both
+directions, Python/Sympy integer dispatch, symbolic widths/constants, signed
+negative patterns and zero flips. There are 135 full-DOT comparisons over five
+aggregations and three visibility depths. Seeded larger child peaks verify idle
+bystanders. Zero-width and out-of-range constants fail before child cache
+mutation, with retry checked. Source RuntimeError maps to native admission
+ValueError. One-bit signed +1 is explicitly rejected on both paths. The three
+frozen source blobs remain unchanged. See
+[the interface and scope](BITWISE_RESOURCE_WIDTH.md).
+
+Local acceptance passed 307 focused, 3,114 concentrated and 87 integration tests
+without skips. Strict typing covers all three changed Python files. Format,
+scope, architecture, internal IR, API, nine doctests and the Markdown example
+pass. The new owner has 39 statements and 18 branches, all covered. The shared
+resource width dispatcher is fully covered, with 99 percent combined coverage
+in the eight-module measured scope. Existing bitwise execution tests preserve
+literal gate order, full complex amplitudes, involution, entangled spectators
+and append. Three-bit actual XOR/constant-3/NOT emit CX3/X2/X3 respectively,
+with model Clifford3/2/3 recorded separately. Added physical gates, work and
+measurements are zero. Controlled arithmetic, addition and general register
+program width bindings remain open under Q-0734.
