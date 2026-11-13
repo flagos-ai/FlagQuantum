@@ -115,7 +115,7 @@ def test_add_typed_register_callbacks_and_all_glyphs_match_source(
     )
     expected = get_musical_score_data(original)
     assert actual_events == expected_events
-    assert_source_geometry(actual, expected)
+    assert_source_geometry(actual, expected, ordered_ports=True)
     assert hash(record) == before
 
 
@@ -133,7 +133,7 @@ def test_same_named_array_ports_use_declarations_and_indices(
         component_register_score(record),
         register_wire_symbol=native_symbols(actual_events),
     )
-    assert_source_geometry(actual, get_musical_score_data(original))
+    assert_source_geometry(actual, get_musical_score_data(original), ordered_ports=True)
     assert actual_events == source_events
     # Idle boundary wires never invoke a component's wire_symbol protocol.
     assert all(event[0] in ("q", None) for event in actual_events)
@@ -333,15 +333,15 @@ def test_input_through_output_shaped_callback_metadata_matches_source(
         return
     expected = get_musical_score_data(original)
     assert actual_events == expected_events
-    assert_source_geometry(actual, expected)
+    assert_source_geometry(actual, expected, ordered_ports=True)
 
 
 def test_final_return_order_drives_stateful_callbacks_and_existing_consumers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    import attrs
     import matplotlib
-    from qualtran import RightDangle, Soquet
+    from qualtran import BloqBuilder
+    from qualtran.bloqs.basic_gates import Hadamard
     from qualtran.drawing import get_musical_score_data
 
     from flagquantum.drawer.register_score_html import export_register_score_html
@@ -365,25 +365,13 @@ def test_final_return_order_drives_stateful_callbacks_and_existing_consumers(
     record = replace(
         record, functions=(replace(root, blocks=(swapped,)), *record.functions[1:])
     )
-    original = attrs.evolve(
-        original,
-        connections=tuple(
-            (
-                attrs.evolve(
-                    connection,
-                    right=Soquet(
-                        RightDangle,
-                        connection.right.reg,
-                        idx=(1 - connection.right.idx[0],),
-                    ),
-                )
-                if connection.right.binst == RightDangle
-                and connection.right.reg.name == "q"
-                else connection
-            )
-            for connection in original.connections
-        ),
-    )
+    # Build swapped final connections through the actual upstream entry point.
+    # Relabeling old edges in place would preserve their old insertion order.
+    bb, values = BloqBuilder.from_signature(original.signature)
+    for index in (0, 1, 0):
+        values["q"][index] = bb.add(Hadamard(), q=values["q"][index])
+    values["q"] = values["q"][::-1]
+    original = bb.finalize(**values)
     expected_events: list[Event] = []
     actual_events: list[Event] = []
     source_symbols(monkeypatch, original, expected_events, numbered=True)
@@ -393,7 +381,7 @@ def test_final_return_order_drives_stateful_callbacks_and_existing_consumers(
     )
     expected = get_musical_score_data(original)
     assert actual_events == expected_events
-    assert_source_geometry(data, expected)
+    assert_source_geometry(data, expected, ordered_ports=True)
     # Older hand-authored scores can omit return-order metadata.
     assert (
         register_score_data(
@@ -466,4 +454,71 @@ def test_synthesized_metadata_preserves_input_and_output_only_sides() -> None:
         "RarrowTextBox",
         "LarrowTextBox",
         "TextBox",
+    }
+
+
+@pytest.mark.parametrize("calls", [0, 1, 2, 3])
+@pytest.mark.parametrize("typed", [False, True])
+def test_boundary_adjacency_independent_calls_idle_wire_and_swapped_returns(
+    monkeypatch: pytest.MonkeyPatch, calls: int, typed: bool
+) -> None:
+    from qualtran import BloqBuilder, QBit
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import XGate
+    from qualtran.drawing import get_musical_score_data
+
+    names = ("b", "a", "idle")
+    bb, values = BloqBuilder.from_signature(
+        SourceSignature(SourceRegister(key, QBit()) for key in names)
+    )
+    register = Register("q", RegisterType("bit", 1))
+    steps = []
+    for key in ("a", "b", "a")[:calls]:
+        values[key] = bb.add(XGate(), q=values[key])
+        steps.append(
+            RegisterStep(
+                "x",
+                (key,),
+                (key,),
+                input_registers=(register,),
+                output_registers=(register,),
+            )
+        )
+    original = bb.finalize(b=values["a"], a=values["b"], idle=values["idle"])
+    score = layout_register_score(
+        dict.fromkeys(names, 1), names, steps, outputs=("a", "b", "idle")
+    )
+    expected_events: list[Event] = []
+    actual_events: list[Event] = []
+    source_symbols(monkeypatch, original, expected_events, numbered=True)
+    expected = get_musical_score_data(original)
+    actual = register_score_data(
+        score, register_wire_symbol=native_symbols(actual_events, numbered=True)
+    )
+    assert actual_events == expected_events
+    assert_source_geometry(actual, expected, ordered_ports=True)
+    if not typed:
+        # The display-identity callback keeps one call per visible register.
+        glyphs = {port["ident"]: port for port in actual["soqs"]}
+        seen: list[str | None] = []
+
+        def plain(
+            step: RegisterStep, key: str | None, side: PortSide | None
+        ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+            seen.append(key)
+            if key is None:
+                return "Text", {"text": "caption", "fontsize": 13}
+            ordinal = next(i for i, value in enumerate(steps) if value is step)
+            port = glyphs[f"{ordinal},{key},Side.{side},()"]
+            return port["symb_cls"], port["symb_attributes"]
+
+        assert register_score_data(score, wire_symbol=plain) == actual
+        assert seen == [
+            value for column in score.columns for value in (*column.step.inputs, None)
+        ]
+    # Omitting explicit final-order metadata retains completed-line fallback.
+    fallback = register_score_data(replace(score, output_order=()))
+    assert {port["ident"]: port for port in fallback["soqs"]} == {
+        port["ident"]: port for port in register_score_data(score)["soqs"]
     }

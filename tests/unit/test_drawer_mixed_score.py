@@ -144,7 +144,7 @@ def test_mixed_arrays_match_full_source_geometry_callbacks_and_exports(
         score, register_wire_symbol=native_symbols(actual_events)
     )
     expected = get_musical_score_data(original)
-    assert_source_geometry(actual, expected)
+    assert_source_geometry(actual, expected, ordered_ports=True)
     assert actual_events == expected_events
     assert hash(record) == before
     assert len(score.lines) == 1 + (0 if 0 in shape else prod(shape))
@@ -162,8 +162,9 @@ def test_mixed_arrays_match_full_source_geometry_callbacks_and_exports(
 
 
 @pytest.mark.parametrize("kind", ["qzero", "czero", "cbit", "cword"])
-def test_mixed_matplotlib_matches_source_after_boundary_and_order_adaptation(
-    monkeypatch: pytest.MonkeyPatch, kind: str
+@pytest.mark.parametrize("shape", [(), (2,), (1, 2), (0,), (0, 2)])
+def test_mixed_matplotlib_matches_source_after_boundary_text_adaptation(
+    monkeypatch: pytest.MonkeyPatch, kind: str, shape: tuple[int, ...]
 ) -> None:
     import attrs
     from matplotlib import pyplot as plt
@@ -173,7 +174,7 @@ def test_mixed_matplotlib_matches_source_after_boundary_and_order_adaptation(
         get_musical_score_data,
     )
 
-    record, original = mixed_fixture(kind, (2,))
+    record, original = mixed_fixture(kind, shape)
     source_symbols(monkeypatch, original, [])
     actual = register_score_data(
         (
@@ -203,9 +204,8 @@ def test_mixed_matplotlib_matches_source_after_boundary_and_order_adaptation(
     ]
     positions = [(port["seq_x"], port["y"]) for port in actual["soqs"]]
     original_positions = [(port.rpos.seq_x, port.rpos.y) for port in expected.soqs]
-    assert positions != original_positions
-    source_ports = {(port.rpos.seq_x, port.rpos.y): port for port in expected.soqs}
-    expected.soqs = [source_ports[position] for position in positions]
+    assert positions == original_positions
+    assert_source_geometry(actual, expected, ordered_ports=True)
     with plt.rc_context({"figure.dpi": 100, "font.family": "DejaVu Sans"}):
         reference, _ = draw_musical_score(expected)
         native, _ = draw_register_score(actual)

@@ -35,7 +35,9 @@ from tests.unit.test_component_tensor_nodes import fixture
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
-def assert_source_geometry(actual: MusicalScoreData, expected: Any) -> None:
+def assert_source_geometry(
+    actual: MusicalScoreData, expected: Any, *, ordered_ports: bool = False
+) -> None:
     original = {
         "max_x": expected.max_x,
         "max_y": expected.max_y,
@@ -58,7 +60,7 @@ def assert_source_geometry(actual: MusicalScoreData, expected: Any) -> None:
                 # Native boundary labels include array indices and owned dtype spelling.
                 port["symb_attributes"] = {"text": "boundary", "fontsize": 8}
             result.append(json.dumps(port, sort_keys=True))
-        return sorted(result)
+        return result if ordered_ports else sorted(result)
 
     assert ports(actual["soqs"]) == ports(original["soqs"])
 

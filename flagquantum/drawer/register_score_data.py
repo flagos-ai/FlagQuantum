@@ -124,20 +124,20 @@ def _symbol_port_order(
 
     Connections are encountered at their consumer in original call order.
     Incoming and outgoing traversal groups connections by neighboring call,
-    retaining encounter order inside each group. None denotes a boundary.
+    retaining encounter order inside each group. The input and output boundaries
+    use -1 and -2 respectively.
     """
-    incoming: dict[int, dict[int | None, list[str]]] = {}
-    outgoing: dict[int, dict[int | None, list[str]]] = {}
-    producers: dict[str, int | None] = {
-        line.register: None for line in score.lines if line.start == -1
+    incoming: dict[int, dict[int, list[str]]] = {}
+    outgoing: dict[int, dict[int, list[str]]] = {}
+    producers: dict[str, int] = {
+        line.register: -1 for line in score.lines if line.start == -1
     }
     for column in sorted(score.columns, key=lambda col: col.ordinal):
         destination = column.ordinal
         for key in column.step.inputs:
             origin = producers[key]
             incoming.setdefault(destination, {}).setdefault(origin, []).append(key)
-            if origin is not None:
-                outgoing.setdefault(origin, {}).setdefault(destination, []).append(key)
+            outgoing.setdefault(origin, {}).setdefault(destination, []).append(key)
         for key in column.step.outputs:
             producers[key] = destination
     final_keys = score.output_order or tuple(
@@ -145,22 +145,14 @@ def _symbol_port_order(
     )
     for key in final_keys:
         origin = producers[key]
-        if origin is not None:
-            outgoing.setdefault(origin, {}).setdefault(None, []).append(key)
+        outgoing.setdefault(origin, {}).setdefault(-2, []).append(key)
+        incoming.setdefault(-2, {}).setdefault(origin, []).append(key)
     return {
-        column.ordinal: (
-            tuple(
-                key
-                for group in incoming.get(column.ordinal, {}).values()
-                for key in group
-            ),
-            tuple(
-                key
-                for group in outgoing.get(column.ordinal, {}).values()
-                for key in group
-            ),
+        node: (
+            tuple(key for group in incoming.get(node, {}).values() for key in group),
+            tuple(key for group in outgoing.get(node, {}).values() for key in group),
         )
-        for column in score.columns
+        for node in (-1, *(column.ordinal for column in score.columns), -2)
     }
 
 
@@ -173,8 +165,8 @@ def register_score_data(
 ) -> MusicalScoreData:
     """Create source-compatible glyph records with one symbol per through port.
 
-    Native register constructions are quantum. The optional classical set
-    marks named lines when projecting a mixed register graph into the score.
+    Lines retain their owned storage flavor. The optional classical set marks
+    additional named lines when projecting a mixed register graph into the score.
     An explicit wire_symbol callback supplies port glyphs and the connector label
     (register=None, side=None), analogous to the source per-component protocol.
     It receives display identities only and cannot alter geometry or execution.
@@ -186,7 +178,8 @@ def register_score_data(
     including the discarded second THRU symbol. Native identities still own
     port keys. Layouts without metadata synthesize scalar opaque registers.
     The two callback forms are mutually exclusive. Grouped metadata is checked
-    before callbacks run.
+    before callbacks run. Records follow input-boundary, component and
+    output-boundary adjacency order, preserving source overdraw semantics.
     """
     if wire_symbol is not None and register_wire_symbol is not None:
         raise ValueError("Choose one wire symbol callback form")
@@ -218,7 +211,7 @@ def register_score_data(
         if register_wire_symbol is not None
         else ()
     )
-    symbol_order = _symbol_port_order(score) if register_wire_symbol is not None else {}
+    symbol_order = _symbol_port_order(score)
     output_column = len(score.columns)
     ports: list[ScorePort] = []
     hlines: list[ScoreHorizontalLine] = []
@@ -340,12 +333,26 @@ def register_score_data(
                 }
             )
 
+    # Paint input boundary, instances and output boundary in source adjacency
+    # order. Keep callback evaluation independent of record reordering.
+    records = {port["ident"]: port for port in ports}
+    identities = [f"dang,{key},l,()" for key in symbol_order[-1][1]]
+    for column in score.columns:
+        inputs, outputs = symbol_order[column.ordinal]
+        for key in dict.fromkeys((*inputs, *outputs)):
+            side = (
+                ("THRU" if key in column.step.outputs else "LEFT")
+                if key in column.step.inputs
+                else "RIGHT"
+            )
+            identities.append(f"{column.ordinal},{key},Side.{side},()")
+    identities.extend(f"dang,{key},r,()" for key in symbol_order[-2][0])
     return {
         "max_x": max(
             output_column - 1, max((line.end for line in score.lines), default=0)
         ),
         "max_y": max((line.lane for line in score.lines), default=0),
-        "soqs": ports,
+        "soqs": [records[identity] for identity in identities],
         "hlines": hlines,
         "vlines": connectors,
     }
