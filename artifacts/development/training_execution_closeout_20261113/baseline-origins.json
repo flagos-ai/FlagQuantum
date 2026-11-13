@@ -1,0 +1,6 @@
+{
+  "scope": "Independent checkout of the locally fetched main, before applying training changes. Git objects were copied; no network fetch succeeded. Only main and its tracking reference were imported.",
+  "base_commit": "98ea298bd7de9b0e8d0f905adc6b333aa1aadaed",
+  "findings": [],
+  "elapsed_seconds": 7.62
+}

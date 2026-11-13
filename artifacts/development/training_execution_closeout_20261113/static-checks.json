@@ -1,0 +1,138 @@
+{
+  "black": {
+    "command": [
+      "<redacted-path>",
+      "-m",
+      "black",
+      "--check",
+      "flagquantum/_api.py",
+      "flagquantum/runtime/builder_compilation.py",
+      "flagquantum/runtime/execution.py",
+      "flagquantum/runtime/execution_plan.py",
+      "flagquantum/runtime/execution_plan_contract.py",
+      "flagquantum/runtime/experiment.py",
+      "flagquantum/runtime/module.py",
+      "flagquantum/runtime/plan_execution.py",
+      "flagquantum/runtime/planner/__init__.py",
+      "flagquantum/runtime/training_state.py",
+      "flagquantum/simulation/statevector/fixed_layer_cpu.py",
+      "tests/team/simulation/test_controlled_phase_graph.py",
+      "tests/team/simulation/test_statevector_ops_numerics.py",
+      "tests/unit/test_evidence_provenance.py",
+      "tests/unit/test_hybrid_models.py",
+      "tests/unit/test_native_cpu_adjoint.py",
+      "tests/unit/test_statevector_batch_chunking.py",
+      "tools/public_api_snapshot.py",
+      "examples/local/train_parameters.py",
+      "flagquantum/runtime/_initial_state.py",
+      "flagquantum/runtime/_run.py",
+      "flagquantum/runtime/_runtime_inputs.py",
+      "tests/api_contract/test_execution_initial_state.py",
+      "tests/api_contract/test_execution_runtime_inputs.py",
+      "tests/fixtures/checkpoint_v2_version_admission.py",
+      "tests/integration/test_custom_initial_state_admission.py",
+      "tests/integration/test_training_parameter_lifecycle.py",
+      "tests/unit/test_execution_initial_state_contract_fake.py",
+      "tests/unit/test_execution_runtime_inputs_contract_fake.py",
+      "tests/unit/test_module_runtime_binding.py",
+      "tests/unit/test_training_parameter_state.py",
+      "tests/unit/test_training_parameter_state_contract_fake.py"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "All done! \u2728 \ud83c\udf70 \u2728\n32 files would be left unchanged.\n",
+    "elapsed_seconds": 1.58
+  },
+  "ruff": {
+    "command": [
+      "<redacted-path>",
+      "-m",
+      "ruff",
+      "check",
+      "flagquantum/_api.py",
+      "flagquantum/runtime/builder_compilation.py",
+      "flagquantum/runtime/execution.py",
+      "flagquantum/runtime/execution_plan.py",
+      "flagquantum/runtime/execution_plan_contract.py",
+      "flagquantum/runtime/experiment.py",
+      "flagquantum/runtime/module.py",
+      "flagquantum/runtime/plan_execution.py",
+      "flagquantum/runtime/planner/__init__.py",
+      "flagquantum/runtime/training_state.py",
+      "flagquantum/simulation/statevector/fixed_layer_cpu.py",
+      "tests/team/simulation/test_controlled_phase_graph.py",
+      "tests/team/simulation/test_statevector_ops_numerics.py",
+      "tests/unit/test_evidence_provenance.py",
+      "tests/unit/test_hybrid_models.py",
+      "tests/unit/test_native_cpu_adjoint.py",
+      "tests/unit/test_statevector_batch_chunking.py",
+      "tools/public_api_snapshot.py",
+      "examples/local/train_parameters.py",
+      "flagquantum/runtime/_initial_state.py",
+      "flagquantum/runtime/_run.py",
+      "flagquantum/runtime/_runtime_inputs.py",
+      "tests/api_contract/test_execution_initial_state.py",
+      "tests/api_contract/test_execution_runtime_inputs.py",
+      "tests/fixtures/checkpoint_v2_version_admission.py",
+      "tests/integration/test_custom_initial_state_admission.py",
+      "tests/integration/test_training_parameter_lifecycle.py",
+      "tests/unit/test_execution_initial_state_contract_fake.py",
+      "tests/unit/test_execution_runtime_inputs_contract_fake.py",
+      "tests/unit/test_module_runtime_binding.py",
+      "tests/unit/test_training_parameter_state.py",
+      "tests/unit/test_training_parameter_state_contract_fake.py"
+    ],
+    "returncode": 0,
+    "stdout": "All checks passed!\n",
+    "stderr": "",
+    "elapsed_seconds": 0.08
+  },
+  "public_api": {
+    "command": [
+      "<redacted-path>",
+      "tools/public_api_snapshot.py"
+    ],
+    "returncode": 0,
+    "stdout": "public API migration baseline passed\n",
+    "stderr": "",
+    "elapsed_seconds": 1.51
+  },
+  "capability": {
+    "command": [
+      "<redacted-path>",
+      "tools/check_capability_maturity.py"
+    ],
+    "returncode": 0,
+    "stdout": "capability maturity matrix passed\n",
+    "stderr": "",
+    "elapsed_seconds": 0.37
+  },
+  "strict_mypy": {
+    "command": [
+      "<redacted-path>",
+      "-m",
+      "mypy",
+      "--strict",
+      "--follow-imports=silent",
+      "flagquantum/runtime/training_state.py",
+      "flagquantum/simulation/statevector/fixed_layer_cpu.py",
+      "tests/unit/test_training_parameter_state.py",
+      "tests/unit/test_statevector_batch_chunking.py"
+    ],
+    "returncode": 0,
+    "stdout": "Success: no issues found in 4 source files\n",
+    "stderr": "",
+    "elapsed_seconds": 9.6
+  },
+  "user_workflow": {
+    "command": [
+      "<redacted-path>",
+      "-m",
+      "examples.local.train_parameters"
+    ],
+    "returncode": 0,
+    "stdout": "Frozen encoder unchanged; readout trained; checkpoint resumed; encoder unfrozen.\n",
+    "stderr": "",
+    "elapsed_seconds": 1.94
+  }
+}
