@@ -1586,3 +1586,13 @@ source-model counts remain separate. Drawer commit `4318c0e4` and notebook/test
 commit `d7cf6d32` are independent. No quantum emitter or numerical kernel changed.
 The next whole-file batch covers Q-0510/Q-0511 and Q-0513/Q-0514, with their
 Q-0509/Q-0512 notebook assets selected as closure-critical direct dependencies.
+
+## Complete polynomial-addition and view batch
+
+G2-FILE-FIELD-POLY-ADD closes notebook assets Q-0526, Q-0528 and Q-0532. The whole
+nine-file group, all 13 original test functions and direct field/codec dependencies
+are disposed in [the audit](FIELD_POLYNOMIAL_FILE_AUDIT.md). Implementation and
+test parents Q-0527/Q-0529/Q-0530/Q-0531/Q-0533/Q-0534 retain explicit count,
+generic executable admission and generic test/serialization conditions. Source
+canonical adjoint order is now native. Source files remain unchanged. Local
+acceptance includes 1,723 concentrated and 94 independent-kernel/CPU/tensor checks.

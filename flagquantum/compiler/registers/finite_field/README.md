@@ -34,3 +34,12 @@ python -m pytest tests/unit/test_finite_field_addition.py -q
 
 The [register package guide](../README.md) provides executable consumer examples,
 source-parity requirements, resource-counting boundaries and the relocation map.
+
+`field_polynomial_addition.py` and `field_polynomial_layout.py` own descending
+coefficient traversal and gate-free word views. Source-specific `adjoint=True`
+reverses coefficient calls while retaining each self-adjoint field XOR child's
+bit order. Simulation's `finite_field_polynomial_addition` owns value callbacks
+and constant field/degree validation. The complete polynomial addition, constant
+addition and view notebooks under `examples/notebooks` demonstrate the normal
+append path. See `docs/development/FIELD_POLYNOMIAL_FILE_AUDIT.md` for the complete
+nine-file mapping, literal inverse ordering and remaining generic boundaries.
