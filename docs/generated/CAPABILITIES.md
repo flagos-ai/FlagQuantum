@@ -407,6 +407,8 @@ This catalog is generated from the machine-validated
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Measure complex one-body fermionic densities on matched full JW, parity or BK registers | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
+| Reconstruct one-body energy while retaining circuit-parameter gradients | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
 | Build a spinful model from explicit undirected edges, including branching and disconnected graphs | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Reuse native encodings and train a bounded determinant pair with an independently verified spectator sign | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Discover independent commuting X/Y/Z symmetries of a native Pauli operator | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
@@ -1546,6 +1548,20 @@ Construct a static periodic ring in native fermionic algebra and reuse the exist
 - **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
 - **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
+
+### Fermionic one-body density measurement
+
+Build Hermitian density observables and assemble their native expectations into a complex PyTorch tensor for one-body energy reconstruction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density.one_body_density_observables`, `flagquantum.algorithms.fermion.density.one_body_density`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `circuit_parameter_gradients_through_measured_tensor_assembly`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_one_body_density.py)
+- **Documentation:** [guide](../../docs/development/FERMION_ONE_BODY_DENSITY.md)
+- **Known boundary:** Exact local CPU expectation workflow on a full unreduced register, gamma[p,q]=<a-dagger[p] a[q]> in physical mode order. The caller supplies a preparation matched to the explicit JW, prefix-parity or Fenwick BK encoding and width; same-width encoding/order mismatches cannot be inferred from unlabelled values. The observable producer is static; tensor assembly preserves existing circuit-parameter gradients without making observable coefficients trainable. Requires n_modes**2 ordered finite real single-element CPU float32/float64 expectations of one dtype; returns complex64/complex128. Scientific acceptance uses complex128 through four modes; float32 assembly has unit evidence only. Conjugate symmetry is imposed by the measurement design, with no eigenvalue clipping, particle-number normalization or noise projection. Measurement/output count is O(n**2), encoded strings add width-dependent costs and runtime statevector storage remains exponential. No two-body density, molecular two-body energy, tapered/ancilla register support, automatic ansatz conversion, sampling/noise, hardware, accelerator, distributed or scalability qualification. Native workflow imports neither OpenFermion nor Cirq.
 
 ### Spinful Fermi-Hubbard explicit graph
 
