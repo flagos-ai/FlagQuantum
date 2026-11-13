@@ -1042,3 +1042,29 @@ Q-0738 is closed with Q-0738.01. Whole-parent counts are 31 accepted, 1249 open
 and 388 active. There are 1194 capability records, comprising 1193 current and
 one historical. Q-0734/Q-0735 and the generic drawing facade retain separate
 scope. The next module is the whole-source Q-0735 test-asset audit.
+
+## G2 complete call-graph source tests
+
+Implementation 6c4d2333 executes all seven original tests and their shuffled
+node-label helper unchanged against source and native test-boundary producers.
+The original function code objects retain every assertion. Native conjunction
+recipes, symbolic graphs, QEC query, generic cost cache, T/CCZ budget, Markdown
+and DOT owners supply the calculated values. Eight whole-table/depth cases and
+a wrong-cost negative control supplement the original root spot checks.
+Six source blobs remain frozen.
+
+Twenty-three focused, 1248 concentrated and 87 independent integration cases
+pass with zero skips. Strict typing of one new file, format, Compiler scope,
+architecture, IR and API checks pass. Existing example/Drawer coverage remains
+100/92 percent, 93 percent combined. Production code changes were unnecessary.
+Test-only source HTML presentation, display-name and explicit zero-bystander
+width-fixture composition are documented in CALL_GRAPH_SOURCE_TESTS.md.
+They do not establish generic foreign graph or liveness admission.
+
+Drawing adds zero gates, work wires or measurements. The synthetic 100T atom
+and numerical X action retain separate accounting. Existing complex-amplitude,
+all-branch cleanup and append regressions pass in the concentrated suite.
+Q-0735 closes with Q-0735.03. Q-0734 remains open for its generic implementation
+and factory scope. Counts are 32 accepted, 1248 open and 387 active, with 1195
+capability records, 1194 current and one historical.
+The next batch audits remaining Q-0734 definitions against existing owners.

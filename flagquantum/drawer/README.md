@@ -410,3 +410,10 @@ and SVG rendering. The synthetic atomic declaration costs 100T and the root
 costs 100*n + 600T. Physical instruction counts are separate.
 [CALL_GRAPH_NOTEBOOK.md](../../docs/development/CALL_GRAPH_NOTEBOOK.md) records
 all seven source cells, native layout/name adaptations and real-kernel evidence.
+
+The full locked call-graph test file runs original assertions through native
+producers in `tests/unit/test_call_graph_source_tests.py`, alongside independent
+source-only executions. Test-boundary HTML presentation and declared-width
+fixture adaptations are documented in
+[CALL_GRAPH_SOURCE_TESTS.md](../../docs/development/CALL_GRAPH_SOURCE_TESTS.md).
+Generic production factory admission retains its separate scope.
