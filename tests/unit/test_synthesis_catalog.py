@@ -242,7 +242,15 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 112
+    assert len(validated) == 114
+    assert (
+        "applications/finance/option_pricing/option_pricing",
+        "examples/synthesis/applications/finance/option_pricing/overview/main.py",
+    ) in validated
+    assert (
+        "tutorials/workshops/finance_workshops/Option_Pricing_Workshop",
+        "examples/synthesis/tutorials/workshops/finance_workshops/option_pricing_workshop/overview/main.py",
+    ) in validated
     assert (
         "applications/benchmarking/randomized_benchmarking/randomized_benchmarking",
         "examples/synthesis/applications/benchmarking/randomized_benchmarking/overview/main.py",
@@ -577,7 +585,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**112/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**114/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

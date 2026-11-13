@@ -84,6 +84,7 @@ Native FlagQuantum programs currently available:
 - [overview](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview/README.md)
 - [overview](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview/README.md)
 - [overview](workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/README.md)
+- [overview](workshops/finance_workshops/option_pricing_workshop/overview/README.md)
 - [overview](workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview/README.md)
 - [overview](workshops/finance_workshops/combi_workshop_equality_constriants_po/overview/README.md)
 - [overview](workshops/grover_workshop/grover_workshop/overview/README.md)

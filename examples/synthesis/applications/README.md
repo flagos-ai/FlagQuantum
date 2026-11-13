@@ -71,6 +71,7 @@ Native FlagQuantum programs currently available:
 - [overview](cybersecurity/link_monitoring/overview/README.md)
 - [overview](cybersecurity/patching_management/patch_min_vertex_cover/overview/README.md)
 - [overview](cybersecurity/whitebox_fuzzing/overview/README.md)
+- [overview](finance/option_pricing/overview/README.md)
 - [overview](finance/portfolio_optimization/overview/README.md)
 - [overview](optimization/integer_linear_programming/overview/README.md)
 - [overview](optimization/max_clique/overview/README.md)
