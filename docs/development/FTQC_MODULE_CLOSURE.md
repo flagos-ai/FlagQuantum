@@ -1156,3 +1156,27 @@ simultaneously live workspace. Added circuit gates, work qubits and measurements
 are zero. Existing numerical execution and separate primitive/model ledgers are
 retained. Foreign admission, renderer distribution, browser interaction, the
 historical QFT expectation and the full-default-suite timeout remain open.
+
+## G2-RESOURCE-WIDTH automatic native bindings
+
+Q-0734.07 connects native atomic resources, owned ComponentCost models, Power
+and OnEach to the recursive width query. Drawer uses these bindings when no
+explicit width provider is supplied. The source comparison covers 26 atomic
+identities, full wrapper caches and 105 full-DOT comparisons across aggregation
+and display-depth settings. Fifteen source Git blobs are verified. See
+[the supported binding scope](RESOURCE_WIDTH_QUERY.md).
+
+Local acceptance passed 119 focused tests, 1,561 concentrated regression tests
+and 87 integration tests with no skips. Strict typing over three files, format,
+scope, architecture, IR and API checks passed. Resource width binding has 100%
+statement and branch coverage. Nine Drawer doctests and the Markdown example
+passed. Existing primitive, amplitude, branch and clean-workspace execution
+regressions passed. Added gates, work qubits and measurements are zero.
+
+The native declaration model retains its local peak and bystander ownership.
+Independent identical OnEach occurrences share one equal-peak connection
+representative. Complete source-cache comparisons include Python zero versus
+Sympy zero dispatch. Unsupported identities fail explicitly. Conjunction,
+controlled-swap, arithmetic and general-register automatic binding remain open
+under Q-0734, alongside the documented foreign, distribution, browser and
+historical test boundaries.
