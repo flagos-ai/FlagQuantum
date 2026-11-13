@@ -3,10 +3,11 @@
 ## Current delivery status
 
 The current checked main baseline is
-`a8fc1fc5494f68a262cb24a293e00c5c53a9874a` on November 13, 2026 (UTC+08:00).
+`b58fc8a01d9395972042abd1aaa507c9769b73da` on November 13, 2026 (UTC+08:00).
 Explicit graph Hubbard assembly merged in #1174 and passed the bounded
-actual-main acceptance recorded below. Its separate experimental capability
-registration is proposed by this documentation change. The preceding checked
+actual-main acceptance recorded below. Experimental registration #1175 and
+three-encoding graph training #1176 are also merged and independently verified
+on their actual main revisions. The graph stage is complete. The preceding checked
 H2 baseline was `b3fa4a78935777bb8e3853752192e9cd47972b2f`; the following
 historical results remain bound to their respective revisions.
 General commuting Pauli discovery, its experimental registration and explicit
@@ -869,11 +870,11 @@ training consumer. Independent occupation matrices and a spectator-sign gradient
 test verify model action; explicit paths/cycles replace existing producers at
 their existing consumers. Weighted/complex edges, flux, coefficient gradients
 and accelerator/distributed qualification remain outside this profile. The
-separate Integration-owned registration proposes an experimental graph entry
+separate Integration-owned registration #1175 added an experimental graph entry
 and generated limitations without promoting existing entries or adding numerical code.
 
 
-### Graph training encoding replacement under review
+### Merged graph training encoding replacement
 
 After graph implementation #1174 and experimental registration #1175, a separate
 Algorithms slice extends the existing example with `--encoding parity` and
@@ -881,5 +882,8 @@ Algorithms slice extends the existing example with `--encoding parity` and
 fixes the same determinant pair in each binary basis. It reuses the constructor,
 encoder, expectation consumer and SGD loop, and checks physical energy, signed
 amplitudes, gradients and spin populations independently. It introduces no
-generic circuit transform, dependency, capability promotion or main-acceptance
-claim for this review branch. Default JW behavior remains supported.
+generic circuit transform, dependency or capability promotion. Default JW
+behavior remains supported. Implementation #1176 merged as
+`b58fc8a01d9395972042abd1aaa507c9769b73da`; its tree matches the accepted
+PR head exactly. The [encoding acceptance record](FERMION_HUBBARD_GRAPH_ENCODINGS.md#merged-main-acceptance)
+binds the complete CI and independent main checks to those revisions.
