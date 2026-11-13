@@ -803,3 +803,37 @@ admission and the historical 600-second default-suite timeout remain open.
 The asset adds zero physical gates, work or measurements. Existing gate-order,
 complex-amplitude, all-branch work restoration and append regressions pass.
 Actual primitive and source-model costs remain in their separate resource table.
+
+
+### Mixed storage register scores (2026-11-13)
+
+Implementation a8729432 shares the existing lane storage classifier with completed
+RegisterLine lifetimes, retaining a default quantum flavor for hand-authored
+records. Core-owned CBit and zero-width quantum components reach the shared
+layout and data exporter. Logical scalar lanes survive width zero. Empty arrays
+have no lanes. Classical integer metadata uses direct layout while its Core
+execution refusal is tested. The existing explicit classical override survives.
+A measured parity/discard graph verifies quantum-to-classical reuse and identical
+physical binding before and after drawing.
+
+31 new cases and 52 focused cases pass. Final regression passes 583 cases in
+19.37 seconds, integration 86 in 25.55 seconds and browser 14 in 20.95 seconds,
+with zero skips and eight/two existing warnings. Strict6/Black/Ruff/scope/
+architecture/IR/API pass. Four owners cover 457/463 statements and 173/180
+branches, 98% combined. Lane classification/heap covers all 87 statements and
+26 branches. The mixed PNG was inspected. Reference code remains unmodified.
+
+Source array, geometry, glyph and callback comparisons pass. Pixel equality
+explicitly adapts boundary text and port-record order. Long overlapping label
+paint order is a recorded open Q-0747 producer gap. General foreign and arbitrary
+serialized-symbol admission remain open. Initial executable classical-integer
+fixture refusal, unadapted pixel-order mismatch and root-signature fixture
+failure are retained with corrected acceptance boundaries. Classical metadata
+execution admission and source reference files are unchanged. Evidence uses
+g2-score-mixed-. Existing all-branch complex-amplitude, parity/discard, work-zero
+and append regressions pass. The measured witness emits H1, measurement1 and
+classical_xor1, while the source MeasureX model records measurement1 and Clifford0.
+Parity has no locked analytical model. Drawing adds zero gates/work/measurements.
+Counts remain 30 closed, 1250 open, 386 active and 1187 capability records.
+The previous full-default600s timeout remains open. Next inspect source port
+traversal and long-label overdraw in the existing record producer.

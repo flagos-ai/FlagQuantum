@@ -250,8 +250,9 @@ The sequence is the drawing order. Independent operations can share a
 dependency generation. This placement describes register connectivity and
 lifetimes, while the compiler still uses the verified effect order for
 execution. The JSON contains port symbols, vertical connectors, and
-horizontal lifetimes. Quantum registers are the default. Supply
-`classical={...}` when exporting a mixed register graph. With
+horizontal lifetimes. Quantum registers are the default for plain layouts.
+Typed metadata automatically preserves classical lifetimes. The explicit
+`classical={...}` option marks additional display identities. With
 `flagquantum[viz]` installed, Matplotlib renders the sequential view from the
 same records and returns a caller-owned figure. Increase the figure width for
 dense scores or long register names.
@@ -329,3 +330,13 @@ accepted through native JSON/HTML export and the browser HTTP form. Run
 `python -m pytest tests/unit/test_drawer_score_asset.py -q` for the offline check.
 REGISTER_SCORE_ANIMATION.md records frozen HTML/browser comparison and the
 separate structured Matplotlib boundary.
+
+
+Mixed component scores accept Core-owned CBit and quantum words, including
+zero-width quantum scalars. Empty arrays have no lanes. Completed lifetimes retain
+the storage flavor selected at allocation, including quantum-to-classical lane
+reuse. Classical integer metadata is supported by direct layout and remains
+outside Core executable admission. COMPONENT_REGISTER_SCORE.md contains a runnable
+measurement example, source comparisons, resource accounts and the open
+long-label port-order gap. Run `python -m pytest tests/unit/test_drawer_mixed_score.py -q`
+in the locked reference environment.

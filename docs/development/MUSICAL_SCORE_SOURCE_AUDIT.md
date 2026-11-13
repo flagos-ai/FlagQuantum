@@ -27,7 +27,7 @@ Existing native records remain the shared representation.
 | Source definition and methods | Existing native owner and disposition |
 | --- | --- |
 | `RegPosition.json_dict` | `RegisterColumn` stores sequential and generation coordinates; `ScorePort` stores exported coordinates. Plain dictionaries provide serialization. |
-| `HLineFlavor.from_qcdtype` | `register_score_data(classical=...)` explicitly marks classical display identities. Automatic foreign dtype inspection and its unknown-type fallback are outside native admission. |
+| `HLineFlavor.from_qcdtype` | The shared register_line_flavor classifies Core storage metadata for allocation and completed lifetimes, including zero-width classical metadata. register_score_data also retains the explicit classical override. Core accepts owned CBit and quantum words; classical integer metadata is layout-only. Foreign dtype fallback remains outside admission. |
 | `HLine.json_dict` | Existing immutable `LaneSegment.json_dict` serializes partial and closed geometry, preserving null endpoints and textual flavor. `RegisterLine` retains semantic lifetimes and `ScoreHorizontalLine` completed rendering data. Native mappings use the standard JSON encoder. Foreign object admission remains separate. See REGISTER_SCORE_RESERVATIONS.md. |
 | `LineManager.__init__`, `new_y` | `RegisterLaneManager` owns the shared minimum-lane heap consumed by `layout_register_score`. Native capacity grows with the graph. The source defaults to 100 lines. Context-aware source `new_y` dispatch is owned by native `new_y_for`, delegating to existing no-argument policies by default. |
 | `LineManager.reserve_n`, `unreserve`, `maybe_reserve` | Native `RegisterLaneManager` now implements ordered reservations and the `maybe_reserve` subclass hook; Core grouping preserves once-per-register predicate cadence and per-element hooks. See REGISTER_SCORE_RESERVATIONS.md for finite-capacity parity and failure adaptations. |
@@ -35,7 +35,7 @@ Existing native records remain the shared representation.
 | `_get_in_vals` | `component_register_score` resolves existing Core SSA values through its `known` mapping and `_ports` iterator. No foreign Soquet map is introduced. |
 | `_update_assign_from_vals` | Native component projection maps THRU outputs to predecessor lifetimes and creates fresh RIGHT display identities. Core validation owns array signatures. Foreign array-value shape diagnostics remain open. |
 | `_binst_assign_line`, nested `_in_vals` | Native component projection consumes the selected call's operands/results, retains THRU identity and retires LEFT lifetimes through the shared layout. |
-| `_cbloq_musical_score`, nested `_f_vals` | `component_register_score` projects the selected Core graph; `layout_register_score` owns dependency generations and output lifetimes. Existing `register_program_score` separately projects verified register constructions. Foreign graph-manager replacement remains open. |
+| `_cbloq_musical_score`, nested `_f_vals` | `component_register_score` projects the selected Core graph; `layout_register_score` owns dependency generations and output lifetimes. Existing `register_program_score` separately projects verified register constructions. Core-owned CBit and zero-width quantum graphs now use the same projection. Classical integer metadata remains direct-layout-only. Foreign graph-manager replacement remains open. |
 | `WireSymbol.draw`, `adjoint`, `json_dict` | Existing `SymbolClass` and attribute dictionaries supply the six glyph classes. `draw_register_score_port` owns drawing. `adjoint_wire_symbol` transforms all six admitted record classes. `port_drawer` replaces local port painting and delegates builtins to the same owner. A custom source subclass with portable fallback JSON matches native Agg pixels. Native label_drawer also replaces connector Text painting with source cadence and half-row coordinates, delegating builtins through draw_register_score_label. Foreign objects and arbitrary serialized names remain open. |
 | `_text_adjoint` | `adjoint_wire_symbol` now preserves the exact source dagger add/remove and `strip` behavior. |
 | `TextBox.draw`, `adjoint` | `draw_register_score_port` draws the round box. `adjoint_wire_symbol` supplies dagger transformation through the existing callback. |
@@ -182,3 +182,13 @@ Strict typing of the added test file, Black, Ruff, Compiler team scope,
 architecture, multi-level IR and protected public API checks pass. All three
 frozen blobs match the fixed inventory. Production owners are unchanged, so this
 batch makes no new production coverage claim.
+
+
+Mixed-storage acceptance is recorded in COMPONENT_REGISTER_SCORE.md at a8729432.
+The full source geometry and callback matrix includes empty arrays and logical
+zero-width lanes. Metadata-only classical integer words retain Core's execution
+refusal. Source-byte identity, ordinary append and all-branch regression pass.
+The Matplotlib pixel comparison explicitly adapts both boundary text and source
+port-record order. Long-label overdraw with unadapted order is a retained Q-0747
+producer-traversal gap. Native callbacks continue to see supplied record order.
+General foreign/serialized-symbol admission remains independently open.

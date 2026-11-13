@@ -33,11 +33,14 @@ do not infer numerical providers from function names or change execution.
 
 ## Ordering and ownership
 
-The selected entry is a finite, one-block typed quantum-call graph admitted by
-Compiler's existing component traversal validation. Positive concrete word
-widths are required; classical, symbolic and zero-width words, conditioned calls
-and parameterized calls are refused. Empty array dimensions retain their existing
-zero-port semantics.
+The selected entry is a finite, one-block typed-call graph admitted by Compiler's
+existing component traversal validation. Quantum words, including scalar width
+zero, and owned classical bits now retain their logical display lanes. Core
+validation owns executable descriptor admission. Symbolic words, conditioned
+calls and parameterized calls remain outside this display profile. Empty array
+dimensions retain their existing zero-port semantics. Classical integer metadata
+can be laid out directly, while Core executable validation still refuses those
+descriptors.
 
 Stored block declaration order seeds layout; the existing register-score owner
 computes display dependency generations and reuses free lanes. Physical component
@@ -100,3 +103,119 @@ The shared heap supports ordered release predicates and per-element subclass
 hooks through initial inputs, fresh RIGHT arrays, consumed LEFT arrays and final
 outputs. See [REGISTER_SCORE_RESERVATIONS.md](REGISTER_SCORE_RESERVATIONS.md) for
 source cadence, finite heap parity, failure handling and foreign protocol limits.
+
+
+## Mixed storage and zero-width follow-up
+
+Implementation `a8729432` completes the native storage-classification chain from
+Core metadata through lane allocation, completed RegisterLine records and score
+export. `register_line_flavor` in the existing lane owner is the shared classifier
+for both interval observations and completed lifetimes. Classical zero-width
+metadata retains its existing storage marker. Every logical scalar element gets
+one lane, including a zero-width quantum word. A zero-length array has no lanes.
+The classifier runs once before each register's element loop, as previously.
+
+The component projection relies on Compiler's verified entry for executable type
+admission. Its redundant positive-quantum-only port guard is removed. The layout
+accepts built-in nonnegative widths, and invalid negative, Boolean and floating
+widths fail before lane mutation. RegisterLine adds a default quantum flavor to
+retain hand-authored five-argument construction. Flavor is keyed by logical
+lifetime, so reusing a geometric lane after quantum consumption retains the new
+classical classification. Plain layouts still synthesize quantum metadata.
+The existing explicit `classical={...}` option can mark additional identities.
+Automatic classical lifetimes keep their classification during export.
+
+```python
+from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+from flagquantum.compiler.registers.component_measurement import measure_x_word_function
+from flagquantum.core.ir.program.register_types import quantum_bit_type
+from flagquantum.core.ir.program.registers import Register, RegisterSide
+from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.drawer.component_score import component_register_score
+from flagquantum.drawer.register_score_data import register_score_data
+
+from flagquantum.core.ir.program.register_types import classical_bit_type
+
+signature = Signature((
+    Register("q", quantum_bit_type(), side=RegisterSide.LEFT),
+    Register("c", classical_bit_type(), side=RegisterSide.RIGHT),
+))
+builder = ComponentProgramBuilder(signature, (measure_x_word_function("measure"),))
+result = builder.call_dict("measure", {"q": builder.inputs["q"]})
+record = builder.finalize({"c": result["c"]})
+data = register_score_data(component_register_score(record))
+assert {line["flavor"] for line in data["hlines"]} == {
+    "HLineFlavor.QUANTUM", "HLineFlavor.CLASSICAL"
+}
+```
+
+The executable mixed witness in `tests/unit/test_drawer_mixed_score.py` composes
+MeasureX, Parity(1) and two Discards, retaining a quantum spectator. The first
+measurement output is a fresh classical lifetime. The parity output reuses a
+released quantum lane with classical flavor. Every line endpoint, connector,
+non-boundary glyph and typed callback event matches the unchanged source. Binding
+before and after drawing is identical. The screenshot of a mixed two-element
+classical array with a quantum bit was inspected, including blue/black lines.
+
+Twenty parameter cases cover scalar, vector, matrix and two empty shapes across
+quantum width zero, classical width zero, CBit and classical width three. Only
+CBit and quantum words run through Core component projection. Classical integer
+cases use direct layout metadata and separately verify Core's existing executable
+refusal. This boundary is tested, including zero-width classical metadata. Native
+port identity and open-boundary dtype spelling use the existing explicit
+comparison adaptation. Complete callback sequences retain scalar and array
+metadata, duplicate THRU calls and independent connector calls. JSON and embedded
+sequential data retain the entire native record. Source fixture construction
+subclasses Bloq only inside tests. Source drawing code remains unmodified.
+
+Four mixed Matplotlib cases match every Agg pixel after explicitly aligning
+source boundary label text and source port-record order to native records.
+The initial unadapted order fails for long overlapping text. This is a recorded
+producer-order gap in Q-0747, beyond the accepted storage classification.
+The renderer continues to paint supplied records in their order. The next batch
+will examine source LeftDangle, instance and RightDangle traversal in the producer.
+The source and native coordinate/glyph mappings already agree. Native record
+order and long-label overdraw have yet to receive direct source acceptance.
+General foreign and arbitrary serialized-symbol admission also remain open.
+
+The new file has 31 cases. The two prior rejection parameters for classical and
+zero-width component graphs are replaced by successful end-to-end coverage.
+Focused verification passes 52 cases in 3.93 seconds. Final concentrated
+verification passes 583 cases in 19.37 seconds with eight existing warnings.
+Independent notebook/CPU/TN integration passes 86 cases in 25.55 seconds with two
+existing warnings. Fixed-style/browser regression passes 14 cases in 20.95
+seconds. No cases skip. Strict typing of six changed Python files, Black, Ruff,
+Compiler scope, architecture, internal IR and protected API checks pass.
+
+Coverage spans 463 statements and 180 branches over the four production owners.
+It covers 457 statements and 173 branches, 98% combined. The shared lane owner
+has all 87 statements and 26 branches covered. Component projection is 96%
+combined, layout 97% and score-data extraction 99%. The remaining conditioned-call
+and incomplete-return branches are reported by the coverage artifact. This batch
+is a single_device_fast_path presentation change. Source blob identity remains
+3863bb66cdba17c4654657e275a8485d94b8da75. Evidence uses g2-score-mixed-.
+
+| Account | Measured mixed witness |
+| --- | --- |
+| Actual primitive instructions | H1, measurement1, classical_xor1 |
+| Discard emission | Zero instructions |
+| Source MeasureX analytical model | Measurement1, T-equivalent0, Clifford0 |
+| Source Parity analytical model | Unavailable in the locked source |
+| Display storage | Two initial quantum lifetimes, two classical lifetimes, maximum three concurrent lanes |
+| Added by drawing | Zero physical gates, work wires or measurements |
+
+The original MeasureX model omits its physical H and remains unchanged. Primitive
+instructions and analytical values are separate. Existing forced-branch complex
+amplitude/density, clean spectator, parity feedback, discard and ordinary append
+regressions pass in the concentrated set. The broader measured MultiAnd witness
+keeps its separately documented forward and erasure counts. The historical
+full-default-suite 600-second timeout remains open. Q-0747 stays open and the
+fixed ledger counts remain 30 closed, 1250 open, 386 active parents and 1187
+capability records.
+
+```bash
+python -m pytest tests/unit/test_drawer_mixed_score.py \
+    tests/unit/test_register_owned_x_measurement.py \
+    tests/unit/test_register_classical_parity.py \
+    tests/unit/test_register_classical_discard.py -q
+```
