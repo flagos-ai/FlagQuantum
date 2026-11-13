@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 95
+    assert len(validated) == 96
+    assert (
+        "tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut",
+        "examples/synthesis/tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/main.py",
+    ) in validated
     assert (
         "applications/cybersecurity/link_monitoring/link_monitoring",
         "examples/synthesis/applications/cybersecurity/link_monitoring/overview/main.py",
@@ -509,7 +513,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**95/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**96/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
