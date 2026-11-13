@@ -29,17 +29,18 @@ concrete remaining work for open files. Reports lead with complete files closed
 and remaining gaps, followed by commits and verification scope. Capability
 subitems continue to index evidence within the fixed 1,280-file inventory.
 
-The latest whole-file batch audits GF2Addition/GF2AddK and the direct field
-converter. Q-0509 and Q-0512 close as complete native notebook assets. Q-0524
-closes as the numerical converter. Implementation Q-0510/Q-0513 and original
-test Q-0511/Q-0514 remain open for source QGF Split/Join count mismatches and
-exact generic admission/autotester/serialization boundaries. See
-[the complete field-addition audit](FIELD_ADDITION_FILE_AUDIT.md) for every
-source definition, original assertion, asset and owner. The prior addition
-batch's Q-0174/Q-0175 boundaries remain recorded in its audit. The next complete
-batch selects GF2Square implementation, original tests and notebook with direct
-linear-map dependencies. Existing source defects retain their accepted evidence.
-The earlier arithmetic-root width queue remains superseded by whole-file batches.
+The latest whole-file batch audits GF2Square and its linear-map/converter
+call chain. Q-0521 closes as a complete native notebook. Q-0522/Q-0523 remain
+open for immutable source matrix/adjoint errors, QGF bookkeeping counts and
+exact generic admission/autotester/serialization boundaries. See the
+[complete field-square audit](FIELD_SQUARE_FILE_AUDIT.md) for every definition,
+original assertion and direct dependency. The previous field-addition batch's
+Q-0509/Q-0512/Q-0524 remain closed, with its other source parents' conditions
+recorded separately. The next batch selects complete GF2PolyAdd/GF2PolyAddK
+implementation, tests and notebooks with the direct polynomial split/join
+files and assets. Existing evidence is reused and source defects retain their
+original witnesses. The earlier arithmetic-root width queue remains superseded
+by whole-file batches.
 
 ## Module closure criteria
 

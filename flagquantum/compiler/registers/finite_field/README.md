@@ -20,6 +20,14 @@ big-endian, self-inverse and require zero work wires and zero measurements.
 `circuit.append(op)` execution. See `docs/development/FIELD_ADDITION_FILE_AUDIT.md`
 for the whole-file mapping and the separate source fixture boundaries.
 
+`linear_resource_model.py` evaluates concrete binary PLU costs independently of
+gate emission. `field_linear.py` retains the symbolic Frobenius bound and exact
+mathematical emitter. Simulation's `finite_field_frobenius` owns numerical
+matrices and field values. The complete `binary_field_square.ipynb` demonstrates
+normal append, free output mapping, explicit binding and inverse restoration.
+See `docs/development/FIELD_SQUARE_FILE_AUDIT.md` for source parity ranges and
+the preserved matrix/adjoint differences.
+
 ```bash
 python -m pytest tests/unit/test_finite_field_addition.py -q
 ```
