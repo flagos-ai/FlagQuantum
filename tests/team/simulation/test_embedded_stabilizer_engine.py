@@ -38,7 +38,7 @@ class _Sampler:
 @pytest.fixture
 def embedded(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> list[_Sampler]:
     (tmp_path / "_embedded_stim_profile.txt").write_text("stim-1.16.0\n")
-    monkeypatch.setattr(engine, "__file__", str(tmp_path / "engine.py"))
+    monkeypatch.setattr(engine, "Path", lambda filename: tmp_path / Path(filename).name)
     prepared: list[_Sampler] = []
 
     def prepare(
@@ -123,7 +123,7 @@ def test_loading_failure_retains_cause_and_never_loads_sdk(
 def test_marker_free_installation_preserves_sdk_route(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
-    monkeypatch.setattr(engine, "__file__", str(tmp_path / "engine.py"))
+    monkeypatch.setattr(engine, "Path", lambda filename: tmp_path / Path(filename).name)
     expected = torch.tensor([[True, False]])
 
     class Stream:
