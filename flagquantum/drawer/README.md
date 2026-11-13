@@ -342,3 +342,13 @@ Source adjacency order and long-label overdraw now pass direct ordered/pixel
 comparisons, with only owned boundary text adapted. General foreign graph and
 arbitrary serialized-symbol admission remain open. Run `python -m pytest tests/unit/test_drawer_mixed_score.py -q`
 in the locked reference environment.
+
+
+Metadata-backed component scores now use declaration names and row-major indices
+in the default symbol path, including comma-space formatting for multidimensional
+indices. Long default titles follow the source eight-characters-plus-two-periods
+rule. Titles use native function names. Existing explicit styles and both symbol
+callbacks retain precedence. Run
+`python -m pytest tests/unit/test_drawer_default_symbols.py -q` in the locked
+reference environment. COMPONENT_REGISTER_SCORE.md records native naming
+adaptations and remaining foreign graph/serialized-symbol boundaries.

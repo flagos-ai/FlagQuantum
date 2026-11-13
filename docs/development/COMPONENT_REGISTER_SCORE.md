@@ -273,3 +273,71 @@ graph/dtype and arbitrary serialized-symbol admission. Core classical integer
 execution and the historical full-default 600-second timeout remain separate
 limits. The next batch should inspect the existing owner boundaries for foreign
 admission without expanding protected schemas or adding a parallel symbol model.
+
+
+## Default register-symbol projection
+
+Implementation `7f980ce1` connects declared Core metadata to the existing default
+symbol path. A caller can obtain register-aware labels with
+`register_score_data(component_register_score(record))` without supplying a
+callback. This follows the locked `Bloq.wire_symbol` default. Local labels use
+the declaration name and row-major index, with comma-space formatting for
+multidimensional indices. LEFT and RIGHT arrows retain their existing painter.
+Default metadata-backed titles longer than ten characters keep eight followed
+by two periods. Titles use the owned native function name, while lifecycle keys
+continue to own record identity. Symbol selection consumes the existing quantum/classical flavor and geometry.
+
+The existing explicit gate style retains control circles, addition markers and
+allocation/release glyphs. Both callback forms retain precedence and invocation
+cadence. Plain layouts without declarations keep their existing display-identity
+labels and title behavior. Default metadata is checked through the existing
+register-group owner before any records are generated. Register groups, default glyphs and lifecycle identities retain their existing
+owners.
+
+```python
+from flagquantum.compiler.registers.arithmetic.addition_component import addition_component_program
+from flagquantum.drawer.component_score import component_register_score
+from flagquantum.drawer.register_score_data import register_score_data
+
+score = component_register_score(addition_component_program(3))
+data = register_score_data(score)
+assert data["soqs"] and data["vlines"]
+```
+
+The new 51-case file directly executes the unmodified upstream default method.
+Reference fixture class names and native function names receive the same title.
+Forty cases cover two storage kinds,
+five shapes and four title lengths, including exact lengths ten and eleven.
+Five cases cover same-named LEFT/RIGHT arrays with distinct opaque lifecycle
+keys. Three compare every Agg pixel with only boundary text adapted and source
+record order retained. Plain-layout and explicit-style compatibility plus both
+malformed metadata directions complete the matrix. All-empty directional source
+graphs raise the existing RightDangle KeyError, while native empty scores remain
+defined. Initial fixture expectations for that exception and a strict-typing
+failure from dynamic replacement keywords were corrected and retained in logs.
+
+Focused verification passes 51 cases in 2.46 seconds. Concentrated regression
+passes 658 in 37.41 seconds with eight existing warnings, independent integration
+86 in 16.74 seconds with two existing warnings, and browser regression 14 in
+28.02 seconds. There are zero skipped tests. Strict typing of the two changed Python files,
+Black, Ruff, Compiler scope, architecture, internal IR and protected API checks
+pass. Four production owners cover 468/474 statements and 175/182 branches,
+98% combined. The score-data owner remains 99%. The old `bc110f91` producer fails
+long-title comparison as an expected negative control. The default matrix-label
+PNG was inspected and retains source overlap behavior.
+
+The reference default method's blob is
+`cef1f2f30bdc849048f50186616b4efce9877d8f` for `_infra/bloq.py`, verified against
+the immutable inventory. The musical-score blob remains
+`3863bb66cdba17c4654657e275a8485d94b8da75`. Evidence uses g2-score-default-.
+Physical gate/operand/feedback, full complex-amplitude, all-branch, clean-work
+and ordinary append regression remains passing. Display adds zero gates, work
+bits or measurements. The existing measured H1/measurement1/classical_xor1
+witness and source MeasureX measurement1/Clifford0/T-equivalent0 model stay
+separate, with source Parity analytical cost unavailable.
+
+This completes the generic default-symbol projection for admitted native
+metadata. Q-0747 remains open for general foreign graph/dtype and arbitrary
+serialized-symbol admission. Native function names and boundary
+labels remain explicit naming adaptations. Source-specific overrides continue
+through the existing caller-supplied style and symbol boundaries.

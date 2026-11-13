@@ -860,3 +860,25 @@ physical gates, work or measurements, and measured/model accounts remain separat
 Evidence uses g2-score-order-. Q-0747 general foreign/serialized-symbol admission
 remains open. Counts remain 30 accepted, 1250 open, 386 active parents and 1187
 capability records. This extends Q-0747.05 without inferring whole-parent closure.
+
+
+### G2 default register-symbol follow-up
+
+Implementation `7f980ce1` reuses existing Core register groups and the Drawer
+symbol selector for default declaration/index labels and source title truncation.
+Native function names own titles. Existing callbacks and gate styles retain
+precedence, while plain metadata-free layouts retain their identity labels.
+Fifty-one new cases execute the unchanged upstream default symbol method,
+including three full Agg comparisons with only boundary text adapted. Frozen
+Bloq and musical-score blobs match the inventory. Empty-source RightDangle
+failure and native empty-score behavior remain explicit.
+
+Local acceptance passes 51 focused, 658 concentrated, 86 independent integration
+and 14 browser cases without skips. Strict two-file typing, format, Compiler
+scope, architecture, IR and public API checks pass. Four owners cover 468/474
+statements and 175/182 branches, 98% combined. Baseline negative control fails
+as expected. Physical instructions, all-branch amplitudes, clean work and append
+regressions pass. Drawing adds zero gates, work or measurements. Measured and
+analytical resource accounts remain separate. Evidence uses g2-score-default-.
+Q-0747 remains open for general foreign/serialized-symbol admission. Counts
+remain 30 accepted, 1250 open, 386 active parents and 1187 capability records.

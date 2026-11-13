@@ -197,3 +197,14 @@ COMPONENT_REGISTER_SCORE.md. Normal upstream finalization is the reference for
 swapped-return fixtures. Arbitrarily mutated foreign edge histories remain
 outside native admission. General foreign/serialized-symbol admission remains
 independently open.
+
+
+Default symbol follow-up `7f980ce1` connects Core declaration names and array
+indices to the existing no-callback path. It follows the unchanged
+`Bloq.wire_symbol` default title truncation and directional text selection.
+Tests supply identical titles as native function names and reference class names,
+without patching source symbol methods. Fifty-one new cases include three exact
+Agg buffers, same-named directional ports, empty arrays and compatibility paths.
+Both source blobs are verified. COMPONENT_REGISTER_SCORE.md records counts,
+resource separation and native naming adaptations. General foreign protocols and
+arbitrary serialized-symbol names remain independently open.
