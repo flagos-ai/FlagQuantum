@@ -197,8 +197,13 @@ document.getElementById('result').textContent = JSON.stringify({
     assert not actual["stale"]
 
 
+@pytest.mark.parametrize("original_asset", [False, True])
 def test_original_multi_and_json_loads_without_record_translation(
-    browser: str, source_script: str, tmp_path: Path, score_server: str
+    browser: str,
+    source_script: str,
+    tmp_path: Path,
+    score_server: str,
+    original_asset: bool,
 ) -> None:
     from qualtran.bloqs.mcmt import MultiAnd
     from qualtran.drawing.musical_score import (
@@ -208,8 +213,14 @@ def test_original_multi_and_json_loads_without_record_translation(
 
     original = get_musical_score_data(MultiAnd((1, 1, 0, 1)).decompose_bloq())
     encoded = json.dumps(original, cls=MusicalScoreEncoder)
-    records = json.loads(encoded)
-    (tmp_path / "original.json").write_text(encoded)
+    if original_asset:
+        raw = (
+            Path(__file__).resolve().parents[1] / "fixtures/register_score/example.json"
+        ).read_bytes()
+    else:
+        raw = encoded.encode()
+    records = json.loads(raw)
+    (tmp_path / "original.json").write_bytes(raw)
     text = next(
         port["symb_attributes"]["text"]
         for port in records["soqs"]

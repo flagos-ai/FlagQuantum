@@ -187,8 +187,13 @@ document.getElementById('result').textContent = JSON.stringify({domains:manualDo
     assert result["initial"] != result["after"]
 
 
+@pytest.mark.parametrize("original_asset", [False, True])
 def test_original_html_load_chain_matches_native_fixed_score(
-    browser: str, source_script: str, tmp_path: Path, score_server: str
+    browser: str,
+    source_script: str,
+    tmp_path: Path,
+    score_server: str,
+    original_asset: bool,
 ) -> None:
     """Relocate the CDN resource and inject only the clock/probe in source HTML."""
     from qualtran.bloqs.mcmt import MultiAnd
@@ -204,7 +209,14 @@ def test_original_html_load_chain_matches_native_fixed_score(
         )
     )
     assert original["max_x"] == 3 and original["max_y"] == 6
-    (tmp_path / "musical_score_example.json").write_text(json.dumps(original))
+    if original_asset:
+        raw = (
+            Path(__file__).resolve().parents[1] / "fixtures/register_score/example.json"
+        ).read_bytes()
+    else:
+        raw = json.dumps(original).encode()
+    original = json.loads(raw)
+    (tmp_path / "musical_score_example.json").write_bytes(raw)
     raw_js = (REFERENCE / "qualtran/drawing/musical_score.js").read_text()
     assert source_script.endswith(raw_js)
     (tmp_path / "musical_score.js").write_text(raw_js)
