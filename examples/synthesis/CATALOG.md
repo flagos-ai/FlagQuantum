@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **102/213**.
+Validated local Notebook workflows: **103/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -362,4 +362,5 @@ Validated local Notebook workflows:
 - [overview](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview/README.md)
 - [overview](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/overview/README.md)
 - [overview](tutorials/workshops/grover_workshop/grover_workshop/overview/README.md)
+- [overview](tutorials/workshops/hhl_workshop/overview/README.md)
 - [overview](tutorials/workshops/oracle_workshop/oracles_workshop/overview/README.md)

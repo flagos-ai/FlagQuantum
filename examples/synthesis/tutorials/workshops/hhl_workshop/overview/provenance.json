@@ -1,0 +1,138 @@
+{
+  "upstream_path": "tutorials/workshops/hhl_workshop/hhl_workshop.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "368bebf746999c36ee6158287593b0e1487c89c66f527d9107162519f38002cd",
+  "git_blob_sha1": "9a83e1effec87ef276cc8bbfd83271273bc2406a",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "ff638c56e28f76fb4451e6606c7a01d9faa33f8f2869099917f2a1a0c14b5872",
+      "native_code_cell": 1,
+      "stage": "Environment setup"
+    },
+    {
+      "index": 6,
+      "sha256": "490cbc6744a31a3064053e3fa2dc6343eccf9e64966bc6ad3b132476d0808ca9",
+      "native_code_cell": 3,
+      "stage": "Original problem,admission and classical solve"
+    },
+    {
+      "index": 10,
+      "sha256": "a6f727259edd637eefe0eb2de76c23ce6d64d615a00b37fc4eafe16f5efe7c70",
+      "native_code_cell": 5,
+      "stage": "Native state-preparation definition"
+    },
+    {
+      "index": 12,
+      "sha256": "f51995dabe5bef5308e09f54cfe4f6264740633fd27598bdd59942226b890fa0",
+      "native_code_cell": 6,
+      "stage": "Synthesize source-sized vector preparation"
+    },
+    {
+      "index": 14,
+      "sha256": "ffea86491ed55bcfaf9fdda23e858569cf7c1d2b6c9b81b945327cc072f88fc4",
+      "native_code_cell": 7,
+      "stage": "Actual prepared complex state"
+    },
+    {
+      "index": 16,
+      "sha256": "151acf1545ee2515403fe2f49e08a255e548e26dba6912a510a3254553f0f8da",
+      "native_code_cell": 8,
+      "stage": "Full preparation comparison"
+    },
+    {
+      "index": 19,
+      "sha256": "7bd7bc9b02e6f85dad78f2c21417f8e97336b09aae4da821a9d95a8785e7e5c9",
+      "native_code_cell": 10,
+      "stage": "Reciprocal table and borrowed-indicator helper"
+    },
+    {
+      "index": 22,
+      "sha256": "ab8aec199a419c1a79c8739f9eaeb4014dbbee1d8710c7ec8d2f3af36dd111c1",
+      "native_code_cell": 12,
+      "stage": "Native HHL root with within/apply and inverse helper"
+    },
+    {
+      "index": 24,
+      "sha256": "075a474b5897b474b46db1bf802c705b1f01f3574429ef53c9ddabd9ba1a4b03",
+      "native_code_cell": 13,
+      "stage": "Fresh matrix exponential and original phase precision"
+    },
+    {
+      "index": 26,
+      "sha256": "50d50ec085286bb70468293a42deedd6d3b2e90ca6f1a7bd58071780ad0a72e8",
+      "native_code_cell": 14,
+      "stage": "Synthesize complete source-sized HHL"
+    },
+    {
+      "index": 28,
+      "sha256": "587ad0142af254b388c8c3c19d5b93bc0fe0c7616a562b0607b8d432f0bd0e33",
+      "native_code_cell": 16,
+      "stage": "Actual synthesized resource inspection"
+    },
+    {
+      "index": 30,
+      "sha256": "02893492dab7b6512f7686aa0b4221f18ba7420397b60b269aec47036e4cc2d7",
+      "native_code_cell": 17,
+      "stage": "Depth report"
+    },
+    {
+      "index": 31,
+      "sha256": "e1e83d7b8033785f6cee66b7b91190b067247403ef8256369c01de4bc361ddf9",
+      "native_code_cell": 18,
+      "stage": "Complete cost report"
+    },
+    {
+      "index": 33,
+      "sha256": "a88e78ee1112f99abb2bdf2b2e48880b8dd5115694bb1598b7fca28b73827599",
+      "native_code_cell": 19,
+      "stage": "Actual complete complex statevector"
+    },
+    {
+      "index": 34,
+      "sha256": "587ad0142af254b388c8c3c19d5b93bc0fe0c7616a562b0607b8d432f0bd0e33",
+      "native_code_cell": 20,
+      "stage": "Named register inspection"
+    },
+    {
+      "index": 35,
+      "sha256": "57c915e585ddaf480dbcc192b5810f582a4ffe202984d64627887f6e148bd8c4",
+      "native_code_cell": 21,
+      "stage": "Retain result with decoded named probabilities"
+    },
+    {
+      "index": 37,
+      "sha256": "79f76d1fa5aed4cc2688a4ec6bec6366845e542f7d2cdf05a96d934a0824b74d",
+      "native_code_cell": 22,
+      "stage": "Named-output interpretation"
+    },
+    {
+      "index": 39,
+      "sha256": "5755de70a2d472f49acee8264a8a8005789687fb0fdc3081f42d0dbdc74bd9eb",
+      "native_code_cell": 24,
+      "stage": "Source postselection,scale and five-decimal rounding"
+    },
+    {
+      "index": 40,
+      "sha256": "5bfc66708e48273aaaa4427c9caf19ae00a728b068fc171425a054a7b813a6aa",
+      "native_code_cell": 25,
+      "stage": "Actual normalized complex solution fidelity"
+    },
+    {
+      "index": 42,
+      "sha256": "d77c6b04790eda9228e5357733ca1d2282e547b9848a0269ff81b91ee4274a69",
+      "native_code_cell": 27,
+      "stage": "Source componentwise phase-removal diagnostic and independent complex metric"
+    },
+    {
+      "index": 43,
+      "sha256": "9fd1194b52cf93791e723646eeb63507b244319313abd03743833be1f136da83",
+      "native_code_cell": 28,
+      "stage": "Actual final classical/HHL comparison plot"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_hhl_workshop_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.hhl_workshop.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/hhl_workshop/overview/walkthrough.ipynb",
+  "scope": "All 21 original source code stages at original 4x4 matrix,b=[1,2,4,3],four-bit fractional QPE and 16 reciprocal amplitudes. Fresh matrix exponential,normalized preparation,classical solve,full complex states,named output probabilities,indicator=1/phase=0 postselection, 1/16 scale, five-decimal rounding,fidelity,source componentwise phase-removal magnitude diagnostic and final plot. Explicitly report phase leakage and magnitude-only limitation. Reuse public native qpe,unitary,select_rotation,within/apply and independent dense Circuit reference. Fixed callback translated into visible native root;no generic QCallable or fresh-output helper support claimed. No compiler, public API, dependency or frozen 216-counterpart change. No source importer,hardware,release,speedup,scalability or optimality claim."
+}

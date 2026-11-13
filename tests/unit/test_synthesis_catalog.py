@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 102
+    assert len(validated) == 103
+    assert (
+        "tutorials/workshops/hhl_workshop/hhl_workshop",
+        "examples/synthesis/tutorials/workshops/hhl_workshop/overview/main.py",
+    ) in validated
     assert (
         "tutorials/workshops/oracle_workshop/oracles_workshop",
         "examples/synthesis/tutorials/workshops/oracle_workshop/oracles_workshop/overview/main.py",
@@ -537,7 +541,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**102/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**103/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
