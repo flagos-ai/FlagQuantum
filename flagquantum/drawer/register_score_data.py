@@ -1,6 +1,6 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 musical-score drawing records and wire symbols.
+# Adapted from Qualtran v0.7.0 musical-score records and Bloq.wire_symbol.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/drawing/musical_score.py
 
 """Translate register layout into musical-score presentation records and JSON."""
@@ -92,7 +92,7 @@ def adjoint_wire_symbol(
 
 
 def _port_symbol(
-    step: RegisterStep, register: str, side: PortSide
+    step: RegisterStep, register: str, side: PortSide, *, text: str | None = None
 ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
     if step.gate == "and" and step.control_values is not None:
         if side == "THRU":
@@ -108,13 +108,14 @@ def _port_symbol(
         return "ModPlus", {}
     if step.name == "qreg.control_h" and (register,) == step.inputs[:1]:
         return "Circle", {"filled": True}
+    label = register if text is None else text
     if side == "LEFT":
-        text = "free" if step.name == "qreg.release" else register
+        text = "free" if step.name == "qreg.release" else label
         return "RarrowTextBox", {"text": text}
     if side == "RIGHT":
-        text = "alloc" if step.name == "qreg.local" else register
+        text = "alloc" if step.name == "qreg.local" else label
         return "LarrowTextBox", {"text": text}
-    return "TextBox", {"text": register}
+    return "TextBox", {"text": label}
 
 
 def _symbol_port_order(
@@ -180,6 +181,9 @@ def register_score_data(
     The two callback forms are mutually exclusive. Grouped metadata is checked
     before callbacks run. Records follow input-boundary, component and
     output-boundary adjacency order, preserving source overdraw semantics.
+    Without a callback, declared register names and row-major indices label
+    ports. Component titles longer than ten characters use eight plus "..".
+    Plain layouts without declarations retain their display-identity labels.
     """
     if wire_symbol is not None and register_wire_symbol is not None:
         raise ValueError("Choose one wire symbol callback form")
@@ -208,7 +212,7 @@ def register_score_data(
             )
             for column in score.columns
         )
-        if register_wire_symbol is not None
+        if register_wire_symbol is not None or wire_symbol is None
         else ()
     )
     symbol_order = _symbol_port_order(score)
@@ -268,6 +272,19 @@ def register_score_data(
                     declaration, index = contexts[key]
                     glyph_record = register_wire_symbol(step, declaration, index)
                     typed_symbols.setdefault(key, glyph_record)
+        default_labels = (
+            {
+                key: declaration.name
+                + (f"[{', '.join(map(str, index))}]" if index else "")
+                for groups in metadata[column_index]
+                for declaration, keys in groups
+                for key, index in zip(keys, declaration.all_idxs(), strict=True)
+            }
+            if wire_symbol is None
+            and register_wire_symbol is None
+            and (step.input_registers or step.output_registers)
+            else {}
+        )
         registers = dict.fromkeys((*step.inputs, *step.outputs))
         for register, lane in zip(registers, column.lanes, strict=True):
             side_of_port: PortSide
@@ -279,7 +296,9 @@ def register_score_data(
                 glyph, attributes = typed_symbols[register]
             else:
                 glyph, attributes = (
-                    _port_symbol(step, register, side_of_port)
+                    _port_symbol(
+                        step, register, side_of_port, text=default_labels.get(register)
+                    )
                     if wire_symbol is None
                     else wire_symbol(step, register, side_of_port)
                 )
@@ -304,6 +323,12 @@ def register_score_data(
                     else step.gate or step.name.removeprefix("qreg.")
                 )
             )
+            if (
+                step.gate is None
+                and (step.input_registers or step.output_registers)
+                and len(title) > 10
+            ):
+                title = title[:8] + ".."
             label: ScoreLabel = {"text": title, "fontsize": 10}
             label_supplier = (
                 register_wire_symbol
