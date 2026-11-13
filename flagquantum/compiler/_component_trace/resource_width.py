@@ -14,6 +14,7 @@ from collections.abc import Callable, MutableMapping
 
 from ..registers.arithmetic.addition_width import addition_width
 from ..registers.arithmetic.arithmetic_declarations import arithmetic_callees
+from ..registers.arithmetic.constant_addition_width import constant_addition_width
 from ..registers.arithmetic.controlled_addition_width import controlled_addition_width
 from ..registers.bits.bitwise_width import BITWISE_WIDTH_OPERATIONS, bitwise_width
 from ..registers.bits.fanout_width import fanout_width
@@ -76,6 +77,8 @@ def query_resource_logical_width(
             return addition_width(node, child)
         if isinstance(node, ArithmeticCall) and node.operation == "controlled_add":
             return controlled_addition_width(node, child)
+        if isinstance(node, ArithmeticCall) and node.operation == "constant_add":
+            return constant_addition_width(node, child)
         if isinstance(node, ConjunctionCall):
             return multi_and_width(node, child)
         if isinstance(node, ControlledSwapCall):
@@ -127,6 +130,7 @@ def query_resource_logical_width(
             *BITWISE_WIDTH_OPERATIONS,
             "add",
             "controlled_add",
+            "constant_add",
         ):
             return tuple(arithmetic_callees(node).items())
         if isinstance(node, ConjunctionCall):
@@ -156,6 +160,8 @@ def _signature_width(node: ResourceCall) -> SymbolicInt:
         return sum(node.widths) + int(node.operation == "controlled_add")
     if isinstance(node, ArithmeticCall) and node.operation in BITWISE_WIDTH_OPERATIONS:
         return node.widths[0] * (2 if node.operation == "xor" else 1)
+    if isinstance(node, ArithmeticCall) and node.operation == "constant_add":
+        return node.widths[0]
     if isinstance(node, ConjunctionCall):
         size = len(node.controls) if isinstance(node.controls, tuple) else node.controls
         if isinstance(size, int) and (type(size) is bool or size < 2):
@@ -186,6 +192,9 @@ def _signature_width(node: ResourceCall) -> SymbolicInt:
                 return width
     if isinstance(node, BookkeepingCall) and node.opcode in {"split", "join"}:
         if type(node.layout) is int:
+            return node.layout
+    if isinstance(node, BookkeepingCall) and node.opcode in {"allocate", "free"}:
+        if type(node.layout) is int and node.layout >= 0:
             return node.layout
     if isinstance(node, BookkeepingCall) and node.opcode == "cast":
         if (
