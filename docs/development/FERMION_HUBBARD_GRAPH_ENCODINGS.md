@@ -77,3 +77,30 @@ without type-error suppressions.
 
 These are focused local review results. Full Linux verification belongs to PR
 CI; this branch does not claim merged-main acceptance or capability promotion.
+
+
+## Merged-main acceptance
+
+Implementation [#1176](https://github.com/flagos-ai/FlagQuantum/pull/1176)
+merged as `b58fc8a01d9395972042abd1aaa507c9769b73da` on November 13, 2026.
+Actual merge tree `eeb11078e7e607f0e3c22ba0016c313e468199b9` exactly matches
+accepted PR head `1ae370f84749ea8ba1aefa60f26d69e434390089`.
+[CI 43392059181](https://github.com/flagos-ai/FlagQuantum/actions/runs/43392059181)
+and [Local GPU Gate 43392059170](https://github.com/flagos-ai/FlagQuantum/actions/runs/43392059170)
+passed for that head: 239 cross-workflow checks succeeded, with three
+conditional skips. Passing repository-wide GPU checks does not qualify this
+CPU-only example for accelerator or distributed support.
+
+The actual merged checkout independently passed 203 related scientific cases,
+five CLI/inventory cases and 37 capability/documentation cases, for 245 tests.
+The Stable Core API baseline, generated documentation consistency and the
+1,423-file local-link/anchor audit passed.
+[Main smoke 43405948359](https://github.com/flagos-ai/FlagQuantum/actions/runs/43405948359)
+passed for the actual merge. Full PR CI applies to the identical merged tree;
+no second full-main CI execution is claimed. The fixed-pair workflow is complete
+at this revision; general ansatz transformation and coefficient gradients remain
+separate requirements.
+
+The subsequent Integration-owned documentation change records three encodings
+in the existing experimental graph capability. Its gradient field continues to
+describe the static constructor, not the composed circuit-angle training loop.
