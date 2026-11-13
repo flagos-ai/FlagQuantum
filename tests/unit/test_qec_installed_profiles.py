@@ -23,6 +23,7 @@ from tools.qec_installed_smoke import (
     PROFILES,
     _embedded_profile,
     _exercise,
+    _exercise_compiled_dem_sampler,
     _exercise_compiled_measurement_sampler,
     _exercise_decoder_records,
     _exercise_matched_detectors,
@@ -61,6 +62,15 @@ def test_public_workflow_in_the_available_source_profile(profile: str) -> None:
     assert (_exercise_shot_file_reading(profile) is not None) == (
         available[0] or _embedded_profile()
     )
+    dem = _exercise_compiled_dem_sampler(profile)
+    assert (dem is not None) == (available[0] or _embedded_profile())
+    if dem is not None:
+        assert dem == {
+            "shots": 64,
+            "error_columns": 1,
+            "exact_replay": True,
+            "file_streams": 3,
+        }
     writing = _exercise_shot_data_writing(profile)
     assert (writing is not None) == (available[0] or _embedded_profile())
     if writing is not None:
