@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 106
+    assert len(validated) == 107
+    assert (
+        "algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver",
+        "examples/synthesis/algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview/main.py",
+    ) in validated
     assert (
         "algorithms/quantum_linear_solvers/hhl/hhl",
         "examples/synthesis/algorithms/quantum_linear_solvers/hhl/overview/main.py",
@@ -553,7 +557,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**106/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**107/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
