@@ -774,3 +774,17 @@ bindings, phase interference and interleaved/concurrent specialization. Width
 256 is capture-only evidence, not a dense-execution capacity claim. Numeric
 annotations remain literal-only. Complete QMCI Notebook acceptance is tracked
 separately in the example inventory.
+
+## Constrained native wide MCX
+
+The unreleased native all-ones `control(array, lambda: X(target))` path can use
+one proven-clean bit when existing lower-depth workspace schedules do not fit.
+Dirty borrowed controls are restored coherently. The15-control hardware-aware
+workflow fits a width ceiling of18 under both all-to-all and line connectivity
+with CX/U leaves. Costs are actual static executable counts, without an
+optimality or hardware performance claim. Exact U conversion preserves scalar
+phase and gradients; line routing validates complete decomposed SWAP witnesses.
+The [workflow](../../examples/synthesis/tutorials/technology_demonstrations/hardware_aware_mcx/overview/README.md)
+uses independent truth-permutation states, nonzero-target XOR and clean-work
+checks. General symbolic controls, arbitrary dirty workspace allocation and
+unsupported named bases remain outside this increment.

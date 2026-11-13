@@ -1624,3 +1624,18 @@ ownership and actual resource budgets still apply. This does not admit bound
 names in numeric annotations, quantum type aliases or parameterized Output
 helpers. Width 256 is validated without allocating a dense state. See the
 [approved scope](../api-changes/FQ-SYNTH-NATIVE-BOUND-ALLOCATION-20261113.md).
+
+## Constrained native wide MCX
+
+The private one-clean fallback extends array-controlled X under tight width
+limits; it does not supply a globally optimal hardware-aware decomposition.
+The source-sized15-control demonstration uses the same exact decomposition in
+both topologies and pays additional CX routing cost on the line. Complete
+three-CX routing SWAP witnesses are preserved through optimization, so some
+otherwise cancellable routing CX gates are deliberately retained. Exact U3
+conversion emits scalar-phase compensation where necessary; it does not expand
+the separately restricted phase-output target profiles. Native original-size
+full-state tests compare Circuit preparation plus an independent basis-index
+permutation, avoiding an exponentially large dense MCX matrix. Larger MCX
+Notebooks, proprietary backend choices and CX-specific optimization need their
+own acceptance and are not credited by this demonstration.

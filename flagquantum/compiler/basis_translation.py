@@ -83,7 +83,7 @@ from ..core.ir import Instruction
 from ..core.operator_schema import canonical_opcode, get_operator_schema
 from ..errors import CompilationError
 from .angle_synthesis import quarter_turn_words
-from .optimization.one_qubit_synthesis import synthesize_one_qubit
+from .optimization.one_qubit_synthesis import _synthesize_u3, synthesize_one_qubit
 
 _HALF = 0.5
 
@@ -673,6 +673,9 @@ def _expand(
         return None
 
     options: list[_Translation] = []
+    u3 = _synthesize_u3(instruction)
+    if u3 is not None and all(can_run(item) for item in u3):
+        options.append(_Translation(u3, (), True))
     if z_rotation is not None and pulse_opcode is not None:
         synthesized = synthesize_one_qubit(
             instruction, z_rotation=z_rotation, pulse_opcode=pulse_opcode

@@ -37,6 +37,7 @@ from .lowering import (
     _copy,
     adjoint_value_candidate,
 )
+from .mcx import one_clean_mcx
 from .pauli_rotation import pauli_rotation_instructions
 from .profile import _fail, _positive_integer, _width, uint_type
 from .register_expansion import expand_register_calls, is_register_function
@@ -124,6 +125,8 @@ def _array_controlled_x(
             )
         if count <= MAX_PHASE_DEGREE:
             return controlled_instruction(Instruction("x", (target,)), controls), 0
+        if workspace_start < n_qubits:
+            return one_clean_mcx(controls, target, workspace_start), 1
         _fail("lowering.workspace", "array control exceeds clean workspace", op)
     flags = tuple(range(workspace_start, workspace_start + flags_width))
     scratch_wires = tuple(

@@ -94,9 +94,11 @@ from .one_qubit_synthesis import (
     _PHASE_EPS,
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
+    _euler_scalar_phase,
     _has_small_component,
     _is_unitary,
     _polar_angle,
+    _synthesize_u3,
 )
 
 #: A 2x2 matrix of Python complex numbers, rows first.
@@ -135,13 +137,8 @@ def _convention_phase(opcode: str, params: Mapping[str, Any]) -> float:
     pins all three against the runtime gate table, which is the authority.
     """
 
-    if opcode == "rz":
-        return -0.5 * float(params["theta"])
-    if opcode == "sx":
-        return 0.25 * math.pi
-    if opcode == "sxdg":
-        return -0.25 * math.pi
-    return 0.0
+    scalar = _euler_scalar_phase(opcode, params)
+    return 0.0 if scalar is None else float(scalar)
 
 
 def _u3_matrix(theta: float, phi: float, lam: float) -> Matrix:
@@ -428,6 +425,16 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
         qubit=instructions[0].wires[0],
         metadata=instructions[0].metadata,
     )
+    if all(item.name == "u3" for item in instructions):
+        # Preserve an already universal U vocabulary through Runtime's normal
+        # optimization; a legal CX/U target must not acquire phase/RZ leaves.
+        converted: list[Instruction] = []
+        for item in replacement:
+            leaves = _synthesize_u3(item)
+            if leaves is None:
+                return None
+            converted.extend(leaves)
+        replacement = tuple(converted)
     if len(replacement) >= len(instructions):
         return None
     if _declines_vocabulary(instructions, replacement):

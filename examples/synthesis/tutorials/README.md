@@ -74,6 +74,7 @@ Native FlagQuantum programs currently available:
 - [overview](technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/README.md)
 - [overview](technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/README.md)
 - [overview](technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/README.md)
+- [overview](technology_demonstrations/hardware_aware_mcx/overview/README.md)
 - [overview](workshops/grover_workshop/grover_workshop/overview/README.md)
 
 ## Additional FlagQuantum teaching examples

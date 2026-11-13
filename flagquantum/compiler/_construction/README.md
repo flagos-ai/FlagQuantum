@@ -1270,3 +1270,25 @@ Run `tests/integration/test_synthesis_native_boolean_xor.py` for basis,
 nonzero-target, coherence, view, ownership and resource-budget checks. The full
 Hidden Shift Notebook is an original-size consumer, including an eight-input
 Boolean marker and independently verified binary reconstruction.
+
+### One-clean wide MCX scheduling
+
+`mcx.one_clean_mcx` is a private fallback for array-controlled X when the existing
+cheaper ladders do not fit and at least one proven-zero bit remains. Each half of
+the controls temporarily borrows the other half through an exact dirty ladder.
+Every control, the target XOR behavior and the clean flag are restored correctly
+for arbitrary coherent inputs; no user bit is assumed zero. Existing larger
+workspace candidates remain unchanged when they fit. This is not a new IR opcode
+or user-facing storage concept.
+
+The shared named-basis search can emit exact U3 forms from the authoritative
+Euler table, retaining the RZ/SX scalar conventions without detaching trainable
+angles. U-only runs retain their vocabulary through Runtime normalization.
+Compiler layout validation also accepts complete, ordered three-CX SWAP
+witnesses, including disjoint ASAP interleavings. Marked routing CX leaves are
+retained until a rewrite can update their complete witness; this may cost
+additional gates. Incomplete, overlapping or mismatched-source witnesses fail.
+Run the Compiler MCX/U3/routing tests and
+`tests/integration/test_synthesis_native_mcx_workspace.py`. The complete
+hardware-aware MCX Notebook retains15 controls, width18, both topologies and
+CX/U-only leaves; all216 existing quantum counterparts remain unchanged.

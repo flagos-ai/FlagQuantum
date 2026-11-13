@@ -409,6 +409,49 @@ def canonical_euler_angles(instruction: Instruction) -> tuple[Any, Any, Any] | N
     return source(instruction)
 
 
+def _euler_scalar_phase(opcode: str, params: Mapping[str, Any]) -> Any:
+    """Return the scalar convention without detaching parameter expressions."""
+    if opcode == "rz":
+        return -0.5 * params["theta"]
+    if opcode == "sx":
+        return _QUARTER_PI
+    if opcode == "sxdg":
+        return -_QUARTER_PI
+    return None
+
+
+def _synthesize_u3(instruction: Instruction) -> tuple[Instruction, ...] | None:
+    """Emit the tabulated U3 form, retaining its absolute scalar phase."""
+    angles = canonical_euler_angles(instruction)
+    if angles is None:
+        return None
+    theta, phi, lam = angles
+    result = Instruction(
+        "u3",
+        instruction.wires,
+        params={"theta": theta, "phi": phi, "lbd": lam},
+        metadata=instruction.metadata,
+    )
+    scalar = _euler_scalar_phase(instruction.name, instruction.params)
+    if scalar is None:
+        return (result,)
+    # P(a) X P(a) X = exp(i*a) I. Keep the scalar as gates because
+    # CircuitIR has no scalar phase field; never detach trainable angles.
+    x = Instruction(
+        "u3",
+        instruction.wires,
+        params={"theta": math.pi, "phi": 0.0, "lbd": math.pi},
+        metadata=instruction.metadata,
+    )
+    phase = Instruction(
+        "u3",
+        instruction.wires,
+        params={"theta": 0.0, "phi": 0.0, "lbd": scalar},
+        metadata=instruction.metadata,
+    )
+    return (result, x, phase, x, phase)
+
+
 def is_diagonal_one_qubit(instruction: Instruction) -> bool:
     """Report whether one instruction is diagonal in the computational basis.
 
