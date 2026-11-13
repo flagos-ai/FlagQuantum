@@ -1389,7 +1389,6 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or matrix_qpe_contract.get("authorization_record")
         != "docs/api-changes/FQ-SYNTH-NATIVE-MATRIX-QPE-20261110.md"
         or not (ROOT / matrix_qpe_contract["authorization_record"]).is_file()
-        or str(inspect.signature(synth.qpe)) != matrix_qpe_contract["signatures"]["qpe"]
     ):
         errors.append("native matrix qpe differs from its authorized scope")
     callback_qpe_contract = json.loads(
@@ -1408,6 +1407,26 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or not (ROOT / callback_qpe_contract["authorization_record"]).is_file()
     ):
         errors.append("native qpe callbacks differ from their authorized scope")
+    power_qpe_contract = json.loads(
+        (ROOT / "contracts/synthesis-native-qpe-power-candidate.json").read_text()
+    )
+    if (
+        power_qpe_contract.get("signatures")
+        != {
+            "qpe": "(callback: 'Callable[[], None] | Callable[[int], None]', phase_result: 'QNum', /) -> 'None'"
+        }
+        or power_qpe_contract.get("callback_ownership_changes") is not False
+        or power_qpe_contract.get("conditional_global_phase_preserved") is not True
+        or power_qpe_contract.get("phase_bits_max") != 8
+        or power_qpe_contract.get("native_effect_operations_max") != 4096
+        or power_qpe_contract.get("implementation_authorized") is not True
+        or power_qpe_contract.get("release_authorized") is not False
+        or power_qpe_contract.get("authorization_record")
+        != "docs/api-changes/FQ-SYNTH-NATIVE-QPE-POWER-20261113.md"
+        or not (ROOT / power_qpe_contract["authorization_record"]).is_file()
+        or str(inspect.signature(synth.qpe)) != power_qpe_contract["signatures"]["qpe"]
+    ):
+        errors.append("native qpe power callbacks differ from their authorized scope")
     rotation_table_contract = json.loads(
         (ROOT / "contracts/synthesis-native-rotation-table-candidate.json").read_text()
     )
