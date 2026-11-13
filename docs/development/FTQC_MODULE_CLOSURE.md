@@ -29,14 +29,17 @@ concrete remaining work for open files. Reports lead with complete files closed
 and remaining gaps, followed by commits and verification scope. Capability
 subitems continue to index evidence within the fixed 1,280-file inventory.
 
-The latest whole-file batch is Q-0173/Q-0174/Q-0175 addition. Its notebook
-asset Q-0173 closes. The implementation Q-0174 and original test file Q-0175
-remain open for the source model/power-inversion discrepancies and the exact
-native admission/autotester/callback boundaries. All definitions and original
-assertions have an explicit disposition. The next batch selects complete
-GF2Addition/GF2AddK implementation/test files and their notebook assets,
-reusing the existing field codecs and emitters. The earlier queue of individual
-arithmetic-root width additions remains superseded by whole-file batches.
+The latest whole-file batch audits GF2Addition/GF2AddK and the direct field
+converter. Q-0509 and Q-0512 close as complete native notebook assets. Q-0524
+closes as the numerical converter. Implementation Q-0510/Q-0513 and original
+test Q-0511/Q-0514 remain open for source QGF Split/Join count mismatches and
+exact generic admission/autotester/serialization boundaries. See
+[the complete field-addition audit](FIELD_ADDITION_FILE_AUDIT.md) for every
+source definition, original assertion, asset and owner. The prior addition
+batch's Q-0174/Q-0175 boundaries remain recorded in its audit. The next complete
+batch selects GF2Square implementation, original tests and notebook with direct
+linear-map dependencies. Existing source defects retain their accepted evidence.
+The earlier arithmetic-root width queue remains superseded by whole-file batches.
 
 ## Module closure criteria
 
