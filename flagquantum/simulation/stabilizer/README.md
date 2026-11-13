@@ -93,7 +93,7 @@ is a numerical primitive. It also must not import Runtime, and it does not read
 lowered `MeasurementNode`s, because reconciling a caller's requested qubits with
 an already-lowered output request is a Runtime decision.
 
-## Why the engine is an external distribution
+## Why the engine reuses Stim
 
 The dependency policy requires a new production dependency to record a
 documented need, an ownership boundary, a licence and supply-chain review, a
@@ -415,3 +415,26 @@ builds and installed native acceptance passed, including an environment without
 the Stim Python package. See the implementation acceptance record in
 `docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
 capability makes no performance, threshold, full-parity or scalability claim.
+
+## Embedded noiseless execution candidate
+
+The candidate changes only the internal implementation of `sample_stabilizer`.
+After existing input, seed and Clifford validation, an embedded build uses the
+existing private `_EmbeddedSampler`, with a terminal measurement in requested
+wire order. The returned CPU `int64` tensor owns its storage. The genuine build
+marker selects this route; a load or link failure retains its cause in
+`StabilizerDependencyError` and does not select the SDK instead. Marker-free
+installations retain the SDK route. Positioned-noise execution and Runtime
+metadata are unchanged. No Runtime orchestration belongs in this package.
+
+Fresh macOS arm64 offline wheel/sdist and installed acceptance passed: 82 tests
+in the no-SDK profile and 246 each with the SDK and with the embedded marker
+absent. Real embedded preparation/sampling and the existing 16,384-wire
+regression were verified separately from replacement fakes. Focused tests passed
+208 cases; complete smoke/unit passed 20,567, with 296 selected-node skips and
+36 additional collection skips. Integration completed all 12,274 selected nodes
+across disjoint groups: 12,028 passed and 246 skipped. Historical failed attempts
+and approved recovery evidence are retained; this was not one uninterrupted run.
+Start with `tests/team/simulation/test_embedded_stabilizer_engine.py` and the
+public workflow in `examples/stabilizer_sampling.py`. Final-head publication and
+actual-main acceptance remain separate gates; no maturity or parity is promoted.

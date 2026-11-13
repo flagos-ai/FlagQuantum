@@ -1144,3 +1144,24 @@ See [the approved implementation proposal](../development/QEC_COMPILED_DEM_SAMPL
 Full upstream DEM text/REPEAT compatibility, categorical native sampling,
 Pauli/Tableau/FlipSimulator algebra, mixed non-Clifford routing and platform
 expansion remain explicit gaps. No maturity or full-parity claim is promoted.
+
+## Recovered noiseless stabilizer implementation candidate — 2026-11-13
+
+The approved slice replaces the implementation behind existing
+`sample_stabilizer`, retaining the SDK route and the public execution contract.
+Scope is the initial 11 paths plus two approved SDK-test isolation repairs, for
+13 paths total. It reuses the existing 98 upstream files and 37 translation units
+without a dependency, API, CI or runner change.
+
+The original temporary artifacts were unavailable and were not reused as proof.
+Fresh qualification now passed 208 focused tests, one offline macOS arm64
+wheel/sdist build, and three actual installed profiles: no-SDK embedded 82 tests,
+embedded with SDK 246, marker-free SDK 246. Real native calls and the existing
+16,384-wire regression are independent of replacement-fake evidence. Complete
+smoke/unit passed 20,567 tests, with 296 selected-node skips plus 36 collection
+skips. Integration completed all 12,274 unique selected nodes across disjoint
+groups: 12,028 passed and 246 skipped. Two failed test attempts, subsequent
+startup errors and approved recoveries remain retained; no uninterrupted-run
+claim is made. Final-head gates, PR publication and actual-main acceptance are
+separate delivery steps. Merge requires separate approval. No maturity,
+performance, scalability or full Stim parity claim follows.

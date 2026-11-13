@@ -10,7 +10,8 @@ Run it from the repository root:
 
     python -m examples.stabilizer_sampling
 
-The engine needs the optional `stim` distribution:
+An embedded build supplies the noiseless engine without the Stim Python SDK.
+A marker-free build keeps the optional SDK route:
 
     pip install 'flagquantum[stim]'
 """
@@ -72,3 +73,13 @@ try:
     sample_stabilizer(fq.Circuit(2).t(0), shots=4, seed=1)
 except CapabilityError as error:
     print("refused a non-Clifford gate:", str(error).split(";")[0])
+
+# The same numerical boundary serves the public execution workflow.
+routed = fq.run(
+    fq.Circuit(3).x(1),
+    options=fq.ExecutionOptions(mode="stabilizer", shots=8, seed=7),
+    outputs=fq.samples(),
+)
+assert routed.samples is not None
+assert routed.samples.tolist() == [[[0, 1, 0]] * 8]
+print("execution path:", routed.runtime["execution_path"])

@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from importlib import import_module
 from itertools import product
+from pathlib import Path
 from types import ModuleType
 from typing import Any
 
@@ -336,6 +337,25 @@ def sample_stabilizer(
     ir, request = _sampling_request(program, qubits=qubits, shots=shots)
     validated_seed = _validate_seed(seed)
     instructions = _clifford_instructions(ir)
+    assert request.shots is not None
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        try:
+            from ._embedded_sampler import _EmbeddedSampler
+
+            operations: tuple[_EngineOperation, ...] = tuple(
+                (gate, wires, None) for gate, wires in instructions
+            ) + (
+                ("M", request.wires, None),
+            )
+            embedded = _EmbeddedSampler(operations, validated_seed, len(request.wires))
+            return embedded.sample(request.shots, bit_packed=False).to(
+                dtype=torch.int64
+            )
+        except (ImportError, OSError) as error:
+            raise StabilizerDependencyError(
+                "the embedded stabilizer engine could not be loaded; "
+                "use a compatible FlagQuantum embedded build"
+            ) from error
     circuit = _engine_circuit(instructions, request.wires)
     sampler = circuit.compile_sampler(seed=validated_seed)
     samples = sampler.sample(shots=request.shots)

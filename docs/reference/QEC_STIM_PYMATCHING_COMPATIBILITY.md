@@ -73,3 +73,21 @@ Actual failed/cancelled jobs and their logs remain part of delivery history.
 Final-head CI/GPU, reviews and actual-main artifact acceptance must finish before
 this candidate is called delivered. Historical receipts validate their original
 SHA and cannot certify a newly changed package automatically.
+
+## Noiseless stabilizer execution candidate
+
+The recovered internal replacement uses the existing embedded Stim source
+closure for noiseless `sample_stabilizer` execution. It adds no Python SDK
+requirement to embedded installations and preserves the SDK implementation in
+marker-free installations. The candidate adds no QEC API, decoder behavior,
+format, general-feedback support or full Stim compatibility claim.
+
+Fresh installed execution passed on macOS arm64: no-SDK embedded 82 tests,
+embedded with SDK 246, and marker-free SDK 246. Actual embedded preparation and
+sampling calls, owned CPU integer results, requested wire ordering, seeded
+repeatability and the 16,384-wire regression were checked independently from
+replacement fakes. Complete smoke/unit passed 20,567 tests (296 selected-node
+skips and 36 collection skips); disjoint integration groups completed all
+12,274 selected nodes (12,028 passed, 246 skipped). Failed attempts and approved
+recoveries remain retained. These results qualify this bounded local candidate;
+final-head CI and actual-main acceptance remain separate delivery gates.
