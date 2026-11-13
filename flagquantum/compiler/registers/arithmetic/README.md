@@ -22,3 +22,12 @@ compose typed CNOT/AND calls over the same logical sequence as the gate emitter.
 Physical binding retains the existing append workflow; explicit numerical
 suppliers can contract large closed graphs without a full addition matrix.
 Run `tests/unit/test_addition_component.py` for the complete contributor scenario.
+
+`addition_width.py` binds existing Add resource identities to connection widths
+using `addition_components`. Each logical AND creates a carry, and its adjoint
+consumes it. Both words remain caller-owned. The native query supports source
+symbolic fallback and Always wrappers. Run
+`python -m pytest tests/unit/test_addition_resource_width.py -q` for complete
+source cache/order, bystander peaks and DOT width-table acceptance.
+[ADDITION_RESOURCE_WIDTH.md](../../../../docs/development/ADDITION_RESOURCE_WIDTH.md)
+records lifetime ownership, dtype normalization and separate gate/model counts.

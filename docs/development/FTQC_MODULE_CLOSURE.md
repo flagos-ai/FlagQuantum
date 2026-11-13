@@ -1276,3 +1276,43 @@ and append. Three-bit actual XOR/constant-3/NOT emit CX3/X2/X3 respectively,
 with model Clifford3/2/3 recorded separately. Added physical gates, work and
 measurements are zero. Controlled arithmetic, addition and general register
 program width bindings remain open under Q-0734.
+
+## G2-ADD-WIDTH carry-owning Add resource connections
+
+Q-0734.11 adds automatic logical width for Add and its existing Always identity.
+The owner reuses `addition_components` from the executable emitter and existing
+factorized component program. AND creates each carry and AND adjoint consumes
+it. Both big-endian input/output words remain caller-owned. The existing
+scheduler accounts for child peaks, live carries and idle words. The source
+Cirq import's one-bit atomic views and reverse-direction word views are retained.
+Sympy integers and symbolic dimensions retain source fallback, including
+zero-multiplicity callees. Gate declarations retain independent ownership.
+
+Complete source cache values and insertion order cover positive operand pairs
+through width five, width three/eight, mixed and symbolic dimensions, three
+encodings, both directions and Always. Nine different encoding pairs at widths
+two/three are covered in each direction. Seeded split/join, AND/erase and CNOT
+peaks verify bystanders. There are 150 full-DOT comparisons. Three frozen Git
+blobs are verified. Native width-only bookkeeping identities normalize source
+dtypes. Equal-width mixed-dtype cache identity remains open. Concrete zero
+input RuntimeError maps to native admission ValueError, and reversed concrete
+widths are rejected before querying children. See
+[the interface and evidence](ADDITION_RESOURCE_WIDTH.md).
+
+Concentrated execution regression retains source primitive/feedback order,
+full complex amplitudes, all small measurement branches, entangled spectators,
+clean physical work and append. Add(2,3) in either direction emits CX20/H6/T4/
+Tdg4/S2/measurement2/conditionalCZ2/reset2, with work2 and two classical slots.
+The source model is separately AND2/Clifford11/measurement2 and width7.
+One-bit Add's original Clifford -3 declaration differs from its one-CNOT stream.
+Unequal-width Add shares the original equal-width formula. These upstream
+formula boundaries are explicit. This width binding adds zero physical gates,
+work and measurements. Controlled arithmetic, connected constant-add lifetimes
+and general register-program bindings remain open under Q-0734.
+
+Local acceptance passed 467 focused tests, 3,731 concentrated regression tests
+and 87 integration tests without skips. Strict typing covers four changed
+Python files. Black, Ruff, scope, architecture, internal IR, protected API,
+nine Drawer doctests and the Markdown example pass. The new owner has 53
+statements and 30 branches, all covered. The shared width dispatcher is fully
+covered. Combined measured coverage over nine modules is 99 percent.
