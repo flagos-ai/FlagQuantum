@@ -43,3 +43,13 @@ and constant field/degree validation. The complete polynomial addition, constant
 addition and view notebooks under `examples/notebooks` demonstrate the normal
 append path. See `docs/development/FIELD_POLYNOMIAL_FILE_AUDIT.md` for the complete
 nine-file mapping, literal inverse ordering and remaining generic boundaries.
+
+`field_multiplication.py` owns source-ordered quadratic multiplication and its
+arbitrary-target `plus_equal_prod=True` variant, alongside the existing exact
+Karatsuba owner. `multiplication_model.py` owns recursive polynomial declarations
+and independent field gate-category models. Numerical products, monomial values,
+coefficient arrays and reduction matrices live in Simulation's
+`finite_field_multiplication`. The complete `binary_field_multiplication.ipynb`
+retains all nine source examples and uses the ordinary append protocol. See
+`docs/development/FIELD_MULTIPLICATION_FILE_AUDIT.md` for the complete definition
+map, immutable-source adjoint witness and retained generic boundaries.
