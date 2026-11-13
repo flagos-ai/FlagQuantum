@@ -121,13 +121,6 @@ Do not edit this generated region. Capability boundaries come from
 | Populated OpenFermion molecular data input | `experimental` | One-way import of already populated OpenFermion 1.7.1 MolecularData objects only. Real dense closed-shell spatial integrals, multiplicity one and lowest-orbital reference occupations only. The adapter reads cached integral fields without implicit loading, runs no electronic-structure calculation and retains no upstream arrays. The default budget is 32 spatial orbitals before integral copies; dense O(n^4) storage remains required. No file discovery, writing, complex/open-shell or spin-orbital input, geometry/integral gradients, amplitudes, density matrices or full upstream compatibility. OpenFermion and its transitive dependencies are separately installed only for this optional boundary; native chemistry does not require OpenFermion or Cirq. No production or scalability claim. |
 | OpenFermion interaction operator input | `experimental` | One-way import of actual OpenFermion 1.7.1 InteractionOperator objects with a finite scalar constant and dense numeric real or complex NumPy arrays of matching (n,n) and (n,n,n,n) shapes, including n=0. Two-body values multiply a-dagger[p] a-dagger[q] a[r] a[s] directly; no half factor, integral permutation or Hermiticity assumption is applied. This is spin-orbital operator input, not spatial molecular integrals. Native ladder algebra owns signs and canonicalization. Validation reads O(n^4) entries; native storage follows nonzero canonical terms, and external arrays are not retained. Consumer register width is explicit. No reverse tensor export, coefficient gradients, upstream execution, circuits or complete upstream compatibility. Hermitian observable validation and circuit-angle training remain native consumer responsibilities. OpenFermion and its transitive packages are separately installed only at this optional boundary; native execution requires neither OpenFermion nor Cirq. No production, accelerator or scalability claim. |
 
-Experimental Torch-FL FP64 RY/CX statevector training has a bounded
-[development experiment](../../benchmarks/torch_fl_fp64/README.md). It uses
-explicit vendor boxing plus cataloged experimental Triton kernels; it does not
-establish default FlagGems complex128 support, other circuit families,
-torch.func, compiled/exported execution, multi-stream or distributed support.
-Recorded performance predates PR integration and is not release certification.
-
 ## Validated public performance claims
 
 | Claim | Maturity and scope | Artifact-derived result | Recorded environment | Evidence identity |
@@ -1603,3 +1596,10 @@ integral storage and is not a scalability claim. Differentiable tensors must
 remain outside the static `MolecularProblem` snapshot path. See
 [the stage contract](../development/FERMION_ORBITAL_GRADIENTS.md) and run
 `python -m examples.algorithms.fermion_orbital_rotation`.
+
+Experimental Torch-FL FP64 RY/CX statevector training has a bounded
+[development experiment](../../benchmarks/torch_fl_fp64/README.md). It uses
+explicit vendor boxing plus cataloged experimental Triton kernels; it does not
+establish default FlagGems complex128 support, other circuit families,
+torch.func, compiled/exported execution, multi-stream or distributed support.
+Recorded performance predates PR integration and is not release certification.
