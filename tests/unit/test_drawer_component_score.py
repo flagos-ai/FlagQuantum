@@ -186,21 +186,9 @@ def test_renderers_use_core_projection_without_quantum_or_tensor_execution(
         plt.close(figure)
 
 
-@pytest.mark.parametrize("kind", ["zero", "classical", "unknown", "physical"])
+@pytest.mark.parametrize("kind", ["unknown", "physical"])
 def test_outside_display_profile_fails_before_partial_rendering(kind: str) -> None:
-    if kind == "zero":
-        record, _ = fixture(0, ())
-    elif kind == "classical":
-        from flagquantum.core.ir.program.register_types import classical_bit_type
-        from flagquantum.core.ir.program.registers import Register
-        from tests.unit.test_program_classical_registers import identity
-
-        signature = Signature((Register("c", classical_bit_type()),))
-        leaf = identity("identity", tuple(signature))
-        builder = ComponentProgramBuilder(signature, (leaf,))
-        record = builder.finalize(builder.call_dict("identity", builder.inputs))
-    else:
-        record = addition_component_program(2)
+    record = addition_component_program(2)
     if kind == "physical":
         from flagquantum.core.ir import CircuitIR, Instruction
         from flagquantum.core.ir.program import circuit_to_program

@@ -224,7 +224,9 @@ def register_score_data(
     hlines: list[ScoreHorizontalLine] = []
     connectors: list[ScoreVerticalLine] = []
     for line in score.lines:
-        is_classical = line.register in classical_names
+        is_classical = (
+            line.register in classical_names or line.flavor == "HLineFlavor.CLASSICAL"
+        )
         kind = "CLASSICAL" if is_classical else "QUANTUM"
         hlines.append(
             {

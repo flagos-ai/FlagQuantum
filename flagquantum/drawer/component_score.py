@@ -20,12 +20,6 @@ def _ports(
 ) -> Iterator[tuple[Register, tuple[int, ...], ValueRef]]:
     identities = iter(values)
     for register in registers:
-        if (
-            not isinstance(register.bitsize, int)
-            or register.bitsize < 1
-            or register.dtype.classical_bits
-        ):
-            raise ValueError("component scores require positive concrete quantum words")
         for index in register.all_idxs():
             yield register, index, next(identities)
 
@@ -54,9 +48,10 @@ def component_register_score(
     per allocated or released element. Boundary locations are input and output.
 
     No decomposition, primitive execution, tensor supply or backend selection
-    occurs. Finite one-block logical quantum graphs are admitted by the existing
-    component traversal boundary. Classical/zero-width/symbolic words and
-    conditioned or parameterized calls are refused rather than drawn incompletely.
+    occurs. Finite one-block logical graphs with quantum and classical words are
+    admitted by the existing component traversal boundary. Zero-width scalar
+    words retain a logical lane, and empty arrays have no elements. Symbolic
+    words and conditioned or parameterized calls are refused.
     """
     root = _call_entry(record, entry)
     assert root.registers is not None

@@ -10,10 +10,20 @@ from dataclasses import dataclass, replace
 from heapq import heappop, heappush
 from typing import Literal, TypeAlias
 
-from ..core.ir.program.registers import Register
+from ..core.ir.program.registers import Register, RegisterType
 
 LaneLocation: TypeAlias = int | Literal["input", "output"]
 ReleasePredicate: TypeAlias = Callable[[LaneLocation, Register], bool]
+
+
+def register_line_flavor(
+    dtype: RegisterType,
+) -> Literal["HLineFlavor.QUANTUM", "HLineFlavor.CLASSICAL"]:
+    """Classify native storage metadata, preserving zero-width classical words."""
+    classical = dtype.num_qubits == 0 and (
+        dtype.num_cbits != 0 or ("storage", "classical") in dtype.parameters
+    )
+    return "HLineFlavor.CLASSICAL" if classical else "HLineFlavor.QUANTUM"
 
 
 @dataclass(frozen=True, order=True)
@@ -128,10 +138,7 @@ class RegisterLaneManager:
     def new(self, location: LaneLocation, register: Register) -> tuple[int, ...]:
         """Open each element at seq_x before invoking its allocation hook."""
         self.unreserve(location, register)
-        classical = register.dtype.num_qubits == 0 and (
-            register.dtype.num_cbits != 0
-            or ("storage", "classical") in register.dtype.parameters
-        )
+        flavor = register_line_flavor(register.dtype)
         lanes = []
         for index in register.all_idxs():
             lane = self.new_y_for(location, register, index or None)
@@ -140,9 +147,7 @@ class RegisterLaneManager:
                 LaneSegment(
                     lane,
                     self.seq_x,
-                    flavor=(
-                        "HLineFlavor.CLASSICAL" if classical else "HLineFlavor.QUANTUM"
-                    ),
+                    flavor=flavor,
                 )
             )
             self.maybe_reserve(location, register, index)

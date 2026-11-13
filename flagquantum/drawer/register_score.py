@@ -11,6 +11,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from graphlib import TopologicalSorter
 from math import prod
+from typing import Literal
 
 from ..compiler._construction.register_expansion import expand_register_calls
 from ..compiler._construction.register_profile import (
@@ -21,7 +22,7 @@ from ..compiler._hybrid.model import HybridProgram, ValueId
 from ..compiler.registers.control.multi_control import multi_and_stages
 from ..core.ir.program.register_types import opaque_register_type
 from ..core.ir.program.registers import Register, RegisterSide
-from .register_lanes import RegisterLaneManager
+from .register_lanes import RegisterLaneManager, register_line_flavor
 
 
 @dataclass(frozen=True)
@@ -62,6 +63,9 @@ class RegisterLine:
     lane: int
     start: int
     end: int
+    flavor: Literal["HLineFlavor.QUANTUM", "HLineFlavor.CLASSICAL"] = (
+        "HLineFlavor.QUANTUM"
+    )
 
 
 @dataclass(frozen=True)
@@ -140,8 +144,8 @@ def layout_register_score(
     Plain layouts synthesize scalar opaque metadata from their declared widths.
     Explicit outputs preserve final signature order for release callbacks.
     """
-    if any(type(width) is not int or width < 1 for width in widths.values()):
-        raise ValueError("Register widths must be positive integers")
+    if any(type(width) is not int or width < 0 for width in widths.values()):
+        raise ValueError("Register widths must be nonnegative integers")
     active = dict.fromkeys(inputs, -1)
     if len(active) != len(inputs) or active.keys() - widths.keys():
         raise ValueError("Initial register identities must be unique and declared")
@@ -188,9 +192,11 @@ def layout_register_score(
     manager = RegisterLaneManager() if lane_manager is None else lane_manager
     manager.seq_x = -1
     live: dict[str, tuple[int, int]] = {}
+    flavors: dict[str, Literal["HLineFlavor.QUANTUM", "HLineFlavor.CLASSICAL"]] = {}
     for register, keys in initial:
         for key, lane in zip(keys, manager.new("input", register), strict=True):
             live[key] = (lane, -1)
+            flavors[key] = register_line_flavor(register.dtype)
     columns = []
     lines = []
     for sequence, index in enumerate(key for key in generations if key >= 0):
@@ -204,6 +210,7 @@ def layout_register_score(
                 continue
             for key, lane in zip(keys, manager.new(index, register), strict=True):
                 live[key] = (lane, sequence)
+                flavors[key] = register_line_flavor(register.dtype)
         lanes = tuple(
             dict.fromkeys(live[key][0] for key in (*step.inputs, *step.outputs))
         )
@@ -213,7 +220,11 @@ def layout_register_score(
                 released = []
                 for key in keys:
                     lane, start = live.pop(key)
-                    lines.append(RegisterLine(key, widths[key], lane, start, sequence))
+                    lines.append(
+                        RegisterLine(
+                            key, widths[key], lane, start, sequence, flavors[key]
+                        )
+                    )
                     released.append(lane)
                 manager.free(index, register, tuple(released))
 
@@ -222,7 +233,9 @@ def layout_register_score(
         released = []
         for key in keys:
             lane, start = live.pop(key)
-            lines.append(RegisterLine(key, widths[key], lane, start, len(steps)))
+            lines.append(
+                RegisterLine(key, widths[key], lane, start, len(steps), flavors[key])
+            )
             released.append(lane)
         manager.free("output", register, tuple(released))
     lines.sort(key=lambda line: (line.lane, line.start))
