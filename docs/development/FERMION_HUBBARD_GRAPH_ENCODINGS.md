@@ -40,3 +40,40 @@ dependency, Stable Core export, capability registration, solver, automatic
 sector selection, tapering, coefficient gradient or scalability claim. Existing
 graph registration remains historical; any metadata expansion is a separate
 Integration-owned change after this implementation's acceptance.
+
+
+## Contributor workflow
+
+```bash
+python -m examples.algorithms.fermion_hubbard_graph
+python -m examples.algorithms.fermion_hubbard_graph --encoding parity
+python -m examples.algorithms.fermion_hubbard_graph --encoding bravyi_kitaev
+python -m pytest tests/integration/test_fermion_hubbard_graph.py -q
+```
+
+Each CLI should start at 0.0339385184 and reach -1.5997840500 after 40 SGD
+steps, with alpha/beta populations 1/1 and finite-difference residual below
+1e-9. The eight-qubit register is unreduced. To change the pair preparation,
+first check all 256 amplitudes and the two occupied amplitudes' signed angle
+derivatives, then rerun
+the analytic energy/update tests and isolated CLIs. Keep explicit preparation
+inside the example; the encoder continues to own the authoritative binary
+basis semantics and the runtime owns execution/autograd.
+
+## Local review evidence
+
+Scope commit `f71be4f8f` preceded implementation. The final branch passed 203
+related Hubbard/encoding scientific cases, including 26 graph integration
+cases, five selected CLI/inventory cases, and 37 capability/documentation cases.
+The graph cases cover all three encodings, signed full-state amplitudes,
+analytic and finite-difference gradients, optimizer updates, spin populations,
+path/cycle producer replacement and three isolated CLI processes.
+
+Strict mypy on the example and graph integration tests, Ruff and Black on all
+three changed Python files, the Stable Core API baseline, generated docs
+consistency, Algorithms scope, whitespace and a 1,423-file local-link/anchor
+audit passed. Invalid runtime inputs are exercised through parametrized tests
+without type-error suppressions.
+
+These are focused local review results. Full Linux verification belongs to PR
+CI; this branch does not claim merged-main acceptance or capability promotion.

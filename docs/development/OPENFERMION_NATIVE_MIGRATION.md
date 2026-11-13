@@ -871,3 +871,15 @@ their existing consumers. Weighted/complex edges, flux, coefficient gradients
 and accelerator/distributed qualification remain outside this profile. The
 separate Integration-owned registration proposes an experimental graph entry
 and generated limitations without promoting existing entries or adding numerical code.
+
+
+### Graph training encoding replacement under review
+
+After graph implementation #1174 and experimental registration #1175, a separate
+Algorithms slice extends the existing example with `--encoding parity` and
+`--encoding bravyi_kitaev`. The [scope](FERMION_HUBBARD_GRAPH_ENCODINGS.md)
+fixes the same determinant pair in each binary basis. It reuses the constructor,
+encoder, expectation consumer and SGD loop, and checks physical energy, signed
+amplitudes, gradients and spin populations independently. It introduces no
+generic circuit transform, dependency, capability promotion or main-acceptance
+claim for this review branch. Default JW behavior remains supported.

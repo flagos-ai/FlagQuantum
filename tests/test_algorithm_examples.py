@@ -2037,8 +2037,11 @@ def test_fermion_hubbard_training_lowers_energy_with_valid_gradients() -> None:
     _assert_premise("fermion_hubbard_training", output)
 
 
-def test_fermion_hubbard_graph_trains_a_bounded_pair() -> None:
-    output = _run("fermion_hubbard_graph")
+@pytest.mark.parametrize("encoding", [None, "parity", "bravyi_kitaev"])
+def test_fermion_hubbard_graph_trains_a_bounded_pair(encoding: str | None) -> None:
+    arguments = () if encoding is None else ("--encoding", encoding)
+    output = _run("fermion_hubbard_graph", *arguments)
+    assert f"Encoding: {encoding or 'jordan_wigner'}" in output
     assert "Graph: 4 sites, 3 undirected edges" in output
     assert float(_labelled(output, "Initial energy")) == pytest.approx(
         1.2 * math.sin(0.37) - 0.4, abs=1e-10
