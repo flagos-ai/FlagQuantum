@@ -117,27 +117,66 @@ def _dot_string(label: str) -> str:
     return f'"{escaped}"'
 
 
+def _dot_attributes(attributes: Mapping[str, str]) -> str:
+    fields = []
+    for key, value in attributes.items():
+        rendered = (
+            value
+            if value.startswith("<") and value.endswith(">")
+            else _dot_string(value)
+        )
+        fields.append(f"{_dot_string(key)}={rendered}")
+    return ", ".join(fields)
+
+
 def export_call_graph_dot(
     root: Node,
     direct_calls: Mapping[tuple[Node, Node], SymbolicInt],
     *,
     title: Callable[[Node], str] = str,
     annotations: Mapping[Node, Mapping[str, str]] | None = None,
+    details: Callable[[Node], str] | None = None,
+    node_properties: Callable[[Node], Mapping[str, str]] | None = None,
 ) -> str:
-    """Export DOT with stable node identities, edge weights and optional tables."""
+    """Export DOT with stable node identities, edge weights and optional tables.
+
+    Details select the source rectangular title/detail label. A complete
+    node_properties callback replaces default properties and bypasses title,
+    details and annotation formatting. Callbacks run once per visible node
+    in topological order, and failures propagate. Returned property mappings
+    remain caller-owned. Property values use strings, with angle-delimited
+    HTML labels passed through as trusted Graphviz markup.
+
+    Examples:
+        >>> dot = export_call_graph_dot("root", {}, details=lambda node: "T count = 4")
+        >>> '"shape"="rect"' in dot and "T count = 4" in dot
+        True
+    """
     order, successors = _call_order(root, direct_calls)
     ids = {node: f"n{index}" for index, node in enumerate(order)}
     lines = ["digraph counts {", "  rankdir=TB;"]
     for node in order:
-        table = {} if annotations is None else annotations.get(node, {})
-        rows = [f'<TR><TD COLSPAN="2">{escape(title(node))}</TD></TR>']
-        rows.extend(
-            f"<TR><TD>{escape(key)}</TD><TD>{escape(value)}</TD></TR>"
-            for key, value in table.items()
-        )
-        label = '<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">'
-        label += "".join(rows) + "</TABLE>"
-        lines.append(f"  {ids[node]} [shape=plaintext, label=<{label}>];")
+        if node_properties is not None:
+            properties = _dot_attributes(node_properties(node))
+        elif details is not None:
+            label = "<" + escape(title(node))
+            detail = escape(details(node))
+            if detail:
+                label += (
+                    f'<br /><font face="monospace" point-size="10">{detail}</font><br/>'
+                )
+            properties = _dot_attributes({"label": label + ">", "shape": "rect"})
+        else:
+            table = {} if annotations is None else annotations.get(node, {})
+            rows = [f'<TR><TD COLSPAN="2">{escape(title(node))}</TD></TR>']
+            rows.extend(
+                f"<TR><TD>{escape(key)}</TD><TD>{escape(value)}</TD></TR>"
+                for key, value in table.items()
+            )
+            label = '<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">'
+            label += "".join(rows) + "</TABLE>"
+            properties = f"shape=plaintext, label=<{label}>"
+        lines.append(f"  {ids[node]} [{properties}];")
     for caller in order:
         for callee in successors.get(caller, ()):
             weight = _dot_string(_dot_count(direct_calls[caller, callee]))
@@ -223,6 +262,8 @@ def export_modeled_call_graph_dot(
     *,
     max_depth: int | None = None,
     aggregation: GateAggregation = "factored",
+    details: Callable[[ComponentCost], str] | None = None,
+    node_properties: Callable[[ComponentCost], Mapping[str, str]] | None = None,
 ) -> str:
     """Annotate a depth-limited graph using costs from the full component model."""
     graph = modeled_call_graph(component, max_depth=max_depth)
@@ -233,6 +274,8 @@ def export_modeled_call_graph_dot(
         graph.direct_calls,
         title=lambda node: node.name,
         annotations=annotations,
+        details=details,
+        node_properties=node_properties,
     )
 
 
@@ -244,6 +287,8 @@ def export_resource_call_graph_dot(
     max_depth: int | None = None,
     aggregation: GateAggregation = "factored",
     title: Callable[[ResourceCall], str] = str,
+    details: Callable[[ResourceCall], str] | None = None,
+    node_properties: Callable[[ResourceCall], Mapping[str, str]] | None = None,
 ) -> str:
     """Draw typed resource calls with full costs and explicitly supplied widths.
 
@@ -295,6 +340,8 @@ def export_resource_call_graph_dot(
         graph.direct_calls,
         title=title,
         annotations=format_call_graph_cost_data(table, aggregation=aggregation),
+        details=details,
+        node_properties=node_properties,
     )
 
 
