@@ -123,6 +123,27 @@ def _register_groups(
     return tuple(groups)
 
 
+def _ordered_register_dependencies(
+    dependencies: Mapping[int, tuple[int, ...]], final_origins: Sequence[int]
+) -> dict[int, tuple[int, ...]]:
+    """Seed graph nodes from connections, with -1 input and -2 output boundaries."""
+    nodes = dict.fromkeys(
+        node
+        for destination, origins in dependencies.items()
+        for origin in origins
+        for node in (origin, destination)
+    )
+    for origin in final_origins:
+        nodes.update(dict.fromkeys((origin, -2)))
+    ordered = {node: dependencies.get(node, ()) for node in nodes}
+    if final_origins:
+        ordered[-2] = tuple(dict.fromkeys(final_origins))
+    # Isolated zero-port calls use native call order as their insertion tie-break.
+    for node, origins in dependencies.items():
+        ordered.setdefault(node, origins)
+    return ordered
+
+
 def layout_register_score(
     widths: Mapping[str, int],
     inputs: Sequence[str],
@@ -143,6 +164,8 @@ def layout_register_score(
     The manager's seq_x cursor and partial hlines are current at each hook.
     Plain layouts synthesize scalar opaque metadata from their declared widths.
     Explicit outputs preserve final signature order for release callbacks.
+    Independent roots follow first connection encounter order, as in the source.
+    Isolated zero-port calls retain original call order.
     """
     if any(type(width) is not int or width < 0 for width in widths.values()):
         raise ValueError("Register widths must be nonnegative integers")
@@ -167,15 +190,19 @@ def layout_register_score(
         active.update(dict.fromkeys(step.outputs, index))
         seen.update(opened)
 
-    generations: dict[int, int] = {}
-    for index in TopologicalSorter(dependencies).static_order():
-        generations[index] = 1 + max(
-            (generations[pred] for pred in dependencies[index]), default=-1
-        )
-    output_generation = max(
-        max(generations.values(), default=0),
-        1 + max((generations[index] for index in active.values()), default=-1),
+    final_keys = tuple(active) if outputs is None else tuple(outputs)
+    if len(set(final_keys)) != len(final_keys) or set(final_keys) != set(active):
+        raise ValueError("Score outputs must retain every live register exactly once")
+
+    ordered_dependencies = _ordered_register_dependencies(
+        dependencies, tuple(active[key] for key in final_keys)
     )
+    generations: dict[int, int] = {}
+    for index in TopologicalSorter(ordered_dependencies).static_order():
+        generations[index] = 1 + max(
+            (generations[pred] for pred in ordered_dependencies[index]), default=-1
+        )
+    output_generation = max(generations.values(), default=0)
 
     initial = _register_groups(inputs, input_registers, widths)
     groups = tuple(
@@ -185,9 +212,6 @@ def layout_register_score(
         )
         for step in steps
     )
-    final_keys = tuple(active) if outputs is None else tuple(outputs)
-    if len(set(final_keys)) != len(final_keys) or set(final_keys) != set(active):
-        raise ValueError("Score outputs must retain every live register exactly once")
     final = _register_groups(final_keys, output_registers, widths)
     manager = RegisterLaneManager() if lane_manager is None else lane_manager
     manager.seq_x = -1

@@ -9,10 +9,16 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Collection
+from graphlib import TopologicalSorter
 from typing import Literal, TypedDict
 
 from ..core.ir.program.registers import Register, RegisterSide
-from .register_score import RegisterScore, RegisterStep, _register_groups
+from .register_score import (
+    RegisterScore,
+    RegisterStep,
+    _ordered_register_dependencies,
+    _register_groups,
+)
 
 SymbolClass = Literal[
     "Text", "TextBox", "RarrowTextBox", "LarrowTextBox", "Circle", "ModPlus"
@@ -148,12 +154,19 @@ def _symbol_port_order(
         origin = producers[key]
         outgoing.setdefault(origin, {}).setdefault(-2, []).append(key)
         incoming.setdefault(-2, {}).setdefault(origin, []).append(key)
+    dependencies = {
+        column.ordinal: tuple(incoming.get(column.ordinal, {}))
+        for column in sorted(score.columns, key=lambda col: col.ordinal)
+    }
+    graph = _ordered_register_dependencies(
+        dependencies, tuple(producers[key] for key in final_keys)
+    )
     return {
         node: (
             tuple(key for group in incoming.get(node, {}).values() for key in group),
             tuple(key for group in outgoing.get(node, {}).values() for key in group),
         )
-        for node in (-1, *(column.ordinal for column in score.columns), -2)
+        for node in TopologicalSorter(graph).static_order()
     }
 
 
@@ -179,8 +192,8 @@ def register_score_data(
     including the discarded second THRU symbol. Native identities still own
     port keys. Layouts without metadata synthesize scalar opaque registers.
     The two callback forms are mutually exclusive. Grouped metadata is checked
-    before callbacks run. Records follow input-boundary, component and
-    output-boundary adjacency order, preserving source overdraw semantics.
+    before callbacks run. Records follow connection-seeded topological order,
+    including boundary nodes, preserving source overdraw semantics.
     Without a callback, declared register names and row-major indices label
     ports. Component titles longer than ten characters use eight plus "..".
     Plain layouts without declarations retain their display-identity labels.
@@ -358,20 +371,24 @@ def register_score_data(
                 }
             )
 
-    # Paint input boundary, instances and output boundary in source adjacency
-    # order. Keep callback evaluation independent of record reordering.
+    # Paint every node in source traversal order, including dangling nodes.
     records = {port["ident"]: port for port in ports}
-    identities = [f"dang,{key},l,()" for key in symbol_order[-1][1]]
-    for column in score.columns:
-        inputs, outputs = symbol_order[column.ordinal]
-        for key in dict.fromkeys((*inputs, *outputs)):
-            side = (
-                ("THRU" if key in column.step.outputs else "LEFT")
-                if key in column.step.inputs
-                else "RIGHT"
-            )
-            identities.append(f"{column.ordinal},{key},Side.{side},()")
-    identities.extend(f"dang,{key},r,()" for key in symbol_order[-2][0])
+    columns = {column.ordinal: column for column in score.columns}
+    identities: list[str] = []
+    for node, (inputs, outputs) in symbol_order.items():
+        if node == -1:
+            identities.extend(f"dang,{key},l,()" for key in outputs)
+        elif node == -2:
+            identities.extend(f"dang,{key},r,()" for key in inputs)
+        else:
+            step = columns[node].step
+            for key in dict.fromkeys((*inputs, *outputs)):
+                side = (
+                    ("THRU" if key in step.outputs else "LEFT")
+                    if key in step.inputs
+                    else "RIGHT"
+                )
+                identities.append(f"{node},{key},Side.{side},()")
     return {
         "max_x": max(
             output_column - 1, max((line.end for line in score.lines), default=0)
