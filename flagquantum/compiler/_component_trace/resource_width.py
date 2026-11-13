@@ -14,6 +14,7 @@ from collections.abc import Callable, MutableMapping
 
 from ..registers.arithmetic.addition_width import addition_width
 from ..registers.arithmetic.arithmetic_declarations import arithmetic_callees
+from ..registers.arithmetic.controlled_addition_width import controlled_addition_width
 from ..registers.bits.bitwise_width import BITWISE_WIDTH_OPERATIONS, bitwise_width
 from ..registers.bits.fanout_width import fanout_width
 from ..registers.control.multi_and_width import multi_and_width
@@ -73,6 +74,8 @@ def query_resource_logical_width(
             return bitwise_width(node, child)
         if isinstance(node, ArithmeticCall) and node.operation == "add":
             return addition_width(node, child)
+        if isinstance(node, ArithmeticCall) and node.operation == "controlled_add":
+            return controlled_addition_width(node, child)
         if isinstance(node, ConjunctionCall):
             return multi_and_width(node, child)
         if isinstance(node, ControlledSwapCall):
@@ -123,6 +126,7 @@ def query_resource_logical_width(
         if isinstance(node, ArithmeticCall) and node.operation in (
             *BITWISE_WIDTH_OPERATIONS,
             "add",
+            "controlled_add",
         ):
             return tuple(arithmetic_callees(node).items())
         if isinstance(node, ConjunctionCall):
@@ -148,8 +152,8 @@ def query_resource_logical_width(
 
 
 def _signature_width(node: ResourceCall) -> SymbolicInt:
-    if isinstance(node, ArithmeticCall) and node.operation == "add":
-        return sum(node.widths)
+    if isinstance(node, ArithmeticCall) and node.operation in {"add", "controlled_add"}:
+        return sum(node.widths) + int(node.operation == "controlled_add")
     if isinstance(node, ArithmeticCall) and node.operation in BITWISE_WIDTH_OPERATIONS:
         return node.widths[0] * (2 if node.operation == "xor" else 1)
     if isinstance(node, ConjunctionCall):
@@ -183,6 +187,18 @@ def _signature_width(node: ResourceCall) -> SymbolicInt:
     if isinstance(node, BookkeepingCall) and node.opcode in {"split", "join"}:
         if type(node.layout) is int:
             return node.layout
+    if isinstance(node, BookkeepingCall) and node.opcode == "cast":
+        if (
+            isinstance(node.layout, tuple)
+            and len(node.layout) == 3
+            and type(node.layout[0]) is int
+            and node.layout[0] >= 1
+            and all(
+                e in ("unsigned", "twos_complement", "montgomery")
+                for e in node.layout[1:]
+            )
+        ):
+            return node.layout[0]
     if isinstance(node, PowerCall):
         return _signature_width(node.child)
     if isinstance(node, OnEachCall):
