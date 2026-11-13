@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 98
+    assert len(validated) == 99
+    assert (
+        "tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk",
+        "examples/synthesis/tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview/main.py",
+    ) in validated
     assert (
         "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1",
         "examples/synthesis/tutorials/basics/quantum_programming/qmod_tutorial_part1/overview/main.py",
@@ -521,7 +525,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**98/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**99/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
