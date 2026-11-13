@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **101/213**.
+Validated local Notebook workflows: **102/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -427,4 +427,4 @@ Validated local Notebook workflows: **101/213**.
 | `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/main.py) | pending |
 | `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | [Native program](tutorials/workshops/grover_workshop/grover_workshop/overview/main.py) | validated |
 | `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | [Native program](tutorials/workshops/hhl_workshop/main.py) | pending |
-| `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/main.py) | pending |
+| `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/overview/main.py) | validated |
