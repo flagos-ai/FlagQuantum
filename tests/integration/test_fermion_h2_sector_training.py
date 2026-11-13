@@ -18,7 +18,7 @@ from flagquantum.algorithms.chemistry_domain.problem import (
     fermion_hamiltonian,
     from_native_molecule,
 )
-from flagquantum.algorithms.fermion.encoding import encode_fermion
+from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.lowering import lift_stabilizer_state
 from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.algorithms.fermion.stabilizer import (
@@ -30,6 +30,7 @@ from flagquantum.algorithms.molecular import create_molecular_hamiltonian
 from flagquantum.core.algebra.pauli import pauli
 from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
 from flagquantum.observables import number
+from flagquantum.observables.fermion import FermionOperator, FermionTerm
 from tests.unit.fermion.oracles import fock_matrix
 
 pytestmark = pytest.mark.integration
@@ -41,16 +42,47 @@ def _native_problem() -> MolecularProblem:
     )
 
 
-def _reduce(problem: MolecularProblem, *, up_parity: int = -1) -> StabilizerReduction:
-    operator = encode_fermion(fermion_hamiltonian(problem), n_modes=4).operator
+def _encoded_indices(encoding: Encoding) -> list[int]:
+    # Independent four-mode occupation-to-code permutation, not native mapping.
+    indices = []
+    for index in range(16):
+        a, b, c, d = ((index >> (3 - q)) & 1 for q in range(4))
+        if encoding == "jordan_wigner":
+            bits = (a, b, c, d)
+        elif encoding == "parity":
+            bits = (a, a ^ b, a ^ b ^ c, a ^ b ^ c ^ d)
+        else:
+            bits = (a, a ^ b, c, a ^ b ^ c ^ d)
+        indices.append(sum(bit << (3 - q) for q, bit in enumerate(bits)))
+    return indices
+
+
+def _reduce(
+    problem: MolecularProblem,
+    encoding: Encoding = "jordan_wigner",
+    *,
+    up_parity: int = -1,
+) -> StabilizerReduction:
+    operator = encode_fermion(
+        fermion_hamiltonian(problem), n_modes=4, encoding=encoding
+    ).operator
+    identity = FermionOperator((FermionTerm(1),))
     candidates = [
-        pauli(factors=((0, "z"), (2, "z"))),
-        pauli(factors=((1, "z"), (3, "z"))),
+        encode_fermion(
+            (identity - 2 * number(a)) * (identity - 2 * number(b)),
+            n_modes=4,
+            encoding=encoding,
+        ).operator
+        for a, b in ((0, 2), (1, 3))
     ]
     generators = discover_pauli_symmetries(operator, n_qubits=4, candidates=candidates)
-    assert generators == tuple(candidates)
+    index = _encoded_indices(encoding)[12 if up_parity == -1 else 4]
+    eigenvalues = [
+        (-1) ** sum((index >> (3 - q)) & 1 for q, _ in word.terms[0].factors)
+        for word in generators
+    ]
     return reduce_stabilizers(
-        operator, n_qubits=4, generators=generators, eigenvalues=[up_parity, -1]
+        operator, n_qubits=4, generators=generators, eigenvalues=eigenvalues
     )
 
 
@@ -67,10 +99,12 @@ def problem(request: pytest.FixtureRequest) -> MolecularProblem:
     return _native_problem()
 
 
+@pytest.mark.parametrize("encoding", ENCODINGS)
 def test_training_matches_independent_molecular_sector(
     problem: MolecularProblem,
+    encoding: Encoding,
 ) -> None:
-    reduced = _reduce(problem)
+    reduced = _reduce(problem, encoding)
     assert reduced.n_qubits == 2
     observable = to_observable(reduced.operator)
     full = fock_matrix(fermion_hamiltonian(problem), 4)
@@ -80,7 +114,7 @@ def test_training_matches_independent_molecular_sector(
     for value in (-0.8, 0.0, 0.2, 1.7):
         angle = torch.tensor(value, dtype=torch.float64, requires_grad=True)
         state = _physical_state(angle)
-        actual = energy(angle, observable)
+        actual = energy(angle, observable, encoding=encoding)
         reference = torch.vdot(state, full @ state).real
         analytic = (a + c) / 2 + (a - c) * angle.cos() / 2 + b * angle.sin()
         torch.testing.assert_close(actual, reference, atol=1e-12, rtol=0)
@@ -105,11 +139,15 @@ def test_training_matches_independent_molecular_sector(
     optimizer = torch.optim.SGD([angle], lr=0.2)
     reference_optimizer = torch.optim.SGD([reference_angle], lr=0.2)
     populations = [
-        to_observable(reduced.reduce_operator(encode_fermion(op, n_modes=4).operator))
+        to_observable(
+            reduced.reduce_operator(
+                encode_fermion(op, n_modes=4, encoding=encoding).operator
+            )
+        )
         for op in (number(0) + number(2), number(1) + number(3))
     ]
     for _ in range(6):
-        previous = energy(angle, observable)
+        previous = energy(angle, observable, encoding=encoding)
         state = _physical_state(reference_angle)
         reference = torch.vdot(state, full @ state).real
         optimizer.zero_grad()
@@ -121,11 +159,13 @@ def test_training_matches_independent_molecular_sector(
         optimizer.step()
         reference_optimizer.step()
         torch.testing.assert_close(angle, reference_angle, atol=1e-12, rtol=0)
-        assert float(energy(angle, observable).detach()) < float(previous.detach())
+        assert float(energy(angle, observable, encoding=encoding).detach()) < float(
+            previous.detach()
+        )
         with torch.no_grad():
             lifted = lift_stabilizer_state(
-                reduced, build_ansatz(angle).state().reshape(-1)
-            )
+                reduced, build_ansatz(angle, encoding=encoding).state().reshape(-1)
+            )[_encoded_indices(encoding)]
             torch.testing.assert_close(
                 lifted, _physical_state(reference_angle), atol=1e-12, rtol=0
             )
@@ -135,7 +175,7 @@ def test_training_matches_independent_molecular_sector(
             assert float(lifted[outside].abs().square().sum()) < 1e-24
             for population in populations:
                 torch.testing.assert_close(
-                    energy(angle, population), angle.new_tensor(1)
+                    energy(angle, population, encoding=encoding), angle.new_tensor(1)
                 )
 
     minimum = (a + c) / 2 - torch.hypot((a - c) / 2, b)
@@ -146,35 +186,41 @@ def test_training_matches_independent_molecular_sector(
     assert float(minimum) == pytest.approx(-1.1372701747, abs=1e-10)
 
 
-def test_input_replacement_preserves_the_training_consumer() -> None:
-    reductions = [
-        _reduce(read_fcidump(H2_FCIDUMP, max_orbitals=2)),
-        _reduce(_native_problem()),
+def test_input_and_encoding_replacement_preserves_the_training_consumer() -> None:
+    producers = (read_fcidump(H2_FCIDUMP, max_orbitals=2), _native_problem())
+    observables = [
+        (encoding, to_observable(_reduce(problem, encoding).operator))
+        for problem in producers
+        for encoding in ENCODINGS
     ]
-    observables = [to_observable(reduction.operator) for reduction in reductions]
     angles = [
         torch.tensor(0.2, dtype=torch.float64, requires_grad=True) for _ in observables
     ]
     optimizers = [torch.optim.SGD([angle], lr=0.2) for angle in angles]
     for _ in range(6):
         values = [
-            energy(angle, observable)
-            for angle, observable in zip(angles, observables, strict=True)
+            energy(angle, observable, encoding=encoding)
+            for angle, (encoding, observable) in zip(angles, observables, strict=True)
         ]
-        torch.testing.assert_close(values[0], values[1], atol=1e-12, rtol=0)
+        for value in values[1:]:
+            torch.testing.assert_close(values[0], value, atol=1e-12, rtol=0)
         for value, optimizer in zip(values, optimizers, strict=True):
             optimizer.zero_grad()
             torch.autograd.backward(value)
             optimizer.step()
-        assert angles[0].grad is not None and angles[1].grad is not None
-        torch.testing.assert_close(angles[0].grad, angles[1].grad, atol=1e-12, rtol=0)
-        torch.testing.assert_close(angles[0], angles[1], atol=1e-12, rtol=0)
+        for angle in angles[1:]:
+            assert angles[0].grad is not None and angle.grad is not None
+            torch.testing.assert_close(angles[0].grad, angle.grad, atol=1e-12, rtol=0)
+            torch.testing.assert_close(angles[0], angle, atol=1e-12, rtol=0)
 
 
-def test_opposite_spin_sector_is_not_a_two_electron_projection() -> None:
-    reduced = _reduce(read_fcidump(H2_FCIDUMP, max_orbitals=2), up_parity=1)
+@pytest.mark.parametrize("encoding", ENCODINGS)
+def test_opposite_spin_sector_is_not_a_two_electron_projection(
+    encoding: Encoding,
+) -> None:
+    reduced = _reduce(read_fcidump(H2_FCIDUMP, max_orbitals=2), encoding, up_parity=1)
     state = torch.ones(4, dtype=torch.complex128) / 2
-    lifted = lift_stabilizer_state(reduced, state)
+    lifted = lift_stabilizer_state(reduced, state)[_encoded_indices(encoding)]
     population = torch.tensor([i.bit_count() for i in range(16)], dtype=torch.float64)
     weights = lifted.abs().square()
     # Mean N=2 alone is insufficient: this different sector has only N=1 and N=3.
@@ -185,24 +231,36 @@ def test_opposite_spin_sector_is_not_a_two_electron_projection() -> None:
     )
 
 
-def test_invalid_preparation_and_nonpreserving_measurement_fail() -> None:
-    reduced = _reduce(read_fcidump(H2_FCIDUMP, max_orbitals=2))
+@pytest.mark.parametrize("encoding", ENCODINGS)
+def test_invalid_preparation_and_nonpreserving_measurement_fail(
+    encoding: Encoding,
+) -> None:
+    reduced = _reduce(read_fcidump(H2_FCIDUMP, max_orbitals=2), encoding)
     with pytest.raises(ValueError, match="scalar angle"):
-        build_ansatz(torch.tensor([0.2]))
+        build_ansatz(torch.tensor([0.2]), encoding=encoding)
     with pytest.raises(ValueError, match="does not preserve"):
         reduced.reduce_operator(pauli(factors=((0, "x"),)))
-    state = build_ansatz(torch.tensor(0.2, requires_grad=True)).state().reshape(-1)
+    state = (
+        build_ansatz(torch.tensor(0.2, requires_grad=True), encoding=encoding)
+        .state()
+        .reshape(-1)
+    )
     with pytest.raises(
         ValueError, match="static preprocessing; autograd inputs are unsupported"
     ):
         lift_stabilizer_state(reduced, state)
 
 
-def test_cli_runs_without_external_science_or_dense_eigenstate_preparation() -> None:
+@pytest.mark.parametrize("encoding", ENCODINGS)
+def test_cli_runs_without_external_science_or_dense_eigenstate_preparation(
+    encoding: Encoding,
+) -> None:
     script = """
         import importlib.abc
         import runpy
         import sys
+        selected = sys.argv[1]
+        sys.argv = ["fermion_h2_sector_training", "--encoding", selected]
         blocked = {"openfermion", "openfermionpyscf", "cirq", "pyscf", "scipy", "h5py"}
         class NoScience(importlib.abc.MetaPathFinder):
             def find_spec(self, fullname, path=None, target=None):
@@ -218,10 +276,29 @@ def test_cli_runs_without_external_science_or_dense_eigenstate_preparation() -> 
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
         """
     result = subprocess.run(
-        [sys.executable, "-c", textwrap.dedent(script)],
+        [sys.executable, "-c", textwrap.dedent(script), encoding],
         cwd=Path(__file__).resolve().parents[2],
         text=True,
         capture_output=True,
         timeout=60,
     )
     assert result.returncode == 0, result.stdout + result.stderr
+    assert f"Encoding: {encoding}" in result.stdout
+
+
+def test_cli_rejects_unknown_encoding() -> None:
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "examples.algorithms.fermion_h2_sector_training",
+            "--encoding",
+            "unsupported",
+        ],
+        cwd=Path(__file__).resolve().parents[2],
+        text=True,
+        capture_output=True,
+        timeout=60,
+    )
+    assert result.returncode == 2
+    assert "invalid choice" in result.stderr

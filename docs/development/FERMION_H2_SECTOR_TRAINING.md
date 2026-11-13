@@ -6,8 +6,8 @@ Algorithms owns this bounded composition of existing molecular input, native
 JW encoding, candidate-restricted symmetry discovery, explicit stabilizer
 reduction, ordinary circuit preparation, `fq.run` expectations and PyTorch SGD.
 The initial scope was committed before implementation and merged in #1171.
-The JW workflow below is implemented; the encoding extension at the end names
-the next bounded scope before its implementation.
+The JW workflow below is implemented; the encoding extension at the end records
+its scope committed before implementation in this review branch.
 There is no new production API, solver, contract, dependency or capability entry.
 
 Use the existing H2 STO-3G FCIDUMP fixture at 0.7414 angstrom, with two spatial
@@ -81,7 +81,7 @@ claim and does not promote the maturity of existing scientific capabilities.
 
 ## Encoding replacement scope before implementation
 
-The next Algorithms-owned slice extends this existing example and its tests to
+This Algorithms-owned slice extends the existing example and its tests to
 the native prefix-parity and Fenwick Bravyi-Kitaev encodings. The base is main
 `e087f51b01f412132d3bf575953d7202f2bc3fc2`. There is no production API,
 dependency, capability registration or contract change. All work stays
@@ -111,3 +111,46 @@ wrong-sector counterexamples, unsupported encodings, nonpreserving observables
 and the existing trainable-lifting refusal. Run all three CLI paths in fresh
 interpreters with external science packages and dense eigensolvers blocked.
 Preserve the default JW CLI behavior and the recorded #1171 evidence above.
+
+### Implemented encoding replacement and contributor path
+
+The scope commit `101d59b` preceded implementation. This branch now extends the
+existing example and scientific tests; it introduces no new production module.
+Run the default and alternate conventions with the same consumer:
+
+```bash
+python -m examples.algorithms.fermion_h2_sector_training
+python -m examples.algorithms.fermion_h2_sector_training --encoding parity
+python -m examples.algorithms.fermion_h2_sector_training --encoding bravyi_kitaev
+python -m pytest tests/integration/test_fermion_h2_sector_training.py -q
+```
+
+Change the initial scalar angle and rerun those tests. The independent physical
+state stays cos(theta/2)|1100> + sin(theta/2)|0011> for each convention.
+The positive representatives discovered for the fixed candidate span are:
+
+| Encoding | Positive generators | Reference eigenvalues | Reduced pair |
+| --- | --- | --- | --- |
+| Jordan-Wigner | Z0 Z2; Z1 Z3 | -1, -1 | 00, 11 |
+| Prefix parity | Z0 Z1 Z2; Z3 | -1, +1 | 00, 01 |
+| Fenwick Bravyi-Kitaev | Z0 Z2; Z3 | -1, +1 | 00, 01 |
+
+The last two rows use total parity as one returned representative, rather than
+the original beta-parity candidate. Both physical spin populations remain one.
+Tests calculate the four-mode code permutations directly, without calling native
+reference-bit mapping, and compare lifted states in occupation order. Their
+optimization oracle uses the independent Fock matrix; it neither reduces nor
+converts native Pauli operators. File/native input and all encodings replace
+one another at the same training consumer over six optimizer updates. The CLI
+tests cover the default, each explicit encoding and rejection of unknown names.
+Static lifting and dense eigensolver restrictions remain unchanged.
+
+Local encoding-extension acceptance passed 100 related encoding, discovery and
+training scientific cases, including 17 H2 cases, and 10 selected example
+CLI/inventory cases. The unknown-encoding CLI refusal passed again after its
+subprocess timeout was aligned with the other fresh-interpreter tests. Strict
+mypy on the example and scientific test, Ruff, Black 24.1 and 26.5, the public
+API baseline, capability maturity validation, documentation consistency,
+Algorithms path ownership and the 1,420-file local-link audit passed. The
+documentation provenance check used a full-history clone. These focused local
+checks do not replace the broad Linux PR checks or certify main acceptance.

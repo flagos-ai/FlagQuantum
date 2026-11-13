@@ -2134,9 +2134,24 @@ def test_pauli_training_example_optimizes_the_explicit_joint_sector() -> None:
     _assert_premise("fermion_pauli_training", output)
 
 
-def test_h2_sector_training_example_preserves_both_spin_populations() -> None:
-    output = _run("fermion_h2_sector_training")
+@pytest.mark.parametrize(
+    ("args", "encoding"),
+    [
+        ((), "jordan_wigner"),
+        (("--encoding", "jordan_wigner"), "jordan_wigner"),
+        (("--encoding", "parity"), "parity"),
+        (("--encoding", "bravyi_kitaev"), "bravyi_kitaev"),
+    ],
+)
+def test_h2_sector_training_example_preserves_both_spin_populations(
+    args: tuple[str, ...], encoding: str
+) -> None:
+    output = _run("fermion_h2_sector_training", *args)
+    assert _labelled(output, "Encoding") == encoding
     assert "Selected alpha/beta parity eigenvalues: -1, -1" in output
+    assert _labelled(output, "Encoded generator eigenvalues") == (
+        "-1, -1" if encoding == "jordan_wigner" else "-1, 1"
+    )
     assert "Register: 4 -> 2 qubits" in output
     initial = float(_labelled(output, "Initial energy").removesuffix(" Ha"))
     final = float(_labelled(output, "Final energy").removesuffix(" Ha"))

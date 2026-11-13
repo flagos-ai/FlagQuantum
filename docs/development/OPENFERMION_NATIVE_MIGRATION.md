@@ -797,3 +797,12 @@ from main `e087f51b01f412132d3bf575953d7202f2bc3fc2`. It plans independent
 physical-state, gradient and update equivalence, without a production API or
 automatic matched-ansatz claim. Its scope is recorded before implementation;
 the preceding acceptance belongs to the merged JW workflow only.
+
+The review branch implements this replacement in the existing example via
+`--encoding parity` and `--encoding bravyi_kitaev`. It encodes the physical
+spin-parity candidates, evaluates returned positive-generator signs using the
+explicit reference, and prepares the same determinant pair in its corresponding
+reduced basis. Independent Fock/occupation tests compare energies, gradients,
+updates and exact populations across all three encodings and file/native input.
+This is review-branch implementation, not a new actual-main acceptance or an
+automatic matched-ansatz feature. The default JW workflow remains supported.
