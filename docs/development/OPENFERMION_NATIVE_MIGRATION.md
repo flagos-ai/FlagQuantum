@@ -3,13 +3,17 @@
 ## Current delivery status
 
 The current checked main baseline is
-`bd054faa02f5b3c5de82f97b5b9f7b19ad47ba7b` on November 13, 2026 (UTC+08:00).
+`b3fa4a78935777bb8e3853752192e9cd47972b2f` on November 13, 2026 (UTC+08:00).
 General commuting Pauli discovery, its experimental registration and explicit
 mixed-axis sector training are merged in #1166, #1167 and #1170. Documentation
 closeout #1169 merged before #1170. The runtime materialization repair #1168
 merged first. The bounded JW H2 training composition merged in #1171 and passed
-actual-main acceptance below. The next three-encoding extension has its scope
-recorded before implementation; it is separate from that accepted delivery.
+actual-main acceptance below. Its three-encoding extension merged in #1172 and
+passed independent actual-main acceptance, including the concurrent FP64
+statevector changes from #1164. Both H2 stages are complete; the acceptance
+records below remain bound to their respective revisions.
+The preceding JW H2 baseline was
+`bd054faa02f5b3c5de82f97b5b9f7b19ad47ba7b`.
 The preceding parity-training baseline was
 `e09b68e7add135dbc42f6bf677e00a611cfd463e`.
 The preceding Z-discovery registration baseline was
@@ -791,18 +795,48 @@ passed on attempt one, including coverage aggregation and the final gate.
 The original PR head passed full CI 43333357231 and 239 cross-workflow checks
 with three conditional skips. These selections are not additive coverage counts.
 
-The next [encoding replacement scope](FERMION_H2_SECTOR_TRAINING.md#encoding-replacement-scope-before-implementation)
-extends this same molecular training consumer to parity and BK on a branch cut
-from main `e087f51b01f412132d3bf575953d7202f2bc3fc2`. It plans independent
-physical-state, gradient and update equivalence, without a production API or
-automatic matched-ansatz claim. Its scope is recorded before implementation;
-the preceding acceptance belongs to the merged JW workflow only.
+### Merged three-encoding replacement and actual-main acceptance
 
-The review branch implements this replacement in the existing example via
+The [encoding replacement scope](FERMION_H2_SECTOR_TRAINING.md#encoding-replacement-scope-before-implementation)
+was committed as `101d59b` before implementation, based on main
+`e087f51b01f412132d3bf575953d7202f2bc3fc2`. The extension merged in
+[#1172](https://github.com/flagos-ai/FlagQuantum/pull/1172). It reuses the existing example via
 `--encoding parity` and `--encoding bravyi_kitaev`. It encodes the physical
 spin-parity candidates, evaluates returned positive-generator signs using the
 explicit reference, and prepares the same determinant pair in its corresponding
 reduced basis. Independent Fock/occupation tests compare energies, gradients,
 updates and exact populations across all three encodings and file/native input.
-This is review-branch implementation, not a new actual-main acceptance or an
-automatic matched-ansatz feature. The default JW workflow remains supported.
+The default JW workflow remains supported. Run the same consumer with:
+
+```bash
+python -m examples.algorithms.fermion_h2_sector_training
+python -m examples.algorithms.fermion_h2_sector_training --encoding parity
+python -m examples.algorithms.fermion_h2_sector_training --encoding bravyi_kitaev
+```
+
+Each fixed 120-step run lowers energy from -1.0649609749 to -1.1372701747 Ha
+and retains one alpha and one beta electron. Discovered positive-generator
+eigenvalues are (-1, -1) for JW and (-1, +1) for parity/BK; the latter generators
+include total parity. The physical spin-parity constraints remain (-1, -1).
+
+PR head `bf53d1ae07ab4abbe4677ab3ddbb00c4e6ad96f9` passed
+[full CI 43352857266](https://github.com/flagos-ai/FlagQuantum/actions/runs/43352857266)
+on attempt one, with 239 successful cross-workflow checks and three conditional
+skips. Actual merge `b3fa4a78935777bb8e3853752192e9cd47972b2f` also contains
+concurrent FP64 statevector optimization #1164. The whole tree differs from the
+PR head, although all seven H2 paths match exactly. Independent acceptance of
+that combined tree passed 135 scientific/capability/documentation cases and
+10 CLI/inventory cases, API baseline, capability validation, documentation
+consistency and the 1,421-file link audit.
+[Main smoke 43359184999](https://github.com/flagos-ai/FlagQuantum/actions/runs/43359184999)
+and independently dispatched
+[full main CI 43359466938](https://github.com/flagos-ai/FlagQuantum/actions/runs/43359466938)
+passed; the latter completed all 236 jobs on attempt one, including coverage
+aggregation and the final gate. No reruns or CI configuration changes were
+needed. These selections are not additive coverage counts or scalability evidence.
+
+This closes the bounded H2 encoding replacement. It adds no production API,
+dependency or capability promotion. Automatic matched-ansatz construction,
+sector selection, coefficient/SCF gradients, larger-molecule qualification and
+accelerator/distributed evidence remain separate proposals, not unfinished H2
+delivery units. No further implementation slice or merge approval is implied.

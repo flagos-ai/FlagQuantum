@@ -6,8 +6,9 @@ Algorithms owns this bounded composition of existing molecular input, native
 JW encoding, candidate-restricted symmetry discovery, explicit stabilizer
 reduction, ordinary circuit preparation, `fq.run` expectations and PyTorch SGD.
 The initial scope was committed before implementation and merged in #1171.
-The JW workflow below is implemented; the encoding extension at the end records
-its scope committed before implementation in this review branch.
+The JW workflow below and the encoding extension at the end are merged in
+#1171 and #1172 respectively. Each scope was committed before implementation;
+their acceptance records remain separate.
 There is no new production API, solver, contract, dependency or capability entry.
 
 Use the existing H2 STO-3G FCIDUMP fixture at 0.7414 angstrom, with two spatial
@@ -114,7 +115,7 @@ Preserve the default JW CLI behavior and the recorded #1171 evidence above.
 
 ### Implemented encoding replacement and contributor path
 
-The scope commit `101d59b` preceded implementation. This branch now extends the
+The scope commit `101d59b` preceded implementation. Merged #1172 extends the
 existing example and scientific tests; it introduces no new production module.
 Run the default and alternate conventions with the same consumer:
 
@@ -154,3 +155,27 @@ API baseline, capability maturity validation, documentation consistency,
 Algorithms path ownership and the 1,420-file local-link audit passed. The
 documentation provenance check used a full-history clone. These focused local
 checks do not replace the broad Linux PR checks or certify main acceptance.
+
+### Merged acceptance
+
+The extension merged as `b3fa4a78935777bb8e3853752192e9cd47972b2f` on
+November 13, 2026. PR head `bf53d1ae07ab4abbe4677ab3ddbb00c4e6ad96f9`
+passed full CI 43352857266 on attempt one, with 239 successful cross-workflow
+checks and three conditional skips. Concurrent #1164 changed the combined
+statevector implementation before merge, so the whole actual-main tree differs
+from that PR head. All seven H2 files match exactly.
+
+An independent clean checkout of the actual merge passed 135 related scientific,
+capability and documentation tests plus 10 CLI/inventory tests. API baseline,
+capability validation, documentation consistency and the 1,421-file link audit
+passed. Main smoke 43359184999 and independent full main CI 43359466938 passed;
+the latter completed all 236 jobs on attempt one, including coverage aggregation
+and the final gate. No reruns, code repairs or CI configuration changes were
+needed. These overlapping test selections are revision-bound correctness
+evidence, not additive coverage counts or a performance claim.
+
+Both H2 stages are complete. Three manually specified preparations for this
+fixture do not implement a general encoded/tapered ansatz transformation, and
+the two-mode-per-spin parity implication does not qualify larger molecules.
+The remaining boundaries and full delivery record are in the
+[migration plan](OPENFERMION_NATIVE_MIGRATION.md#merged-three-encoding-replacement-and-actual-main-acceptance).
