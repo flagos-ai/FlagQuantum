@@ -1595,3 +1595,19 @@ The focused integration tests exhaust all 32 inputs for each of 96 combinations
 of control spelling, target layout, offset and helper nesting. Independent
 complex-amplitude Circuit checks include absolute phase and zero hidden work.
 This compiler slice alone does not certify an additional original or Notebook.
+
+## Static power-dependent native QPE
+
+Experimental native `qpe` also accepts one positional lambda parameter. The
+compiler binds it to powers 1,2,...,128 for the existing one-to-eight-bit counter.
+`qpe(lambda power: operation(power, data), counter)` captures and controls each
+family member once. It does not repeat that member or raise a returned matrix
+to the same power again. Zero-argument callbacks keep repeated-U semantics.
+
+This supports the matrix-QPE Notebook's seven-bit, second-order Suzuki schedule
+with repetitions 2,3,5,7,11,16,23. Reuse finite static array lookup for the schedule;
+no host callback runs. Defaults, variadics, keyword calls, captured-name
+shadowing, counter aliases, ownership changes and Output escapes remain rejected.
+All intermediate effects and final resources count against existing budgets.
+Dropped entangled data stays physically retained and is not clean workspace.
+See the [native matrix-QPE workflow](../../examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/overview/README.md).

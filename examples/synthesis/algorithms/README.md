@@ -60,6 +60,7 @@ Native FlagQuantum programs currently available:
 - [overview](hamiltonian_simulation/hamiltonian_simulation_guide/overview/README.md)
 - [overview](hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/README.md)
 - [overview](metrology/classical_shadow_tomography/overview/README.md)
+- [overview](quantum_phase_estimation/qpe_for_matrix/overview/README.md)
 - [overview](quantum_primitives/gqsp/overview/README.md)
 - [overview](quantum_primitives/hadamard_test/overview/README.md)
 - [overview](quantum_primitives/swap_test/overview/README.md)

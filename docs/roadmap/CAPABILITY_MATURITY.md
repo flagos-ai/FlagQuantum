@@ -751,3 +751,13 @@ predicates preserve conservative whole-register borrowing.
 basis cases, 96 independent complex coherent states, hidden-work cleanup,
 nested aliases and five overlap refusals. No complete Notebook, original-corpus
 coverage increase, resource optimality or hardware claim follows from this slice.
+
+## Experimental native QPE unitary families
+
+The native QPE frontend admits a bounded static one-parameter lambda for a
+power-dependent unitary family, alongside unchanged zero-argument callbacks.
+It reuses shared controlled effects and inverse Fourier without new IR or
+numerical kernels. Independent complete-state tests cover nonlinear powers,
+conditional scalar phase, matrix no-double-power behavior, lexical scope,
+alias/escape rejection and resource budgets. This is local CPU correctness;
+no release, hardware, optimality or scalability promotion is implied.
