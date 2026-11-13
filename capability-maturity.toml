@@ -2333,6 +2333,24 @@ limitations = "At least three sites, finite static real coefficients and interle
 focused_tests = "tests/unit/fermion/test_hubbard_ring.py"
 integration_tests = "tests/integration/test_fermion_hubbard_ring.py"
 development_artifact = "docs/development/FERMION_HUBBARD_RING.md"
+[capabilities.fermion_hubbard_graph]
+title = "Spinful Fermi-Hubbard explicit graph"
+summary = "Assemble a static simple-graph Hamiltonian in native fermionic algebra and compose it with existing encodings, measurement and circuit-angle training."
+category = "simulation_and_training"
+user_goals = ["Build a spinful model from explicit undirected edges, including branching and disconnected graphs", "Reuse native encodings and train a bounded determinant pair with an independently verified spectator sign"]
+public_apis = ["flagquantum.algorithms.fermion.hubbard.fermi_hubbard_graph"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "unsupported"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/algorithms/fermion_hubbard_graph.py"
+documentation = "docs/development/FERMION_HUBBARD_GRAPH.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Explicit finite undirected simple graphs with uniform static real t, U and mu and interleaved spins only. Empty graphs and isolated sites are valid; self edges, duplicate/reversed edges and invalid endpoints are refused even at zero hopping. Supply explicit encoding width 2*n_sites. No weighted/complex edges, flux, coefficient gradients, general encoded ansatz transformation or graph solver. Independent small occupation matrices and three-encoding checks establish bounded correctness. The CPU JW training example optimizes one manually specified determinant pair without dense eigenstate preparation; its minimum -1.6 is not the graph ground energy. Only the circuit angle is differentiable. No accelerator, distributed, scalability or full upstream compatibility claim; no OpenFermion or Cirq dependency."
+focused_tests = "tests/unit/fermion/test_hubbard_graph.py"
+integration_tests = "tests/integration/test_fermion_hubbard_graph.py"
+development_artifact = "docs/development/FERMION_HUBBARD_GRAPH.md"
 [capabilities.fermion_pauli_symmetry_discovery]
 title = "Commuting Pauli symmetry discovery"
 summary = "Discover a deterministic independent commuting subgroup of encoded Pauli symmetries and select joint sectors with existing native reduction."

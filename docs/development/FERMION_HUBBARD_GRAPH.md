@@ -87,3 +87,29 @@ The recorded example energy is 0.0339385184 initially and -1.5997840500 after
 populations are 1.000000. Last digits may vary by platform. These focused local
 checks are not full-suite or actual-main acceptance. Broad Linux checks remain
 assigned to PR CI, and no new capability maturity is registered by this branch.
+
+
+## Merged implementation acceptance
+
+Implementation [#1174](https://github.com/flagos-ai/FlagQuantum/pull/1174) merged
+as `a8fc1fc5494f68a262cb24a293e00c5c53a9874a`. Its tree
+`ebdfdc592954aa08e022735e143cd64265231b79` is identical to reviewed head
+`b223f5e98240382da34f0c7d341e4dba804efd60`. PR CI run
+[43375308679](https://github.com/flagos-ai/FlagQuantum/actions/runs/43375308679)
+passed on attempt 2: 239 checks succeeded and three conditional checks skipped.
+Attempt 1 failed while downloading the source artifact with ECONNRESET before
+one coverage partition could execute; the failed partition and downstream
+coverage/final gates passed on rerun without source changes.
+
+The exact merged main checkout independently passed 54 graph unit, integration
+and CLI cases. Its
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43383069790)
+also passed. The full PR CI result applies to the identical merged tree; no
+second full-main CI run is claimed. These records qualify this revision's
+bounded CPU behavior only.
+
+A separate Integration-owned registration now proposes an `experimental`
+`fermion_hubbard_graph` entry, generated catalog and known limitations. It does
+not promote chain/ring entries or make the model coefficients differentiable.
+The constructor has no gradient support; ordinary native execution in the
+example differentiates its circuit angle.
