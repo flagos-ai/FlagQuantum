@@ -67,6 +67,7 @@ Native FlagQuantum programs currently available:
 - [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
 - [overview](chemistry/second_quantized_hamiltonian/overview/README.md)
 - [overview](cybersecurity/whitebox_fuzzing/overview/README.md)
+- [overview](finance/portfolio_optimization/overview/README.md)
 - [overview](optimization/integer_linear_programming/overview/README.md)
 - [overview](optimization/max_clique/overview/README.md)
 - [overview](optimization/max_independent_set/overview/README.md)

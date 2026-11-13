@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 90
+    assert len(validated) == 91
+    assert (
+        "applications/finance/portfolio_optimization/portfolio_optimization",
+        "examples/synthesis/applications/finance/portfolio_optimization/overview/main.py",
+    ) in validated
     assert (
         "applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing",
         "examples/synthesis/applications/cybersecurity/whitebox_fuzzing/overview/main.py",
@@ -489,7 +493,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**90/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**91/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

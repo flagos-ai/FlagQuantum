@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **90/213**.
+Validated local Notebook workflows: **91/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -241,7 +241,7 @@ Validated local Notebook workflows: **90/213**.
 | `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/main.py) | pending |
 | `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/main.py) | pending |
 | `applications/finance/option_pricing/option_pricing` | notebook_workflow | [Native program](applications/finance/option_pricing/main.py) | pending |
-| `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/main.py) | pending |
+| `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/overview/main.py) | validated |
 | `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_bruteforce_method/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_direct_method/main.py) | pending |
