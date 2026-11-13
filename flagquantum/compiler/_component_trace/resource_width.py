@@ -12,12 +12,15 @@ from __future__ import annotations
 
 from collections.abc import Callable, MutableMapping
 
+from ..registers.arithmetic.arithmetic_declarations import arithmetic_callees
+from ..registers.bits.bitwise_width import BITWISE_WIDTH_OPERATIONS, bitwise_width
 from ..registers.bits.fanout_width import fanout_width
 from ..registers.control.multi_and_width import multi_and_width
 from ..registers.primitives.controlled_swap_width import controlled_swap_width
 from ..registers.primitives.relative_controlled_swap_width import (
     relative_controlled_swap_width,
 )
+from .arithmetic_call import ArithmeticCall
 from .logical_width import query_logical_width
 from .resource_decomposition import decomposed_resource_callees
 from .resource_generalization import (
@@ -62,6 +65,11 @@ def query_resource_logical_width(
             for call in _active_calls(node):
                 peak = smax(peak, child(call.component) + call.bystander_qubits)
             return peak
+        if (
+            isinstance(node, ArithmeticCall)
+            and node.operation in BITWISE_WIDTH_OPERATIONS
+        ):
+            return bitwise_width(node, child)
         if isinstance(node, ConjunctionCall):
             return multi_and_width(node, child)
         if isinstance(node, ControlledSwapCall):
@@ -109,6 +117,11 @@ def query_resource_logical_width(
             declared_calls is not None and node in declared_calls
         ):
             return tuple(decomposed_resource_callees(node, declared_calls))
+        if (
+            isinstance(node, ArithmeticCall)
+            and node.operation in BITWISE_WIDTH_OPERATIONS
+        ):
+            return tuple(arithmetic_callees(node).items())
         if isinstance(node, ConjunctionCall):
             size = (
                 len(node.controls)
@@ -132,6 +145,8 @@ def query_resource_logical_width(
 
 
 def _signature_width(node: ResourceCall) -> SymbolicInt:
+    if isinstance(node, ArithmeticCall) and node.operation in BITWISE_WIDTH_OPERATIONS:
+        return node.widths[0] * (2 if node.operation == "xor" else 1)
     if isinstance(node, ConjunctionCall):
         size = len(node.controls) if isinstance(node.controls, tuple) else node.controls
         if isinstance(size, int) and (type(size) is bool or size < 2):
