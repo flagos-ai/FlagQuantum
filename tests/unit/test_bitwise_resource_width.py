@@ -260,7 +260,7 @@ def test_invalid_constant_rejected_before_cache_mutation(
 
 
 def test_unsupported_arithmetic_keeps_explicit_boundary() -> None:
-    root = ArithmeticCall("add", (3, 3))
+    root = ArithmeticCall("controlled_add", (3, 3))
     with pytest.raises(NotImplementedError):
         bitwise_width(root, lambda child: 0)
     with pytest.raises(NotImplementedError, match="No native logical width binding"):

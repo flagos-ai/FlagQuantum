@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, MutableMapping
 
+from ..registers.arithmetic.addition_width import addition_width
 from ..registers.arithmetic.arithmetic_declarations import arithmetic_callees
 from ..registers.bits.bitwise_width import BITWISE_WIDTH_OPERATIONS, bitwise_width
 from ..registers.bits.fanout_width import fanout_width
@@ -70,6 +71,8 @@ def query_resource_logical_width(
             and node.operation in BITWISE_WIDTH_OPERATIONS
         ):
             return bitwise_width(node, child)
+        if isinstance(node, ArithmeticCall) and node.operation == "add":
+            return addition_width(node, child)
         if isinstance(node, ConjunctionCall):
             return multi_and_width(node, child)
         if isinstance(node, ControlledSwapCall):
@@ -117,9 +120,9 @@ def query_resource_logical_width(
             declared_calls is not None and node in declared_calls
         ):
             return tuple(decomposed_resource_callees(node, declared_calls))
-        if (
-            isinstance(node, ArithmeticCall)
-            and node.operation in BITWISE_WIDTH_OPERATIONS
+        if isinstance(node, ArithmeticCall) and node.operation in (
+            *BITWISE_WIDTH_OPERATIONS,
+            "add",
         ):
             return tuple(arithmetic_callees(node).items())
         if isinstance(node, ConjunctionCall):
@@ -145,6 +148,8 @@ def query_resource_logical_width(
 
 
 def _signature_width(node: ResourceCall) -> SymbolicInt:
+    if isinstance(node, ArithmeticCall) and node.operation == "add":
+        return sum(node.widths)
     if isinstance(node, ArithmeticCall) and node.operation in BITWISE_WIDTH_OPERATIONS:
         return node.widths[0] * (2 if node.operation == "xor" else 1)
     if isinstance(node, ConjunctionCall):
