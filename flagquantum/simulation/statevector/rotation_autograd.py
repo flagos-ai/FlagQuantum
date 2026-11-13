@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 
 
 class _Context(Protocol):
-    wire: int
-    n_wires: int
+    qubit: int
+    n_qubits: int
 
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
@@ -52,7 +52,7 @@ def _require_fp64_kernel(state: torch.Tensor, backward: bool = False) -> None:
 
 
 def _apply_real_ry(
-    state: torch.Tensor, matrix: torch.Tensor, wire: int, n_wires: int
+    state: torch.Tensor, matrix: torch.Tensor, qubit: int, n_qubits: int
 ) -> torch.Tensor:
     """Apply the real RY matrix to both float64 components of complex128."""
     if (
@@ -63,10 +63,10 @@ def _apply_real_ry(
         _require_fp64_kernel(state)
         from ...kernels.triton.statevector_ry_fp64 import forward
 
-        return forward(state, matrix.reshape(-1, 2, 2), wire, n_wires)
+        return forward(state, matrix.reshape(-1, 2, 2), qubit, n_qubits)
     batch = state.shape[0]
     values = torch.view_as_real(state.resolve_conj()).reshape(
-        batch, 1 << wire, 2, 1 << (n_wires - wire - 1), 2
+        batch, 1 << qubit, 2, 1 << (n_qubits - qubit - 1), 2
     )
     low, high = values[:, :, 0], values[:, :, 1]
     entries = matrix.real.reshape(-1, 2, 2)
@@ -95,12 +95,12 @@ class _RYRotation(torch.autograd.Function):
         state: torch.Tensor,
         parameters: torch.Tensor,
         matrix: torch.Tensor,
-        wire: int,
-        n_wires: int,
+        qubit: int,
+        n_qubits: int,
     ) -> torch.Tensor:
-        result = _apply_real_ry(state, matrix, wire, n_wires)
+        result = _apply_real_ry(state, matrix, qubit, n_qubits)
         ctx.save_for_backward(result, parameters)
-        ctx.wire, ctx.n_wires = wire, n_wires
+        ctx.qubit, ctx.n_qubits = qubit, n_qubits
         return result
 
     @staticmethod
@@ -108,7 +108,7 @@ class _RYRotation(torch.autograd.Function):
         ctx: _Context, gradient: torch.Tensor
     ) -> tuple[torch.Tensor | None, torch.Tensor | None, None, None, None]:
         output, parameters = ctx.saved_tensors
-        wire, n_wires = ctx.wire, ctx.n_wires
+        qubit, n_qubits = ctx.qubit, ctx.n_qubits
         state_gradient = parameter_gradient = None
         if gradient.device.type == "flagos" and not torch.is_grad_enabled():
             _require_fp64_kernel(gradient, backward=True)
@@ -122,8 +122,8 @@ class _RYRotation(torch.autograd.Function):
                 gradient,
                 output,
                 matrix,
-                wire,
-                n_wires,
+                qubit,
+                n_qubits,
                 state=ctx.needs_input_grad[0],
                 angle=ctx.needs_input_grad[1],
             )
@@ -140,9 +140,9 @@ class _RYRotation(torch.autograd.Function):
             matrix_real = torch.stack((cosine, sine, -sine, cosine), dim=-1)
             matrix_real = matrix_real.reshape(-1, 2, 2)
             matrix = torch.complex(matrix_real, torch.zeros_like(matrix_real))
-            state_gradient = _apply_real_ry(gradient, matrix, wire, n_wires)
+            state_gradient = _apply_real_ry(gradient, matrix, qubit, n_qubits)
         if ctx.needs_input_grad[1]:
-            shape = (output.shape[0], 1 << wire, 2, 1 << (n_wires - wire - 1), 2)
+            shape = (output.shape[0], 1 << qubit, 2, 1 << (n_qubits - qubit - 1), 2)
             values = torch.view_as_real(output.resolve_conj()).reshape(shape)
             grads = torch.view_as_real(gradient.resolve_conj()).reshape(shape)
             products = torch.addcmul(

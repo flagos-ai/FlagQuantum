@@ -1,13 +1,25 @@
 """Exact permutation and derivative conformance for FP64 Torch-FL CX kernels."""
 
+import os
+from importlib import import_module
+
 import pytest
 
-pytest.importorskip("torch_fl")
+if os.environ.get("FLAGQUANTUM_TEST_TORCH_FL_FP64") != "1":
+    pytest.skip(
+        "set FLAGQUANTUM_TEST_TORCH_FL_FP64=1 in a validated Torch-FL GPU environment",
+        allow_module_level=True,
+    )
+
+else:
+    # Registration must happen before importing torch in an opted-in process.
+    import_module("torch_fl")
+
 import torch
 
 from flagquantum.simulation.statevector.cx_fp64_autograd import apply_cx_sequence
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.gpu, pytest.mark.triton, pytest.mark.integration]
 
 
 def reference(state, controls, targets, n):

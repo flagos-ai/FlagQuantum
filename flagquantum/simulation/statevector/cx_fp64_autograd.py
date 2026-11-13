@@ -14,7 +14,7 @@ from ..kernel_dispatch import _require_cataloged_kernel
 class _Context(Protocol):
     controls: tuple[int, ...]
     targets: tuple[int, ...]
-    n_wires: int
+    n_qubits: int
 
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
@@ -32,7 +32,7 @@ class _CXSequence(torch.autograd.Function):
         state: torch.Tensor,
         controls: tuple[int, ...],
         targets: tuple[int, ...],
-        n_wires: int,
+        n_qubits: int,
     ) -> torch.Tensor:
         request = KernelRequest(
             semantic_id="statevector.apply.cnot_sequence.local",
@@ -50,8 +50,8 @@ class _CXSequence(torch.autograd.Function):
         )
         from ...kernels.triton.statevector_cx_fp64 import apply_cx
 
-        ctx.controls, ctx.targets, ctx.n_wires = controls, targets, n_wires
-        return apply_cx(state, controls, targets, n_wires)
+        ctx.controls, ctx.targets, ctx.n_qubits = controls, targets, n_qubits
+        return apply_cx(state, controls, targets, n_qubits)
 
     @staticmethod
     def backward(
@@ -59,7 +59,7 @@ class _CXSequence(torch.autograd.Function):
     ) -> tuple[torch.Tensor, None, None, None]:
         return (
             _apply_cx_sequence(
-                gradient, ctx.controls[::-1], ctx.targets[::-1], ctx.n_wires
+                gradient, ctx.controls[::-1], ctx.targets[::-1], ctx.n_qubits
             ),
             None,
             None,
@@ -68,10 +68,10 @@ class _CXSequence(torch.autograd.Function):
 
 
 def apply_cx_sequence(
-    state: torch.Tensor, controls: Sequence[int], targets: Sequence[int], n_wires: int
+    state: torch.Tensor, controls: Sequence[int], targets: Sequence[int], n_qubits: int
 ) -> torch.Tensor:
     """Preserve arbitrary-order input derivatives through a reversible permutation."""
-    return _apply_cx_sequence(state, tuple(controls), tuple(targets), n_wires)
+    return _apply_cx_sequence(state, tuple(controls), tuple(targets), n_qubits)
 
 
 def _apply_cx_sequence(*args: object) -> torch.Tensor:

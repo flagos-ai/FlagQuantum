@@ -141,3 +141,19 @@ Other circuit families/devices, torch.func, graph capture/compile/export,
 multiple streams, distributed execution and full framework CI are not certified.
 No capability maturity is promoted. Kernel errors propagate. The full required
 CI and fresh dual-vendor performance measurements remain merge/release gates.
+
+### Opt-in kernel conformance
+
+Torch-FL is an externally provisioned platform, not a pip extra. On either
+validated vendor runtime, import its registration before pytest and enable the
+explicit device tests:
+
+```bash
+export FLAGQUANTUM_TEST_TORCH_FL_FP64=1
+python -c 'import torch_fl, pytest; raise SystemExit(pytest.main(["-q", "tests/unit/test_statevector_ry_fp64.py", "tests/unit/test_statevector_cx_fp64.py"]))'
+```
+
+Without this opt-in these hardware tests skip; that is not portability evidence.
+With the opt-in, a missing platform package or unavailable device is an error.
+The FlagTree suite lists the evidence files, but its stock CUDA environment
+does not itself establish Torch-FL device support.

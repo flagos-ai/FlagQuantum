@@ -40,29 +40,29 @@ def apply_cx(
     state: torch.Tensor,
     controls: tuple[int, ...],
     targets: tuple[int, ...],
-    n_wires: int,
+    n_qubits: int,
 ) -> torch.Tensor:
     """Apply a CX sequence by mapping each destination to its exact source."""
     if state.device.type != "flagos" or state.dtype != torch.complex128:
         raise ValueError("FP64 CX requires a complex128 Torch-FL state")
-    if state.ndim != 2 or state.shape[1] != 1 << n_wires:
+    if state.ndim != 2 or state.shape[1] != 1 << n_qubits:
         raise ValueError("CX state shape must match its qubit count")
     if not controls or len(controls) != len(targets):
         raise ValueError("CX controls and targets must be equally sized and nonempty")
     if any(
-        not 0 <= c < n_wires or not 0 <= t < n_wires or c == t
+        not 0 <= c < n_qubits or not 0 <= t < n_qubits or c == t
         for c, t in zip(controls, targets, strict=True)
     ):
-        raise ValueError("CX wires must be distinct valid qubit indices")
+        raise ValueError("CX qubits must be distinct valid qubit indices")
     state = state.resolve_conj().contiguous()
     out = torch.empty(state.shape, device=state.device, dtype=state.dtype)
     # Source addressing traverses gates in reverse chronological order.
-    c_bits = tuple(n_wires - c - 1 for c in controls[::-1])
-    t_bits = tuple(n_wires - t - 1 for t in targets[::-1])
-    _cx[(triton.cdiv(2 << n_wires, 1024), state.shape[0])](
+    c_bits = tuple(n_qubits - c - 1 for c in controls[::-1])
+    t_bits = tuple(n_qubits - t - 1 for t in targets[::-1])
+    _cx[(triton.cdiv(2 << n_qubits, 1024), state.shape[0])](
         torch.view_as_real(state),
         torch.view_as_real(out),
-        1 << n_wires,
+        1 << n_qubits,
         c_bits,
         t_bits,
         1024,

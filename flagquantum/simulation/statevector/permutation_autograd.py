@@ -28,19 +28,19 @@ _INDEX_CACHE_LIMIT = 3 * (1 << 30)
 def _full_index(
     controls: tuple[int, ...],
     targets: tuple[int, ...],
-    n_wires: int,
+    n_qubits: int,
     state: torch.Tensor,
 ) -> torch.Tensor:
     from .operations import _cx_sequence_permutation_index
 
-    key = (controls, targets, n_wires, str(state.device))
+    key = (controls, targets, n_qubits, str(state.device))
     if key in _INDEX_CACHE:
         _INDEX_CACHE.move_to_end(key)
         return _INDEX_CACHE[key]
     result = _cx_sequence_permutation_index(
         controls,
         targets,
-        n_wires,
+        n_qubits,
         device=state.device,
         dtype=state.dtype,
     )
@@ -88,21 +88,21 @@ def apply_compact_cx_sequence(
     state: torch.Tensor,
     controls: Sequence[int],
     targets: Sequence[int],
-    n_wires: int,
+    n_qubits: int,
 ) -> torch.Tensor:
-    """Gather only the participating contiguous wire interval, not global indices."""
+    """Gather only the participating contiguous qubit interval, not global indices."""
     from .operations import _cx_sequence_permutation_index
 
     first, last = min((*controls, *targets)), max((*controls, *targets))
     width = last - first + 1
     if first >= 8:
-        forward = _full_index(tuple(controls), tuple(targets), n_wires, state)
+        forward = _full_index(tuple(controls), tuple(targets), n_qubits, state)
         reverse = _full_index(
-            tuple(controls)[::-1], tuple(targets)[::-1], n_wires, state
+            tuple(controls)[::-1], tuple(targets)[::-1], n_qubits, state
         )
-        return _apply_cx_permutation(state, forward, reverse, 1, 1 << n_wires, 1)
-    local_controls = tuple(wire - first for wire in controls)
-    local_targets = tuple(wire - first for wire in targets)
+        return _apply_cx_permutation(state, forward, reverse, 1, 1 << n_qubits, 1)
+    local_controls = tuple(qubit - first for qubit in controls)
+    local_targets = tuple(qubit - first for qubit in targets)
     forward = _cx_sequence_permutation_index(
         local_controls,
         local_targets,
@@ -117,7 +117,7 @@ def apply_compact_cx_sequence(
         device=state.device,
         dtype=state.dtype,
     )
-    outer, inner = 1 << first, 1 << (n_wires - last - 1)
+    outer, inner = 1 << first, 1 << (n_qubits - last - 1)
     return _apply_cx_permutation(state, forward, reverse, outer, 1 << width, inner)
 
 

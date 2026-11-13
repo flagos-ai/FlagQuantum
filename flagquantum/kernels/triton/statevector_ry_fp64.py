@@ -72,11 +72,11 @@ def _vjp(
         tl.store(partial_ptr + batch * tl.cdiv(size, block) + tl.program_id(0), value)
 
 
-def _validate(state: torch.Tensor, matrix: torch.Tensor, wire: int, n: int) -> None:
+def _validate(state: torch.Tensor, matrix: torch.Tensor, qubit: int, n: int) -> None:
     if state.device.type != "flagos" or state.dtype != torch.complex128:
         raise ValueError("FP64 RY requires a complex128 Torch-FL state")
-    if state.ndim != 2 or state.shape[1] != 1 << n or not 0 <= wire < n:
-        raise ValueError("RY state shape and wire must match the qubit count")
+    if state.ndim != 2 or state.shape[1] != 1 << n or not 0 <= qubit < n:
+        raise ValueError("RY state shape and qubit must match the qubit count")
     if matrix.device != state.device or matrix.dtype != torch.complex128:
         raise ValueError("RY matrix must share the state device and precision")
     if matrix.shape not in ((1, 2, 2), (state.shape[0], 2, 2)):

@@ -9,8 +9,8 @@ import torch
 
 
 class _Context(Protocol):
-    wire: int
-    n_wires: int
+    qubit: int
+    n_qubits: int
 
     @property
     def saved_tensors(self) -> tuple[torch.Tensor, ...]: ...
@@ -76,15 +76,15 @@ class _SingleWireMatrix(torch.autograd.Function):
         ctx: _Context,
         state: torch.Tensor,
         matrix: torch.Tensor,
-        wire: int,
-        n_wires: int,
+        qubit: int,
+        n_qubits: int,
     ) -> torch.Tensor:
         from .operations import _apply_single_wire_matrix
 
         ctx.save_for_backward(state, matrix)
-        ctx.wire = wire
-        ctx.n_wires = n_wires
-        return _apply_single_wire_matrix(state, matrix, wire, n_wires)
+        ctx.qubit = qubit
+        ctx.n_qubits = n_qubits
+        return _apply_single_wire_matrix(state, matrix, qubit, n_qubits)
 
     @staticmethod
     def backward(
@@ -93,16 +93,16 @@ class _SingleWireMatrix(torch.autograd.Function):
         from .operations import _apply_single_wire_matrix
 
         state, matrix = ctx.saved_tensors
-        wire, n_wires = ctx.wire, ctx.n_wires
+        qubit, n_qubits = ctx.qubit, ctx.n_qubits
         state_gradient = None
         matrix_gradient = None
         if ctx.needs_input_grad[0]:
             state_gradient = _apply_single_wire_matrix(
-                gradient, matrix.transpose(-1, -2).conj(), wire, n_wires
+                gradient, matrix.transpose(-1, -2).conj(), qubit, n_qubits
             )
         if ctx.needs_input_grad[1]:
             batch = state.shape[0]
-            outer, inner = 1 << wire, 1 << (n_wires - wire - 1)
+            outer, inner = 1 << qubit, 1 << (n_qubits - qubit - 1)
             before = state.reshape(batch, outer, 2, inner)
             after = gradient.reshape(batch, outer, 2, inner)
             before = before.permute(0, 2, 1, 3).reshape(batch, 2, -1).contiguous()
@@ -115,8 +115,8 @@ class _SingleWireMatrix(torch.autograd.Function):
         return state_gradient, matrix_gradient, None, None
 
 
-def apply_single_wire_matrix(
-    state: torch.Tensor, matrix: torch.Tensor, wire: int, n_wires: int
+def apply_single_qubit_matrix(
+    state: torch.Tensor, matrix: torch.Tensor, qubit: int, n_qubits: int
 ) -> torch.Tensor:
     """Use layout-preserving forward and reverse on complex128 statevectors."""
 
@@ -124,8 +124,8 @@ def apply_single_wire_matrix(
 
     matrix = matrix.to(device=state.device, dtype=state.dtype)
     if torch.is_grad_enabled() and (state.requires_grad or matrix.requires_grad):
-        return _apply_single_wire_matrix(state, matrix, wire, n_wires)
-    return _apply_single_wire_matrix(state, matrix, wire, n_wires)
+        return _apply_single_qubit_autograd(state, matrix, qubit, n_qubits)
+    return _apply_single_wire_matrix(state, matrix, qubit, n_qubits)
 
 
 def _apply_gate_matrix_bmm(*args: object) -> torch.Tensor:
@@ -136,7 +136,7 @@ def _apply_gate_matrix_bmm(*args: object) -> torch.Tensor:
     return result
 
 
-def _apply_single_wire_matrix(*args: object) -> torch.Tensor:
+def _apply_single_qubit_autograd(*args: object) -> torch.Tensor:
     apply: Callable[..., object] = _SingleWireMatrix.apply
     result = apply(*args)
     if not isinstance(result, torch.Tensor):

@@ -1,8 +1,20 @@
 """FP64 Torch-FL RY kernel and derivative conformance."""
 
+import os
+from importlib import import_module
+
 import pytest
 
-pytest.importorskip("torch_fl")
+if os.environ.get("FLAGQUANTUM_TEST_TORCH_FL_FP64") != "1":
+    pytest.skip(
+        "set FLAGQUANTUM_TEST_TORCH_FL_FP64=1 in a validated Torch-FL GPU environment",
+        allow_module_level=True,
+    )
+
+else:
+    # Registration must happen before importing torch in an opted-in process.
+    import_module("torch_fl")
+
 import torch
 
 from flagquantum.kernels.catalog import (
@@ -12,7 +24,7 @@ from flagquantum.kernels.catalog import (
 )
 from flagquantum.simulation.statevector.rotation_autograd import _RYRotation
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.gpu, pytest.mark.triton, pytest.mark.integration]
 
 
 def reference(x, p, w, n):

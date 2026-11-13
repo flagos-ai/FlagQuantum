@@ -57,7 +57,7 @@ from .index_basis import (
     _basis_offsets_tensor,
     _zero_basis_local_indices,
 )
-from .matrix_autograd import apply_gate_matrix_bmm, apply_single_wire_matrix
+from .matrix_autograd import apply_gate_matrix_bmm, apply_single_qubit_matrix
 from .program import _StatevectorControlledPhaseDecompositionStep
 from .program import (
     _StatevectorCrossWireDiagonalStep as _StatevectorCrossWireDiagonalStep,
@@ -727,7 +727,7 @@ def _apply_matrix(
         and state.dtype == torch.complex128
         and state.shape[-1] >= 1 << 22
     ):
-        return apply_single_wire_matrix(state, matrix, wires[0], n_wires)
+        return apply_single_qubit_matrix(state, matrix, wires[0], n_wires)
     if (
         len(wires) == 2
         and (

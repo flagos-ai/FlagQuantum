@@ -48,3 +48,22 @@ def test_wire_matrix_finite_differences(wire: int) -> None:
 
     assert torch.autograd.gradcheck(apply, (state, matrix))
     assert torch.autograd.gradgradcheck(apply, (state, matrix))
+
+
+def test_matrix_dispatch_retains_custom_autograd() -> None:
+    from flagquantum.simulation.statevector.matrix_autograd import (
+        apply_single_qubit_matrix,
+    )
+
+    torch.manual_seed(99)
+    state = torch.randn(2, 16, dtype=torch.complex128, requires_grad=True)
+    matrix = torch.randn(2, 2, dtype=torch.complex128, requires_grad=True)
+    output = apply_single_qubit_matrix(state, matrix, 2, 4)
+    assert output.grad_fn is not None
+    assert type(output.grad_fn).__name__ == "_SingleWireMatrixBackward"
+    reference = _apply_matrix_layout(state, matrix, (2,), 4)
+    torch.testing.assert_close(output, reference)
+    actual = torch.autograd.grad(output.abs().square().sum(), (state, matrix))
+    expected = torch.autograd.grad(reference.abs().square().sum(), (state, matrix))
+    for got, want in zip(actual, expected, strict=True):
+        torch.testing.assert_close(got, want)
