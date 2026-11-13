@@ -44,3 +44,9 @@ Controlled constant-add widths extend `constant_addition_width.py`, preserving
 control liveness across Always(Add). Controlled XorK belongs to the bits owner,
 and both polarities share the single-zero-control width owner.
 See [the interface and acceptance](../../../../docs/development/CONTROLLED_CONSTANT_RESOURCE_WIDTH.md).
+
+Out-of-place sum lifetimes live in `out_of_place_addition_width.py`. Physical
+emission and width connections share `out_of_place_addition_structure.py`.
+AND creates output bits and its exact adjoint consumes them, with one explicit
+low-output allocation/free. See
+[the interface and acceptance](../../../../docs/development/OUT_OF_PLACE_RESOURCE_WIDTH.md).

@@ -1439,3 +1439,31 @@ optional X2 with no work or measurements. Width binding adds zero physical
 gates, workspace and measurements. Dtype-to-width normalization, limited
 scalar allocations/casts, symbolic fallback underestimation, general control
 shapes and general register bindings remain open.
+
+## G2-OOP-WIDTH sum-output lifetime binding
+
+`out_of_place_addition_structure.py` shares the locked logical sequence between
+primitive emission and `out_of_place_addition_width.py`. Both output modes and
+directions bind existing arithmetic identities to recursive widths and Drawer.
+Complete normalized cache order, child-local peaks, symbolic fallback, zero
+failures/retry and full DOT comparisons are tested. Source gate/operand/feedback,
+complex amplitudes, all small measurement histories, output zero and append
+regression cover the extracted sequence. Actual primitives and source model
+categories are recorded separately in
+[OUT_OF_PLACE_RESOURCE_WIDTH.md](OUT_OF_PLACE_RESOURCE_WIDTH.md).
+
+Q-0734 remains open for further arithmetic and general register bindings.
+Source power inversion loses the truncation flag, explicit adjoint preserves it.
+Dtype-specific bookkeeping cache seeds, dirty/array allocation and symbolic
+fallback underestimation retain their existing boundaries.
+
+Acceptance passed 878 focused/7,522 concentrated/87 integration tests without
+skips, strict typing for six changed Python files, formatting, scope,
+architecture, IR and API checks. Eight unchanged reference blobs, nine Drawer
+doctests and the Markdown example pass. Structure, emitter, lifetime owner
+and resource-width dispatcher have full statement/branch coverage; sixteen
+measured modules have 99 percent combined coverage. Actual three-bit forward
+CX counts are 24 truncated and 33 full, versus source category AND2/Clifford12
+and AND3/Clifford15. Explicit adjoints use two/three classical slots and clear
+all output bits, with zero separate work. Initial fixture arity and explicit
+zip-mode diagnostics were corrected and rerun.
