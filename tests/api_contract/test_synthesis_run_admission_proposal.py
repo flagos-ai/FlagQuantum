@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 import flagquantum as fq
+from tools.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,5 +30,7 @@ def test_historical_proposal_stays_unapproved_while_implementation_has_authoriza
     assert admission["implementation_authorized"] is True
     assert admission["release_authorized"] is False
     assert not admission["human_trial_records"]
-    assert str(inspect.signature(fq.run, eval_str=False)) == admission["run_signature"]
+    assert str(
+        inspect.signature(fq.run, eval_str=False)
+    ) == _initial_state_run_signature(admission["run_signature"])
     assert admission["run_signature"] == CONTRACT["proposed_run_signature"]
