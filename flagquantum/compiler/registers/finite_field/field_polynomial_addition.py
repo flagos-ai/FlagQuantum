@@ -19,6 +19,8 @@ def gf2_polynomial_add_ir(
     source: tuple[int, ...],
     target: tuple[int, ...],
     layout: FieldPolynomialLayout,
+    *,
+    adjoint: bool = False,
 ) -> tuple[Instruction, ...]:
     """XOR corresponding coefficient words into target, highest power first.
 
@@ -26,16 +28,17 @@ def gf2_polynomial_add_ir(
     The caller provides leading zero coefficients when the actual polynomial
     degree is smaller than the bound. The source is preserved and there is no
     additional workspace. Applying the same operation twice is the identity.
+    The source adjoint reverses coefficient calls while preserving each
+    self-adjoint field adder's ascending CX order.
     """
     source_words = layout.split(source)
     target_words = layout.split(target)
     if set(source) & set(target):
         raise ValueError("Polynomial addition requires disjoint operand registers")
-    return tuple(
-        gate
-        for left, right in zip(source_words, target_words, strict=True)
-        for gate in gf2_add_ir(left, right)
-    )
+    pairs = tuple(zip(source_words, target_words, strict=True))
+    if adjoint:
+        pairs = tuple(reversed(pairs))
+    return tuple(gate for left, right in pairs for gate in gf2_add_ir(left, right))
 
 
 def _polynomial_width(
@@ -79,15 +82,18 @@ def gf2_polynomial_add_constant_ir(
     target: tuple[int, ...],
     coefficients: tuple[int, ...],
     layout: FieldPolynomialLayout,
+    *,
+    adjoint: bool = False,
 ) -> tuple[Instruction, ...]:
     """Add an encoded constant in descending degree order, padding on the left."""
     words = layout.split(target)
     padded = _constant_coefficients(coefficients, layout)
-    return tuple(
+    gates = tuple(
         gate
         for word, value in zip(words, padded, strict=True)
         for gate in gf2_add_constant_ir(word, value)
     )
+    return tuple(reversed(gates)) if adjoint else gates
 
 
 def source_gf2_polynomial_add_constant_resource_formula(
