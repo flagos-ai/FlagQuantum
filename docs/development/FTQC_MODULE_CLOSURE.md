@@ -1467,3 +1467,32 @@ CX counts are 24 truncated and 33 full, versus source category AND2/Clifford12
 and AND3/Clifford15. Explicit adjoints use two/three classical slots and clear
 all output bits, with zero separate work. Initial fixture arity and explicit
 zip-mode diagnostics were corrected and rerun.
+
+## G2-CXOR-WIDTH controlled register-XOR liveness
+
+The bits owner `controlled_xor_width.py` reuses atomic Toffoli emission from
+`controlled_register_xor.py`, the through-wire scheduler and the shared
+zero-control wrapper. Both words and the control remain caller-owned.
+Both polarities/directions and concrete/symbolic caches retain source order.
+Python and Sympy zero failures preserve the zero-control X partial cache and
+permit retry. Source self-adjoint child identity is canonical, while a native
+root can retain its direction. Bookkeeping keys keep dtype-to-width
+normalization. Details and separate emitted/model counts are in
+[CONTROLLED_XOR_RESOURCE_WIDTH.md](CONTROLLED_XOR_RESOURCE_WIDTH.md).
+
+Q-0734 remains open for further arithmetic and general register bindings.
+Dtype-specific cache seeds, dirty/array allocation and symbolic fallback
+underestimation retain their existing boundaries.
+
+Acceptance passed 1,060 focused/8,083 concentrated/87 integration tests without
+skips, strict typing for three changed files, formatting, scope, architecture,
+IR and API checks. Eight source blobs, nine Drawer doctests and the Markdown
+example pass. New owner30 statements/ten branches and the dispatcher have full
+coverage, with 99 percent across seventeen measured modules. Existing grouped
+XOR source gate/operand/feedback, all small forced measurement histories and
+clean predicate work pass. New normal-append tests preserve complex amplitudes
+with a spectator for either polarity, and double append restores the input.
+Three-bit words emit atomic CCX3 and optionally X2, with work0/measurement0.
+The model separately returns Toffoli3, Clifford0/2, peak7 and default T equivalent12.
+Initial symbolic-view fixture construction and resource-report method diagnostics
+were corrected and rerun.

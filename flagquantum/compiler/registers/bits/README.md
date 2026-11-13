@@ -31,3 +31,8 @@ caller control/target live without workspace. Run
 `python -m pytest tests/unit/test_controlled_constant_resource_width.py tests/unit/test_controlled_bitwise.py -q`.
 [The interface and evidence](../../../../docs/development/CONTROLLED_CONSTANT_RESOURCE_WIDTH.md)
 record source self-adjoint child identities and symbolic fallback limits.
+
+`controlled_xor_width.py` binds the existing controlled register-XOR emitter's
+atomic Toffolis to through-wire connections. Zero control reuses the shared
+control-flip wrapper with both words live. See
+[the interface and evidence](../../../../docs/development/CONTROLLED_XOR_RESOURCE_WIDTH.md).
