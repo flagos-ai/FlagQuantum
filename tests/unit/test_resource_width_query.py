@@ -13,12 +13,12 @@ from sympy import Integer, Symbol
 from flagquantum.compiler._component_trace.resource_generalization import (
     BookkeepingCall,
     CliffordCall,
-    ControlledSwapCall,
     FixedTCall,
     OnEachCall,
     PhaseCall,
     PowerCall,
     ResourceCall,
+    RotationCall,
     ZeroCostCall,
     identity_cost_key,
 )
@@ -264,7 +264,7 @@ def test_symbolic_power_failed_width_boundary_matches_source() -> None:
 @pytest.mark.parametrize(
     "root",
     [
-        ControlledSwapCall(3, approximate=True),
+        RotationCall("rz", 0.125),
         ZeroCostCall("identity"),
         ZeroCostCall("identity", ("bad",)),
         BookkeepingCall("split", (2, 3)),
@@ -275,7 +275,7 @@ def test_unsupported_binding_fails_and_explicit_provider_remains_available(
 ) -> None:
     with pytest.raises(NotImplementedError, match="logical width"):
         query_resource_logical_width(root)
-    if isinstance(root, ControlledSwapCall):
+    if isinstance(root, RotationCall):
         with pytest.raises(NotImplementedError, match="logical width"):
             export_resource_call_graph_dot(root, max_depth=0)
         assert "7" in export_resource_call_graph_dot(root, logical_width=lambda node: 7)

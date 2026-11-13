@@ -12,8 +12,12 @@ from __future__ import annotations
 
 from collections.abc import Callable, MutableMapping
 
+from ..registers.bits.fanout_width import fanout_width
 from ..registers.control.multi_and_width import multi_and_width
 from ..registers.primitives.controlled_swap_width import controlled_swap_width
+from ..registers.primitives.relative_controlled_swap_width import (
+    relative_controlled_swap_width,
+)
 from .logical_width import query_logical_width
 from .resource_decomposition import decomposed_resource_callees
 from .resource_generalization import (
@@ -22,6 +26,7 @@ from .resource_generalization import (
     ConjunctionCall,
     ControlledSwapCall,
     DeclaredResourceCalls,
+    FanoutCall,
     FixedTCall,
     OnEachCall,
     PhaseCall,
@@ -40,7 +45,7 @@ def query_resource_logical_width(
     declared_calls: DeclaredResourceCalls | None = None,
     cache: MutableMapping[ResourceCall, SymbolicInt] | None = None,
 ) -> SymbolicInt:
-    """Query owned atoms, components, wrappers, And ladders and exact swaps.
+    """Query owned atoms, components, wrappers, And ladders, swaps and fanout.
 
     ComponentCost owns local peaks and per-call bystanders. Gate declaration
     overrides affect the fallback call graph, while an available width
@@ -60,7 +65,11 @@ def query_resource_logical_width(
         if isinstance(node, ConjunctionCall):
             return multi_and_width(node, child)
         if isinstance(node, ControlledSwapCall):
+            if node.approximate:
+                return relative_controlled_swap_width(node, child)
             return controlled_swap_width(node, child)
+        if isinstance(node, FanoutCall):
+            return fanout_width(node, child)
         if isinstance(node, PowerCall):
             if type(node.repetitions) is not int:
                 raise ValueError("Symbolic power has no source width decomposition")
@@ -128,8 +137,10 @@ def _signature_width(node: ResourceCall) -> SymbolicInt:
         if isinstance(size, int) and (type(size) is bool or size < 2):
             raise ValueError("And width requires at least two controls")
         return 2 * size - 1
-    if isinstance(node, ControlledSwapCall) and not node.approximate:
+    if isinstance(node, ControlledSwapCall):
         return 2 * node.width + 1
+    if isinstance(node, FanoutCall):
+        return node.width + 1
     if isinstance(node, ComponentCost):
         return _component_width(node)
     if isinstance(node, PhaseCall):

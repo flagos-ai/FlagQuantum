@@ -38,10 +38,27 @@ def _relative_swap_gates(
     adjoint: bool,
     layer_rotations: bool = False,
 ) -> tuple[Instruction, ...]:
-    if not left or len(left) != len(right):
-        raise ValueError("Relative controlled swap requires equal nonempty words")
     if type(adjoint) is not bool:
         raise ValueError("Relative controlled swap requires a boolean adjoint flag")
+    before, after = _relative_swap_parts(left, right, layer_rotations=layer_rotations)
+    gates = (*before, *fanout_ir(control, right), *after)
+    if not adjoint:
+        return gates
+    return tuple(
+        Instruction(_INVERSE_PHASE.get(gate.name, gate.name), gate.wires)
+        for gate in reversed(gates)
+    )
+
+
+def _relative_swap_parts(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    *,
+    layer_rotations: bool = False,
+) -> tuple[tuple[Instruction, ...], tuple[Instruction, ...]]:
+    """Share the literal instruction segments around the fanout call."""
+    if not left or len(left) != len(right):
+        raise ValueError("Relative controlled swap requires equal nonempty words")
     right_to_left = tuple(
         Instruction("cx", (y, x)) for x, y in zip(left, right, strict=True)
     )
@@ -60,24 +77,20 @@ def _relative_swap_gates(
         return tuple(Instruction(gate, (wire,)) for wire in right for gate in sequence)
 
     inverse_rotation, rotation = rotate("tdg"), rotate("t")
-    gates = (
+    before = (
         *right_to_left,
         *inverse_rotation,
         *left_to_right,
         *inverse_rotation,
-        *fanout_ir(control, right),
+    )
+    after = (
         *rotation,
         *left_to_right,
         *rotation,
         *right_to_left,
     )
 
-    if not adjoint:
-        return gates
-    return tuple(
-        Instruction(_INVERSE_PHASE.get(gate.name, gate.name), gate.wires)
-        for gate in reversed(gates)
-    )
+    return before, after
 
 
 def control_relative_swap_ir(

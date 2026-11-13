@@ -341,7 +341,7 @@ def export_resource_call_graph_dot(
         width = logical_width(node)
         table[node] = {} if width is None else {PEAK_LOGICAL_QUBITS: width}
     for node, gates in costs.items():
-        table[node][GATE_COST] = gates
+        table.setdefault(node, {})[GATE_COST] = gates
     return export_call_graph_dot(
         graph.root,
         graph.direct_calls,

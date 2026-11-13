@@ -117,7 +117,9 @@ def _leaf_cost(node: ResourceCall, legacy: bool) -> QECGateCost | None:
         if node.adjoint:
             return QECGateCost(clifford=3 + flips if legacy else 1, measurement=1)
         return QECGateCost(and_bloq=1, clifford=flips)
-    if family == "clifford" or (isinstance(node, FanoutCall) and not legacy):
+    if family == "clifford" or (
+        isinstance(node, FanoutCall) and not node.adjoint and not legacy
+    ):
         return QECGateCost(clifford=1)
     if isinstance(node, (BookkeepingCall, ZeroCostCall)):
         return QECGateCost()

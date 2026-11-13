@@ -150,6 +150,7 @@ class MeasurementCall:
 @dataclass(frozen=True)
 class FanoutCall:
     width: SymbolicInt
+    adjoint: bool = False
 
 
 @dataclass(frozen=True)

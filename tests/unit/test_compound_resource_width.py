@@ -230,10 +230,10 @@ def test_unavailable_control_connections_fail_closed(
         query_resource_logical_width(ConjunctionCall(controls))
 
 
-def test_approximate_swap_keeps_explicit_provider_boundary() -> None:
+def test_approximate_swap_supports_automatic_and_explicit_provider() -> None:
     root = ControlledSwapCall(3, approximate=True)
-    with pytest.raises(NotImplementedError, match="fanout adjoint"):
-        query_resource_logical_width(root)
+    assert query_resource_logical_width(root) == 7
+    assert "7" in export_resource_call_graph_dot(root)
     assert "7" in export_resource_call_graph_dot(root, logical_width=lambda node: 7)
 
 
