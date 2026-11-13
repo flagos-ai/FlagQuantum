@@ -27,12 +27,102 @@
           "kind": "quantum_program"
         }
       ],
-      "workflow_status": "pending",
+      "workflow_status": "validated",
       "native_program": {
         "path": "examples/synthesis/algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/main.py",
-        "scope": "Quantum program only; complete training/Notebook workflow remains pending."
+        "scope": "Complete local CPU Notebook computation: original ten-bit subset-majority data and shuffle, disjoint 340/512 split, batch size 64, Linear/Tanh/quantum/Linear/ReLU network, pinned pretrained weights, SGD(lr=0.05), MSE, one-epoch continuation and 30-epoch from-scratch training, rounded-label held-out evaluation. Exact complex128 readout replaces the original 4096-shot QLayer; no sampled, hardware, convergence or scalability claim."
       },
-      "kind": "notebook_workflow"
+      "kind": "notebook_workflow",
+      "workflow_validation": {
+        "upstream_path": "algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority.qmod",
+        "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+        "original_sha256": "e7070708b270852ae1301029ebf4af23114487f8e1b7f21b3b14f4b54f781b6e",
+        "scope": "Complete local CPU Notebook computation: original ten-bit subset-majority data and shuffle, disjoint 340/512 split, batch size 64, Linear/Tanh/quantum/Linear/ReLU network, pinned pretrained weights, SGD(lr=0.05), MSE, one-epoch continuation and 30-epoch from-scratch training, rounded-label held-out evaluation. Exact complex128 readout replaces the original 4096-shot QLayer; no sampled, hardware, convergence or scalability claim.",
+        "native_semantic_adaptations": "Preserve all four encoded features, three quantum angles, source logical register order, architecture, loss and optimizer. Compose the existing fq.Module with a differentiable Circuit builder; entrywise complete-state tests link it to the native qfunc program. Float64 classical parameters and exact complex128 expectations replace float32/4096-shot execution. Store the five original checkpoint tensors as JSON, map qlayer.weight to qlayer.parameters_tensor, and preserve every float32 value exactly as a float64 value. The final RZZ angle has zero gradient for Z-only marginals because the operators commute; it remains present. Seed local shuffling and initialization for reproducibility; training metrics need not improve monotonically.",
+        "native_entrypoint": "examples.synthesis.algorithms.machine_learning.hybrid_qnn.hybrid_qnn_for_subset_majority.workflow",
+        "acceptance_test": "tests/integration/test_synthesis_native_qnn_training.py",
+        "quantum_program_upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+        "notebook_path": "algorithms/QML/hybrid_qnn/hybrid_qnn_for_subset_majority.ipynb",
+        "git_blob_sha1": "3b539284c04a13e9e0ddd0d8f69ec67cfb1f4a8c",
+        "reviewed_code_cells": [
+          {
+            "index": 7,
+            "sha256": "20b8e78a176626e0983c29032a9aa5355d4072097a5ceeba013d72eae9bd6e7a"
+          },
+          {
+            "index": 8,
+            "sha256": "934a92df8a79cd8ed21b1f1f1c128eab456f3859bf7b857ff0ff2ab250917915"
+          },
+          {
+            "index": 9,
+            "sha256": "c08a482acc22bc45ba4c9517e9388eabcf1671e055d49eb5848a2d978b70169d"
+          },
+          {
+            "index": 10,
+            "sha256": "83bf3147c9326a4615285006d5e8fea92cd8fd68a230ac30eb3c0a10f1f55122"
+          },
+          {
+            "index": 12,
+            "sha256": "ae50b754c87615c355fdfb68bf740e0388e972a5b61f6e0ef2cac57464d43e54"
+          },
+          {
+            "index": 13,
+            "sha256": "d3a155e1e402ccf2ff137cf67fe6d22669275ac3f9a90b8292764208580fbbed"
+          },
+          {
+            "index": 14,
+            "sha256": "837da180ac5bb3e673db0d6884838833781d8f63561719a7da88cdb01599f371"
+          },
+          {
+            "index": 19,
+            "sha256": "eafd3243301e91f0c508f78e095959a2ec4940e154f6bfa8844b37a79d4822d8"
+          },
+          {
+            "index": 20,
+            "sha256": "e0b55d96ef927e7d229d058a1276a15ada1bc29e4871bf2112896350c523ef18"
+          },
+          {
+            "index": 21,
+            "sha256": "c5309a0ccea4b913908d1e96d1897846d74c7eb85b37dac4f80c092c06089e4b"
+          },
+          {
+            "index": 24,
+            "sha256": "666d5420f3c866b84e9df560a323dd74d5eedcf376830207a9060085496c1508"
+          },
+          {
+            "index": 27,
+            "sha256": "375cd714ee7d200178867a891e85eb5edca4fe2c69485d620c42b9331b2738c3"
+          },
+          {
+            "index": 29,
+            "sha256": "1ae60d0187c5effcda85ebe7987a9bd415642ab58d26fb2ee7afde049a59b0ad"
+          },
+          {
+            "index": 31,
+            "sha256": "ba7e0ad5e3195099811f18a37602e321812b94814b8ab9b96d492de440c17a01"
+          },
+          {
+            "index": 34,
+            "sha256": "9b751a69840125de40e97892f8219377bb988ffc6469115025759c7d32e72ee4"
+          },
+          {
+            "index": 35,
+            "sha256": "26d962d5b8143da592d5ff45ef47ddcf3af08142acad8297a155b2c0cc6517a2"
+          },
+          {
+            "index": 36,
+            "sha256": "7a266c025bf00fc9b38f2403e96b648e31485ee86798bc29de69433455ae3b35"
+          }
+        ],
+        "pretrained_checkpoint": {
+          "upstream_path": "algorithms/QML/hybrid_qnn/trained_model.pth",
+          "git_blob_sha1": "05d65902ac38ef884a190f21668b3bb728be422c",
+          "original_sha256": "c5cedb2be2c7538f4006a9c17afe4dbdea42f42ade83a186cd142e5a62fd4e6d",
+          "native_path": "examples/synthesis/algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/pretrained.json",
+          "native_sha256": "fe90f518962d17b8d309e854c4bb0e0411fc65b4cb7c740592ebef9fffdab123",
+          "conversion": "torch.load(weights_only=True, map_location=\"cpu\"); tensor.tolist(); no weight fitting or rounding"
+        }
+      }
     },
     {
       "id": "algorithms/QML/qgan/qgan_bars_and_strips",

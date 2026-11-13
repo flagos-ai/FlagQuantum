@@ -82,7 +82,7 @@ def test_qml_helpers_preserve_finite_plain_real_parameter_checks(
         build([0.1] * 4, [value] + [0.1] * (count - 1))
 
 
-def test_quantum_programs_do_not_certify_complete_training_notebooks() -> None:
+def test_quantum_program_and_training_workflow_acceptance_remain_separate() -> None:
     inventory = json.loads(
         (ROOT / "tests/fixtures/classiq_qmod/native_library_inventory.json").read_text()
     )
@@ -92,4 +92,10 @@ def test_quantum_programs_do_not_certify_complete_training_notebooks() -> None:
             "algorithms/QML/qgan/qgan_bars_and_strips",
         }:
             assert group["native_program"]
-            assert group["workflow_status"] == "pending"
+            if group["id"] == "algorithms/QML/qgan/qgan_bars_and_strips":
+                assert group["workflow_status"] == "pending"
+            else:
+                assert group["workflow_status"] == "validated"
+                assert group["workflow_validation"]["acceptance_test"] == (
+                    "tests/integration/test_synthesis_native_qnn_training.py"
+                )
