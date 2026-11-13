@@ -60,6 +60,14 @@ def _expectation_pauli_string(
         for axis, qubits in (("X", x), ("Y", y), ("Z", z))
         for qubit in qubits
     )
+    if (
+        current_state.device.type == "flagos"
+        and current_state.dtype == torch.complex128
+        and current_state.shape[-1] >= 1 << 22
+    ):
+        from .expectation_autograd import _apply_pauli_expectation
+
+        return _apply_pauli_expectation(current_state, operators, circuit.n_qubits)
     dispatched = _try_apply_cataloged_statevector_pauli_expectation(
         current_state, operators
     )

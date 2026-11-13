@@ -1597,3 +1597,10 @@ integral storage and is not a scalability claim. Differentiable tensors must
 remain outside the static `MolecularProblem` snapshot path. See
 [the stage contract](../development/FERMION_ORBITAL_GRADIENTS.md) and run
 `python -m examples.algorithms.fermion_orbital_rotation`.
+
+Experimental Torch-FL FP64 RY/CX statevector training has a bounded
+[development experiment](../../benchmarks/torch_fl_fp64/README.md). It uses
+explicit vendor boxing plus cataloged experimental Triton kernels; it does not
+establish default FlagGems complex128 support, other circuit families,
+torch.func, compiled/exported execution, multi-stream or distributed support.
+Recorded performance predates PR integration and is not release certification.
