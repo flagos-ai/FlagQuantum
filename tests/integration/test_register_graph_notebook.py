@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_graphs", 13, 10, 0),
         ("register_musical_score", 3, 1, 1),
         ("resource_call_graphs", 3, 2, 0),
+        ("register_addition", 20, 6, 3),
     ],
 )
 def test_register_graph_notebook_kernel_without_reference_imports(
