@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 77
+    assert len(validated) == 78
+    assert (
+        "algorithms/foundational/quantum_teleportation/quantum_teleportation",
+        "examples/synthesis/algorithms/foundational/quantum_teleportation/overview/main.py",
+    ) in validated
     assert (
         "community/paper_implementation_project/bb84/bb84_implementation",
         "examples/synthesis/community/paper_implementation_project/bb84/bb84_implementation/overview/main.py",
@@ -437,7 +441,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**77/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**78/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

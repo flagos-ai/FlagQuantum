@@ -53,6 +53,7 @@ Native FlagQuantum programs currently available:
 - [overview](amplitude_amplification_and_estimation/quantum_counting/overview/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)
+- [overview](foundational/quantum_teleportation/overview/README.md)
 - [overview](foundational/simon/overview/README.md)
 - [overview](hamiltonian_simulation/hamiltonian_simulation_guide/overview/README.md)
 - [overview](hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/README.md)
