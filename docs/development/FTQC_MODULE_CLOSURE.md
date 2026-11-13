@@ -29,14 +29,14 @@ concrete remaining work for open files. Reports lead with complete files closed
 and remaining gaps, followed by commits and verification scope. Capability
 subitems continue to index evidence within the fixed 1,280-file inventory.
 
-The next batch is Q-0198 `arithmetic/hamming_weight.py` and Q-0199
-`arithmetic/hamming_weight_test.py`, including only closure-critical And, Xor,
-generic adjoint and QubitCount dependencies. Reuse the completed Hamming stream,
-complex-amplitude, resource and width evidence. Audit every definition and
-original test assertion, retain the open Q-0198.02 boundary, and state each
-file's closure outcome. Q-0174 addition and its original tests are the next
-candidate. The prior queue of individual arithmetic-root width additions is
-superseded by this whole-file batch. This rule change closes zero source files.
+The latest whole-file batch is Q-0173/Q-0174/Q-0175 addition. Its notebook
+asset Q-0173 closes. The implementation Q-0174 and original test file Q-0175
+remain open for the source model/power-inversion discrepancies and the exact
+native admission/autotester/callback boundaries. All definitions and original
+assertions have an explicit disposition. The next batch selects complete
+GF2Addition/GF2AddK implementation/test files and their notebook assets,
+reusing the existing field codecs and emitters. The earlier queue of individual
+arithmetic-root width additions remains superseded by whole-file batches.
 
 ## Module closure criteria
 
@@ -1560,3 +1560,25 @@ formatting, scope, architecture, internal IR, protected API and the normal
 append example. Prior production-path regression/integration evidence is reused.
 The next complete-file batch is Q-0174 addition and Q-0175 original addition
 tests, with closure-critical direct dependencies selected after auditing them.
+
+## G2-FILE-ADDITION whole-file disposition
+
+Q-0173 `arithmetic/addition.ipynb` closes. All 33 cells and 20 code cells are
+covered by the native catalog/notebook, including ten original example
+signatures and one-level call graphs, six SVG displays and three concrete score
+views. Frozen source blobs, all source notebook cells and its unchanged original
+test function pass. Native table layout and resource names are explicit
+presentation adaptations. The implementation Q-0174 and original test Q-0175
+remain open for their centralized source defects and admission/callback gaps.
+See [the complete source/test matrix and resource accounts](ADDITION_FILE_AUDIT.md).
+
+The fixed inventory now has 34 closed, 1,246 open and 388 active parents.
+Capability records remain 1,210, including one historical record. Final batch
+regression passes 4,580 cases and independent-kernel/CPU/tensor integration
+passes 88, without skips. Strict typing covers five changed files, and formatting,
+scope, architecture, internal IR and protected API checks pass. Existing normal
+append preserves control/source and clears three work wires. Primitive and
+source-model counts remain separate. Drawer commit `4318c0e4` and notebook/test
+commit `d7cf6d32` are independent. No quantum emitter or numerical kernel changed.
+The next whole-file batch covers Q-0510/Q-0511 and Q-0513/Q-0514, with their
+Q-0509/Q-0512 notebook assets selected as closure-critical direct dependencies.
