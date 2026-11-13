@@ -31,3 +31,7 @@ symbolic fallback and Always wrappers. Run
 source cache/order, bystander peaks and DOT width-table acceptance.
 [ADDITION_RESOURCE_WIDTH.md](../../../../docs/development/ADDITION_RESOURCE_WIDTH.md)
 records lifetime ownership, dtype normalization and separate gate/model counts.
+
+CAdd connected resource widths live in `controlled_addition_width.py`. The owner
+keeps caller words live across controlled load, the shared Add child and erasure.
+See [the interface and acceptance](../../../../docs/development/CONTROLLED_ADDITION_RESOURCE_WIDTH.md).

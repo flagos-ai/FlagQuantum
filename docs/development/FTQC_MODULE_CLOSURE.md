@@ -1316,3 +1316,41 @@ Python files. Black, Ruff, scope, architecture, internal IR, protected API,
 nine Drawer doctests and the Markdown example pass. The new owner has 53
 statements and 30 branches, all covered. The shared width dispatcher is fully
 covered. Combined measured coverage over nine modules is 99 percent.
+
+
+## G2-CADD-WIDTH controlled-load resource connections
+
+`registers/arithmetic/controlled_addition_width.py` maps the frozen CAdd
+composite into existing width steps and connections. Caller control and
+big-endian words remain live while AND creates each loaded bit, the shared
+Add child owns carries, and reversed AND adjoints consume the loaded bits.
+The adjoint reverses graph edges, child identities, cast encoding order and
+view order. The dispatcher automatically binds both control polarities and
+both directions. Cast uses the existing bookkeeping key with width and
+input/output encodings. See
+[the interface and evidence](CONTROLLED_ADDITION_RESOURCE_WIDTH.md).
+
+All positive operand pairs through five bits, three/eight-bit operands,
+three encodings, symbolic/Sympy dimensions, nine mixed-encoding pairs,
+seeded child peaks and 180 full-DOT comparisons match the unchanged source.
+Source dtype views normalize to existing width-only split/join keys before
+cache value/order comparison. Arbitrary dtype-specific seeded caches remain
+open. Unsupported cast layouts, zero/reversed admission and gate-override
+independence have separate tests. Four frozen Git blobs pass verification.
+
+Acceptance passed 525 focused tests, 4,442 concentrated tests and 87 integration
+tests without skips. The new owner has 61 statements and 24 branches with full
+coverage, as does the width dispatcher. Ten measured modules have 99 percent
+combined coverage. Strict typing covers four changed files. Formatting, team
+scope, architecture, internal IR, protected API, nine Drawer doctests and the
+Markdown example pass. Concentrated/integration runs report 1,112/two existing
+warnings. An initial symbolic signature boolean addition was corrected and the
+symbolic matrix rerun.
+
+Physical CAdd(2,3) in either direction emits CX32/H12/T8/Tdg8/S4/measurement4/
+conditionalCZ4/reset4 with four work qubits and classical slots. Control-on-zero
+adds X8. The model separately returns AND4/Clifford13/measurement4/width10.
+One-bit CAdd's model Clifford -2 and Add's unequal-width formula boundaries
+remain explicit. This binding adds zero physical gates, work or measurements.
+Constant-add lifetimes, general register bindings, symbolic fallback
+underestimation and dtype-specific bookkeeping cache identity remain open.
