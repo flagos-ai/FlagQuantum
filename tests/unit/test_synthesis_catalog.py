@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 84
+    assert len(validated) == 85
+    assert (
+        "algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift",
+        "examples/synthesis/algorithms/number_theory_and_cryptography/hidden_shift/overview/main.py",
+    ) in validated
     assert (
         "algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix",
         "examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/overview/main.py",
@@ -465,7 +469,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**84/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**85/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

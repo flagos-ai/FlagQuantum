@@ -1253,3 +1253,20 @@ differing inputs, basis and routing profiles, request isolation, budget refusal
 and tamper behavior. The runnable eight-layer example at
 `examples/synthesis/applications/optimization/max_induced_k_color_subgraph/main.py`
 exercises this reuse through the unchanged public `synth.synthesize` workflow.
+
+### Boolean XOR from static bit views
+
+`frontend_xor` recognizes one writable `QBit` updated by constants 0/1,
+static one-bit views and `&`, `|`, `^`, `~`. It reuses `expand_native_phase`'s
+bounded Boolean predicate expansion (eight distinct reads) and emits existing
+indexed `qreg.control_x` effects for odd polynomial coefficients. All reads are
+witnessed even when terms cancel; physical target/read overlap is rejected.
+The XOR path cannot invoke phase factoring or sparse-phase fallbacks. Numeric
+and multi-bit expressions retain checked arithmetic lowering. Existing controlled-X
+scheduling chooses a budget-compatible workspace strategy; zero-workspace
+schedules remain legal when their actual cost fits the other limits.
+
+Run `tests/integration/test_synthesis_native_boolean_xor.py` for basis,
+nonzero-target, coherence, view, ownership and resource-budget checks. The full
+Hidden Shift Notebook is an original-size consumer, including an eight-input
+Boolean marker and independently verified binary reconstruction.
