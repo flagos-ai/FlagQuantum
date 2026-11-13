@@ -1587,6 +1587,26 @@ RSS and caller-retained batches. Zero stored columns are refused. See
 exact budgets, API mapping and remaining parity gaps. Native and installed
 acceptance are pending for this candidate.
 
+## Embedded noiseless stabilizer replacement candidate
+
+The recovered candidate routes existing noiseless `sample_stabilizer` calls
+through the embedded engine when its genuine build marker is present. Public
+signatures, CPU integer outputs, requested wire order and seed validation are
+unchanged. Marker-free installations keep the SDK path. This does not extend
+noise support, conditional feedback, differentiation, accelerator support,
+distribution semantics, parity or maturity. In particular, the separate
+explicit-record bounds do not introduce a new wire limit on this entry point.
+
+Fresh macOS arm64 offline wheel/sdist and three installed profiles now qualify
+this reconstructed candidate: no-SDK embedded 82 passed, embedded with SDK
+246 passed, and marker-free SDK 246 passed. Real native execution includes the
+16,384-wire regression. Complete smoke/unit passed 20,567 tests, with 296
+selected-node skips and 36 collection skips; integration completed 12,274 unique
+nodes across disjoint groups (12,028 passed, 246 skipped). Historical failures
+and recovery records remain evidence, not successful uninterrupted runs.
+Publication and actual-main acceptance remain separate from local qualification.
+Full Stim API compatibility and other platforms are not certified by this slice.
+
 ## Differentiable orbital rotations
 
 The experimental `algorithms.chemistry_domain.orbital_rotation` workflow uses

@@ -37,7 +37,10 @@ class _FakeSampler:
 
 
 @pytest.fixture
-def fake(monkeypatch: pytest.MonkeyPatch) -> _FakeSampler:
+def fake(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> _FakeSampler:
+    monkeypatch.setattr(
+        implementation, "__file__", str(tmp_path / "measurement_sampler.py")
+    )
     sdk = _FakeSampler()
 
     def prepare(operations: object, seed: int | None) -> _FakeSampler:
