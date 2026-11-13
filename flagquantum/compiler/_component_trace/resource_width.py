@@ -16,6 +16,9 @@ from ..registers.arithmetic.addition_width import addition_width
 from ..registers.arithmetic.arithmetic_declarations import arithmetic_callees
 from ..registers.arithmetic.constant_addition_width import constant_addition_width
 from ..registers.arithmetic.controlled_addition_width import controlled_addition_width
+from ..registers.arithmetic.out_of_place_addition_width import (
+    out_of_place_addition_width,
+)
 from ..registers.bits.bitwise_width import BITWISE_WIDTH_OPERATIONS, bitwise_width
 from ..registers.bits.controlled_constant_width import controlled_constant_width
 from ..registers.bits.fanout_width import fanout_width
@@ -74,6 +77,8 @@ def query_resource_logical_width(
             and node.operation in BITWISE_WIDTH_OPERATIONS
         ):
             return bitwise_width(node, child)
+        if isinstance(node, ArithmeticCall) and node.operation == "out_of_place_add":
+            return out_of_place_addition_width(node, child)
         if isinstance(node, ArithmeticCall) and node.operation == "add":
             return addition_width(node, child)
         if isinstance(node, ArithmeticCall) and node.operation == "controlled_add":
@@ -138,6 +143,7 @@ def query_resource_logical_width(
         if isinstance(node, ArithmeticCall) and node.operation in (
             *BITWISE_WIDTH_OPERATIONS,
             "add",
+            "out_of_place_add",
             "controlled_add",
             "constant_add",
             "controlled_constant_add",
@@ -167,6 +173,8 @@ def query_resource_logical_width(
 
 
 def _signature_width(node: ResourceCall) -> SymbolicInt:
+    if isinstance(node, ArithmeticCall) and node.operation == "out_of_place_add":
+        return 3 * node.widths[0] + int(node.include_most_significant_bit)
     if isinstance(node, ArithmeticCall) and node.operation in {"add", "controlled_add"}:
         return sum(node.widths) + int(node.operation == "controlled_add")
     if isinstance(node, ArithmeticCall) and node.operation in BITWISE_WIDTH_OPERATIONS:

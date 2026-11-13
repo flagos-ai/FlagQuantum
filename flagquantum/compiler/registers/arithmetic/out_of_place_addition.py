@@ -8,6 +8,7 @@
 
 from ....core.ir import Instruction
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
+from .out_of_place_addition_structure import out_of_place_addition_components
 
 
 def out_of_place_add_ir(
@@ -47,36 +48,19 @@ def out_of_place_add_ir(
         raise ValueError(
             f"Adder requires {measured} distinct nonnegative classical slots"
         )
-    a, b, c = left[::-1], right[::-1], output[::-1]
-    blocks = []
-    for i in range(count):
-        if adjoint:
-            blocks.append(
-                (
-                    Instruction("cx", (b[i], c[i])),
-                    Instruction("cx", (a[i], c[i + 1])),
-                    Instruction("cx", (a[i], b[i])),
-                    *and_uncompute_ir(b[i], c[i], c[i + 1], classical_bits[i]),
-                    Instruction("cx", (a[i], c[i])),
-                    Instruction("cx", (a[i], b[i])),
-                )
-            )
+    slots = dict(zip(output[::-1][1:], classical_bits, strict=False))
+    gates: list[Instruction] = []
+    for kind, operands in out_of_place_addition_components(
+        left, right, output, include_msb=include_msb, adjoint=adjoint
+    ):
+        if kind == "cx":
+            gates.append(Instruction("cx", operands))
+        elif kind == "and":
+            gates.extend(and_compute_ir(operands[0], operands[1], operands[2]))
         else:
-            blocks.append(
-                (
-                    Instruction("cx", (a[i], b[i])),
-                    Instruction("cx", (a[i], c[i])),
-                    *and_compute_ir(b[i], c[i], c[i + 1]),
-                    Instruction("cx", (a[i], b[i])),
-                    Instruction("cx", (a[i], c[i + 1])),
-                    Instruction("cx", (b[i], c[i])),
+            gates.extend(
+                and_uncompute_ir(
+                    operands[0], operands[1], operands[2], slots[operands[2]]
                 )
             )
-    top = (
-        (Instruction("cx", (a[-1], c[-1])), Instruction("cx", (b[-1], c[-1])))
-        if not include_msb
-        else ()
-    )
-    if adjoint:
-        return (*reversed(top), *(g for block in reversed(blocks) for g in block))
-    return (*(g for block in blocks for g in block), *top)
+    return tuple(gates)
