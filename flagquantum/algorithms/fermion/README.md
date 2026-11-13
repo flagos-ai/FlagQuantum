@@ -182,6 +182,26 @@ particle-sector support and native dependency isolation. See the
 for expected values and the zero-hopping stationary case. This example adds no
 solver or model API and makes no coefficient-gradient or scalability claim.
 
+Explicit undirected simple graphs use the experimental concrete
+`hubbard.fermi_hubbard_graph(n_sites, edges, t=..., u=..., mu=...)` constructor.
+It reuses chain onsite terms, counts each supplied bond once and retains native
+fermionic signs. It owns no topology type, graph library, encoding or solver.
+Self/duplicate edges and invalid endpoints fail before execution; empty graphs
+and isolated sites retain their explicit register width. Existing chain/ring
+constructors keep their separate interfaces and capability entries.
+
+Run `python -m examples.algorithms.fermion_hubbard_graph` for a four-site star
+with a down-spin spectator and a trainable up-spin determinant pair. It uses
+ordinary CPU JW expectations and SGD without dense eigenstate preparation.
+Change an edge and run
+`python -m pytest tests/unit/fermion/test_hubbard_graph.py tests/integration/test_fermion_hubbard_graph.py -q`.
+The [graph scope](../../../docs/development/FERMION_HUBBARD_GRAPH.md) records
+independent occupation matrices, encoding/producer replacement and the analytic
+nonlocal-hop gradient. Coefficients are static uniform real numbers; weighted or
+complex bonds, flux, coefficient gradients and accelerator/distributed evidence
+are outside this profile. Graph catalog registration remains a separate
+Integration change; no existing entry gains a broader support claim here.
+
 
 Diagonal symmetry discovery lives in `symmetry.discover_z_parities`. It returns
 independent encoded Z words for the existing `reduce_z_parities` consumer;

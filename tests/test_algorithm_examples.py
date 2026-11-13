@@ -21,6 +21,7 @@ phrase was chosen and for what it leaves uncovered.
 
 from __future__ import annotations
 
+import math
 import re
 import subprocess
 import sys
@@ -121,6 +122,7 @@ SCRIPTS = (
     "fermion_hubbard",
     "fermion_hubbard_training",
     "fermion_hubbard_ring_training",
+    "fermion_hubbard_graph",
     "fermion_spinless",
     "fermion_spinless_training",
     "fermion_parity_discovery",
@@ -148,6 +150,7 @@ SCRIPTS = (
 #   from that script's premise paragraph left the suite green with only the
 #   block-encoding phrase pinned.
 PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
+    "fermion_hubbard_graph": ("fixed determinant pair", "single_device_fast_path"),
     "fermion_h2_sector_training": (
         "Only the reduced circuit angle is trainable",
         "discovery does not infer sectors or transform UCCSD",
@@ -2032,6 +2035,19 @@ def test_fermion_hubbard_training_lowers_energy_with_valid_gradients() -> None:
     assert -1e-9 <= final - reference < 1e-5
     assert float(_labelled(output, "Particles")) == pytest.approx(2, abs=1e-10)
     _assert_premise("fermion_hubbard_training", output)
+
+
+def test_fermion_hubbard_graph_trains_a_bounded_pair() -> None:
+    output = _run("fermion_hubbard_graph")
+    assert "Graph: 4 sites, 3 undirected edges" in output
+    assert float(_labelled(output, "Initial energy")) == pytest.approx(
+        1.2 * math.sin(0.37) - 0.4, abs=1e-10
+    )
+    final = float(_labelled(output, "Final energy"))
+    assert -1.6 - 1e-10 <= final < -1.59
+    assert float(_labelled(output, "Gradient residual")) < 1e-9
+    assert "Alpha/beta populations: 1.000000, 1.000000" in output
+    _assert_premise("fermion_hubbard_graph", output)
 
 
 def test_fermion_hubbard_ring_training_lowers_energy() -> None:

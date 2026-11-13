@@ -336,6 +336,14 @@ The constructor counts each ring bond once and rejects fewer than three sites.
 See the [periodic-ring scope](../../docs/development/FERMION_HUBBARD_RING.md);
 dense reference preparation has exponential inspection cost.
 
+[`fermion_hubbard_graph.py`](fermion_hubbard_graph.py), run with
+`python -m examples.algorithms.fermion_hubbard_graph`, builds a four-site star
+from explicit edges and trains a fixed determinant pair through native CPU JW
+expectations and PyTorch SGD. A down-spin spectator reverses the nonlocal-hop
+sign. Only the circuit angle is trainable; no dense eigenstate is prepared and
+the pair minimum is not the full graph ground energy. See the
+[graph contributor path](../../docs/development/FERMION_HUBBARD_GRAPH.md).
+
 [`fermion_hubbard_ring_training.py`](fermion_hubbard_ring_training.py), run with
 `python -m examples.algorithms.fermion_hubbard_ring_training`, composes the
 three-site Hubbard ring with existing six-mode UCCSD and 60 PyTorch Adam updates.

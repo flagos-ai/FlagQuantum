@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from numbers import Real
 
 from ...core.algebra.pauli import count, scalar
@@ -101,6 +102,70 @@ def fermi_hubbard_ring(
         hop = create(2 * (n_sites - 1) + spin) * annihilate(spin)
         operator = operator - t * (hop + hop.dagger())
     return operator
+
+
+def fermi_hubbard_graph(
+    n_sites: int,
+    edges: Sequence[tuple[int, int]],
+    *,
+    t: float = 1.0,
+    u: float = 0.0,
+    mu: float = 0.0,
+) -> FermionOperator:
+    """Build a spinful Hubbard model on an explicit undirected simple graph.
+
+    Reuses chain onsite terms. Each supplied edge contributes minus-t hopping
+    for both spins, with interleaved modes 2*i and 2*i+1. No graph or dense
+    numerical representation is constructed. Empty graphs retain onsite terms.
+
+    Args:
+        n_sites: Positive site count; encode with explicit width 2*n_sites.
+        edges: Finite sequence of endpoint pairs, each undirected bond once.
+        t: Finite static real hopping amplitude, with coefficient -t.
+        u: Finite static real unshifted onsite interaction.
+        mu: Finite static real chemical potential, subtracted from population.
+
+    Raises:
+        TypeError: An input has the wrong type or an endpoint is not an integer.
+        ValueError: A size/coefficient is invalid, a pair is malformed, or an
+            edge is self-connected, repeated or outside the site register.
+
+    Examples:
+        >>> import flagquantum as fq
+        >>> from flagquantum.algorithms.fermion.encoding import encode_fermion
+        >>> from flagquantum.algorithms.fermion.observables import to_observable
+        >>> h = fermi_hubbard_graph(3, ((0, 1), (0, 2)), u=4, mu=1)
+        >>> encoded = encode_fermion(h, n_modes=6)
+        >>> result = fq.run(fq.Circuit(6).x(0).x(1),
+        ...                 outputs=[fq.expectation(to_observable(encoded.operator))])
+        >>> float(result.expectation().reshape(()))
+        2.0
+    """
+    n_sites = count(n_sites, "n_sites", minimum=1)
+    t = _real_coefficient(t, "t")
+    onsite = fermi_hubbard_chain(n_sites, t=0.0, u=u, mu=mu)
+    if isinstance(edges, (str, bytes)) or not isinstance(edges, Sequence):
+        raise TypeError("edges must be a finite sequence of endpoint pairs")
+    terms = list(onsite.terms)
+    seen: set[tuple[int, int]] = set()
+    for edge in edges:
+        if isinstance(edge, (str, bytes)) or not isinstance(edge, Sequence):
+            raise TypeError("each edge must be an endpoint pair")
+        if len(edge) != 2:
+            raise ValueError("each edge must contain exactly two endpoints")
+        left, right = (count(endpoint, "edge endpoint") for endpoint in edge)
+        if left >= n_sites or right >= n_sites:
+            raise ValueError("edge endpoint is outside n_sites")
+        if left == right:
+            raise ValueError("self edges are unsupported")
+        bond = (min(left, right), max(left, right))
+        if bond in seen:
+            raise ValueError("each undirected edge must occur exactly once")
+        seen.add(bond)
+        for spin in (0, 1):
+            hop = create(2 * left + spin) * annihilate(2 * right + spin)
+            terms.extend((-t * (hop + hop.dagger())).terms)
+    return FermionOperator(tuple(terms))
 
 
 def spinless_fermion_chain(

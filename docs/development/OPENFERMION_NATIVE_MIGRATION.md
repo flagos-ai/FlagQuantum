@@ -840,3 +840,22 @@ dependency or capability promotion. Automatic matched-ansatz construction,
 sector selection, coefficient/SCF gradients, larger-molecule qualification and
 accelerator/distributed evidence remain separate proposals, not unfinished H2
 delivery units. No further implementation slice or merge approval is implied.
+
+## Independent extension: explicit Hubbard graph
+
+The [graph scope](FERMION_HUBBARD_GRAPH.md) is a new Algorithms-owned proposal
+based on accepted main `4b1fbd7edcb2f24f00a74ff5ab1e921b1bcf89cb`. Its scope
+commit precedes implementation. The review branch adds the experimental concrete
+`fermi_hubbard_graph` constructor in the existing model module; chain/ring
+interfaces and capability entries remain unchanged. It accepts a finite explicit
+undirected simple edge list with uniform static real coefficients and returns
+the existing `FermionOperator`. It adds no graph library, topology contract,
+solver or execution policy. This is review work, not actual-main acceptance.
+
+Run `python -m examples.algorithms.fermion_hubbard_graph` for the bounded CPU JW
+training consumer. Independent occupation matrices and a spectator-sign gradient
+test verify model action; explicit paths/cycles replace existing producers at
+their existing consumers. Weighted/complex edges, flux, coefficient gradients
+and accelerator/distributed qualification remain outside this profile. A later
+Integration change may register the graph capability after scientific acceptance;
+this branch does not edit the capability registry or promote existing entries.
