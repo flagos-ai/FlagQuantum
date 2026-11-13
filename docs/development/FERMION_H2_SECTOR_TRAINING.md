@@ -5,8 +5,9 @@
 Algorithms owns this bounded composition of existing molecular input, native
 JW encoding, candidate-restricted symmetry discovery, explicit stabilizer
 reduction, ordinary circuit preparation, `fq.run` expectations and PyTorch SGD.
-The scope was committed before implementation; this feature branch now
-implements the paths below.
+The initial scope was committed before implementation and merged in #1171.
+The JW workflow below is implemented; the encoding extension at the end names
+the next bounded scope before its implementation.
 There is no new production API, solver, contract, dependency or capability entry.
 
 Use the existing H2 STO-3G FCIDUMP fixture at 0.7414 angstrom, with two spatial
@@ -52,7 +53,7 @@ Static integrals, geometry, SCF and symbolic reduction remain nondifferentiable.
 `tests/integration/test_fermion_h2_sector_training.py` owns independent scientific
 scenarios. The existing algorithm example inventory tests its source and CLI,
 and the fermion README links the workflow. The migration plan distinguishes the
-already merged Pauli training stage from this review branch.
+already merged Pauli and H2 training stages from subsequent review work.
 
 The shortest supported workflow and focused verification are:
 
@@ -77,3 +78,36 @@ The classification is experimental CPU `single_device_fast_path`. Linux broad
 checks belong to PR CI; local checks stay focused. This composition makes no
 general convergence, larger-molecule, accelerator, distributed or scalability
 claim and does not promote the maturity of existing scientific capabilities.
+
+## Encoding replacement scope before implementation
+
+The next Algorithms-owned slice extends this existing example and its tests to
+the native prefix-parity and Fenwick Bravyi-Kitaev encodings. The base is main
+`e087f51b01f412132d3bf575953d7202f2bc3fc2`. There is no production API,
+dependency, capability registration or contract change. All work stays
+`single_device_fast_path` on CPU; broad Linux checks remain CI-owned.
+
+The physical constraints remain explicitly odd alpha and beta parities. Encode
+the two physical spin-parity operators with the same convention as the molecular
+Hamiltonian before restricting discovery to their span. Discovery returns
+positive independent representatives and may replace one candidate by their
+product. The explicitly supplied reference occupation (1,1,0,0) fixes signs for
+those returned representatives through its encoded bits; total N=2 alone does
+not determine the signs. This is reference-sector evaluation, not a ground-sector
+search or general sector inference.
+
+For this fixture and the current native reduction, the JW determinant pair
+occupies reduced |00> and |11>; parity/BK occupy |00> and |01>. The preparation
+must express the same physical pair, rather than reuse JW wire labels blindly.
+This remains a manually specified two-orbital circuit, not a general transformed
+ansatz. The expectation and optimizer consumer must accept encoding replacement
+without a second runtime, solver or training abstraction.
+
+Acceptance compares each lifted state, energy, analytic/finite-difference angle
+gradient and optimizer update against independent occupation-space states under
+independently calculated bit permutations. The same consumer must support
+file/native producers and all three encodings. Protect exact spin populations,
+wrong-sector counterexamples, unsupported encodings, nonpreserving observables
+and the existing trainable-lifting refusal. Run all three CLI paths in fresh
+interpreters with external science packages and dense eigensolvers blocked.
+Preserve the default JW CLI behavior and the recorded #1171 evidence above.
