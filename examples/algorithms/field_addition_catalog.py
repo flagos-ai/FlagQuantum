@@ -16,7 +16,7 @@ from flagquantum.compiler.registers.finite_field.addition_model import (
     field_add_constant_calls,
     field_addition_calls,
 )
-from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.drawer.call_graph import render_call_graph_svg
 from flagquantum.drawer.register_graph_table import signature_instance_table
@@ -56,9 +56,17 @@ def field_signature_svg(examples: Sequence[FieldExample]) -> bytes:
     """Show symbolic and concrete field signatures using native table layout."""
     nodes = []
     for index, (name, signature, _) in enumerate(examples):
-        names = tuple(reg.name for reg in signature)
-        step = RegisterStep(name, names, names)
-        ports = {reg.name: f"p{i}" for i, reg in enumerate(signature)}
+        inputs, outputs = [], []
+        ports: dict[str, str] = {}
+        for ordinal, register in enumerate(signature):
+            for item, _ in enumerate(register.all_idxs()):
+                lane = f"r{ordinal}_{item}"
+                ports[lane] = f"p{len(ports)}"
+                if register.side & RegisterSide.LEFT:
+                    inputs.append(lane)
+                if register.side & RegisterSide.RIGHT:
+                    outputs.append(lane)
+        step = RegisterStep(name, tuple(inputs), tuple(outputs))
         table = signature_instance_table(signature, step, ports)
         nodes.append(f"n{index} [shape=plain, label=<{table}>];")
     return render_call_graph_svg("digraph signatures { " + " ".join(nodes) + " }")
