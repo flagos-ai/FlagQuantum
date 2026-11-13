@@ -901,3 +901,27 @@ Evidence uses g2-score-roots-. Native names/boundary text and isolated zero-port
 insertion order are explicit adaptations. General foreign/serialized-symbol
 admission keeps Q-0747 open. Counts remain 30 accepted, 1250 open, 386 active
 parents and 1187 capability records.
+
+
+### G2 resource flame data
+
+Implementation `b7111c18` adds source-ordered folded T-cost DFS through Drawer.
+Existing Compiler graph and cost owners supply keys, weights and full costs.
+The generator repeats complete child subtrees, retains positive-successor
+filtering and explicit T/T-adjoint collapse, and supports bounded partial reads
+at a trillion repetitions. Native title and concrete-integer admission are
+explicit adaptations. All eight source definitions have dispositions in
+RESOURCE_FLAME_GRAPH.md. Automatic source naming/keep recognition, the convenience
+facade and interactive SVG remain pending in Q-0739.
+
+Acceptance passes 69 focused, 857 concentrated, 51 cost/Fredkin and 86 independent
+integration cases without skips. Strict two-file typing, formatting, Compiler
+scope, architecture, internal IR and API checks pass. The new owner covers all
+28 statements and 16 branches. The four frozen source blobs match inventory.
+All four original test functions retain their assertions, including the QFT
+historical expectation failure for both producers. Actual QFT data agrees.
+The original source file reports three passes and one xfail. Model/visible-graph
+cost mismatch behavior is recorded alongside separate physical and modeled
+resource counts. Drawing adds zero gates/work/measurements. Counts remain 30
+accepted and 1250 open, with 388 active and 1189 capability records. Q-0740 remains
+open for its QFT expectation disposition. Evidence uses g2-flame-data-.

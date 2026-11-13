@@ -360,3 +360,16 @@ input boundaries at their source topological position. Run
 `python -m pytest tests/unit/test_drawer_root_order.py -q` in the locked reference
 environment for 130 cases. COMPONENT_REGISTER_SCORE.md records the native naming
 and isolated zero-port insertion adaptations plus remaining admission gaps.
+
+
+## Resource flame graph data
+
+`flame_graph.iter_flame_graph_data` streams ordered folded T-cost paths from the
+existing call graph and a full-subtree cost map. Repeated edges repeat entire
+subtrees, while visible depth cutoffs preserve full cost annotations. Compiler
+retains model evaluation and synthesis precision. The executable workflow,
+source definition table and separate primitive/model counts are in
+[RESOURCE_FLAME_GRAPH.md](../../docs/development/RESOURCE_FLAME_GRAPH.md).
+Run `python -m pytest tests/unit/test_drawer_flame_graph.py -q` with the locked
+reference environment for exact source row-order comparisons. Caller-supplied
+native names and explicit T-terminal recognition replace source class reflection.
