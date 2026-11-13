@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 81
+    assert len(validated) == 82
+    assert (
+        "algorithms/metrology/classical_shadow_tomography",
+        "examples/synthesis/algorithms/metrology/classical_shadow_tomography/overview/main.py",
+    ) in validated
     assert (
         "algorithms/QML/quantum_autoencoder/quantum_autoencoder",
         "examples/synthesis/algorithms/machine_learning/quantum_autoencoder/overview/main.py",
@@ -453,7 +457,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**81/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**82/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

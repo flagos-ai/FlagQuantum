@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **81/213**.
+Validated local Notebook workflows: **82/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -174,7 +174,7 @@ Validated local Notebook workflows: **81/213**.
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_qubitization` | notebook_workflow | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_utils` | python_unclassified | Pending | pending |
 | `algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion` | notebook_workflow | [Native program](algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/jacobi_anger_expansion/overview/main.py) | validated |
-| `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Native program](algorithms/metrology/classical_shadow_tomography/main.py) | pending |
+| `algorithms/metrology/classical_shadow_tomography` | notebook_workflow | [Native program](algorithms/metrology/classical_shadow_tomography/overview/main.py) | validated |
 | `algorithms/number_theory_and_cryptography/discrete_log/discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/discrete_log/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log/main.py) | pending |
 | `algorithms/number_theory_and_cryptography/hidden_shift/hidden_shift` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/hidden_shift/main.py) | pending |
