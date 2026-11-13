@@ -666,3 +666,29 @@ its independent original JSON asset boundary. Counts remain29 closed/1251 open/
 387 active parents and1187 capability records. Added physical gates, work and
 measurements are zero. Actual primitives and source models have separate
 accounts. The existing full-default timeout remains recorded.
+
+
+### Typed score register symbols (2026-11-13)
+
+Implementation `34553f8d` extends existing Drawer score-data extraction with a
+Core-register/index callback and recovers source predecessor/successor adjacency
+ordering. Final root order comes from the existing layout. THRU output callbacks
+run before their result is discarded. Stateful numbered glyphs and all callback
+events match the unchanged source for Add1–32, shaped ports and reordered returns.
+Existing consumers accept the resulting records unchanged.
+
+32 new cases, 448 concentrated cases in 16.35 seconds and 86 independent
+integration cases in 8.64 seconds pass with zero skips and eight/two existing
+warnings. Strict3, formatting, scope, architecture, IR and API checks pass.
+Score-data coverage is 98% across 143 statements and 68 branches. Evidence uses
+`g2-score-register-symbols-`, with a runnable example and explicit native metadata
+synthesis/final-order fallback in REGISTER_SCORE_SYMBOL_ADJOINT.md. The source
+all-empty graph RightDangle error is reproduced alongside native empty output.
+Initial test/typing failures are retained and corrected.
+
+Q-0747 remains open for general foreign and record serialization boundaries.
+Q-0748's original JSON asset and the historical default-suite timeout stay open.
+Counts remain 29 closed, 1251 open, 387 active parents and 1187 capability records.
+Added physical gates, work and measurements are zero. Existing amplitude,
+all-branch work restoration and append regressions pass. Physical primitives
+and source analytical models remain separately reported.

@@ -89,8 +89,9 @@ python -m pytest tests/unit/test_drawer_symbol_adjoint.py \
     tests/unit/test_component_adjoint.py -q
 ```
 
-Q-0747 remains open for custom lane reservations, foreign graph/dtype admission
-and arbitrary WireSymbol subclass protocols. The six builtin glyph adjoints
+Native lane reservations and partial-line lifecycle observations are accepted
+in REGISTER_SCORE_RESERVATIONS.md. Q-0747 remains open for general foreign
+graph/dtype admission, arbitrary WireSymbol subclasses and source record protocols. The six builtin glyph adjoints
 are now available through native records. Source-wide drawing admission and
 Javascript animation remain separately tracked. Evidence prefix is
 `g2-score-symbol-adjoint-` in the reference workspace.
@@ -110,3 +111,92 @@ Strict typing of three Python files, Black, Ruff, scope, architecture, multi-lev
 IR and protected public API checks pass. All five reference blobs match the fixed
 inventory. The implementation and example consumer retain their existing
 ownership boundaries and require no new production dependency.
+
+
+## Typed register callbacks and source adjacency order
+
+Implementation `34553f8d` extends the existing score-data owner with the optional
+`register_wire_symbol` callback. It receives the native `RegisterStep`, original
+Core `Register` declaration and element index. Scalar indices are `()`, array
+indices retain their row-major tuples and connector arguments are `(None, None)`.
+The original register object preserves name, dtype, shape and side. Display
+identity strings continue to identify lifetimes. Metadata recovery uses the
+existing grouping validator and preflights every column before callback effects.
+
+```python
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.drawer.register_score import RegisterStep, layout_register_score
+from flagquantum.drawer.register_score_data import SymbolClass, register_score_data
+
+
+def symbol(
+    step: RegisterStep, register: Register | None, index: tuple[int, ...] | None
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    if register is None:
+        return "Text", {"text": step.name, "fontsize": 10}
+    return "TextBox", {"text": f"{register.name}{index}"}
+
+
+score = layout_register_score(
+    {"q": 1}, ("q",), (RegisterStep("X", ("q",), ("q",)),)
+)
+data = register_score_data(score, register_wire_symbol=symbol)
+assert any(port["symb_attributes"].get("text") == "q()" for port in data["soqs"])
+```
+
+The typed callback and existing display-identity `wire_symbol` callback are
+mutually exclusive. The existing form retains its invocation cadence. Callable
+objects with false truth values work in either form. Callback exceptions and
+invalid connector captions propagate through the existing owner.
+
+Source `_binst_to_cxns` groups incoming connections by predecessor and outgoing
+connections by successor, retaining connection encounter order within each group.
+The score-data owner reconstructs that order from existing dependencies and
+original operation ordinals. Layout retains final root signature order in
+`RegisterScore.output_order`, including reordered returns. Split outputs can
+therefore visit indices in a different order from their declaration. A typed
+callback runs for all inputs, then all outputs, including the discarded second
+THRU invocation. Rendering keeps the first THRU result. Connector captions follow
+the source's existing multi-port condition. The ordered callback event list and
+numbered glyphs are compared directly without sorting.
+
+Layouts with display identities alone synthesize scalar opaque register metadata
+using LEFT, RIGHT or THRU according to port ownership. Display names are never
+parsed into array declarations. Hand-authored scores that omit `output_order`
+use completed-line order for final connections. Precise root return order is
+available from layout-produced scores. These are explicit native metadata
+adaptations. An all-empty source custom graph raises `KeyError: RightDangle`;
+the native empty graph retains its defined empty records and zero callbacks.
+The original exception is reproduced in tests.
+
+The unchanged musical-score blob is
+`3863bb66cdba17c4654657e275a8485d94b8da75`. Add widths 1, 2, 3, 5, 16 and 32
+compare complete geometry and callback events with pure and stateful suppliers.
+Scalar/vector/matrix/empty ports, same-name opposite sides, reordered returns,
+canonical metadata identity, malformed metadata, callback failures and existing
+HTML/Matplotlib consumers are covered. A source test class is constructed at the
+test-only foreign boundary. Production uses existing Core records and Python
+containers, with no foreign runtime dependency.
+
+Thirty-two new cases and 448 concentrated cases pass in 16.35 seconds, with eight
+existing parser warnings. Independent notebook/CPU/tensor integration passes
+86 cases in 8.64 seconds with two existing warnings. Both sets have zero skips.
+Strict typing of three files, Black, Ruff, team scope, architecture, multi-level
+IR and protected API checks pass. Score-data coverage is 98% across 143 statements
+and 68 branches. Two existing builtin control-H and unknown-classical rejection
+paths are uncovered by this concentrated set.
+
+Evidence uses `g2-score-register-symbols-`. Initial adjacency-order and synthetic
+return-order expectations, strict typing failures and the reproduced source
+empty-graph exception are retained separately. Existing component-adjoint and
+execution regressions continue to verify complex amplitudes, forced measurement
+branches, clean work restoration and normal `circuit.append(op)` execution.
+Presentation adds zero physical gates, work wires, measurements or feedback.
+Actual primitives and source analytical estimates retain their separate accounts
+in MUSICAL_SCORE_SOURCE_AUDIT.md. Q-0747 stays open for general foreign
+admission and record serialization boundaries. Q-0748's original JSON asset is
+tracked independently.
+
+```bash
+python -m pytest tests/unit/test_drawer_register_symbols.py -q
+```

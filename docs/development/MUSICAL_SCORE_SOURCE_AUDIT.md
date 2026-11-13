@@ -28,7 +28,7 @@ Existing native records remain the shared representation.
 | --- | --- |
 | `RegPosition.json_dict` | `RegisterColumn` stores sequential and generation coordinates; `ScorePort` stores exported coordinates. Plain dictionaries provide serialization. |
 | `HLineFlavor.from_qcdtype` | `register_score_data(classical=...)` explicitly marks classical display identities. Automatic foreign dtype inspection and its unknown-type fallback are outside native admission. |
-| `HLine.json_dict` | `RegisterLine` stores lifetimes; `ScoreHorizontalLine` serializes completed lines with source flavor spelling. Partial foreign line records remain internal to the source manager. |
+| `HLine.json_dict` | `RegisterLine` stores lifetimes; `ScoreHorizontalLine` serializes completed lines with source flavor spelling. Native immutable LaneSegment records expose partial geometry through the shared manager; generic foreign record admission remains open. |
 | `LineManager.__init__`, `new_y` | `RegisterLaneManager` owns the shared minimum-lane heap consumed by `layout_register_score`. Native capacity grows with the graph. The source defaults to 100 lines. Context-aware source `new_y` dispatch is owned by native `new_y_for`, delegating to existing no-argument policies by default. |
 | `LineManager.reserve_n`, `unreserve`, `maybe_reserve` | Native `RegisterLaneManager` now implements ordered reservations and the `maybe_reserve` subclass hook; Core grouping preserves once-per-register predicate cadence and per-element hooks. See REGISTER_SCORE_RESERVATIONS.md for finite-capacity parity and failure adaptations. |
 | `LineManager.new`, `finish_hline`, `free` | Existing native layout allocates fresh RIGHT lanes before freeing LEFT lanes and closes lifetimes at consumption or final output. `_ports` flattens shaped register elements in row-major order. Native reservation callbacks now cover these boundaries. Context-aware coordinate overrides now match source allocation order and full geometry. Native geometric open/closed intervals now expose every source allocation/release observation through `hlines` and `finish_hline`; cursor and malformed-release preflight adaptations are documented. |
@@ -45,12 +45,12 @@ Existing native records remain the shared representation.
 | `Circle.draw` | `_draw_port` preserves filled/open circles, radius and color. |
 | `ModPlus.draw` | `_draw_port` preserves the addition marker, font and transparent box. |
 | `directional_text_box` | `_port_symbol` selects through/left/right box styles for admitted native ports. Source enum error behavior and a standalone foreign helper remain outside that surface. |
-| `_soq_to_symb` | `register_score_data` builds native boundary labels and accepts the existing `wire_symbol` callback for component ports and captions. Callback ownership remains presentation-only. |
+| `_soq_to_symb` | Native `register_wire_symbol` receives the original Core register and element index, with scalar `()` and connector `(None, None)`. Source adjacency groups and input/output invocation cadence include the discarded second THRU symbol. Metadata synthesis and hand-authored final-order fallback are documented in REGISTER_SCORE_SYMBOL_ADJOINT.md. Arbitrary foreign glyph subclasses remain open. |
 | `SoqData.json_dict` | `ScorePort` stores symbol, coordinates and identity together. |
 | `VLine.json_dict` | `ScoreVerticalLine` and `ScoreLabel` retain connector geometry, text and font size. |
 | `MusicalScoreData.json_dict` | Existing typed `MusicalScoreData` is a plain mapping with the source JSON field names. |
 | `_make_ident` | Existing native identity strings name logical lane lifetimes and the original operation ordinal. Foreign instance/Soquet identity spelling is explicitly adapted. |
-| `get_musical_score_data` | Native component projection, layout and score-data extraction form the equivalent admitted call chain. Native lane-reservation managers are supported. Generic foreign Bloqs, foreign line managers and source-wide wire-symbol protocols remain open. |
+| `get_musical_score_data` | Native component projection, layout and score-data extraction follow the admitted chain. Native lane managers and typed register callbacks preserve source adjacency ordering and final signature order. General foreign Bloq/manager/glyph admission and source record protocols remain open. |
 | `draw_musical_score` | `draw_register_score` preserves sequential geometry, sizing, colors, glyph order and axes. Seven direct glyph render cases supplement existing whole-score pixel comparisons. |
 | `MusicalScoreEncoder.default` | `export_register_score_json` serializes the existing plain records through the standard JSON encoder. Foreign object type dispatch is owned by the reference test boundary. |
 | `dump_musical_score` | Existing JSON export plus caller-owned `Path.write_text`, demonstrated by the accepted native notebook. File ownership stays with the caller. |
@@ -127,7 +127,11 @@ and source analytical models retain their distinct accounting layers.
 
 Q-0749 closes for the complete two-function original test file after both real
 source tests and the native equivalents pass. Q-0747 remains open for the
-general foreign and wire-symbol protocol admission boundaries listed above.
+general foreign admission and record serialization boundaries listed above.
+Typed native register callbacks now match ordered source invocation events and
+stateful glyphs, including THRU output effects and reordered final bindings.
+Metadata synthesis, hand-authored final-order fallback and the source all-empty
+RightDangle exception are documented in REGISTER_SCORE_SYMBOL_ADJOINT.md.
 Context-aware coordinate selection and partial-line lifecycle observations are
 accepted through `new_y_for`, `hlines` and `finish_hline`. Native cursor placement,
 textual flavor representation and malformed-release preflight have explicit
