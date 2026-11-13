@@ -423,3 +423,10 @@ share `format_call_graph_cost_data`. It accepts existing Compiler metric keys,
 preserves annotation order and warns for unknown metrics. The source definition
 map, runnable example, native adaptations and acceptance evidence are recorded
 in [CALL_GRAPH_COST_DATA.md](../../docs/development/CALL_GRAPH_COST_DATA.md).
+
+`export_resource_call_graph_dot` composes typed Compiler resource recipes and
+QEC queries with an explicit peak-width provider. Display cutoffs retain full
+costs, and `None` preserves a sparse width query. Source-asset tests use this
+production entry for their cost annotations. The runnable workflow and source
+comparison are in
+[RESOURCE_CALL_GRAPH_FACTORY.md](../../docs/development/RESOURCE_CALL_GRAPH_FACTORY.md).

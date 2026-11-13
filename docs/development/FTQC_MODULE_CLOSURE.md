@@ -1087,3 +1087,28 @@ adaptations are recorded. Formatting adds zero gates, work wires and
 measurements. Existing full-branch amplitude, cleanup and append checks pass.
 Counts remain 32 accepted parents, 1248 open and 387 active. The new child brings
 capability records to 1196, comprising 1195 current and one historical.
+
+
+## G2-CALL-FACTORY typed resource factory and sparse widths
+
+Q-0734.04 adds the native typed resource graph entry using shared recipes,
+recursive QEC costs, cost-row formatting and an existing width provider.
+The provider returns None for an unvisited width metric. Source negative
+MultiAnd and concrete versus symbolic CSwapApprox sparse rows are preserved.
+The original source-asset native path now calls the production entry and
+removes its duplicated gate-annotation loop. The fixture-specific width and
+HTML presentation adaptations remain explicit.
+
+68 new cases and 23 original-asset cases pass together. 1390 concentrated
+cases and 87 independent real-kernel/CPU/TN integration cases pass without
+skips. Three changed Python files pass strict typing and formatting.
+Compiler scope, architecture, IR and protected API checks pass. Example/Drawer
+coverage is 100/95 percent, 96 percent combined. Four source blobs, seven
+doctest examples and the Markdown workflow pass. Drawing adds zero gates,
+work wires or measurements. Existing exact gate-sequence, full-amplitude,
+measurement-branch, work-zero and append regression passes. Primitive counts
+and model estimates are recorded separately in RESOURCE_CALL_GRAPH_FACTORY.md.
+
+Q-0734 stays open for universal width admission and arbitrary subclass
+node-property overrides. Counts remain 32 accepted, 1248 open and 387 active,
+with 1197 capability records, 1196 current and one historical.
