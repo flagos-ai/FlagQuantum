@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **104/213**.
+Validated local Notebook workflows: **106/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -75,6 +75,7 @@ Validated local Notebook workflows:
 - [overview](algorithms/number_theory_and_cryptography/discrete_log/overview/README.md)
 - [overview](algorithms/number_theory_and_cryptography/hidden_shift/overview/README.md)
 - [overview](algorithms/number_theory_and_cryptography/shor/overview/README.md)
+- [overview](algorithms/quantum_linear_solvers/hhl/overview/README.md)
 - [overview](algorithms/quantum_phase_estimation/qpe_for_matrix/overview/README.md)
 - [overview](algorithms/quantum_primitives/gqsp/overview/README.md)
 - [overview](algorithms/quantum_primitives/gradient_estimation/overview/README.md)
@@ -345,6 +346,7 @@ Validated local Notebook workflows:
 - [overview](tutorials/basics/quantum_programming/qmod_tutorial_part1/overview/README.md)
 - [classiq_overview_tutorial](tutorials/basics/quantum_programming/classiq_overview_tutorial/README.md)
 - [synthesis_tutorial](tutorials/basics/quantum_programming/synthesis_tutorial/README.md)
+- [overview](tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview/README.md)
 - [approximated_state_preparation](tutorials/technology_demonstrations/approximated_state_preparation/README.md)
 - [overview](tutorials/technology_demonstrations/arithmetic_expressions/overview/README.md)
 - [auxiliary_management](tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/README.md)

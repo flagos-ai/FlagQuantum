@@ -63,6 +63,7 @@ Native FlagQuantum programs currently available:
 - [overview](number_theory_and_cryptography/discrete_log/overview/README.md)
 - [overview](number_theory_and_cryptography/hidden_shift/overview/README.md)
 - [overview](number_theory_and_cryptography/shor/overview/README.md)
+- [overview](quantum_linear_solvers/hhl/overview/README.md)
 - [overview](quantum_phase_estimation/qpe_for_matrix/overview/README.md)
 - [overview](quantum_primitives/gqsp/overview/README.md)
 - [overview](quantum_primitives/gradient_estimation/overview/README.md)

@@ -1,0 +1,96 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/hhl/hhl.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0f97f0b0dc67f659c3ebfe8ffa6a36606621942d5b16c9800b9506b324d33ae7",
+  "git_blob_sha1": "360362ea22588be3313987330ad22f39f915ae0d",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "sha256": "7f7a0dc7e3d192df8c6b539de4e4fa34d8677f72a9c8f691d3320319e3013820",
+      "native_code_cell": 1,
+      "stage": "Original dense problem, normalization, spectrum and 32-bit diagnostics"
+    },
+    {
+      "index": 10,
+      "sha256": "2b23029b7e58cad60d1886f654ac75b76c250892372c5defe1d0503f1caf5df9",
+      "native_code_cell": 2,
+      "stage": "Fresh ordered Pauli decomposition and dense reconstruction"
+    },
+    {
+      "index": 14,
+      "sha256": "b02c745425919e7149956a16247deeaf98f043440a57a828c3f2e5e9573f3b90",
+      "native_code_cell": 3,
+      "stage": "Visible native amplitude-preparation function"
+    },
+    {
+      "index": 17,
+      "sha256": "f00a8fb63a86dff40af5d8a0589e01b363047e8b4c6ed6bc07cc79eb2ba54d4a",
+      "native_code_cell": 5,
+      "stage": "Visible complete native exact HHL root"
+    },
+    {
+      "index": 22,
+      "sha256": "64b68f011803c31d1455c466f36c9269f4e75b3c86d36d948392e84738af2a56",
+      "native_code_cell": 6,
+      "stage": "Source named postselection, 1/16 scale and five-decimal readout"
+    },
+    {
+      "index": 24,
+      "sha256": "09a4bf11fc10762b8d84671c4bd24bedc193104e85730d3fb2ddd0cec77ce3f8",
+      "native_code_cell": 7,
+      "stage": "Source global phase, real projection, classical solve and fidelity"
+    },
+    {
+      "index": 27,
+      "sha256": "c17b138c59a724409da37cda73c9611c7099e2e1d4265b6faef5e3958b6923e7",
+      "native_code_cell": 8,
+      "stage": "Original exact-evolution data and four-bit configuration"
+    },
+    {
+      "index": 28,
+      "sha256": "d706bac41d9958b0d742771c1e1ee7ec379d5d269ec5fc107e998ec0b82efc42",
+      "native_code_cell": 9,
+      "stage": "Actual native exact synthesis"
+    },
+    {
+      "index": 30,
+      "sha256": "cef4b46acf27bc3fbab4b4d986f79d96d6722ce9af00338083f884e6f96a9b2c",
+      "native_code_cell": 10,
+      "stage": "Actual CX/U3 conversion, resource metrics and full-state validation"
+    },
+    {
+      "index": 33,
+      "sha256": "a9d47adbb12b11ec2951d9913ac4197d97d5556651f32a6c85427c4b8224eee5",
+      "native_code_cell": 11,
+      "stage": "Actual state vector and named numeric probabilities"
+    },
+    {
+      "index": 35,
+      "sha256": "fdfcf9d41f718e56974244d870aa5abd2455a0f335c455758ad4c92b0d7fb123",
+      "native_code_cell": 12,
+      "stage": "Complete exact postprocessing, fidelity, leakage and plot"
+    },
+    {
+      "index": 38,
+      "sha256": "c698c60c26b700c2b05724706f211fd0ce58fb4380d7f839336129fc483f1181",
+      "native_code_cell": 14,
+      "stage": "Source power-dependent repetition rule and lookup"
+    },
+    {
+      "index": 40,
+      "sha256": "b35109078ce2c0cdf085017ba993d632bb76c7bcb53baf6b645d56e2a62921fc",
+      "native_code_cell": 15,
+      "stage": "Visible native powered Trotter HHL root"
+    },
+    {
+      "index": 41,
+      "sha256": "a859b3a6ba6fadf2f2cef74a967071cf94ea73be8f013430156deda62cfcf4e5",
+      "native_code_cell": 16,
+      "stage": "Complete Trotter synthesis, metrics, readout, source threshold and plot"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_algorithm_hhl_notebook.py",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_linear_solvers.hhl.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_linear_solvers/hhl/overview/walkthrough.ipynb",
+  "scope": "Complete all 14 original code stages, dense four-by-four matrix, normalized [1,2,4,3], four fractional QPE bits and both exact and powered first-order Trotter routes. Recompute ordered Pauli expansion, retain repetitions 4/8/16/24, original negative evolution time, reciprocal table, 1e-12 filtering, five-decimal complex rounding, single-global-phase correction, source real-projection diagnostic, fidelity and ten-percent threshold. Actual operator-exact CX/U3 conversion, independent full complex Circuit references and both source plots. Native root programs replace fixed callable applications; no generic QCallable or fresh-Output helper claim. No source importer, frozen216 modification, compiler/API/dependency, hardware, speedup, scalability or optimality claim."
+}

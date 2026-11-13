@@ -242,7 +242,15 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 104
+    assert len(validated) == 106
+    assert (
+        "algorithms/quantum_linear_solvers/hhl/hhl",
+        "examples/synthesis/algorithms/quantum_linear_solvers/hhl/overview/main.py",
+    ) in validated
+    assert (
+        "tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix",
+        "examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview/main.py",
+    ) in validated
     assert (
         "algorithms/quantum_primitives/gradient_estimation/gradient_estimation",
         "examples/synthesis/algorithms/quantum_primitives/gradient_estimation/overview/main.py",
@@ -545,7 +553,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**104/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**106/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
