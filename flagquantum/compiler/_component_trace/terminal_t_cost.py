@@ -6,19 +6,24 @@
 
 """Compute the locked precision-sensitive model from terminal multiplicities."""
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, MutableMapping
 from math import pi
 
+from .call_graph import compose_cost_generalizer
+from .cost_query import _query_cost
 from .resource_classification import classify_resource_gate
 from .resource_generalization import (
     ArithmeticCall,
     ConjunctionCall,
     ControlledRotationCall,
+    DeclaredResourceCalls,
     FixedTCall,
     PhaseCall,
     ResourceCall,
     RotationCall,
+    _resource_callees,
 )
+from .resource_model import ComponentCost
 from .symbolic_math import SymbolicInt, SymbolicReal, ceil, log2
 
 
@@ -35,6 +40,46 @@ def estimate_terminal_t_cost(sigma: Mapping[ResourceCall, SymbolicInt]) -> Symbo
     are rounded per call before multiplication.
     """
     return sum(count * _unit_t_cost(call) for call, count in sigma.items())
+
+
+def query_terminal_t_cost(
+    root: ResourceCall,
+    *,
+    declared_calls: DeclaredResourceCalls | None = None,
+    cache: MutableMapping[ResourceCall, SymbolicInt] | None = None,
+) -> SymbolicInt:
+    """Cache full-subtree costs using the locked terminal-count convention.
+
+    Explicit rows replace component declarations, including exclusive gates.
+    Otherwise exclusive T-bearing categories must be represented as child
+    calls. In particular, aggregate rotation counts lack synthesis precision.
+    Reuse a cache only with the same declarations. Visibility cutoffs belong
+    to presentation and do not affect this query. Cycles raise ValueError.
+    """
+
+    def compute(
+        node: ResourceCall, child: Callable[[ResourceCall], SymbolicInt]
+    ) -> SymbolicInt:
+        explicit = declared_calls is not None and node in declared_calls
+        if isinstance(node, ComponentCost) and not explicit:
+            gates = node.gates
+            if any(
+                (gates.t, gates.toffoli, gates.cswap, gates.and_bloq, gates.rotation)
+            ):
+                raise ValueError(
+                    "Declare exclusive T-bearing component gates as resource calls"
+                )
+        callees = tuple(_resource_callees(node, declared_calls))
+        for _, count in callees:
+            if isinstance(count, (int, float)) and (
+                type(count) is not int or count < 0
+            ):
+                raise ValueError("Resource counts must be nonnegative integers")
+        if callees:
+            return sum(count * child(call) for call, count in callees)
+        return _unit_t_cost(node)
+
+    return _query_cost(root, compute, 0, compose_cost_generalizer(None), cache, None)
 
 
 def _unit_t_cost(call: ResourceCall) -> SymbolicInt:

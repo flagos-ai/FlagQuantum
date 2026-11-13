@@ -7,8 +7,76 @@
 
 from collections.abc import Callable, Generator, Iterator, Mapping
 
-from ..compiler._component_trace.call_graph import Node
+from ..compiler._component_trace.call_graph import Node, _build_call_graph
+from ..compiler._component_trace.resource_generalization import (
+    ConjunctionCall,
+    ControlledZPowerCall,
+    DeclaredResourceCalls,
+    FixedTCall,
+    PhaseCall,
+    ResourceCall,
+    _resource_callees,
+)
+from ..compiler._component_trace.resource_model import ComponentCost
+from ..compiler._component_trace.symbolic_math import SymbolicInt
+from ..compiler._component_trace.terminal_t_cost import query_terminal_t_cost
 from .call_graph import _call_order
+
+
+def _keep_small_resource(call: ResourceCall) -> bool:
+    return isinstance(call, (FixedTCall, ControlledZPowerCall)) or (
+        isinstance(call, ConjunctionCall)
+        and isinstance(call.controls, tuple)
+        and len(call.controls) == 2
+    )
+
+
+def _resource_title(call: ResourceCall) -> str:
+    return call.name if isinstance(call, ComponentCost) else str(call)
+
+
+def _concrete_count(value: SymbolicInt) -> int:
+    if type(value) is not int or value < 0:
+        raise ValueError("Flame graph counts must be nonnegative concrete integers")
+    return value
+
+
+def iter_resource_flame_graph_data(
+    *roots: ResourceCall,
+    declared_calls: DeclaredResourceCalls | None = None,
+    title: Callable[[ResourceCall], str] = _resource_title,
+    keep: Callable[[ResourceCall], bool] | None = _keep_small_resource,
+    max_depth: int | None = None,
+) -> Generator[str, None, None]:
+    """Compose native declarations, full precision costs and visible DFS paths.
+
+    Roots are emitted in argument order. Each root's complete costs are
+    computed independently of keep and max_depth. The default keep predicate
+    retains binary conjunctions, Toffoli, Fredkin and controlled Z powers.
+    Explicit declarations must include decompositions for compound resource
+    keys. Component names provide native titles, other keys use str unless
+    title is supplied. Counts must be concrete nonnegative Python integers.
+    Files and output buffering belong to the caller.
+    """
+    costs: dict[ResourceCall, SymbolicInt] = {}
+    for root in roots:
+        query_terminal_t_cost(root, declared_calls=declared_calls, cache=costs)
+        visible = _build_call_graph(
+            root,
+            lambda node: _resource_callees(node, declared_calls),
+            None,
+            keep,
+            max_depth,
+        )
+        calls = {edge: _concrete_count(n) for edge, n in visible.direct_calls.items()}
+        totals = {node: _concrete_count(n) for node, n in costs.items()}
+        yield from iter_flame_graph_data(
+            root,
+            calls,
+            totals,
+            title=title,
+            is_t_gate=lambda node: isinstance(node, PhaseCall) and node.opcode == "t",
+        )
 
 
 def iter_flame_graph_data(
