@@ -1136,3 +1136,23 @@ Q-0734 retains universal width admission. Counts are 32 accepted parents,
 1248 open and 387 active, with 1198 capability records, 1197 current and one
 historical. Foreign/CDDL/browser/QFT historical/default-timeout scopes remain
 open in their existing records.
+
+## G2-LOGICAL-WIDTH recursive query ownership
+
+Q-0734.06 adds the Compiler recursive width query using the existing cost-query
+engine and connection-liveness owner. Twelve complete source width caches match
+without changing the frozen reference. Native tests verify sparse drawing-cache
+admission, bystanders, zero repetitions, symbolic maxima, cache overrides and
+failure paths. See [the query evidence](LOGICAL_WIDTH_QUERY.md).
+
+Local acceptance passed 23 focused tests, 1,442 concentrated regression tests and
+87 integration tests with no skips. Strict typing, formatting, scope,
+architecture, IR and API checks passed. The new query module has 100% statement
+and branch coverage. Three doctests and the Markdown example passed.
+
+Q-0734 remains open for automatic resource-key signature/decomposition binding.
+Callbacks currently supply those owners. The source fallback can underestimate
+simultaneously live workspace. Added circuit gates, work qubits and measurements
+are zero. Existing numerical execution and separate primitive/model ledgers are
+retained. Foreign admission, renderer distribution, browser interaction, the
+historical QFT expectation and the full-default-suite timeout remain open.
