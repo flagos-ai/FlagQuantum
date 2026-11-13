@@ -5,7 +5,11 @@
 
 """Stream declared T-cost paths in the folded-stack FlameGraph format."""
 
-from collections.abc import Callable, Generator, Iterator, Mapping
+import shutil
+import subprocess
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from ..compiler._component_trace.call_graph import Node, _build_call_graph
 from ..compiler._component_trace.resource_generalization import (
@@ -21,6 +25,52 @@ from ..compiler._component_trace.resource_model import ComponentCost
 from ..compiler._component_trace.symbolic_math import SymbolicInt
 from ..compiler._component_trace.terminal_t_cost import query_terminal_t_cost
 from .call_graph import _call_order
+
+
+def render_flame_graph_svg(
+    rows: Iterable[str], *, executable: str, timeout: float = 30.0
+) -> bytes:
+    """Render folded rows with a caller-provided FlameGraph executable.
+
+    The executable must support --countname TCounts and a folded-data filename.
+    Rows are streamed to a UTF-8 temporary file, closed on every exit path.
+    The result occupies memory proportional to the SVG output. The subprocess
+    has a bounded timeout. Missing executables raise ImportError, process
+    failures raise RuntimeError with a bounded stderr diagnostic.
+    """
+    renderer = shutil.which(executable)
+    if renderer is None:
+        raise ImportError(
+            f"Flame graph rendering requires an executable {executable!r}"
+        )
+    with TemporaryDirectory(prefix="flagquantum-flame-") as directory:
+        path = Path(directory) / "folded.txt"
+        with path.open("w", encoding="utf-8") as data:
+            separator = ""
+            for row in rows:
+                data.write(separator)
+                data.write(row)
+                separator = "\n"
+        try:
+            return subprocess.run(
+                [renderer, "--countname", "TCounts", str(path)],
+                capture_output=True,
+                check=True,
+                timeout=timeout,
+            ).stdout
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(
+                f"Flame graph rendering timed out after {timeout:g}s"
+            ) from exc
+        except subprocess.CalledProcessError as exc:
+            diagnostic = exc.stderr[-4000:].decode("utf-8", errors="replace").strip()
+            raise RuntimeError(
+                f"Flame graph SVG rendering failed: {diagnostic}"
+            ) from exc
+        except OSError as exc:
+            raise RuntimeError(
+                f"Cannot run flame graph executable {renderer}: {exc}"
+            ) from exc
 
 
 def _keep_small_resource(call: ResourceCall) -> bool:
