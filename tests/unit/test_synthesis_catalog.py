@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 87
+    assert len(validated) == 88
+    assert (
+        "tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation",
+        "examples/synthesis/tutorials/basics/qmci_pi_estimation/overview/main.py",
+    ) in validated
     assert (
         "algorithms/number_theory_and_cryptography/shor/shor",
         "examples/synthesis/algorithms/number_theory_and_cryptography/shor/overview/main.py",
@@ -477,7 +481,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**87/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**88/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

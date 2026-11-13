@@ -761,3 +761,16 @@ numerical kernels. Independent complete-state tests cover nonlinear powers,
 conditional scalar phase, matrix no-double-power behavior, lexical scope,
 alias/escape rejection and resource budgets. This is local CPU correctness;
 no release, hardware, optimality or scalability promotion is implied.
+
+## Checked native allocation sizes
+
+Maturity: `development_evidence`, local `single_device_fast_path`. The approved
+[bound-allocation admission](../api-changes/FQ-SYNTH-NATIVE-BOUND-ALLOCATION-20261113.md)
+allows existing `allocate(bits, q)` to specialize a checked synthesis-time integer
+before ordinary register construction. It reuses the static integer evaluator,
+width validation, ownership and resource checks; no export, signature, physical
+IR or execution kernel changes. Independent states cover widths 1..4, helper
+bindings, phase interference and interleaved/concurrent specialization. Width
+256 is capture-only evidence, not a dense-execution capacity claim. Numeric
+annotations remain literal-only. Complete QMCI Notebook acceptance is tracked
+separately in the example inventory.

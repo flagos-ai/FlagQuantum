@@ -1611,3 +1611,16 @@ shadowing, counter aliases, ownership changes and Output escapes remain rejected
 All intermediate effects and final resources count against existing budgets.
 Dropped entangled data stays physically retained and is not clean workspace.
 See the [native matrix-QPE workflow](../../examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/overview/README.md).
+
+## Native bound allocation boundary
+
+Unreleased native `allocate(bits, q)` accepts a checked synthesis-time integer
+in 1..256. Names bound through classical inputs, static integer constants,
+bounded loop indices, classical integer-array reads and closed `+`, `-`, `*`
+expressions use the existing depth-32 and absolute-value-4096 evaluator limits.
+Bool, float, quantum reads, unresolved names, calls (including `len`) and dynamic
+attributes cannot determine allocation width. Existing width agreement,
+ownership and actual resource budgets still apply. This does not admit bound
+names in numeric annotations, quantum type aliases or parameterized Output
+helpers. Width 256 is validated without allocating a dense state. See the
+[approved scope](../api-changes/FQ-SYNTH-NATIVE-BOUND-ALLOCATION-20261113.md).

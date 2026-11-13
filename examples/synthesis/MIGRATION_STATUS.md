@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **87/213**.
+Validated local Notebook workflows: **88/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -387,7 +387,7 @@ Validated local Notebook workflows: **87/213**.
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | [Native program](tutorials/basics/mcx/main.py) | pending |
 | `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | [Native program](tutorials/basics/optimization/learning_optimization/overview/main.py) | validated |
 | `tutorials/basic_tutorials/prepare_state/prepare_state` | notebook_workflow | [Native program](tutorials/basics/prepare_state/main.py) | validated |
-| `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | [Native program](tutorials/basics/qmci_pi_estimation/main.py) | pending |
+| `tutorials/basic_tutorials/qmci_pi_estimation/qmci_pi_estimation` | notebook_workflow | [Native program](tutorials/basics/qmci_pi_estimation/overview/main.py) | validated |
 | `tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide` | notebook_workflow | [Native program](tutorials/basics/qml/overview/main.py) | validated |
 | `tutorials/basic_tutorials/quantum_primitives/hadamard_test_tutorial/hadamard_test_tutorial` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/hadamard_test_tutorial/overview/main.py) | validated |
 | `tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries` | notebook_workflow | [Native program](tutorials/basics/quantum_primitives/linear_combination_of_unitaries/overview/main.py) | validated |

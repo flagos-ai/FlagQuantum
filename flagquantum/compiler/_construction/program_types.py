@@ -170,8 +170,11 @@ def allocate(
 ) -> None:
     """Declare fresh zero storage inside a captured qfunc.
 
-    Pass a sized output, or a literal width and an unsigned output. This
-    operation cannot run in the host interpreter; use synthesize and fq.run.
+    Pass a sized output, or a checked synthesis-time integer width in 1..256
+    and an unsigned output. Bound integer parameters and closed static integer
+    expressions specialize independently for each synthesis. Calls and quantum
+    reads cannot determine a width. This operation cannot run in the host
+    interpreter; use synthesize and fq.run.
     """
     raise TypeError("allocate is captured inside qfunc; synthesize the program")
 
