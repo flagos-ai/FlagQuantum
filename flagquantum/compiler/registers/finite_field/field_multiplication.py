@@ -185,22 +185,35 @@ def gf2_multiplication(
     *,
     modulus: int,
     algorithm: Literal["karatsuba", "quadratic"] = "karatsuba",
+    plus_equal_prod: bool = False,
 ) -> FieldDecomposition:
     """Compute a product into a clean target; preserve upstream output qubit maps.
 
     All registers are big-endian. Quadratic multiplication needs no scratch;
     Karatsuba uses caller-owned clean scratch for odd recursive widths.
+    Quadratic plus-equal multiplication admits an arbitrary target and retains
+    the source's inverse monomial shift before the two multiplication ladders.
     """
     n = len(left)
     _validate_field(n, modulus)
     _validate_registers(left, right, target, workspace)
     if len(right) != n or len(target) != n:
         raise ValueError("Field multiplication requires equal register widths")
+    if type(plus_equal_prod) is not bool:
+        raise ValueError("Product accumulation flag must be boolean")
+    if plus_equal_prod and algorithm != "quadratic":
+        raise ValueError("Source plus-equal multiplication requires quadratic mode")
     emitter = _FieldEmitter(workspace, modulus)
     x, y, result = left[::-1], right[::-1], target[::-1]
     if algorithm == "karatsuba":
         result = emitter.multiply(x, y, result)
     elif algorithm == "quadratic":
+        if plus_equal_prod and n > 1:
+            degrees = [i for i in range(1, n) if modulus >> i & 1]
+            for _ in range(n):
+                for i in reversed(degrees):
+                    emitter.cx(result[0], result[i])
+                result = result[1:] + result[:1]
         for i in range(n):
             for j in range(i + 1, n):
                 emitter.ccx(x[n - j + i], y[j], result[i])
