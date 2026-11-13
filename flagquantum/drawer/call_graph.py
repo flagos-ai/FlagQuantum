@@ -38,6 +38,7 @@ from ..compiler._component_trace.resource_generalization import (
     ResourceCall,
 )
 from ..compiler._component_trace.resource_model import ComponentCost, GateCost
+from ..compiler._component_trace.resource_width import query_resource_logical_width
 from ..compiler._component_trace.symbolic_math import SymbolicInt
 from ..compiler._component_trace.terminal_t_cost import _terminal_resource_callees
 
@@ -282,7 +283,7 @@ def export_modeled_call_graph_dot(
 def export_resource_call_graph_dot(
     root: ResourceCall,
     *,
-    logical_width: Callable[[ResourceCall], SymbolicInt | None],
+    logical_width: Callable[[ResourceCall], SymbolicInt | None] | None = None,
     declared_calls: DeclaredResourceCalls | None = None,
     max_depth: int | None = None,
     aggregation: GateAggregation = "factored",
@@ -290,7 +291,7 @@ def export_resource_call_graph_dot(
     details: Callable[[ResourceCall], str] | None = None,
     node_properties: Callable[[ResourceCall], Mapping[str, str]] | None = None,
 ) -> str:
-    """Draw typed resource calls with full costs and explicitly supplied widths.
+    """Draw typed resource calls with full costs and owned logical widths.
 
     Shared Compiler recipes supply automatic children and QEC costs. Explicit
     declaration rows replace automatic children. The width provider owns peak
@@ -299,7 +300,9 @@ def export_resource_call_graph_dot(
     or a previously evaluated width table. Return None for an unvisited width
     metric so sparse query rows retain their original meaning. Provider failures
     propagate.
-    Input declarations and width tables remain caller-owned.
+    Without a provider, Compiler queries supported native width bindings once
+    from the root and preserves sparse visitation. Unsupported bindings raise
+    NotImplementedError. Input declarations and width tables remain caller-owned.
 
     Examples:
         >>> from ..compiler._component_trace.resource_generalization import PhaseCall
@@ -329,6 +332,10 @@ def export_resource_call_graph_dot(
     nodes, _ = _call_order(complete.root, complete.direct_calls)
     costs: dict[ResourceCall, QECGateCost] = {}
     query_qec_gate_cost(root, declared_calls=declared_calls, cache=costs)
+    if logical_width is None:
+        widths: dict[ResourceCall, SymbolicInt] = {}
+        query_resource_logical_width(root, declared_calls=declared_calls, cache=widths)
+        logical_width = widths.get
     table: dict[ResourceCall, dict[object, object]] = {}
     for node in nodes:
         width = logical_width(node)
