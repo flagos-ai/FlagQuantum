@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **109/213**.
+Validated local Notebook workflows: **110/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -219,7 +219,7 @@ Validated local Notebook workflows: **109/213**.
 | `applications/CFD/heat_eq_qsvt/heat_eq_qsvt` | notebook_workflow | [Native program](applications/cfd/heat_eq_qsvt/main.py) | pending |
 | `applications/CFD/qlbm/qlbm` | notebook_workflow | [Native program](applications/cfd/qlbm/main.py) | pending |
 | `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | Pending | pending |
-| `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/main.py) | pending |
+| `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/overview/main.py) | validated |
 | `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | [Native program](applications/benchmarking/randomized_benchmarking/main.py) | pending |
 | `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | Pending | pending |
 | `applications/chemistry/molecular_energy_curve/molecular_energy_curve` | notebook_workflow | [Native program](applications/chemistry/molecular_energy_curve/main.py) | pending |

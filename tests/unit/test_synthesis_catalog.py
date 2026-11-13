@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 109
+    assert len(validated) == 110
+    assert (
+        "applications/benchmarking/quantum_volume/quantum_volume",
+        "examples/synthesis/applications/benchmarking/quantum_volume/overview/main.py",
+    ) in validated
     assert (
         "tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/qpe_for_grover_operator",
         "examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_grover_operator/overview/main.py",
@@ -565,7 +569,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**109/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**110/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

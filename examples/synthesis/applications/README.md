@@ -64,6 +64,7 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
+- [overview](benchmarking/quantum_volume/overview/README.md)
 - [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
 - [overview](chemistry/second_quantized_hamiltonian/overview/README.md)
 - [overview](cybersecurity/link_monitoring/overview/README.md)
