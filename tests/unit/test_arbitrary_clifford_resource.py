@@ -6,8 +6,10 @@ import pytest
 
 from flagquantum.compiler._component_trace.qec_gate_cost import (
     QECGateCost,
-    _qec_callees,
     query_qec_gate_cost,
+)
+from flagquantum.compiler._component_trace.resource_decomposition import (
+    decomposed_resource_callees,
 )
 from flagquantum.compiler._component_trace.resource_generalization import (
     ControlledSwapCall,
@@ -71,7 +73,7 @@ def test_approximate_swap_keeps_distinct_source_clifford_widths_and_weights(
         *(leaf.adjoint() if adjoint else leaf for leaf in cliffords),
     )
     weights = source.call_graph()[1]
-    assert dict(_qec_callees(node, None)) == {
+    assert dict(decomposed_resource_callees(node, None)) == {
         key: weights[leaf] for key, leaf in zip(keys, source_leaves, strict=True)
     }
     assert {k: v for k, v in asdict(query_qec_gate_cost(node)).items() if v != 0} == (

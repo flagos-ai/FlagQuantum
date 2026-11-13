@@ -7,38 +7,23 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
+from collections.abc import Callable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
-from math import pi
 
 from .call_graph import Generalizer, compose_cost_generalizer
 from .cost_query import _query_cost
 from .gate_budget import GateCategories
 from .resource_classification import classify_resource_gate
+from .resource_decomposition import decomposed_resource_callees
 from .resource_generalization import (
     BookkeepingCall,
-    CliffordCall,
     ConjunctionCall,
-    ControlledRegisterSwapCall,
-    ControlledSwapCall,
-    ControlledZPowerCall,
-    ControlledZRotationCall,
-    ControlPredicateCall,
     DeclaredResourceCalls,
     FanoutCall,
     FixedTCall,
     MeasurementCall,
-    MergedFredkinCall,
-    OnEachCall,
-    PartitionedCall,
-    PhaseCall,
-    PowerCall,
-    PredicateControlledCall,
     ResourceCall,
-    RotationCall,
     ZeroCostCall,
-    _resource_callees,
-    arbitrary_clifford_cost_key,
 )
 from .resource_model import ComponentCost
 from .symbolic_math import SymbolicInt
@@ -105,7 +90,7 @@ def query_qec_gate_cost(
             if isinstance(node, ComponentCost)
             else QECGateCost()
         )
-        for call, count in _qec_callees(node, declared_calls):
+        for call, count in decomposed_resource_callees(node, declared_calls):
             gates = gates.plus(child(call), count)
         return gates
 
@@ -139,81 +124,3 @@ def _leaf_cost(node: ResourceCall, legacy: bool) -> QECGateCost | None:
     if family == "rotation":
         return QECGateCost(rotation=1)
     return None
-
-
-def _qec_callees(
-    node: ResourceCall, declared_calls: DeclaredResourceCalls | None
-) -> Iterable[tuple[ResourceCall, SymbolicInt]]:
-    if isinstance(node, (ComponentCost, PowerCall, OnEachCall)) or (
-        declared_calls is not None and node in declared_calls
-    ):
-        yield from _resource_callees(node, declared_calls)
-    elif isinstance(node, ConjunctionCall):
-        controls = node.controls
-        size = len(controls) if isinstance(controls, tuple) else controls
-        yield ConjunctionCall((1, 1), adjoint=node.adjoint), size - 1
-        if isinstance(controls, tuple) and all(isinstance(cv, int) for cv in controls):
-            inversions = sum(cv == 0 for cv in controls)
-            if inversions:
-                yield CliffordCall("x", 1), 2 * inversions
-    elif isinstance(node, FanoutCall):
-        if not isinstance(node.width, int) or node.width < 1:
-            raise TypeError("Legacy fanout requires a positive concrete width")
-        yield CliffordCall("cx", 2), 2 * node.width - 1
-    elif isinstance(node, ControlledSwapCall):
-        if node.approximate:
-            yield PhaseCall("t", adjoint=node.adjoint), 4 * node.width
-            yield arbitrary_clifford_cost_key(1, adjoint=node.adjoint), 16 * node.width
-            yield arbitrary_clifford_cost_key(
-                2, adjoint=node.adjoint
-            ), 6 * node.width - 1
-        else:
-            yield FixedTCall("fredkin"), node.width
-    elif isinstance(node, ControlledRegisterSwapCall):
-        if not isinstance(node.width, int) or node.width < 1:
-            raise TypeError("Controlled register swap requires positive concrete width")
-        yield MergedFredkinCall((1, 1)), node.width
-    elif isinstance(node, MergedFredkinCall):
-        if len(node.controls) < 2:
-            raise ValueError("Merged Fredkin requires at least two controls")
-        yield ConjunctionCall(node.controls), 1
-        yield FixedTCall("fredkin"), 1
-        yield ConjunctionCall(node.controls, adjoint=True), 1
-    elif isinstance(node, ControlledZPowerCall):
-        yield ConjunctionCall((1, 1)), 1
-        yield RotationCall("zpow", node.exponent, node.precision), 1
-        yield ConjunctionCall((1, 1), adjoint=True), 1
-    elif isinstance(node, ControlledZRotationCall):
-        half = (node.angle / pi) / 2
-        yield RotationCall("zpow", half, node.precision / 2), 1
-        yield CliffordCall("cx", 2), 2
-        yield RotationCall("zpow", -half, node.precision / 2), 1
-    elif isinstance(node, ControlPredicateCall):
-        controls = node.controls
-        size = len(controls) if isinstance(controls, tuple) else controls
-        if isinstance(size, int) and size < 2:
-            raise ValueError("Control predicate requires at least two control bits")
-        if isinstance(controls, tuple):
-            if any(type(bit) is not int or bit not in (0, 1) for bit in controls):
-                raise ValueError("Control pattern requires binary activation values")
-            conjunction = ConjunctionCall(controls, node.adjoint)
-        else:
-            conjunction = ConjunctionCall(
-                (None, None) if type(controls) is int and controls == 2 else controls,
-                node.adjoint,
-            )
-        yield conjunction, 1
-    elif isinstance(node, PredicateControlledCall):
-        yield node.positive, 1
-        if isinstance(node.controls, tuple) and len(node.controls) == 1:
-            if node.controls == (0,):
-                yield CliffordCall("x", 1), 2
-            elif node.controls != (1,):
-                raise ValueError("Control pattern requires binary activation values")
-        else:
-            yield ControlPredicateCall(node.controls), 1
-            yield ControlPredicateCall(node.controls, adjoint=True), 1
-    elif isinstance(node, PartitionedCall):
-        yield node.call, 1
-    else:
-        raise NotImplementedError(f"No QEC gate model or declared callees for {node!r}")

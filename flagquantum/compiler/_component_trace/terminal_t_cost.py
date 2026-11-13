@@ -6,21 +6,28 @@
 
 """Compute the locked precision-sensitive model from terminal multiplicities."""
 
-from collections.abc import Callable, Mapping, MutableMapping
+from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from math import pi
 
 from .call_graph import compose_cost_generalizer
 from .cost_query import _query_cost
 from .resource_classification import classify_resource_gate
+from .resource_decomposition import decomposed_resource_callees
 from .resource_generalization import (
     ArithmeticCall,
+    BookkeepingCall,
     ConjunctionCall,
     ControlledRotationCall,
     DeclaredResourceCalls,
+    FanoutCall,
     FixedTCall,
+    MeasurementCall,
+    OnEachCall,
     PhaseCall,
+    PowerCall,
     ResourceCall,
     RotationCall,
+    ZeroCostCall,
     _resource_callees,
 )
 from .resource_model import ComponentCost
@@ -53,6 +60,7 @@ def query_terminal_t_cost(
     Explicit rows replace component declarations, including exclusive gates.
     Otherwise exclusive T-bearing categories must be represented as child
     calls. In particular, aggregate rotation counts lack synthesis precision.
+    Known compound keys expand through the shared resource recipes.
     Reuse a cache only with the same declarations. Visibility cutoffs belong
     to presentation and do not affect this query. Cycles raise ValueError.
     """
@@ -69,7 +77,7 @@ def query_terminal_t_cost(
                 raise ValueError(
                     "Declare exclusive T-bearing component gates as resource calls"
                 )
-        callees = tuple(_resource_callees(node, declared_calls))
+        callees = tuple(_terminal_resource_callees(node, declared_calls))
         for _, count in callees:
             if isinstance(count, (int, float)) and (
                 type(count) is not int or count < 0
@@ -80,6 +88,31 @@ def query_terminal_t_cost(
         return _unit_t_cost(node)
 
     return _query_cost(root, compute, 0, compose_cost_generalizer(None), cache, None)
+
+
+def _terminal_resource_callees(
+    node: ResourceCall, declared_calls: DeclaredResourceCalls | None
+) -> Iterable[tuple[ResourceCall, SymbolicInt]]:
+    """Expand compound keys while retaining the source terminal-T boundary."""
+    if (declared_calls is not None and node in declared_calls) or isinstance(
+        node, (ComponentCost, PowerCall, OnEachCall)
+    ):
+        yield from _resource_callees(node, declared_calls)
+    elif (
+        classify_resource_gate(node) is not None
+        or isinstance(
+            node,
+            (FixedTCall, BookkeepingCall, MeasurementCall, ZeroCostCall, FanoutCall),
+        )
+        or (
+            isinstance(node, ConjunctionCall)
+            and isinstance(node.controls, tuple)
+            and len(node.controls) == 2
+        )
+    ):
+        return
+    else:
+        yield from decomposed_resource_callees(node, declared_calls)
 
 
 def _unit_t_cost(call: ResourceCall) -> SymbolicInt:

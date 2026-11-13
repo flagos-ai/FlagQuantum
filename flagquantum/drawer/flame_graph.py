@@ -19,11 +19,13 @@ from ..compiler._component_trace.resource_generalization import (
     FixedTCall,
     PhaseCall,
     ResourceCall,
-    _resource_callees,
 )
 from ..compiler._component_trace.resource_model import ComponentCost
 from ..compiler._component_trace.symbolic_math import SymbolicInt
-from ..compiler._component_trace.terminal_t_cost import query_terminal_t_cost
+from ..compiler._component_trace.terminal_t_cost import (
+    _terminal_resource_callees,
+    query_terminal_t_cost,
+)
 from .call_graph import _call_order
 
 
@@ -103,8 +105,9 @@ def iter_resource_flame_graph_data(
     Roots are emitted in argument order. Each root's complete costs are
     computed independently of keep and max_depth. The default keep predicate
     retains binary conjunctions, Toffoli, Fredkin and controlled Z powers.
-    Explicit declarations must include decompositions for compound resource
-    keys. Component names provide native titles, other keys use str unless
+    Known compound keys expand using the shared Compiler recipes. Explicit
+    declarations override those recipes. Component names provide native titles,
+    other keys use str unless
     title is supplied. Counts must be concrete nonnegative Python integers.
     Files and output buffering belong to the caller.
     """
@@ -113,7 +116,7 @@ def iter_resource_flame_graph_data(
         query_terminal_t_cost(root, declared_calls=declared_calls, cache=costs)
         visible = _build_call_graph(
             root,
-            lambda node: _resource_callees(node, declared_calls),
+            lambda node: _terminal_resource_callees(node, declared_calls),
             None,
             keep,
             max_depth,
