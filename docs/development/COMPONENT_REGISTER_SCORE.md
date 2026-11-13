@@ -168,15 +168,11 @@ metadata, duplicate THRU calls and independent connector calls. JSON and embedde
 sequential data retain the entire native record. Source fixture construction
 subclasses Bloq only inside tests. Source drawing code remains unmodified.
 
-Four mixed Matplotlib cases match every Agg pixel after explicitly aligning
-source boundary label text and source port-record order to native records.
-The initial unadapted order fails for long overlapping text. This is a recorded
-producer-order gap in Q-0747, beyond the accepted storage classification.
-The renderer continues to paint supplied records in their order. The next batch
-will examine source LeftDangle, instance and RightDangle traversal in the producer.
-The source and native coordinate/glyph mappings already agree. Native record
-order and long-label overdraw have yet to receive direct source acceptance.
-General foreign and arbitrary serialized-symbol admission also remain open.
+The mixed-storage batch initially aligned source boundary text and source
+port-record order for pixel comparison. The following traversal batch removes
+that order adaptation. The renderer continues to paint supplied records in their
+order. Native boundary text remains an explicit naming adaptation. General
+foreign and arbitrary serialized-symbol admission remain open.
 
 The new file has 31 cases. The two prior rejection parameters for classical and
 zero-width component graphs are replaced by successful end-to-end coverage.
@@ -219,3 +215,61 @@ python -m pytest tests/unit/test_drawer_mixed_score.py \
     tests/unit/test_register_classical_parity.py \
     tests/unit/test_register_classical_discard.py -q
 ```
+
+
+## Source adjacency traversal acceptance
+
+Implementation `0054242d` extends the existing adjacency reconstruction to both
+boundary nodes. Connections retain original consumer-call order within each
+neighbor group. Visible records follow LeftDangle outgoing groups, existing
+component visitation with predecessor then successor groups, and RightDangle
+incoming groups. The first THRU glyph is retained while both typed callback
+invocations still run. Display-identity callbacks retain their existing single
+visible-port invocation and connector cadence. Geometry, portable record fields
+and native identities use the existing owners. The change belongs entirely to
+Drawer's single_device_fast_path presentation chain.
+
+Ordered comparisons now check every normalized record, without sorting or
+reordering source ports. Add widths 1, 2, 3, 5, 16 and 32 use ordinary and stateful
+symbols. Scalar, vector, matrix and empty arrays retain complete metadata.
+Independent calls, idle wires, zero calls and swapped final returns exercise
+boundary neighbor grouping. Hand-authored scores without final-order metadata
+use completed-line order, retaining their port mapping.
+
+Twenty mixed-storage/shape cases compare every Agg pixel with unmodified source
+record order. Only boundary label text is adapted to FlagQuantum-owned names and
+dtype spelling. Long directional boxes overlap in the same order as the source.
+The inspected PNG deliberately retains this source appearance. The baseline
+producer from `5c7777be` fails the new ordered assertion as an expected negative
+control. It runs in a separate test process without modifying tracked sources.
+
+The existing swapped-return fixture formerly changed destination indices in an
+already-built source graph, preserving its original edge insertion order.
+It now builds swapped returns through upstream BloqBuilder.finalize, matching the
+native finalization entry. This is an explicit fixture correction. Arbitrarily
+mutated foreign connection histories remain outside native graph admission.
+The first focused attempt also assumed missing final-order metadata preserved
+raw order. That expectation now checks the documented mapping-preserving
+completed-line fallback. Initial failures are retained in the evidence log.
+
+The batch adds 24 parameter cases. Focused verification passes 87 in 2.92 seconds,
+concentrated regression 607 in 24.27 seconds, independent integration 86 in 10.90
+seconds and fixed/browser regression 14 in 16.97 seconds. No tests skip.
+The concentrated and integration suites retain eight and two existing warnings.
+Strict typing of seven Python files, Black, Ruff, Compiler scope, architecture,
+internal IR and protected API checks pass. Four production owners cover 464 of
+470 statements and 173 of 180 branches, 98% combined. The score-data owner is 99%.
+
+Physical instruction, complex-amplitude, measurement-branch, clean-work and
+ordinary append regressions pass in the concentrated suite. Presentation adds
+zero gates, work bits or measurements. The prior mixed witness still emits H1,
+measurement1 and classical_xor1. Its source MeasureX analytical model reports
+measurement1, Clifford0 and T-equivalent0. The locked Parity model is unavailable.
+Actual and analytical accounts stay separate.
+
+Evidence uses `g2-score-order-`. The musical-score source blob remains
+`3863bb66cdba17c4654657e275a8485d94b8da75`. Q-0747 remains open for general foreign
+graph/dtype and arbitrary serialized-symbol admission. Core classical integer
+execution and the historical full-default 600-second timeout remain separate
+limits. The next batch should inspect the existing owner boundaries for foreign
+admission without expanding protected schemas or adding a parallel symbol model.

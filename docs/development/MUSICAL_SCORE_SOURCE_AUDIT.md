@@ -188,7 +188,12 @@ Mixed-storage acceptance is recorded in COMPONENT_REGISTER_SCORE.md at a8729432.
 The full source geometry and callback matrix includes empty arrays and logical
 zero-width lanes. Metadata-only classical integer words retain Core's execution
 refusal. Source-byte identity, ordinary append and all-branch regression pass.
-The Matplotlib pixel comparison explicitly adapts both boundary text and source
-port-record order. Long-label overdraw with unadapted order is a retained Q-0747
-producer-traversal gap. Native callbacks continue to see supplied record order.
-General foreign/serialized-symbol admission remains independently open.
+The initial mixed-storage pixel comparison adapted boundary text and port order.
+Traversal acceptance at `0054242d` removes source port reordering and compares
+ordered records plus twenty mixed-storage Agg buffers directly. Only owned
+boundary text is adapted. The original source blob remains unchanged. Callback
+cadence, empty graphs and return-order handling are documented in
+COMPONENT_REGISTER_SCORE.md. Normal upstream finalization is the reference for
+swapped-return fixtures. Arbitrarily mutated foreign edge histories remain
+outside native admission. General foreign/serialized-symbol admission remains
+independently open.

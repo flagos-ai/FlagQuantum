@@ -837,3 +837,26 @@ Parity has no locked analytical model. Drawing adds zero gates/work/measurements
 Counts remain 30 closed, 1250 open, 386 active and 1187 capability records.
 The previous full-default600s timeout remains open. Next inspect source port
 traversal and long-label overdraw in the existing record producer.
+
+
+### G2 score adjacency traversal follow-up
+
+Implementation `0054242d` reuses the existing neighbor-group reconstruction for
+LeftDangle, component instances and RightDangle. It preserves callback cadence
+and native identities while correcting producer overdraw order. Twenty mixed
+Agg cases compare directly without source port reordering. Boundary text remains
+an explicit native naming adaptation. Add 1–32-bit ordered records, idle wires,
+empty graphs and swapped returns through actual source finalization pass.
+Hand-authored scores retain completed-line fallback. Arbitrary mutated source
+edge insertion histories remain outside native graph admission.
+
+The batch adds 24 cases and passes 87 focused, 607 concentrated, 86 independent
+integration and 14 browser cases with zero skips. Strict seven-file typing,
+format, Compiler scope, architecture, IR and public API checks pass. Four owners
+cover 464/470 statements and 173/180 branches, 98% combined. Old producer negative
+control fails as expected. Source bytes remain unchanged. Prior physical counts,
+all-branch amplitudes, clean work and append regressions pass. Display adds zero
+physical gates, work or measurements, and measured/model accounts remain separate.
+Evidence uses g2-score-order-. Q-0747 general foreign/serialized-symbol admission
+remains open. Counts remain 30 accepted, 1250 open, 386 active parents and 1187
+capability records. This extends Q-0747.05 without inferring whole-parent closure.

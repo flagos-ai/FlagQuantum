@@ -337,6 +337,8 @@ zero-width quantum scalars. Empty arrays have no lanes. Completed lifetimes reta
 the storage flavor selected at allocation, including quantum-to-classical lane
 reuse. Classical integer metadata is supported by direct layout and remains
 outside Core executable admission. COMPONENT_REGISTER_SCORE.md contains a runnable
-measurement example, source comparisons, resource accounts and the open
-long-label port-order gap. Run `python -m pytest tests/unit/test_drawer_mixed_score.py -q`
+measurement example, source comparisons and separate resource accounts.
+Source adjacency order and long-label overdraw now pass direct ordered/pixel
+comparisons, with only owned boundary text adapted. General foreign graph and
+arbitrary serialized-symbol admission remain open. Run `python -m pytest tests/unit/test_drawer_mixed_score.py -q`
 in the locked reference environment.
