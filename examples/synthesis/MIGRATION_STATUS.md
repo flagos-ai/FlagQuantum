@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **89/213**.
+Validated local Notebook workflows: **90/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -234,7 +234,7 @@ Validated local Notebook workflows: **89/213**.
 | `applications/chemistry/tensor_hypercontraction/tensor_hypercontraction` | notebook_workflow | [Native program](applications/chemistry/tensor_hypercontraction/main.py) | pending |
 | `applications/cybersecurity/link_monitoring/link_monitoring` | notebook_workflow | [Native program](applications/cybersecurity/link_monitoring/main.py) | pending |
 | `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/main.py) | pending |
-| `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | [Native program](applications/cybersecurity/whitebox_fuzzing/main.py) | pending |
+| `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | [Native program](applications/cybersecurity/whitebox_fuzzing/overview/main.py) | validated |
 | `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | [Native program](applications/finance/autocallable_options/partial_exponential_state_preparation/main.py) | pending |
 | `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | [Native program](applications/finance/autocallable_options/quantum_autocallable_option_pricing/main.py) | pending |
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | [Native program](applications/finance/brownian_chebyshev_polynomials/main.py) | pending |
