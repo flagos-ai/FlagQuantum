@@ -3,7 +3,12 @@
 ## Current delivery status
 
 The current checked main baseline is
-`b3fa4a78935777bb8e3853752192e9cd47972b2f` on November 13, 2026 (UTC+08:00).
+`a8fc1fc5494f68a262cb24a293e00c5c53a9874a` on November 13, 2026 (UTC+08:00).
+Explicit graph Hubbard assembly merged in #1174 and passed the bounded
+actual-main acceptance recorded below. Its separate experimental capability
+registration is proposed by this documentation change. The preceding checked
+H2 baseline was `b3fa4a78935777bb8e3853752192e9cd47972b2f`; the following
+historical results remain bound to their respective revisions.
 General commuting Pauli discovery, its experimental registration and explicit
 mixed-axis sector training are merged in #1166, #1167 and #1170. Documentation
 closeout #1169 merged before #1170. The runtime materialization repair #1168
@@ -181,6 +186,7 @@ percentage of OpenFermion compatibility. Module paths are relative to
 | File, driver and populated object input | `ecosystem/chemistry` | FCIDUMP/HDF5 tests and molecular input replacement scenarios | Real closed-shell spatial data; PySCF/h5py remain optional adapters; no implicit solver |
 | Optional upstream operator conversion | `ecosystem/openfermion.py` | `unit/test_openfermion_conversion.py`, `integration/test_openfermion_interop.py` | FermionOperator/QubitOperator import/export and InteractionOperator import; no circuit conversion |
 | Static spinful and spinless chains/rings | `algorithms/fermion/hubbard.py` | `unit/fermion/test_hubbard*.py`, `unit/fermion/test_spinless.py` | No arbitrary graphs, twisted phases or coefficient gradients |
+| Static spinful explicit graphs | `algorithms/fermion/hubbard.py` | `unit/fermion/test_hubbard_graph.py`, `integration/test_fermion_hubbard_graph.py` | Finite undirected simple graphs with uniform real coefficients; no weighted/complex edges, flux or coefficient gradients |
 | Orbital decomposition and preparation | `algorithms/fermion/decomposition.py`, `preparation.py`, `lowering.py` | `unit/fermion/test_preparation.py` | Static CPU Slater determinants and Gaussian vacua; no full excited Gaussian basis transform |
 | Fermionic Fourier basis change | `algorithms/fermion/fourier.py`, `lowering.py` | `unit/fermion/test_fourier.py` | Power-of-two widths; adjacent circuit has O(n**2) factors; no FFT speedup claim |
 | Low-rank and controlled evolution | `algorithms/fermion/low_rank.py`, `evolution.py` | `unit/fermion/test_evolution.py`, `test_controlled_evolution.py` | Real spatial closed-shell order-1/2 formulas, static factors, scalar-time gradients, unreduced JW |
