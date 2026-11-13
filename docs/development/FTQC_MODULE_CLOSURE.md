@@ -1012,3 +1012,33 @@ with 1193 capability records, comprising 1192 current and one historical.
 Q-0739 retains foreign admission, licensed renderer distribution and interactive
 inspection. The historical QFT assertion and full-default timeout remain open.
 The next asset is Q-0738, the call-graph drawing notebook, using existing owners.
+
+## G2 complete resource call-graph notebook
+
+Implementation 303b4c33 integrates the seven-cell, three-code-cell source asset
+through native symbolic graph, QEC cache and existing Drawer DOT/SVG owners.
+All original and native code cells execute independently. Nine nodes and nine
+edges, symbolic multiplicities, full leaf totals, per-node cost annotations,
+five depth settings and title/annotation customization are compared.
+A real independent kernel executes the native notebook and validates both
+SVG displays. The byte-export cell retains its third SVG. Native imports reject
+reference SDK and graph-library dependencies during standalone cell execution.
+
+Thirteen focused, 1225 concentrated and 87 integration cases pass with zero
+skips. Strict typing of three files, format, team scope, architecture, IR and
+protected API checks pass. New example coverage is 31 statements and two
+branches at 100 percent. Existing Drawer coverage is 92 percent, combined
+93 percent. Five source blobs remain unchanged, including the notebook restored
+from its exact Git object. The native rendered PNG was inspected locally.
+
+Native declaration names, existing table layout and explicit title/annotation
+callbacks are the presentation adaptations. The source demonstration's atom
+static100T and numerical X tensor remain separate accounting. Drawing emits
+zero quantum gates, work wires or measurements. Existing measured branch and
+work-zero regressions remain in the concentrated run. CALL_GRAPH_NOTEBOOK.md
+records the complete source cell mapping and retained initial verification logs.
+
+Q-0738 is closed with Q-0738.01. Whole-parent counts are 31 accepted, 1249 open
+and 388 active. There are 1194 capability records, comprising 1193 current and
+one historical. Q-0734/Q-0735 and the generic drawing facade retain separate
+scope. The next module is the whole-source Q-0735 test-asset audit.

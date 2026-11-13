@@ -399,3 +399,14 @@ methods retain precedence. Tuple lengths, array shapes and two-digit float
 formatting follow the frozen source rules. The explicit title callback controls
 application labels. Run `python -m pytest tests/unit/test_resource_flame_labels.py -q`
 for naming, default-path row parity and collision/format validation.
+
+## Resource call-graph notebook
+
+`examples/notebooks/resource_call_graphs.ipynb` demonstrates the complete native
+symbolic graph, SVG-byte export and per-node annotation workflow. The standalone
+entry is `python -m examples.algorithms.resource_call_graphs`. Compiler supplies
+declarations and recursive costs. Drawer supplies DOT, title/annotation hooks
+and SVG rendering. The synthetic atomic declaration costs 100T and the root
+costs 100*n + 600T. Physical instruction counts are separate.
+[CALL_GRAPH_NOTEBOOK.md](../../docs/development/CALL_GRAPH_NOTEBOOK.md) records
+all seven source cells, native layout/name adaptations and real-kernel evidence.
