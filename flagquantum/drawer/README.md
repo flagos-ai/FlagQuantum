@@ -430,3 +430,9 @@ costs, and `None` preserves a sparse width query. Source-asset tests use this
 production entry for their cost annotations. The runnable workflow and source
 comparison are in
 [RESOURCE_CALL_GRAPH_FACTORY.md](../../docs/development/RESOURCE_CALL_GRAPH_FACTORY.md).
+
+Call-graph exporters accept `details` and `node_properties` callbacks. Details
+select the source rectangular title/detail label. Complete properties replace
+default labels and styles. Only visible nodes receive presentation callbacks.
+[CALL_GRAPH_NODE_PROPERTIES.md](../../docs/development/CALL_GRAPH_NODE_PROPERTIES.md)
+contains the runnable example and unchanged-source comparisons.

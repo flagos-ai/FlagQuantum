@@ -1112,3 +1112,27 @@ and model estimates are recorded separately in RESOURCE_CALL_GRAPH_FACTORY.md.
 Q-0734 stays open for universal width admission and arbitrary subclass
 node-property overrides. Counts remain 32 accepted, 1248 open and 387 active,
 with 1197 capability records, 1196 current and one historical.
+
+
+## G2-CALL-PROPERTIES node presentation ownership
+
+Q-0734.05 supplies source title/detail and complete property override behavior
+through callbacks on the existing generic, concrete and typed graph exporters.
+DOT keys and string values are quoted, with trusted angle-delimited HTML markup
+retained. Callback order, replacement precedence, failure/retry and input
+ownership are tested. Native/source actual SVG visible text matches.
+
+29 focused, 1419 concentrated and 87 real-kernel/CPU/TN integration cases pass
+with zero skips. Both changed Python files pass strict typing, Black and Ruff.
+Compiler scope, architecture, IR and protected API checks pass. One frozen
+source blob, nine doctest examples and the Markdown workflow pass.
+Example/Drawer coverage is 100/96 percent, 96 percent combined. Property
+serialization and all three graph exporters have complete measured coverage.
+Presentation adds zero gates, work wires or measurements. Existing exact
+sequence, full-amplitude, branch cleanup and append tests pass. Physical counts
+and model estimates are separated in CALL_GRAPH_NODE_PROPERTIES.md.
+
+Q-0734 retains universal width admission. Counts are 32 accepted parents,
+1248 open and 387 active, with 1198 capability records, 1197 current and one
+historical. Foreign/CDDL/browser/QFT historical/default-timeout scopes remain
+open in their existing records.
