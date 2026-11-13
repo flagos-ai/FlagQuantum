@@ -1652,3 +1652,7 @@ addends, overlap, uninitialized storage and Const writes refuse. Two-register
 controlled helper updates remain unsupported. The existing indexed-X lowering
 owns compiler workspace and budgets; no optimality or resource-parity claim
 follows. See the [semantic contract](../api-changes/FQ-SYNTH-NATIVE-REGISTER-ADDITION-20261113.md).
+
+## Native numeric scalar bit gates
+
+Static scalar gate indices can select encoded bits of initialized signed and binary-scaled QNum registers while preserving exact numeric formats. Width, bounds, initialization, Const, alias and budget checks still apply. This supports the original five-bit flexible-QPE comparison without resetting its shared data. General signed/fractional numerical slices, unsigned arithmetic reinterpreting those slices and dynamic indices remain unsupported. Dropped QPE data and counters remain retained private environment, not clean compiler workspace.

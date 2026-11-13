@@ -1292,3 +1292,5 @@ Run the Compiler MCX/U3/routing tests and
 `tests/integration/test_synthesis_native_mcx_workspace.py`. The complete
 hardware-aware MCX Notebook retains15 controls, width18, both topologies and
 CX/U-only leaves; all216 existing quantum counterparts remain unchanged.
+
+Scalar gate targets can address static encoded bits of signed or binary-scaled QNum registers without changing their numeric format. General numeric slices and helper borrowing retain their unsigned-only admission; raw scalar access is never a format reinterpretation. See `docs/api-changes/FQ-SYNTH-NATIVE-NUMERIC-BIT-GATES-20261114.md` for the scoped acceptance.

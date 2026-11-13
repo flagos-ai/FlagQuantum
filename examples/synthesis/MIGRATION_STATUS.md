@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **110/213**.
+Validated local Notebook workflows: **111/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -378,7 +378,7 @@ Validated local Notebook workflows: **110/213**.
 | `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_circle_balanced_coin/main.py) | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube` | quantum_program | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk/quantum_walk_hypercube/main.py) | pending |
 | `tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk` | notebook_workflow | [Native program](tutorials/advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview/main.py) | validated |
-| `tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe` | notebook_workflow | Pending | pending |
+| `tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe` | notebook_workflow | [Native program](tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/overview/main.py) | validated |
 | `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | [Native program](tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh/main.py) | pending |
 | `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | [Native program](tutorials/basics/add_bell_states/main.py) | pending |
 | `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | validated |

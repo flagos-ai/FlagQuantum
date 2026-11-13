@@ -1,0 +1,108 @@
+{
+  "upstream_path": "tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/high_level_modeling_flexible_qpe.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "2855eeeb272499ced6fdfbb54204231f92f85b975715ae048f25cc3314b960b5",
+  "git_blob_sha1": "aeebc5ac77ff642d26116e6edba187999afdb8eb",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b",
+      "native_code_cell": 1,
+      "stage": "Public native program, full-state reference and workflow imports"
+    },
+    {
+      "index": 6,
+      "sha256": "fc89001a6863f6789fa20fac257812e77e969e473262896b04cbfc156fbeb644",
+      "native_code_cell": 2,
+      "stage": "Reuse checked native per-power QPE instead of reimplementing higher-order capture"
+    },
+    {
+      "index": 10,
+      "sha256": "aeb67c8ee2f6d3738413c6ea08b055fccf8b22a1aade7ec9a9edd0093e417fd0",
+      "native_code_cell": 3,
+      "stage": "Original conditional ceiling logic resolved as bounded synthesis-time repetition bindings"
+    },
+    {
+      "index": 14,
+      "sha256": "08802168dfc902842dbc75b9f7d8a70758c7044aaada0269b8b3f56630151c68",
+      "native_code_cell": 4,
+      "stage": "Retain all seven ordered Pauli summands and source least-significant-index convention"
+    },
+    {
+      "index": 17,
+      "sha256": "e63e5589d7e448b95fccf41d1f844e3eb909157df08fa991746b4d43d3ad9268",
+      "native_code_cell": 5,
+      "stage": "Fresh eigendecomposition with original unsorted eigenvector index two"
+    },
+    {
+      "index": 20,
+      "sha256": "428d9a4b8220ce4467d464a3bebc36c10096f2292e7da5f6269182bf410ec048",
+      "native_code_cell": 6,
+      "stage": "Build complete original five-phase-bit/two-data-bit flexible estimation program"
+    },
+    {
+      "index": 21,
+      "sha256": "5af493d5f69bd523bb70d1504055780d95fa373db4c70a94c216cfbd62c84cac",
+      "native_code_cell": 7,
+      "stage": "Display actual native circuit resources instead of a hosted circuit link"
+    },
+    {
+      "index": 23,
+      "sha256": "d5466a806ed8414123e80ae415c8d2e13fa2c25dd30127ca2f86c11c6c06ab5c",
+      "native_code_cell": 8,
+      "stage": "Actual native execution and independent absolute Circuit verification with 1024 configured draws"
+    },
+    {
+      "index": 24,
+      "sha256": "dc416f3024a560d8e91636f2582f4165012cf5233c839049fcf04f93b6a752c4",
+      "native_code_cell": 9,
+      "stage": "Decode named fractional phase values without user physical wires or bitstrings"
+    },
+    {
+      "index": 25,
+      "sha256": "632acec1a363b1f6c2b4f026cd9d6725740de99a531af387cc3ae2066151455e",
+      "native_code_cell": 10,
+      "stage": "Actual phase histogram, exact eigenvalue marker and observed maximum"
+    },
+    {
+      "index": 29,
+      "sha256": "4683be8b20e939b895dfe515cb854e429021632bcb120209b44a5631ea286402",
+      "native_code_cell": 11,
+      "stage": "Reuse checked static unitary helper powers with a fresh Hermitian matrix exponential"
+    },
+    {
+      "index": 31,
+      "sha256": "b57dc4b9551cda15cd2d397f3c860fa659b9e9ce222231b8197d223d6a4bd865",
+      "native_code_cell": 12,
+      "stage": "Original thirteen-qubit sequential approximate/exact estimation and SWAP comparison"
+    },
+    {
+      "index": 32,
+      "sha256": "f033384f950d0379fa7e76470d3deaf492de87cf809092696b4a493a0defce50",
+      "native_code_cell": 13,
+      "stage": "Show actual native comparison resources and named output"
+    },
+    {
+      "index": 34,
+      "sha256": "721900e8362623ab4310890f265c9cc01b64ea27f5186b177aa0f6967e5373be",
+      "native_code_cell": 14,
+      "stage": "Actual comparison execution retaining private environment and independent full physical state"
+    },
+    {
+      "index": 35,
+      "sha256": "c671ec38312050dd246b3cc6572aa61e1c86ab3705c87e8e8cf9e24f0deb0c1c",
+      "native_code_cell": 15,
+      "stage": "Actual output-bit observations with explicit seeded readout"
+    },
+    {
+      "index": 37,
+      "sha256": "03d1c4b82c7835983a1453a8599d06014820a34a1c8027a674fbf1cc118a56e9",
+      "native_code_cell": 16,
+      "stage": "Preserve source overlap statistic and distinguish exact value, finite draws and shared-environment semantics"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_flexible_qpe_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.advanced_tutorials.high_level_modeling_flexible_qpe.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/advanced_tutorials/high_level_modeling_flexible_qpe/overview/walkthrough.ipynb",
+  "scope": "All16sourcecode stages; original two-qubit seven-ordered-term Hamiltonian, fresh eigendecomposition index2, five-bit QPE, piecewise-ceiling repetitions4/4/4/12/32, both seven/thirteen-qubit programs, sequential shared data, exact Hermitian matrix powers, five controlled three-CX exchanges, retained private environment, independent absolute physical Circuit states, named numeric phase/bit marginals, actual resources, explicit1024draws/seeds and final phase histogram. Scalar encoded-bit gates preserve numeric formats; signed/fractional arithmetic borrows remain rejected. No source importer, historical count fitting, frozen216change, new dependency, runtime/backend change, hardware,speedup or scalability claim."
+}
