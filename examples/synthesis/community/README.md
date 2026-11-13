@@ -19,5 +19,6 @@ Native FlagQuantum programs currently available:
 
 - [superposition](basic_examples/superposition/README.md)
 - [overview](basics/vqe/overview/README.md)
+- [overview](paper_implementation_project/bb84/bb84_implementation/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).
