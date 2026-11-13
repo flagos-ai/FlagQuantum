@@ -786,6 +786,14 @@ def _validated_plan_program(
     measurements: Sequence[MeasurementNode] | None,
     noise_model: NoiseModel | None,
 ) -> CircuitIR:
+    construction = getattr(program, "circuit_param", {})
+    if isinstance(construction, Mapping) and construction.get("inputs") is not None:
+        # Plans cannot preserve live tensors; refuse before lossy IR conversion.
+        raise CapabilityError(
+            "execution planning does not support custom initial states because "
+            "ExecutionPlan v1 does not serialize them; use Circuit.state() for "
+            "local statevector execution, or express state preparation as gates"
+        )
     source_ir = program.to_ir() if hasattr(program, "to_ir") else program
     if not isinstance(source_ir, CircuitIR):
         raise TypeError("program must be a Circuit or CircuitIR")
@@ -836,12 +844,6 @@ def _validate_dynamic_plan_request(
     """Validate the approved local planning slice before compilation."""
 
     validate_classical_control(source_ir.instructions, n_qubits=source_ir.n_wires)
-    construction = getattr(program, "circuit_param", {})
-    if isinstance(construction, Mapping) and construction.get("inputs") is not None:
-        raise CapabilityError(
-            "dynamic planning does not yet support custom initial states because "
-            "ExecutionPlan v1 does not serialize them"
-        )
     if resolved.mode != "auto":
         raise CapabilityError("dynamic planning supports mode='auto' only")
     if resolved.backend not in {"auto", "pytorch"}:
@@ -940,7 +942,6 @@ def plan(
         runtime_config=runtime_config,
     )
     world_size = resolve_distributed_backend_policy().effective_world_size
-    construction = getattr(program, "circuit_param", {})
     if (
         not is_dynamic
         and not source_ir.measurements
@@ -961,9 +962,6 @@ def plan(
         and not _requires_dynamic_gradients(program, source_ir)
         and not resolved.allow_approximate
         and not resolved.allow_backend_fallback
-        and not (
-            isinstance(construction, Mapping) and construction.get("inputs") is not None
-        )
         and any(map(supports_dynamic_select, source_ir.instructions))
     ):
         candidate = lower_select_program(source_ir, "dynamic_unary_iteration")

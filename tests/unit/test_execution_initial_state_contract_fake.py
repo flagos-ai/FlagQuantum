@@ -198,6 +198,7 @@ def test_full_register_inputs_and_compatible_json_replay(dtype: torch.dtype) -> 
     assert restored._contract_payload_json == text
     with pytest.raises(ValidationError, match="requires initial_state"):
         _execute_review(restored, None)
+    assert fq.ExecutionPlan.from_json(text).to_json() == text
     unknown = json.loads(text)
     unknown["extensions"][0]["version"] = "unsupported"
     with pytest.raises(

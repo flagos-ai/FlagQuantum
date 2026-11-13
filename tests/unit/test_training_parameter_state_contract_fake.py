@@ -425,3 +425,38 @@ def test_identity_ignores_training_flags_but_preserves_fixed_program_values(
     first()
     assert _identity(first) == identity
     assert _identity(changed) != identity
+
+
+def test_historical_v2_version_admission_refuses_v3(tmp_path: Path) -> None:
+    # Freeze the historical reader's version admission, not the new reader's
+    # behavior. Later checks are unreachable for v3 in that reader.
+    import runpy
+
+    reader = runpy.run_path(
+        str(
+            Path(__file__).parents[1]
+            / "fixtures"
+            / "checkpoint_v2_version_admission.py"
+        )
+    )["admit_version"]
+    source = _model()
+    source()
+    path = source.save_checkpoint(tmp_path / "source.pt", optimizer=None, seed=1)
+    payload = torch.load(path, weights_only=True)
+    assert payload["version"] == VERSION
+    with pytest.raises(TrainingStateError, match="unsupported training state"):
+        reader(payload)
+
+
+def test_historical_v2_keeps_caller_owned_training_flags(tmp_path: Path) -> None:
+    source, target = _model(), _model()
+    source.parameter_groups["encoder"].requires_grad_(False)
+    source(), target()
+    path = source.save_checkpoint(tmp_path / "v2.pt", optimizer=None, seed=1)
+    payload = torch.load(path, weights_only=True)
+    payload["version"] = "flagquantum.training_state.v2"
+    payload["workload_signature"] = source._checkpoint_signature()
+    payload.pop("parameter_training", None)
+    torch.save(payload, path)
+    target.load_checkpoint(path, optimizer=None)
+    assert target.parameter_groups["encoder"].requires_grad

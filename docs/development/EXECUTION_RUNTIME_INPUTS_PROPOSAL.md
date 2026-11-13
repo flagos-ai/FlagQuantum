@@ -35,7 +35,7 @@ existing parameters, order, defaults, exports and result fields:
 inputs: Mapping[str, float | Tensor] | None = None
 ```
 
-The dependent Runtime change implements this approved signature delta. Its intended workflow is:
+This approved signature delta is implemented. The complete supported workflow is:
 
 ```python
 import torch

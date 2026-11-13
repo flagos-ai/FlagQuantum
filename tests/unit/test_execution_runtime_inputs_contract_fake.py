@@ -387,7 +387,7 @@ def test_admitted_reader_preserves_requirement_and_tampering_is_detected() -> No
     plan = _review_plan(circuit)
     text = plan._contract_payload_json
     assert text is not None
-    assert _restore_review_plan(text)._contract_payload_json == text
+    assert fq.ExecutionPlan.from_json(text).to_json() == text
     unknown = json.loads(text)
     unknown["extensions"][0]["version"] = "unsupported"
     with pytest.raises(

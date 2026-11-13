@@ -1,9 +1,9 @@
 {
   "schema": "flagquantum.api_change_proposal",
   "version": "1.0",
-  "status": "approved",
+  "status": "implemented_candidate",
   "implementation_authorized": true,
-  "production_implemented": false,
+  "production_implemented": true,
   "api_owner_approval": {
     "kind": "explicit_human_user_approval",
     "date": "2026-11-12",

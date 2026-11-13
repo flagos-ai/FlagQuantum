@@ -3,7 +3,7 @@
   "version": "1.0",
   "status": "approved",
   "implementation_authorized": true,
-  "production_implemented": false,
+  "production_implemented": true,
   "api_owner_approval": "docs/api-changes/FQ-TRAINING-PARAMETER-STATE-20261112.md",
   "owner": "integration",
   "implementation_owner": "runtime",
