@@ -76,6 +76,7 @@ Native FlagQuantum programs currently available:
 - [overview](finance/portfolio_optimization/overview/README.md)
 - [overview](finance/value_at_risk/overview/README.md)
 - [overview](optimization/integer_linear_programming/overview/README.md)
+- [overview](optimization/kidney_exchange/kidney_exchange_problem/overview/README.md)
 - [overview](optimization/max_clique/overview/README.md)
 - [overview](optimization/max_independent_set/overview/README.md)
 - [overview](optimization/max_induced_k_color_subgraph/overview/README.md)
