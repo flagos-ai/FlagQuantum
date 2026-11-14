@@ -86,5 +86,6 @@ Native FlagQuantum programs currently available:
 - [overview](optimization/set_partition/overview/README.md)
 - [overview](physical_systems/ising_model/overview/README.md)
 - [overview](physical_systems/quantum_chaos/quantum_sawtooth_map/overview/README.md)
+- [overview](telecom/radio_access_network/radio_access_network_positioning_antennas/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

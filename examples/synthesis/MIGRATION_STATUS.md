@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **119/213**.
+Validated local Notebook workflows: **120/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -278,7 +278,7 @@ Validated local Notebook workflows: **119/213**.
 | `applications/plasma/vlasov_ampere/vlasov_ampere` | notebook_workflow | Pending | pending |
 | `applications/plasma/vlasov_ampere/vlasov_ampere_qiskit` | notebook_workflow | Pending | pending |
 | `applications/telecom/network_traffic_optimization/network_traffic_optimization` | notebook_workflow | [Native program](applications/telecom/network_traffic_optimization/main.py) | pending |
-| `applications/telecom/radio_access_network/radio_access_network_positioning_antennas` | notebook_workflow | [Native program](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/main.py) | pending |
+| `applications/telecom/radio_access_network/radio_access_network_positioning_antennas` | notebook_workflow | [Native program](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/overview/main.py) | validated |
 | `applications/telecom/resiliency_planning/resiliency_planning` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/main.py) | pending |
 | `applications/telecom/resiliency_planning/resiliency_planning_AMD` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/resiliency_planning_amd/main.py) | pending |
 | `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_2nd_place_submission` | notebook_workflow | Pending | pending |
