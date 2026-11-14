@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 118
+    assert len(validated) == 119
+    assert (
+        "applications/optimization/electric_grid_optimization/electric_grid_optimization",
+        "examples/synthesis/applications/optimization/electric_grid_optimization/overview/main.py",
+    ) in validated
     assert (
         "applications/optimization/kidney_exchange/kidney_exchange_problem",
         "examples/synthesis/applications/optimization/kidney_exchange/kidney_exchange_problem/overview/main.py",
@@ -601,7 +605,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**118/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**119/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
