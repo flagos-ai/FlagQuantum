@@ -13,6 +13,7 @@ from ...compiler._component_trace.resource_model import (
 from ...compiler.registers.preparation.prepare_reflection import (
     source_prepare_reflection_cost,
 )
+from .chemistry_number_phase import ChemistryNumberPhase
 from .double_factorization_prepare_model import (
     _auxiliary_width,
     _df_address_widths,
@@ -48,7 +49,7 @@ def source_double_factorization_one_body_cost(
     # The source's gate-count declaration fixes bitsize=5. Its circuit binds
     # the actual spatial width, with one additional qubit for the CCZ predicate.
     select_ports = spatial + 2
-    select = ComponentCost("ApplyControlledZs", select_ports + 1, GateCost(toffoli=1))
+    select = ChemistryNumberPhase((1, 1), spatial).resource_model()
     width = (
         5
         + 2 * rank

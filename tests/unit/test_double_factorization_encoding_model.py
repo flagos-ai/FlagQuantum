@@ -7,6 +7,9 @@ from math import sqrt
 import pytest
 
 from examples.algorithms.double_factorization_resources import notebook_models
+from flagquantum.algorithms.primitives.chemistry_number_phase import (
+    ChemistryNumberPhase,
+)
 from flagquantum.algorithms.primitives.double_factorization_block_encoding import (
     DoubleFactorizationBlockEncoding as ExecutableDoubleFactorization,
 )
@@ -18,7 +21,6 @@ from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.control.multi_control import multi_control_z_ir
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -184,23 +186,44 @@ def test_df_notebook_models_match_both_locked_depth_one_graphs():
         )
 
 
-@pytest.mark.parametrize("spatial,controls", [(3, 2), (5, 2), (3, 3)])
-def test_df_number_phase_uses_locked_predicate_and_cleans_every_branch(
-    spatial, controls
-):
+@pytest.mark.parametrize(
+    "spatial,values",
+    [
+        (3, (1,)),
+        (3, (0,)),
+        (3, (1, 1)),
+        (5, (1, 1)),
+        (3, (1, 1, 1)),
+        (3, (1, 0)),
+        (3, (0, 1, 0)),
+    ],
+)
+def test_df_number_phase_uses_locked_predicate_and_cleans_every_branch(spatial, values):
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.black_boxes import ApplyControlledZs
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
+    from flagquantum.dynamic import DynamicCircuit
+
+    controls = len(values)
     flags = tuple(range(controls))
     system = tuple(range(controls, controls + spatial))
     first_work = controls + spatial
     work = tuple(range(first_work, first_work + controls - 1))
     slots = tuple(range(len(work)))
     width = first_work + len(work)
-    values = (1,) * controls
     source = ApplyControlledZs(values, spatial)
-    stream = multi_control_z_ir(flags, values, system[0], work, slots)
+    native = ChemistryNumberPhase(values, spatial)
+    assert tuple(
+        (reg.name, reg.bitsize, reg.shape, reg.side.value) for reg in native.signature
+    ) == tuple(
+        (reg.name, reg.bitsize, reg.shape, reg.side.value) for reg in source.signature
+    )
+    model = native.resource_model()
+    assert model.qubits == get_cost_value(source, QubitCount())
+    assert model.gates.toffoli == get_cost_value(source, QECGatesCost()).toffoli
+    circuit = DynamicCircuit(width).append(native.make_on(flags, system, work, slots))
+    stream = circuit.to_ir().instructions
     reference = reference_arithmetic_gates(
         source,
         {"ctrls": flags, "system": system},
@@ -219,7 +242,7 @@ def test_df_number_phase_uses_locked_predicate_and_cleans_every_branch(
         index << len(work): amplitude * (-1j) ** (index % 4)
         for index in range(1 << first_work)
     }
-    active = (1 << (controls + 1)) - 1
+    active = (int("".join(map(str, values)), 2) << 1) | 1
     expected = {
         index: -value if index >> (width - controls - 1) == active else value
         for index, value in initial.items()

@@ -12,6 +12,7 @@ from ....compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
+from ..chemistry_number_phase import ChemistryNumberPhase
 
 
 def thc_rotations_cost(
@@ -103,11 +104,13 @@ def select_thc_cost(
         "CSwap(address)", 1 + 2 * address_width, GateCost(cswap=address_width)
     )
     spin_flag_swap = ComponentCost("CSwap(spin flags)", 3, GateCost(cswap=1))
-    reflect_one = ComponentCost("ApplyControlledZs(1)", 1 + orbitals)
+    reflect_one = ChemistryNumberPhase((1,), orbitals).resource_model(
+        "ApplyControlledZs(1)"
+    )
     # The two-control reflection's QubitCount includes its AND work bit.
     reflect_two_ports = 2 + orbitals
-    reflect_two = ComponentCost(
-        "ApplyControlledZs(1,0)", reflect_two_ports + 1, GateCost(toffoli=1)
+    reflect_two = ChemistryNumberPhase((1, 0), orbitals).resource_model(
+        "ApplyControlledZs(1,0)"
     )
     # Five selection flags, one rotation flag, two addresses and both systems.
     signature_width = 6 + keep_bitsize + 2 * address_width + num_spin_orb
