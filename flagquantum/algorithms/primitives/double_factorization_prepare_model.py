@@ -16,6 +16,7 @@ from ...compiler.registers.arithmetic.arithmetic_resource_model import source_ad
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
+from ...core.ir.program.signatures import Signature
 from .chemistry_qroam_model import source_chemistry_qroam_cost
 
 _TOFFOLI = ComponentCost("Toffoli", 3, GateCost(toffoli=1))
@@ -44,6 +45,35 @@ def _auxiliary_width(auxiliaries: int) -> int:
     return auxiliaries.bit_length()
 
 
+def source_double_factorization_inner_prepare_signature(
+    spin_orbitals: int, eigenvalues: int, rotation_bits: int
+) -> Signature:
+    """Describe the source rank, offset, rotation, success and address ports."""
+    _, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
+    _require_positive_precision(rotation_bits)
+    return Signature.build(xi=rank, offset=offset, rot=rotation_bits, succ_p=1, p=rank)
+
+
+def source_double_factorization_outer_prepare_signature(auxiliaries: int) -> Signature:
+    """Describe the source factor address and success flag."""
+    return Signature.build(l=_auxiliary_width(auxiliaries), succ_l=1)
+
+
+def source_double_factorization_indexed_data_signature(
+    auxiliaries: int, spin_orbitals: int, eigenvalues: int, rotation_bits: int = 8
+) -> Signature:
+    """Describe the source indexed metadata words in declared order."""
+    _, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
+    _require_positive_precision(rotation_bits)
+    return Signature.build(
+        l=_auxiliary_width(auxiliaries),
+        l_ne_zero=1,
+        xi=rank,
+        rot_data=rotation_bits,
+        offset=offset,
+    )
+
+
 def source_double_factorization_inner_prepare_cost(
     spin_orbitals: int,
     eigenvalues: int,
@@ -61,7 +91,11 @@ def source_double_factorization_inner_prepare_cost(
     addition = source_add_cost(offset, offset)
     return ComponentCost(
         "Adjoint" if adjoint else "InnerPrepareDoubleFactorization",
-        2 * rank + offset + rotation_bits + 1,
+        int(
+            source_double_factorization_inner_prepare_signature(
+                spin_orbitals, eigenvalues, rotation_bits
+            ).n_qubits()
+        ),
         calls=(
             CostCall(_TOFFOLI, toffolis),
             CostCall(replace(addition, name="Adjoint") if adjoint else addition),
@@ -83,7 +117,9 @@ def source_double_factorization_outer_prepare_cost(
     uniform = source_uniform_preparation_cost(auxiliaries + 1)
     return ComponentCost(
         "Adjoint" if adjoint else "OuterPrepareDoubleFactorization",
-        width + 1,
+        int(
+            source_double_factorization_outer_prepare_signature(auxiliaries).n_qubits()
+        ),
         calls=(
             CostCall(replace(uniform, name="Adjoint") if adjoint else uniform),
             CostCall(
@@ -105,13 +141,14 @@ def source_double_factorization_indexed_data_cost(
     adjoint: bool = False,
 ) -> ComponentCost:
     """Count the lookup of rank, offset, rotation data and the nonzero flag."""
-    width = _auxiliary_width(auxiliaries)
+    signature = source_double_factorization_indexed_data_signature(
+        auxiliaries, spin_orbitals, eigenvalues, rotation_bits
+    )
     _, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
-    _require_positive_precision(rotation_bits)
     target = rank + offset + rotation_bits + 1
     return ComponentCost(
         "Adjoint" if adjoint else "OutputIndexedData",
-        width + target,
+        int(signature.n_qubits()),
         calls=(
             CostCall(
                 source_chemistry_qroam_cost(auxiliaries + 1, target, adjoint=adjoint)
