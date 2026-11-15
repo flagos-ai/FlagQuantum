@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **124/213**.
+Validated local Notebook workflows: **125/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -266,7 +266,7 @@ Validated local Notebook workflows: **124/213**.
 | `applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa` | notebook_workflow | [Native program](applications/optimization/qaoa_in_qaoa/overview/main.py) | validated |
 | `applications/optimization/rectangles_packing/rectangles_packing_grid` | notebook_workflow | [Native program](applications/optimization/rectangles_packing/rectangles_packing_grid/main.py) | pending |
 | `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | [Native program](applications/optimization/robust_posture_optimization/overview/main.py) | validated |
-| `applications/optimization/set_cover/set_cover` | notebook_workflow | [Native program](applications/optimization/set_cover/main.py) | pending |
+| `applications/optimization/set_cover/set_cover` | notebook_workflow | [Native program](applications/optimization/set_cover/overview/main.py) | validated |
 | `applications/optimization/set_partition/set_partition` | notebook_workflow | [Native program](applications/optimization/set_partition/overview/main.py) | validated |
 | `applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution` | notebook_workflow | [Native program](applications/optimization/variational_quantum_imaginary_time_evolution/main.py) | pending |
 | `applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D` | notebook_workflow | [Native program](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/main.py) | pending |
