@@ -84,6 +84,10 @@ def main(encoding: Encoding = "jordan_wigner") -> None:
     pairs, energy, direct = measure_h2(angle, encoding)
     torch.testing.assert_close(energy, direct.to(energy.dtype), atol=1e-12, rtol=0)
     gradient = torch.autograd.grad(energy.real, angle)[0]
+    print(
+        "premise: single_device_fast_path on a full CPU register. "
+        "Dense two-body output grows as O(n^4).\n"
+    )
     print(f"Encoding: {encoding}; exact CPU expectations on four qubits")
     print(f"Ordered particle pairs: {pairs.detach().item():.0f}")
     print(f"Reconstructed energy: {energy.real.detach().item():.10f} Ha")

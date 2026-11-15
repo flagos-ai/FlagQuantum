@@ -136,8 +136,8 @@ def two_body_density_observables(
         >>> circuit = fq.Circuit(2, dtype=torch.complex128, device="cpu").x(0).x(1)
         >>> observables = two_body_density_observables(n_modes=2)
         >>> result = fq.run(circuit, outputs=[fq.expectation(o) for o in observables])
-        >>> two_body_density(result.expectations, n_modes=2)[0, 1, 1, 0].item()
-        (1+0j)
+        >>> pair = two_body_density(result.expectations, n_modes=2)[0, 1, 1, 0]
+        >>> torch.testing.assert_close(pair, pair.new_tensor(1 + 0j), atol=1e-12, rtol=0)
     """
     width = count(n_modes, "n_modes", minimum=2)
     if encoding not in ENCODINGS:
