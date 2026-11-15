@@ -1,10 +1,18 @@
 """Verify literal SWAP order and costs against the pinned source."""
 
+from collections.abc import Hashable
+
 import pytest
 import torch
 
 import flagquantum as fq
 from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum.compiler._component_trace.call_graph import symbolic_call_graph
+from flagquantum.compiler._component_trace.resource_generalization import (
+    CliffordCall,
+    ControlledSwapCall,
+)
+from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
 from flagquantum.compiler.registers.primitives.controlled_swap import (
     controlled_swap_bit_ir,
     controlled_swap_ir,
@@ -14,8 +22,51 @@ from flagquantum.compiler.registers.primitives.swap import (
     swap_bit_ir,
     swap_register_ir,
 )
+from flagquantum.core.ir.program.signatures import Signature
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+def test_original_swap_tutorial_shapes_and_one_level_counts() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates.swap import (
+        TwoBitCSwap,
+        TwoBitSwap,
+        _cswap,
+        _cswap_large,
+        _cswap_small,
+        _swap,
+        _swap_large,
+        _swap_small,
+    )
+    from qualtran.resource_counting.generalizers import ignore_split_join
+    from sympy import Symbol
+
+    n = Symbol("n", positive=True, integer=True)
+    for controlled, examples in (
+        (False, (_swap, _swap_small, _swap_large)),
+        (True, (_cswap, _cswap_small, _cswap_large)),
+    ):
+        key = ControlledSwapCall(1) if controlled else CliffordCall("swap_bit", 2)
+        original_leaf = TwoBitCSwap() if controlled else TwoBitSwap()
+        for factory, width in zip(examples, (n, 4, 64), strict=True):
+            source = factory.make()
+            ports = {"ctrl": 1} if controlled else {}
+            signature = Signature.build(**ports, x=width, y=width)
+            assert [(r.name, r.bitsize, r.side.value) for r in signature] == [
+                (r.name, r.bitsize, r.side.value) for r in source.signature
+            ]
+            original, leaves = source.call_graph(
+                max_depth=1, generalizer=ignore_split_join
+            )
+            assert tuple(original.edges) == ((source, original_leaf),)
+            assert leaves == {original_leaf: width}
+            native_calls: dict[Hashable, dict[Hashable, SymbolicInt]] = {
+                "register swap": {key: width},
+            }
+            graph = symbolic_call_graph("register swap", native_calls, max_depth=1)
+            assert graph.leaf_counts == {key: leaves[original_leaf]}
 
 
 @pytest.mark.ftqc_reference
