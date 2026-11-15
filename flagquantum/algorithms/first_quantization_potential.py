@@ -1,11 +1,11 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from the Qualtran v0.7.0 nuclear index and potential PREPARE signatures.
+# Adapted from the Qualtran v0.7.0 nuclear index and potential PREPARE/SELECT signatures.
 # https://github.com/quantumlib/Qualtran/tree/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization
 
-"""Register contracts for potential-energy and nuclear-index preparation."""
+"""Register contracts for potential energy and nuclear-index preparation."""
 
-from ..core.ir.program.register_types import opaque_register_type
+from ..core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
 from .first_quantization_nu import prepare_nu_signature
@@ -25,3 +25,33 @@ def prepare_uv_signature(num_bits_p: int, num_atoms: int, m_param: int) -> Signa
     mu, nu, m, flag = prepare_nu_signature(num_bits_p, m_param)
     (index,) = prepare_zeta_signature(num_atoms)
     return Signature((mu, nu, m, index, flag))
+
+
+def select_uv_signature(
+    num_bits_p: int, num_atoms: int, num_bits_nuc_pos: int
+) -> Signature:
+    """Return the potential flags, nuclear words, and three oriented axis banks."""
+    (index,) = prepare_zeta_signature(num_atoms)
+    return Signature(
+        (
+            Register("flag_tuv", quantum_bit_type()),
+            Register("flag_uv", quantum_bit_type()),
+            index,
+            Register("rl", opaque_register_type(num_bits_nuc_pos)),
+            Register("nu", opaque_register_type(num_bits_p + 1), shape=(3,)),
+            Register("p", opaque_register_type(num_bits_p), shape=(3,)),
+            Register("q", opaque_register_type(num_bits_p), shape=(3,)),
+        )
+    )
+
+
+def apply_nuclear_phase_signature(num_bits_p: int, num_bits_nuc: int) -> Signature:
+    """Keep the source's capitalized Rl and distinct nuclear and momentum widths."""
+    position = opaque_register_type(num_bits_nuc)
+    return Signature(
+        (
+            Register("l", position),
+            Register("Rl", position),
+            Register("nu", opaque_register_type(num_bits_p), shape=(3,)),
+        )
+    )
