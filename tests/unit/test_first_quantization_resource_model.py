@@ -9,6 +9,7 @@ from flagquantum.algorithms.first_quantization_kinetic import (
     prepare_power_two_signature,
     prepare_t_signature,
 )
+from flagquantum.algorithms.first_quantization_potential import prepare_zeta_signature
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_apply_nuclear_phase_cost,
     source_prepare_first_quantization_cost,
@@ -283,7 +284,7 @@ def test_prepare_zeta_cost(
     atoms: int, charge: int, precision: int, adjoint: bool
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran import DecomposeNotImplementedError, Side
+    from qualtran import DecomposeNotImplementedError, QAny, Side
     from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_zeta import (
         PrepareZetaState,
     )
@@ -294,6 +295,12 @@ def test_prepare_zeta_cost(
     index = source.signature.get_left("l")
     assert index.side == Side.THRU
     assert index.bitsize == (atoms - 1).bit_length()
+    (native,) = prepare_zeta_signature(atoms)
+    assert native.name == index.name == "l"
+    assert native.side.value == index.side.value
+    assert native.shape == index.shape
+    assert native.dtype.encoding == "opaque"
+    assert QAny(native.bitsize) == index.dtype
     assert_source_model(
         source_prepare_zeta_cost(atoms, charge, adjoint=adjoint), source
     )

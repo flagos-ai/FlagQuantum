@@ -21,6 +21,7 @@ from .first_quantization_kinetic import (
     prepare_t_signature,
 )
 from .first_quantization_nu_resource_model import source_prepare_nu_cost
+from .first_quantization_potential import prepare_zeta_signature
 
 
 def source_select_t_cost(num_bits_p: int) -> ComponentCost:
@@ -199,10 +200,10 @@ def source_prepare_zeta_cost(
     The single big-endian index is a through register. The source has a cost
     declaration without a gate decomposition or work-register contract.
     """
-    _require_positive(num_atoms)
+    signature = prepare_zeta_signature(num_atoms)
     if type(lambda_zeta) is not int or lambda_zeta < 0:
         raise ValueError("Total nuclear charge must be a nonnegative integer")
-    width = (num_atoms - 1).bit_length()
+    width = int(signature.n_qubits())
     # Keep the source's floating square-root rounding in the adjoint model.
     toffoli = ceil(lambda_zeta**0.5) if adjoint else lambda_zeta
     return ComponentCost("PrepareZetaState", max(width, 3), GateCost(toffoli=toffoli))
