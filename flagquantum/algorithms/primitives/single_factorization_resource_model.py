@@ -17,6 +17,7 @@ from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
 from ...compiler.registers.sorting.contiguous_index import source_contiguous_index_cost
+from ...core.ir.program.signatures import Signature
 from .chemistry_qroam_model import (
     source_chemistry_qroam_cost,
     source_chemistry_qroam_two_axis_cost,
@@ -51,6 +52,27 @@ def source_single_factorization_select_cost(
     )
 
 
+def _auxiliary_width(auxiliaries: int) -> int:
+    if type(auxiliaries) is not int or auxiliaries < 0:
+        raise ValueError("Single factorization requires nonnegative auxiliaries")
+    return auxiliaries.bit_length()
+
+
+def source_single_factorization_inner_prepare_signature(
+    auxiliaries: int, spin_orbitals: int
+) -> Signature:
+    """Return the source's narrow through ports, including width-zero omission."""
+    n = _spatial_width(spin_orbitals)
+    return Signature.build(l=_auxiliary_width(auxiliaries), p=n, q=n, succ_pq=1)
+
+
+def source_single_factorization_outer_prepare_signature(auxiliaries: int) -> Signature:
+    """Return the source through words and three preparation flags."""
+    return Signature.build(
+        l=_auxiliary_width(auxiliaries), succ_l=1, l_ne_zero=1, rot_aa=1
+    )
+
+
 def source_single_factorization_inner_prepare_cost(
     auxiliaries: int,
     spin_orbitals: int,
@@ -79,7 +101,11 @@ def source_single_factorization_inner_prepare_cost(
     triangular = spin_orbitals**2 // 8 + spin_orbitals // 4
     return ComponentCost(
         "Adjoint" if adjoint else "InnerPrepareSingleFactorization",
-        auxiliaries.bit_length() + 2 * n + 1,
+        int(
+            source_single_factorization_inner_prepare_signature(
+                auxiliaries, spin_orbitals
+            ).n_qubits()
+        ),
         calls=(
             CostCall(_TOFFOLI, 6 * n + 2 * rotation_bits - 7),
             CostCall(source_contiguous_index_cost(n, 2 * n)),
@@ -103,13 +129,12 @@ def source_single_factorization_outer_prepare_cost(
     auxiliaries: int, alias_bits: int, *, adjoint: bool = False
 ) -> ComponentCost:
     """Count uniform, QROAM, comparison and swap on the outer alias register."""
-    if type(auxiliaries) is not int or auxiliaries < 0:
-        raise ValueError("Single factorization requires nonnegative auxiliaries")
+    signature = source_single_factorization_outer_prepare_signature(auxiliaries)
     rows = auxiliaries + 1
     lookup_address = rows.bit_length()
     return ComponentCost(
         "Adjoint" if adjoint else "OuterPrepareSingleFactorization",
-        auxiliaries.bit_length() + 3,
+        int(signature.n_qubits()),
         calls=(
             CostCall(source_uniform_preparation_cost(rows)),
             CostCall(
