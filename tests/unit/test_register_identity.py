@@ -5,6 +5,7 @@ import torch
 
 import flagquantum as fq
 from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum.compiler._component_trace.call_graph import symbolic_call_graph
 from flagquantum.compiler._component_trace.qec_gate_cost import (
     QECGateCost,
     query_qec_gate_cost,
@@ -14,12 +15,19 @@ from flagquantum.compiler._component_trace.resource_generalization import (
 )
 from flagquantum.compiler.registers.primitives.identity import register_identity_ir
 from flagquantum.core.ir import Instruction
+from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.simulation.classical_truth_table import (
+    format_classical_truth_table,
+    register_classical_truth_table,
+)
 
 pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("width,controls", [(0, 0), (0, 2), (1, 0), (3, 0), (3, 2)])
+@pytest.mark.parametrize(
+    "width,controls", [(0, 0), (0, 2), (1, 0), (2, 0), (3, 0), (3, 2), (4, 0)]
+)
 def test_identity_source_width_cost_and_exact_action(width: int, controls: int) -> None:
     pytest.importorskip("qualtran")
     np = pytest.importorskip("numpy")
@@ -113,3 +121,48 @@ def test_identity_rejects_aliases_and_negative_widths() -> None:
         register_identity_ir((0,), controls=((1, 0),))
     with pytest.raises(ValueError, match="nonnegative"):
         identity_cost_key(2, control_width=-1)
+
+
+@pytest.mark.ftqc_reference
+def test_identity_notebook_factories_and_symbolic_leaf() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates.identity import (
+        _identity,
+        _identity_n,
+        _identity_symb,
+    )
+    from qualtran.resource_counting.generalizers import ignore_split_join
+    from sympy import Symbol
+
+    for example, width in (
+        (_identity, 1),
+        (_identity_n, 4),
+        (_identity_symb, Symbol("n")),
+    ):
+        source = example.make()
+        signature = Signature.build(q=width)
+        assert [reg.name for reg in signature.lefts()] == ["q"]
+        assert [reg.name for reg in signature.rights()] == ["q"]
+        assert signature.n_qubits() == source.signature.n_qubits() == width
+        source_graph, source_leaves = source.call_graph(
+            max_depth=1, generalizer=ignore_split_join
+        )
+        assert list(source_graph.nodes) == [source] and not source_graph.edges
+        key = identity_cost_key(width)
+        graph = symbolic_call_graph(key, {}, max_depth=1)
+        assert not graph.direct_calls
+        assert graph.leaf_counts == {key: source_leaves[source]} == {key: 1}
+
+
+@pytest.mark.ftqc_reference
+def test_original_identity_classical_truth_table() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import Identity
+    from qualtran.simulation.classical_sim import (
+        format_classical_truth_table as format_source,
+    )
+    from qualtran.simulation.classical_sim import get_classical_truth_table
+
+    native = register_classical_truth_table(Signature.build(q=1), lambda q: (q["q"],))
+    expected = format_source(*get_classical_truth_table(Identity()))
+    assert format_classical_truth_table(*native) == expected
