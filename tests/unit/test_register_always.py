@@ -25,11 +25,110 @@ from flagquantum.compiler.registers.primitives.always import (
     Always,
     always_component_cost,
 )
+from flagquantum.compiler.registers.primitives.and_compute import (
+    and_compute_ir,
+    and_uncompute_ir,
+)
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+def test_original_always_and_gate_stream_and_both_erase_branches() -> None:
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.bookkeeping.always import _always_and
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum import Circuit
+    from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
+    from flagquantum.compiler._component_trace.resource_generalization import (
+        ConjunctionCall,
+    )
+    from flagquantum.core.ir.program.register_types import quantum_bit_type
+    from flagquantum.core.ir.program.registers import Register, RegisterSide
+    from flagquantum.core.ir.program.signatures import Signature
+
+    source = _always_and()
+    assert source.controlled() == source
+    x, y, target, slot = 1, 2, 3, 7
+    bit = quantum_bit_type()
+    signature = Signature(
+        (
+            Register("ctrl", bit, shape=(2,)),
+            Register("target", bit, side=RegisterSide.RIGHT),
+        )
+    )
+    native = Always(
+        lambda: and_compute_ir(x, y, target),
+        lambda: and_uncompute_ir(x, y, target, slot),
+        signature,
+    )
+    controls = (0,)
+    passthrough, wrapped = native.controlled(controls)
+    assert passthrough is controls and wrapped is native
+    assert wrapped.signature is signature
+    for adjoint, pair in enumerate(
+        ((wrapped, source), (wrapped.adjoint(), source.adjoint()))
+    ):
+        component, original = pair
+        assert component.signature is not None
+        assert tuple(
+            (reg.name, reg.shape, reg.side.value) for reg in component.signature
+        ) == tuple((reg.name, reg.shape, reg.side.value) for reg in original.signature)
+        assert (
+            component.signature.n_qubits()
+            == get_cost_value(original, QubitCount())
+            == 3
+        )
+        assert original.call_graph(max_depth=1)[1] == {original: 1}
+        with pytest.raises(DecomposeTypeError, match="atomic"):
+            get_cost_value(original, QECGatesCost())
+        child = query_qec_gate_cost(ConjunctionCall((1, 1), bool(adjoint)))
+        assert {name: cost for name, cost in asdict(child).items() if cost} == (
+            get_cost_value(original.subbloq, QECGatesCost()).asdict()
+        )
+    forward = reference_arithmetic_gates(
+        source,
+        {"ctrl": (x, y)},
+        (target,),
+        {},
+        expected_outputs={"ctrl": (x, y), "target": (target,)},
+    )
+    inverse = reference_arithmetic_gates(
+        source.adjoint(),
+        {"ctrl": (x, y), "target": (target,)},
+        (),
+        {target: slot},
+        expected_outputs={"ctrl": (x, y)},
+    )
+    assert_source(wrapped.emit(), forward)
+    assert_source(wrapped.adjoint().emit(), inverse)
+    assert sum(gate.name in {"t", "tdg"} for gate in wrapped.emit()) == 4
+    assert Counter(gate.name for gate in wrapped.adjoint().emit()) == {
+        "h": 1,
+        "measure": 1,
+        "cz": 1,
+        "reset": 1,
+    }
+    initial = torch.zeros(16, dtype=torch.complex128)
+    values = torch.arange(1, 9, dtype=torch.float64)
+    initial[::2] = torch.complex(values, 2 - (values % 4))
+    initial /= initial.norm()
+    expected = initial.clone()
+    for basis in (6, 14):
+        expected[basis], expected[basis + 1] = 0, initial[basis]
+    circuit = Circuit(4, inputs=initial, dtype=torch.complex128)
+    circuit.append(FieldOperation(4, wrapped.emit()))
+    torch.testing.assert_close(circuit.state().flatten(), expected, atol=3e-12, rtol=0)
+    for outcome in (0, 1):
+        branch = forced_branch(
+            initial, (*wrapped.emit(), *wrapped.adjoint().emit()), (outcome,)
+        )
+        torch.testing.assert_close(branch, initial / 2**0.5, atol=3e-12, rtol=0)
 
 
 @pytest.mark.ftqc_reference

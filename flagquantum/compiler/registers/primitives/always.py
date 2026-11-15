@@ -10,6 +10,7 @@ from dataclasses import dataclass, replace
 from typing import Generic, ParamSpec, TypeVar
 
 from ....core.ir import Instruction
+from ....core.ir.program.signatures import Signature
 from ..._component_trace.resource_model import ComponentCost
 
 Parameters = ParamSpec("Parameters")
@@ -22,6 +23,7 @@ class Always(Generic[Parameters]):
 
     forward: Callable[Parameters, tuple[Instruction, ...]]
     inverse: Callable[Parameters, tuple[Instruction, ...]]
+    signature: Signature | None = None
 
     def controlled(self, controls: Controls) -> tuple[Controls, "Always[Parameters]"]:
         """Pass control wires to the caller unchanged, without gating this child."""
@@ -29,7 +31,8 @@ class Always(Generic[Parameters]):
 
     def adjoint(self) -> "Always[Parameters]":
         """Reverse the wrapped component using its declared inverse."""
-        return Always(self.inverse, self.forward)
+        signature = None if self.signature is None else self.signature.adjoint()
+        return Always(self.inverse, self.forward, signature)
 
     def emit(
         self, *args: Parameters.args, **kwargs: Parameters.kwargs
