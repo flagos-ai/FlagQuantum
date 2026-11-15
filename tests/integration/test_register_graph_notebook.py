@@ -58,6 +58,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_cnot", 7, 2, 0),
         ("register_diagonal_gates", 12, 3, 0),
         ("register_global_phase", 7, 1, 0),
+        ("register_gradient_givens", 8, 4, 0),
         ("register_hadamard", 9, 2, 1),
         ("register_identity", 8, 2, 0),
         ("register_measurement", 10, 4, 0),
