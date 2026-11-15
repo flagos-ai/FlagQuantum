@@ -19,7 +19,9 @@ from flagquantum.algorithms.first_quantization_nu_resource_model import (
     source_projectile_prepare_nu_adjoint_gate_cost,
     source_projectile_prepare_nu_cost,
 )
+from flagquantum.algorithms.first_quantization_potential import prepare_uv_signature
 from flagquantum.algorithms.first_quantization_projectile_resource_model import (
+    projectile_prepare_uv_adjoint_model,
     source_projectile_power_two_cost,
     source_projectile_prepare_first_quantization_adjoint_gate_cost,
     source_projectile_prepare_first_quantization_cost,
@@ -277,7 +279,10 @@ def test_projectile_prepare_uv_source_graph(
     p: int, n: int, atoms: int, m: int, charge: int
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran import LeftDangle, RightDangle
+    from qualtran import BloqError, LeftDangle, RightDangle
+    from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
+        PrepareNuStateWithProj,
+    )
     from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_uv import (
         PrepareUVFirstQuantizationWithProj,
     )
@@ -285,6 +290,8 @@ def test_projectile_prepare_uv_source_graph(
 
     source = PrepareUVFirstQuantizationWithProj(p, n, 10, atoms, m, charge, 8)
     model = source_projectile_prepare_uv_cost(p, n, atoms, m, charge)
+    signature = prepare_uv_signature(n, atoms, m)
+    _assert_signature(signature, source.signature)
     assert_source_model(model, source)
     assert model.qubits == source.signature.n_qubits()
     graph = source.decompose_bloq()
@@ -311,12 +318,49 @@ def test_projectile_prepare_uv_source_graph(
     ]
 
     adjoint = source.adjoint()
+    _assert_signature(signature, adjoint.signature)
+    adjoint_graph = adjoint.decompose_bloq()
+    corrected = projectile_prepare_uv_adjoint_model(p, n, atoms, m, charge)
+    reversed_bindings = []
+    live = {edge for edge in adjoint_graph.connections if edge.left.binst == LeftDangle}
+    for node, incoming, outgoing in adjoint_graph.iter_bloqnections():
+        live.difference_update(incoming)
+        assert all(edge.left.binst == LeftDangle for edge in incoming)
+        assert all(edge.right.binst == RightDangle for edge in outgoing)
+        expected = {(edge.left.reg.name, edge.left.idx) for edge in incoming}
+        assert expected == {(edge.right.reg.name, edge.right.idx) for edge in outgoing}
+        if node.bloq == PrepareNuStateWithProj(p, n, m).adjoint():
+            assert expected == {
+                (reg.name, idx)
+                for reg in prepare_nu_signature(n, m)
+                for idx in reg.all_idxs()
+            }
+            with pytest.raises(BloqError, match="does not accept Soquets.*flag"):
+                node.bloq.decompose_bloq()
+        else:
+            assert expected == {("l", ())}
+        reversed_bindings.append((str(node.bloq), sum(edge.shape for edge in live)))
+        live.update(outgoing)
+    assert reversed_bindings == [
+        (call.component.name, call.bystander_qubits) for call in corrected.calls
+    ]
     with pytest.raises(RuntimeError, match="does not accept Soquets.*flag"):
         get_cost_value(adjoint, QubitCount())
     gates = source_projectile_prepare_uv_adjoint_gate_cost(p, n, atoms, charge)
     assert {
         key: value for key, value in asdict(gates).items() if value
     } == get_cost_value(adjoint, QECGatesCost()).asdict()
+    result = estimate_ftqc_resources(corrected)
+    assert result.logical.gates == gates
+    assert result.emitted is None
+    index_width = signature.get_left("l").bitsize
+    nu_peak = estimate_ftqc_resources(
+        projectile_prepare_nu_adjoint_model(p, n, m)
+    ).logical.peak_logical_qubits
+    assert result.logical.peak_logical_qubits == max(
+        int(signature.n_qubits()) + max(0, 3 - int(index_width)),
+        nu_peak + int(index_width),
+    )
 
 
 @pytest.mark.parametrize(

@@ -21,9 +21,11 @@ from .first_quantization_kinetic import (
     projectile_prepare_t_signature,
 )
 from .first_quantization_nu_resource_model import (
+    projectile_prepare_nu_adjoint_model,
     source_projectile_prepare_nu_adjoint_gate_cost,
     source_projectile_prepare_nu_cost,
 )
+from .first_quantization_potential import prepare_uv_signature
 from .first_quantization_resource_model import (
     _require_positive,
     _signed_conversion_cost,
@@ -116,15 +118,52 @@ def source_projectile_prepare_uv_cost(
     """Model forward momentum transfer and nuclear-index preparation."""
     nu = source_projectile_prepare_nu_cost(num_bits_p, num_bits_n, m_param)
     zeta = source_prepare_zeta_cost(num_atoms, lambda_zeta)
-    nu_ports = 4 * num_bits_n + (m_param - 1).bit_length() + 4
-    index_width = (num_atoms - 1).bit_length()
+    return _projectile_prepare_uv_model(num_bits_n, num_atoms, m_param, nu, zeta)
+
+
+def projectile_prepare_uv_adjoint_model(
+    num_bits_p: int,
+    num_bits_n: int,
+    num_atoms: int,
+    m_param: int,
+    lambda_zeta: int,
+    *,
+    decomposed: bool = False,
+) -> ComponentCost:
+    """Estimate the native adjoint with the corrected nested ν flag direction."""
+    nu = projectile_prepare_nu_adjoint_model(
+        num_bits_p, num_bits_n, m_param, decomposed=decomposed
+    )
+    zeta = source_prepare_zeta_cost(num_atoms, lambda_zeta, adjoint=True)
+    return _projectile_prepare_uv_model(
+        num_bits_n, num_atoms, m_param, nu, zeta, adjoint=True
+    )
+
+
+def _projectile_prepare_uv_model(
+    num_bits_n: int,
+    num_atoms: int,
+    m_param: int,
+    nu: ComponentCost,
+    zeta: ComponentCost,
+    *,
+    adjoint: bool = False,
+) -> ComponentCost:
+    signature = prepare_uv_signature(num_bits_n, num_atoms, m_param)
+    ports = int(signature.n_qubits())
+    index_width = int(signature.get_left("l").bitsize)
+    calls = (
+        CostCall(nu, bystander_qubits=index_width),
+        CostCall(zeta, bystander_qubits=ports - index_width),
+    )
     return ComponentCost(
-        "PrepareUVFirstQuantizationWithProj",
-        nu_ports + index_width,
-        calls=(
-            CostCall(nu, bystander_qubits=index_width),
-            CostCall(zeta, bystander_qubits=nu_ports),
+        (
+            "PrepareUVFirstQuantizationWithProj†"
+            if adjoint
+            else "PrepareUVFirstQuantizationWithProj"
         ),
+        ports,
+        calls=calls[::-1] if adjoint else calls,
     )
 
 
