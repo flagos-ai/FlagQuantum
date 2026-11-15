@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **123/213**.
+Validated local Notebook workflows: **124/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -262,7 +262,7 @@ Validated local Notebook workflows: **123/213**.
 | `applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph` | notebook_workflow | [Native program](applications/optimization/max_induced_k_color_subgraph/overview/main.py) | validated |
 | `applications/optimization/max_k_vertex_cover/max_k_vertex_cover` | notebook_workflow | [Native program](applications/optimization/max_k_vertex_cover/overview/main.py) | validated |
 | `applications/optimization/min_graph_coloring/min_graph_coloring` | notebook_workflow | [Native program](applications/optimization/min_graph_coloring/overview/main.py) | validated |
-| `applications/optimization/minimum_dominating_set/minimum_dominating_set` | notebook_workflow | [Native program](applications/optimization/minimum_dominating_set/main.py) | pending |
+| `applications/optimization/minimum_dominating_set/minimum_dominating_set` | notebook_workflow | [Native program](applications/optimization/minimum_dominating_set/overview/main.py) | validated |
 | `applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa` | notebook_workflow | [Native program](applications/optimization/qaoa_in_qaoa/overview/main.py) | validated |
 | `applications/optimization/rectangles_packing/rectangles_packing_grid` | notebook_workflow | [Native program](applications/optimization/rectangles_packing/rectangles_packing_grid/main.py) | pending |
 | `applications/optimization/robust_posture_optimization/robust_posture_optimization` | notebook_workflow | [Native program](applications/optimization/robust_posture_optimization/overview/main.py) | validated |
