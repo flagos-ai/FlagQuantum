@@ -73,26 +73,51 @@ def notebook_signatures() -> tuple[Signature, Signature]:
             system,
         )
     )
-    block = Signature(
+    return one_body, double_factorization_block_signature(
+        _AUXILIARIES, _SPIN_ORBITALS, _EIGENVALUES, 7, 7
+    )
+
+
+def double_factorization_block_signature(
+    auxiliaries: int,
+    spin_orbitals: int,
+    eigenvalues: int,
+    basis_rotation_bits: int,
+    inner_rotation_bits: int,
+) -> Signature:
+    """Return the full source block-encoding port metadata."""
+    spatial = spin_orbitals // 2
+    rank = opaque_register_type((spatial - 1).bit_length())
+    bit = quantum_bit_type()
+    return Signature(
         (
             Register("ctrl", bit, shape=(4,)),
-            Register("l", opaque_register_type(_AUXILIARIES.bit_length())),
+            Register("l", opaque_register_type(auxiliaries.bit_length())),
             Register("p", rank),
             Register("spin", bit),
             Register("rot_aa", bit),
-            *common,
-            Register("rot", opaque_register_type(7)),
-            rotations,
-            system,
+            Register("xi", rank),
+            Register(
+                "offset", opaque_register_type((eigenvalues + spatial - 1).bit_length())
+            ),
+            Register("rot", opaque_register_type(inner_rotation_bits)),
+            Register("rotations", opaque_register_type(spatial * basis_rotation_bits)),
+            Register("sys", opaque_register_type(spatial), shape=(2,)),
         )
     )
-    return one_body, block
 
 
 def notebook_block_score() -> RegisterScore:
-    """Layout the source's seven calls and their live register operands."""
+    """Layout the original seven-stage teaching example."""
     _, signature = notebook_signatures()
     _, model = notebook_models()
+    return double_factorization_block_score(model, signature)
+
+
+def double_factorization_block_score(
+    model: ComponentCost, signature: Signature
+) -> RegisterScore:
+    """Layout the source's seven calls and their live register operands."""
     widths = {
         reg.name + "".join(f"[{i}]" for i in indices): int(reg.bitsize)
         for reg in signature
