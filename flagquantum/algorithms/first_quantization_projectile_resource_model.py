@@ -5,6 +5,8 @@
 
 """Resource models for first-quantized chemistry with a quantum projectile."""
 
+from dataclasses import replace
+
 from ..compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
@@ -26,6 +28,11 @@ from .first_quantization_nu_resource_model import (
     source_projectile_prepare_nu_cost,
 )
 from .first_quantization_potential import prepare_uv_signature
+from .first_quantization_projectile import (
+    projectile_prepare_signature,
+    projectile_prepare_tuv_signature,
+    projectile_select_signature,
+)
 from .first_quantization_resource_model import (
     _require_positive,
     _signed_conversion_cost,
@@ -193,16 +200,7 @@ def source_projectile_select_first_quantization_cost(
     coordinate_swap = ComponentCost("CSwap", 2 * n + 1, GateCost(cswap=n))
     kinetic = source_projectile_select_t_cost(n)
     potential = source_projectile_select_uv_cost(p, n, num_atoms, num_bits_nuc_pos)
-    ports = (
-        6  # Four Hamiltonian flags, i != j and plus_t.
-        + 2 * (eta - 1).bit_length()
-        + 6  # Two three-bit coordinate selectors.
-        + 3 * n  # r, s and mu.
-        + 3 * (n + 1)  # Momentum-transfer coordinates.
-        + (m_param - 1).bit_length()
-        + (num_atoms - 1).bit_length()
-        + 3 * (eta * p + n)  # Electron and projectile systems.
-    )
+    ports = int(projectile_select_signature(p, n, eta, num_atoms, m_param).n_qubits())
     one_momentum = ports + 3 * n
     both_momenta = one_momentum + 3 * p
     # QubitCount postpones the q and rl allocations until first use and
@@ -257,7 +255,7 @@ def source_projectile_prepare_tuv_cost(
     _require_positive(num_bits_t)
     return ComponentCost(
         "PrepareTUVSuperpositions",
-        9,
+        int(projectile_prepare_tuv_signature().n_qubits()),
         GateCost(toffoli=0 if adjoint else 6 * num_bits_t + 2),
     )
 
@@ -274,26 +272,87 @@ def source_projectile_prepare_first_quantization_cost(
     num_bits_rot_aa: int = 8,
 ) -> ComponentCost:
     """Estimate the forward top-level projectile preparation."""
-    particles = source_prepare_ij_cost(eta, num_bits_rot_aa)
-    if eta < 2:
-        raise ValueError("Source projectile PREPARE requires at least two particles")
-    term = source_projectile_prepare_tuv_cost(num_bits_t)
-    kinetic = source_projectile_prepare_t_cost(num_bits_p, num_bits_n)
     potential = source_projectile_prepare_uv_cost(
         num_bits_p, num_bits_n, num_atoms, m_param, lambda_zeta
     )
+    return _projectile_prepare_model(
+        num_bits_p,
+        num_bits_n,
+        eta,
+        num_atoms,
+        m_param,
+        num_bits_t,
+        num_bits_rot_aa,
+        potential,
+        adjoint=False,
+    )
+
+
+def projectile_prepare_first_quantization_adjoint_model(
+    num_bits_p: int,
+    num_bits_n: int,
+    eta: int,
+    num_atoms: int,
+    lambda_zeta: int,
+    *,
+    m_param: int = 2**8,
+    num_bits_t: int = 16,
+    num_bits_rot_aa: int = 8,
+) -> ComponentCost:
+    """Estimate the top adjoint using the native UV model's corrected ν flag."""
+    potential = projectile_prepare_uv_adjoint_model(
+        num_bits_p, num_bits_n, num_atoms, m_param, lambda_zeta
+    )
+    return _projectile_prepare_model(
+        num_bits_p,
+        num_bits_n,
+        eta,
+        num_atoms,
+        m_param,
+        num_bits_t,
+        num_bits_rot_aa,
+        potential,
+        adjoint=True,
+    )
+
+
+def _projectile_prepare_model(
+    num_bits_p: int,
+    num_bits_n: int,
+    eta: int,
+    num_atoms: int,
+    m_param: int,
+    num_bits_t: int,
+    num_bits_rot_aa: int,
+    potential: ComponentCost,
+    *,
+    adjoint: bool,
+) -> ComponentCost:
+    particles = source_prepare_ij_cost(eta, num_bits_rot_aa)
+    if eta < 2:
+        raise ValueError("Source projectile PREPARE requires at least two particles")
+    if adjoint:
+        particles = replace(particles, name=f"{particles.name}†")
+    term = source_projectile_prepare_tuv_cost(num_bits_t, adjoint=adjoint)
+    kinetic = source_projectile_prepare_t_cost(num_bits_p, num_bits_n, adjoint=adjoint)
     particle_ports = 2 * (eta - 1).bit_length()
-    # The disjoint child groups leave plus_t live throughout.
-    ports = term.qubits + particle_ports + kinetic.qubits + potential.qubits + 1
+    ports = int(
+        projectile_prepare_signature(num_bits_n, eta, num_atoms, m_param).n_qubits()
+    )
+    calls = (
+        CostCall(term, bystander_qubits=ports - term.qubits),
+        CostCall(particles, bystander_qubits=ports - particle_ports),
+        CostCall(kinetic, bystander_qubits=ports - kinetic.qubits),
+        CostCall(potential, bystander_qubits=ports - potential.qubits),
+    )
     return ComponentCost(
-        "PrepareFirstQuantizationWithProj",
-        ports,
-        calls=(
-            CostCall(term, bystander_qubits=ports - term.qubits),
-            CostCall(particles, bystander_qubits=ports - particle_ports),
-            CostCall(kinetic, bystander_qubits=ports - kinetic.qubits),
-            CostCall(potential, bystander_qubits=ports - potential.qubits),
+        (
+            "PrepareFirstQuantizationWithProj†"
+            if adjoint
+            else "PrepareFirstQuantizationWithProj"
         ),
+        ports,
+        calls=calls[::-1] if adjoint else calls,
     )
 
 

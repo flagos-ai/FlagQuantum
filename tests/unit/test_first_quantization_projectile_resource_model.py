@@ -20,7 +20,13 @@ from flagquantum.algorithms.first_quantization_nu_resource_model import (
     source_projectile_prepare_nu_cost,
 )
 from flagquantum.algorithms.first_quantization_potential import prepare_uv_signature
+from flagquantum.algorithms.first_quantization_projectile import (
+    projectile_prepare_signature,
+    projectile_prepare_tuv_signature,
+    projectile_select_signature,
+)
 from flagquantum.algorithms.first_quantization_projectile_resource_model import (
+    projectile_prepare_first_quantization_adjoint_model,
     projectile_prepare_uv_adjoint_model,
     source_projectile_power_two_cost,
     source_projectile_prepare_first_quantization_adjoint_gate_cost,
@@ -39,6 +45,22 @@ from tests.unit.test_first_quantization_nu_resource_model import _assert_signatu
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = pytest.mark.unit
+
+
+def assert_projectile_signature(native, source):
+    from qualtran import BQUInt, QAny, QBit
+
+    def source_dtype(port):
+        if port.dtype.encoding == "uint":
+            return BQUInt(port.bitsize, dict(port.dtype.parameters)["bound"])
+        if port.dtype.encoding == "bit":
+            return QBit()
+        assert port.dtype.encoding == "opaque"
+        return QAny(port.bitsize)
+
+    assert [
+        (port.name, port.shape, port.side.value, source_dtype(port)) for port in native
+    ] == [(port.name, port.shape, port.side.value, port.dtype) for port in source]
 
 
 @pytest.mark.parametrize(
@@ -385,6 +407,9 @@ def test_projectile_top_select_resource_schedule(p, n, eta, atoms, m, precision)
     source = SelectFirstQuantizationWithProj(
         p, n, eta, atoms, 10, m_param=m, num_bits_nuc_pos=precision
     )
+    assert_projectile_signature(
+        projectile_select_signature(p, n, eta, atoms, m), source.signature
+    )
     model = source_projectile_select_first_quantization_cost(
         p, n, eta, atoms, m_param=m, num_bits_nuc_pos=precision
     )
@@ -429,6 +454,7 @@ def test_projectile_top_prepare_term_selection(bits, adjoint):
     )
 
     source = PrepareTUVSuperpositions(bits, 10, 10, is_adjoint=adjoint)
+    _assert_signature(projectile_prepare_tuv_signature(), source.signature)
     assert_source_model(
         source_projectile_prepare_tuv_cost(bits, adjoint=adjoint), source
     )
@@ -478,6 +504,8 @@ def test_projectile_top_prepare_resources_and_ports(
         num_bits_t=term_bits,
         num_bits_rot_aa=rotation_bits,
     )
+    signature = projectile_prepare_signature(n, eta, atoms, m)
+    assert_projectile_signature(signature, source.signature)
     assert_source_model(model, source)
     assert model.qubits == source.signature.n_qubits()
     graph = source.decompose_bloq()
@@ -507,6 +535,27 @@ def test_projectile_top_prepare_resources_and_ports(
     ]
 
     reverse = source.adjoint()
+    assert_projectile_signature(signature, reverse.signature)
+    native = projectile_prepare_first_quantization_adjoint_model(
+        p,
+        n,
+        eta,
+        atoms,
+        charge,
+        m_param=m,
+        num_bits_t=term_bits,
+        num_bits_rot_aa=rotation_bits,
+    )
+    reverse_graph = reverse.decompose_bloq()
+    live = {edge for edge in reverse_graph.connections if edge.left.binst == LeftDangle}
+    reverse_calls = []
+    for node, incoming, outgoing in reverse_graph.iter_bloqnections():
+        live.difference_update(incoming)
+        reverse_calls.append((str(node.bloq), sum(edge.shape for edge in live)))
+        live.update(outgoing)
+    assert reverse_calls == [
+        (call.component.name, call.bystander_qubits) for call in native.calls
+    ]
     with pytest.raises(RuntimeError, match="does not accept Soquets.*flag"):
         get_cost_value(reverse, QubitCount())
     gates = source_projectile_prepare_first_quantization_adjoint_gate_cost(
@@ -515,3 +564,4 @@ def test_projectile_top_prepare_resources_and_ports(
     assert {
         key: value for key, value in asdict(gates).items() if value
     } == get_cost_value(reverse, QECGatesCost()).asdict()
+    assert estimate_ftqc_resources(native).logical.gates == gates
