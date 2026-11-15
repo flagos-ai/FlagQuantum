@@ -15,7 +15,7 @@ from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
-    source_uncontrolled_prepare_reflection_cost,
+    source_prepare_reflection_cost,
 )
 from ...core.ir import Instruction
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
@@ -68,16 +68,23 @@ class ChebyshevBlockEncoding:
         adjoint_child: ComponentCost,
         *,
         adjoint: bool = False,
+        controlled: bool = False,
         reflection_model: Literal["call_graph", "decomposition"] = "call_graph",
     ) -> ComponentCost:
         """Compose directional costs and choose the source reflection count route."""
-        if type(adjoint) is not bool or reflection_model not in (
-            "call_graph",
-            "decomposition",
+        if (
+            type(adjoint) is not bool
+            or type(controlled) is not bool
+            or reflection_model not in ("call_graph", "decomposition")
         ):
-            raise ValueError("Chebyshev requires a boolean direction and a cost route")
+            raise ValueError("Chebyshev requires boolean flags and a cost route")
         pairs, remainder = divmod(self.order, 2)
-        width = self.system_bitsize + self.ancilla_bitsize + self.resource_bitsize
+        width = (
+            self.system_bitsize
+            + self.ancilla_bitsize
+            + self.resource_bitsize
+            + int(controlled)
+        )
         forward_count, adjoint_count = pairs + remainder, pairs
         if adjoint:
             forward_count, adjoint_count = adjoint_count, forward_count
@@ -96,8 +103,8 @@ class ChebyshevBlockEncoding:
             count = 2 * pairs if reflection_model == "call_graph" else self.order
             if count:
                 identity = ComponentCost("PrepareIdentity", self.ancilla_bitsize)
-                reflection = source_uncontrolled_prepare_reflection_cost(
-                    self.ancilla_bitsize, 0, identity, identity
+                reflection = source_prepare_reflection_cost(
+                    self.ancilla_bitsize, 0, identity, identity, controlled=controlled
                 )
                 calls.append(
                     CostCall(
