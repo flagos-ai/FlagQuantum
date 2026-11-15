@@ -81,6 +81,29 @@ def controlled_swap_with_predicate_ir(
     )
 
 
+def controlled_swap_via_bit_predicates_ir(
+    controls: tuple[tuple[int, ...], ...],
+    registers: tuple[ControlRegister, ...],
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Bind generic Controlled(Swap) with one predicate per source bit swap."""
+    if not left or len(left) != len(right):
+        raise ValueError("Controlled swap requires equal nonempty register widths")
+    _validate_wires(
+        (*left, *right, *workspace, *(q for word in controls for q in word))
+    )
+    return tuple(
+        gate
+        for x, y in zip(left, right, strict=True)
+        for gate in controlled_swap_with_predicate_ir(
+            controls, registers, (x,), (y,), workspace, classical_bits
+        )
+    )
+
+
 def control_bit_cswap_ir(
     controls: tuple[tuple[int, ...], ...],
     registers: tuple[ControlRegister, ...],

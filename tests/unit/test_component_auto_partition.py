@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from collections import Counter
+from dataclasses import asdict
+from itertools import product
+from math import sqrt
 from typing import Any
 
 import numpy as np
@@ -40,6 +43,201 @@ LAYOUTS = (
     (("a", (("ctrl", 1), ("q", 1))), ("b", (("spectator", 1), (None, 1)))),
     (("a", ((None, 1), ("ctrl", 1))), ("b", (("q", 1), ("spectator", 1)))),
 )
+
+SOURCE_SWAP_LAYOUTS = (
+    ((("x", (("ctrl", 1), ("x", 1))), ("y", (("y", 1),))), 1, 1),
+    (
+        (
+            ("x", (("ctrl", 1), ("x", 1), (None, 1))),
+            ("y", (("y", 1),)),
+            ("z", ((None, 2),)),
+        ),
+        1,
+        1,
+    ),
+    (
+        (
+            ("x", ((None, 1), ("ctrl", 1), ("x", 1))),
+            ("y", (("y", 1),)),
+            ("z", ((None, 2),)),
+        ),
+        1,
+        1,
+    ),
+    ((("a", (("y", 3), ("ctrl", 4))), ("b", (("x", 3),))), 4, 0b0110),
+)
+
+
+@pytest.mark.parametrize("groups,control_width,activation", SOURCE_SWAP_LAYOUTS)
+def test_original_swap_layouts_preserve_every_amplitude_and_resource(
+    groups: tuple[tuple[str, tuple[tuple[str | None, int], ...]], ...],
+    control_width: int,
+    activation: int,
+) -> None:
+    from qualtran import Controlled, CtrlSpec, QUInt
+    from qualtran.bloqs.basic_gates import Swap
+    from qualtran.bloqs.basic_gates.swap import TwoBitCSwap
+    from qualtran.bloqs.mcmt.controlled_via_and import ControlledViaAnd
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum import Circuit
+    from flagquantum.compiler._component_trace.compound_control_resource import (
+        controlled_swap_cost_key,
+    )
+    from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.primitives.controlled_swap import (
+        controlled_swap_via_bit_predicates_ir,
+        controlled_swap_with_predicate_ir,
+    )
+    from flagquantum.dynamic import DynamicCircuit
+    from tests.unit.test_register_constant_addition import reference_arithmetic_gates
+    from tests.unit.test_register_subtraction import assert_source
+
+    layout = AutoPartition(groups)
+    packed = {}
+    offset = 0
+    for name, parts in groups:
+        width = sum(size for _, size in parts)
+        packed[name] = tuple(range(offset, offset + width))
+        offset += width
+    ports, spare = layout.bind(packed)
+    assert layout.restore(ports, spare) == packed
+    width = len(ports["x"])
+    spec = (
+        CtrlSpec()
+        if control_width == 1
+        else CtrlSpec(qdtypes=QUInt(control_width), cvs=activation)
+    )
+    child = Controlled(Swap(width), spec)
+    source = source_partition(child, layout)
+    work = tuple(range(offset, offset + control_width - 1))
+    slots = tuple(range(20, 20 + len(work)))
+    settings = ControlRegister(control_width, (activation,))
+    gates = controlled_swap_via_bit_predicates_ir(
+        (ports["ctrl"],), (settings,), ports["x"], ports["y"], work, slots
+    )
+    measurements = len(work) * width
+
+    def leaf(bloq, inputs, desired):
+        partition = source_partition_leaf(bloq, inputs, desired)
+        if partition is not None:
+            return partition
+        if isinstance(bloq, (TwoBitCSwap, ControlledViaAnd)):
+            reference = reference_arithmetic_gates(
+                (
+                    bloq.as_composite_bloq()
+                    if isinstance(bloq, TwoBitCSwap)
+                    else bloq.decompose_bloq().flatten()
+                ),
+                inputs,
+                work,
+                dict(zip(work, slots, strict=True)),
+                preserve_components=True,
+            )
+            return reference, inputs
+        return None
+
+    reference, returned = walk_source_graph(source, packed, packed, leaf)
+    assert returned == packed
+    assert_source(gates, reference)
+    inverse = controlled_swap_with_predicate_ir(
+        (ports["ctrl"],), (settings,), ports["x"], ports["y"], work, slots
+    )
+    original_inverse = source.adjoint()
+    reference_inverse, returned = walk_source_graph(
+        original_inverse, packed, packed, leaf
+    )
+    assert returned == packed
+    assert_source(inverse, reference_inverse)
+    assert tuple((reg.name, reg.bitsize) for reg in source.signature) == tuple(
+        (name, len(wires)) for name, wires in packed.items()
+    )
+    if not spare:
+        child_output_names = tuple(reg.name for reg in child.signature.rights())
+        input_only = AutoPartition(groups, child_output_names, left_only=True)
+        source_input_only = source_partition(child, input_only)
+        native_outputs = input_only.restore(ports, {})
+        assert tuple(native_outputs) == tuple(
+            reg.name for reg in source_input_only.signature.rights()
+        )
+        reference, returned = walk_source_graph(
+            source_input_only, packed, native_outputs, leaf
+        )
+        assert returned == native_outputs
+        assert_source(gates, reference)
+
+    model = query_qec_gate_cost(controlled_swap_cost_key(1, settings.bits()))
+    locked = get_cost_value(source, QECGatesCost())
+    assert {name: count * width for name, count in asdict(model).items() if count} == (
+        locked.asdict()
+    )
+    assert layout.logical_width(control_width + 2 * width + len(work)) == (
+        get_cost_value(source, QubitCount())
+    )
+    assert sum(gate.name == "measure" for gate in gates) == measurements
+    assert sum(gate.name in {"t", "tdg"} for gate in gates) == (
+        locked.total_t_count(ts_per_cswap=7)
+    )
+    reverse_model = query_qec_gate_cost(
+        controlled_swap_cost_key(width, settings.bits())
+    )
+    reverse_locked = get_cost_value(original_inverse, QECGatesCost())
+    assert {name: count for name, count in asdict(reverse_model).items() if count} == (
+        reverse_locked.asdict()
+    )
+    assert sum(gate.name == "measure" for gate in inverse) == len(work)
+    assert sum(gate.name in {"t", "tdg"} for gate in inverse) == (
+        reverse_locked.total_t_count(ts_per_cswap=7)
+    )
+    values = torch.arange(1, (1 << offset) + 1, dtype=torch.float64)
+    amplitudes = torch.complex(values, (values % 11) - 5)
+    amplitudes /= amplitudes.norm()
+    destinations = []
+    for index in range(1 << offset):
+        values = {
+            name: (index >> (offset - wires[-1] - 1)) & ((1 << len(wires)) - 1)
+            for name, wires in packed.items()
+        }
+        output = source.call_classically(**values)
+        destination = 0
+        for word, wires in zip(output, packed.values(), strict=True):
+            destination = (destination << len(wires)) | int(word)
+        destinations.append(destination << len(work))
+    initial = torch.zeros(1 << (offset + len(work)), dtype=torch.complex128)
+    initial[:: 1 << len(work)] = amplitudes
+    expected = torch.zeros_like(initial)
+    expected[destinations] = amplitudes
+    if not measurements:
+        circuit = Circuit(offset, inputs=initial, dtype=torch.complex128)
+        circuit.append(FieldOperation(offset, gates))
+        torch.testing.assert_close(
+            circuit.state().flatten(), expected, rtol=0, atol=3e-12
+        )
+        circuit.append(FieldOperation(offset, inverse))
+        torch.testing.assert_close(
+            circuit.state().flatten(), initial, rtol=0, atol=3e-12
+        )
+    else:
+        for direction in (gates, inverse):
+            circuit = DynamicCircuit(offset + len(work), dtype=torch.complex128)
+            circuit.append(FieldOperation(offset + len(work), direction))
+            assert circuit.to_ir().instructions == direction
+        for outcomes in product((0, 1), repeat=measurements):
+            torch.testing.assert_close(
+                forced_branch(initial, gates, outcomes),
+                expected / sqrt(2**measurements),
+                rtol=0,
+                atol=3e-12,
+            )
+        for outcomes in product((0, 1), repeat=len(work)):
+            torch.testing.assert_close(
+                forced_branch(expected, inverse, outcomes),
+                initial / sqrt(2 ** len(work)),
+                rtol=0,
+                atol=3e-12,
+            )
 
 
 def source_partition(child: Any, layout: AutoPartition) -> Any:
