@@ -12,8 +12,11 @@ import numpy as np
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.bits.bitwise import on_each_ir
+from flagquantum.compiler.registers.bits.on_each import on_each_word_program
+from flagquantum.compiler.registers.component_gate_function import bit_gate_function
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.simulation.classical_on_each import on_each_classical_value
 from flagquantum.simulation.classical_pauli_values import (
     x_classical_value,
@@ -29,13 +32,14 @@ class EachBitXZ:
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         kinds = ("z", "x") if self.inverse else ("x", "z")
-        gates = tuple(
-            gate
-            for wire in (0, 2, 3)
-            for kind in kinds
-            for gate in on_each_ir(Instruction(kind, (0,)), (wire,))
+        child = bit_gate_function(
+            "bit_xz",
+            tuple(Signature.build(q=1)),
+            CircuitIR(1, tuple(Instruction(kind, (0,)) for kind in kinds)),
         )
-        return circuit.compose(CircuitIR(circuit.n_qubits, gates))
+        record = on_each_word_program(3, child)
+        bound = bind_register_program(record, ((0, 2, 3),))
+        return circuit.compose(CircuitIR(circuit.n_qubits, bound.circuit.instructions))
 
 
 def bit_xz(value: object, *, inverse: bool = False) -> tuple[object, complex]:
