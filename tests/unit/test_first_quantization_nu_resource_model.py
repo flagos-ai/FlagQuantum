@@ -1,7 +1,16 @@
 """Compare momentum-transfer costs and live workspace with the locked source."""
 
-import pytest
+from itertools import product
+from math import sqrt
 
+import pytest
+import torch
+
+from flagquantum.algorithms.first_quantization_nu import (
+    prepare_nu_leaf_signatures,
+    prepare_nu_m_on,
+    prepare_nu_signature,
+)
 from flagquantum.algorithms.first_quantization_nu_resource_model import (
     source_prepare_nu_cost,
 )
@@ -12,10 +21,27 @@ from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import 
 from flagquantum.compiler.registers.comparison.ordering import source_greater_cost
 from flagquantum.compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
+    uniform_preparation_requirements,
 )
+from flagquantum.dynamic import DynamicCircuit
+from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+def _assert_signature(native, source):
+    from qualtran import QAny, QBit
+
+    assert [
+        (
+            reg.name,
+            reg.shape,
+            reg.side.value,
+            QBit() if reg.dtype.encoding == "bit" else QAny(reg.bitsize),
+        )
+        for reg in native
+    ] == [(reg.name, reg.shape, reg.side.value, reg.dtype) for reg in source]
 
 
 @pytest.mark.parametrize("count", [2, 3, 5, 6, 8, 9, 14, 31, 32768])
@@ -65,6 +91,8 @@ def test_prepare_nu_cost_and_bystanders(p: int, m: int, adjoint: bool) -> None:
     source = PrepareNuState(p, m)
     if adjoint:
         source = source.adjoint()
+    _assert_signature(prepare_nu_signature(p, m), source.signature)
+    signatures = prepare_nu_leaf_signatures(p, m, adjoint=adjoint)
     assert_source_model(source_prepare_nu_cost(p, m, adjoint=adjoint), source)
     composite = source.decompose_bloq()
     model = source_prepare_nu_cost(p, m, adjoint=adjoint, decomposed=True)
@@ -83,11 +111,109 @@ def test_prepare_nu_cost_and_bystanders(p: int, m: int, adjoint: bool) -> None:
             with pytest.raises(DecomposeNotImplementedError):
                 node.bloq.decompose_bloq()
             name = type(bloq).__name__
+            _assert_signature(signatures[name], node.bloq.signature)
         stages[name] = sum(edge.shape for edge in live)
         live.update(outgoing)
     assert stages == {
         call.component.name: call.bystander_qubits for call in model.calls
     }
+    flags = {"flag", "flag_mu_prep", "flag_minus_zero", "flag_nu_lt_mu", "flag_ineq"}
+    edges = {
+        (edge.left.reg.name, edge.right.reg.name)
+        for edge in composite.connections
+        if edge.left.reg.name in flags or edge.right.reg.name in flags
+    }
+    forward = {
+        ("flag", "flag_mu_prep"),
+        ("flag_minus_zero", "flag_minus_zero"),
+        ("flag_nu_lt_mu", "flag_ineq"),
+    }
+    assert edges == ({(end, start) for start, end in forward} if adjoint else forward)
+    assert {
+        (edge.left.reg.name, edge.right.reg.name)
+        for edge in composite.connections
+        if {"flag_nu", "succ"} == {edge.left.reg.name, edge.right.reg.name}
+    } == {("flag_nu", "succ"), ("succ", "flag_nu")}
+
+
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_momentum_m_native_append_matches_source_state_and_feedback(adjoint):
+    pytest.importorskip("qualtran")
+    import cirq
+    import numpy as np
+    from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
+        PrepareNuState,
+    )
+    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+        PrepareUniformSuperposition,
+    )
+
+    count = 3
+    composite = PrepareNuState(2, count).decompose_bloq()
+    (source,) = (
+        node.bloq
+        for node, _, _ in composite.iter_bloqsoqs()
+        if isinstance(node.bloq, PrepareUniformSuperposition)
+    )
+    target = (2, 0)
+    _, work, slots = uniform_preparation_requirements(count)
+    workspace = tuple(range(3, 3 + work))
+    wires = tuple(cirq.LineQubit.range(3))
+    operation = source.on(*(wires[q] for q in target))
+    if adjoint:
+        operation = cirq.inverse(operation)
+    reference = cirq.Circuit(
+        cirq.decompose(
+            operation,
+            context=cirq.DecompositionContext(
+                cirq.GreedyQubitManager("m", maximize_reuse=True)
+            ),
+            on_stuck_raise=None,
+            keep=lambda op: op.gate == cirq.H
+            or isinstance(op.gate, (cirq.ControlledGate, cirq.Rz, cirq.ResetChannel))
+            or cirq.is_measurement(op)
+            or isinstance(op, cirq.ClassicallyControlledOperation),
+        )
+    )
+    scratch = tuple(sorted(reference.all_qubits() - set(wires)))
+    values = torch.arange(1, 9, dtype=torch.float64)
+    logical = torch.complex(values, values.flip(0))
+    logical /= logical.norm()
+    source_input = np.zeros(8 << len(scratch), dtype=np.complex128)
+    source_input[:: 1 << len(scratch)] = logical.numpy()
+    ref = (
+        cirq.Simulator(dtype=np.complex128, seed=3)
+        .simulate(reference, qubit_order=(*wires, *scratch), initial_state=source_input)
+        .final_state_vector.reshape(8, -1)
+    )
+    np.testing.assert_allclose(ref[:, 1:], 0, atol=3e-12, rtol=0)
+    initial = torch.zeros(8 << work, dtype=torch.complex128)
+    initial[:: 1 << work] = logical
+    expected = torch.zeros_like(initial)
+    expected[:: 1 << work] = torch.from_numpy(ref[:, 0].copy())
+    circuit = DynamicCircuit(3 + work).append(
+        prepare_nu_m_on(
+            count,
+            target,
+            workspace=workspace,
+            classical_bits=tuple(range(slots)),
+            adjoint=adjoint,
+        )
+    )
+    instructions = tuple(circuit.to_ir().instructions)
+    measurements = sum(gate.name == "measure" for gate in instructions)
+    assert (
+        sum(gate.name in ("t", "tdg") for gate in instructions),
+        measurements,
+        work,
+    ) == (20, 5, 4)
+    for history in product((0, 1), repeat=measurements):
+        torch.testing.assert_close(
+            forced_branch(initial, instructions, history),
+            expected / sqrt(2**measurements),
+            atol=3e-12,
+            rtol=0,
+        )
 
 
 def test_prepare_nu_source_empty_m_is_explicit() -> None:
@@ -97,6 +223,7 @@ def test_prepare_nu_source_empty_m_is_explicit() -> None:
     )
     from qualtran.resource_counting import QubitCount, get_cost_value
 
+    _assert_signature(prepare_nu_signature(2, 1), PrepareNuState(2, 1).signature)
     with pytest.raises(RuntimeError, match="does not accept Soquets"):
         get_cost_value(PrepareNuState(2, 1), QubitCount())
     with pytest.raises(ValueError, match="m_param >= 2"):

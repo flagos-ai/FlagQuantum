@@ -16,10 +16,10 @@ from ..compiler.registers.comparison.ordering import source_greater_cost
 from ..compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
+from .first_quantization_nu import prepare_nu_leaf_signatures, prepare_nu_signature
 
 
-def _inequality_cost(p: int, m: int, adjoint: bool) -> ComponentCost:
-    ports = 4 * p + m + 7
+def _inequality_cost(p: int, m: int, ports: int, adjoint: bool) -> ComponentCost:
     if adjoint:
         return ComponentCost("TestNuInequality", ports)
     result_width = 2 * p + 2
@@ -71,8 +71,13 @@ def _prepare_nu_cost(
     if type(m_param) is not int or m_param < 2:
         raise ValueError("Source momentum transfer requires m_param >= 2")
     m = (m_param - 1).bit_length()
-    nu_width = 3 * (p + 1)
-    ports = p + nu_width + m + 1
+    ports = int(prepare_nu_signature(p, m_param).n_qubits())
+    leaf_widths = {
+        name: int(signature.n_qubits())
+        for name, signature in prepare_nu_leaf_signatures(
+            p, m_param, adjoint=adjoint
+        ).items()
+    }
     uniform = source_uniform_preparation_cost(m_param)
     m_call = CostCall(uniform, bystander_qubits=ports - m)
     # In Qualtran's width schedule the independent m preparation can run
@@ -83,7 +88,7 @@ def _prepare_nu_cost(
         CostCall(
             ComponentCost(
                 "PrepareNuSuperPositionState",
-                p + nu_width,
+                leaf_widths["PrepareNuSuperPositionState"],
                 _nu_superposition_gates(p),
             ),
             bystander_qubits=m + 2,
@@ -91,7 +96,7 @@ def _prepare_nu_cost(
         CostCall(
             ComponentCost(
                 "FlagZeroAsFailure",
-                nu_width + 1,
+                leaf_widths["FlagZeroAsFailure"],
                 GateCost(toffoli=0 if adjoint else 3 * p + 2),
             ),
             bystander_qubits=p + m + 2,
@@ -99,12 +104,12 @@ def _prepare_nu_cost(
         CostCall(
             ComponentCost(
                 "TestNuLessThanMu",
-                p + nu_width + 1,
+                leaf_widths["TestNuLessThanMu"],
                 GateCost(toffoli=0 if adjoint else 3 * p),
             ),
             bystander_qubits=m + 3,
         ),
-        CostCall(_inequality_cost(p, m, adjoint)),
+        CostCall(_inequality_cost(p, m, leaf_widths["TestNuInequality"], adjoint)),
     )
     if decomposed:
         calls = (m_call, *calls)

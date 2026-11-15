@@ -1,0 +1,79 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from the Qualtran v0.7.0 momentum-transfer PREPARE signatures.
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py
+
+"""Register contracts and executable uniform word of momentum-transfer PREPARE."""
+
+from ..compiler.registers.preparation.uniform_preparation import uniform_preparation_ir
+from ..core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ..core.ir.program.registers import Register, RegisterSide
+from ..core.ir.program.signatures import Signature
+from .primitives._block_binding import _BoundBlockOperation
+
+
+def _momentum_words(
+    num_bits_p: int, m_param: int
+) -> tuple[Register, Register, Register]:
+    if any(type(n) is not int or n < 1 for n in (num_bits_p, m_param)):
+        raise ValueError("Momentum width and m_param must be positive integers")
+    return (
+        Register("mu", opaque_register_type(num_bits_p)),
+        Register("nu", opaque_register_type(num_bits_p + 1), shape=(3,)),
+        Register("m", opaque_register_type((m_param - 1).bit_length())),
+    )
+
+
+def prepare_nu_signature(num_bits_p: int, m_param: int) -> Signature:
+    """Return the source through words, including the externally owned success bit."""
+    return Signature(
+        (*_momentum_words(num_bits_p, m_param), Register("flag_nu", quantum_bit_type()))
+    )
+
+
+def prepare_nu_leaf_signatures(
+    num_bits_p: int, m_param: int, *, adjoint: bool = False
+) -> dict[str, Signature]:
+    """Describe the five declaration-only children and directional flag ownership."""
+    mu, nu, m = _momentum_words(num_bits_p, m_param)
+    produced = RegisterSide.LEFT if adjoint else RegisterSide.RIGHT
+    consumed = RegisterSide.RIGHT if adjoint else RegisterSide.LEFT
+    bit = quantum_bit_type()
+    return {
+        "PrepareMuUnaryEncodedOneHot": Signature(
+            (mu, Register("flag", bit, side=produced))
+        ),
+        "PrepareNuSuperPositionState": Signature((mu, nu)),
+        "FlagZeroAsFailure": Signature(
+            (nu, Register("flag_minus_zero", bit, side=produced))
+        ),
+        "TestNuLessThanMu": Signature(
+            (mu, nu, Register("flag_nu_lt_mu", bit, side=produced))
+        ),
+        "TestNuInequality": Signature(
+            (
+                mu,
+                nu,
+                m,
+                Register("flag_minus_zero", bit, side=consumed),
+                Register("flag_mu_prep", bit, side=consumed),
+                Register("flag_ineq", bit, side=consumed),
+                Register("succ", bit),
+            )
+        ),
+    }
+
+
+def prepare_nu_m_on(
+    m_param: int,
+    target: tuple[int, ...],
+    *,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    adjoint: bool = False,
+) -> _BoundBlockOperation:
+    """Bind the composite's executable m-register stage for circuit.append."""
+    gates = uniform_preparation_ir(
+        m_param, target, workspace, classical_bits, adjoint=adjoint
+    )
+    return _BoundBlockOperation(gates, max((*target, *workspace), default=-1) + 1)
