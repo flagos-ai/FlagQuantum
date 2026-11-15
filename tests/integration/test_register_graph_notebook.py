@@ -30,6 +30,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_multiplication", 34, 16, 0),
         ("register_subtraction", 16, 4, 0),
         ("register_negation", 7, 2, 0),
+        ("register_permutation", 16, 4, 0),
     ],
 )
 def test_register_graph_notebook_kernel_without_reference_imports(
