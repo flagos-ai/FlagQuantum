@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("binary_field_inverse", 7, 2, 0),
         ("block_encoding_interface", 3, 0, 0),
         ("register_chebyshev", 12, 4, 0),
+        ("register_lcu_block_encoding", 22, 8, 0),
         ("register_multiplication", 34, 16, 0),
         ("register_subtraction", 16, 4, 0),
         ("register_negation", 7, 2, 0),
