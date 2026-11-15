@@ -1,6 +1,9 @@
 """Check the pinned abstract Clifford leaf and both approximate-swap call graphs."""
 
+import subprocess
+import sys
 from dataclasses import asdict
+from pathlib import Path
 
 import pytest
 
@@ -15,6 +18,10 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     ControlledSwapCall,
     PhaseCall,
     arbitrary_clifford_cost_key,
+    arbitrary_clifford_signature,
+)
+from flagquantum.compiler._component_trace.resource_width import (
+    query_resource_logical_width,
 )
 from flagquantum.compiler.registers.layout.int_vector import int_vector_cost_key
 
@@ -22,15 +29,22 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("width", [0, 1, 2, 8, None])
-def test_arbitrary_clifford_cost_and_width_match_source(width: int | None) -> None:
+@pytest.mark.parametrize("width", [0, 1, 2, 8, "unconstrained", None])
+def test_arbitrary_clifford_cost_and_width_match_source(
+    width: int | str | None,
+) -> None:
     pytest.importorskip("qualtran")
     from qualtran import DecomposeNotImplementedError, Side
     from qualtran.bloqs.bookkeeping import ArbitraryClifford
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
     from sympy import Symbol
 
-    bits = Symbol("n", positive=True, integer=True) if width is None else width
+    if width is None:
+        bits = Symbol("n", positive=True, integer=True)
+    elif isinstance(width, str):
+        bits = Symbol("n")
+    else:
+        bits = width
     leaf = ArbitraryClifford(bits)
     assert leaf.signature[0].side == Side.THRU
     assert int_vector_cost_key(bits) == arbitrary_clifford_cost_key(bits)
@@ -38,6 +52,19 @@ def test_arbitrary_clifford_cost_and_width_match_source(width: int | None) -> No
         source = leaf.adjoint() if adjoint else leaf
         key = arbitrary_clifford_cost_key(bits, adjoint=adjoint)
         assert key.width == get_cost_value(source, QubitCount()) == bits
+        assert str(key) == str(source)
+        (port,) = arbitrary_clifford_signature(key)
+        original = source.signature[0]
+        assert (port.name, port.bitsize, port.side.value, port.shape) == (
+            original.name,
+            original.bitsize,
+            original.side.value,
+            original.shape,
+        )
+        assert query_resource_logical_width(key) == bits
+        assert source.call_graph(max_depth=1)[1] == {source: 1}
+        with pytest.raises(NotImplementedError, match="declared callees"):
+            tuple(decomposed_resource_callees(key, None))
         assert query_qec_gate_cost(key) == QECGateCost(clifford=1)
         assert get_cost_value(source, QECGatesCost()).asdict() == {"clifford": 1}
     with pytest.raises(DecomposeNotImplementedError):
@@ -84,3 +111,17 @@ def test_approximate_swap_keeps_distinct_source_clifford_widths_and_weights(
 def test_arbitrary_clifford_rejects_negative_width() -> None:
     with pytest.raises(ValueError, match="nonnegative integer width"):
         arbitrary_clifford_cost_key(-1)
+
+
+def test_arbitrary_clifford_resource_owner_imports_in_a_fresh_process() -> None:
+    subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from flagquantum.compiler._component_trace.resource_generalization "
+            "import arbitrary_clifford_cost_key",
+        ],
+        cwd=Path(__file__).resolve().parents[2],
+        check=True,
+        timeout=30,
+    )

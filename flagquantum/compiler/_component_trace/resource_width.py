@@ -46,6 +46,7 @@ from .resource_generalization import (
     PowerCall,
     ResourceCall,
     ZeroCostCall,
+    arbitrary_clifford_signature,
 )
 from .resource_model import ComponentCost, _active_calls, _component_width
 from .symbolic_math import SymbolicInt, smax
@@ -213,10 +214,11 @@ def _signature_width(node: ResourceCall) -> SymbolicInt:
     if isinstance(node, PhaseCall):
         return 1
     if isinstance(node, CliffordCall):
-        if node.opcode != "arbitrary":
-            expected = 2 if node.opcode in {"cx", "cy", "cz", "swap_bit"} else 1
-            if node.width != expected:
-                raise ValueError("Clifford width must match its gate signature")
+        if node.opcode == "arbitrary":
+            return arbitrary_clifford_signature(node).n_qubits()
+        expected = 2 if node.opcode in {"cx", "cy", "cz", "swap_bit"} else 1
+        if node.width != expected:
+            raise ValueError("Clifford width must match its gate signature")
         return node.width
     if isinstance(node, FixedTCall):
         return 3

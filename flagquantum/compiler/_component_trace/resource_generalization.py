@@ -12,6 +12,9 @@ from collections.abc import Hashable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from typing import Literal, TypeAlias
 
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from .arithmetic_call import ArithmeticCall as ArithmeticCall
 from .call_graph import Generalizer, _component_calls
 from .resource_model import ComponentCost
@@ -48,6 +51,12 @@ class CliffordCall:
     width: SymbolicInt
     adjoint: bool = False
 
+    def __str__(self) -> str:
+        if self.opcode == "arbitrary":
+            suffix = "†" if self.adjoint else ""
+            return f"ArbitraryClifford(n={self.width}){suffix}"
+        return repr(self)
+
 
 def arbitrary_clifford_cost_key(
     width: SymbolicInt, *, adjoint: bool = False
@@ -56,6 +65,13 @@ def arbitrary_clifford_cost_key(
     if isinstance(width, (int, float)) and (type(width) is not int or width < 0):
         raise ValueError("Arbitrary Clifford requires a nonnegative integer width")
     return CliffordCall("arbitrary", width, adjoint)
+
+
+def arbitrary_clifford_signature(call: CliffordCall) -> Signature:
+    """Retain the opaque through word, including the source zero-width port."""
+    if call.opcode != "arbitrary":
+        raise ValueError("Arbitrary Clifford signature requires an opaque Clifford")
+    return Signature((Register("x", opaque_register_type(call.width)),))
 
 
 @dataclass(frozen=True)
