@@ -42,6 +42,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_partition", 10, 3, 0),
         ("register_split2_join2", 8, 2, 0),
         ("register_cast", 5, 1, 0),
+        ("register_split_join", 8, 2, 0),
         ("register_multiplication", 34, 16, 0),
         ("register_subtraction", 16, 4, 0),
         ("register_negation", 7, 2, 0),
