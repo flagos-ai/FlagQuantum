@@ -72,6 +72,7 @@ Native FlagQuantum programs currently available:
 - [overview](quantum_primitives/swap_test/overview/README.md)
 - [overview](search_and_optimization/qaoa/overview/README.md)
 - [overview](search_and_optimization/grover/grover/overview/README.md)
+- [overview](search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/README.md)
 
 ## Additional FlagQuantum teaching examples
 
