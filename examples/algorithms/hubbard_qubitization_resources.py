@@ -8,7 +8,10 @@
 from argparse import ArgumentParser
 from dataclasses import asdict
 
-from flagquantum.algorithms.primitives.hubbard_prepare import PrepareHubbard
+from flagquantum.algorithms.primitives.hubbard_prepare import (
+    PrepareHubbard,
+    hubbard_selection_layout,
+)
 from flagquantum.algorithms.primitives.hubbard_qubitization_resource_model import (
     source_hubbard_majorana_formula,
     source_hubbard_spin_up_formula,
@@ -16,6 +19,19 @@ from flagquantum.algorithms.primitives.hubbard_qubitization_resource_model impor
 from flagquantum.algorithms.primitives.hubbard_select import SelectHubbard
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
+from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt, ceil, log2
+from flagquantum.core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+    quantum_bit_type,
+)
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.drawer.register_score import (
+    RegisterScore,
+    RegisterStep,
+    layout_register_score,
+)
 from flagquantum.qec.resources.estimation import (
     estimate_ftqc_resources,
     estimate_symbolic_ftqc_resources,
@@ -28,6 +44,80 @@ def notebook_models() -> tuple[tuple[int, ComponentCost], ...]:
         (4, SelectHubbard(4).source_resource_model()),
         (4, PrepareHubbard(4, t=1.0, u=4.0).source_resource_model()),
         (11, SelectHubbard(11, controlled=True).source_resource_model()),
+    )
+
+
+def notebook_signature(
+    side: int, *, prepare: bool = False, controlled: bool = False
+) -> Signature:
+    """Describe the concrete notebook's through ports and coordinate extents."""
+    control = (Register("control", quantum_bit_type()),) if controlled else ()
+    selection = tuple(
+        Register(
+            name,
+            bounded_unsigned_register_type(
+                width, side if name in ("p_x", "p_y", "q_x", "q_y") else 2
+            ),
+        )
+        for name, width in hubbard_selection_layout(side)
+    )
+    payload = (
+        Register("temp", opaque_register_type(2))
+        if prepare
+        else Register("target", opaque_register_type(2 * side**2))
+    )
+    return Signature((*control, *selection, payload))
+
+
+def notebook_consumer_signature(
+    side: SymbolicInt, *, majorana: bool, controlled: bool = False
+) -> Signature:
+    """Describe the symbolic or concrete consumer's original register order."""
+    control = (Register("control", quantum_bit_type()),) if controlled else ()
+    bit = bounded_unsigned_register_type(1, 2)
+    coordinate = bounded_unsigned_register_type(ceil(log2(side)), side)
+    sites = (Register("x", coordinate), Register("y", coordinate))
+    selection = (
+        (*sites, Register("spin", bit)) if majorana else (Register("V", bit), *sites)
+    )
+    return Signature(
+        (*control, *selection, Register("target", opaque_register_type(2 * side**2)))
+    )
+
+
+def notebook_controlled_select_score() -> RegisterScore:
+    """Show each source call and its logical operands for 11×11 SELECT."""
+    signature = notebook_signature(11, controlled=True)
+    _, model = notebook_models()[-1]
+    widths = {register.name: int(register.bitsize) for register in signature}
+    x_swap = ("V", "p_x", "q_x")
+    y_swap = ("V", "p_y", "q_y")
+    spin_swap = ("V", "alpha", "beta")
+    operands = (
+        ("control", "p_x", "p_y", "alpha", "target"),
+        x_swap,
+        y_swap,
+        spin_swap,
+        ("control", "q_x", "q_y", "beta", "target"),
+        spin_swap,
+        y_swap,
+        x_swap,
+        ("control",),
+        ("control", "U"),
+        ("control", "V", "q_x", "q_y", "target"),
+    )
+    names = (
+        call.component.name for call in model.calls for _ in range(call.repetitions)
+    )
+    return layout_register_score(
+        widths,
+        tuple(widths),
+        tuple(
+            RegisterStep(name, ports, ports)
+            for name, ports in zip(names, operands, strict=True)
+        ),
+        input_registers=tuple(signature),
+        output_registers=tuple(signature),
     )
 
 
