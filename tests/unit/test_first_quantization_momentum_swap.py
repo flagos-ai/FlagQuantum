@@ -9,6 +9,7 @@ import torch
 from flagquantum.algorithms.first_quantization import (
     ControlledMultiplexedCSwap3D,
     MultiplexedCSwap3D,
+    momentum_exchange_signature,
     source_controlled_multiplexed_cswap_3d_cost,
     source_multiplexed_cswap_3d_cost,
 )
@@ -20,6 +21,9 @@ from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
     walk_source_graph,
+)
+from tests.unit.test_first_quantization_resource_model import (
+    assert_first_quantization_signature,
 )
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_relative_controlled_swap import (
@@ -73,6 +77,10 @@ def test_pinned_momentum_exchange_graph(
 
     base = SourceSwap(bits, eta)
     source = base.adjoint() if adjoint else base
+    signature = momentum_exchange_signature(eta, bits)
+    assert_first_quantization_signature(
+        signature.adjoint() if adjoint else signature, source.signature
+    )
     ports = {
         "sel": selection,
         "targets": tuple(wire for row in targets for word in row for wire in word),

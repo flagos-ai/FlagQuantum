@@ -14,7 +14,10 @@ from ..compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
 from ..core.ir.program.signatures import Signature
-from .first_quantization import source_multiplexed_cswap_3d_cost
+from .first_quantization import (
+    first_quantization_signature,
+    source_multiplexed_cswap_3d_cost,
+)
 from .first_quantization_kinetic import (
     KINETIC_COORDINATE_COUNT,
     prepare_power_two_signature,
@@ -84,15 +87,10 @@ def source_select_first_quantization_cost(
     kinetic = source_select_t_cost(num_bits_p)
     potential = source_select_uv_cost(num_bits_p, num_atoms, num_bits_nuc_pos)
     p = num_bits_p
-    ports = (
-        4  # T/U/V flags, i != j and plus.
-        + 2 * (eta - 1).bit_length()
-        + 3  # Momentum coordinate selector w.
-        + 3 * p  # r, s and mu.
-        + 3 * (p + 1)  # Momentum transfer.
-        + (m_param - 1).bit_length()
-        + (num_atoms - 1).bit_length()
-        + 3 * p * eta
+    ports = int(
+        first_quantization_signature(
+            p, eta, num_atoms, m_param, prepare=False
+        ).n_qubits()
     )
     one_momentum = ports + 3 * p
     both_momenta = ports + 6 * p
@@ -277,7 +275,11 @@ def source_prepare_first_quantization_cost(
     # The groups are disjoint. plus_t is wired straight through the composite.
     particle_ports = 2 * (eta - 1).bit_length()
     kinetic_ports = int(prepare_t_signature(num_bits_p).n_qubits())
-    ports = 3 + particle_ports + kinetic_ports + potential.qubits
+    ports = int(
+        first_quantization_signature(
+            num_bits_p, eta, num_atoms, m_param, prepare=True
+        ).n_qubits()
+    )
     if adjoint:
         # These source adjoints retain their forward cost declarations.
         term = replace(term, name=f"{term.name}†")

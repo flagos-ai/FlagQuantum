@@ -4,6 +4,7 @@ from dataclasses import asdict
 
 import pytest
 
+from flagquantum.algorithms.first_quantization import first_quantization_signature
 from flagquantum.algorithms.first_quantization_kinetic import (
     prepare_kinetic_coordinate_on,
     prepare_power_two_signature,
@@ -35,6 +36,22 @@ from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 
 pytestmark = pytest.mark.unit
+
+
+def assert_first_quantization_signature(native, source):
+    from qualtran import BQUInt, QAny, QBit
+
+    def source_dtype(port):
+        if port.dtype.encoding == "uint":
+            return BQUInt(port.bitsize, dict(port.dtype.parameters)["bound"])
+        if port.dtype.encoding == "bit":
+            return QBit()
+        assert port.dtype.encoding == "opaque"
+        return QAny(port.bitsize)
+
+    assert [
+        (port.name, port.shape, port.side.value, source_dtype(port)) for port in native
+    ] == [(port.name, port.shape, port.side.value, port.dtype) for port in source]
 
 
 def assert_source_model(component: ComponentCost, source: object) -> None:
@@ -118,6 +135,9 @@ def test_select_graph_and_peak_width(
         p, eta, atoms, m_param=m, num_bits_nuc_pos=nuc
     )
     assert_source_model(model, source)
+    assert_first_quantization_signature(
+        first_quantization_signature(p, eta, atoms, m, prepare=False), source.signature
+    )
     assert model.qubits == source.signature.n_qubits()
 
     graph = source.decompose_bloq()
@@ -504,6 +524,10 @@ def test_prepare_first_quantization_source_graph(
         adjoint=adjoint,
     )
     assert_source_model(model, source)
+    signature = first_quantization_signature(p, eta, atoms, m, prepare=True)
+    assert_first_quantization_signature(
+        signature.adjoint() if adjoint else signature, source.signature
+    )
     assert model.qubits == source.signature.n_qubits()
     graph = source.decompose_bloq()
     live = {edge for edge in graph.connections if edge.left.binst == LeftDangle}

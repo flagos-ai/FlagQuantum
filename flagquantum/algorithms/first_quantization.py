@@ -18,7 +18,65 @@ from ..compiler.registers.lookup.multiplexed_swap import (
     source_multiplexed_cswap_cost,
 )
 from ..core.ir import CircuitIR, Instruction
+from ..core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+    quantum_bit_type,
+)
+from ..core.ir.program.registers import Register
+from ..core.ir.program.signatures import Signature
 from ..errors import ValidationError
+
+
+def _word(name: str, width: int, shape: tuple[int, ...] = ()) -> Register:
+    return Register(name, opaque_register_type(width), shape=shape)
+
+
+def _bit(name: str) -> Register:
+    return Register(name, quantum_bit_type())
+
+
+def _bounded(name: str, width: int, length: int | None = None) -> Register:
+    return Register(
+        name,
+        bounded_unsigned_register_type(width, 2**width if length is None else length),
+    )
+
+
+def first_quantization_signature(
+    p: int, eta: int, atoms: int, m: int, *, prepare: bool
+) -> Signature:
+    """Describe the matching source PREPARE or SELECT port order and domains."""
+    if any(type(value) is not int or value < 1 for value in (p, eta, atoms, m)):
+        raise ValueError("First-quantized dimensions must be positive integers")
+    n_eta, n_atoms = (eta - 1).bit_length(), (atoms - 1).bit_length()
+    indices = (_bounded("i", n_eta, eta), _bounded("j", n_eta, eta))
+    momenta = tuple(_bounded(name, p) for name in ("r", "s", "mu"))
+    transfers = tuple(_bounded(name, p + 1) for name in ("nu_x", "nu_y", "nu_z"))
+    common = (*momenta, *transfers, _bounded("m", (m - 1).bit_length()))
+    if prepare:
+        return Signature(
+            (
+                _bounded("tuv", 1),
+                _bounded("uv", 1),
+                *indices,
+                _bounded("w", 2, 3),
+                *common,
+                _bounded("l", n_atoms, n_atoms),
+                _bit("succ_nu"),
+                _bit("plus_t"),
+            )
+        )
+    return Signature(
+        (
+            *(_bit(name) for name in ("tuv", "uv", "i_ne_j", "plus_t")),
+            *indices,
+            _bounded("w", 3),
+            *common,
+            _bounded("l", n_atoms),
+            _word("sys", p, (eta, 3)),
+        )
+    )
 
 
 @dataclass(frozen=True)
@@ -95,15 +153,28 @@ class MultiplexedCSwap3D:
         return circuit.compose(ir.validate())
 
 
-def source_multiplexed_cswap_3d_cost(eta: int, num_bits_p: int) -> ComponentCost:
-    """Estimate the source reshaping wrapper and its shared exchange leaf."""
+def momentum_exchange_signature(eta: int, num_bits_p: int) -> Signature:
+    """Declare the bounded selector and shaped momentum banks."""
     if type(eta) is not int or eta < 2 or type(num_bits_p) is not int or num_bits_p < 1:
         raise ValueError(
             "Momentum exchange requires at least two particles and a positive coordinate width"
         )
     selection_width = (eta - 1).bit_length()
+    return Signature(
+        (
+            _bounded("sel", selection_width, eta),
+            _word("targets", num_bits_p, (eta, 3)),
+            _word("junk", num_bits_p, (3,)),
+        )
+    )
+
+
+def source_multiplexed_cswap_3d_cost(eta: int, num_bits_p: int) -> ComponentCost:
+    """Estimate the source reshaping wrapper and its shared exchange leaf."""
+    signature = momentum_exchange_signature(eta, num_bits_p)
+    selection_width = int(signature.get_left("sel").bitsize)
     child = source_multiplexed_cswap_cost((eta,), (selection_width,), 0, 3 * num_bits_p)
-    ports = selection_width + 3 * num_bits_p * (eta + 1)
+    ports = int(signature.n_qubits())
     return ComponentCost("MultiplexedCSwap3D", ports, calls=(CostCall(child),))
 
 

@@ -7,6 +7,7 @@
 
 from dataclasses import replace
 
+from flagquantum.algorithms.first_quantization import first_quantization_signature
 from flagquantum.algorithms.first_quantization_kinetic import prepare_t_signature
 from flagquantum.algorithms.first_quantization_potential import (
     prepare_uv_signature,
@@ -27,7 +28,6 @@ from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
 )
 from flagquantum.core.ir.program.register_types import (
-    bounded_unsigned_register_type,
     opaque_register_type,
     quantum_bit_type,
 )
@@ -41,44 +41,6 @@ def _word(name: str, width: int, shape: tuple[int, ...] = ()) -> Register:
 
 def _bit(name: str) -> Register:
     return Register(name, quantum_bit_type())
-
-
-def _bounded(name: str, width: int, length: int | None = None) -> Register:
-    return Register(
-        name,
-        bounded_unsigned_register_type(width, 2**width if length is None else length),
-    )
-
-
-def _top_signature(p: int, eta: int, atoms: int, *, prepare: bool) -> Signature:
-    n_eta, n_atoms = (eta - 1).bit_length(), (atoms - 1).bit_length()
-    indices = (_bounded("i", n_eta, eta), _bounded("j", n_eta, eta))
-    momenta = tuple(_bounded(name, p) for name in ("r", "s", "mu"))
-    transfers = tuple(_bounded(name, p + 1) for name in ("nu_x", "nu_y", "nu_z"))
-    common = (*momenta, *transfers, _bounded("m", 8))
-    if prepare:
-        return Signature(
-            (
-                _bounded("tuv", 1),
-                _bounded("uv", 1),
-                *indices,
-                _bounded("w", 2, 3),
-                *common,
-                _bounded("l", n_atoms, n_atoms),
-                _bit("succ_nu"),
-                _bit("plus_t"),
-            )
-        )
-    return Signature(
-        (
-            *(_bit(name) for name in ("tuv", "uv", "i_ne_j", "plus_t")),
-            *indices,
-            _bounded("w", 3),
-            *common,
-            _bounded("l", n_atoms),
-            _word("sys", p, (eta, 3)),
-        )
-    )
 
 
 def _toffoli_graph(model: ComponentCost) -> ComponentCost:
@@ -110,11 +72,11 @@ def notebook_cases() -> dict[str, tuple[Signature, ComponentCost]]:
     """Return the complete seven concrete examples in their original order."""
     return {
         "prepare": (
-            _top_signature(6, 10, 10, prepare=True),
+            first_quantization_signature(6, 10, 10, 256, prepare=True),
             source_prepare_first_quantization_cost(6, 10, 10, 10),
         ),
         "select": (
-            _top_signature(6, 10, 10, prepare=False),
+            first_quantization_signature(6, 10, 10, 256, prepare=False),
             _select_graph(),
         ),
         "prepare_t": (
