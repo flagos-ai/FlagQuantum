@@ -2,6 +2,11 @@
 
 import pytest
 
+from flagquantum.algorithms.primitives.ising_hamiltonian import (
+    ising_hamiltonian,
+    ising_lcu_coefficients,
+    periodic_ising_terms,
+)
 from flagquantum.algorithms.primitives.ising_walk import ising_norm_bound, ising_walk
 from flagquantum.algorithms.primitives.pauli_hamiltonian_walk import (
     PauliHamiltonianWalk,
@@ -10,6 +15,55 @@ from flagquantum.algorithms.primitives.pauli_hamiltonian_walk import (
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("labels", [(9,), (9, 2), (9, 2, 7, 1)])
+@pytest.mark.parametrize("strengths", [(1.0, -0.5), (0.0, 2.0), (-2.0, 0.0)])
+def test_raw_periodic_ising_terms_match_source(labels, strengths) -> None:
+    pytest.importorskip("qualtran")
+    import cirq
+    from qualtran.bloqs.chemistry.ising.hamiltonian import (
+        get_1d_ising_hamiltonian,
+        get_1d_ising_pauli_terms,
+    )
+
+    def source_terms(source):
+        return [
+            (
+                term.coefficient.real,
+                tuple(
+                    sorted((wire.x, str(pauli).lower()) for wire, pauli in term.items())
+                ),
+            )
+            for term in source
+        ]
+
+    wires = tuple(map(cirq.LineQubit, labels))
+    original = get_1d_ising_pauli_terms(wires, *strengths)
+    for group, source in zip(
+        periodic_ising_terms(labels, *strengths), original, strict=True
+    ):
+        assert [
+            (term.coefficient, tuple(sorted(term.ops))) for term in group
+        ] == source_terms(source)
+    merged = ising_hamiltonian(labels, *strengths)
+    assert [(term.coefficient, term.ops) for term in merged.terms] == source_terms(
+        get_1d_ising_hamiltonian(wires, *strengths)
+    )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("sites", [0, 1, 2, 4])
+def test_ising_lcu_coefficients_match_merged_source_order(sites) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.ising.hamiltonian import get_1d_ising_lcu_coeffs
+
+    assert ising_lcu_coefficients(sites) == tuple(get_1d_ising_lcu_coeffs(sites))
+    for strengths in ((-0.75, 1.5), (0, 1), (1, 0), (0, 0)):
+        assert ising_lcu_coefficients(sites, *strengths) == tuple(
+            get_1d_ising_lcu_coeffs(sites, *strengths)
+        )
 
 
 @pytest.mark.ftqc_reference

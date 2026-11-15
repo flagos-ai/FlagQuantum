@@ -5,56 +5,18 @@
 
 """Construct the source periodic Ising Hamiltonian and walk."""
 
-from collections import Counter
-from math import sqrt
 from typing import overload
 
-from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal
-from ..core import Hamiltonian, HamiltonianTerm
+from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ..core import Hamiltonian
+from .ising_hamiltonian import ising_hamiltonian as ising_hamiltonian
+from .ising_hamiltonian import ising_norm_bound as ising_norm_bound
 from .pauli_hamiltonian_walk import (
     PauliHamiltonianWalk,
     SymbolicPauliHamiltonianWalk,
     pauli_hamiltonian_walk,
     symbolic_pauli_hamiltonian_walk,
 )
-
-
-def ising_hamiltonian(sites: int, j_zz: float = 1, gamma_x: float = -1) -> Hamiltonian:
-    """List periodic ZZ terms first, then X terms, with source coefficient signs."""
-    if type(sites) is not int or sites < 1:
-        raise ValueError("Ising sites must be a positive integer")
-    bonds = Counter(tuple(sorted({site, (site + 1) % sites})) for site in range(sites))
-    zz = tuple(
-        HamiltonianTerm(j_zz * count, "Z" * len(bond), bond)
-        for bond, count in bonds.items()
-        if j_zz
-    )
-    x = tuple(
-        HamiltonianTerm(gamma_x, "X", (site,)) for site in range(sites) if gamma_x
-    )
-    return Hamiltonian((*zz, *x))
-
-
-@overload
-def ising_norm_bound(sites: int, j_zz: float, gamma_x: float) -> float: ...
-
-
-@overload
-def ising_norm_bound(
-    sites: SymbolicInt, j_zz: SymbolicReal, gamma_x: SymbolicReal
-) -> SymbolicReal: ...
-
-
-def ising_norm_bound(
-    sites: SymbolicInt, j_zz: SymbolicReal, gamma_x: SymbolicReal
-) -> SymbolicReal:
-    """Apply the source norm bound obtained by pairing ZZ and X terms."""
-    squared = j_zz**2 + gamma_x**2
-    if isinstance(squared, (int, float)):
-        return sites * sqrt(squared)
-    from sympy import sqrt as symbolic_sqrt
-
-    return sites * symbolic_sqrt(squared)
 
 
 @overload
