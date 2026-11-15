@@ -17,6 +17,97 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
+def test_original_thirty_two_bit_fixed_point_view_matches_source():
+    import cirq
+    import numpy as np
+    from qualtran.bloqs.bookkeeping.cast import _cast
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from flagquantum.simulation.fixed_point_encoding import fixed_point_real_value
+
+    original = _cast()
+    native = RegisterCast(32, 32)
+    wires = tuple(reversed(range(32)))
+    foreign_wires = np.array([cirq.LineQubit(wire) for wire in wires])
+    operation, outputs = original.as_cirq_op(None, reg=foreign_wires)
+    assert operation is None and outputs["reg"] is foreign_wires
+    assert (
+        native.bind(wires)
+        == native.adjoint().bind(wires)
+        == tuple(qubit.x for qubit in outputs["reg"])
+    )
+    assert native.logical_width == get_cost_value(original, QubitCount()) == 32
+    assert get_cost_value(original, QECGatesCost()).asdict() == {}
+    for value in (-(1 << 31), -1, 0, 1, (1 << 31) - 1):
+        converted = native.reinterpret_integer(value, source_signed=True)
+        assert original.call_classically(reg=value) == (converted,)
+        assert fixed_point_real_value(converted, 32, 32) == (
+            original.out_dtype.float_from_fixed_width_int(converted)
+        )
+
+
+@pytest.mark.ftqc_reference
+def test_original_cast_add_cast_has_only_the_add_stream_and_restores_work():
+    from itertools import product
+    from math import sqrt
+
+    from qualtran.bloqs.for_testing import TestCastToFrom
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.compiler.registers.arithmetic.addition import add_ir
+    from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
+        source_add_cost,
+    )
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.simulation.classical_addition import register_add_classical_values
+    from flagquantum.simulation.fixed_point_encoding import fixed_point_real_value
+    from tests.unit.measurement_checks import forced_branch
+    from tests.unit.test_indexed_component_cost_profiles import _assert_model
+    from tests.unit.test_register_constant_addition import reference_arithmetic_gates
+    from tests.unit.test_register_subtraction import assert_source
+
+    source = TestCastToFrom()
+    cast = RegisterCast(4, 4)
+    a, b, work, slots = (0, 1, 2, 3), (4, 5, 6, 7), (8, 9, 10), (12, 13, 14)
+    gates = add_ir(a, cast.bind(b), work, slots)
+    assert cast.adjoint().bind(b) == b
+    assert_source(
+        gates,
+        reference_arithmetic_gates(
+            source, {"a": a, "b": b}, work, dict(zip(work, slots, strict=True))
+        ),
+    )
+    for legacy in (False, True):
+        _assert_model(source_add_cost(4, 4, legacy_shims=legacy), source, legacy)
+    assert sum(gate.name in {"t", "tdg"} for gate in gates) == 12
+    assert sum(gate.name == "measure" for gate in gates) == 3
+    values = torch.arange(1, 257, dtype=torch.float64)
+    ket = torch.complex(values, (values % 13) - 6)
+    ket /= ket.norm()
+    clean = torch.zeros(8, dtype=torch.complex128)
+    clean[0] = 1
+    original = torch.as_tensor(source.tensor_contract(), dtype=ket.dtype).reshape(
+        256, 256
+    )
+    expected = torch.kron(original @ ket, clean)
+    circuit = DynamicCircuit(11, dtype=ket.dtype).append(FieldOperation(11, gates))
+    initial = torch.kron(ket, clean)
+    for outcomes in product((0, 1), repeat=3):
+        torch.testing.assert_close(
+            forced_branch(initial, circuit.to_ir().instructions, outcomes),
+            expected / sqrt(8),
+            rtol=0,
+            atol=3e-12,
+        )
+
+    raw = RegisterCast(8, 8)
+    left, right = register_add_classical_values(7, raw.reinterpret_integer(2), 8)
+    result = raw.adjoint().reinterpret_integer(right)
+    assert TestCastToFrom(bitsize=8).call_classically(a=7, b=2) == (left, result)
+    assert fixed_point_real_value(result, 8, 8) == 9 / 256
+
+
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "input_type,output_type,source_signed,target_signed",
     [
@@ -129,6 +220,14 @@ def test_shaped_symbolic_and_mixed_cast_boundaries() -> None:
     source_mixed = Cast(QBit(), CBit(), allow_quantum_to_classical=True)
     assert mixed.logical_width == get_cost_value(source_mixed, QubitCount()) == 1
     assert mixed.bind((4,)) == mixed.adjoint().bind((4,)) == (4,)
+    reverse_mixed = Cast(CBit(), QBit(), allow_quantum_to_classical=True)
+    for value in (0, 1):
+        assert source_mixed.call_classically(reg=value) == (
+            mixed.reinterpret_integer(value),
+        )
+        assert reverse_mixed.call_classically(reg=value) == (
+            mixed.adjoint().reinterpret_integer(value),
+        )
     assert RegisterCast(
         1, 1, source_quantum=False, target_quantum=False
     ).logical_width == (get_cost_value(Cast(CBit(), CBit()), QubitCount()))
