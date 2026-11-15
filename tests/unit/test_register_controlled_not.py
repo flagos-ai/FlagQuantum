@@ -3,7 +3,7 @@
 from collections import Counter
 from dataclasses import asdict
 from itertools import product
-from typing import Any
+from typing import Any, TypedDict
 
 import pytest
 import torch
@@ -16,6 +16,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     FixedTCall,
 )
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.compiler.registers.primitives.controlled_not import (
     cnot_with_controls_ir,
     toffoli_with_controls_ir,
@@ -31,6 +32,13 @@ from tests.unit.register_source_graph import (
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
+
+
+class _Controls(TypedDict):
+    controls: tuple[int, ...]
+    values: tuple[int, ...]
+    workspace: tuple[int, ...]
+    classical_bits: tuple[int, ...]
 
 
 @pytest.mark.ftqc_reference
@@ -54,14 +62,15 @@ def test_added_controls_match_source_adder_and_every_branch(
     work_count = max(0, n - 1) if original_count == 1 else n + 1 if n else 0
     work = tuple(range(ports_width + 1, ports_width + 1 + work_count))
     bits = tuple(range(20, 20 + work_count))
-    emitter = cnot_with_controls_ir if original_count == 1 else toffoli_with_controls_ir
-    gates = emitter(
-        *original_wires,
-        target,
-        controls=control_wires,
-        values=values,
-        workspace=work,
-        classical_bits=bits,
+    arguments = _Controls(
+        controls=control_wires, values=values, workspace=work, classical_bits=bits
+    )
+    gates = (
+        cnot_with_controls_ir(original_wires[0], target, **arguments)
+        if original_count == 1
+        else toffoli_with_controls_ir(
+            original_wires[0], original_wires[1], target, **arguments
+        )
     )
     if not n:
         source = original
@@ -136,6 +145,61 @@ def test_added_controls_match_source_adder_and_every_branch(
         torch.testing.assert_close(
             forced_branch(branch, gates, second), state * scale**2, rtol=0, atol=2e-12
         )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("signed", [False, True])
+def test_original_eight_bit_toffoli_adder_operands_and_feedback(signed: bool) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import BloqBuilder, CtrlSpec, QBit, QInt, QUInt, Register
+    from qualtran.bloqs.basic_gates import CNOT, Toffoli, XGate
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    dtype = QInt(8) if signed else QUInt(8)
+    word = tuple(reversed(range(8)))
+    original = (9, 8)
+    work, slots = tuple(range(11, 20)), tuple(range(7, 16))
+    spec = ControlRegister(8, (6,), "twos_complement" if signed else "unsigned")
+    _, add = Toffoli().get_ctrl_system(CtrlSpec(qdtypes=dtype, cvs=6))
+    builder = BloqBuilder()
+    extra = builder.add_register(Register("extra", dtype))
+    ctrl = builder.add_register(Register("old", QBit(), shape=(2,)))
+    target = builder.add_register(Register("target", QBit()))
+    (extra_out,), (ctrl_out, target_out) = add(
+        builder, [extra], {"ctrl": ctrl, "target": target}
+    )
+    source = builder.finalize(extra=extra_out, old=ctrl_out, target=target_out)
+    ports = {"extra": word, "old": original, "target": (10,)}
+
+    def leaf(
+        bloq: Any, inputs: SourcePorts, desired: SourcePorts
+    ) -> SourceResult | None:
+        if isinstance(bloq, XGate):
+            return (Instruction("x", inputs["q"]),), inputs
+        if isinstance(bloq, CNOT):
+            return (Instruction("cx", (*inputs["ctrl"], *inputs["target"])),), inputs
+        return source_control_predicate_leaf(bloq, inputs, work, slots)
+
+    reference, outputs = walk_source_graph(source, ports, ports, leaf)
+    actual = toffoli_with_controls_ir(
+        *original,
+        10,
+        controls=word,
+        values=spec.bits(),
+        workspace=work,
+        classical_bits=slots,
+    )
+    assert outputs == ports
+    assert_source(actual, reference)
+    key = compound_control_key(FixedTCall("toffoli"), spec.bits())
+    assert key is not None
+    cost = query_qec_gate_cost(key)
+    assert {
+        name: count for name, count in asdict(cost).items() if count
+    } == get_cost_value(source, QECGatesCost()).asdict()
+    assert get_cost_value(source, QubitCount()) == 20
+    counts = Counter(g.name for g in actual)
+    assert counts["measure"] == 9 and counts["t"] + counts["tdg"] == 36
 
 
 def test_added_controls_reject_operand_aliases_and_incomplete_workspace() -> None:
