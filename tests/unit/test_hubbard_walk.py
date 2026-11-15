@@ -1,6 +1,7 @@
 """Check the complete-signal Hubbard walk and the locked analytical model."""
 
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import asdict
 from itertools import product
 from math import sqrt
@@ -59,9 +60,9 @@ def test_hubbard_walk_locked_schedule_and_resources(side):
         assert result.peak_logical_qubits == get_cost_value(source, QubitCount())
 
 
-def _projected_select(vector):
+def _projected_select(vector: Mapping[int, complex]) -> dict[int, complex]:
     """Average signed Pauli actions using the original 2×2 PREPARE probabilities."""
-    result = defaultdict(complex)
+    result: dict[int, complex] = defaultdict(complex)
     for x, y, spin, axis, direction in product((0, 1), repeat=5):
         p = 2 * (2 * x + y) + spin
         nx, ny = (x ^ 1, y) if axis == 0 else (x, y ^ 1)

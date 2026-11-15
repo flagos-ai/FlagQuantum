@@ -2,6 +2,7 @@
 
 from cmath import exp
 from collections import defaultdict
+from collections.abc import Iterable
 from itertools import product
 from math import cos, sin, sqrt
 
@@ -28,7 +29,14 @@ from tests.unit.test_source_qroam_clean import source_clean_graph
 pytestmark = pytest.mark.unit
 
 
-def _branch(gates, width, history, state=None, *, normalize_measurements=False):
+def _branch(
+    gates: Iterable[Instruction],
+    width: int,
+    history: Iterable[int],
+    state: dict[int, complex] | None = None,
+    *,
+    normalize_measurements: bool = False,
+) -> dict[int, complex]:
     """Evaluate the small-support fixture without allocating dense bank states."""
     state = {0: 1 + 0j} if state is None else state
     bits = {}
