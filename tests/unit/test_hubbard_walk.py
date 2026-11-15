@@ -4,7 +4,7 @@ from collections import defaultdict
 from collections.abc import Mapping
 from dataclasses import asdict
 from itertools import product
-from math import sqrt
+from math import pi, sqrt
 
 import pytest
 
@@ -17,11 +17,13 @@ from flagquantum.compiler._component_trace.resource_comparison import (
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
+from flagquantum.compiler.registers.control.multi_control import multi_control_z_ir
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
 )
+from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_sparse_chemistry_prepare import _branch
 
@@ -38,7 +40,14 @@ def test_hubbard_walk_locked_schedule_and_resources(side):
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     original = get_walk_operator_for_hubbard_model(side, side, 2, 8)
-    walk = HubbardWalk(PrepareHubbard(side, 2, 8))
+    walk = HubbardWalk.from_lattice(side, 2, 8)
+    assert not walk.reflect_directions
+    assert dict(walk.source_layout) == {
+        reg.name: reg.total_bits() for reg in original.signature
+    }
+    assert walk.prepare.layout[-1] == ("temp", 2)
+    assert original.block_encoding.resource_bitsize == 2
+    assert original.block_encoding.junk_registers == ()
     model = walk.source_resource_model()
     stages = tuple(original.decompose_bloq().iter_bloqsoqs())
     assert [call.component.name for call in model.calls] == [
@@ -58,6 +67,101 @@ def test_hubbard_walk_locked_schedule_and_resources(side):
             get_cost_value(source, QECGatesCost()).asdict()
         )
         assert result.peak_logical_qubits == get_cost_value(source, QubitCount())
+
+
+@pytest.mark.ftqc_reference
+def test_locked_walk_binds_the_original_reflection_operands_and_phase():
+    pytest.importorskip("qualtran")
+    import cirq
+    from qualtran._infra.gate_with_registers import get_named_qubits
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.walk_operator import (
+        get_walk_operator_for_hubbard_model,
+    )
+
+    source = get_walk_operator_for_hubbard_model(2, 2, 1, 2)
+    reflect = source.reflect
+    named = get_named_qubits(reflect.signature)
+    backward, flip, mark, scalar, clear, forward = cirq.flatten_op_tree(
+        reflect.decompose_from_registers(
+            context=cirq.DecompositionContext(cirq.SimpleQubitManager()), **named
+        )
+    )
+    assert backward == cirq.inverse(forward)
+    assert flip == clear and flip.gate == cirq.X
+    assert scalar.gate.coefficient == -1
+
+    walk = HubbardWalk.from_lattice(2, 1, 2)
+    prepare = walk.prepare
+    logical = sum(width for _, width in walk.layout)
+    work, slots = walk.requirements()
+    width = logical + work
+    ports = partition_register(tuple(range(logical)), walk.layout)
+    workspace = tuple(range(logical, width))
+    mapping = {
+        soq: wire
+        for name, qubits in named.items()
+        for soq, wire in zip(qubits.flat, ports[name], strict=True)
+    }
+    mapping.update(zip(forward.qubits[-2:], ports["temp"], strict=True))
+    mapping[flip.qubits[0]] = workspace[0]
+    assert tuple(mapping[q] for q in forward.qubits) == tuple(
+        wire for name, _ in prepare.layout for wire in ports[name]
+    )
+    controls = tuple(mapping[q] for q in mark.qubits[:-1])
+    values = tuple(mark.gate.cvs)
+    assert values == (0,) * len(controls)
+    target = mapping[mark.qubits[-1]]
+    assert target == workspace[0]
+
+    prep_work, prep_slots = prepare.requirements()
+    args = (ports, workspace[1 : 1 + prep_work], tuple(range(prep_slots)))
+    phase = Instruction("phase", (target,), params={"theta": pi})
+    x = Instruction("x", (target,))
+    source_reflection = (
+        *prepare._emit(*args, True),
+        x,
+        *multi_control_z_ir(
+            controls, values, target, workspace[1:], tuple(range(slots))
+        ),
+        phase,
+        x,
+        *prepare._emit(*args, False),
+    )
+    select = SelectHubbard(2)
+    select_work, select_slots = select.requirements()
+    select_args = (ports, workspace[:select_work], tuple(range(select_slots)))
+    for adjoint, expected in (
+        (False, (*select._emit(*select_args), *source_reflection)),
+        (True, (*source_reflection, *select._emit(*select_args, adjoint=True))),
+    ):
+        ir = (
+            DynamicCircuit(width)
+            .append(walk.make_on(ports, workspace=workspace, adjoint=adjoint))
+            .to_ir()
+        )
+        assert ir.instructions == expected
+
+    bound_forward = walk.make_on(ports, workspace=workspace)
+    bound_backward = walk.make_on(ports, workspace=workspace, adjoint=True)
+    circuit = DynamicCircuit(width).append(bound_forward).append(bound_backward)
+    stream = circuit.to_ir().instructions
+    count = count_emitted_instructions(
+        DynamicCircuit(width).append(bound_forward).to_ir()
+    )
+    assert (count.t_count, count.unconditional["measure"], work) == (224, 28, 8)
+    events = sum(gate.name == "measure" for gate in stream)
+    selection_bit = 1 << (width - ports["p_x"][0] - 1)
+    system_bit = 1 << (width - ports["target"][0] - 1)
+    initial = {0: 1 / sqrt(2), selection_bit | system_bit: 1j / sqrt(2)}
+    for pattern in ((0,), (1,), (0, 1), (1, 0)):
+        state = _branch(
+            stream,
+            width,
+            (pattern * events)[:events],
+            initial,
+            normalize_measurements=True,
+        )
+        assert state == pytest.approx(initial, abs=5e-12)
 
 
 def _projected_select(vector: Mapping[int, complex]) -> dict[int, complex]:

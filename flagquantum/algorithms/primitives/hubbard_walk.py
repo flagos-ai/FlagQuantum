@@ -41,6 +41,16 @@ class HubbardWalk:
         if type(self.reflect_directions) is not bool:
             raise ValueError("Hubbard walk reflection mode must be boolean")
 
+    @classmethod
+    def from_lattice(cls, dimension: int, t: float, u: float) -> "HubbardWalk":
+        """Construct the locked square-lattice walk with the selection-only mark."""
+        return cls(PrepareHubbard(dimension, t, u), reflect_directions=False)
+
+    @property
+    def source_layout(self) -> RegisterLayout:
+        """Return the source-visible selection and system words in binding order."""
+        return (*self.prepare.selection_layout, self.layout[-1])
+
     @property
     def layout(self) -> RegisterLayout:
         return (*self.prepare.layout, ("target", 2 * self.prepare.dimension**2))
@@ -71,17 +81,17 @@ class HubbardWalk:
 
     def source_resource_model(self) -> ComponentCost:
         """Estimate the locked walk with the source's narrower mark and junk."""
-        width = sum(bits for _, bits in self.prepare.selection_layout)
-        system = self.layout[-1][1]
+        width = sum(bits for _, bits in self.source_layout)
+        system = self.source_layout[-1][1]
         select = SelectHubbard(self.prepare.dimension).source_resource_model()
-        block = ComponentCost(
-            "SelectBlockEncoding", width + system, calls=(CostCall(select),)
-        )
+        block = ComponentCost("SelectBlockEncoding", width, calls=(CostCall(select),))
         prep = self.prepare.source_resource_model()
-        reflection = source_uncontrolled_prepare_reflection_cost(width, 2, prep, prep)
+        reflection = source_uncontrolled_prepare_reflection_cost(
+            width - system, 2, prep, prep
+        )
         return ComponentCost(
             "QubitizationWalkOperator",
-            width + system,
+            width,
             calls=(CostCall(block), CostCall(reflection, bystander_qubits=system)),
         )
 
@@ -122,9 +132,11 @@ class _BoundHubbardWalk:
         prepare = self.walk.prepare
         select = SelectHubbard(prepare.dimension)
         select_work, select_slots = select.requirements()
-        # SELECT is a Hermitian signed Pauli permutation on the populated addresses.
         selection = select._emit(
-            self.ports, self.workspace[:select_work], slots[:select_slots]
+            self.ports,
+            self.workspace[:select_work],
+            slots[:select_slots],
+            adjoint=self.adjoint,
         )
         prep_work, prep_slots = prepare.requirements()
         prep_args = (self.ports, self.workspace[1 : 1 + prep_work], slots[:prep_slots])
