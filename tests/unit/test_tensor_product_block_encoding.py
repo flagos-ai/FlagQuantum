@@ -1,5 +1,6 @@
 """Source packed partitions, exact child streams and tensor-product branches."""
 
+from dataclasses import replace
 from itertools import product
 
 import pytest
@@ -29,6 +30,115 @@ CASES = (
     ("add2", "add3"),
     ("t", "cx", "add2"),
 )
+
+
+@pytest.mark.ftqc_reference
+def test_original_overrides_preserve_full_complex_auxiliary_ports():
+    from qualtran.bloqs.block_encoding.tensor_product import (
+        _tensor_product_block_encoding_properties,
+    )
+
+    from flagquantum import Circuit
+    from flagquantum.core.ir import Instruction
+    from flagquantum.simulation.unitary import get_unitary
+
+    source = _tensor_product_block_encoding_properties()
+    t, *_ = _fixture("t", 2, 1)
+    cx, *_ = _fixture("cx", 1, 1)
+    blocks = (t, replace(cx, epsilon=0.1))
+    native, operation, binding, _ = _binding(blocks, False, True)
+    assert (
+        tuple(map(len, (binding["system"], binding["ancilla"], binding["resource"])))
+        == (
+            3,
+            3,
+            2,
+        )
+        == tuple(register.total_bits() for register in source.signature)
+    )
+    assert (native.alpha, native.epsilon) == (source.alpha, source.epsilon)
+    circuit = Circuit(8, dtype=torch.complex128).append(operation)
+    assert circuit.to_ir().instructions == (
+        Instruction("t", (0,)),
+        Instruction("cx", (1, 2)),
+    )
+    matrix = get_unitary(circuit)
+    expected = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
+    torch.testing.assert_close(matrix, expected, atol=2e-12, rtol=0)
+    selected = torch.arange(8) * 32
+    projector = torch.eye(32, dtype=torch.complex128)
+    torch.testing.assert_close(
+        matrix,
+        torch.kron(expected[selected][:, selected], projector),
+        atol=2e-12,
+        rtol=0,
+    )
+
+
+@pytest.mark.ftqc_reference
+def test_original_nested_x_x_cnot_cirq_export():
+    import cirq
+    from qualtran.bloqs.basic_gates import CNOT, XGate
+    from qualtran.bloqs.block_encoding.tensor_product import TensorProduct
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    from flagquantum import Circuit
+    from flagquantum.algorithms.primitives.unitary_block_encoding import (
+        UnitaryBlockEncoding,
+    )
+    from flagquantum.core.ir import Instruction
+    from flagquantum.ecosystem.cirq import to_cirq
+
+    def x(ports, work, bits, inverse):
+        return (Instruction("x", ports["q"]),)
+
+    def bind(block):
+        def apply(ports, work, bits, inverse):
+            return block.make_on(system=ports["system"], adjoint=inverse)
+
+        return apply
+
+    bit_flip = UnitaryBlockEncoding((("q", 1),), x)
+    pair = TensorProductBlockEncoding((bit_flip, bit_flip))
+    cnot, *_ = _fixture("cx", 0, 0)
+    root = TensorProductBlockEncoding((pair, cnot))
+
+    def bind_pair(ports, work, bits, inverse):
+        return pair.make_on(
+            (bind(bit_flip), bind(bit_flip)),
+            system=ports["system"],
+            workspaces=((), ()),
+            classical_bits=((), ()),
+            adjoint=inverse,
+        )
+
+    operation = root.make_on(
+        (bind_pair, bind(cnot)),
+        system=(0, 1, 2, 3),
+        workspaces=((), ()),
+        classical_bits=((), ()),
+    )
+    actual = to_cirq(Circuit(4).append(operation).to_ir())
+    original = TensorProduct(
+        (TensorProduct((Unitary(XGate()), Unitary(XGate()))), Unitary(CNOT()))
+    )
+    qubits = cirq.LineQubit.range(4)
+    expected = cirq.Circuit(
+        cirq.decompose_once(
+            original.on_registers(system=qubits),
+            context=cirq.DecompositionContext(
+                cirq.GreedyQubitManager(prefix="_a", maximize_reuse=True)
+            ),
+        )
+    )
+    gates = (cirq.X(qubits[0]), cirq.X(qubits[1]), cirq.CNOT(*qubits[2:]))
+    lowered = cirq.decompose(expected, keep=lambda op: op.gate in (cirq.X, cirq.CNOT))
+    assert tuple(actual.all_operations()) == tuple(lowered) == gates
+    matrix = torch.as_tensor(actual.unitary(qubit_order=qubits))
+    torch.testing.assert_close(
+        matrix, torch.as_tensor(expected.unitary(qubit_order=qubits))
+    )
+    assert matrix[:, 0b0111].abs().argmax().item() == 0b1010
 
 
 def _blocks(kinds, mixed):
