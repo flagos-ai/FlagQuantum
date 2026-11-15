@@ -231,8 +231,15 @@ def _signature_width(node: ResourceCall) -> SymbolicInt:
         if type(node.layout) is int:
             return node.layout
     if isinstance(node, BookkeepingCall) and node.opcode in {"allocate", "free"}:
-        if type(node.layout) is int and node.layout >= 0:
-            return node.layout
+        from sympy import Expr
+
+        layout = node.layout
+        if isinstance(layout, tuple) and len(layout) == 2 and type(layout[1]) is bool:
+            layout = layout[0]
+        if type(layout) is int and layout >= 0:
+            return layout
+        if isinstance(layout, Expr) and layout.free_symbols:
+            return smax(0, layout)
     if isinstance(node, BookkeepingCall) and node.opcode == "cast":
         if (
             isinstance(node.layout, tuple)
