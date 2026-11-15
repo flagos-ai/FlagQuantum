@@ -17,6 +17,7 @@ from examples.algorithms.classical_action_dispatch import evaluate_word_paulis
 from examples.algorithms.classical_controlled_values import WordControlledPaulis
 from flagquantum.compiler.registers.primitives.power import register_power_ir
 from flagquantum.core.ir import CircuitIR
+from flagquantum.drawer.power_symbols import power_wire_symbols
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from flagquantum.simulation.classical_power import power_classical_values
@@ -89,6 +90,7 @@ def main() -> None:
     )
     print("Emitted: 16 T, 4 measurements, 1 reused work, 5 declared wires")
     print("Source model: 16 T equivalents, 4 measurements, 4 peak logical wires")
+    print("Powered child label:", power_wire_symbols(("controlled XZ",), 2)[0])
 
 
 if __name__ == "__main__":
