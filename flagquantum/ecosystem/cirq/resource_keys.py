@@ -53,6 +53,8 @@ def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
         cirq.X: CliffordCall("x", 1),
         cirq.Y: CliffordCall("y", 1),
         cirq.ControlledGate(cirq.Y): CliffordCall("cy", 2),
+        # Recent Cirq versions specialize the positive control as a CY constant.
+        cirq.Y.controlled(): CliffordCall("cy", 2),
         cirq.Z: CliffordCall("z", 1),
         cirq.CZ: CliffordCall("cz", 2),
         cirq.SWAP: CliffordCall("swap_bit", 2),
