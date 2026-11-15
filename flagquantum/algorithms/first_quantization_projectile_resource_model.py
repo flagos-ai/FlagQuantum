@@ -32,6 +32,8 @@ from .first_quantization_projectile import (
     projectile_prepare_signature,
     projectile_prepare_tuv_signature,
     projectile_select_signature,
+    projectile_select_t_signature,
+    projectile_select_uv_signature,
 )
 from .first_quantization_resource_model import (
     _require_positive,
@@ -79,10 +81,10 @@ def source_projectile_prepare_t_cost(
 
 def source_projectile_select_t_cost(num_bits_n: int) -> ComponentCost:
     """Count the source kinetic selector with two three-bit coordinate words."""
-    _require_positive(num_bits_n)
+    signature = projectile_select_t_signature(num_bits_n)
     return ComponentCost(
         "SelectTFirstQuantizationWithProj",
-        9 + 5 * num_bits_n,
+        int(signature.n_qubits()),
         GateCost(toffoli=5 * (num_bits_n - 1) + 3),
     )
 
@@ -91,15 +93,39 @@ def source_projectile_select_uv_cost(
     num_bits_p: int, num_bits_n: int, num_atoms: int, num_bits_nuc_pos: int
 ) -> ComponentCost:
     """Count the potential selector on three unequal-width p and q axes."""
-    _require_positive(num_bits_p, num_bits_n, num_atoms, num_bits_nuc_pos)
+    signature = projectile_select_uv_signature(
+        num_bits_p, num_bits_n, num_atoms, num_bits_nuc_pos
+    )
     if min(num_bits_p, num_bits_n) < 2:
         raise ValueError(
             "Source projectile SELECT UV requires at least two momentum bits"
         )
-    p, n = num_bits_p, num_bits_n
+    return ComponentCost(
+        "SelectUVFirstQuantizationWithProj",
+        int(signature.n_qubits()),
+        calls=_projectile_select_uv_calls(num_bits_p, num_bits_n, num_bits_nuc_pos),
+    )
+
+
+def source_projectile_select_uv_gate_cost(
+    num_bits_p: int, num_bits_n: int, num_atoms: int, num_bits_nuc_pos: int
+) -> GateCost:
+    """Return the declared gates even when a one-bit conversion has no source peak."""
+    projectile_select_uv_signature(num_bits_p, num_bits_n, num_atoms, num_bits_nuc_pos)
+    gates = GateCost()
+    for call in _projectile_select_uv_calls(num_bits_p, num_bits_n, num_bits_nuc_pos):
+        gates = gates.plus(
+            estimate_component_resources(call.component).gates, call.repetitions
+        )
+    return gates
+
+
+def _projectile_select_uv_calls(
+    p: int, n: int, num_bits_nuc_pos: int
+) -> tuple[CostCall, ...]:
     # Keep the independent electronic and projectile arithmetic families.
     # The call-graph query combines structurally equal children.
-    calls = (
+    return (
         CostCall(_signed_conversion_cost(p), repetitions=3),
         CostCall(_signed_conversion_cost(n), repetitions=3),
         CostCall(source_add_cost(p + 1, p + 1), repetitions=3),
@@ -111,11 +137,6 @@ def source_projectile_select_uv_cost(
         CostCall(_signed_conversion_cost(p + 2), repetitions=3),
         CostCall(_signed_conversion_cost(n + 2), repetitions=3),
         CostCall(source_apply_nuclear_phase_cost(n, num_bits_nuc_pos)),
-    )
-    return ComponentCost(
-        "SelectUVFirstQuantizationWithProj",
-        2 + (num_atoms - 1).bit_length() + num_bits_nuc_pos + 3 * (n + 1) + 3 * (p + n),
-        calls=calls,
     )
 
 

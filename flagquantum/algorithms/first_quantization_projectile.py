@@ -89,3 +89,43 @@ def projectile_select_signature(
             _word("proj", n, (3,)),
         )
     )
+
+
+def projectile_select_t_signature(num_bits_n: int) -> Signature:
+    """Expose the two coordinate selectors and the projectile momentum bank."""
+    if type(num_bits_n) is not int or num_bits_n < 1:
+        raise ValueError("First-quantized dimensions must be positive integers")
+    return Signature(
+        (
+            _bit("flag_T"),
+            _bit("flag_mean"),
+            _bit("plus"),
+            _word("w", 3),
+            _word("w_mean", 3),
+            _word("r", num_bits_n),
+            _word("s", num_bits_n),
+            _word("p", num_bits_n, (3,)),
+        )
+    )
+
+
+def projectile_select_uv_signature(
+    num_bits_p: int, num_bits_n: int, num_atoms: int, num_bits_nuc_pos: int
+) -> Signature:
+    """Expose independent electron, projectile, and transfer momentum widths."""
+    if any(
+        type(width) is not int or width < 1
+        for width in (num_bits_p, num_bits_n, num_atoms, num_bits_nuc_pos)
+    ):
+        raise ValueError("First-quantized dimensions must be positive integers")
+    return Signature(
+        (
+            _bit("flag_tuv"),
+            _bit("flag_uv"),
+            _word("l", (num_atoms - 1).bit_length()),
+            _word("rl", num_bits_nuc_pos),
+            _word("nu", num_bits_n + 1, (3,)),
+            _word("p", num_bits_n, (3,)),
+            _word("q", num_bits_p, (3,)),
+        )
+    )

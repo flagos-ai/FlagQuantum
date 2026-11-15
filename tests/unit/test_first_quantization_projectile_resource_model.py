@@ -24,6 +24,8 @@ from flagquantum.algorithms.first_quantization_projectile import (
     projectile_prepare_signature,
     projectile_prepare_tuv_signature,
     projectile_select_signature,
+    projectile_select_t_signature,
+    projectile_select_uv_signature,
 )
 from flagquantum.algorithms.first_quantization_projectile_resource_model import (
     projectile_prepare_first_quantization_adjoint_model,
@@ -38,6 +40,7 @@ from flagquantum.algorithms.first_quantization_projectile_resource_model import 
     source_projectile_select_first_quantization_cost,
     source_projectile_select_t_cost,
     source_projectile_select_uv_cost,
+    source_projectile_select_uv_gate_cost,
 )
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -118,17 +121,23 @@ def test_projectile_select_t_cost(n: int) -> None:
         SelectTFirstQuantizationWithProj,
     )
 
-    source = SelectTFirstQuantizationWithProj(n, 10)
+    source = SelectTFirstQuantizationWithProj(n, 32)
     assert_source_model(source_projectile_select_t_cost(n), source)
-    assert source.signature.get_left("w_mean").bitsize == 3
-    assert source.signature.get_left("p").shape == (3,)
+    _assert_signature(projectile_select_t_signature(n), source.signature)
     with pytest.raises(DecomposeNotImplementedError):
         source.decompose_bloq()
 
 
 @pytest.mark.parametrize(
     ("p", "n", "atoms", "precision"),
-    [(2, 2, 1, 1), (2, 4, 5, 4), (3, 6, 10, 8), (6, 8, 10, 16), (4, 2, 3, 5)],
+    [
+        (2, 2, 1, 1),
+        (2, 4, 5, 4),
+        (3, 6, 10, 8),
+        (6, 8, 10, 16),
+        (4, 2, 3, 5),
+        (6, 9, 10, 18),
+    ],
 )
 @pytest.mark.ftqc_reference
 def test_projectile_select_uv_cost_graph(
@@ -144,10 +153,13 @@ def test_projectile_select_uv_cost_graph(
     source = SelectUVFirstQuantizationWithProj(p, n, 10, atoms, precision)
     model = source_projectile_select_uv_cost(p, n, atoms, precision)
     assert_source_model(model, source)
+    _assert_signature(
+        projectile_select_uv_signature(p, n, atoms, precision), source.signature
+    )
     assert model.qubits == source.signature.n_qubits()
-    for name, width in (("p", n), ("q", p), ("nu", n + 1)):
-        reg = source.signature.get_left(name)
-        assert reg.bitsize == width and reg.shape == (3,)
+    assert source_projectile_select_uv_gate_cost(p, n, atoms, precision) == (
+        estimate_ftqc_resources(model).logical.gates
+    )
     expected = Counter()
     for child, multiplicity in source.bloq_counts().items():
         counts = get_cost_value(child, QECGatesCost()).asdict()
@@ -171,17 +183,23 @@ def test_projectile_select_uv_cost_graph(
         source.decompose_bloq()
 
 
-@pytest.mark.parametrize(("p", "n"), [(1, 2), (2, 1)])
+@pytest.mark.parametrize(("p", "n"), [(1, 1), (1, 2), (2, 1)])
 @pytest.mark.ftqc_reference
 def test_projectile_select_uv_one_bit_source_failure(p: int, n: int) -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_uv import (
         SelectUVFirstQuantizationWithProj,
     )
-    from qualtran.resource_counting import QubitCount, get_cost_value
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
+    source = SelectUVFirstQuantizationWithProj(p, n, 10, 1, 8)
+    _assert_signature(projectile_select_uv_signature(p, n, 1, 8), source.signature)
+    gates = source_projectile_select_uv_gate_cost(p, n, 1, 8)
+    assert {
+        key: value for key, value in asdict(gates).items() if value
+    } == get_cost_value(source, QECGatesCost()).asdict()
     with pytest.raises(RuntimeError, match="bitsize must be > 1"):
-        get_cost_value(SelectUVFirstQuantizationWithProj(p, n, 10, 1, 8), QubitCount())
+        get_cost_value(source, QubitCount())
     with pytest.raises(ValueError, match="at least two momentum bits"):
         source_projectile_select_uv_cost(p, n, 1, 8)
 
