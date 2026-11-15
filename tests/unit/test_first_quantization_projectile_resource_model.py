@@ -5,6 +5,10 @@ from dataclasses import asdict
 
 import pytest
 
+from flagquantum.algorithms.first_quantization_kinetic import (
+    projectile_prepare_power_two_signature,
+    projectile_prepare_t_signature,
+)
 from flagquantum.algorithms.first_quantization_nu import (
     prepare_nu_signature,
     projectile_prepare_nu_leaf_signatures,
@@ -57,12 +61,8 @@ def test_projectile_kinetic_prepare(
     model = source_projectile_prepare_t_cost(p, n, adjoint=adjoint)
     assert_source_model(source_projectile_power_two_cost(n, p, adjoint=adjoint), power)
     assert_source_model(model, source)
-    assert [(reg.name, reg.bitsize) for reg in source.signature.lefts()] == [
-        ("w", 2),
-        ("w_mean", 2),
-        ("r", n),
-        ("s", n),
-    ]
+    _assert_signature(projectile_prepare_power_two_signature(n, p), power.signature)
+    _assert_signature(projectile_prepare_t_signature(p, n), source.signature)
     assert source.bloq_counts() == {Toffoli(): 15 if adjoint else 31, power: 2}
     assert [call.repetitions for call in model.calls] == [15 if adjoint else 31, 2]
     for operation in (power, source):

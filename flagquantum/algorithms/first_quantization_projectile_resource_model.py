@@ -16,6 +16,10 @@ from .first_quantization import (
     source_controlled_multiplexed_cswap_3d_cost,
     source_multiplexed_cswap_3d_cost,
 )
+from .first_quantization_kinetic import (
+    projectile_prepare_power_two_signature,
+    projectile_prepare_t_signature,
+)
 from .first_quantization_nu_resource_model import (
     source_projectile_prepare_nu_adjoint_gate_cost,
     source_projectile_prepare_nu_cost,
@@ -33,16 +37,14 @@ def source_projectile_power_two_cost(
     bitsize_n: int, bitsize_p: int, *, adjoint: bool = False
 ) -> ComponentCost:
     """Estimate the source unary preparation on an n-bit through register."""
-    _require_positive(bitsize_n, bitsize_p)
-    if bitsize_n < bitsize_p:
-        raise ValueError(
-            "Projectile momentum width must be at least the electron width"
-        )
+    signature = projectile_prepare_power_two_signature(bitsize_n, bitsize_p)
     toffoli = bitsize_n - 2
     if not adjoint:
         toffoli += bitsize_n - bitsize_p
     return ComponentCost(
-        "PreparePowerTwoStateWithProj", max(3, bitsize_n), GateCost(toffoli=toffoli)
+        "PreparePowerTwoStateWithProj",
+        max(3, int(signature.n_qubits())),
+        GateCost(toffoli=toffoli),
     )
 
 
@@ -55,7 +57,7 @@ def source_projectile_prepare_t_cost(
     coordinate_toffolis = 15 if adjoint else 31
     return ComponentCost(
         "PrepareTFirstQuantizationWithProj",
-        4 + 2 * num_bits_n,
+        int(projectile_prepare_t_signature(num_bits_p, num_bits_n).n_qubits()),
         calls=(
             CostCall(
                 ComponentCost("Toffoli", 3, GateCost(toffoli=1)),

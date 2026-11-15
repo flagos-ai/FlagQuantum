@@ -27,6 +27,29 @@ def prepare_t_signature(num_bits_p: int) -> Signature:
     )
 
 
+def projectile_prepare_power_two_signature(bitsize_n: int, bitsize_p: int) -> Signature:
+    """Return the projectile unary word while checking both momentum widths."""
+    if type(bitsize_p) is not int or bitsize_p < 1:
+        raise ValueError("First-quantized dimensions must be positive integers")
+    signature = prepare_power_two_signature(bitsize_n)
+    if bitsize_n < bitsize_p:
+        raise ValueError(
+            "Projectile momentum width must be at least the electron width"
+        )
+    return signature
+
+
+def projectile_prepare_t_signature(num_bits_p: int, num_bits_n: int) -> Signature:
+    """Add the projectile mean-coordinate word to the through kinetic ports."""
+    width = (
+        projectile_prepare_power_two_signature(num_bits_n, num_bits_p)
+        .get_left("r")
+        .bitsize
+    )
+    coordinate = (KINETIC_COORDINATE_COUNT - 1).bit_length()
+    return Signature.build(w=coordinate, w_mean=coordinate, r=width, s=width)
+
+
 def prepare_kinetic_coordinate_on(
     target: tuple[int, ...],
     *,
