@@ -1,6 +1,7 @@
 """Source unitary wrapper gates, metadata, idle ports and exact branch amplitudes."""
 
 from collections.abc import Mapping
+from dataclasses import replace
 from itertools import product
 from math import pi
 
@@ -22,6 +23,79 @@ from tests.unit.test_register_constant_addition import reference_arithmetic_gate
 from tests.unit.test_relative_controlled_swap import assert_source_dependencies
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("overrides", [False, True])
+def test_original_t_wrapper_examples_exact_matrix_and_ports(overrides):
+    from qualtran.bloqs.block_encoding.unitary import (
+        _unitary_block_encoding,
+        _unitary_block_encoding_properties,
+    )
+
+    from flagquantum import Circuit
+    from flagquantum.simulation.unitary import get_unitary
+
+    if overrides:
+        source = _unitary_block_encoding_properties()
+        ancilla, resource = (1, 2), (3,)
+        native, *_ = _fixture("t", 2, 1)
+    else:
+        source = _unitary_block_encoding()
+        ancilla, resource = (), ()
+        native, *_ = _fixture("t", 0, 0)
+        native = replace(native, alpha=1, epsilon=0)
+    width = 1 + len(ancilla) + len(resource)
+    assert tuple((reg.name, reg.bitsize) for reg in native.signature) == tuple(
+        (reg.name, reg.bitsize) for reg in source.signature
+    )
+    assert (native.alpha, native.epsilon) == (source.alpha, source.epsilon)
+    model = native.resource_model(ComponentCost("T", 1, GateCost(t=1)))
+    assert source.build_call_graph(None) == {source.U: 1}
+    assert len(model.calls) == model.calls[0].repetitions == 1
+    for legacy in (False, True):
+        _assert_model(model, source, legacy)
+    binding = dict(system=(0,), ancilla=ancilla, resource=resource)
+    assert native.signal_state.emit(ancilla, (), (), ()) == ()
+    circuit = Circuit(width, dtype=torch.complex128)
+    circuit.append(native.make_on(**binding))
+    assert circuit.to_ir().instructions == (Instruction("t", (0,)),)
+    torch.testing.assert_close(
+        get_unitary(circuit),
+        torch.as_tensor(source.tensor_contract(), dtype=torch.complex128),
+        atol=2e-12,
+        rtol=0,
+    )
+    circuit.append(native.make_on(**binding, adjoint=True))
+    torch.testing.assert_close(
+        get_unitary(circuit),
+        torch.eye(1 << width, dtype=torch.complex128),
+        atol=2e-12,
+        rtol=0,
+    )
+
+
+@pytest.mark.ftqc_reference
+def test_original_rejects_preparation_as_a_unitary_child():
+    from qualtran.bloqs.basic_gates import IntState
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    from flagquantum.core.ir.program.register_types import opaque_register_type
+    from flagquantum.core.ir.program.registers import Register, RegisterSide
+    from flagquantum.core.ir.program.signatures import Signature
+
+    source = IntState(55, bitsize=8)
+    with pytest.raises(ValueError, match="THRU"):
+        Unitary(source)
+    (register,) = source.signature
+    native = Signature(
+        (Register(register.name, opaque_register_type(8), side=RegisterSide.RIGHT),)
+    )
+    phase, *_ = _fixture("t", 0, 0)
+    with pytest.raises(ValueError, match="THRU"):
+        UnitaryBlockEncoding.from_signature(native, phase.unitary)
+    bound = UnitaryBlockEncoding.from_signature(Signature.build(q=1), phase.unitary)
+    assert bound.make_on(system=(3,)).to_ir() == (Instruction("t", (3,)),)
 
 
 def _fixture(kind: str, ancilla: int, resource: int):

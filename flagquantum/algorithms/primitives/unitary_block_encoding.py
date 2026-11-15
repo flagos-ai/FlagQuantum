@@ -18,7 +18,14 @@ from ...compiler.registers.layout.partition import (
     partition_width,
 )
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.signatures import Signature
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
+
+_UnitaryEmitter = Callable[
+    [Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
+    tuple[Instruction, ...],
+]
 
 
 @dataclass(frozen=True)
@@ -31,10 +38,7 @@ class UnitaryBlockEncoding:
     """
 
     system_layout: RegisterLayout
-    unitary: Callable[
-        [Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
-        tuple[Instruction, ...],
-    ]
+    unitary: _UnitaryEmitter
     alpha: SymbolicReal = 1
     ancilla_bitsize: int = 0
     resource_bitsize: int = 0
@@ -51,9 +55,53 @@ class UnitaryBlockEncoding:
         ):
             raise ValueError("Block auxiliary widths must be nonnegative integers")
 
+    @classmethod
+    def from_signature(
+        cls,
+        signature: Signature,
+        unitary: _UnitaryEmitter,
+        *,
+        alpha: SymbolicReal = 1,
+        ancilla_bitsize: int = 0,
+        resource_bitsize: int = 0,
+        epsilon: SymbolicReal = 0,
+    ) -> "UnitaryBlockEncoding":
+        """Preserve typed child port order for concrete scalar quantum registers."""
+        if not signature.thru_registers_only:
+            raise ValueError("Block encoded unitary must have all THRU registers")
+        layout: list[tuple[str, int]] = []
+        for register in signature:
+            width = register.dtype.num_qubits
+            if (
+                register.shape_symbolic
+                or register.dtype.num_cbits != 0
+                or type(width) is not int
+            ):
+                raise ValueError(
+                    "Unitary binding requires concrete scalar quantum registers"
+                )
+            layout.append((register.name, width))
+        return cls(
+            tuple(layout),
+            unitary,
+            alpha=alpha,
+            ancilla_bitsize=ancilla_bitsize,
+            resource_bitsize=resource_bitsize,
+            epsilon=epsilon,
+        )
+
     @property
     def system_bitsize(self) -> int:
         return sum(width for _, width in self.system_layout)
+
+    @property
+    def signature(self) -> Signature:
+        """Return the packed source system, ancilla and resource declaration."""
+        return Signature.build_from_dtypes(
+            system=opaque_register_type(self.system_bitsize),
+            ancilla=opaque_register_type(self.ancilla_bitsize),
+            resource=opaque_register_type(self.resource_bitsize),
+        )
 
     @property
     def signal_state(self) -> BlackBoxPrepare:
