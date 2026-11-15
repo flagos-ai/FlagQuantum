@@ -4,6 +4,11 @@ from dataclasses import asdict
 
 import pytest
 
+from flagquantum.algorithms.first_quantization_kinetic import (
+    prepare_kinetic_coordinate_on,
+    prepare_power_two_signature,
+    prepare_t_signature,
+)
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_apply_nuclear_phase_cost,
     source_prepare_first_quantization_cost,
@@ -151,11 +156,21 @@ def test_prepare_t_cost_paths(p: int, eta: int, precision: int) -> None:
     )
 
     power = PreparePowerTwoState(p)
+    assert [
+        (reg.name, reg.bitsize, reg.shape, reg.side.value)
+        for reg in prepare_power_two_signature(p)
+    ] == [(reg.name, reg.bitsize, reg.shape, reg.side.value) for reg in power.signature]
     assert_source_model(source_prepare_power_two_cost(p), power)
     with pytest.raises(DecomposeNotImplementedError):
         power.decompose_bloq()
 
     source = PrepareTFirstQuantization(p, eta, precision)
+    assert [
+        (reg.name, reg.bitsize, reg.shape, reg.side.value)
+        for reg in prepare_t_signature(p)
+    ] == [
+        (reg.name, reg.bitsize, reg.shape, reg.side.value) for reg in source.signature
+    ]
     declared = source_prepare_t_cost(p)
     assert_source_model(declared, source)
     assert source.bloq_counts() == {Toffoli(): 13, power: 2}
@@ -164,20 +179,27 @@ def test_prepare_t_cost_paths(p: int, eta: int, precision: int) -> None:
         ("PreparePowerTwoState", 2),
     ]
 
-    composite = source.decompose_bloq()
-    assert_source_model(source_prepare_t_cost(p, decomposed=True), composite)
-    # The three operations are disjoint. Check register bindings independently
-    # of their ordering in the composite's topological traversal.
-    assert {
-        (node.bloq, incoming[0].left.reg.name, outgoing[0].right.reg.name)
-        for node, incoming, outgoing in composite.iter_bloqnections()
-        if incoming[0].left.binst == LeftDangle
-        and outgoing[0].right.binst == RightDangle
-    } == {
-        (PrepareUniformSuperposition(3), "w", "w"),
-        (power, "r", "r"),
-        (power, "s", "s"),
-    }
+    for adjoint in (False, True):
+        directional = source.adjoint() if adjoint else source
+        composite = directional.decompose_bloq()
+        assert_source_model(source_prepare_t_cost(p, adjoint=adjoint), directional)
+        assert_source_model(
+            source_prepare_t_cost(p, decomposed=True, adjoint=adjoint), composite
+        )
+        # These calls are independent. Compare the port map in either schedule.
+        assert {
+            (node.bloq, incoming[0].left.reg.name, outgoing[0].right.reg.name)
+            for node, incoming, outgoing in composite.iter_bloqnections()
+            if incoming[0].left.binst == LeftDangle
+            and outgoing[0].right.binst == RightDangle
+        } == {
+            (child.adjoint() if adjoint else child, port, port)
+            for child, port in (
+                (PrepareUniformSuperposition(3), "w"),
+                (power, "r"),
+                (power, "s"),
+            )
+        }
 
 
 @pytest.mark.parametrize(("eta", "precision"), [(1, 8), (2, 1), (10, 8)])
@@ -205,25 +227,35 @@ def test_prepare_ij_cost(eta: int, precision: int) -> None:
             source.decompose_bloq()
 
 
-def test_kinetic_prepare_resource_report_separates_emitted_coordinate() -> None:
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_kinetic_prepare_resource_report_separates_emitted_coordinate(
+    adjoint: bool,
+) -> None:
     from flagquantum.compiler.registers.preparation.uniform_preparation import (
         uniform_preparation_ir,
         uniform_preparation_requirements,
     )
-    from flagquantum.core.ir import CircuitIR
+    from flagquantum.dynamic import DynamicCircuit
 
     target, work, slots = uniform_preparation_requirements(3)
+    wires = tuple(reversed(range(target)))
+    workspace = tuple(range(target, target + work))
+    classical_bits = tuple(range(slots))
     coordinate = uniform_preparation_ir(
-        3,
-        tuple(range(target)),
-        tuple(range(target, target + work)),
-        tuple(range(slots)),
+        3, wires, workspace, classical_bits, adjoint=adjoint
     )
+    circuit = DynamicCircuit(target + work).append(
+        prepare_kinetic_coordinate_on(
+            wires, workspace=workspace, classical_bits=classical_bits, adjoint=adjoint
+        )
+    )
+    ir = circuit.to_ir()
+    assert ir.instructions == coordinate
     declared = estimate_ftqc_resources(source_prepare_t_cost(6))
     composite = estimate_ftqc_resources(source_prepare_t_cost(6, decomposed=True))
     emitted = estimate_ftqc_resources(
         source_prepare_t_cost(6, decomposed=True).calls[0].component,
-        emitted_ir=CircuitIR(target + work, coordinate),
+        emitted_ir=ir,
     )
     assert declared.logical.gates.toffoli == 21
     assert composite.logical.gates.toffoli == 8

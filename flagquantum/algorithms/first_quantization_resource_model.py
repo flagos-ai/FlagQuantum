@@ -15,6 +15,11 @@ from ..compiler.registers.preparation.uniform_preparation import (
 )
 from ..core.ir.program.signatures import Signature
 from .first_quantization import source_multiplexed_cswap_3d_cost
+from .first_quantization_kinetic import (
+    KINETIC_COORDINATE_COUNT,
+    prepare_power_two_signature,
+    prepare_t_signature,
+)
 from .first_quantization_nu_resource_model import source_prepare_nu_cost
 
 
@@ -119,10 +124,10 @@ def _require_positive(*dimensions: int) -> None:
 
 def source_prepare_power_two_cost(bitsize: int) -> ComponentCost:
     """Keep the pinned unary power-of-two preparation's declared cost."""
-    _require_positive(bitsize)
+    signature = prepare_power_two_signature(bitsize)
     return ComponentCost(
         "PreparePowerTwoState",
-        max(bitsize, 3),
+        max(int(signature.n_qubits()), 3),
         GateCost(toffoli=bitsize - 2),
     )
 
@@ -147,7 +152,7 @@ def source_prepare_ij_cost(eta: int, num_bits_rot_aa: int = 8) -> ComponentCost:
 
 
 def source_prepare_t_cost(
-    num_bits_p: int, *, decomposed: bool = False
+    num_bits_p: int, *, decomposed: bool = False, adjoint: bool = False
 ) -> ComponentCost:
     """Report the pinned declared cost or the cost of its actual composite.
 
@@ -156,13 +161,16 @@ def source_prepare_t_cost(
     reports use the composite's peak width.
     """
     power_two = source_prepare_power_two_cost(num_bits_p)
-    ports = 2 + 2 * num_bits_p
+    signature = prepare_t_signature(num_bits_p)
+    ports = int(signature.n_qubits())
+    coordinate_width = int(signature.get_left("w").bitsize)
     # QubitCount follows the composite even when QECGatesCost uses the
     # declared Toffolis. The w preparation holds four additional clean wires.
     if decomposed:
+        uniform = source_uniform_preparation_cost(KINETIC_COORDINATE_COUNT)
         coordinate_call = CostCall(
-            source_uniform_preparation_cost(3),
-            bystander_qubits=ports - 2,
+            replace(uniform, name=f"{uniform.name}†") if adjoint else uniform,
+            bystander_qubits=ports - coordinate_width,
         )
         width = ports
     else:
@@ -170,13 +178,16 @@ def source_prepare_t_cost(
             ComponentCost("Toffoli", 3, GateCost(toffoli=1)), repetitions=13
         )
         width = ports + 4
+    if adjoint:
+        power_two = replace(power_two, name=f"{power_two.name}†")
+    calls = (
+        coordinate_call,
+        CostCall(power_two, repetitions=2, bystander_qubits=ports - num_bits_p),
+    )
     return ComponentCost(
-        "PrepareTFirstQuantization",
+        "PrepareTFirstQuantization†" if adjoint else "PrepareTFirstQuantization",
         width,
-        calls=(
-            coordinate_call,
-            CostCall(power_two, repetitions=2, bystander_qubits=ports - num_bits_p),
-        ),
+        calls=calls[::-1] if adjoint else calls,
     )
 
 
@@ -257,19 +268,18 @@ def source_prepare_first_quantization_cost(
     if eta < 2:
         raise ValueError("Source PREPARE requires at least two particles")
     particles = source_prepare_ij_cost(eta, num_bits_rot_aa)
-    kinetic = source_prepare_t_cost(num_bits_p)
+    kinetic = source_prepare_t_cost(num_bits_p, adjoint=adjoint)
     potential = source_prepare_uv_cost(
         num_bits_p, num_atoms, m_param, lambda_zeta, adjoint=adjoint
     )
     # The groups are disjoint. plus_t is wired straight through the composite.
     particle_ports = 2 * (eta - 1).bit_length()
-    kinetic_ports = 2 + 2 * num_bits_p
+    kinetic_ports = int(prepare_t_signature(num_bits_p).n_qubits())
     ports = 3 + particle_ports + kinetic_ports + potential.qubits
     if adjoint:
-        # These three source adjoints retain their forward cost declarations.
+        # These source adjoints retain their forward cost declarations.
         term = replace(term, name=f"{term.name}†")
         particles = replace(particles, name=f"{particles.name}†")
-        kinetic = replace(kinetic, name=f"{kinetic.name}†")
     calls = (
         CostCall(term, bystander_qubits=ports - 2),
         CostCall(particles, bystander_qubits=ports - particle_ports),

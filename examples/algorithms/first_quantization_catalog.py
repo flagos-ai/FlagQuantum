@@ -7,6 +7,7 @@
 
 from dataclasses import replace
 
+from flagquantum.algorithms.first_quantization_kinetic import prepare_t_signature
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_prepare_first_quantization_cost,
     source_prepare_t_cost,
@@ -113,7 +114,7 @@ def notebook_cases() -> dict[str, tuple[Signature, ComponentCost]]:
             _select_graph(),
         ),
         "prepare_t": (
-            Signature.build(w=2, r=5, s=5),
+            prepare_t_signature(5),
             source_prepare_t_cost(5),
         ),
         "prepare_uv": (
