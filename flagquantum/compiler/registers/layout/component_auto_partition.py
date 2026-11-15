@@ -7,59 +7,13 @@
 
 from dataclasses import replace
 
-import numpy as np
-
 from ....core.ir.program import ProgramRecord
-from ....core.ir.program.register_bindings import RegisterBinding
-from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
-from ..component_graph import _call_entry, _namespace_helpers
+from ..component_graph import _call_entry
 from .auto_partition import AutoPartition
-
-
-def _partition_program(
-    registers: tuple[Register, ...], name: str, reverse: bool
-) -> ProgramRecord:
-    width = sum(int(r.total_qubits()) for r in registers)
-    word = Register(
-        "x",
-        RegisterType("opaque", width),
-        side=RegisterSide.RIGHT if reverse else RegisterSide.LEFT,
-    )
-    parts = tuple(
-        Register(
-            r.name,
-            r.dtype,
-            r.shape,
-            RegisterSide.LEFT if reverse else RegisterSide.RIGHT,
-        )
-        for r in registers
-    )
-    builder = ComponentProgramBuilder(
-        Signature((*parts, word) if reverse else (word, *parts)), name=name
-    )
-    outputs: dict[str, BindingCollection] = {}
-    if reverse:
-        joined_bits: list[RegisterBinding] = []
-        for register in registers:
-            for binding in np.asarray(builder.inputs[register.name]).flat:
-                joined_bits.extend(builder.split(binding))
-        outputs["x"] = builder.join(joined_bits, word.dtype)
-    else:
-        packed = builder.inputs["x"]
-        assert isinstance(packed, RegisterBinding)
-        bits = builder.split(packed)
-        offset = 0
-        for register in registers:
-            values = np.empty(register.shape, dtype=object)
-            n = executable_register_width(register.dtype)
-            for index in register.all_idxs():
-                values[index] = builder.join(bits[offset : offset + n], register.dtype)
-                offset += n
-            outputs[register.name] = values if register.shape else values[()]
-    return _namespace_helpers(builder.finalize(outputs), name)
+from .component_partition import partition_component_program
 
 
 def auto_partition_component_program(
@@ -123,11 +77,11 @@ def auto_partition_component_program(
         )
         partitions.append(parts)
         definitions.extend(
-            _partition_program(parts, prefix + f"split{i}", False).functions
+            partition_component_program(parts, prefix + f"split{i}", False).functions
         )
         if not layout.left_only:
             definitions.extend(
-                _partition_program(parts, prefix + f"join{i}", True).functions
+                partition_component_program(parts, prefix + f"join{i}", True).functions
             )
     builder = ComponentProgramBuilder(Signature(public), definitions, name=name)
     inputs: dict[str, BindingCollection] = {}

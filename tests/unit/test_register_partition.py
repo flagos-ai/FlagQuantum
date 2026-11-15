@@ -25,6 +25,134 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
+def test_original_notebook_shaped_partition_and_join_keep_port_order():
+    import cirq
+    import numpy as np
+    from qualtran import QAny, Register
+    from qualtran.bloqs.bookkeeping.partition import Partition
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from flagquantum.compiler.registers.layout.component_partition import (
+        partition_component_program,
+        partition_signature,
+    )
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.core.ir.program.register_types import opaque_register_type
+    from flagquantum.core.ir.program.registers import Register as NativeRegister
+
+    original_ports = (Register("xx", QAny(2), shape=(2, 3)), Register("yy", QAny(37)))
+    ports = (
+        NativeRegister("xx", opaque_register_type(2), shape=(2, 3)),
+        NativeRegister("yy", opaque_register_type(37)),
+    )
+    source = Partition(49, original_ports)
+    wires = tuple(reversed(range(49)))
+    manager = cirq.SimpleQubitManager()
+    operation, source_parts = source.as_cirq_op(
+        manager, x=np.array([cirq.LineQubit(wire) for wire in wires])
+    )
+    assert operation is None
+    parts = tuple(
+        tuple(q.x for q in array[index].flat)
+        for name, array in source_parts.items()
+        for index in source.signature.get_right(name).all_idxs()
+    )
+
+    for reverse, locked, inputs, outputs in (
+        (False, source, (wires,), parts),
+        (True, source.adjoint(), parts, (wires,)),
+    ):
+        metadata = partition_signature(ports, reverse=reverse)
+        assert metadata.n_qubits() == get_cost_value(locked, QubitCount()) == 49
+        assert get_cost_value(locked, QECGatesCost()).asdict() == {}
+        assert tuple(
+            (port.name, port.shape, port.bitsize, port.side.value) for port in metadata
+        ) == tuple(
+            (port.name, port.shape, port.bitsize, port.side.value)
+            for port in locked.signature
+        )
+        program = partition_component_program(ports, "main", reverse)
+        result = bind_register_program(program, inputs)
+        assert result.outputs == outputs
+        assert result.events == result.circuit.instructions == ()
+
+
+@pytest.mark.ftqc_reference
+def test_original_twelve_wire_wrapper_preserves_the_complex_tensor_map():
+    import cirq
+    from qualtran import BloqBuilder, Signature
+    from qualtran.bloqs.bookkeeping import Partition
+    from qualtran.bloqs.for_testing import TestMultiRegister
+    from qualtran.simulation.tensor import cbloq_to_quimb
+    from quimb.tensor import Tensor
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.compiler.registers.layout.component_partition import (
+        partition_component_program,
+    )
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.core.ir import Instruction
+    from flagquantum.core.ir.program.register_types import opaque_register_type
+    from flagquantum.core.ir.program.registers import Register
+
+    child = TestMultiRegister()
+    partition = Partition(12, tuple(child.signature))
+    builder, inputs = BloqBuilder.from_signature(Signature.build(test_regs=12))
+    child_inputs = builder.add_d(partition, x=inputs["test_regs"])
+    child_outputs = builder.add_d(child, **child_inputs)
+    composite = builder.finalize(
+        test_regs=builder.add(partition.adjoint(), **child_outputs)
+    )
+    network = cbloq_to_quimb(composite.flatten(), friendly_indices=True)
+    assert network.shape == (2,) * 24
+    assert all(tensor.ndim <= 4 for tensor in network.rank_simplify().tensors)
+    wires = tuple(range(12))
+    external_wires = cirq.NamedQubit.range(12, prefix="system")
+    foreign = composite.to_cirq_circuit(
+        qubit_manager=cirq.SimpleQubitManager(),
+        cirq_quregs={"test_regs": external_wires},
+    )
+    (foreign_child,) = foreign.all_operations()
+    assert foreign_child.qubits == tuple(external_wires)
+
+    registers = (
+        Register("xx", opaque_register_type(1)),
+        Register("yy", opaque_register_type(2), shape=(2, 2)),
+        Register("zz", opaque_register_type(3)),
+    )
+    split = bind_register_program(
+        partition_component_program(registers, "main", False), (wires,)
+    )
+    join = bind_register_program(
+        partition_component_program(registers, "main", True), split.outputs
+    )
+    assert join.outputs == (wires,)
+    assert split.circuit.instructions == join.circuit.instructions == ()
+    first, *pairs, spectator = split.outputs
+    assert (first, pairs, spectator) == (
+        (0,),
+        [(1, 2), (3, 4), (5, 6), (7, 8)],
+        (9, 10, 11),
+    )
+    # The source testing atoms define X and CNOT tensors, not gate decompositions.
+    instructions = (
+        Instruction("x", first),
+        *(Instruction("cx", pair) for pair in pairs),
+    )
+    values = torch.arange(1, 4097, dtype=torch.float64)
+    initial = torch.complex(values, (values % 13) - 6)
+    initial /= initial.norm()
+    left = tuple(f"test_regs_{i}l" for i in wires)
+    right = tuple(f"test_regs_{i}r" for i in wires)
+    assert set(network.outer_inds()) == set(left + right)
+    ket = Tensor(initial.numpy().reshape((2,) * 12), inds=left)
+    expected = torch.as_tensor((network & ket).to_dense(right).reshape(-1))
+    circuit = fq.Circuit(12, inputs=initial, dtype=initial.dtype)
+    circuit.append(FieldOperation(12, instructions))
+    torch.testing.assert_close(circuit.state().flatten(), expected, rtol=0, atol=2e-12)
+
+
+@pytest.mark.ftqc_reference
 def test_source_partition_shaped_ports_and_join():
     pytest.importorskip("qualtran")
     import cirq
