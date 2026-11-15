@@ -8,10 +8,14 @@
 from dataclasses import replace
 
 from flagquantum.algorithms.first_quantization import first_quantization_signature
-from flagquantum.algorithms.first_quantization_kinetic import prepare_t_signature
+from flagquantum.algorithms.first_quantization_kinetic import (
+    prepare_t_signature,
+    select_t_signature,
+)
 from flagquantum.algorithms.first_quantization_potential import (
     prepare_uv_signature,
     prepare_zeta_signature,
+    select_uv_signature,
 )
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_prepare_first_quantization_cost,
@@ -27,20 +31,7 @@ from flagquantum.compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from flagquantum.core.ir.program.register_types import (
-    opaque_register_type,
-    quantum_bit_type,
-)
-from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
-
-
-def _word(name: str, width: int, shape: tuple[int, ...] = ()) -> Register:
-    return Register(name, opaque_register_type(width), shape=shape)
-
-
-def _bit(name: str) -> Register:
-    return Register(name, quantum_bit_type())
 
 
 def _toffoli_graph(model: ComponentCost) -> ComponentCost:
@@ -88,30 +79,11 @@ def notebook_cases() -> dict[str, tuple[Signature, ComponentCost]]:
             source_prepare_uv_cost(5, 10, 256, 10),
         ),
         "select_t": (
-            Signature(
-                (
-                    _bit("flag_T"),
-                    _bit("plus"),
-                    _word("w", 3),
-                    _word("r", 5),
-                    _word("s", 5),
-                    _word("p", 5, (3,)),
-                )
-            ),
+            select_t_signature(5),
             _toffoli_graph(source_select_t_cost(5)),
         ),
         "select_uv": (
-            Signature(
-                (
-                    _bit("flag_tuv"),
-                    _bit("flag_uv"),
-                    _word("l", 4),
-                    _word("rl", 16),
-                    _word("nu", 6, (3,)),
-                    _word("p", 5, (3,)),
-                    _word("q", 5, (3,)),
-                )
-            ),
+            select_uv_signature(5, 10, 16),
             _toffoli_graph(source_select_uv_cost(5, 10, 16)),
         ),
         "zeta": (

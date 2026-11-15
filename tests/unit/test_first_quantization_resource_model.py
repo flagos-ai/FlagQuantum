@@ -9,14 +9,17 @@ from flagquantum.algorithms.first_quantization_kinetic import (
     prepare_kinetic_coordinate_on,
     prepare_power_two_signature,
     prepare_t_signature,
+    select_t_signature,
 )
 from flagquantum.algorithms.first_quantization_nu import (
     prepare_nu_m_on,
     prepare_nu_signature,
 )
 from flagquantum.algorithms.first_quantization_potential import (
+    apply_nuclear_phase_signature,
     prepare_uv_signature,
     prepare_zeta_signature,
+    select_uv_signature,
 )
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_apply_nuclear_phase_cost,
@@ -31,6 +34,7 @@ from flagquantum.algorithms.first_quantization_resource_model import (
     source_select_first_quantization_cost,
     source_select_t_cost,
     source_select_uv_cost,
+    source_select_uv_gate_cost,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -74,6 +78,7 @@ def test_kinetic_source_cost(p: int) -> None:
     )
 
     source = SelectTFirstQuantization(p, 3)
+    assert_first_quantization_signature(select_t_signature(p), source.signature)
     assert_source_model(source_select_t_cost(p), source)
     with pytest.raises(DecomposeNotImplementedError):
         source.decompose_bloq()
@@ -87,14 +92,16 @@ def test_nuclear_phase_source_cost(p: int, nuc: int) -> None:
         ApplyNuclearPhase,
     )
 
-    assert_source_model(
-        source_apply_nuclear_phase_cost(p, nuc), ApplyNuclearPhase(p, nuc)
+    source = ApplyNuclearPhase(p, nuc)
+    assert_first_quantization_signature(
+        apply_nuclear_phase_signature(p, nuc), source.signature
     )
+    assert_source_model(source_apply_nuclear_phase_cost(p, nuc), source)
 
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
-    ("p", "atoms", "nuc"), [(2, 1, 1), (2, 2, 16), (4, 5, 4), (2, 2, 100)]
+    ("p", "atoms", "nuc"), [(2, 1, 1), (2, 2, 16), (4, 5, 4), (2, 2, 100), (6, 10, 8)]
 )
 def test_potential_source_cost(p: int, atoms: int, nuc: int) -> None:
     pytest.importorskip("qualtran")
@@ -104,9 +111,35 @@ def test_potential_source_cost(p: int, atoms: int, nuc: int) -> None:
     )
 
     source = SelectUVFirstQuantization(p, 3, atoms, nuc)
+    assert_first_quantization_signature(
+        select_uv_signature(p, atoms, nuc), source.signature
+    )
     assert_source_model(source_select_uv_cost(p, atoms, nuc), source)
     with pytest.raises(DecomposeNotImplementedError):
         source.decompose_bloq()
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(("atoms", "nuc"), [(1, 1), (2, 16)])
+def test_potential_source_gate_count_without_one_bit_peak(atoms: int, nuc: int) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.pbc.first_quantization.select_uv import (
+        SelectUVFirstQuantization,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = SelectUVFirstQuantization(1, 3, atoms, nuc)
+    assert_first_quantization_signature(
+        select_uv_signature(1, atoms, nuc), source.signature
+    )
+    cost = source_select_uv_gate_cost(1, atoms, nuc)
+    assert {name: count for name, count in asdict(cost).items() if count} == (
+        get_cost_value(source, QECGatesCost()).asdict()
+    )
+    with pytest.raises(RuntimeError, match="bitsize must be > 1"):
+        get_cost_value(source, QubitCount())
+    with pytest.raises(ValueError, match="at least two momentum bits"):
+        source_select_uv_cost(1, atoms, nuc)
 
 
 @pytest.mark.ftqc_reference

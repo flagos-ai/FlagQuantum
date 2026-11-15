@@ -8,7 +8,12 @@
 from dataclasses import replace
 from math import ceil
 
-from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from ..compiler._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+    estimate_component_resources,
+)
 from ..compiler.registers.arithmetic.arithmetic_resource_model import source_add_cost
 from ..compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
@@ -22,9 +27,15 @@ from .first_quantization_kinetic import (
     KINETIC_COORDINATE_COUNT,
     prepare_power_two_signature,
     prepare_t_signature,
+    select_t_signature,
 )
 from .first_quantization_nu_resource_model import source_prepare_nu_cost
-from .first_quantization_potential import prepare_uv_signature, prepare_zeta_signature
+from .first_quantization_potential import (
+    apply_nuclear_phase_signature,
+    prepare_uv_signature,
+    prepare_zeta_signature,
+    select_uv_signature,
+)
 
 
 def source_select_t_cost(num_bits_p: int) -> ComponentCost:
@@ -32,7 +43,7 @@ def source_select_t_cost(num_bits_p: int) -> ComponentCost:
     _require_positive(num_bits_p)
     return ComponentCost(
         "SelectTFirstQuantization",
-        5 + 5 * num_bits_p,
+        int(select_t_signature(num_bits_p).n_qubits()),
         GateCost(toffoli=5 * (num_bits_p - 1) + 2),
     )
 
@@ -45,7 +56,9 @@ def source_apply_nuclear_phase_cost(
     p, nuc = num_bits_p, num_bits_nuc_pos
     toffoli = 3 * (2 * p * nuc - p * (p + 1) - 1) if nuc > p else 3 * nuc * (nuc - 1)
     return ComponentCost(
-        "ApplyNuclearPhase", 2 * nuc + 3 * p, GateCost(toffoli=toffoli)
+        "ApplyNuclearPhase",
+        int(apply_nuclear_phase_signature(p, nuc).n_qubits()),
+        GateCost(toffoli=toffoli),
     )
 
 
@@ -58,11 +71,23 @@ def source_select_uv_cost(
         raise ValueError(
             "Source SELECT UV qubit count requires at least two momentum bits"
         )
-    p = num_bits_p
-    atom_width = (num_atoms - 1).bit_length()
+    return _select_uv_model(num_bits_p, num_atoms, num_bits_nuc_pos)
+
+
+def source_select_uv_gate_cost(
+    num_bits_p: int, num_atoms: int, num_bits_nuc_pos: int
+) -> GateCost:
+    """Return source gate categories even when one-bit conversion has no peak."""
+    _require_positive(num_bits_p, num_atoms, num_bits_nuc_pos)
+    model = _select_uv_model(num_bits_p, num_atoms, num_bits_nuc_pos)
+    return estimate_component_resources(model).gates
+
+
+def _select_uv_model(p: int, num_atoms: int, num_bits_nuc_pos: int) -> ComponentCost:
+    signature = select_uv_signature(p, num_atoms, num_bits_nuc_pos)
     return ComponentCost(
         "SelectUVFirstQuantization",
-        2 + atom_width + num_bits_nuc_pos + 3 * (p + 1) + 6 * p,
+        int(signature.n_qubits()),
         GateCost(toffoli=6 * (p + 1)),
         (
             CostCall(_signed_conversion_cost(p), repetitions=6),
