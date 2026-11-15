@@ -37,6 +37,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_hermitian_sparse_matrix", 7, 2, 0),
         ("register_tensor_product_block_encoding", 8, 2, 0),
         ("register_unitary_block_encoding", 7, 2, 0),
+        ("register_allocate_free", 10, 4, 0),
         ("register_multiplication", 34, 16, 0),
         ("register_subtraction", 16, 4, 0),
         ("register_negation", 7, 2, 0),
