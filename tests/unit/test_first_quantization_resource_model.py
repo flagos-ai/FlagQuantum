@@ -8,6 +8,7 @@ from flagquantum.algorithms.first_quantization_resource_model import (
     source_apply_nuclear_phase_cost,
     source_prepare_first_quantization_cost,
     source_prepare_ij_cost,
+    source_prepare_ij_signature,
     source_prepare_power_two_cost,
     source_prepare_t_cost,
     source_prepare_tuv_cost,
@@ -191,6 +192,14 @@ def test_prepare_ij_cost(eta: int, precision: int) -> None:
 
     for source_module in (prepare, select_and_prepare):
         source = source_module.UniformSuperpostionIJFirstQuantization(eta, precision)
+        signature = source_prepare_ij_signature(eta)
+        assert [
+            (reg.name, reg.bitsize, reg.shape, reg.side.value) for reg in signature
+        ] == [
+            (reg.name, reg.bitsize, reg.shape, reg.side.value)
+            for reg in source.signature
+        ]
+        assert_source_model(source_prepare_ij_cost(eta, precision), source.adjoint())
         assert_source_model(source_prepare_ij_cost(eta, precision), source)
         with pytest.raises(DecomposeNotImplementedError):
             source.decompose_bloq()

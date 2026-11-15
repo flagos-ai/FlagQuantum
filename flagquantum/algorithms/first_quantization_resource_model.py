@@ -13,6 +13,7 @@ from ..compiler.registers.arithmetic.arithmetic_resource_model import source_add
 from ..compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
+from ..core.ir.program.signatures import Signature
 from .first_quantization import source_multiplexed_cswap_3d_cost
 from .first_quantization_nu_resource_model import source_prepare_nu_cost
 
@@ -126,10 +127,18 @@ def source_prepare_power_two_cost(bitsize: int) -> ComponentCost:
     )
 
 
+def source_prepare_ij_signature(eta: int) -> Signature:
+    """Return the two through index words of the source cost declaration."""
+    _require_positive(eta)
+    width = (eta - 1).bit_length()
+    return Signature.build(i=width, j=width)
+
+
 def source_prepare_ij_cost(eta: int, num_bits_rot_aa: int = 8) -> ComponentCost:
     """Count the source distinct-particle preparation declaration."""
-    _require_positive(eta, num_bits_rot_aa)
-    width = (eta - 1).bit_length()
+    _require_positive(num_bits_rot_aa)
+    signature = source_prepare_ij_signature(eta)
+    width = int(signature.n_qubits()) // 2
     return ComponentCost(
         "UniformSuperpostionIJFirstQuantization",
         max(2 * width, 3),
