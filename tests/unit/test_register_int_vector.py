@@ -24,7 +24,9 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("width,value", [(1, 0), (1, 1), (3, 2), (5, 17), (8, 173)])
+@pytest.mark.parametrize(
+    "width,value", [(1, 0), (1, 1), (3, 2), (5, 17), (8, 173), (8, 255)]
+)
 def test_integer_vectors_keep_source_bit_order_and_complex_action(
     width: int, value: int
 ) -> None:
