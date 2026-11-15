@@ -16,7 +16,11 @@ from ..compiler.registers.comparison.ordering import source_greater_cost
 from ..compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
-from .first_quantization_nu import prepare_nu_leaf_signatures, prepare_nu_signature
+from .first_quantization_nu import (
+    prepare_nu_leaf_signatures,
+    prepare_nu_signature,
+    projectile_prepare_mu_signature,
+)
 
 
 def _inequality_cost(p: int, m: int, ports: int, adjoint: bool) -> ComponentCost:
@@ -128,16 +132,11 @@ def source_projectile_prepare_mu_cost(
     num_bits_p: int, num_bits_n: int, *, adjoint: bool = False
 ) -> ComponentCost:
     """Estimate the projectile unary word with its source right-only flag."""
-    if any(type(width) is not int or width < 1 for width in (num_bits_p, num_bits_n)):
-        raise ValueError("Momentum widths must be positive integers")
-    if num_bits_n < num_bits_p:
-        raise ValueError(
-            "Projectile momentum width must be at least the electron width"
-        )
+    signature = projectile_prepare_mu_signature(num_bits_p, num_bits_n)
     toffoli = num_bits_n if adjoint else 2 * num_bits_n - num_bits_p - 1
     return ComponentCost(
         "PrepareMuUnaryEncodedOneHotWithProj",
-        max(num_bits_n + 1, 3),
+        max(int(signature.n_qubits()), 3),
         GateCost(toffoli=toffoli),
     )
 
@@ -164,3 +163,23 @@ def source_projectile_prepare_nu_adjoint_gate_cost(
     mu = source_projectile_prepare_mu_cost(num_bits_p, num_bits_n, adjoint=True)
     # The other three children have empty adjoint gate declarations.
     return mu.gates.plus(_nu_superposition_gates(num_bits_n), 1)
+
+
+def projectile_prepare_nu_adjoint_model(
+    num_bits_p: int, num_bits_n: int, m_param: int, *, decomposed: bool = False
+) -> ComponentCost:
+    """Estimate the native adjoint with the μ flag consumed on the left.
+
+    This uses the declared adjoint gate counts and native live widths.
+    Its peak is an estimate for the corrected binding, since the frozen
+    source's right-only flag prevents its own adjoint width query.
+    """
+    mu = source_projectile_prepare_mu_cost(num_bits_p, num_bits_n, adjoint=True)
+    return _prepare_nu_cost(
+        num_bits_n,
+        m_param,
+        mu,
+        "PrepareNuStateWithProj",
+        adjoint=True,
+        decomposed=decomposed,
+    )

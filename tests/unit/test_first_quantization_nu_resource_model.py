@@ -137,19 +137,28 @@ def test_prepare_nu_cost_and_bystanders(p: int, m: int, adjoint: bool) -> None:
 
 
 @pytest.mark.parametrize("adjoint", [False, True])
-def test_momentum_m_native_append_matches_source_state_and_feedback(adjoint):
+@pytest.mark.parametrize("projectile", [False, True])
+def test_momentum_m_native_append_matches_source_state_and_feedback(
+    adjoint, projectile
+):
     pytest.importorskip("qualtran")
     import cirq
     import numpy as np
     from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_nu import (
         PrepareNuState,
     )
+    from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.prepare_nu import (
+        PrepareNuStateWithProj,
+    )
     from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
         PrepareUniformSuperposition,
     )
 
     count = 3
-    composite = PrepareNuState(2, count).decompose_bloq()
+    parent = (
+        PrepareNuStateWithProj(1, 2, count) if projectile else PrepareNuState(2, count)
+    )
+    composite = parent.decompose_bloq()
     (source,) = (
         node.bloq
         for node, _, _ in composite.iter_bloqsoqs()

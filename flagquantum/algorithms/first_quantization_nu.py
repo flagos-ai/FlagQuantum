@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from the Qualtran v0.7.0 momentum-transfer PREPARE signatures.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/prepare_nu.py
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/projectile/prepare_nu.py
 
 """Register contracts and executable uniform word of momentum-transfer PREPARE."""
 
@@ -61,6 +62,35 @@ def prepare_nu_leaf_signatures(
                 Register("succ", bit),
             )
         ),
+    }
+
+
+def projectile_prepare_mu_signature(num_bits_p: int, num_bits_n: int) -> Signature:
+    """Return the projectile μ word and the forward-produced success flag."""
+    if any(type(width) is not int or width < 1 for width in (num_bits_p, num_bits_n)):
+        raise ValueError("Momentum widths must be positive integers")
+    if num_bits_n < num_bits_p:
+        raise ValueError(
+            "Projectile momentum width must be at least the electron width"
+        )
+    return Signature(
+        (
+            Register("mu", opaque_register_type(num_bits_n)),
+            Register("flag", quantum_bit_type(), side=RegisterSide.RIGHT),
+        )
+    )
+
+
+def projectile_prepare_nu_leaf_signatures(
+    num_bits_p: int, num_bits_n: int, m_param: int, *, adjoint: bool = False
+) -> dict[str, Signature]:
+    """Reuse the shared ν contracts and reverse the projectile μ flag ownership."""
+    mu = projectile_prepare_mu_signature(num_bits_p, num_bits_n)
+    leaves = prepare_nu_leaf_signatures(num_bits_n, m_param, adjoint=adjoint)
+    del leaves["PrepareMuUnaryEncodedOneHot"]
+    return {
+        "PrepareMuUnaryEncodedOneHotWithProj": mu.adjoint() if adjoint else mu,
+        **leaves,
     }
 
 

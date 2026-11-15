@@ -5,7 +5,12 @@ from dataclasses import asdict
 
 import pytest
 
+from flagquantum.algorithms.first_quantization_nu import (
+    prepare_nu_signature,
+    projectile_prepare_nu_leaf_signatures,
+)
 from flagquantum.algorithms.first_quantization_nu_resource_model import (
+    projectile_prepare_nu_adjoint_model,
     source_projectile_prepare_mu_cost,
     source_projectile_prepare_nu_adjoint_gate_cost,
     source_projectile_prepare_nu_cost,
@@ -24,6 +29,7 @@ from flagquantum.algorithms.first_quantization_projectile_resource_model import 
 )
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+from tests.unit.test_first_quantization_nu_resource_model import _assert_signature
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = pytest.mark.unit
@@ -185,6 +191,10 @@ def test_projectile_prepare_nu_forward_and_adjoint_boundary(
             leaf.decompose_bloq()
 
     source = PrepareNuStateWithProj(p, n, m)
+    signature = prepare_nu_signature(n, m)
+    _assert_signature(signature, source.signature)
+    leaves = projectile_prepare_nu_leaf_signatures(p, n, m)
+    adjoint_leaves = projectile_prepare_nu_leaf_signatures(p, n, m, adjoint=True)
     assert_source_model(source_projectile_prepare_nu_cost(p, n, m), source)
     graph = source.decompose_bloq()
     composite = source_projectile_prepare_nu_cost(p, n, m, decomposed=True)
@@ -197,6 +207,8 @@ def test_projectile_prepare_nu_forward_and_adjoint_boundary(
         if isinstance(node.bloq, PrepareUniformSuperposition):
             assert incoming[0].left.reg.name == outgoing[0].right.reg.name == "m"
             name = f"PrepareUniformSuperposition({m})"
+        else:
+            _assert_signature(leaves[name], node.bloq.signature)
         if name == "TestNuInequality":
             assert {
                 (type(edge.left.binst.bloq).__name__, edge.right.reg.name)
@@ -207,6 +219,14 @@ def test_projectile_prepare_nu_forward_and_adjoint_boundary(
                 ("FlagZeroAsFailure", "flag_minus_zero"),
                 ("TestNuLessThanMu", "flag_ineq"),
             }
+            for edge in incoming:
+                if not edge.right.reg.name.startswith("flag_"):
+                    continue
+                producer_name = type(edge.left.binst.bloq).__name__
+                consumed = adjoint_leaves[producer_name].get_left(edge.left.reg.name)
+                produced = adjoint_leaves[name].get_right(edge.right.reg.name)
+                assert consumed.dtype == produced.dtype
+                assert consumed.shape == produced.shape == ()
         stages[name] = sum(edge.shape for edge in live)
         live.update(outgoing)
     assert stages == {
@@ -222,6 +242,23 @@ def test_projectile_prepare_nu_forward_and_adjoint_boundary(
     assert {
         key: value for key, value in asdict(gates).items() if value
     } == get_cost_value(reverse, QECGatesCost()).asdict()
+    corrected = projectile_prepare_nu_adjoint_model(p, n, m)
+    assert estimate_ftqc_resources(corrected).logical.gates == gates
+    expanded = projectile_prepare_nu_adjoint_model(p, n, m, decomposed=True)
+    assert expanded.qubits == signature.n_qubits()
+    assert [
+        (edge.component.name, edge.bystander_qubits) for edge in expanded.calls
+    ] == [
+        (edge.component.name, edge.bystander_qubits)
+        for edge in reversed(composite.calls)
+    ]
+    result = estimate_ftqc_resources(expanded)
+    assert result.emitted is None
+    assert result.logical.peak_logical_qubits == max(
+        int(signature.n_qubits()) + 3,
+        stages[f"PrepareUniformSuperposition({m})"]
+        + get_cost_value(PrepareUniformSuperposition(m), QubitCount()),
+    )
 
 
 def test_projectile_prepare_nu_rejects_unbound_dimensions() -> None:
