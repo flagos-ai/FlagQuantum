@@ -3,7 +3,7 @@
 from collections import Counter
 from itertools import product
 from math import pi
-from typing import Any
+from typing import Any, TypedDict
 
 import pytest
 import torch
@@ -19,6 +19,7 @@ from flagquantum.compiler.registers.primitives.global_phase import (
     global_phase_ir,
 )
 from flagquantum.core.ir import Instruction
+from flagquantum.simulation.unitary import get_unitary
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
@@ -29,6 +30,13 @@ from tests.unit.register_source_graph import (
 from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
+
+
+class _ControlBindings(TypedDict):
+    controls: tuple[int, ...]
+    values: tuple[int, ...]
+    workspace: tuple[int, ...]
+    classical_bits: tuple[int, ...]
 
 
 def reference_controlled_phase(
@@ -95,7 +103,9 @@ def test_controlled_phase_source_flow_and_every_branch(
     controls = tuple(range(n, 0, -1))
     work = tuple(range(n + 1, 2 * n))
     bits = tuple(range(30, 30 + len(work)))
-    ports = dict(controls=controls, values=values, workspace=work, classical_bits=bits)
+    ports = _ControlBindings(
+        controls=controls, values=values, workspace=work, classical_bits=bits
+    )
     source = GlobalPhase(exponent=exponent).controlled(
         CtrlSpec(cvs=values[0] if n == 1 else np.asarray(values))
     )
@@ -136,7 +146,9 @@ def test_controlled_phase_source_flow_and_every_branch(
     expected = initial.clone()
     for row in range(1 << (n + 1)):
         index = row << len(work)
-        initial[index] = complex(row + 1, row % 3 - 2) / (1 << n)
+        initial[index] = torch.tensor(
+            complex(row + 1, row % 3 - 2) / (1 << n), dtype=initial.dtype
+        )
         source_row = sum(
             ((index >> (width - 1 - wire)) & 1) << (n - 1 - i)
             for i, wire in enumerate(controls)
@@ -165,6 +177,39 @@ def test_global_phase_binding_validation() -> None:
         global_phase_ir(0.5, controls=(0, 1), values=(0, 1), workspace=(2,))
     with pytest.raises(ValueError, match="finite"):
         global_phase_ir(float("inf"), anchor=0)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("control", [None, 0, 1])
+def test_original_seeded_phase_matrices(control: int | None) -> None:
+    pytest.importorskip("qualtran")
+    import cirq
+    import numpy as np
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.basic_gates import GlobalPhase
+
+    for alpha in np.random.RandomState(2).random(size=10):
+        exponent = float(2 * alpha)
+        source = GlobalPhase(exponent=exponent)
+        coefficient = np.exp(2j * np.pi * alpha)
+        if control is None:
+            instructions = global_phase_ir(exponent, anchor=0)
+            scalar = complex(source.tensor_contract())
+            assert scalar == pytest.approx(coefficient, rel=0, abs=2e-12)
+            expected = scalar * torch.eye(2, dtype=torch.complex128)
+        else:
+            instructions = global_phase_ir(exponent, controls=(0,), values=(control,))
+            controlled_source = source.controlled(CtrlSpec(cvs=control))
+            expected = torch.as_tensor(controlled_source.tensor_contract())
+            cirq_gate = cirq.GlobalPhaseGate(coefficient).controlled(
+                control_values=[control]
+            )
+            torch.testing.assert_close(
+                expected, torch.as_tensor(cirq.unitary(cirq_gate)), rtol=0, atol=2e-12
+            )
+        circuit = fq.Circuit(1, dtype=torch.complex128)
+        circuit.append(FieldOperation(1, instructions))
+        torch.testing.assert_close(get_unitary(circuit), expected, rtol=0, atol=2e-12)
 
 
 @pytest.mark.ftqc_reference
