@@ -44,6 +44,8 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_cast", 5, 1, 0),
         ("register_split_join", 8, 2, 0),
         ("register_double_factorization", 11, 4, 1),
+        ("register_hubbard_qubitization", 9, 4, 0),
+        ("register_hubbard_select", 16, 4, 1),
         ("register_multiplication", 34, 16, 0),
         ("register_subtraction", 16, 4, 0),
         ("register_negation", 7, 2, 0),
