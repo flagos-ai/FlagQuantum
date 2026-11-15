@@ -150,9 +150,10 @@ It requires explicit matched full-register JW/parity/BK preparation and supports
 complex CPU density assembly with circuit-parameter gradients. It adds no
 OpenFermion/Cirq dependency, new RDM class or execution implementation.
 
-Step D is delivered by the separate Integration experimental registration.
-Step E remains proposed: this registration does not implement two-body density,
-full molecular energy reconstruction or measured-data constraint projection.
+Step D landed in #1181 as a separate experimental registration. Step E
+provides [native two-body measurements and H2 energy reconstruction](FERMION_TWO_BODY_DENSITY.md)
+for small full-register CPU states. Measured-data constraint projection and
+separate capability registration are outside the implementation scope.
 The upstream inventory and its hashes still refer to the original audit pin;
 neither root import count nor this delivery update implies full compatibility.
 

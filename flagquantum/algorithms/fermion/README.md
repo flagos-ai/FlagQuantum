@@ -30,6 +30,12 @@ The example reports particle number 1, energy 0.4520082847 and angle gradient
 -0.5016897975. See the [scope](../../../docs/development/FERMION_ONE_BODY_DENSITY.md)
 for ordering, O(n**2) measurement/output costs and unsupported boundaries.
 
+The same module also provides experimental two-body measurements and assembly.
+Run `python -m examples.algorithms.fermion_two_body_density --encoding parity`
+to reconstruct the energy and angle gradient of a four-mode H2 determinant
+pair. See the [two-body scope](../../../docs/development/FERMION_TWO_BODY_DENSITY.md)
+for the pair order, molecular coefficient convention and O(n^4) costs.
+
 Modules are split by numerical responsibility: decomposition.py returns adjacent
 orbital matrices without importing Circuit; lowering.py lifts them to JW gates;
 preparation.py creates Slater determinants and canonical Gaussian vacua.
