@@ -8,6 +8,8 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
+from examples.algorithms.hadamard_tutorial import controlled_hadamard_specialty
+from flagquantum import Circuit
 from flagquantum.compiler._component_trace.compound_control_resource import (
     compound_control_key,
 )
@@ -17,6 +19,7 @@ from flagquantum.compiler.registers.control.multi_control import multi_control_h
 from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from flagquantum.simulation.unitary import get_unitary
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
@@ -116,6 +119,48 @@ def test_hadamard_control_matches_source(values: tuple[int, ...]) -> None:
 def test_hadamard_rejects_target_aliases() -> None:
     with pytest.raises(ValueError, match="distinct"):
         multi_control_h_ir((0,), (1,), 0, (), ())
+
+
+@pytest.mark.ftqc_reference
+def test_original_specialty_leaves_and_active_control() -> None:
+    pytest.importorskip("qualtran")
+    import cirq
+    from qualtran.bloqs.basic_gates import Hadamard
+
+    ctrl, target = cirq.LineQubit.range(2)
+    source = cirq.decompose_multi_controlled_rotation(
+        cirq.unitary(cirq.H), controls=[ctrl], target=target
+    )
+    specialty = controlled_hadamard_specialty()
+    assert tuple(gate.name for gate in specialty.instructions) == (
+        "phase",
+        "any",
+        "cx",
+        "any",
+        "cx",
+        "any",
+    )
+    for instruction, operation in zip(specialty.instructions, source, strict=True):
+        assert instruction.wires == tuple(
+            (ctrl, target).index(qubit) for qubit in operation.qubits
+        )
+        leaf = Circuit(2, dtype=torch.complex128).append(
+            FieldOperation(2, (instruction,))
+        )
+        expected = cirq.Circuit(operation).unitary(qubit_order=(ctrl, target))
+        torch.testing.assert_close(
+            get_unitary(leaf), torch.as_tensor(expected), rtol=0, atol=2e-12
+        )
+
+    circuit = Circuit(2, dtype=torch.complex128).append(specialty)
+    actual = get_unitary(circuit)
+    h = Hadamard()
+    torch.testing.assert_close(
+        actual, torch.as_tensor(h.controlled().tensor_contract()), rtol=0, atol=2e-12
+    )
+    torch.testing.assert_close(
+        actual[2:, 2:], torch.as_tensor(h.tensor_contract()), rtol=0, atol=2e-12
+    )
 
 
 def test_measured_hadamard_appends_to_dynamic_circuit() -> None:
