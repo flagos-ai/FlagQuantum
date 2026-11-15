@@ -8,6 +8,10 @@
 from dataclasses import replace
 
 from flagquantum.algorithms.first_quantization_kinetic import prepare_t_signature
+from flagquantum.algorithms.first_quantization_potential import (
+    prepare_uv_signature,
+    prepare_zeta_signature,
+)
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_prepare_first_quantization_cost,
     source_prepare_t_cost,
@@ -118,15 +122,7 @@ def notebook_cases() -> dict[str, tuple[Signature, ComponentCost]]:
             source_prepare_t_cost(5),
         ),
         "prepare_uv": (
-            Signature(
-                (
-                    _word("mu", 5),
-                    _word("nu", 6, (3,)),
-                    _word("m", 8),
-                    _word("l", 4),
-                    _bit("flag_nu"),
-                )
-            ),
+            prepare_uv_signature(5, 10, 256),
             source_prepare_uv_cost(5, 10, 256, 10),
         ),
         "select_t": (
@@ -157,7 +153,7 @@ def notebook_cases() -> dict[str, tuple[Signature, ComponentCost]]:
             _toffoli_graph(source_select_uv_cost(5, 10, 16)),
         ),
         "zeta": (
-            Signature((_word("l", 4),)),
+            prepare_zeta_signature(10),
             _toffoli_graph(source_prepare_zeta_cost(10, 10)),
         ),
     }

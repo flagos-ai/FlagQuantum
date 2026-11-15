@@ -9,7 +9,14 @@ from flagquantum.algorithms.first_quantization_kinetic import (
     prepare_power_two_signature,
     prepare_t_signature,
 )
-from flagquantum.algorithms.first_quantization_potential import prepare_zeta_signature
+from flagquantum.algorithms.first_quantization_nu import (
+    prepare_nu_m_on,
+    prepare_nu_signature,
+)
+from flagquantum.algorithms.first_quantization_potential import (
+    prepare_uv_signature,
+    prepare_zeta_signature,
+)
 from flagquantum.algorithms.first_quantization_resource_model import (
     source_apply_nuclear_phase_cost,
     source_prepare_first_quantization_cost,
@@ -324,7 +331,7 @@ def test_prepare_uv_source_graph(
     p: int, eta: int, atoms: int, m: int, charge: int, precision: int, adjoint: bool
 ) -> None:
     pytest.importorskip("qualtran")
-    from qualtran import LeftDangle, RightDangle
+    from qualtran import LeftDangle, QAny, QBit, RightDangle
     from qualtran.bloqs.chemistry.pbc.first_quantization.prepare_uv import (
         PrepareUVFirstQuantization,
     )
@@ -332,6 +339,16 @@ def test_prepare_uv_source_graph(
     source = PrepareUVFirstQuantization(p, eta, atoms, m, charge, precision)
     if adjoint:
         source = source.adjoint()
+    signature = prepare_uv_signature(p, atoms, m)
+    assert [
+        (
+            reg.name,
+            reg.shape,
+            reg.side.value,
+            QBit() if reg.dtype.encoding == "bit" else QAny(reg.bitsize),
+        )
+        for reg in signature
+    ] == [(reg.name, reg.shape, reg.side.value, reg.dtype) for reg in source.signature]
     model = source_prepare_uv_cost(p, atoms, m, charge, adjoint=adjoint)
     assert_source_model(model, source)
     assert model.qubits == source.signature.n_qubits()
@@ -343,18 +360,58 @@ def test_prepare_uv_source_graph(
         live.difference_update(incoming)
         assert all(edge.left.binst == LeftDangle for edge in incoming)
         assert all(edge.right.binst == RightDangle for edge in outgoing)
-        register_names = {edge.left.reg.name for edge in incoming}
-        assert register_names == {edge.right.reg.name for edge in outgoing}
-        assert register_names == (
-            {"l"}
+        child = (
+            prepare_zeta_signature(atoms)
             if str(node.bloq) == "PrepareZetaState"
-            else {"mu", "nu", "m", "flag_nu"}
+            else prepare_nu_signature(p, m)
         )
+        expected = {(reg.name, idx) for reg in child for idx in reg.all_idxs()}
+        for connections in (incoming, outgoing):
+            assert {
+                (edge.left.reg.name, edge.left.idx) for edge in connections
+            } == expected
+            assert all(
+                (edge.left.reg.name, edge.left.idx)
+                == (edge.right.reg.name, edge.right.idx)
+                for edge in connections
+            )
         stages.append((str(node.bloq), sum(edge.shape for edge in live)))
         live.update(outgoing)
     assert stages == [
         (call.component.name, call.bystander_qubits) for call in model.calls
     ]
+
+
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_prepare_uv_m_child_uses_only_the_bound_word_and_workspace(
+    adjoint: bool,
+) -> None:
+    from flagquantum.compiler.registers.layout.partition import partition_register
+    from flagquantum.compiler.registers.preparation.uniform_preparation import (
+        uniform_preparation_requirements,
+    )
+    from flagquantum.dynamic import DynamicCircuit
+
+    signature = prepare_uv_signature(2, 2, 3)
+    layout = tuple((reg.name, int(reg.total_bits())) for reg in signature)
+    width = int(signature.n_qubits())
+    ports = partition_register(tuple(range(width)), layout)
+    _, work, slots = uniform_preparation_requirements(3)
+    workspace = tuple(range(width, width + work))
+    circuit = DynamicCircuit(width + work).append(
+        prepare_nu_m_on(
+            3,
+            ports["m"],
+            workspace=workspace,
+            classical_bits=tuple(range(slots)),
+            adjoint=adjoint,
+        )
+    )
+    stream = circuit.to_ir().instructions
+    assert {wire for gate in stream for wire in gate.wires} == set(
+        (*ports["m"], *workspace)
+    )
+    assert sum(gate.name == "measure" for gate in stream) == 5
 
 
 def test_prepare_uv_roundtrip_resources() -> None:

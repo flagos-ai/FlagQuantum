@@ -21,7 +21,7 @@ from .first_quantization_kinetic import (
     prepare_t_signature,
 )
 from .first_quantization_nu_resource_model import source_prepare_nu_cost
-from .first_quantization_potential import prepare_zeta_signature
+from .first_quantization_potential import prepare_uv_signature, prepare_zeta_signature
 
 
 def source_select_t_cost(num_bits_p: int) -> ComponentCost:
@@ -225,15 +225,16 @@ def source_prepare_uv_cost(
     """
     nu = source_prepare_nu_cost(num_bits_p, m_param, adjoint=adjoint)
     zeta = source_prepare_zeta_cost(num_atoms, lambda_zeta, adjoint=adjoint)
-    nu_ports = 4 * num_bits_p + (m_param - 1).bit_length() + 4
-    index_width = (num_atoms - 1).bit_length()
+    signature = prepare_uv_signature(num_bits_p, num_atoms, m_param)
+    ports = int(signature.n_qubits())
+    index_width = int(signature.get_left("l").bitsize)
     calls = (
         CostCall(nu, bystander_qubits=index_width),
-        CostCall(zeta, bystander_qubits=nu_ports),
+        CostCall(zeta, bystander_qubits=ports - index_width),
     )
     return ComponentCost(
         "PrepareUVFirstQuantization†" if adjoint else "PrepareUVFirstQuantization",
-        nu_ports + index_width,
+        ports,
         calls=calls[::-1] if adjoint else calls,
     )
 
