@@ -2,11 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 CAdd.build_composite_bloq.
 # Source: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/arithmetic/controlled_addition.py
+# Controlled negation follows the generic control of Negate in arithmetic/negate.py.
 # Changes: native IR and explicit quantum/classical workspace.
 
 """Controlled register addition and exact adjoints through shared source emitters."""
 
 from ....core.ir import Instruction
+from ..bits.bitwise import controlled_xor_constant_ir
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
 from .addition import _constant_addition_ir, add_adjoint_ir, add_ir
 
@@ -153,6 +155,31 @@ def controlled_add_constant_ir(
         control_value=control_value,
         adjoint=False,
     )
+
+
+def controlled_negate_ir(
+    control: int,
+    target: tuple[int, ...],
+    constant: tuple[int, ...],
+    carries: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    *,
+    control_value: int = 1,
+) -> tuple[Instruction, ...]:
+    """Apply the source controlled complement and constant increment.
+
+    Target uses big-endian words. The caller supplies clean constant/carry
+    wires and feedback slots under the existing controlled AddK contract.
+    Negative control conjugates the entire compound operation with X.
+    """
+    if type(control_value) is not int or control_value not in (0, 1):
+        raise ValueError("Controlled negation control value must be zero or one")
+    increment = controlled_add_constant_ir(
+        control, target, 1, constant, carries, classical_bits
+    )
+    complement = controlled_xor_constant_ir(control, target, (1 << len(target)) - 1)
+    flip = (Instruction("x", (control,)),) if control_value == 0 else ()
+    return (*flip, *complement, *increment, *flip)
 
 
 def controlled_add_constant_adjoint_ir(
