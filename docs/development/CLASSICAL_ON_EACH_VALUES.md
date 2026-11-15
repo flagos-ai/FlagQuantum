@@ -42,7 +42,8 @@ python -m examples.algorithms.classical_on_each_values
 ```
 
 It composes X then Z on each of three bits, or their exact per-bit reverse, using
-`circuit.append(op)` and the existing `on_each_ir` emitter. Noncontiguous wires
+`circuit.append(op)` and the owned Split/child/Join body described in
+[OnEach source family](ON_EACH_FILE_AUDIT.md). Noncontiguous wires
 preserve a middle spectator. Full complex amplitudes, the complete original
 tensor and inverse restoration agree. There are six emitted Clifford instructions,
 zero T, zero measurements and zero work wires; four declared wires include the

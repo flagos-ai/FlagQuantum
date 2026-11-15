@@ -1,7 +1,8 @@
 """Check source OnEach wiring, full complex action and modeled multiplicity."""
 
-from dataclasses import asdict
-from typing import Any, Literal
+from collections import Counter
+from dataclasses import asdict, replace
+from typing import Any, Literal, SupportsIndex
 
 import pytest
 import torch
@@ -18,7 +19,18 @@ from flagquantum.compiler._component_trace.selected_call_count import (
     count_selected_calls,
 )
 from flagquantum.compiler.registers.bits.bitwise import bitwise_not_ir, on_each_ir
-from flagquantum.core.ir import Instruction
+from flagquantum.compiler.registers.bits.on_each import on_each_word_program
+from flagquantum.compiler.registers.component_gate_function import bit_gate_function
+from flagquantum.compiler.registers.component_graph import iter_component_calls
+from flagquantum.compiler.registers.register_binding import bind_register_program
+from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir.program import FunctionRecord, verify_program_record
+from flagquantum.core.ir.program.register_types import unsigned_register_type
+from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.simulation.classical_on_each import on_each_classical_value
+from flagquantum.simulation.classical_pauli_values import x_classical_value
+from flagquantum.simulation.integer_encoding import integer_from_bits, integer_to_bits
+from flagquantum.simulation.unitary import get_unitary
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
@@ -26,6 +38,111 @@ from tests.unit.register_source_graph import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+def bit_child(opcode: str) -> FunctionRecord:
+    return bit_gate_function(
+        opcode, tuple(Signature.build(q=1)), CircuitIR(1, (Instruction(opcode, (0,)),))
+    )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("opcode,width", [("x", 10), ("h", 5), ("h", 10)])
+def test_original_word_program_and_resource_counts(
+    opcode: Literal["x", "h"], width: int
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+    from qualtran.resource_counting.generalizers import ignore_split_join
+    from qualtran.testing import assert_valid_bloq_decomposition
+
+    leaf = XGate() if opcode == "x" else Hadamard()
+    source = OnEach(width, leaf)
+    assert_valid_bloq_decomposition(source)
+    body = source.decompose_bloq()
+    source_calls = [item.bloq for item, _, _ in body.iter_bloqsoqs()]
+    assert [type(call).__name__ for call in source_calls] == [
+        "Split",
+        *([type(leaf).__name__] * width),
+        "Join",
+    ]
+    record = on_each_word_program(width, bit_child(opcode))
+    assert verify_program_record(record) == ()
+    main = next(function for function in record.functions if function.name == "main")
+    assert main.registers is not None
+    assert Signature(main.registers).n_qubits() == source.signature.n_qubits()
+    calls = [
+        main.blocks[0].operations[i].callee for i, _, _ in iter_component_calls(record)
+    ]
+    assert len(calls) == width + 2 and calls[1:-1] == [opcode] * width
+    wires = tuple(reversed(range(width)))
+    bound = bind_register_program(record, (wires,))
+    assert bound.outputs == (wires,) and not bound.events
+    instructions = bound.circuit.instructions
+    assert instructions == tuple(Instruction(opcode, (wire,)) for wire in wires)
+
+    key = CliffordCall(opcode, 1)
+    _, leaves = source.call_graph()
+    declared = count_selected_calls(OnEachCall(key, width), (key,))
+    assert (
+        declared[key]
+        == leaves[leaf]
+        == Counter(gate.name for gate in instructions)[opcode]
+    )
+    assert source.bloq_counts(generalizer=ignore_split_join) == body.bloq_counts(
+        generalizer=ignore_split_join
+    )
+    if opcode == "h" and width == 5:
+        circuit = fq.Circuit(width, dtype=torch.complex128)
+        circuit.append(FieldOperation(width, instructions))
+        torch.testing.assert_close(
+            get_unitary(circuit),
+            torch.as_tensor(source.tensor_contract()),
+            rtol=0,
+            atol=2e-12,
+        )
+
+
+@pytest.mark.ftqc_reference
+def test_original_ten_bit_classical_action_and_refusal() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.basic_gates.on_each import OnEach
+
+    def apply_x(bit: object) -> tuple[object, complex]:
+        assert isinstance(bit, SupportsIndex)
+        return x_classical_value(bit.__index__()), 1.0
+
+    def unsupported_h(bit: object) -> tuple[object, complex]:
+        assert bit == 0
+        raise NotImplementedError("H is not classically simulable.")
+
+    args = (
+        0,
+        10,
+        lambda q: integer_to_bits(q, 10),
+        lambda bits: integer_from_bits(bits, 10),
+    )
+    actual, phase = on_each_classical_value(*args, apply_x, lambda _: None)
+    assert (actual,) == OnEach(10, XGate()).call_classically(q=0)
+    assert actual == 1023 and phase == 1
+    with pytest.raises(NotImplementedError, match=r"H is not classically simulable\."):
+        OnEach(10, Hadamard()).call_classically(q=0)
+    with pytest.raises(NotImplementedError, match=r"H is not classically simulable\."):
+        on_each_classical_value(*args, unsupported_h, lambda _: None)
+
+
+def test_word_program_admission_and_zero_width() -> None:
+    child = bit_child("x")
+    bound = bind_register_program(on_each_word_program(0, child), ((),), borrowed=(0,))
+    assert bound.outputs == ((),) and bound.circuit.instructions == ()
+    with pytest.raises(ValueError, match="scalar QBit THRU port named q"):
+        on_each_word_program(2, replace(child, registers=tuple(Signature.build(r=1))))
+    with pytest.raises(ValueError, match="dtype must match"):
+        on_each_word_program(2, child, target_dtype=unsigned_register_type(3))
+    with pytest.raises(ValueError, match="nonnegative integer width"):
+        on_each_word_program(-1, child)
 
 
 @pytest.mark.ftqc_reference
