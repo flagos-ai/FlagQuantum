@@ -9,11 +9,46 @@ import flagquantum as fq
 from flagquantum.simulation.tensor_network.entrypoints import (
     build_tensor_network,
     discard_basis_measurement_result,
+    tensor_network_basis_effect,
     tensor_network_basis_measurement,
     tensor_network_discard_qubit,
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+def test_plus_state_projection_and_discard_match_source_scalars() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import BloqBuilder
+    from qualtran.bloqs.basic_gates import Discard, MeasureZ, PlusState, ZeroEffect
+
+    projection = BloqBuilder()
+    projection.add(ZeroEffect(), q=projection.add(PlusState()))
+    source_projection = projection.finalize().tensor_contract(superoperator=True)
+
+    discard = BloqBuilder()
+    result = discard.add(MeasureZ(), q=discard.add(PlusState()))
+    discard.add(Discard(), c=result)
+    source_discard = discard.finalize().tensor_contract(superoperator=True)
+
+    circuit = fq.Circuit(1, dtype=torch.complex128).h(0)
+    plan = build_tensor_network(circuit, dtype=torch.complex128)
+    projected = tensor_network_basis_effect(plan, {0: ("z", 0)})
+    outcomes = tensor_network_basis_measurement(plan, 0, basis="z")
+    traced = discard_basis_measurement_result(outcomes)
+    torch.testing.assert_close(
+        projected.abs().square().squeeze(),
+        torch.as_tensor(source_projection).real.to(torch.float64).reshape(()),
+        rtol=0,
+        atol=2e-12,
+    )
+    torch.testing.assert_close(
+        traced.squeeze(),
+        torch.as_tensor(source_discard, dtype=torch.complex128).reshape(()),
+        rtol=0,
+        atol=2e-12,
+    )
 
 
 @pytest.mark.ftqc_reference
