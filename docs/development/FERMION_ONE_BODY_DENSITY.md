@@ -70,8 +70,12 @@ The example reports particle number 1, energy 0.4520082847, angle gradient
 -0.5016897975 and a direct-energy residual below 1e-12 for all three encodings.
 Its preparation uses X/RY/CX/S gates without dense state loading. The test-only
 occupation oracle and complex unitary completion are bounded to four modes;
-they are not part of the normal execution path. Capability registration remains
-a separate Integration change after scientific acceptance.
+they are not part of the normal execution path. The separate Integration
+registration records this executed scope as experimental in
+[`capability-maturity.toml`](../../capability-maturity.toml). The static
+observable producer and differentiable measured-tensor assembler are distinct;
+the entry's gradient field describes the latter in the existing execution
+composition, not trainable observable coefficients.
 
 ## Local verification
 
@@ -92,3 +96,29 @@ Strict module typing, Ruff, Black, architecture boundaries, protected API
 baseline, generated-document consistency, repository language and local Markdown
 links also pass. This records local scientific evidence; Linux CI and the full
 default tier are recorded independently in the PR rather than inferred here.
+
+## Merged implementation acceptance
+
+Implementation [PR #1179](https://github.com/flagos-ai/FlagQuantum/pull/1179)
+merged as `8f71c80fd0732feeb74d25a71b9ad9b21ab3ad9f` on November 13, 2026
+at 14:08:53 UTC. Its final head
+`184a072641faffd10eeeca52a9e974492fed6906` passed 239 CI checks, with three
+conditional skips. The repair adds the actual density observable producer to
+the executable-docstring entry list; both previously failing jobs then passed.
+No assertion or production behavior was weakened.
+
+The actual merged source archive passed 118 density, complete docstring,
+encoding, fermion-algebra, dependency-isolation and public-API candidate tests.
+The protected API baseline also passed. Exact-commit
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43439979724)
+passed. Git fetch timeouts were followed by an exact-revision GitHub API archive
+for that local acceptance, rather than treating the PR head as actual main.
+These are bounded CPU scientific and contract results, not performance or
+hardware qualification.
+
+The earlier local full default tier reached approximately 56% at its 600-second
+budget and was not a pass. Its three QFT phase-fusion count failures reproduced
+on a separate clean baseline `b58fc8a01d9395972042abd1aaa507c9769b73da`.
+Those local results remain distinct from the later successful Linux PR CI.
+Optional local coverage instrumentation exited before test output, so no local
+coverage percentage is claimed.
