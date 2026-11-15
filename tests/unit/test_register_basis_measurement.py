@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum.compiler._component_trace.call_graph import symbolic_call_graph
 from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
 from flagquantum.compiler._component_trace.resource_generalization import (
     MeasurementCall,
@@ -39,8 +40,10 @@ def test_consuming_measurement_resources_and_all_raw_branches(
         ZeroEffect,
     )
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting.generalizers import ignore_split_join
 
     wire, slot = 1, 3
+    prefix: tuple[Instruction, ...]
     if basis == "x":
         source, effects, gates = (
             MeasureX(),
@@ -59,7 +62,15 @@ def test_consuming_measurement_resources_and_all_raw_branches(
     assert (q.side, q.dtype, c.side, c.dtype) == (Side.LEFT, QBit(), Side.RIGHT, CBit())
     assert get_cost_value(source, QubitCount()) == 1
     assert get_cost_value(source, QECGatesCost()).asdict() == {"measurement": 1}
-    cost = query_qec_gate_cost(MeasurementCall(basis))
+    source_graph, source_leaves = source.call_graph(
+        max_depth=1, generalizer=ignore_split_join
+    )
+    key = MeasurementCall(basis)
+    graph = symbolic_call_graph(key, {}, max_depth=1)
+    assert list(source_graph.nodes) == [source]
+    assert not source_graph.edges and not graph.direct_calls
+    assert graph.leaf_counts == {key: source_leaves[source]} == {key: 1}
+    cost = query_qec_gate_cost(key)
     assert cost.measurement == 1
     assert cost.t == cost.clifford == cost.rotation == 0
     assert gates == (
