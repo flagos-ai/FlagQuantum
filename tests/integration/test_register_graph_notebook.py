@@ -40,6 +40,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_hadamard", 9, 2, 1),
         ("register_identity", 8, 2, 0),
         ("register_measurement", 10, 4, 0),
+        ("register_rotation", 26, 10, 2),
     ],
 )
 def test_register_graph_notebook_kernel_without_reference_imports(
