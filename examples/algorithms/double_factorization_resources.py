@@ -16,25 +16,119 @@ from flagquantum.algorithms.primitives.double_factorization_encoding_model impor
 )
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
+from flagquantum.core.ir.program.register_types import (
+    opaque_register_type,
+    quantum_bit_type,
+)
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.drawer.register_score import (
+    RegisterScore,
+    RegisterStep,
+    layout_register_score,
+)
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+_AUXILIARIES = 50
+_SPIN_ORBITALS = 10
+_EIGENVALUES = _AUXILIARIES * (_SPIN_ORBITALS // 2)
 
 
 def notebook_models() -> tuple[ComponentCost, ComponentCost]:
     """Return the one-body and full block with the original notebook parameters."""
-    auxiliaries, spin_orbitals = 50, 10
-    eigenvalues = auxiliaries * (spin_orbitals // 2)
     one_body = source_double_factorization_one_body_cost(
-        spin_orbitals, eigenvalues, alias_bits=12, basis_rotation_bits=7
+        _SPIN_ORBITALS, _EIGENVALUES, alias_bits=12, basis_rotation_bits=7
     )
     block = source_double_factorization_block_encoding_cost(
-        auxiliaries,
-        spin_orbitals,
-        eigenvalues,
+        _AUXILIARIES,
+        _SPIN_ORBITALS,
+        _EIGENVALUES,
         alias_bits=12,
         basis_rotation_bits=7,
         inner_rotation_bits=7,
     )
     return one_body, block
+
+
+def notebook_signatures() -> tuple[Signature, Signature]:
+    """Declare the input and output words of both source notebook examples."""
+    spatial = _SPIN_ORBITALS // 2
+    rank = opaque_register_type((spatial - 1).bit_length())
+    offset = opaque_register_type((_EIGENVALUES + spatial - 1).bit_length())
+    bit = quantum_bit_type()
+    rotations = Register("rotations", opaque_register_type(spatial * 7))
+    system = Register("sys", opaque_register_type(spatial), shape=(2,))
+    common = (Register("xi", rank), Register("offset", offset))
+    one_body = Signature(
+        (
+            Register("succ_l", bit),
+            Register("l_ne_zero", bit),
+            Register("succ_p", bit),
+            Register("p", rank),
+            Register("rot_aa", bit),
+            Register("spin", bit),
+            *common,
+            Register("rot", opaque_register_type(8)),
+            rotations,
+            system,
+        )
+    )
+    block = Signature(
+        (
+            Register("ctrl", bit, shape=(4,)),
+            Register("l", opaque_register_type(_AUXILIARIES.bit_length())),
+            Register("p", rank),
+            Register("spin", bit),
+            Register("rot_aa", bit),
+            *common,
+            Register("rot", opaque_register_type(7)),
+            rotations,
+            system,
+        )
+    )
+    return one_body, block
+
+
+def notebook_block_score() -> RegisterScore:
+    """Layout the source's seven calls and their live register operands."""
+    _, signature = notebook_signatures()
+    _, model = notebook_models()
+    widths = {
+        reg.name + "".join(f"[{i}]" for i in indices): int(reg.bitsize)
+        for reg in signature
+        for indices in reg.all_idxs()
+    }
+    outer = ("l", "ctrl[0]")
+    data = ("l", "ctrl[1]", "xi", "rot", "offset")
+    body = (
+        "ctrl[0]",
+        "ctrl[1]",
+        "ctrl[3]",
+        "p",
+        "rot_aa",
+        "spin",
+        "xi",
+        "offset",
+        "rot",
+        "rotations",
+        "sys[0]",
+        "sys[1]",
+    )
+    reflect = ("ctrl[0]", "p", "spin")
+    return layout_register_score(
+        widths,
+        tuple(widths),
+        tuple(
+            RegisterStep(call.component.name, ports, ports)
+            for call, ports in zip(
+                model.calls,
+                (outer, data, body, reflect, body, data, outer),
+                strict=True,
+            )
+        ),
+        input_registers=tuple(signature),
+        output_registers=tuple(signature),
+    )
 
 
 def main() -> None:

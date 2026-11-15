@@ -6,7 +6,11 @@ from math import sqrt
 
 import pytest
 
-from examples.algorithms.double_factorization_resources import notebook_models
+from examples.algorithms.double_factorization_resources import (
+    notebook_block_score,
+    notebook_models,
+    notebook_signatures,
+)
 from flagquantum.algorithms.primitives.chemistry_number_phase import (
     ChemistryNumberPhase,
 )
@@ -99,6 +103,24 @@ def test_full_source_graph_retains_actual_reflection_ports(spin):
         _ = source.epsilon
 
 
+def test_original_openfermion_comparison_has_the_same_native_df_graph():
+    from qualtran.bloqs.chemistry.df.double_factorization import (
+        DoubleFactorizationBlockEncoding,
+    )
+
+    source = DoubleFactorizationBlockEncoding(
+        num_spin_orb=108,
+        num_aux=360,
+        num_eig=13031,
+        num_bits_state_prep=10,
+        num_bits_rot_aa_outer=7,
+        num_bits_rot_aa_inner=7,
+        num_bits_rot=16,
+    )
+    model = source_double_factorization_block_encoding_cost(360, 108, 13031, 10, 16, 7)
+    _assert_ordered_graph(model, source)
+
+
 def test_df_source_estimate_from_operation_without_emitting_ir(monkeypatch):
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.df.double_factorization import (
@@ -164,7 +186,12 @@ def test_df_notebook_models_match_both_locked_depth_one_graphs():
             **params, num_bits_rot_aa_outer=1, num_bits_rot_aa_inner=7
         ),
     )
-    for model, source in zip(notebook_models(), originals, strict=True):
+    for model, signature, source in zip(
+        notebook_models(), notebook_signatures(), originals, strict=True
+    ):
+        assert tuple(
+            (r.name, r.shape, r.bitsize, r.side.value) for r in signature
+        ) == tuple((r.name, r.shape, r.bitsize, r.side.value) for r in source.signature)
         ordered = _assert_ordered_graph(model, source)
         keys = {
             edge.component: instance.bloq
@@ -184,6 +211,37 @@ def test_df_notebook_models_match_both_locked_depth_one_graphs():
         assert {keys[child]: count for child, count in graph.leaf_counts.items()} == (
             expected_counts
         )
+
+    import numpy as np
+    from qualtran import LeftDangle, Soquet
+
+    composite = originals[1].decompose_bloq()
+    identities = {
+        Soquet(LeftDangle, register, index): (
+            register.name + "".join(f"[{i}]" for i in index)
+        )
+        for register in composite.signature.lefts()
+        for index in register.all_idxs()
+    }
+    columns = notebook_block_score().columns
+    for column, (instance, inputs, outputs) in zip(
+        columns, composite.iter_bloqsoqs(), strict=True
+    ):
+        touched = {
+            identities[wire]
+            for port in inputs.values()
+            for wire in np.asarray(port, dtype=object).flat
+        }
+        assert column.step.name == type(instance.bloq).__name__
+        assert set(column.step.inputs) == set(column.step.outputs) == touched
+        for register, output in zip(
+            instance.bloq.signature.rights(), outputs, strict=True
+        ):
+            old = np.asarray(inputs[register.name], dtype=object).flat
+            new = np.asarray(output, dtype=object).flat
+            identities.update(
+                (dst, identities[src]) for src, dst in zip(old, new, strict=True)
+            )
 
 
 @pytest.mark.parametrize(
