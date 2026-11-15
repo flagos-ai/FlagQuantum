@@ -164,6 +164,8 @@ class SelectHubbard:
         ports: Mapping[str, tuple[int, ...]],
         work: tuple[int, ...],
         slots: tuple[int, ...],
+        *,
+        adjoint: bool = False,
     ) -> tuple[Instruction, ...]:
         d = self.dimension
         px, py, qx, qy = (ports[name] for name in ("p_x", "p_y", "q_x", "q_y"))
@@ -175,45 +177,57 @@ class SelectHubbard:
         swap_x = controlled_swap_ir(v, px, qx)
         swap_y = controlled_swap_ir(v, py, qy)
         swap_spin = controlled_swap_ir(v, alpha, beta)
-        gates = [
-            *bounded_majorana_ir(
-                (*px, *py, *alpha), target, control, "Y", work, slots, axis_extents=axes
-            ),
-            *swap_x,
-            *swap_y,
-            *swap_spin,
-            *bounded_majorana_ir(
-                (*qx, *qy, *beta), target, control, "X", work, slots, axis_extents=axes
-            ),
-            *swap_spin,
-            *swap_y,
-            *swap_x,
-        ]
+        majorana_y = bounded_majorana_ir(
+            (*px, *py, *alpha), target, control, "Y", work, slots, axis_extents=axes
+        )
+        majorana_x = bounded_majorana_ir(
+            (*qx, *qy, *beta), target, control, "X", work, slots, axis_extents=axes
+        )
+        swap_out = (*swap_x, *swap_y, *swap_spin)
+        swap_back = (*swap_spin, *swap_y, *swap_x)
         start = int(control is not None)
         predicate = v
         if control is None:
-            gates.extend(scalar_phase_ir(u, -pi / 2))
-            gates.append(Instruction("z", (u,)))
+            phase = (
+                *scalar_phase_ir(u, pi / 2 if adjoint else -pi / 2),
+                Instruction("z", (u,)),
+            )
+            spin_up: list[Instruction] = []
         else:
-            gates.extend(
-                (Instruction("sdg", (control,)), Instruction("cz", (control, u)))
+            phase = (
+                Instruction("s" if adjoint else "sdg", (control,)),
+                Instruction("cz", (control, u)),
             )
             predicate = work[0]
-            gates.extend(and_compute_ir(v, control, predicate))
+            spin_up = list(and_compute_ir(v, control, predicate))
 
-        def phase(index: int, enabled: int) -> None:
-            gates.append(Instruction("cz", (enabled, target[d**2 + index])))
+        def apply_spin_z(index: int, enabled: int) -> None:
+            spin_up.append(Instruction("cz", (enabled, target[d**2 + index])))
 
         # The source spin-up leaf deliberately traverses y before x.
         append_nested_bounded_unary_tree(
-            gates, predicate, (qy, qx), (d, d), work[start:], slots[start:], phase
+            spin_up,
+            predicate,
+            (qy, qx),
+            (d, d),
+            work[start:],
+            slots[start:],
+            apply_spin_z,
         )
         if control is not None:
-            gates.extend(and_uncompute_ir(v, control, predicate, slots[0]))
-            if self.control_value == 0:
-                flip = Instruction("x", (control,))
-                return (flip, *gates, flip)
-        return tuple(gates)
+            spin_up.extend(and_uncompute_ir(v, control, predicate, slots[0]))
+
+        # The bounded Pauli stages are involutions on the declared addresses.
+        # Reorder whole stages so measurement predicates still compute before erasing.
+        gates = (
+            (*spin_up, *phase, *swap_out, *majorana_x, *swap_back, *majorana_y)
+            if adjoint
+            else (*majorana_y, *swap_out, *majorana_x, *swap_back, *phase, *spin_up)
+        )
+        if control is not None and self.control_value == 0:
+            flip = Instruction("x", (control,))
+            return (flip, *gates, flip)
+        return gates
 
 
 @dataclass(frozen=True)

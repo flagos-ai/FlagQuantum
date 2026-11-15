@@ -167,6 +167,13 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
         )
     counts = count_emitted_instructions(ir)
     events = counts.unconditional["measure"]
+    inverse = select._emit(
+        ports,
+        tuple(range(logical, width)),
+        tuple(range(select.requirements()[1])),
+        adjoint=True,
+    )
+    assert sum(gate.name == "measure" for gate in inverse) == events
     assert (counts.t_count, events, work) == {
         (2, False): (102, 15, 3),
         (2, True): (114, 18, 4),
@@ -229,6 +236,13 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
         assert result == pytest.approx(expected, abs=5e-12)
         assert _branch(
             ir.instructions,
+            width,
+            tuple(1 - bit for bit in history),
+            result,
+            normalize_measurements=True,
+        ) == pytest.approx(initial, abs=5e-12)
+        assert _branch(
+            inverse,
             width,
             tuple(1 - bit for bit in history),
             result,
