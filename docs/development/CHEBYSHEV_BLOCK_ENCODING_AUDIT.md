@@ -42,10 +42,46 @@ conjunctions. Four measurements are emitted, and three reflection work
 qubits are reused. The model counts the two child T gates, four And
 operations and four measurements separately.
 
-## Remaining scope
+## Scaled block
 
-The concrete packed interface does not yet model symbolic-width
-decomposition. The scaled coefficient transform, controlled-term
-composition through the existing linear combination, and complete native
-notebook are tracked in this same batch. The three file-level items remain
-open until the scaled and tutorial ownership checks are complete.
+The scaled block retains the source power-basis conversion, coefficient-wise
+multiplication by the child normalization, and conversion back to Chebyshev
+basis. Its terms include zero coefficients and preserve degree order. Orders
+zero and one directly expose the unscaled child and retain its normalization
+one, including when the original input normalization differs. The model
+delegates to existing LCU metadata and signal preparation. The caller binds
+controlled terms through the shared LCU SELECT callback and appends the
+resulting operation to the circuit.
+
+The original fourth- and fifth-order fixtures match the native coefficients,
+normalization and packed widths. The native second-order, one-bit
+coefficient-precision fixture with one child ancilla matches complete complex
+outputs for forward and adjoint across all 32 measurement histories per
+direction. The native state has zero in every temporary work bit at the end
+of each branch. Its direct gate model matches the locked source, including
+58 Cliffords, four Fredkin gates, five And calls, five measurements and peak
+width 11. The decomposition model includes one additional controlled
+reflection at degree one, adding four modeled Cliffords. The executable
+stream emits 48 T/T-dagger instructions from four seven-T Fredkins and five
+four-T conjunctions, plus five measurements. The default source
+T-equivalent rates assign four T equivalents to each Fredkin.
+
+## Test coverage and remaining scope
+
+The unchanged original non-notebook suite passes 29 cases with two mode
+skips and three expected serialization failures. The original notebook
+executes all 20 cells independently. The native 22-cell tutorial preserves
+the four original fixtures, two signature figures, two call graphs, and the
+unscaled/scaled derivations. It adds an executable append and inverse example
+covering the full odd-block matrix.
+
+Q-0279 closes with the native tutorial. Q-0280 remains open for symbolic-width
+binding and generic source object and serialization protocols. Q-0281
+remains open for native full-state execution of the original large scaled
+fourth- and fifth-order fixtures and the entire random-matrix family.
+The small executable scaled fixture provides independent evidence at its
+own bindings and precision.
+
+```bash
+jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_chebyshev.ipynb
+```
