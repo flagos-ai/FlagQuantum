@@ -507,3 +507,29 @@ builds and installed native acceptance passed, including an environment without
 the Stim Python package. See the implementation acceptance record in
 `docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
 capability makes no performance, threshold, full-parity or scalability claim.
+
+## Existing noiseless execution with an embedded build
+
+The recovered candidate keeps the existing public workflow:
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(3).x(1),
+    options=fq.ExecutionOptions(mode="stabilizer", shots=8, seed=7),
+    outputs=fq.samples(),
+)
+assert result.samples is not None
+assert result.samples.tolist() == [[[0, 1, 0]] * 8]
+print(result.runtime["execution_path"])
+# local_stabilizer -- the existing local execution path is preserved
+```
+
+An embedded build selects the private native sampler without loading the Stim
+Python package; a marker-free build retains the optional SDK path. Existing
+Clifford validation and refusal behavior remain in force. Fresh no-SDK installed
+acceptance verifies this workflow through the real native sampler, separately
+from replacement fakes. The existing 16,384-wire regression also passed in the
+embedded installation. This is bounded local evidence, not a full Stim parity
+claim; PR delivery and actual-main acceptance remain separate gates.

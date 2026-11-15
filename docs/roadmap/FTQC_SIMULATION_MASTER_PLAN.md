@@ -1194,3 +1194,23 @@ See [the approved implementation proposal](../development/QEC_COMPILED_DEM_SAMPL
 Full upstream DEM text/REPEAT compatibility, categorical native sampling,
 Pauli/Tableau/FlipSimulator algebra, mixed non-Clifford routing and platform
 expansion remain explicit gaps. No maturity or full-parity claim is promoted.
+
+## Recovered embedded noiseless execution candidate — 2026-11-13
+
+This slice replaces an implementation behind the existing stabilizer sampling
+boundary. It preserves the local CPU path, terminal measurement ordering,
+marker-free SDK implementation, positioned-noise behavior and existing
+16,384-wire regression. It introduces no numerical core or horizontal public
+abstraction and makes no capacity, performance or maturity promotion.
+
+The initial 11-path scope includes two separately approved SDK-test isolation
+repairs, for 13 paths. Fresh qualification replaces the unavailable prior
+artifacts: 208 focused tests, one offline macOS arm64 wheel/sdist build, no-SDK
+embedded installation 82 passed, embedded with SDK 246 passed, and marker-free
+SDK 246 passed. Actual native calls and the 16,384-wire regression are recorded
+separately from replacement fakes. Complete smoke/unit passed 20,567 tests, with
+296 selected-node skips and 36 collection skips. Integration completed 12,274
+unique nodes across disjoint groups (12,028 passed, 246 skipped); historical
+failed attempts and approved recoveries remain retained. Final-head publication
+and actual-main acceptance remain separate gates, with merge separately
+authorized. Existing capability maturity and all broader FTQC gaps remain.
