@@ -4,6 +4,7 @@ from cmath import exp
 from collections import Counter
 from math import pi
 
+import numpy as np
 import pytest
 import torch
 
@@ -16,8 +17,105 @@ from flagquantum.compiler.registers.phase.su2_rotation import (
     su2_rotation_calls,
     su2_rotation_ir,
 )
+from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+def test_original_seeded_su2_decompositions_and_tensors() -> None:
+    pytest.importorskip("qualtran")
+    import cirq
+    from qualtran.bloqs.basic_gates import SU2RotationGate
+
+    rng = np.random.default_rng(42)
+    for theta, phi, lambd, shift in rng.random((20, 4)) * 2 * pi:
+        source = SU2RotationGate(theta, phi, lambd, shift)
+        gates = su2_rotation_ir(
+            0, float(theta), float(phi), float(lambd), global_shift=float(shift)
+        )
+        circuit = fq.Circuit(1, dtype=torch.complex128).append(FieldOperation(1, gates))
+        expected = torch.as_tensor(source.rotation_matrix)
+        torch.testing.assert_close(get_unitary(circuit), expected, atol=2e-12, rtol=0)
+        torch.testing.assert_close(
+            torch.as_tensor(source.tensor_contract()), expected, atol=2e-12, rtol=0
+        )
+        torch.testing.assert_close(
+            torch.as_tensor(cirq.unitary(source.decompose_bloq().to_cirq_circuit())),
+            expected,
+            atol=2e-12,
+            rtol=0,
+        )
+
+
+@pytest.mark.ftqc_reference
+def test_original_seeded_and_standard_matrix_recovery() -> None:
+    pytest.importorskip("qualtran")
+    import cirq
+    from qualtran.bloqs.basic_gates import (
+        Hadamard,
+        SU2RotationGate,
+        TGate,
+        XGate,
+        YGate,
+        ZGate,
+    )
+
+    rng = np.random.RandomState(42)
+    matrices = [cirq.testing.random_unitary(2, random_state=rng) for _ in range(20)]
+    matrices.extend(
+        gate().tensor_contract() for gate in (TGate, XGate, YGate, ZGate, Hadamard)
+    )
+    for matrix in matrices:
+        source = SU2RotationGate.from_matrix(matrix)
+        theta, phi, lambd, shift = su2_angles_from_matrix(matrix.tolist())
+        assert (theta, phi, lambd, shift) == pytest.approx(
+            (source.theta, source.phi, source.lambd, source.global_shift), abs=2e-15
+        )
+        gates = su2_rotation_ir(0, theta, phi, lambd, global_shift=shift)
+        circuit = fq.Circuit(1, dtype=torch.complex128).append(FieldOperation(1, gates))
+        torch.testing.assert_close(
+            get_unitary(circuit), torch.as_tensor(matrix), atol=2e-12, rtol=0
+        )
+
+
+@pytest.mark.ftqc_reference
+def test_original_three_su2_factories_and_exact_examples() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.basic_gates.su2_rotation import (
+        _hadamard,
+        _su2_rotation_gate,
+        _t_gate,
+    )
+
+    signature = Signature.build(q=1)
+    for example, equivalent in (
+        (_su2_rotation_gate, None),
+        (_hadamard, Hadamard()),
+        (_t_gate, TGate()),
+    ):
+        source = example.make()
+        assert [(r.name, r.bitsize, r.side.value) for r in source.signature] == [
+            (r.name, r.bitsize, r.side.value) for r in signature
+        ]
+        gates = su2_rotation_ir(
+            0,
+            float(source.theta),
+            float(source.phi),
+            float(source.lambd),
+            global_shift=float(source.global_shift),
+        )
+        circuit = fq.Circuit(1, dtype=torch.complex128).append(FieldOperation(1, gates))
+        expected = (
+            equivalent.tensor_contract()
+            if equivalent is not None
+            else source.tensor_contract()
+        )
+        torch.testing.assert_close(
+            get_unitary(circuit), torch.as_tensor(expected), atol=2e-12, rtol=0
+        )
 
 
 @pytest.mark.ftqc_reference
@@ -63,7 +161,7 @@ def test_su2_decomposition_and_exact_adjoint(
         )
         assert get_cost_value(bloq, QubitCount()) == 1
     calls = su2_rotation_calls(theta, phi, lambd, global_shift=shift)
-    gates = Counter()
+    gates: Counter[str] = Counter()
     for call in calls:
         cost = query_qec_gate_cost(call)
         gates.update(t=cost.t, clifford=cost.clifford, rotation=cost.rotation)
