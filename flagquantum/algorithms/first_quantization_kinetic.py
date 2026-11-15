@@ -1,11 +1,13 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from the Qualtran v0.7.0 kinetic PREPARE signatures and composition.
+# Adapted from Qualtran v0.7.0 kinetic PREPARE and SELECT register contracts.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/pbc/first_quantization/prepare_t.py
 
-"""Register contracts and executable coordinate preparation of kinetic PREPARE."""
+"""Kinetic register contracts and executable coordinate preparation."""
 
 from ..compiler.registers.preparation.uniform_preparation import uniform_preparation_ir
+from ..core.ir.program.register_types import opaque_register_type
+from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
 from .primitives._block_binding import _BoundBlockOperation
 
@@ -24,6 +26,20 @@ def prepare_t_signature(num_bits_p: int) -> Signature:
     width = prepare_power_two_signature(num_bits_p).get_left("r").bitsize
     return Signature.build(
         w=(KINETIC_COORDINATE_COUNT - 1).bit_length(), r=width, s=width
+    )
+
+
+def select_t_signature(num_bits_p: int) -> Signature:
+    """Return the kinetic control flags, coordinate indices, and three axes."""
+    ports = Signature.build(flag_T=1, plus=1, w=3)
+    coordinate = opaque_register_type(num_bits_p)
+    return Signature(
+        (
+            *ports,
+            Register("r", coordinate),
+            Register("s", coordinate),
+            Register("p", coordinate, shape=(3,)),
+        )
     )
 
 
