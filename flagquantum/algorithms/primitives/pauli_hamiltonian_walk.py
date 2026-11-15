@@ -5,6 +5,8 @@
 
 """Construct an alias-prepared walk from ordered real Pauli coefficients."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from dataclasses import dataclass
 from math import isfinite, sqrt
@@ -20,6 +22,7 @@ from ...compiler.registers.preparation.prepare_reflection import (
     source_uncontrolled_prepare_reflection_cost,
 )
 from ...core.ir import Instruction
+from ...core.value_parameters import is_symbolic_value
 from ..core import Hamiltonian
 from .alias_preparation import (
     alias_black_box_prepare,
@@ -113,9 +116,12 @@ class SymbolicPauliHamiltonianWalk:
 
 
 def symbolic_pauli_hamiltonian_walk(
-    hamiltonian: Hamiltonian, epsilon: SymbolicReal, *, norm_bound: float | None = None
+    hamiltonian: Hamiltonian,
+    epsilon: SymbolicReal,
+    *,
+    norm_bound: SymbolicReal | None = None,
 ) -> SymbolicPauliHamiltonianWalk:
-    """Apply the source shape-only PREPARE path to a symbolic precision."""
+    """Apply the source shape-only PREPARE path to symbolic precision or norm."""
     targets, words, weights, norm = _walk_inputs(hamiltonian, norm_bound)
     normalization = sum(weights)
     precision = prepare_precision_from_eigenphase(
@@ -171,9 +177,9 @@ def pauli_hamiltonian_walk(
     )
 
 
-def _walk_inputs(
-    hamiltonian: Hamiltonian, norm_bound: float | None
-) -> tuple[tuple[int, ...], tuple[str, ...], tuple[float, ...], float]:
+def _combined_real_terms(
+    hamiltonian: Hamiltonian,
+) -> tuple[tuple[dict[int, str], float], ...]:
     combined: dict[tuple[tuple[int, str], ...], float] = {}
     for term in hamiltonian.terms:
         coefficient = term.coefficient
@@ -183,7 +189,44 @@ def _walk_inputs(
             raise ValueError("Walk coefficients must be concrete finite real scalars")
         key = tuple(sorted(term.ops))
         combined[key] = combined.get(key, 0.0) + coefficient.real
-    terms = tuple((dict(ops), weight) for ops, weight in combined.items() if weight)
+    return tuple((dict(ops), weight) for ops, weight in combined.items() if weight)
+
+
+def _source_signed_norm(terms: tuple[tuple[dict[int, str], float], ...]) -> float:
+    signed_sum = sum(weight for _, weight in terms)
+    anticommute = sum(
+        abs(weight * other_weight)
+        for i, (ops, weight) in enumerate(terms)
+        for other, other_weight in terms[:i]
+        if sum(ops[q] != other[q] for q in ops.keys() & other.keys()) % 2
+    )
+    squared = signed_sum**2 - 2 * anticommute
+    if squared < 0:
+        raise ValueError("Source norm estimate is nonreal; supply a valid norm bound")
+    return sqrt(squared)
+
+
+def source_pauli_hamiltonian_norm_bound(hamiltonian: Hamiltonian) -> float:
+    """Evaluate the locked signed-sum formula independently of walk admission."""
+    return _source_signed_norm(_combined_real_terms(hamiltonian))
+
+
+@overload
+def _walk_inputs(
+    hamiltonian: Hamiltonian, norm_bound: float | None
+) -> tuple[tuple[int, ...], tuple[str, ...], tuple[float, ...], float]: ...
+
+
+@overload
+def _walk_inputs(
+    hamiltonian: Hamiltonian, norm_bound: SymbolicReal | None
+) -> tuple[tuple[int, ...], tuple[str, ...], tuple[float, ...], SymbolicReal]: ...
+
+
+def _walk_inputs(
+    hamiltonian: Hamiltonian, norm_bound: SymbolicReal | None
+) -> tuple[tuple[int, ...], tuple[str, ...], tuple[float, ...], SymbolicReal]:
+    terms = _combined_real_terms(hamiltonian)
     if len(terms) < 2:
         raise ValueError("A source alias walk requires at least two nonzero products")
 
@@ -193,21 +236,11 @@ def _walk_inputs(
     if not isfinite(normalization):
         raise ValueError("Walk normalization must be finite")
     if norm_bound is None:
-        signed_sum = sum(weight for _, weight in terms)
-        anticommute = sum(
-            abs(weight * other_weight)
-            for i, (ops, weight) in enumerate(terms)
-            for other, other_weight in terms[:i]
-            if sum(ops[q] != other[q] for q in ops.keys() & other.keys()) % 2
-        )
-        squared = signed_sum**2 - 2 * anticommute
-        if squared < 0:
-            raise ValueError(
-                "Source norm estimate is nonreal; supply a valid norm bound"
-            )
-        norm_bound = sqrt(squared)
-    if not isfinite(norm_bound) or not 0 <= norm_bound < normalization:
-        raise ValueError("Norm bound must be finite and below the L1 normalization")
+        norm_bound = _source_signed_norm(terms)
+    if not is_symbolic_value(norm_bound):
+        norm_bound = float(norm_bound)
+        if not isfinite(norm_bound) or not 0 <= norm_bound < normalization:
+            raise ValueError("Norm bound must be finite and below the L1 normalization")
 
     words = tuple(
         ("-" if weight < 0 else "") + "".join(ops.get(q, "i").upper() for q in targets)

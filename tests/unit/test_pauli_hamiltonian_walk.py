@@ -10,9 +10,12 @@ from flagquantum.algorithms.core import Hamiltonian, HamiltonianTerm
 from flagquantum.algorithms.primitives.alias_preparation import (
     alias_preparation_requirements,
 )
+from flagquantum.algorithms.primitives.ising_walk import ising_walk
 from flagquantum.algorithms.primitives.pauli_hamiltonian_walk import (
     pauli_hamiltonian_walk,
     prepare_precision_from_eigenphase,
+    source_pauli_hamiltonian_norm_bound,
+    symbolic_pauli_hamiltonian_walk,
 )
 from flagquantum.compiler.registers.lookup.unary_iteration import (
     unary_iteration_workspace,
@@ -31,10 +34,41 @@ pytestmark = pytest.mark.unit
 def test_nonreal_locked_norm_requires_explicit_bound() -> None:
     ham = Hamiltonian([HamiltonianTerm(1, "X", (0,)), HamiltonianTerm(-1, "Z", (0,))])
     with pytest.raises(ValueError, match="Source norm estimate is nonreal"):
+        source_pauli_hamiltonian_norm_bound(ham)
+    with pytest.raises(ValueError, match="Source norm estimate is nonreal"):
         pauli_hamiltonian_walk(ham, 1)
     assert pauli_hamiltonian_walk(
         ham, 1, norm_bound=sqrt(2)
     ).selector.select_unitaries == ("X", "-Z")
+
+
+@pytest.mark.ftqc_reference
+def test_pauli_norm_and_symbolic_bound_match_locked_source() -> None:
+    sympy = pytest.importorskip("sympy")
+    pytest.importorskip("qualtran")
+    import cirq
+    from qualtran.bloqs.chemistry.ising.walk_operator import (
+        upper_bound_norm_for_pauli_hamiltonian,
+        walk_operator_for_pauli_hamiltonian,
+    )
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    wire = cirq.LineQubit(4)
+    source_ham = cirq.PauliSum.from_pauli_strings([4 * cirq.X(wire), -cirq.Z(wire)])
+    hamiltonian = Hamiltonian([HamiltonianTerm(4, "X", 4), HamiltonianTerm(-1, "Z", 4)])
+    signed_bound = upper_bound_norm_for_pauli_hamiltonian(source_ham)
+    # The signed source formula can underestimate the true norm of mixed signs.
+    assert source_pauli_hamiltonian_norm_bound(hamiltonian) == signed_bound == 1
+    bound = sympy.Symbol("norm", positive=True)
+    source = walk_operator_for_pauli_hamiltonian(
+        source_ham, 0.25, ham_norm_upper_bound=bound
+    )
+    plan = symbolic_pauli_hamiltonian_walk(hamiltonian, 0.25, norm_bound=bound)
+    assert plan.target_qubits == (4,)
+    assert sympy.simplify(plan.prepare.probability_bits - source.prepare.mu) == 0
+    gates = plan.gate_cost()
+    for key, expected in get_cost_value(source, QECGatesCost()).asdict().items():
+        assert sympy.simplify(getattr(gates, key) - expected) == 0
 
 
 @pytest.mark.ftqc_reference
@@ -57,34 +91,46 @@ def test_symbolic_precision_matches_locked_source() -> None:
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("adjoint", [False, True])
-def test_signed_walk_from_terms_matches_locked_source(adjoint: bool) -> None:
+@pytest.mark.parametrize("ising", [False, True])
+def test_signed_walk_from_terms_matches_locked_source(
+    adjoint: bool, ising: bool
+) -> None:
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.ising.walk_operator import (
+        get_walk_operator_for_1d_ising_model,
         walk_operator_for_pauli_hamiltonian,
     )
     from qualtran.cirq_interop.testing import GateHelper
 
-    q0, q1 = cirq.LineQubit(2), cirq.LineQubit(9)
-    source_ham = cirq.PauliSum.from_pauli_strings(
-        [3 * cirq.X(q1) * cirq.Z(q0), -3 * cirq.Y(q1) * cirq.Z(q0)]
-    )
-    ham = Hamiltonian(
-        [
-            HamiltonianTerm(0.75, {9: "X", 2: "Z"}),
-            HamiltonianTerm(-3, {9: "Y", 2: "Z"}),
-            HamiltonianTerm(2.25, {2: "Z", 9: "X"}),
-        ]
-    )
-    norm = sqrt(18)
-    original = walk_operator_for_pauli_hamiltonian(
-        source_ham, 1, ham_norm_upper_bound=norm
-    )
+    if ising:
+        original, _ = get_walk_operator_for_1d_ising_model(
+            1, 1.0, j_zz_strength=3, gamma_x_strength=-3
+        )
+        plan, _ = ising_walk(1, 1.0, j_zz=3, gamma_x=-3)
+        assert plan.target_qubits == (0,)
+        assert plan.selector.select_unitaries == ("Z", "-X")
+    else:
+        q0, q1 = cirq.LineQubit(2), cirq.LineQubit(9)
+        source_ham = cirq.PauliSum.from_pauli_strings(
+            [3 * cirq.X(q1) * cirq.Z(q0), -3 * cirq.Y(q1) * cirq.Z(q0)]
+        )
+        ham = Hamiltonian(
+            [
+                HamiltonianTerm(0.75, {9: "X", 2: "Z"}),
+                HamiltonianTerm(-3, {9: "Y", 2: "Z"}),
+                HamiltonianTerm(2.25, {2: "Z", 9: "X"}),
+            ]
+        )
+        norm = sqrt(18)
+        original = walk_operator_for_pauli_hamiltonian(
+            source_ham, 1, ham_norm_upper_bound=norm
+        )
+        plan = pauli_hamiltonian_walk(ham, 1, norm_bound=norm)
+        assert plan.target_qubits == (2, 9)
+        assert plan.selector.select_unitaries == ("ZX", "-ZY")
     source = original.adjoint() if adjoint else original
-    plan = pauli_hamiltonian_walk(ham, 1, norm_bound=norm)
-    assert plan.target_qubits == (2, 9)
-    assert plan.selector.select_unitaries == ("ZX", "-ZY")
     assert plan.walk.alpha == original.sum_of_lcu_coefficients
     assert plan.table.alternates == tuple(original.prepare.alt)
     assert plan.table.keep == tuple(original.prepare.keep)
@@ -133,7 +179,7 @@ def test_signed_walk_from_terms_matches_locked_source(adjoint: bool) -> None:
     measurements = sum(gate.name == "measure" for gate in actual)
     report = estimate_ftqc_resources(model, emitted_ir=circuit.to_ir())
     assert report.emitted is not None
-    assert report.logical.peak_logical_qubits == 14
+    assert report.logical.peak_logical_qubits == (13 if ising else 14)
     assert report.logical.gates.total_t_count() == 32
     assert report.emitted.t_count == 38 and measurements == 6
     initial = torch.zeros(1 << (width + work_count), dtype=torch.complex128)
@@ -175,7 +221,9 @@ def test_signed_walk_from_terms_matches_locked_source(adjoint: bool) -> None:
         2**measurements
     )
     # The locked reflection can leave its signal junk dirty, even from zero.
-    assert np.linalg.norm(reference.reshape(-1, 1 << junk)[:, 1:]) > 0.9
+    assert np.linalg.norm(reference.reshape(-1, 1 << junk)[:, 1:]) > (
+        0.1 if ising else 0.9
+    )
     for history in product((0, 1), repeat=measurements):
         torch.testing.assert_close(
             forced_branch(initial, actual, history),
