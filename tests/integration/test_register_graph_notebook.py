@@ -39,6 +39,8 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_unitary_block_encoding", 7, 2, 0),
         ("register_allocate_free", 10, 4, 0),
         ("register_always", 6, 2, 0),
+        ("register_partition", 10, 3, 0),
+        ("register_split2_join2", 8, 2, 0),
         ("register_multiplication", 34, 16, 0),
         ("register_subtraction", 16, 4, 0),
         ("register_negation", 7, 2, 0),
