@@ -33,6 +33,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_permutation", 16, 4, 0),
         ("register_sorting", 20, 8, 0),
         ("comparison_gate_costs", 36, 0, 0),
+        ("register_trigonometric", 7, 2, 0),
     ],
 )
 def test_register_graph_notebook_kernel_without_reference_imports(
