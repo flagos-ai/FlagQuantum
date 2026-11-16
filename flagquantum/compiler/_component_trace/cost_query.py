@@ -3,14 +3,24 @@
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 CostKey, get_cost_value, and query_costs.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_costing.py
+# Success probability follows the product rule in the pinned source.
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_success_prob.py
 
 """Query declared component costs with independent caches for each metric."""
 
 from collections.abc import Callable, Iterable, Mapping, MutableMapping, Sequence
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeVar, cast
 
-from .call_graph import CostGeneralizer, Generalizer, Node, compose_cost_generalizer
+from .call_graph import (
+    CallDeclaration,
+    CostGeneralizer,
+    Generalizer,
+    Node,
+    SymbolAllocator,
+    component_callee_counts,
+    compose_cost_generalizer,
+)
 from .resource_model import (
     ComponentCost,
     GateCost,
@@ -18,6 +28,7 @@ from .resource_model import (
     _component_width,
     _declared_success,
 )
+from .symbolic_math import SymbolicInt, SymbolicReal
 
 Value = TypeVar("Value")
 
@@ -145,12 +156,60 @@ def _success_cost(
     declared = _declared_success(node)
     if declared is not None:
         return declared
-    success = 1.0
-    for call in _active_calls(node):
-        success *= child(call.component) ** call.repetitions
+    return cast(
+        float,
+        _success_product(
+            (child(call.component), call.repetitions) for call in _active_calls(node)
+        ),
+    )
+
+
+def _success_product(
+    callees: Iterable[tuple[SymbolicReal, SymbolicInt]],
+) -> SymbolicReal:
+    success: SymbolicReal = 1.0
+    for probability, repetitions in callees:
+        success = cast(SymbolicReal, success * probability**repetitions)
     return success
 
 
 GATE_COST = CostMetric(_gate_cost, GateCost())
 PEAK_LOGICAL_QUBITS = CostMetric(_width_cost, 0)
 SUCCESS_PROBABILITY = CostMetric(_success_cost, 1.0)
+
+
+def query_declared_success_probability(
+    root: Node,
+    declared_calls: Mapping[Node, Mapping[Node, SymbolicInt]] | CallDeclaration[Node],
+    *,
+    cache: MutableMapping[Node, SymbolicReal] | None = None,
+    static_costs: Mapping[Node, SymbolicReal] | None = None,
+    generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None = None,
+    allocator: SymbolAllocator | None = None,
+) -> SymbolicReal:
+    """Multiply declared probabilities with concrete or symbolic repetitions.
+
+    Seeded and static costs use the existing recursive query semantics.
+    Each declared callee is visited, including a zero-multiplicity callee.
+    The result models success of a component and its calls.
+    """
+    symbols = allocator if allocator is not None else SymbolAllocator()
+
+    def compute(node: Node, child: Callable[[Node], SymbolicReal]) -> SymbolicReal:
+        counts = (
+            component_callee_counts(node, declared_calls, allocator=symbols)
+            if callable(declared_calls)
+            else declared_calls.get(node, {})
+        )
+        return _success_product(
+            (child(callee), count) for callee, count in counts.items()
+        )
+
+    return _query_cost(
+        root,
+        compute,
+        SUCCESS_PROBABILITY.zero,
+        compose_cost_generalizer(generalizer),
+        cache,
+        static_costs,
+    )
