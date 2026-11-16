@@ -170,9 +170,30 @@ spectator's complex amplitudes are preserved and the consumed input is
 zero. The locked source `IntEffect` still refuses Cirq export of its basis
 effect. The source witness uses explicit X and Free operations.
 
+## Package entry
+
+Q-0714 covers the nine names imported by the locked Cirq package initializer
+at blob `f6727d52660d008766a65672129094209ca8922d`. Each responsibility has a
+native owner. External gates and Qids stay at the adapter boundary.
+
+| Locked entry | Native owner |
+| --- | --- |
+| `CirqQuregT` | The Ecosystem qubit-array type and concrete bit-axis placement in `_register_export.py` and `_register_import.py`. |
+| `CirqGateAsBloq` | `import_cirq_register_gate` adapts a decomposed gate to an owned register program. |
+| `CirqGateAsBloqBase` | `_gate_metadata.py` handles gate signatures, tensor projection and display metadata. `resource_keys.py` owns resource classification. |
+| `cirq_optree_to_cbloq` | `import_cirq_register_optree` binds ordered words, shape, lifetimes and outputs. |
+| `cirq_gate_to_bloq` | `resource_keys.py` recognizes exact gate keys. `_register_import.py` constructs the owned program for admitted gates. |
+| `decompose_from_cirq_style_method` | `_decompose.py` drives one SDK step. Register import admits clean auxiliary lifetimes. |
+| `BloqAsCirqGate` | `RegisterCirqGate` adapts native physical bodies to SDK gate protocols. |
+| `get_named_qubits` | `_register_export.py` produces scalar and shaped names in declaration order. |
+| `merge_qubits` | Register placement and `RegisterCirqGate.on` bind signature-ordered operands. |
+
+The locked entries and their native owners resolve in the reference runtime.
+The native Cirq package keeps its guarded public exports. Compiler and
+Simulation retain ownership of physical binding and dense inspection.
+
 ## Remaining files
 
-- Q-0714 awaits the package-entry export map.
 - Q-0715 retains dense inspection of dynamic workspace bodies, source
   wrapper value identity and custom glyph callbacks. Guarded measurement
   requires a dedicated clean wire in the export scope.
