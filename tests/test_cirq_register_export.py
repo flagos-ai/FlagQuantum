@@ -549,6 +549,12 @@ def test_gate_workspace_context_replays_native_leases(
     source_events = tuple(events)
     events.clear()
     wrapped = RegisterCirqGate(bound, signature)
+    np.testing.assert_allclose(cirq.unitary(wrapped), np.eye(2), atol=2e-12, rtol=0)
+    altered = replace(
+        bound,
+        circuit=CircuitIR(2, (Instruction("cz" if dirty else "cx", (0, 1)),)),
+    )
+    assert cirq.unitary(RegisterCirqGate(altered, signature), default=None) is None
     emitted = cirq.decompose_once(
         wrapped.on(data_q), context=cirq.DecompositionContext(Manager())
     )
@@ -1185,3 +1191,116 @@ def test_cirq_guarded_measurement_preserves_the_inactive_instrument(cirq: Any) -
                 atol=2e-12,
                 rtol=0,
             )
+
+
+@pytest.mark.ftqc_reference
+def test_valid_modexp_register_export_preserves_source_output_and_feedback(
+    cirq: Any, source_export: Any
+) -> None:
+    from collections import Counter
+
+    from qualtran.bloqs.cryptography.rsa.rsa_mod_exp import ModExp
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from flagquantum.algorithms.primitives.modular_exponentiation import (
+        ModularExponentiation,
+    )
+    from flagquantum.dynamic import DynamicCircuit
+
+    source = ModExp(2, 3, 1, 2)
+    logical_source = source.decompose_bloq()
+    original_ports = source_export.get_named_qubits(source.signature)
+    with pytest.raises(ValueError, match="There is no Cirq equivalent"):
+        logical_source.flatten().to_cirq_circuit_and_quregs(
+            exponent=original_ports["exponent"],
+            qubit_manager=cirq.GreedyQubitManager("source", maximize_reuse=True),
+        )
+    named_source = tuple(q for word in original_ports.values() for q in word.flat)
+    outer = tuple(
+        cirq.decompose_once(source_export.BloqAsCirqGate(source).on(*named_source))
+    )
+    assert tuple(op.qubits for op in outer) == (named_source[1:], named_source)
+
+    program = ModularExponentiation(2, 3, 1, 2)
+    work, slots = program.workspace_requirements()
+    width = 3 + work
+    ir = (
+        DynamicCircuit(width)
+        .append(
+            program.make_on(
+                exponent=(0,),
+                target=(1, 2),
+                workspace=tuple(range(3, width)),
+                classical_bits=tuple(range(slots)),
+            )
+        )
+        .to_ir()
+    )
+    assert (work, slots, width) == (13, 4, 16)
+    exported, output_ports = export_register_cirq(
+        ir,
+        program.source_signature,
+        {"exponent": (0,), "x": (1, 2)},
+        input_quregs={"exponent": original_ports["exponent"]},
+        output_quregs={"x": original_ports["x"]},
+        feedback_key_prefix="modexp",
+    )
+    order = (
+        *output_ports["exponent"].flat,
+        *output_ports["x"].flat,
+        *cirq.LineQubit.range(3, width),
+    )
+    assert tuple(order[:3]) == named_source and exported.report.lossless
+    operations = tuple(exported.circuit.all_operations())
+    assert len(operations) == len(ir.instructions) == 1155
+    gates = {
+        "x": cirq.X,
+        "h": cirq.H,
+        "s": cirq.S,
+        "t": cirq.T,
+        "tdg": cirq.T**-1,
+        "cx": cirq.CNOT,
+        "cz": cirq.CZ,
+    }
+    latest: dict[int, str] = {}
+    for index, (native, exported_op) in enumerate(
+        zip(ir.instructions, operations, strict=True)
+    ):
+        operands = tuple(order[wire] for wire in native.wires)
+        if native.name == "measure":
+            key = f"modexp_{index}"
+            latest[native.metadata["classical_bit"]] = key
+            expected_op = cirq.measure(*operands, key=key)
+        elif native.name == "reset":
+            expected_op = cirq.reset(*operands)
+        else:
+            expected_op = gates[native.name].on(*operands)
+            if "conditions" in native.metadata:
+                ((slot, value),) = native.metadata["conditions"]
+                assert value == 1
+                expected_op = expected_op.with_classical_controls(latest[slot])
+        assert exported_op == expected_op
+
+    counts = Counter(op.name for op in ir.instructions)
+    cost = get_cost_value(source, QECGatesCost())
+    assert counts["t"] + counts["tdg"] == cost.total_t_count(ts_per_cswap=7) == 206
+    assert counts["measure"] == cost.measurement == 48
+    assert get_cost_value(source, QubitCount()) == width
+    initial = np.zeros(1 << (width + 1), dtype=np.complex128)
+    expected = np.zeros_like(initial)
+    weights = np.array([1, -2j, 3j, -4], dtype=np.complex128).reshape(2, 2) / np.sqrt(
+        30
+    )
+    for exponent, amplitudes in enumerate(weights):
+        start = exponent << width
+        initial[start : start + 2] = amplitudes
+        value = logical_source.on_classical_vals(exponent=exponent)["x"]
+        end = start | (int(value) << (width - 2))
+        expected[end : end + 2] = amplitudes
+    actual = cirq.Simulator(dtype=np.complex128, seed=34).simulate(
+        exported.circuit,
+        qubit_order=(*order, cirq.NamedQubit("spectator")),
+        initial_state=initial.copy(),
+    )
+    assert len(actual.measurements) == 48
+    np.testing.assert_allclose(actual.final_state_vector, expected, atol=2e-12, rtol=0)

@@ -184,15 +184,28 @@ class RegisterCirqGate(Gate):
         return tuple(remapped.all_operations())
 
     def _unitary_(self) -> object:
-        if self._bound is not None or not self._signature.thru_registers_only:
+        if not self._signature.thru_registers_only:
             return NotImplemented
         import torch
 
-        from ...simulation.unitary import get_unitary
+        from ...simulation.unitary import _unitary_with_workspace, get_unitary
 
         try:
-            matrix = get_unitary(self._body, device="cpu", dtype=torch.complex128)
+            if self._bound is None:
+                matrix = get_unitary(self._body, device="cpu", dtype=torch.complex128)
+            else:
+                borrowed = frozenset(
+                    wire
+                    for event in self._bound.events
+                    if event.kind == "allocate" and event.dirty
+                    for wire in event.wires
+                )
+                matrix = _unitary_with_workspace(
+                    self._body, len(self._labels), borrowed
+                )
         except (TypeError, ValueError, NotImplementedError):
+            if self._bound is not None:
+                return None
             return NotImplemented
         return np.asarray(matrix.detach().numpy(), dtype=np.complex128)
 
