@@ -9,7 +9,7 @@ Q-0717 and Q-0718 track `cirq_interop/_cirq_to_bloq.py` and its original tests.
 | Gate recognition and resource estimates | `resource_keys.py` covers exact gates, controlled binary clauses, parameterized powers and the admitted inverse leaves. Ecosystem owns opaque SDK values. |
 | One-step decomposition and qubit manager | `_decompose.py` and `_qubit_manager.py` preserve protocol order and distinguish no decomposition from an empty decomposition. Native register import uses declared clean lifetimes for admitted operands and managed decomposition work. |
 | `cirq_optree_to_cbloq` | `import_cirq_register_optree` handles default through ports and explicit concrete signatures with shaped bit-axis quregs. It reuses the native builder for split/join, first-use allocations, clean releases and sided output binding. |
-| Gate wrappers, circuit conversion and `decompose_from_cirq_style_method` | `import_cirq_register_gate` expands one untagged SDK decomposition. Its default signature retains the original through operands, including idle wires. An explicit native signature can consume a left word after binary reset. An explicit native signature defaults to operand-order placement. Automatic signature reflection for third-party metadata remains open. |
+| Gate wrappers, circuit conversion and `decompose_from_cirq_style_method` | `import_cirq_register_gate` expands one untagged SDK decomposition. Its default signature retains the original through operands, including idle wires. An explicit native signature can consume a left word after binary reset and defaults to operand-order placement. Optree conversion recognizes gate-owned, typed native definitions and gives caller-supplied definitions precedence. |
 | `_QReg` and register helpers | Native port bit order, shape and ownership are checked. An explicit native function definition preserves per-gate word grouping. The importer splits only overlapping words and joins in operand order. The locked optree conversion materializes the SDK borrowed-wire witness as clean Allocate/Free. |
 | `_my_tensors_from_gate` and wire symbols | `_gate_metadata.py` reads Cirq's unitary and diagram protocols and returns owned bit-axis tensors and native glyph data. Shared Simulation projection preserves output-then-input order and zero-projects missing sides. Nonunitary reset is refused at the tensor boundary. |
 | Global phase and unsupported dimensions | The typed import lowers concrete global phase through the existing scalar primitive on a live wire or an explicitly owned clean carrier. Symbolic phases, wider qudits and symbolic signatures require separate admission. |
@@ -43,8 +43,15 @@ literal six-wire seeded source circuit, including iSWAP and its scalar
 phase, agrees with the full 64-by-64 complex unitary obtained through
 normal append.
 
-Q-0718 covers the locked tests and their admitted native paths. Q-0717
-retains automatic extraction of foreign gate declarations and SDK lifetime
-reuse beyond the source's clean optree ownership. Callers provide typed
-native definitions for shaped gate groups; only native records enter
-the Program.
+The default 28-wire import discovers typed `FunctionRecord` definitions
+exposed by the SDK gates. The shaped import uses the explicit definition
+mapping. The importer reserves names before lowering primitives and verifies
+the native type before inserting a definition into the Program. Gates with
+no definition use the existing raw Cirq path. Opaque foreign declarations
+stay at the Ecosystem boundary.
+
+Q-0717 covers the locked conversion responsibilities through the native
+Ecosystem entry points. Q-0718 covers the unchanged original tests and the
+native counterparts above. Symbolic phases, nonbinary operands, and
+foreign SDK ownership beyond the locked clean allocation contract remain
+outside the admitted path.
