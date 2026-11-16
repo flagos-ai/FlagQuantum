@@ -164,7 +164,9 @@ def import_cirq_register_optree(
     Omitted input wires are allocated at first use. Wires outside the output
     mapping are released under the clean-work contract, which callers must
     satisfy when binding and executing the Program. Gate definitions can
-    provide native typed operand groups for selected SDK gates.
+    provide native typed operand groups for selected SDK gates. A gate can
+    supply its own FunctionRecord as `flagquantum_register_definition`.
+    An explicit definition for that gate takes precedence.
     """
     cirq = _cirq()
     circuit = cirq.Circuit(optree)
@@ -184,40 +186,49 @@ def import_cirq_register_optree(
 
     incoming = _port_arrays(signature.lefts(), in_quregs)
     outgoing = _port_arrays(signature.rights(), out_quregs)
-    builder = ComponentProgramBuilder(signature)
+    declared = {} if gate_definitions is None else gate_definitions
+    definitions: dict[str, FunctionRecord] = {}
+    gates: list[tuple[object, tuple[Hashable, ...], FunctionRecord | None]] = []
+    for operation in circuit.all_operations():
+        if not isinstance(operation, cirq.GateOperation) or operation.tags:
+            raise ValueError("Cirq register import requires untagged gate operations")
+        gate = operation.gate
+        qubits = operation.qubits
+        if any(qubit.dimension != 2 for qubit in qubits):
+            raise ValueError("Cirq register import requires two-dimensional operands")
+        definition = (
+            declared.get(gate) if declared and isinstance(gate, Hashable) else None
+        )
+        if definition is None:
+            definition = getattr(gate, "flagquantum_register_definition", None)
+        if definition is not None:
+            if (
+                not isinstance(definition, FunctionRecord)
+                or definition.registers is None
+            ):
+                raise TypeError(
+                    "Cirq gate definition requires a typed native FunctionRecord"
+                )
+            previous = definitions.setdefault(definition.name, definition)
+            if previous != definition:
+                raise ValueError(
+                    f"Conflicting Cirq gate definition {definition.name!r}"
+                )
+        gates.append((gate, qubits, definition))
+
+    builder = ComponentProgramBuilder(signature, definitions.values())
     live = _WordBindings(builder)
     live.store(signature.lefts(), incoming, builder.inputs)
-    definitions: dict[str, FunctionRecord] = {}
-    declared = {} if gate_definitions is None else gate_definitions
-    reserved = {function.name for function in declared.values()}
 
     def call(function: FunctionRecord, qubits: tuple[Hashable, ...]) -> None:
-        if function.registers is None:
-            raise ValueError("Cirq gate definition requires typed register ports")
-        previous = definitions.get(function.name)
-        if previous is None:
-            builder.define(function)
-            definitions[function.name] = function
-        elif previous != function:
-            raise ValueError(f"Conflicting Cirq gate definition {function.name!r}")
+        assert function.registers is not None
         ports = Signature(function.registers)
         left, right = _operation_ports(ports, qubits)
         outputs = builder.call_dict(function.name, live.take_ports(ports.lefts(), left))
         live.store(ports.rights(), right, outputs)
 
-    for index, operation in enumerate(circuit.all_operations()):
-        if not isinstance(operation, cirq.GateOperation) or operation.tags:
-            raise ValueError("Cirq register import requires untagged gate operations")
-        gate = operation.gate
-        qubits = operation.qubits
-        definition = (
-            declared.get(gate) if declared and isinstance(gate, Hashable) else None
-        )
+    for index, (gate, qubits, definition) in enumerate(gates):
         if definition is not None:
-            if any(qubit.dimension != 2 for qubit in qubits):
-                raise ValueError(
-                    "Cirq register import requires two-dimensional operands"
-                )
             call(definition, qubits)
             continue
         if isinstance(gate, cirq.GlobalPhaseGate):
@@ -233,14 +244,10 @@ def import_cirq_register_optree(
         ):
             opcode = "iswap" if gate == cirq.ISWAP else "iswapdg"
             instructions = (Instruction(opcode, (0, 1)),)
-        elif (
-            isinstance(gate, cirq.ResetChannel)
-            and len(qubits) == 1
-            and qubits[0].dimension == 2
-        ):
+        elif isinstance(gate, cirq.ResetChannel) and len(qubits) == 1:
             instructions = (Instruction("reset", (0,), metadata={"is_dynamic": True}),)
         else:
-            if not qubits or any(qubit.dimension != 2 for qubit in qubits):
+            if not qubits:
                 raise ValueError(
                     "Cirq register import requires nonempty two-dimensional operands"
                 )
@@ -257,11 +264,12 @@ def import_cirq_register_optree(
         names = tuple(f"bit{i}" for i in range(len(qubits)))
         registers = tuple(Register(name, bit) for name in names)
         name = f"gate_{index}"
-        while name in reserved:
+        while name in definitions:
             name = "_" + name
         function = bit_gate_function(
             name, registers, CircuitIR(len(qubits), instructions)
         )
+        builder.define(function)
         call(function, qubits)
 
     returns = live.take_ports(signature.rights(), outgoing)
@@ -280,8 +288,8 @@ def import_cirq_register_gate(
     """Import one declared SDK decomposition with explicit native ownership.
 
     The raw gate contract exposes the original operands as through wires.
-    A supplied signature can express sided ports and defaults to operand order. Temporary decomposition
-    wires outside those ports use the optree importer's clean lifetimes.
+    A supplied signature can express sided ports and defaults to operand
+    order. Temporary wires use the optree importer's clean lifetimes.
     """
     cirq = _cirq()
     if isinstance(value, cirq.Gate):

@@ -315,8 +315,9 @@ def test_registered_gate_words_match_the_locked_optree_fixture() -> None:
     cirq = pytest.importorskip("cirq")
 
     class Packet(cirq.Gate):  # type: ignore[name-defined, misc]
-        def __init__(self, count: int) -> None:
+        def __init__(self, count: int, definition: FunctionRecord) -> None:
             self.count = count
+            self.flagquantum_register_definition = definition
 
         def _num_qubits_(self) -> int:
             return self.count
@@ -325,12 +326,12 @@ def test_registered_gate_words_match_the_locked_optree_fixture() -> None:
         builder = ComponentProgramBuilder(Signature((register,)), name=name)
         return builder.finalize(builder.inputs).functions[0]
 
-    first, middle, last = Packet(24), Packet(8), Packet(24)
     word = opaque_register_type(2)
+    first = Packet(24, passthrough("first", Register("x", word, (3, 4))))
+    middle = Packet(8, passthrough("middle", Register("anc", word, (4,))))
+    last = Packet(24, passthrough("last", Register("y", word, (12,))))
     definitions: dict[Hashable, FunctionRecord] = {
-        first: passthrough("first", Register("x", word, (3, 4))),
-        middle: passthrough("middle", Register("anc", word, (4,))),
-        last: passthrough("last", Register("y", word, (12,))),
+        gate: gate.flagquantum_register_definition for gate in (first, middle, last)
     }
     qubits = cirq.LineQubit.range(24)
     ancillas = cirq.NamedQubit.range(4, prefix="anc")
@@ -339,7 +340,7 @@ def test_registered_gate_words_match_the_locked_optree_fixture() -> None:
         middle.on(*ancillas, *qubits[:4]),
         last.on(*qubits),
     )
-    default = import_cirq_register_optree(optree, gate_definitions=definitions)
+    default = import_cirq_register_optree(optree)
     assert default.functions[0].registers == (
         Register("qubits", quantum_bit_type(), (28,)),
     )
@@ -432,3 +433,38 @@ def test_locked_six_wire_optree_preserves_full_phase_sensitive_unitary() -> None
         rtol=0,
         atol=2e-12,
     )
+
+
+def test_owned_gate_definition_precedence_and_name_collision() -> None:
+    cirq = pytest.importorskip("cirq")
+
+    class Owned(cirq.Gate):  # type: ignore[name-defined, misc]
+        def __init__(self, definition: object) -> None:
+            self.flagquantum_register_definition = definition
+
+        def _num_qubits_(self) -> int:
+            return 1
+
+    port = Register("word", quantum_bit_type())
+
+    def identity_definition(name: str) -> FunctionRecord:
+        builder = ComponentProgramBuilder(Signature((port,)), name=name)
+        return builder.finalize(builder.inputs).functions[0]
+
+    owned = Owned(identity_definition("gate_0"))
+    wire = cirq.LineQubit(0)
+    program = import_cirq_register_optree([cirq.X(wire), owned(wire)])
+    assert [op.callee for op in program.functions[0].blocks[0].operations] == [
+        "_gate_0",
+        "gate_0",
+    ]
+    assert bind_register_program(program, ((0,),)).circuit.instructions == (
+        Instruction("x", (0,)),
+    )
+    override = identity_definition("custom")
+    overridden = import_cirq_register_optree(
+        [owned(wire)], gate_definitions={owned: override}
+    )
+    assert overridden.functions[1] is override
+    with pytest.raises(TypeError, match="typed native FunctionRecord"):
+        import_cirq_register_optree(Owned(object())(wire))
