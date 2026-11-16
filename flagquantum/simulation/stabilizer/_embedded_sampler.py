@@ -14,11 +14,18 @@ if TYPE_CHECKING:
 
 def _operations_text(operations: tuple[_EngineOperation, ...]) -> str:
     lines = []
-    for gate, wires, arguments in operations:
+    for gate, targets, arguments in operations:
         if arguments is not None:
-            raise ValueError("embedded measurement operations take no parameters")
-        targets = " ".join(f"rec[{wire}]" if wire < 0 else str(wire) for wire in wires)
-        lines.append(f"{gate} {targets}")
+            values = arguments if isinstance(arguments, tuple) else (arguments,)
+            gate += f"({','.join(map(repr, values))})"
+        encoded = []
+        for target in targets:
+            if isinstance(target, tuple):
+                wire, pauli = target
+                encoded.append(f"{pauli}{wire}")
+            else:
+                encoded.append(f"rec[{target}]" if target < 0 else str(target))
+        lines.append(f"{gate} {' '.join(encoded)}")
     return "\n".join(lines)
 
 
@@ -33,7 +40,7 @@ class _EmbeddedSampler:
         self._handle = self._native.prepare(_operations_text(operations), seed)
         self._columns = columns
 
-    def sample(self, shots: int, *, bit_packed: bool) -> torch.Tensor:
+    def sample(self, shots: int, *, bit_packed: bool = False) -> torch.Tensor:
         width = (self._columns + 7) // 8 if bit_packed else self._columns
         buffer = self._native.sample(self._handle, shots, bit_packed)
         dtype = torch.uint8 if bit_packed else torch.bool

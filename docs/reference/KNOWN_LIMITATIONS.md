@@ -1608,6 +1608,15 @@ and recovery records remain evidence, not successful uninterrupted runs.
 Publication and actual-main acceptance remain separate from local qualification.
 Full Stim API compatibility and other platforms are not certified by this slice.
 
+## Embedded positioned-noise measurement sampling
+
+The embedded build can use the existing positioned Pauli-noise measurement
+stream for one-shot and repeated sampling. This covers the existing Clifford
+gates, single-qubit resets and readouts, and Pauli-frame mixtures accepted by
+that stream. It does not extend the supported noise models, feedback, the
+annotated Stim text path, or the supported build platforms. The standard
+profile still uses the Stim Python SDK.
+
 ## Differentiable orbital rotations
 
 The experimental `algorithms.chemistry_domain.orbital_rotation` workflow uses
