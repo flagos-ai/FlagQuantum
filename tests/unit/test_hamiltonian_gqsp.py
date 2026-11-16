@@ -267,3 +267,75 @@ def test_hubbard_example_declares_the_five_exact_costs(symbolic: bool) -> None:
         "SU2Rotation" if isinstance(child, SU2RotationGate) else keys[child]: count
         for child, count in counts.items()
     }
+
+
+@pytest.mark.parametrize("width", [1, 2])
+@pytest.mark.parametrize("time", [2, 3, 5, 10])
+@pytest.mark.parametrize("precision", [1e-5, 1e-7])
+def test_source_random_unitary_matrix_grid(
+    width: int, time: float, precision: float, pytestconfig: pytest.Config
+) -> None:
+    pytestconfig.addinivalue_line(
+        "markers", "notebook: frozen Qualtran notebook fixture"
+    )
+    pytestconfig.addinivalue_line("markers", "slow: frozen Qualtran slow fixture")
+    import cirq
+    from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+    from qualtran.bloqs.for_testing.random_select_and_prepare import (
+        random_qubitization_walk_operator,
+    )
+    from qualtran.bloqs.hamiltonian_simulation.hamiltonian_simulation_by_gqsp import (
+        HamiltonianSimulationByGQSP,
+    )
+    from qualtran.bloqs.qsp.generalized_qsp import GeneralizedQSP as SourceGQSP
+    from scipy.linalg import block_diag
+
+    random = np.random.RandomState(42)
+    reference_walk, _ = random_qubitization_walk_operator(1, 1, random_state=random)
+    original = HamiltonianSimulationByGQSP(reference_walk, t=time, precision=precision)
+    identity = np.eye(1 << width)
+    matrix = identity
+
+    def emit(
+        signal: int,
+        ports: Mapping[str, tuple[int, ...]],
+        _workspace: tuple[int, ...],
+        value: int | None,
+        adjoint: bool,
+    ) -> tuple[Instruction, ...]:
+        unitary = matrix.conj().T if adjoint else matrix
+        if value is None:
+            return (Instruction("matrix", ports["q"], matrix=unitary),)
+        controlled = (
+            block_diag(unitary, identity)
+            if value == 0
+            else block_diag(identity, unitary)
+        )
+        return (Instruction("matrix", (signal, *ports["q"]), matrix=controlled),)
+
+    prep = BlackBoxPrepare((), (), lambda *_args: (), original.alpha)
+    model = HamiltonianGQSP((("q", width),), emit, prep, time, precision)
+    np.testing.assert_array_equal(model.coefficients, original.approx_cos)
+    size = 1 << (width + 1)
+    for _ in range(5):
+        gate = MatrixGate.random(width, random_state=random)
+        matrix = cirq.unitary(gate)
+        source = SourceGQSP(
+            gate,
+            original.gqsp.P,
+            original.gqsp.Q,
+            negative_power=original.degree,
+        )
+        expected = cirq.unitary(source)
+        program = model.make_on(signal=0, target=tuple(range(1, width + 1)))
+        columns = [
+            Circuit(width + 1, inputs=column, dtype=column.dtype)
+            .append(program)
+            .state()
+            .reshape(-1)
+            .numpy()
+            for column in torch.eye(size, dtype=torch.complex128)
+        ]
+        np.testing.assert_allclose(
+            np.stack(columns, axis=-1), expected, atol=8e-12, rtol=0
+        )

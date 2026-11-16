@@ -75,3 +75,42 @@ non-slow run, the original suite has 39 passes and three expected
 failures. Q-0540 and Q-0541 retain the native Hubbard measured append
 path, projected execution evidence, and full native randomized matrix
 coverage.
+
+## Hubbard measured append and source clean-release boundary
+
+`HubbardHamiltonianGQSP` binds the existing Hubbard PREPARE, controlled
+SELECT and selection-only reflection through the generic GQSP append
+path. The caller supplies separate two-bit outer PREPARE and reflection
+temp words and seven reusable scratch wires and feedback slots for the
+2-by-2 fixture. Only a DynamicCircuit can append the measured stream.
+The degree-one example at time 0.002 and precision 0.01 emits 2,379 IR
+primitives, with 566 T/T†, 68 measurements and 68 resets. Its direct
+source declaration is one walk of each polarity, three SU2 calls and
+two outer PREPARE calls. The degree-127 notebook remains a resource
+example.
+
+The all-zero, all-one and both alternating native measurement
+histories preserve the complete complex output on the three-term test
+input. All nine reflection-temp and reusable scratch wires end zero.
+The comparison evaluates the unchanged Qualtran Cirq decomposition
+with the source's opaque one-bit ModAddK and its adjoint interpreted
+as the stated two-zero-control toggle. The original exporter cannot
+decompose that leaf. The sparse source evaluator retains every
+allocated qubit and compares every surviving complex amplitude with
+the native result. Different Cirq and native primitive refinements
+retain separate measurement counts.
+
+The source declares Free on both outer PREPARE temp bits after
+unpreparation. The test input leaves 0.016501741620346923 probability
+on their nonzero subspace. Even jointly projecting the signal and
+selection to zero leaves 0.00003027031372650665 unnormalized
+probability in that subspace. FlagQuantum exposes the outer temp
+word as a retained caller-owned output. Q-0540 remains open for the
+clean release contract. A cleanup would require separate semantic
+evidence.
+
+The native random-unitary matrix grid covers both target widths,
+four evolution times, both precisions and five locked random draws
+per combination. All 80 complete GQSP matrices agree with Qualtran.
+Q-0541 retains the full randomized block-encoded Hamiltonian
+projection grid and the native controlled Hubbard resource query.
