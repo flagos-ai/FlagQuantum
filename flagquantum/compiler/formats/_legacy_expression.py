@@ -1,4 +1,4 @@
-"""Decode an explicit arithmetic grammar for legacy symbolic wire values."""
+"""Decode the arithmetic and piecewise grammar for legacy symbolic values."""
 
 from __future__ import annotations
 
@@ -10,6 +10,7 @@ from ...errors import SerializationError
 
 if TYPE_CHECKING:
     from sympy import Expr
+    from sympy.logic.boolalg import Boolean
 
 _BINARY = {
     ast.Add: operator.add,
@@ -17,7 +18,18 @@ _BINARY = {
     ast.Mult: operator.mul,
     ast.Div: operator.truediv,
     ast.Pow: operator.pow,
+    ast.Mod: operator.mod,
 }
+_RELATIONS = {
+    ast.Eq: "Eq",
+    ast.NotEq: "Ne",
+    ast.Lt: "Lt",
+    ast.LtE: "Le",
+    ast.Gt: "Gt",
+    ast.GtE: "Ge",
+}
+_BOOLEAN_INFIX = {ast.BitAnd: "And", ast.BitOr: "Or", ast.BitXor: "Xor"}
+_BOOLEAN_CALLS = {"And", "Or", "Xor", "Not", "Implies", "Equivalent", "ITE"}
 _CONSTANTS = {"E", "I", "pi", "oo", "nan", "zoo"}
 _FUNCTIONS = {
     "Abs",
@@ -35,6 +47,10 @@ _FUNCTIONS = {
     "acos",
     "atan",
     "sign",
+    "Mod",
+    "KroneckerDelta",
+    "binomial",
+    "factorial",
 }
 _CURVE_FUNCTIONS = {"ec_times_x", "ec_times_y"}
 _MAX_EXPRESSION_LENGTH = 4096
@@ -64,18 +80,79 @@ def _check_power_budget(left: Expr | int | float, right: Expr | int | float) -> 
         raise SerializationError("Legacy symbolic exponent exceeds the decode budget")
 
 
+def _check_combinatorial_budget(name: str, values: tuple[Expr, ...]) -> None:
+    from sympy import Integer, Rational
+
+    if name == "factorial" and len(values) == 1:
+        value = values[0]
+        if isinstance(value, Integer) and value > _MAX_INTEGER_BITS:
+            raise SerializationError(
+                "Legacy symbolic factorial exceeds the decode budget"
+            )
+    if name == "binomial" and len(values) == 2:
+        n, k = values
+        if isinstance(k, Integer) and k > 0:
+            if isinstance(n, Integer) and n >= 0:
+                if k > n:
+                    return
+                k = min(k, n - k)
+            if k > _MAX_INTEGER_BITS or (
+                isinstance(n, Rational)
+                and k * max(n.p.bit_length(), n.q.bit_length()) > 4 * _MAX_INTEGER_BITS
+            ):
+                raise SerializationError(
+                    "Legacy symbolic binomial exceeds the decode budget"
+                )
+
+
 def parse_legacy_expression(text: str) -> Expr:
     """Build trusted SymPy nodes from syntax without evaluating Python calls."""
     import sympy
-    from sympy import Float, Integer, Symbol
+    from sympy import Expr, Float, Integer, Symbol
 
     if len(text) > _MAX_EXPRESSION_LENGTH:
         raise SerializationError("Legacy symbolic expression exceeds the decode budget")
 
+    def condition(node: ast.expr) -> Boolean:
+        if isinstance(node, ast.Constant) and type(node.value) is bool:
+            return sympy.true if node.value else sympy.false
+        if isinstance(node, ast.Name) and not node.id.startswith("_"):
+            value = evaluate(node)
+            if isinstance(value, Symbol):
+                return value
+        if isinstance(node, ast.Compare) and len(node.ops) == 1:
+            relation = _RELATIONS.get(type(node.ops[0]))
+            if relation is not None:
+                return getattr(sympy, relation)(
+                    evaluate(node.left), evaluate(node.comparators[0])
+                )
+        if isinstance(node, ast.BinOp) and type(node.op) in _BOOLEAN_INFIX:
+            operation = _BOOLEAN_INFIX[type(node.op)]
+            return getattr(sympy, operation)(
+                condition(node.left), condition(node.right)
+            )
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.Invert):
+            return sympy.Not(condition(node.operand))
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and not node.keywords
+        ):
+            name = node.func.id
+            if name in _RELATIONS.values() and len(node.args) == 2:
+                return getattr(sympy, name)(*(evaluate(arg) for arg in node.args))
+            if name in _BOOLEAN_CALLS:
+                return getattr(sympy, name)(*(condition(arg) for arg in node.args))
+        raise SerializationError(
+            f"Unsupported legacy symbolic predicate: {type(node).__name__}"
+        )
+
     def evaluate(node: ast.expr) -> Expr:
         if isinstance(node, ast.Constant):
             if type(node.value) is int:
-                return Integer(node.value)
+                literal = Integer(node.value)
+                _check_integer_size(literal)
+                return literal
             if type(node.value) is float:
                 return Float(ast.get_source_segment(text, node) or str(node.value))
         elif isinstance(node, ast.Name) and not node.id.startswith("_"):
@@ -100,8 +177,19 @@ def parse_legacy_expression(text: str) -> Expr:
             name = node.func.id
             if name in _CURVE_FUNCTIONS and len(node.args) == 2:
                 return sympy.Function(name)(*(evaluate(arg) for arg in node.args))
+            if name == "Piecewise" and node.args:
+                branches = []
+                for arg in node.args:
+                    if not isinstance(arg, ast.Tuple) or len(arg.elts) != 2:
+                        raise SerializationError("Unsupported legacy Piecewise branch")
+                    branches.append((evaluate(arg.elts[0]), condition(arg.elts[1])))
+                piecewise = sympy.Piecewise(*branches)
+                if isinstance(piecewise, Expr):
+                    return piecewise
             if name in _FUNCTIONS:
-                result = getattr(sympy, name)(*(evaluate(arg) for arg in node.args))
+                values = tuple(evaluate(arg) for arg in node.args)
+                _check_combinatorial_budget(name, values)
+                result = getattr(sympy, name)(*values)
                 if isinstance(result, sympy.Expr):
                     _check_integer_size(result)
                     return result
@@ -111,7 +199,13 @@ def parse_legacy_expression(text: str) -> Expr:
 
     try:
         return evaluate(ast.parse(text, mode="eval").body)
-    except (SyntaxError, TypeError, ValueError, RecursionError, OverflowError) as error:
+    except (
+        SyntaxError,
+        TypeError,
+        ValueError,
+        RecursionError,
+        ArithmeticError,
+    ) as error:
         if isinstance(error, SerializationError):
             raise
         raise SerializationError("Invalid legacy symbolic expression") from error
