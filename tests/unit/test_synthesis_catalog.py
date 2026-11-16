@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 129
+    assert len(validated) == 130
+    assert (
+        "algorithms/quantum_state_preparation/fermionic_gaussian/fermionic_gaussian",
+        "examples/synthesis/algorithms/quantum_state_preparation/fermionic_gaussian/overview/main.py",
+    ) in validated
     assert (
         "applications/optimization/adapt_qaoa/adapt_qaoa",
         "examples/synthesis/applications/optimization/adapt_qaoa/overview/main.py",
@@ -645,7 +649,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**129/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**130/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
