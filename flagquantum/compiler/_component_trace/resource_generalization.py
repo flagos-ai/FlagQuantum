@@ -229,6 +229,13 @@ class OnEachCall:
             raise ValueError("OnEach requires a nonnegative integer width")
 
 
+@dataclass(frozen=True)
+class ResourceSequenceCall:
+    """An ordered decomposition for gate-cost queries."""
+
+    calls: tuple[ResourceCall, ...]
+
+
 ResourceCall = (
     ArithmeticCall
     | ComponentCost
@@ -252,6 +259,7 @@ ResourceCall = (
     | PartitionedCall
     | PowerCall
     | OnEachCall
+    | ResourceSequenceCall
 )
 
 DeclaredResourceCalls = Mapping[ResourceCall, Mapping[ResourceCall, SymbolicInt]]
@@ -264,6 +272,8 @@ def _resource_callees(
         yield from declared_calls[node].items()
     elif isinstance(node, ComponentCost):
         yield from _component_calls(node)
+    elif isinstance(node, ResourceSequenceCall):
+        yield from ((call, 1) for call in node.calls)
     elif isinstance(node, PowerCall):
         yield node.child, node.repetitions
     elif isinstance(node, OnEachCall):

@@ -26,6 +26,7 @@ from .resource_generalization import (
     PowerCall,
     PredicateControlledCall,
     ResourceCall,
+    ResourceSequenceCall,
     RotationCall,
     _resource_callees,
     arbitrary_clifford_cost_key,
@@ -43,9 +44,9 @@ def decomposed_resource_callees(
     Explicit rows replace all automatic children. Unsupported identities
     retain the historical QEC diagnostic for existing callers.
     """
-    if isinstance(node, (ComponentCost, PowerCall, OnEachCall)) or (
-        declared_calls is not None and node in declared_calls
-    ):
+    if isinstance(
+        node, (ComponentCost, PowerCall, OnEachCall, ResourceSequenceCall)
+    ) or (declared_calls is not None and node in declared_calls):
         yield from _resource_callees(node, declared_calls)
     elif isinstance(node, ConjunctionCall):
         controls = node.controls
