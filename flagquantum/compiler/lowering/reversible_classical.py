@@ -13,13 +13,17 @@ def lower_classical_assignment(
     operations = [
         Operation("push_condition", (), condition_bit=slot) for slot in scopes
     ]
-    if assignment.sources.count(assignment.target) % 2 == 0:
+    self_reads = assignment.sources.count(assignment.target)
+    if self_reads % 2 == 0:
+        # An old-value read proves the target is defined. A self-guarded
+        # inversion clears it without introducing a fresh definition.
+        invert_to_clear = bool(scopes or self_reads)
         operations.append(
             Operation(
-                "bit_invert" if scopes else "bit_store0",
+                "bit_invert" if invert_to_clear else "bit_store0",
                 (),
                 result_bit=assignment.target,
-                condition_bit=assignment.target if scopes else None,
+                condition_bit=assignment.target if invert_to_clear else None,
             )
         )
     operations.extend(

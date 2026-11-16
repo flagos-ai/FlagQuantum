@@ -152,10 +152,37 @@ routine grows it to the reserved ID. The native adapter round-trips the
 wire format by ID. The source allocation-time name displacement remains
 an upstream defect.
 
+## Broadcast CX and CZ with classical and X-basis operands
+
+The direct source dependencies are `py/circuit/ops/cx.cc`
+(blob `b83879b628ef730c0ca6c499868d0eb467e7d2a4`) and `cz.cc`
+(blob `e418d2ebe013f419f2ac5a8128b5431f3e198dd7`). They validate
+equal lengths and check mixed operand tags before emitting an operation.
+CX rejects quantum control of a classical target. With a classical target,
+each lane reads the previous target and the current control and writes the
+XOR in lane order. A bit controlling its own inversion clears the bit
+and now emits the same KMX `BIT_INVERT bN if bN` form as the source.
+
+A known X eigenvalue provides a constant phase control. A measured X
+eigenvalue reads a classical slot. Both use the existing controlled sign
+emitter. The locked source matrix covers 24 CX and 16 CZ requests, including
+38 operation streams and two atomic refusals. Classical guard sets are
+compared after scope expansion. The ordered classical alias chain matches
+the source bytes and final values for all eight input assignments. The
+X-basis probe compares all 16 complex amplitudes for each of eight
+classical assignments, including scalar phase.
+
+The source alias chain emits three conditional bit inversions, with no
+measurement or workspace. The selected X-basis example emits Z1, NEG2,
+and X1 in KMX with the corresponding classical guards. In circuit IR each
+NEG is represented by four scalar-sign primitives. The source defines
+no separate analytical model for these dispatch rules.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
-Classical and X-basis broadcast targets, other C++ scope guards, general
-loop patterns and debug metadata beyond named block ranges have separate
-source assertions.
+C++ allocation scopes, general loop patterns and debug metadata beyond
+named block ranges have separate source assertions. The full public mixed
+vector admission and degenerate quantum wire aliases remain outside the
+checked dispatch fixtures.
 The original `CircuitBuilder.*` suite passed all 27 tests with GoogleTest
 1.14.0 from the locked Bazel manifest. The build compiled the unchanged
 builder, original tests and test helpers, and linked the remaining native

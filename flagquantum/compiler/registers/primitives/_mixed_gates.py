@@ -4,6 +4,9 @@
 
 """Shared gate dispatch for the locked comparator schedules."""
 
+from dataclasses import dataclass
+
+from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from .global_phase import ccz_ir, scalar_sign_ir
@@ -163,6 +166,69 @@ def _parity_controlled_flip(
     return (*apply(first, *controls), *apply(second, *controls))
 
 
+@dataclass(frozen=True)
+class _XBasisTarget:
+    """Known or measured X eigenvalue, true denoting the minus eigenstate."""
+
+    outcome: bool | ClassicalFieldCoefficient
+
+
+def _is_z_operand(value: object) -> bool:
+    return type(value) in (int, bool) or isinstance(value, ClassicalFieldCoefficient)
+
+
+def _broadcast_cx(
+    controls: tuple[_Control, ...],
+    targets: tuple[int | ClassicalFieldCoefficient | _XBasisTarget, ...],
+) -> tuple[Instruction, ...]:
+    """Apply ordered CX lanes, with phase kickback for X-basis targets."""
+    if len(controls) != len(targets):
+        raise ValueError("Broadcast controls and targets must have equal lengths")
+    for control, target in zip(controls, targets, strict=True):
+        if not _is_z_operand(control):
+            raise ValueError("CX requires a Z-basis control")
+        if isinstance(target, ClassicalFieldCoefficient) and type(control) is int:
+            raise ValueError("Quantum control cannot flip a classical target")
+        if type(target) is bool:
+            raise ValueError("CX cannot flip a compile-time Boolean target")
+
+    gates: list[Instruction] = []
+    for control, target in zip(controls, targets, strict=True):
+        if isinstance(target, _XBasisTarget):
+            gates.extend(_flip(None, control, target.outcome))
+        elif isinstance(target, ClassicalFieldCoefficient):
+            if control is True:
+                gates.append(
+                    ClassicalXor(
+                        (target.slot,), target.slot, constant=True
+                    ).instruction()
+                )
+            elif isinstance(control, ClassicalFieldCoefficient):
+                gates.append(
+                    ClassicalXor((target.slot, control.slot), target.slot).instruction()
+                )
+        else:
+            gates.extend(_flip(target, control))
+    return tuple(gates)
+
+
+def _broadcast_cz(
+    left: tuple[_Control, ...], right: tuple[_Control, ...]
+) -> tuple[Instruction, ...]:
+    """Apply one controlled sign per ordered pair of Z-basis controls."""
+    if len(left) != len(right):
+        raise ValueError("Broadcast controls and targets must have equal lengths")
+    if not all(
+        _is_z_operand(value) for operands in (left, right) for value in operands
+    ):
+        raise ValueError("CZ requires Z-basis controls")
+    return tuple(
+        gate
+        for first, second in zip(left, right, strict=True)
+        for gate in _flip(None, first, second)
+    )
+
+
 def _broadcast_controlled_flip(
     control: _Control,
     controls: tuple[_Control, ...],
@@ -178,6 +244,12 @@ def _broadcast_controlled_flip(
     """
     if control is False:
         return ()
+    if control is True:
+        return (
+            _broadcast_cz(controls, targets)
+            if phase
+            else _broadcast_cx(controls, targets)
+        )
     if type(control) is not int and len(controls) != len(targets):
         raise ValueError("Broadcast controls and targets must have equal lengths")
     # The locked homogeneous quantum loop packs its lane operand first.
