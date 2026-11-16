@@ -21,6 +21,9 @@ from flagquantum.algorithms.fermion.density import (
     two_body_density,
     two_body_density_observables,
 )
+from flagquantum.algorithms.fermion.density_projection import (
+    project_fixed_particle_densities,
+)
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.ecosystem.chemistry.fcidump import read_fcidump
@@ -45,11 +48,9 @@ def reconstruct_energy(
     return energy
 
 
-def measure_h2(
-    angle: torch.Tensor, encoding: Encoding
+def _measure_densities(
+    problem: MolecularProblem, angle: torch.Tensor, encoding: Encoding
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """Return particle-pair count, reconstructed energy and direct energy."""
-    problem = read_fcidump(H2_FCIDUMP, max_orbitals=2)
     width = problem.n_modes
     encoded = encode_fermion(
         fermion_hamiltonian(problem), n_modes=width, encoding=encoding
@@ -72,10 +73,19 @@ def measure_h2(
     ).expectations
     gamma = one_body_density(values[: len(one)], n_modes=width)
     pair_density = two_body_density(values[len(one) : -1], n_modes=width)
+    return gamma, pair_density, values[-1].reshape(())
+
+
+def measure_h2(
+    angle: torch.Tensor, encoding: Encoding
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Return particle-pair count, reconstructed energy and direct energy."""
+    problem = read_fcidump(H2_FCIDUMP, max_orbitals=2)
+    gamma, pair_density, direct = _measure_densities(problem, angle, encoding)
     return (
         torch.einsum("pqqp->", pair_density).real,
         reconstruct_energy(problem, gamma, pair_density),
-        values[-1].reshape(()),
+        direct,
     )
 
 
@@ -95,7 +105,31 @@ def main(encoding: Encoding = "jordan_wigner") -> None:
     print(f"Direct energy residual: {(energy.real - direct).abs().detach().item():.3e}")
 
 
+def _projection_example(encoding: Encoding) -> None:
+    problem = read_fcidump(H2_FCIDUMP, max_orbitals=2)
+    angle = torch.tensor(0.6, dtype=torch.float64)
+    gamma, pairs, direct = _measure_densities(problem, angle, encoding)
+    exact = project_fixed_particle_densities(gamma, pairs, n_particles=2)
+    torch.testing.assert_close(exact[0], gamma, atol=1e-12, rtol=0)
+    torch.testing.assert_close(exact[1], pairs, atol=1e-12, rtol=0)
+    torch.testing.assert_close(direct, reconstruct_energy(problem, *exact).real)
+    disturbed = (1.05 * gamma, 0.9 * pairs)
+    projected = project_fixed_particle_densities(*disturbed, n_particles=2)
+    for label, (one_body, two_body) in (("Input", disturbed), ("Projected", projected)):
+        residual = (torch.einsum("pqqs->ps", two_body) - one_body).abs().max()
+        energy = reconstruct_energy(problem, one_body, two_body).real
+        print(f"{label} contraction residual: {residual.item():.3e}")
+        print(f"{label} energy: {energy.item():.10f} Ha")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--encoding", choices=ENCODINGS, default="jordan_wigner")
-    main(parser.parse_args().encoding)
+    parser.add_argument(
+        "--project", action="store_true", help="project deliberately perturbed RDMs"
+    )
+    args = parser.parse_args()
+    if args.project:
+        _projection_example(args.encoding)
+    else:
+        main(args.encoding)

@@ -153,7 +153,10 @@ OpenFermion/Cirq dependency, new RDM class or execution implementation.
 Step D landed in #1181 as a separate experimental registration. Step E
 landed in #1182 and provides [native two-body measurements and H2 energy reconstruction](FERMION_TWO_BODY_DENSITY.md)
 for small full-register CPU states. A separate Integration change records that
-workflow as experimental. Measured-data constraint projection remains deferred.
+workflow as experimental (#1183). The independent
+[fixed-particle projection](FERMION_RDM_PROJECTION.md) covers a small static
+CPU linear-constraint slice; stronger representability checks, sampling and
+noise models remain deferred.
 The upstream inventory and its hashes still refer to the original audit pin;
 neither root import count nor this delivery update implies full compatibility.
 
@@ -174,7 +177,7 @@ neither root import count nor this delivery update implies full compatibility.
 - **Sparse reference solver:** requires an explicit size budget and a current
   scientific need beyond small dense tests. It must not become a backend or
   bypass one of the three owned numerical cores.
-- **RDM constraint projection, bosonic interop, resource-estimate families and
+- **Broader RDM constraints, bosonic interop, resource-estimate families and
   additional encodings:** remain separate proposals. Their downstream need,
   dependency review and replacement/conformance evidence must precede code.
 

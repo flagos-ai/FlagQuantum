@@ -36,6 +36,13 @@ to reconstruct the energy and angle gradient of a four-mode H2 determinant
 pair. See the [two-body scope](../../../docs/development/FERMION_TWO_BODY_DENSITY.md)
 for the pair order, molecular coefficient convention and O(n^4) costs.
 
+For static measured densities with a known particle number, the optional
+[fixed-particle projection](../../../docs/development/FERMION_RDM_PROJECTION.md)
+operates on the assembled tensors and leaves the raw measurements untouched.
+Add `--project` to the two-body H2 example to compare constraint residuals
+and energies. The projection enforces linear identities, without a positivity
+or N-representability guarantee.
+
 Modules are split by numerical responsibility: decomposition.py returns adjacent
 orbital matrices without importing Circuit; lowering.py lifts them to JW gates;
 preparation.py creates Slater determinants and canonical Gaussian vacua.
