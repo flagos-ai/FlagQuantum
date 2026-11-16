@@ -16,7 +16,8 @@ share `CircuitIR` where their entry points require it.
 provides shared register decompositions. `_torch/` owns the PyTorch frontend
 capture and training compilation. Documented compiler entry modules remain
 importable at their existing paths. Deployment packaging is owned by
-[`flagquantum.deployment`](../deployment/).
+[`flagquantum.deployment`](../deployment/). Bounded Pauli products and
+product-formula schedules are implemented in [`lowering/`](lowering/).
 
 Transform quantum programs while preserving their numerical meaning,
 measurement behavior, and required gradients. The design direction is one

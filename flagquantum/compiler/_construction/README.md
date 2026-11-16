@@ -8,6 +8,8 @@ selection and lowering to CircuitIR.
 
 | Module | Responsibility |
 | --- | --- |
+| `_fixed_word.py` | Exact fixed-word expressions and XOR truth tables |
+| `_phase_polynomial.py`, `_phase_factors.py`, `_sparse_predicate.py` | Shared phase expansion, Boolean factor preservation, and sparse predicate evaluation |
 | `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
 | `fixed_point.py` | Bounded quantized scalar arithmetic, shared prepared-selector rows and actual-value discard-environment proofs |
 | `fixed_point_program.py` | Shared fresh bindings, read/drop ownership facts and reversible output-column lowering |

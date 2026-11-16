@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...compiler import _pauli_products as products
+from ...compiler.lowering import _pauli_products as products
 from .syntax import Expression, Statement, Token, reject
 
 if TYPE_CHECKING:

@@ -9,11 +9,11 @@ from decimal import Decimal
 from operator import eq, ge, gt, le, lt, ne
 from typing import NoReturn
 
-from ...compiler import _pauli_schedule
 from ...compiler._construction.numeric_expression import WordExpression
 from ...compiler._hybrid.model import (
     HybridProgram,
 )
+from ...compiler.lowering import _pauli_schedule
 from .angles import REAL_LITERAL
 from .cscope import QaoaWorkflow
 from .fixed_payoff import inferred_computation
