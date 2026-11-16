@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 143
+    assert len(validated) == 144
+    assert (
+        "applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator",
+        "examples/synthesis/applications/chemistry/quantum_drude_oscillator/overview/main.py",
+    ) in validated
     assert (
         "algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation",
         "examples/synthesis/algorithms/search_and_optimization/quantum_likelihood_estimation/overview/main.py",
@@ -701,7 +705,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**143/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**144/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
