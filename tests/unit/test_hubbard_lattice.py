@@ -373,3 +373,53 @@ def test_single_site_interaction_uses_one_direct_phase():
     )
     with pytest.raises(ValueError, match="positive concrete width"):
         HubbardInteraction.make_on(**arguments, hamming_weight=True)
+
+
+@pytest.mark.parametrize("stripped", (False, True))
+@pytest.mark.parametrize("adjoint", (False, True))
+@pytest.mark.parametrize("hamming_weight", (False, True))
+def test_suzuki_operands_match_ordered_standalone_layers(
+    stripped, adjoint, hamming_weight
+):
+    common = dict(
+        length=2,
+        up=(2, 0, 6, 4),
+        down=(3, 1, 7, 5),
+        workspace=_WORK if hamming_weight else (),
+        hamming_weight=hamming_weight,
+    )
+    timestep, hubb_u, hubb_t = -0.34, 1.23, -0.51
+    plan = [("pink", 0.5), ("gold", 1.0), ("pink", 0.5)]
+    if stripped:
+        plan.append(("interaction", 1.0))
+    else:
+        plan = [("interaction", 0.5), *plan, ("interaction", 0.5)]
+    if adjoint:
+        plan.reverse()
+    expected = []
+    for term, coefficient in plan:
+        time = coefficient * timestep
+        if term == "interaction":
+            op = HubbardInteraction.make_on(
+                **common, timestep=time, hubb_u=hubb_u, adjoint=adjoint
+            )
+        else:
+            op = HubbardHoppingTile.make_on(
+                **common,
+                timestep=time,
+                hubb_t=hubb_t,
+                pink=term == "pink",
+                adjoint=adjoint,
+            )
+        (layer,) = op.layers
+        expected.extend(layer.emit(common["workspace"], (0,) if hamming_weight else ()))
+    op = HubbardSuzukiStep.make_on(
+        **common,
+        timestep=timestep,
+        hubb_u=hubb_u,
+        hubb_t=hubb_t,
+        strip_layer=stripped,
+        adjoint=adjoint,
+    )
+    circuit = DynamicCircuit(11) if hamming_weight else Circuit(8)
+    assert circuit.append(op).to_ir().instructions == tuple(expected)

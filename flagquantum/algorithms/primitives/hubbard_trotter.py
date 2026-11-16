@@ -9,6 +9,7 @@ from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from .hubbard_resource_model import (
     source_hubbard_hopping_tile_cost,
     source_hubbard_interaction_cost,
+    source_hubbard_interaction_signature,
 )
 
 
@@ -57,4 +58,7 @@ def source_hubbard_suzuki_cost(
                 hamming_weight=hamming_weight,
             )
         calls.append(CostCall(cost))
-    return ComponentCost("HubbardSuzukiStep", 2 * length, calls=tuple(calls))
+    signature = source_hubbard_interaction_signature(length)
+    return ComponentCost(
+        "HubbardSuzukiStep", int(signature.n_qubits()), calls=tuple(calls)
+    )
