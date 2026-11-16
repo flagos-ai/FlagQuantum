@@ -30,6 +30,27 @@ from ...core.value_parameters import is_symbolic_value
 from ...dynamic import DynamicCircuit
 
 
+def shor_factoring_parameters(
+    modulus: SymbolicInt, base: SymbolicInt | None, random_state: RandomState | None
+) -> tuple[SymbolicInt, SymbolicInt]:
+    """Return the source word width and optional seeded base for either factory."""
+    if is_symbolic_value(modulus):
+        from sympy import Symbol, ceiling, log
+
+        return ceiling(log(modulus, 2)), Symbol("g") if base is None else base
+    value = int(modulus)
+    width = ceil(log2(value))
+    if base is not None:
+        return width, base
+    if value <= 2:
+        raise ValueError("Random factoring base selection requires modulus > 2")
+    rng = RandomState() if random_state is None else random_state
+    candidate = int(rng.randint(2, value))
+    while gcd(candidate, value) != 1:
+        candidate = int(rng.randint(2, value))
+    return width, candidate
+
+
 @dataclass(frozen=True)
 class _BoundModularExponentiation:
     wires: tuple[int, ...]
@@ -74,24 +95,7 @@ class ModularExponentiation:
         random_state: RandomState | None = None,
     ) -> ModularExponentiation:
         """Use the source factoring widths and its optional seeded base selection."""
-        from sympy import Symbol, ceiling, log
-
-        if is_symbolic_value(modulus):
-            width = ceiling(log(modulus, 2))
-            if base is None:
-                base = Symbol("g")
-        else:
-            value = int(modulus)
-            width = ceil(log2(value))
-            if base is None:
-                if value <= 2:
-                    raise ValueError(
-                        "Random factoring base selection requires modulus > 2"
-                    )
-                rng = RandomState() if random_state is None else random_state
-                base = int(rng.randint(2, value))
-                while gcd(base, value) != 1:
-                    base = int(rng.randint(2, value))
+        width, base = shor_factoring_parameters(modulus, base, random_state)
         return cls(base, modulus, 2 * width, width)
 
     @property
