@@ -36,6 +36,7 @@ _FUNCTIONS = {
     "atan",
     "sign",
 }
+_CURVE_FUNCTIONS = {"ec_times_x", "ec_times_y"}
 _MAX_EXPRESSION_LENGTH = 4096
 _MAX_INTEGER_BITS = 16384
 
@@ -93,13 +94,16 @@ def parse_legacy_expression(text: str) -> Expr:
         elif (
             isinstance(node, ast.Call)
             and isinstance(node.func, ast.Name)
-            and node.func.id in _FUNCTIONS
             and not node.keywords
         ):
-            result = getattr(sympy, node.func.id)(*(evaluate(arg) for arg in node.args))
-            if isinstance(result, sympy.Expr):
-                _check_integer_size(result)
-                return result
+            name = node.func.id
+            if name in _CURVE_FUNCTIONS and len(node.args) == 2:
+                return sympy.Function(name)(*(evaluate(arg) for arg in node.args))
+            if name in _FUNCTIONS:
+                result = getattr(sympy, name)(*(evaluate(arg) for arg in node.args))
+                if isinstance(result, sympy.Expr):
+                    _check_integer_size(result)
+                    return result
         raise SerializationError(
             f"Unsupported legacy symbolic syntax: {type(node).__name__}"
         )
