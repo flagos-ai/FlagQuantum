@@ -157,6 +157,8 @@ def source_phase_gradient_lookup_resource_formula(
     )
     address = selection_width + control_count
     addition_peak = smax(3, 2 * phase_width) + address
+    # Allocate contributes the maximum of its empty input and angle output.
+    allocation_peak = address + phase_width + smax(0, phase_width)
     width = cast(
         SymbolicInt,
         smax(
@@ -164,6 +166,7 @@ def source_phase_gradient_lookup_resource_formula(
             address + 2 * phase_width,
             qrom.logical_qubits + phase_width,
             addition_peak,
+            allocation_peak,
         ),
     )
     return SymbolicResourceFormula(
