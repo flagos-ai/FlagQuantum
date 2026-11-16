@@ -7,6 +7,7 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import cached_property
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import (
@@ -34,6 +35,13 @@ from ...compiler.registers.sorting.contiguous_index import (
     source_contiguous_index_cost,
 )
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+    quantum_bit_type,
+)
+from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.signatures import Signature
 from .thc_chemistry_data import THCChemistryData
 from .thc_uniform_preparation import THCUniformPreparation
 
@@ -50,28 +58,75 @@ class PrepareTHCChemistry:
 
     data: THCChemistryData
 
+    @cached_property
+    def selection_registers(self) -> tuple[Register, ...]:
+        """Return source through ports in the signed preparation order."""
+        width = self.data.num_mu.bit_length()
+        orbit = bounded_unsigned_register_type(width, self.data.num_mu + 1)
+        bit = bounded_unsigned_register_type(1)
+        return (
+            Register("mu", orbit),
+            Register("nu", orbit),
+            *(Register(name, bit) for name in ("plus_mn", "plus_a", "plus_b")),
+            Register(
+                "sigma", bounded_unsigned_register_type(self.data.probability_bits)
+            ),
+            *(Register(name, bit) for name in ("rot", "succ", "nu_eq_mp1")),
+        )
+
+    @cached_property
+    def qroam_target_registers(self) -> tuple[Register, ...]:
+        """Declare selected alias values and the two sign bits."""
+        return tuple(
+            Register(
+                name,
+                (
+                    quantum_bit_type()
+                    if name in ("theta", "alt_theta")
+                    else opaque_register_type(width)
+                ),
+                side=RegisterSide.RIGHT,
+            )
+            for name, width in self.data.target_layout
+        )
+
+    @cached_property
+    def qroam_extra_target_registers(self) -> tuple[Register, ...]:
+        """Retain the source's zero-length bank declarations at block size one."""
+        cells = (1 << self.data.log_block_size) - 1
+        return tuple(
+            Register(
+                f"junk_{reg.name}", reg.dtype, shape=(cells,), side=RegisterSide.RIGHT
+            )
+            for reg in self.qroam_target_registers
+        )
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return (
+            Register("s", opaque_register_type(self.data.address_width)),
+            Register("less_than", quantum_bit_type()),
+            Register("extra_ctrl", quantum_bit_type()),
+            *self.qroam_target_registers,
+            *self.qroam_extra_target_registers,
+        )
+
+    @cached_property
+    def source_signature(self) -> Signature:
+        return Signature((*self.selection_registers, *self.junk_registers))
+
     @property
     def selection_layout(self) -> RegisterLayout:
-        width = self.data.num_mu.bit_length()
-        return (
-            ("mu", width),
-            ("nu", width),
-            ("plus_mn", 1),
-            ("plus_a", 1),
-            ("plus_b", 1),
-            ("sigma", self.data.probability_bits),
-            ("rot", 1),
-            ("succ", 1),
-            ("nu_eq_mp1", 1),
+        return tuple(
+            (reg.name, int(reg.total_bits())) for reg in self.selection_registers
         )
 
     @property
     def junk_layout(self) -> RegisterLayout:
-        return (
-            ("s", self.data.address_width),
-            ("less_than", 1),
-            ("extra_ctrl", 1),
-            *self.data.lookup_output_layout,
+        return tuple(
+            (reg.name, int(reg.total_bits()))
+            for reg in self.junk_registers
+            if reg.shape != (0,)
         )
 
     def requirements(self) -> tuple[int, int]:
@@ -229,7 +284,7 @@ class PrepareTHCChemistry:
         symmetry = ComponentCost(
             "MultiControlX", 4, GateCost(and_bloq=1, clifford=2, measurement=1)
         )
-        logical = sum(bits for _, bits in (*self.selection_layout, *self.junk_layout))
+        logical = int(self.source_signature.n_qubits())
         banks = sum(bits for _, bits in data.lookup_output_layout)
         before_lookup = logical - banks
         calls = (

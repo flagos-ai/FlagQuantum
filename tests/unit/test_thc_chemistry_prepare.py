@@ -15,7 +15,7 @@ from flagquantum.compiler._component_trace.resource_comparison import (
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_first_quantization_resource_model import assert_source_model
-from tests.unit.test_sparse_chemistry_prepare import _branch
+from tests.unit.test_sparse_chemistry_prepare import _assert_sparse_signature, _branch
 
 pytestmark = pytest.mark.unit
 
@@ -48,6 +48,20 @@ def test_source_prepare_cost_and_unchanged_original_body_flag(m, bits, log):
         get_cost_value(source, QECGatesCost()).asdict()
     )
     source_adjoint = source.adjoint()
+    _assert_sparse_signature(native.source_signature, source.signature)
+    _assert_sparse_signature(
+        native.source_signature.adjoint(), source_adjoint.signature
+    )
+    _assert_sparse_signature(native.selection_registers, source.selection_registers)
+    _assert_sparse_signature(native.junk_registers, source.junk_registers)
+    _assert_sparse_signature(
+        native.qroam_target_registers, source.qroam_target_registers
+    )
+    _assert_sparse_signature(
+        native.qroam_extra_target_registers, source.qroam_extra_target_registers
+    )
+    assert native.junk_layout[3:] == data.lookup_output_layout
+
     assert {
         k: v for k, v in asdict(native.source_gate_cost(adjoint=True)).items() if v
     } == get_cost_value(source_adjoint, QECGatesCost()).asdict()

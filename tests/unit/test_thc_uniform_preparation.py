@@ -14,7 +14,7 @@ from flagquantum.compiler._component_trace.resource_comparison import (
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_first_quantization_resource_model import assert_source_model
-from tests.unit.test_sparse_chemistry_prepare import _branch
+from tests.unit.test_sparse_chemistry_prepare import _assert_sparse_signature, _branch
 
 pytestmark = pytest.mark.unit
 
@@ -29,6 +29,10 @@ def test_locked_thc_uniform_cost(m, n):
     native = THCUniformPreparation(m, n)
     assert native.layout == tuple(
         (reg.name, reg.total_bits()) for reg in source.signature
+    )
+    _assert_sparse_signature(native.source_signature, source.signature)
+    _assert_sparse_signature(
+        native.source_signature.adjoint(), source.adjoint().signature
     )
     assert len(source.decompose_bloq().bloq_instances) == 35
     assert_source_model(native.source_resource_model(), source)

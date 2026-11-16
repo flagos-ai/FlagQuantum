@@ -34,6 +34,9 @@ from ...compiler.registers.preparation.prepare_reflection import (
     source_uncontrolled_prepare_reflection_cost,
 )
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 
 
 @dataclass(frozen=True)
@@ -61,9 +64,21 @@ class THCUniformPreparation:
             raise ValueError("THC dimensions must fit the unsigned address registers")
 
     @property
+    def source_signature(self) -> Signature:
+        """Declare the source's two opaque address words and through flags."""
+        orbit = opaque_register_type(self.num_mu.bit_length())
+        flag = quantum_bit_type()
+        return Signature(
+            (
+                Register("mu", orbit),
+                Register("nu", orbit),
+                *(Register(name, flag) for name in ("nu_eq_mp1", "succ", "rot")),
+            )
+        )
+
+    @property
     def layout(self) -> RegisterLayout:
-        width = self.num_mu.bit_length()
-        return (("mu", width), ("nu", width), ("nu_eq_mp1", 1), ("succ", 1), ("rot", 1))
+        return tuple((reg.name, int(reg.total_bits())) for reg in self.source_signature)
 
     def requirements(self) -> tuple[int, int]:
         """Return clean work and reusable measurement slots."""
