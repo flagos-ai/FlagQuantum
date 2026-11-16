@@ -59,7 +59,7 @@ these four source blobs before comparisons.
 | _is_leaf_node | A node with no positive-cost successors emits one row, including a zero-cost root. A single positive T/T-adjoint child collapses through is_t_gate. |
 | _populate_flame_graph_data | iter_flame_graph_data preserves successor insertion order, positive-cost filtering, DFS path titles, tab-separated cost and repeated complete subtrees. Streaming replaces list multiplication. |
 | get_flame_graph_data | iter_resource_flame_graph_data composes existing graph construction, Compiler full costs, native titles and T-terminal recognition for ordered multiple roots. Streaming and caller-owned files are explicit adaptations. |
-| get_flame_graph_svg_data | render_flame_graph_svg streams rows to a temporary directory and invokes an explicit executable with --countname TCounts. Input closes before execution. Cleanup, timeout and diagnostic handling are native lifecycle adaptations. Interactive browser inspection and packaged asset distribution remain open. |
+| get_flame_graph_svg_data | render_flame_graph_svg streams rows to a temporary directory and invokes an explicit executable with --countname TCounts. Input closes before execution. Cleanup, timeout and diagnostic handling are native lifecycle adaptations. The resulting SVG controls run in Chromium. Packaged asset distribution is a separate integration boundary. |
 
 Validation completes before the first yielded row. Native admission requires
 concrete nonnegative Python integers for multiplicities and costs, with an entry
@@ -214,11 +214,10 @@ statements belong to existing terminal error paths. A native 94-T SVG example
 executes successfully. Evidence uses the g2-flame-composed- and
 g2-flame-workflow- prefixes in the external reference environment.
 
-The in-app browser rejects file-protocol preview, so interactive zoom/search
-inspection remains open. XML comparison includes their original script bodies.
-Foreign name reflection, executable distribution, historical QFT T190 versus
-T496 assertions and general foreign/serialized-symbol admission remain explicit
-gaps. Q-0739 and Q-0740 keep their parent status open. Actual Fredkin emission
+The browser evidence is recorded under Whole-file disposition below. XML
+comparison includes the original script bodies. Foreign name reflection,
+executable distribution, historical QFT T190 versus T496 assertions and general
+foreign/serialized-symbol admission remain explicit gaps. Actual Fredkin emission
 remains CX8/H2/T4/Tdg3, zero work and zero measurements. Terminal-model Fredkin7T
 and QEC default Fredkin4T remain separately reported. The native mixture model
 is 2*7 + 3*25 + 5 = 94T. Drawing adds zero gates, work qubits or measurements.
@@ -383,6 +382,28 @@ This display layer adds zero primitive gates, work wires or measurements.
 Existing exact Fredkin execution and measured merged-Fredkin branch regressions
 remain in the concentrated suite. Their measured primitive counts and terminal
 or QEC estimates remain separate in the preceding accounting sections.
-The native class/constructor naming adaptation is explicit. General foreign
-admission, licensed renderer packaging, interactive browser inspection and the
-historical QFT expectation remain open under their existing parent records.
+The native class/constructor naming adaptation is explicit.
+
+## Whole-file disposition
+
+Q-0739 covers all eight source definitions in the map above. The existing
+ordered rows, full-subtree model, visible DFS, explicit rendering and native
+title adapters are used directly. Program callers supply declarations or
+already evaluated counts for resource identities outside the automatic recipe
+set. Foreign object conversion and serialized symbol reflection remain outside
+that interface. The renderer executable is caller-owned. Bundling the frozen
+CDDL script would require a separate package and license integration change.
+
+`test_drawer_flame_graph_browser.py` renders two native DFS stacks with weights
+7 and 3 through the unchanged frozen executable. Chrome 157 loaded the SVG
+and ran its click handlers. Zoom hid the sibling and expanded the selected
+frame. Reset restored geometry. Regex search highlighted 70.0 percent of
+samples. Clicking search again restored the fill and hid the match total.
+The test supplies the prompt text and dispatches clicks without editing the
+renderer JavaScript. The browser case and 332 concentrated cases passed.
+
+Q-0740 still tracks the original QFT expectation. The three other original
+functions pass with both producers. Native and unchanged source produce the
+same ordered rows for `QFTTextBook(5)`, totaling T190 at the root, and the
+unchanged T496 assertion fails with either producer. No analytic model or
+historical source assertion is altered by the drawing acceptance.
