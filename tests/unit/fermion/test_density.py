@@ -8,6 +8,8 @@ import torch
 from flagquantum.algorithms.fermion.density import (
     one_body_density,
     one_body_density_observables,
+    two_body_density,
+    two_body_density_observables,
 )
 
 pytestmark = pytest.mark.unit
@@ -86,3 +88,26 @@ def test_mixed_precision_is_explicitly_refused() -> None:
     values = [torch.tensor(0.0, dtype=torch.float64)] * 3 + [torch.tensor(0.0)]
     with pytest.raises(ValueError, match="one dtype"):
         one_body_density(values, n_modes=2)
+
+
+@pytest.mark.parametrize("dtype", (torch.float32, torch.float64))
+def test_two_mode_pair_density_preserves_dtype_and_gradient(dtype: torch.dtype) -> None:
+    value = torch.tensor([[0.7]], dtype=dtype, requires_grad=True)
+    density = two_body_density((value,), n_modes=2)
+    assert density.shape == (2, 2, 2, 2)
+    assert density.dtype == torch.complex(value, value).dtype
+    torch.testing.assert_close(density[0, 1, 1, 0].real, value.reshape(()))
+    torch.testing.assert_close(density[0, 1, 0, 1].real, -value.reshape(()))
+    grad = torch.autograd.grad(density[0, 1, 1, 0].real, value)[0]
+    torch.testing.assert_close(grad, torch.ones_like(value))
+
+
+def test_two_body_density_refuses_ambiguous_or_malformed_inputs() -> None:
+    with pytest.raises(ValueError, match="n_modes"):
+        two_body_density_observables(n_modes=1)
+    with pytest.raises(ValueError, match="n_modes"):
+        two_body_density((), n_modes=1)
+    with pytest.raises(ValueError, match="ordered density expectations"):
+        two_body_density((torch.tensor(0.0),), n_modes=3)
+    with pytest.raises(ValueError, match="finite"):
+        two_body_density((torch.tensor(float("nan")),), n_modes=2)

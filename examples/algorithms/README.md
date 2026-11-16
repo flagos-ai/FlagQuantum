@@ -357,6 +357,14 @@ density module owns observables and assembly only; execution stays with
 OpenFermion or Cirq. Statevector memory remains exponential. See the
 [density contributor path](../../docs/development/FERMION_ONE_BODY_DENSITY.md).
 
+[`fermion_two_body_density.py`](fermion_two_body_density.py), run with
+`python -m examples.algorithms.fermion_two_body_density --encoding parity`,
+combines native one- and two-body densities to reconstruct the energy of a
+four-mode H2 determinant pair. It reports -0.8766911918 Ha and an angle
+gradient of 0.5945439485 Ha/rad. The matched JW and BK preparations give the
+same result. See the [two-body density guide](../../docs/development/FERMION_TWO_BODY_DENSITY.md)
+for the index convention and O(n^4) dense output cost.
+
 [`fermion_hubbard_ring_training.py`](fermion_hubbard_ring_training.py), run with
 `python -m examples.algorithms.fermion_hubbard_ring_training`, composes the
 three-site Hubbard ring with existing six-mode UCCSD and 60 PyTorch Adam updates.

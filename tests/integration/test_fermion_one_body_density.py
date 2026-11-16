@@ -14,9 +14,12 @@ import torch
 
 import flagquantum as fq
 from examples.algorithms.fermion_one_body_density import build_circuit
+from examples.algorithms.fermion_two_body_density import measure_h2
 from flagquantum.algorithms.fermion.density import (
     one_body_density,
     one_body_density_observables,
+    two_body_density,
+    two_body_density_observables,
 )
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, Encoding, encode_fermion
 from flagquantum.algorithms.fermion.observables import to_observable
@@ -264,3 +267,67 @@ def test_cli_without_openfermion_cirq_or_external_science(encoding: Encoding) ->
     assert "Particle number: 1.0000000000" in result.stdout
     assert "One-body energy: 0.4520082847" in result.stdout
     assert "Angle gradient: -0.5016897975" in result.stdout
+
+
+@pytest.mark.parametrize("encoding", ENCODINGS)
+@pytest.mark.parametrize("particles", (0, 1, 2, 3))
+def test_two_body_density_matches_every_ordered_occupation_element(
+    encoding: Encoding, particles: int
+) -> None:
+    width = 4
+    generator = torch.Generator().manual_seed(23)
+    state = torch.randn(1 << width, dtype=torch.complex128, generator=generator)
+    for index in range(state.numel()):
+        if index.bit_count() != particles:
+            state[index] = 0
+    state /= state.norm()
+    circuit = _prepared(state, width, encoding)
+    observables = two_body_density_observables(n_modes=width, encoding=encoding)
+    assert len(observables) == 36
+    results = fq.run(circuit, outputs=[fq.expectation(o) for o in observables])
+    density = two_body_density(results.expectations, n_modes=width)
+    lowered = [_annihilated(state, p, width) for p in range(width)]
+    pairs = {
+        (p, q): _annihilated(lowered[p], q, width)
+        for p, q in itertools.product(range(width), repeat=2)
+    }
+    expected = torch.stack(
+        [
+            torch.vdot(pairs[p, q], pairs[s, r])
+            for p, q, r, s in itertools.product(range(width), repeat=4)
+        ]
+    ).reshape((width,) * 4)
+    torch.testing.assert_close(density, expected, atol=1e-12, rtol=0)
+    torch.testing.assert_close(density, -density.transpose(0, 1))
+    torch.testing.assert_close(density, -density.transpose(2, 3))
+    torch.testing.assert_close(density, density.permute(3, 2, 1, 0).conj())
+    assert torch.einsum("pqqp->", density).real.item() == pytest.approx(
+        particles * (particles - 1), abs=1e-12
+    )
+    gamma = torch.stack(
+        [torch.vdot(left, right) for left in lowered for right in lowered]
+    ).reshape(width, width)
+    torch.testing.assert_close(
+        torch.einsum("pqqs->ps", density),
+        (particles - 1) * gamma,
+        atol=1e-12,
+        rtol=0,
+    )
+
+
+@pytest.mark.parametrize("encoding", ENCODINGS)
+def test_h2_energy_reconstruction_preserves_angle_gradient(encoding: Encoding) -> None:
+    angle = torch.tensor(0.6, dtype=torch.float64, requires_grad=True)
+    pairs, energy, direct = measure_h2(angle, encoding)
+    assert pairs.item() == pytest.approx(2)
+    torch.testing.assert_close(energy, direct.to(energy.dtype), atol=1e-12, rtol=0)
+    gradient = torch.autograd.grad(energy.real, angle, retain_graph=True)[0]
+    reference = torch.autograd.grad(direct, angle)[0]
+    assert gradient.abs().item() > 1e-3
+    torch.testing.assert_close(gradient, reference, atol=1e-12, rtol=0)
+    with torch.no_grad():
+        _, above, _ = measure_h2(angle + 1e-5, encoding)
+        _, below, _ = measure_h2(angle - 1e-5, encoding)
+    torch.testing.assert_close(
+        gradient, ((above - below) / 2e-5).real, atol=1e-9, rtol=0
+    )
