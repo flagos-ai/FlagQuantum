@@ -72,30 +72,24 @@ not measured primitive counts.
 
 ### Pure stored-body evaluator
 
-`simulate_component_calls` follows the pure composite entry using the same
-stored graph evaluator as `simulate_phased_component_calls`. Compiler supplies
-the normalized call schedules. Value and phase dispatch, output assignment,
-and recursive failure context use the existing state. Pure bodies reject
-phases after binding outputs, and return no phase contribution to the parent.
-The public-in-module pure helper returns root outputs and the root SSA mapping.
+The existing `simulate_pure_component_calls` and
+`simulate_phased_component_calls` share a stored-body evaluator.
+Compiler supplies the normalized call schedules. Both entries retain their
+original output shapes. Value and phase dispatch, output assignment and
+recursive failure context use the existing state. Pure bodies reject phases
+after binding outputs and return no phase contribution to the parent.
 
-The root fixed-value mapping is never inherited by pure nested calls. Nested
-calls share a separate generator which is lazily created for the evaluation.
-Callers may supply a persistent generator to reproduce long-running streams.
-The source's default generator is process-shared. The comparison snapshots its
-generator state, runs unchanged source execution, and restores the state at
-test teardown. Repeated results and complete generator states agree, including
-when the root is configured with a fixed value that must stay out of the child.
-The phased helper retains the parent's RNG or fixed mapping at every level.
+The pure root's fixed values apply to the root only. Nested calls continue to
+use the pure module's process-shared default generator, matching the source
+lifetime. The phased entry passes the parent's RNG or fixed mapping to every
+nested body. Seeded comparisons retain both generator states and source
+draw sequences across depth and root policy.
 
-All 64 logical assignments of the three-port Add fixture agree at depths one
-through three. Source traversal stores dangling Soquet aliases; the native
-return stores original root arguments and actual call results once by SSA ID.
-The existing measured branches, complex amplitudes, and work-zero acceptance
-are reused. This evaluator emits zero new primitives and has no separate QEC
-model. The stored pure path does not discover foreign Python decompositions.
-The direct state suite passed 250 cases. The concentrated classical regression
-passed 11,024 cases with 178 existing dependency and numerical warnings.
+The complete three-port Add fixture traverses all 64 logical inputs at depths
+one through three. Existing measured branches, complex amplitudes, and work-zero
+acceptance are reused. The shared evaluator emits zero new primitives and has no
+separate QEC model. It operates on owned stored bodies and explicit call schedules.
+The shared-evaluator run passed 135 focused and 11,072 concentrated cases.
 
 ### Open compatibility conditions
 

@@ -12,7 +12,7 @@ import numpy as np
 from ..core.ir.program import FunctionRecord, ProgramRecord
 from ..core.ir.program.registers import RegisterType
 from .classical_measurement import MeasurementOutcomePhase
-from .component_classical_state import ComponentClassicalState
+from .component_classical_state import _simulate_stored_component_calls
 from .finite_field_encoding import FiniteFieldEncoding
 
 # The source helper owns one default handler for its entire process lifetime.
@@ -50,38 +50,19 @@ def simulate_pure_component_calls(
     existing state owns binding, output commit and phase rejection. No graph
     discovery, decomposition-exception translation or physical lowering occurs.
     """
-    orders, ids = dict(call_orders), dict(instance_ids or {})
-
-    def recurse(
-        function: FunctionRecord, inputs: dict[str, object]
-    ) -> tuple[dict[str, object], None]:
-        return evaluate(function.name, inputs, _DEFAULT_RNG, None), None
-
-    def evaluate(
-        name: str,
-        inputs: Mapping[str, object],
-        generator: np.random.Generator | None,
-        fixed: Mapping[int, object] | None,
-    ) -> dict[str, object]:
-        try:
-            order = orders[name]
-        except KeyError as exc:
-            raise NotImplementedError(
-                f"no classical call order supplied for {name}"
-            ) from exc
-        return ComponentClassicalState(
-            record,
-            order,
-            inputs,
-            value_action,
-            phase_action,
-            entry=name,
-            instance_ids=ids.get(name),
-            field_encodings=field_encodings,
-            rng=generator,
-            fixed_values=fixed,
-            recurse=recurse,
-        ).simulate()
-
     generator = rng if rng is not None or fixed_values is not None else _DEFAULT_RNG
-    return evaluate(entry, values, generator, fixed_values)
+    outputs, _ = _simulate_stored_component_calls(
+        record,
+        call_orders,
+        values,
+        value_action,
+        phase_action,
+        entry=entry,
+        instance_ids=instance_ids,
+        field_encodings=field_encodings,
+        rng=generator,
+        fixed_values=fixed_values,
+        phased=False,
+        nested_rng=_DEFAULT_RNG,
+    )
+    return outputs

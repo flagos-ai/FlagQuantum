@@ -26,9 +26,9 @@ from flagquantum.core.ir.program import (
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.simulation.component_classical_state import (
-    ComponentClassicalState,
-    simulate_component_calls,
+from flagquantum.simulation.component_classical_state import ComponentClassicalState
+from flagquantum.simulation.component_pure_evaluation import (
+    simulate_pure_component_calls,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -332,13 +332,12 @@ def test_original_multidimensional_assertions_with_native_numerical_codecs(
             leaf = leaf_builder.finalize({"y": leaf_builder.inputs["x"]}).functions[0]
             builder = ComponentProgramBuilder(signature, (leaf,))
             record = builder.finalize(builder.call_dict("forward", builder.inputs))
-            outputs, assignments = simulate_component_calls(
+            outputs = simulate_pure_component_calls(
                 record,
                 {"main": (0,)},
                 values,
                 lambda _, inputs: bloq.on_classical_vals(**inputs),
             )
-            assert len(assignments) == 2 * bloq.n
             visits.append("native-graph")
             return (outputs["y"],)
         # The numerical codecs include types refused by the executable Core

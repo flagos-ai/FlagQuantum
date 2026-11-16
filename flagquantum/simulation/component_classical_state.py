@@ -313,7 +313,7 @@ def simulate_phased_component_calls(
     raise NotImplementedError with the existing recursive cause context. Other
     admission, action and output failures retain ComponentClassicalState rules.
     """
-    outputs, state = _simulate_stored_component_calls(
+    return _simulate_stored_component_calls(
         record,
         call_orders,
         values,
@@ -326,47 +326,6 @@ def simulate_phased_component_calls(
         fixed_values=fixed_values,
         phased=True,
     )
-    return outputs, state.phase
-
-
-def simulate_component_calls(
-    record: ProgramRecord,
-    call_orders: Mapping[str, tuple[int, ...]],
-    values: Mapping[str, object],
-    value_action: _ValueAction,
-    phase_action: _PhaseAction | None = None,
-    *,
-    entry: str = "main",
-    instance_ids: Mapping[str, tuple[int, ...]] | None = None,
-    field_encodings: Mapping[RegisterType, FiniteFieldEncoding] | None = None,
-    rng: np.random.Generator | None = None,
-    fixed_values: Mapping[int, object] | None = None,
-    nested_rng: np.random.Generator | None = None,
-) -> tuple[dict[str, object], dict[ValueRef, object]]:
-    """Evaluate pure classical stored bodies and return the root assignments.
-
-    Pure recursion uses a separate RNG shared across nested body calls.
-    The root's fixed outcomes apply only to the root. The default RNGs
-    belong to this evaluation, and callers can supply persistent generators.
-    Phase contributions retain the pure state's assign-then-reject behavior.
-    """
-    if rng is None and fixed_values is None:
-        rng = np.random.default_rng()
-    outputs, state = _simulate_stored_component_calls(
-        record,
-        call_orders,
-        values,
-        value_action,
-        phase_action,
-        entry=entry,
-        instance_ids=instance_ids,
-        field_encodings=field_encodings,
-        rng=rng,
-        fixed_values=fixed_values,
-        phased=False,
-        nested_rng=nested_rng,
-    )
-    return outputs, state.assignments
 
 
 def _simulate_stored_component_calls(
@@ -383,30 +342,27 @@ def _simulate_stored_component_calls(
     fixed_values: Mapping[int, object] | None,
     phased: bool,
     nested_rng: np.random.Generator | None = None,
-) -> tuple[dict[str, object], ComponentClassicalState]:
+) -> tuple[dict[str, object], complex]:
     orders = dict(call_orders)
     ids = dict(instance_ids or {})
 
     def recurse(
         function: FunctionRecord, inputs: dict[str, object]
     ) -> tuple[dict[str, object], complex | None]:
-        nonlocal nested_rng
-        if not phased and nested_rng is None:
-            nested_rng = np.random.default_rng()
-        outputs, state = evaluate(
+        outputs, phase = evaluate(
             function.name,
             inputs,
             rng if phased else nested_rng,
             fixed_values if phased else None,
         )
-        return outputs, state.phase if phased else None
+        return outputs, phase if phased else None
 
     def evaluate(
         name: str,
         inputs: Mapping[str, object],
         body_rng: np.random.Generator | None,
         body_fixed_values: Mapping[int, object] | None,
-    ) -> tuple[dict[str, object], ComponentClassicalState]:
+    ) -> tuple[dict[str, object], complex]:
         try:
             order = orders[name]
         except KeyError as exc:
@@ -427,6 +383,6 @@ def _simulate_stored_component_calls(
             fixed_values=body_fixed_values,
             recurse=recurse,
         )
-        return state.simulate(), state
+        return state.simulate(), state.phase
 
     return evaluate(entry, values, rng, fixed_values)

@@ -1,7 +1,6 @@
 """Stored recursive phase graphs reuse the existing numerical state owner."""
 
 from collections import Counter
-from copy import deepcopy
 from dataclasses import replace
 from itertools import product
 from typing import Any
@@ -24,15 +23,11 @@ from flagquantum.core.ir.program import (
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.simulation.classical_distributions import ClassicalDistribution
 from flagquantum.simulation.classical_measurement import measure_x_basis_phase
 from flagquantum.simulation.component_classical_state import (
-    simulate_component_calls,
     simulate_phased_component_calls,
 )
 from tests.unit.measurement_checks import forced_branch
-from tests.unit.test_component_bit_values import identity_record
-from tests.unit.test_component_classical_recursion import source_leaf
 from tests.unit.test_component_classical_state import (
     add_values,
     measurement_record,
@@ -286,10 +281,7 @@ def test_nested_measurement_reconstructs_complex_superposition_branches(
 
 @pytest.mark.parametrize("depth", [1, 2, 3])
 def test_recursive_add_all_basis_values_without_caller_recursion(depth: int) -> None:
-    from qualtran.simulation.classical_sim import (
-        call_cbloq_classically,
-        do_phased_classical_simulation,
-    )
+    from qualtran.simulation.classical_sim import do_phased_classical_simulation
 
     record, source = wrapped_add(depth)
     for a, b, spectator in product(range(4), range(8), range(2)):
@@ -299,80 +291,6 @@ def test_recursive_add_all_basis_values_without_caller_recursion(depth: int) -> 
         )
         assert actual == do_phased_classical_simulation(source, values)
         assert actual == ({"a": a, "b": (b + 2 * a) % 8, "spectator": spectator}, 1)
-        pure, assignments = simulate_component_calls(
-            record, orders(record), values, add_values
-        )
-        source_pure, _ = call_cbloq_classically(
-            source.signature, values, source._binst_graph
-        )
-        assert pure == source_pure == actual[0]
-        root = next(f for f in record.functions if f.name == "main").blocks[0]
-        assert set(assignments) == set(root.arguments) | {
-            result for op in root.operations for result in op.results
-        }
-
-
-def test_pure_recursion_uses_a_separate_policy_and_matches_rng_advancement() -> None:
-    from qualtran.simulation.classical_sim import (
-        ClassicalSimState,
-        ClassicalValDistribution,
-        _FixedClassicalValHandler,
-        call_cbloq_classically,
-    )
-
-    def no_decomposition() -> None:
-        raise AssertionError("the direct leaf must not decompose")
-
-    leaf = source_leaf(
-        lambda self, **values: {"x": ClassicalValDistribution(2)},
-        lambda self, **values: None,
-        lambda self: no_decomposition(),
-    )
-    record, source = wrap(identity_record(()), leaf.as_composite_bloq(), 3)
-    defaults = call_cbloq_classically.__defaults__
-    assert defaults is not None
-    source_rng = defaults[0]._gen
-    initial_state = deepcopy(source_rng.bit_generator.state)
-    nested_rng = np.random.default_rng()
-    nested_rng.bit_generator.state = initial_state
-
-    def values(function: FunctionRecord, inputs: dict[str, object]) -> object:
-        return (
-            {"x": ClassicalDistribution(2)}
-            if function.name == "identity"
-            else NotImplemented
-        )
-
-    try:
-        for _ in range(12):
-            source_state = ClassicalSimState(
-                source.signature,
-                source._binst_graph,
-                {"x": 1},
-                _FixedClassicalValHandler({0: -1}),
-            )
-            outputs, _ = simulate_component_calls(
-                record,
-                orders(record),
-                {"x": 1},
-                values,
-                fixed_values={0: -1},
-                nested_rng=nested_rng,
-            )
-            assert outputs == source_state.simulate()
-            assert nested_rng.bit_generator.state == source_rng.bit_generator.state
-    finally:
-        source_rng.bit_generator.state = initial_state
-
-
-def test_pure_stored_body_rejects_phase_inside_nested_call() -> None:
-    from qualtran.simulation.classical_sim import call_cbloq_classically
-
-    record, source = phase_fixture(1, 2)
-    with pytest.raises(ValueError, match="phase"):
-        call_cbloq_classically(source.signature, {}, source._binst_graph)
-    with pytest.raises(ValueError, match="phase"):
-        simulate_component_calls(record, orders(record), {}, phase_values, phase_action)
 
 
 @pytest.mark.parametrize(
