@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **128/213**.
+Validated local Notebook workflows: **129/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -252,7 +252,7 @@ Validated local Notebook workflows: **128/213**.
 | `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | [Native program](applications/logistics/task_scheduling_problem/main.py) | pending |
 | `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | [Native program](applications/logistics/traveling_salesman_problem/main.py) | pending |
 | `applications/logistics/vehicle_routing_problem/vehicle_routing_problem` | notebook_workflow | [Native program](applications/logistics/vehicle_routing_problem/main.py) | pending |
-| `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/main.py) | pending |
+| `applications/optimization/adapt_qaoa/adapt_qaoa` | notebook_workflow | [Native program](applications/optimization/adapt_qaoa/overview/main.py) | validated |
 | `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | [Native program](applications/optimization/electric_grid_optimization/overview/main.py) | validated |
 | `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/overview/main.py) | validated |
 | `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | [Native program](applications/optimization/kidney_exchange/kidney_exchange_problem/overview/main.py) | validated |

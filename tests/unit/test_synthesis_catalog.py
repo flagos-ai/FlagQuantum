@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 128
+    assert len(validated) == 129
+    assert (
+        "applications/optimization/adapt_qaoa/adapt_qaoa",
+        "examples/synthesis/applications/optimization/adapt_qaoa/overview/main.py",
+    ) in validated
     assert (
         "algorithms/quantum_walks/glued_trees/glued_trees",
         "examples/synthesis/algorithms/quantum_walks/glued_trees/overview/main.py",
@@ -641,7 +645,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**128/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**129/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
