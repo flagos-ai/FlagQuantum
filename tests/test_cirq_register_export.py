@@ -475,3 +475,99 @@ def test_original_uniform_preparation_flattened_workspace_extent(
     measurements = tuple(g for g in gates if g.name == "measure")
     assert len(measurements) == 6
     assert {g.metadata["classical_bit"] for g in measurements} == {0, 1}
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("dirty", (False, True))
+def test_gate_workspace_context_replays_native_leases(
+    cirq: Any, source_export: Any, dirty: bool
+) -> None:
+    from collections.abc import Iterable
+    from dataclasses import replace
+
+    from cirq import Qid, SimpleQubitManager
+    from qualtran import BloqBuilder, QBit
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import CNOT
+
+    from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.core.ir.program.register_bindings import RegisterBinding
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+    from tests.unit.test_register_program_lowering import packed_circuit
+
+    signature = Signature.build(data=1)
+    module = packed_circuit(CircuitIR(2, (Instruction("cx", (0, 1)),)), (1, 1))
+    definitions = tuple(
+        replace(f, name="cnot") if f.name == "main" else f for f in module.functions
+    )
+    builder = ComponentProgramBuilder(signature, definitions)
+    data = builder.inputs["data"]
+    source, inputs = BloqBuilder.from_signature(SourceSignature.build(data=1))
+    source_data = inputs["data"]
+    for _ in range(2):
+        work = builder.allocate(dirty=dirty)
+        source_work = source.allocate(dtype=QBit(), dirty=dirty)
+        for _ in range(2):
+            data, next_work = builder.call_tuple("cnot", {"word0": data, "word1": work})
+            assert isinstance(next_work, RegisterBinding)
+            work = next_work
+            source_data, source_work = source.add(
+                CNOT(), ctrl=source_data, target=source_work
+            )
+        builder.free(work, dirty=dirty)
+        source.free(source_work, dirty=dirty)
+    bound = bind_register_program(
+        builder.finalize({"data": data}),
+        ((0,),),
+        clean=() if dirty else (1,),
+        borrowed=(1,) if dirty else (),
+    )
+    composite = source.finalize(data=source_data)
+    data_q, work_q, spectator = cirq.LineQubit.range(3)
+    events: list[str] = []
+
+    class Manager(SimpleQubitManager):
+        def qalloc(self, n: int, dim: int = 2) -> list[Qid]:
+            assert (n, dim) == (1, 2)
+            events.append("clean")
+            return [work_q]
+
+        def qborrow(self, n: int, dim: int = 2) -> list[Qid]:
+            assert (n, dim) == (1, 2)
+            events.append("borrow")
+            return [work_q]
+
+        def qfree(self, qubits: Iterable[Qid]) -> None:
+            assert tuple(qubits) == (work_q,)
+            events.append("free")
+
+    original, _ = composite.to_cirq_circuit_and_quregs(
+        data=np.array([data_q]), qubit_manager=Manager()
+    )
+    source_events = tuple(events)
+    events.clear()
+    wrapped = RegisterCirqGate(bound, signature)
+    emitted = cirq.decompose_once(
+        wrapped.on(data_q), context=cirq.DecompositionContext(Manager())
+    )
+    assert (
+        tuple(emitted)
+        == tuple(original.all_operations())
+        == (cirq.CNOT(data_q, work_q),) * 4
+    )
+    assert (
+        tuple(events) == source_events == ("borrow" if dirty else "clean", "free") * 2
+    )
+    initial = np.array([1, 2j, -3j, 4, 2 + 1j, -1, 3, -2j], dtype=np.complex128)
+    if not dirty:
+        initial.reshape(2, 2, 2)[:, 1, :] = 0
+    initial /= np.linalg.norm(initial)
+    simulated = cirq.Simulator(dtype=np.complex128).simulate(
+        cirq.Circuit(emitted),
+        qubit_order=(data_q, work_q, spectator),
+        initial_state=initial.copy(),
+    )
+    np.testing.assert_allclose(
+        simulated.final_state_vector, initial, rtol=0, atol=2e-12
+    )
