@@ -14,6 +14,8 @@ from flagquantum.qec import DecodingGraph, DetectorErrorModel, PyMatchingDecoder
 from flagquantum.qec.adapters.stim import stim_circuit_to_dem_text
 from flagquantum.qec.dem.graph import DecodingGraphEdge
 
+pytestmark = pytest.mark.integration
+
 pytest.importorskip("flagquantum.qec.decoders._sparse_blossom")
 
 
