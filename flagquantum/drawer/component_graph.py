@@ -6,7 +6,7 @@
 """Draw component connectivity with width or typed port annotations."""
 
 import json
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 
 from ..core.ir.program import FunctionRecord, ProgramRecord
@@ -19,7 +19,7 @@ from .register_graph_table import (
     pretty_connection_attributes,
     signature_instance_table,
 )
-from .register_score import RegisterStep, _register_groups
+from .register_score import RegisterScore, RegisterStep, _register_groups
 
 
 def _reshaping_label(function: FunctionRecord, signature: Signature) -> str | None:
@@ -66,6 +66,19 @@ def export_component_graph_dot(
     if typed and not pretty:
         raise ValueError("Typed graph rendering requires compact presentation")
     score = component_register_score(record, entry)
+    return _export_component_graph_dot(record, score, entry, typed=typed, pretty=pretty)
+
+
+def _export_component_graph_dot(
+    record: ProgramRecord,
+    score: RegisterScore,
+    entry: str,
+    *,
+    typed: bool = False,
+    pretty: bool = True,
+    edge_attributes: Callable[[RegisterConnection], str] | None = None,
+) -> str:
+    """Share formal component ports and tables across edge presentations."""
     signatures = {
         function.name: Signature(function.registers)
         for function in record.functions
@@ -149,7 +162,7 @@ def export_component_graph_dot(
 
     return _export_register_graph_dot(
         score,
-        attributes,
+        attributes if edge_attributes is None else edge_attributes,
         table=table,
         input_labels=input_labels,
         output_labels=output_labels,

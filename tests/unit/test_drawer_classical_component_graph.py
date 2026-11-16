@@ -29,6 +29,7 @@ from flagquantum.drawer.component_score import component_register_score
 from flagquantum.drawer.register_graph import register_connections
 from flagquantum.simulation.classical_and import and_classical_values
 from flagquantum.simulation.component_classical_state import ComponentClassicalState
+from tests.unit.test_graphviz_notebook import normalized_table
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -142,6 +143,24 @@ def test_full_multi_and_all_inputs_edges_styles_and_original_fixture(
         assert observed == expected
         graph = parsed(actual)
         assert len(graph.get_edges()) == 13
+        if not any(bits):
+            source_graph = reference.get_graph()
+            for instance in reference._binsts:
+                expected_table = source_graph.get_node(reference.ids[instance])[
+                    0
+                ].get_label()
+                actual_table = graph.get_node(f"n{instance.i}")[0].get_label()
+                native_name = score.columns[instance.i].step.name
+                assert normalized_table(actual_table) == normalized_table(
+                    expected_table.replace(str(instance.bloq), native_name)
+                )
+            assert [
+                Counter(node.get_label().strip('<>"') for node in group.get_nodes())
+                for group in graph.get_subgraphs()
+            ] == [
+                Counter(node.get_label().strip('<>"') for node in group.get_nodes())
+                for group in source_graph.get_subgraphs()
+            ]
         for edge in graph.get_edges():
             attrs = edge.get_attributes()
             source_edge = reference.cxn_edge("left", "right", source.connections[0])

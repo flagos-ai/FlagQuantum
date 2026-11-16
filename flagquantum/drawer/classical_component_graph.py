@@ -10,8 +10,9 @@ from collections.abc import Mapping
 
 from ..compiler.registers.component_graph import _call_entry
 from ..core.ir.program import ProgramRecord, ValueRef
+from .component_graph import _export_component_graph_dot
 from .component_score import component_register_score
-from .register_graph import RegisterConnection, _export_register_graph_dot
+from .register_graph import RegisterConnection
 
 
 def export_classical_component_graph_dot(
@@ -23,7 +24,8 @@ def export_classical_component_graph_dot(
 
     The caller supplies Simulation assignments; drawing never evaluates an
     operation. Reuse the component score's finite logical admission, register
-    names, array order, instance ordinals and boundary geometry. A THRU lane's
+    array order and instance ordinals, with compact tables and formal port
+    labels from the component graph renderer. A THRU lane's
     successive SSA results remain distinct even though its display name is reused.
     Missing producer assignments raise KeyError; value stringification failures
     propagate. Neither assignments nor the program is modified.
@@ -53,4 +55,4 @@ def export_classical_component_graph_dot(
             'fontcolor="darkblue", arrowhead="dot", arrowsize=0.25'
         )
 
-    return _export_register_graph_dot(score, attributes)
+    return _export_component_graph_dot(record, score, entry, edge_attributes=attributes)
