@@ -48,6 +48,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("state_preparation_via_rotation_tutorial", 9, 2, 0),
         ("swap_network", 19, 6, 0),
         ("cirq_register_interop", 24, 6, 0),
+        ("cirq_t_complexity", 7, 0, 1),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
         ("binary_field_square", 7, 2, 0),
