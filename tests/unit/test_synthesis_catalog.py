@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 139
+    assert len(validated) == 140
+    assert (
+        "community/paper_implementation_project/block_encoding/select_structures_BE",
+        "examples/synthesis/community/paper_implementation_project/block_encoding/select_structures_be/overview/main.py",
+    ) in validated
     assert (
         "applications/logistics/traveling_salesman_problem/traveling_salesman_problem",
         "examples/synthesis/applications/logistics/traveling_salesman_problem/overview/main.py",
@@ -685,7 +689,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**139/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**140/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

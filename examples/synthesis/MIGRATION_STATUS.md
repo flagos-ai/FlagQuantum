@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **139/213**.
+Validated local Notebook workflows: **140/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -297,7 +297,7 @@ Validated local Notebook workflows: **139/213**.
 | `community/paper_implementation_project/bb84/bb84_implementation` | notebook_workflow | [Native program](community/paper_implementation_project/bb84/bb84_implementation/overview/main.py) | validated |
 | `community/paper_implementation_project/block_encoding/checkerboard_BE_N8` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/checkerboard/main.py) | pending |
 | `community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/laplacian_4x4/main.py) | pending |
-| `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | Pending | pending |
+| `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | [Native program](community/paper_implementation_project/block_encoding/select_structures_be/overview/main.py) | validated |
 | `community/paper_implementation_project/block_encoding/toeplitz_BE_N16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/toeplitz/main.py) | pending |
 | `community/paper_implementation_project/block_encoding/tridiagonal_BE_size16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/tridiagonal/main.py) | pending |
 | `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Native program](community/paper_implementation_project/bpde/main.py) | pending |
