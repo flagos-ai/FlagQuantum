@@ -60,7 +60,13 @@ automatic outputs invoke it once with the original mapping object.
   open. Native validation and function definition have their own observable
   failure boundary; this is not a claim of identical builder internals.
 - Numerical wrong-output overlap is zero; physical effects express clean-release
-  promises. These different consumer contracts remain explicit.
+  promises. The same concrete X fixture now exercises both through normal
+  component binding. Automatic output 1 gives numerical overlap one and a
+  physical all-zero state after the two X instructions. Explicit wrong output
+  0 gives numerical overlap zero and a physical slot still at one after the
+  single X. The emitted allocation and free events are identical. That wrong
+  output violates the caller's clean-release promise. It is an audit fixture,
+  and no runtime projection or reset is inferred from the release event.
 
 ## Amplitudes, workspace and resources
 

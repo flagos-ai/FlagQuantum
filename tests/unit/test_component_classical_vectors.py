@@ -306,8 +306,11 @@ def test_original_xgate_inference_and_mismatched_tensor_effect(
     monkeypatch: pytest.MonkeyPatch, output: int | None
 ) -> None:
     from qualtran.bloqs.basic_gates import XGate
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
     from qualtran.simulation.xcheck_classical_quimb import flank_with_classical_vectors
 
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.circuit import Circuit
     from tests.unit.test_component_expansion import _hierarchy
 
     record, _ = _hierarchy(1, 1)
@@ -340,3 +343,23 @@ def test_original_xgate_inference_and_mismatched_tensor_effect(
     original = flank_with_classical_vectors(XGate(), {"q": 0}, outputs)
     np.testing.assert_allclose(actual.numpy(), original.tensor_contract(), atol=2e-12)
     assert actual.item() == (1 if output is None else 0)
+
+    bound = bind_register_program(native, (), entry="classical_vectors", clean=(0,))
+    instructions = bound.circuit.instructions
+    assert [(gate.name, gate.wires) for gate in instructions] == [("x", (0,))] * (
+        2 if output is None else 1
+    )
+    assert [(event.kind, event.wires) for event in bound.events] == [
+        ("allocate", (0,)),
+        ("free", (0,)),
+    ]
+    assert bound.outputs == () and bound.classical_outputs == ()
+    circuit = Circuit(1, dtype=torch.complex128).append(FieldOperation(1, instructions))
+    expected = torch.tensor(
+        [1, 0] if output is None else [0, 1], dtype=torch.complex128
+    )
+    torch.testing.assert_close(circuit.state().flatten(), expected, rtol=0, atol=0)
+    # IntEffect is a tensor bra. Its physical lowering is an X word
+    # followed by a release promise, which the caller must satisfy.
+    model = get_cost_value(original, QECGatesCost())
+    assert model.clifford == 3 and model.measurement == 0
