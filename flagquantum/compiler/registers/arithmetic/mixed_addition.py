@@ -11,7 +11,7 @@ from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
-from ..primitives._mixed_gates import _flip
+from ..primitives._mixed_gates import _flip, _invert_operand
 from ..primitives.measurement import measure_x_clear_ir
 from .carry_parity import (
     _broadcast_offset,
@@ -37,15 +37,6 @@ def _xor_parity(
     ):
         return (*_flip(target, first, second, *extra), *_flip(target, control, *extra))
     return _carry_parity_gate(target, (first, second), (control, *extra), (), None)
-
-
-def _complement(value: _Coefficient) -> tuple[_Coefficient, tuple[Instruction, ...]]:
-    if isinstance(value, bool):
-        return not value, ()
-    if isinstance(value, ClassicalFieldCoefficient):
-        slot = value.slot
-        return value, (ClassicalXor((slot,), slot, constant=True).instruction(),)
-    return value, _flip(value)
 
 
 def _guard(gates: tuple[Instruction, ...], bit: int) -> tuple[Instruction, ...]:
@@ -212,8 +203,8 @@ def _add(
                     minimize,
                     inf,
                 )
-            complemented = tuple(_complement(value) for value in low)
-            inverted_carry, carry_gates = _complement(carry)
+            complemented = tuple(_invert_operand(value) for value in low)
+            inverted_carry, carry_gates = _invert_operand(carry)
             input_gates = tuple(gate for _, gates in complemented for gate in gates)
             invert = tuple(Instruction("x", (wire,)) for wire in target[:width])
             sub = _add(

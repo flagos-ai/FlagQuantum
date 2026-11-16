@@ -14,11 +14,11 @@ from ...artifacts.reversible_phase import (
 )
 from ...lowering.reversible_phase import lower_reversible_phase
 from ..arithmetic.carry_parity import _Coefficient
-from ..arithmetic.mixed_addition import _complement, mixed_addition_ir
+from ..arithmetic.mixed_addition import mixed_addition_ir
 from ..bits.bit_rotation import bit_rotation_ir
 from ..comparison.mixed_comparison import mixed_greater_than_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
-from ..primitives._mixed_gates import _flip
+from ..primitives._mixed_gates import _flip, _invert_operand
 from ..primitives.measurement import measure_x_clear_ir
 from .exact_modular_doubling import (
     _modular_doubling_ports,
@@ -97,7 +97,7 @@ def modular_doubling_program(
         complemented: list[_Coefficient] = []
         gates: list[Instruction] = []
         for value in reversed(word):
-            changed, body = _complement(value)
+            changed, body = _invert_operand(value)
             complemented.append(changed)
             gates.extend(body)
         emit(tuple(gates))

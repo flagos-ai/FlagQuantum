@@ -320,6 +320,24 @@ wire, matches R3 in KMX and leaves the exact spectator density matrix
 after tracing out the reset wires. Its native IR uses H3 and reset3, with
 no result slots. Guarded reset uses the same native emitter.
 
+## Mixed operand inversion and condition guard movement
+
+The locked `inplace_invert` flips a literal in its operand binding, emits
+X for a quantum operand and emits BIT_INVERT for a classical slot. Reusing
+one slot in two lanes emits two inversions in order. The native primitive
+returns the replacement binding and any emitted gates. Mixed addition,
+modular doubling and greater-than comparison now share the same primitive.
+The unchanged C++ fixture and native KMX agree on X1 and BIT_INVERT2.
+Both input values of the repeated slot preserve the expected full complex
+state. The literal replacements emit no operation, and there is no work,
+measurement or separate source model.
+
+The locked move-assignment operator for a live condition guard overwrites
+the pointer to its existing builder scope. Two pushes then produce a single
+pop. The source accepts this stream and its leaked guard conditions the
+following X. All four guard assignments demonstrate the leak. The native
+KMX target refuses the unbalanced stream at validation. The scope leak remains a source issue.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug runtime output have
 separate source assertions. The full public mixed

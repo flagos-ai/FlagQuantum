@@ -9,13 +9,13 @@
 from math import ceil, inf, isnan
 from typing import cast
 
-from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import (
     _broadcast_controlled_flip,
     _flip,
+    _invert_operand,
     _parity_controlled_flip,
 )
 from ..primitives.measurement import measure_x_clear_ir
@@ -449,8 +449,6 @@ def mixed_greater_than_ir(
     """
     if control is False:
         return ()
-    invert: tuple[Instruction, ...] = ()
-    inverted_equal = or_equal
     if isinstance(or_equal, ClassicalFieldCoefficient):
         if (
             or_equal in right
@@ -458,11 +456,7 @@ def mixed_greater_than_ir(
             or (measurement_bit == or_equal.slot)
         ):
             raise ValueError("Comparison equality must use a separate classical slot")
-        slot = or_equal.slot
-        invert = (ClassicalXor((slot,), slot, constant=True).instruction(),)
-    elif isinstance(or_equal, bool):
-        inverted_equal = not or_equal
-    else:
+    elif type(or_equal) is int:
         quantum_rhs = tuple(
             coefficient for coefficient in right if type(coefficient) is int
         )
@@ -473,7 +467,7 @@ def mixed_greater_than_ir(
             or target == or_equal
         ):
             raise ValueError("Comparison equality must use a separate quantum wire")
-        invert = _flip(or_equal)
+    inverted_equal, invert = _invert_operand(or_equal)
     compare = mixed_less_than_ir(
         left,
         right,

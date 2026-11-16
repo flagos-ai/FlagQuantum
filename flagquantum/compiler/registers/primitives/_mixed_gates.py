@@ -119,6 +119,17 @@ def _flip(
     )
 
 
+def _invert_operand(value: _Control) -> tuple[_Control, tuple[Instruction, ...]]:
+    """Complement a literal or toggle a physical operand without rebinding it."""
+    if isinstance(value, bool):
+        return not value, ()
+    if isinstance(value, ClassicalFieldCoefficient):
+        return value, (
+            ClassicalXor((value.slot,), value.slot, constant=True).instruction(),
+        )
+    return value, _flip(value)
+
+
 def _parity_controlled_flip(
     target: int | None,
     first: _Control,
