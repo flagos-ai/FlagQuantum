@@ -31,7 +31,7 @@ turning it into an unconditional gate.
 | Through, left and right port placement | Through ports preserve identity. Left-only ports are excluded from output. Right-only ports use fresh names or caller-owned qubits. The adapter rejects aliasing across supplied ports. |
 | Component conversion and graph order | The adapter consumes native physical IR. Native append and Compiler own decomposition and allocation before conversion. |
 | Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body. Through-only bodies without private workspace expose the native matrix, including a tensor-backed body with no Cirq leaf decomposition. They retain the source's integer repetition and adjoint behavior. |
-| Workspace allocation | The adapter replays Compiler lifetime events in the Cirq decomposition context for static through bodies. Caller Qids remain reserved. Clean and borrowed physical wires may be released and reused. |
+| Workspace allocation and output transfer | The adapter replays Compiler lifetime events in the Cirq decomposition context. Clean and borrowed private wires may be released and reused. The final clean lease of a right-only output is rebound to the caller's Qid, and its temporary reservation is released in register order. |
 | Diagram symbols | Primitive circuits use Cirq's native exchange and Toffoli rendering. Wrapped register gates label operands in declaration order with the native register name and optional element index. |
 
 ## Verification
@@ -95,17 +95,26 @@ operations. An exact lifetime witness performs two sequential leases on one
 private wire. Its clean and borrowed versions each preserve the source's
 allocation/free order and four CX operations. The complete complex state
 matches with a spectator. Clean work returns to zero, and borrowed work
-returns its joint state with the spectator. The wrapper admits only unchanged
-through mappings for this route. Dynamic measurement lifetimes require a
-separate mapping for instruction expansion and classical slots.
+returns its joint state with the spectator. Through wires retain their input
+mapping. Dynamic measurement lifetimes require a separate mapping for
+instruction expansion and classical slots.
+
+For the original two-bit `IntState(1, 2)`, both wrappers emit one X on the
+same caller-supplied least-significant bit and give the full `|01⟩` result.
+The source allocates two separate bits. The native typed component allocates
+one two-bit word. Each releases the same temporary Qids in bit order after
+binding the outputs. The source model counts one arbitrary Clifford
+component. An explicit replay fixture first leases the same native physical
+ID as private work. Its two X gates stay on scratch and erase it before
+the final lease is mapped to the caller's output.
 
 ## Remaining files
 
 - Q-0714 awaits the rest of the source package export map, including
   import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain source graph output-transfer behavior, dynamic
-  feedback and arithmetic export, and direct dense inspection of bodies that
-  use private workspace. The static wrapper replays physical leases for
-  unchanged through mappings.
+- Q-0715 and Q-0716 retain consumed left-port transfer, dynamic feedback
+  and arithmetic export, and direct dense inspection of bodies that use
+  private workspace. The static wrapper replays physical leases for
+  unchanged through mappings and right-only output transfer.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
