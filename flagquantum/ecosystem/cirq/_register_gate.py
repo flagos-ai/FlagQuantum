@@ -33,7 +33,11 @@ class RegisterCirqGate(Gate):
     """Adapt an owned body over ordered register bits and optional private leases."""
 
     def __init__(
-        self, body: CircuitIR | BoundRegisterProgram, signature: Signature
+        self,
+        body: CircuitIR | BoundRegisterProgram,
+        signature: Signature,
+        *,
+        feedback_key_prefix: str | None = None,
     ) -> None:
         labels: list[str] = []
         input_indices: list[int] = []
@@ -97,6 +101,7 @@ class RegisterCirqGate(Gate):
                     output_wires[index] = wire
         self._body = ir
         self._bound = bound
+        self._feedback_key_prefix = feedback_key_prefix
         self._signature = signature
         self._labels = tuple(labels)
         self._input_indices = tuple(input_indices)
@@ -119,8 +124,10 @@ class RegisterCirqGate(Gate):
     def _decompose_with_context_(
         self, qubits: Sequence[Qid], context: DecompositionContext | None = None
     ) -> object:
-        if self._bound is not None and any(
-            gate.name == "measure" for gate in self._body.instructions
+        if (
+            self._bound is not None
+            and self._feedback_key_prefix is None
+            and any(gate.name == "measure" for gate in self._body.instructions)
         ):
             return NotImplemented
         try:
@@ -129,6 +136,7 @@ class RegisterCirqGate(Gate):
                 allow_lossy=False,
                 include_inverse_phases=True,
                 extent_declared_by_gate=True,
+                feedback_key_prefix=self._feedback_key_prefix,
             )
         except CirqConversionError:
             return NotImplemented
@@ -172,6 +180,8 @@ class RegisterCirqGate(Gate):
             raise ValueError("Cirq gate power requires a positive integer magnitude")
         if power == 1:
             return self
+        if self._feedback_key_prefix is not None:
+            raise ValueError("Cirq feedback gate power requires fresh measurement keys")
         if self._bound is not None:
             raise ValueError(
                 "Cirq workspace gate power requires rebinding its lifetimes"

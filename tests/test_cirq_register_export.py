@@ -809,3 +809,165 @@ def test_gate_releases_left_input_without_freeing_caller_qid(
         initial_state=initial.copy(),
     )
     np.testing.assert_allclose(actual.final_state_vector, want, atol=2e-12, rtol=0)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("values", ((1, 1), (0, 1)))
+def test_cirq_feedback_replays_each_and_branch(
+    cirq: Any, source_export: Any, values: tuple[int, int]
+) -> None:
+    from itertools import product
+
+    import torch
+    from qualtran.bloqs.mcmt import And
+
+    from flagquantum.compiler.registers.register_binding import (
+        BoundRegisterProgram,
+        WorkspaceEvent,
+    )
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+    from tests.unit.measurement_checks import forced_branch
+
+    wires = (0, 1)
+    compute = multi_and_ir(wires, values, (2,))
+    erase = multi_and_ir(wires, values, (2,), classical_bits=(3,), uncompute=True)
+    body = CircuitIR(3, (compute + erase) * 2)
+    signature = Signature.build(a=1, b=1, scratch=1)
+    qids = tuple(cirq.LineQubit.range(3))
+    supplied = dict(zip(("a", "b", "scratch"), qids, strict=True))
+    export, _ = export_register_cirq(
+        body,
+        signature,
+        {"a": (0,), "b": (1,), "scratch": (2,)},
+        input_quregs=supplied,
+        feedback_key_prefix="feedback",
+    )
+    emitted = tuple(export.circuit.all_operations())
+    assert export.report.lossless and len(emitted) == len(body.instructions)
+    positions = [
+        i for i, gate in enumerate(body.instructions) if gate.name == "measure"
+    ]
+    keys = tuple(f"feedback_{position}" for position in positions)
+    assert tuple(cirq.measurement_key_name(emitted[i]) for i in positions) == keys
+    original_compute = tuple(cirq.decompose_once(And(*values).on(*qids)))
+    original_erase = tuple(cirq.decompose_once(And(*values, uncompute=True).on(*qids)))
+    source_key = next(
+        cirq.measurement_key_name(op)
+        for op in original_erase
+        if cirq.is_measurement(op)
+    )
+    assert emitted == tuple(
+        op
+        for key in keys
+        for op in (
+            *original_compute,
+            *(
+                (
+                    cirq.with_measurement_key_mapping(item, {source_key: key})
+                    if cirq.is_measurement(item)
+                    or isinstance(item, cirq.ClassicallyControlledOperation)
+                    else item
+                )
+                for item in original_erase
+            ),
+        )
+    )
+    with pytest.raises(CirqConversionError):
+        export_cirq(body)
+
+    # Replaying workspace events preserves the exact emitted instruction indices.
+    bound = BoundRegisterProgram(
+        body,
+        ((0,), (1,)),
+        (
+            WorkspaceEvent(0, "allocate", (2,), False, instruction_offset=0),
+            WorkspaceEvent(
+                len(emitted) + 1, "free", (2,), False, instruction_offset=len(emitted)
+            ),
+        ),
+    )
+    wrapped = RegisterCirqGate(
+        bound, Signature.build(a=1, b=1), feedback_key_prefix="feedback"
+    )
+    actual = tuple(cirq.decompose_once(wrapped.on(*qids[:2])))
+    (scratch,) = {q for op in actual for q in op.qubits} - set(qids[:2])
+    assert (
+        tuple(
+            op.transform_qubits(lambda q: qids[2] if q == scratch else q)
+            for op in actual
+        )
+        == emitted
+    )
+
+    # Project each Cirq measurement explicitly to retain unnormalized amplitudes.
+    order = (*qids, cirq.LineQubit(3))
+    initial = np.zeros((2, 2, 2, 2), dtype=np.complex128)
+    weights = np.arange(1, 9).astype(np.complex128) + 1j * np.arange(8, 0, -1)
+    initial[:, :, 0, :] = (weights / np.linalg.norm(weights)).reshape(2, 2, 2)
+    for history in product((0, 1), repeat=2):
+        state = initial.reshape(-1).copy()
+        bits = iter(history)
+        classical = cirq.ClassicalDataDictionaryStore()
+        last = 0
+        for operation in emitted:
+            if cirq.is_measurement(operation):
+                last = next(bits)
+                selector = (slice(None), slice(None), 1 - last, slice(None))
+                state.reshape((2,) * 4)[selector] = 0
+                classical.record_measurement(
+                    cirq.measurement_key_obj(operation), (last,), operation.qubits
+                )
+                continue
+            if isinstance(operation, cirq.ClassicallyControlledOperation):
+                if not all(
+                    condition.resolve(classical)
+                    for condition in operation.classical_controls
+                ):
+                    continue
+                operation = operation.without_classical_controls()
+            if isinstance(operation.gate, cirq.ResetChannel):
+                if last == 0:
+                    continue
+                operation = cirq.X(qids[2])
+            state = cirq.Circuit(operation).unitary(qubit_order=order) @ state
+        native = forced_branch(
+            torch.from_numpy(initial.reshape(-1)), body.instructions, history
+        )
+        np.testing.assert_allclose(state, native.numpy(), atol=2e-12, rtol=0)
+        np.testing.assert_allclose(state, initial.reshape(-1) / 2, atol=2e-12, rtol=0)
+
+
+def test_cirq_feedback_keeps_both_polarities_in_disjunctions(cirq: Any) -> None:
+    from itertools import product
+
+    signature = Signature.build(a=1, b=1, target=1)
+    wires = {"a": (0,), "b": (1,), "target": (2,)}
+    measurements = (
+        Instruction("measure", (0,), metadata={"is_dynamic": True, "classical_bit": 5}),
+        Instruction("measure", (1,), metadata={"is_dynamic": True, "classical_bit": 2}),
+    )
+    controlled = Instruction(
+        "x",
+        (2,),
+        metadata={"condition_clauses": (((2, 0), (5, 1)), ((2, 1), (5, 0)))},
+    )
+    program = CircuitIR(3, (*measurements, controlled))
+    exported, ports = export_register_cirq(
+        program, signature, wires, feedback_key_prefix="external"
+    )
+    order = tuple(ports[name][0] for name in wires)
+    simulator = cirq.Simulator(dtype=np.complex128)
+    for a, b in product((0, 1), repeat=2):
+        actual = simulator.simulate(
+            exported.circuit, qubit_order=order, initial_state=4 * a + 2 * b
+        )
+        expected = np.zeros(8, dtype=np.complex128)
+        expected[4 * a + 2 * b + (a ^ b)] = 1
+        np.testing.assert_array_equal(actual.final_state_vector, expected)
+    with pytest.raises(ValueError, match="read before measurement"):
+        export_register_cirq(
+            CircuitIR(3, (controlled, *measurements)),
+            signature,
+            wires,
+            feedback_key_prefix="external",
+        )

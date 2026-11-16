@@ -61,9 +61,10 @@ def export_register_cirq(
     *,
     input_quregs: Mapping[str, Any] | None = None,
     output_quregs: Mapping[str, Any] | None = None,
+    feedback_key_prefix: str | None = None,
     allow_lossy: bool = False,
 ) -> tuple[CirqExportResult, dict[str, _Qureg]]:
-    """Place a static export on named register wires and return right ports.
+    """Place an export on named register wires and return right ports.
 
     The native circuit owns its physical allocation. Unbound native wires
     remain temporary lines. Right-only ports can use caller-supplied qubits
@@ -71,6 +72,9 @@ def export_register_cirq(
     This boundary preserves the ordinary export diagnostics and instruction
     order. A caller-supplied qubit array must match the register's shape with
     its bit axis last.
+    With a feedback key prefix, each measurement receives a unique key formed
+    from the prefix and its instruction index. Classical conditions read the
+    latest write to their native slot.
     """
     ir = ensure_circuit_ir(program)
     names = tuple(reg.name for reg in signature)
@@ -146,7 +150,12 @@ def export_register_cirq(
         placed[wire] = qubit
         occupied.add(qubit)
 
-    exported = _export_cirq(ir, allow_lossy=allow_lossy, include_inverse_phases=True)
+    exported = _export_cirq(
+        ir,
+        allow_lossy=allow_lossy,
+        include_inverse_phases=True,
+        feedback_key_prefix=feedback_key_prefix,
+    )
     circuit = exported.circuit.transform_qubits(lambda qubit: placed[qubit.x])
     return CirqExportResult(circuit, cast(CirqConversionReport, exported.report)), {
         reg.name: all_ports[reg.name] for reg in signature.rights()

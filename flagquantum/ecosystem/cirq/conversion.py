@@ -7,9 +7,14 @@ from importlib import import_module
 from numbers import Number
 from typing import Any, Literal
 
+from ...core.classical_control import (
+    instruction_condition_clauses,
+    validate_classical_control,
+)
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ...core.operator_schema import get_operator_schema
 from ...core.parameters import Parameter, ParameterExpression
+from ._register_feedback import with_feedback
 from .models import (
     CirqConversionError,
     CirqConversionIssue,
@@ -626,6 +631,7 @@ def _export_cirq(
     allow_lossy: bool,
     include_inverse_phases: bool = False,
     extent_declared_by_gate: bool = False,
+    feedback_key_prefix: str | None = None,
 ) -> CirqExportResult:
     cirq = _cirq()
     ir = ensure_circuit_ir(program)
@@ -633,6 +639,13 @@ def _export_cirq(
     if include_inverse_phases:
         supported_gates.update(("sdg", "tdg"))
     issues: list[CirqConversionIssue] = []
+    measurement_keys: dict[int, str] = {}
+    if feedback_key_prefix is not None:
+        if allow_lossy or not feedback_key_prefix.isidentifier():
+            raise ValueError(
+                "Cirq feedback export requires a key prefix and strict conversion"
+            )
+        validate_classical_control(ir.instructions, n_qubits=ir.n_wires)
     if ir.observables or ir.measurements:
         _issue(
             issues,
@@ -669,7 +682,44 @@ def _export_cirq(
         current_measurement_qubits = []
 
     for index, instruction in enumerate(ir.instructions):
-        if (
+        clauses = (
+            instruction_condition_clauses(instruction)
+            if feedback_key_prefix is not None
+            else ()
+        )
+        if feedback_key_prefix is not None:
+            if instruction.name in {"measure", "reset"}:
+                if (
+                    len(instruction.wires) != 1
+                    or clauses
+                    or instruction.matrix is not None
+                ):
+                    _issue(
+                        issues,
+                        "unsupported_operation",
+                        "Cirq register feedback requires an unconditional one-wire measurement or reset.",
+                        index=index,
+                        name=instruction.name,
+                    )
+                    break
+                qubit = qubits[instruction.wires[0]]
+                if instruction.name == "measure":
+                    write_key = f"{feedback_key_prefix}_{index}"
+                    measurement_keys[instruction.metadata["classical_bit"]] = write_key
+                    operations.append(cirq.measure(qubit, key=write_key))
+                else:
+                    operations.append(cirq.reset(qubit))
+                continue
+            if instruction.name == "classical_xor":
+                _issue(
+                    issues,
+                    "unsupported_operation",
+                    "Cirq register feedback requires measurement-defined classical bits.",
+                    index=index,
+                    name=instruction.name,
+                )
+                break
+        elif (
             "conditions" in instruction.metadata
             or "condition_clauses" in instruction.metadata
         ):
@@ -793,7 +843,10 @@ def _export_cirq(
         if blocked:
             continue
         gate = _export_gate(cirq, instruction, params)
-        operations.append(gate.on(*(qubits[wire] for wire in instruction.wires)))
+        operation = gate.on(*(qubits[wire] for wire in instruction.wires))
+        if clauses:
+            operation = with_feedback(cirq, operation, clauses, measurement_keys)
+        operations.append(operation)
     flush_measurement()
     report = _report("to_cirq", str(cirq.__version__), issues)
     circuit = cirq.Circuit(cirq.Moment([operation]) for operation in operations)
