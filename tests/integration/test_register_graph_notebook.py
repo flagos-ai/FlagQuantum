@@ -35,6 +35,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("apply_lth_bloq", 6, 2, 0),
         ("select_pauli_lcu", 6, 2, 0),
         ("unary_iteration", 17, 0, 0),
+        ("hamming_weight_phasing", 10, 4, 0),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
         ("binary_field_square", 7, 2, 0),
