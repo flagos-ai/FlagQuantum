@@ -16,9 +16,19 @@ cover the 12-way fanout, binary AND compute and erase, measurements and
 undeclared-call refusals. Model counts and the append-path primitive evidence
 are independent.
 
-Q-0798 retains the composite-cache boundary in the QEC-specific query. The
-generic typed Program cost query separately supports the source's policy of
-bypassing composite seeds and omitting computed composite rows. Plain QEC
-resource identities remain memoized as declared keys. The native model does
-not use a source Bloq class as its identity. Legacy annotations are admitted
-explicitly at the query boundary.
+Q-0798 also covers the executable typed Program cost query.
+`query_program_qec_gate_cost` uses the generic Program cache policy for
+call-only bodies and the existing QEC classifier for named terminal keys.
+A computed composite bypasses seeded values and is omitted from the cache.
+Validated static costs can still be stored. A program leaf requires an
+explicit resource identity unless the caller supplies its cost. Legacy
+annotations on resource identities use the existing declared-key query.
+
+The five-control MultiAnd fixture verifies four modeled compute ANDs against
+the frozen decomposition. Native binding emits 16 T/T-adjoint primitives
+and the appended operation preserves the complex amplitudes and prefix
+outputs. In the frozen source, mixed controls contribute four explicit
+Cliffords to the abstract default MultiAnd model for two negative controls.
+Its default decomposed AND leaves contribute zero Clifford, and its legacy
+decomposed AND leaves count the four inversions. The native Program adapter
+matches the decomposition profile.
