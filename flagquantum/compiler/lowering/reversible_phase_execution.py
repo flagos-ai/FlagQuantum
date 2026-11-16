@@ -9,6 +9,7 @@ from ..artifacts.reversible_phase import (
     ReversiblePhaseProgram,
 )
 from ..registers.primitives.global_phase import ccz_ir, scalar_sign_ir
+from ..registers.primitives.measurement import reset_x_register_ir
 
 
 def _phase_instruction(
@@ -90,26 +91,23 @@ def bind_reversible_phase_execution(
         guards = (*scopes, *((predicate,) if predicate is not None else ()))
         conditions = tuple(sorted((bit, 1) for bit in guards))
         metadata: dict[str, object] = {"conditions": conditions} if conditions else {}
-        if op.opcode in {"hmr", "r"}:
+        if op.opcode == "r":
+            gates.extend(reset_x_register_ir(op.qubits, conditions=conditions))
+        elif op.opcode == "hmr":
+            assert result is not None
             gates.append(Instruction("h", op.qubits, metadata=metadata))
             effect = {**metadata, "is_dynamic": True}
             if conditions:
                 effect["guarded_effect"] = True
-            if op.opcode == "hmr":
-                assert result is not None
-                gates.append(
-                    Instruction(
-                        "measure",
-                        op.qubits,
-                        metadata={**effect, "classical_bit": result},
-                    )
+            gates.append(
+                Instruction(
+                    "measure",
+                    op.qubits,
+                    metadata={**effect, "classical_bit": result},
                 )
-                clear = tuple(sorted((*conditions, (result, 1))))
-                gates.append(
-                    Instruction("x", op.qubits, metadata={"conditions": clear})
-                )
-            else:
-                gates.append(Instruction("reset", op.qubits, metadata=effect))
+            )
+            clear = tuple(sorted((*conditions, (result, 1))))
+            gates.append(Instruction("x", op.qubits, metadata={"conditions": clear}))
         elif op.opcode == "z_pow":
             gates.append(_phase_instruction(op, metadata))
         elif op.opcode == "ccz":

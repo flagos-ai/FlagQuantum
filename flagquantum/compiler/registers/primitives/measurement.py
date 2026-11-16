@@ -6,6 +6,8 @@
 # Basis instruments: https://github.com/quantumlib/Qualtran/tree/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates
 # DiscardQ: https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/basic_gates/discard.py
 # Changes: caller-owned physical clearing and explicit parity-controlled phase expansion.
+# Broadcast order follows the locked Kickmix CircuitBuilder.
+# https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/build/circuit_builder.cc
 
 """Shared basis measurement clearing and classical-parity phase decompositions."""
 
@@ -37,11 +39,44 @@ def measure_x_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...
     return (Instruction("h", (qubit,)), *clear)
 
 
+def measure_x_clear_register_ir(
+    qubits: tuple[int, ...], classical_bits: tuple[int, ...]
+) -> tuple[Instruction, ...]:
+    """Measure and clear paired lanes in order, with caller-owned result slots."""
+    if len(qubits) != len(classical_bits):
+        raise ValueError("Measurement targets and results must have equal lengths")
+    return tuple(
+        gate
+        for qubit, bit in zip(qubits, classical_bits, strict=True)
+        for gate in measure_x_clear_ir(qubit, bit)
+    )
+
+
 def discard_qubit_ir(qubit: int) -> tuple[Instruction, ...]:
     """Consume a logical qubit and return its physical slot in zero without a result bit."""
     if type(qubit) is not int or qubit < 0:
         raise ValueError("Discard qubit must be a nonnegative integer")
     return (Instruction("reset", (qubit,), metadata={"is_dynamic": True}),)
+
+
+def reset_x_register_ir(
+    qubits: tuple[int, ...], *, conditions: tuple[tuple[int, int], ...] = ()
+) -> tuple[Instruction, ...]:
+    """Discard each qubit in the X basis, in physical lane order."""
+    if any(type(qubit) is not int or qubit < 0 for qubit in qubits):
+        raise ValueError("Reset qubits must be nonnegative integers")
+    metadata = {"conditions": conditions} if conditions else {}
+    effect: dict[str, object] = {**metadata, "is_dynamic": True}
+    if conditions:
+        effect["guarded_effect"] = True
+    return tuple(
+        gate
+        for qubit in qubits
+        for gate in (
+            Instruction("h", (qubit,), metadata=metadata),
+            Instruction("reset", (qubit,), metadata=effect),
+        )
+    )
 
 
 @dataclass(frozen=True)

@@ -297,6 +297,29 @@ by earlier lanes. The native immutable emitter rejects the call before
 publishing any stream. Raw quantum self-alias behavior remains outside the
 supported gate contract. K-0208 remains open for both source boundaries.
 
+## Ordered HMR and reset broadcasts
+
+The locked builder's HMR broadcast requires equally long target and result
+sequences. It pairs physical lanes in their supplied order. It accepts a
+repeated result slot and a repeated measured wire. The later HMR overwrites
+that result slot or measures the physical zero left by the earlier HMR
+respectively. The native register primitive uses the same lane order and
+existing single-wire clearing operation. Paired-table erasure uses this
+shared path.
+
+The locked source and native KMX agree on all three two-lane examples,
+including the read of the final result. All four unnormalized complex
+branches agree per example and every measured wire clears. Each example
+emits HMR2 in KMX, or H2, measure2 and conditional X2 in physical IR,
+plus one external feedback X in the test. It requires no extra quantum
+work or analytical source model.
+
+The source simulator implements R by X-basis dephasing followed by reset,
+as recorded in `sim/sim.h`. The three-lane reset stream retains a repeated
+wire, matches R3 in KMX and leaves the exact spectator density matrix
+after tracing out the reset wires. Its native IR uses H3 and reset3, with
+no result slots. Guarded reset uses the same native emitter.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug runtime output have
 separate source assertions. The full public mixed

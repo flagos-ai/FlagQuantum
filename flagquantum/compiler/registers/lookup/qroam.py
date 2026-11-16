@@ -10,7 +10,7 @@ from collections.abc import Sequence
 
 from ....core.ir import CircuitIR, Instruction
 from ..._component_trace.trace import ComponentCall, ComponentTrace
-from ..primitives.measurement import ParityPhase, measure_x_clear_ir
+from ..primitives.measurement import ParityPhase, measure_x_clear_register_ir
 from .unary_iteration import append_unary_iteration
 
 
@@ -29,11 +29,8 @@ def paired_lookup_ir(
     banks = 2 if blocked else 1
     data_start = 1 + width
     operand_count = data_start + banks * data_width
-    instructions: list[Instruction] = []
-    if measurement_bits:
-        for offset, bit in enumerate(measurement_bits):
-            wire = data_start + offset
-            instructions.extend(measure_x_clear_ir(wire, bit))
+    measured_wires = tuple(range(data_start, data_start + len(measurement_bits)))
+    instructions = list(measure_x_clear_register_ir(measured_wires, measurement_bits))
 
     measurement_stop = len(instructions)
     swaps = (
