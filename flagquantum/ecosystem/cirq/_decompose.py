@@ -7,6 +7,7 @@
 from typing import Any
 from uuid import uuid4
 
+from ._qubit_manager import InteropQubitManager
 from .conversion import _cirq, _import_static_cirq
 from .models import CirqImportResult
 
@@ -14,13 +15,18 @@ from .models import CirqImportResult
 def decompose_cirq_once(value: Any) -> list[Any] | None:
     """Return the leaves in protocol order, or None when unavailable."""
     cirq = _cirq()
-    context = cirq.DecompositionContext(
-        qubit_manager=cirq.GreedyQubitManager(prefix=f"_{uuid4()}", maximize_reuse=True)
+    manager = InteropQubitManager(
+        cirq.GreedyQubitManager(prefix=f"_{uuid4()}", maximize_reuse=True)
     )
+    if isinstance(value, cirq.Operation):
+        manager.manage_qubits(value.qubits)
+    context = cirq.DecompositionContext(qubit_manager=manager)
     if isinstance(value, cirq.Gate):
+        qubits = cirq.LineQid.for_gate(value)
+        manager.manage_qubits(qubits)
         tree = cirq.decompose_once_with_qubits(
             value,
-            cirq.LineQid.for_gate(value),
+            qubits,
             context=context,
             flatten=False,
             default=None,
