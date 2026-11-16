@@ -10,6 +10,46 @@ from .global_phase import ccz_ir, scalar_sign_ir
 from .measurement import measure_x_clear_ir
 
 
+def _three_control_ir(
+    first: int,
+    second: int,
+    third: int,
+    target: int,
+    *,
+    phase: bool,
+    scratch: int | None,
+    measurement_bit: int | None,
+) -> tuple[Instruction, ...]:
+    """Share the source CCCX/CCCZ schedule over already admitted operands.
+
+    Callers supply clean scratch in zero, satisfying the source's initial R.
+    Otherwise borrow the lowest available wire and restore its entire state.
+    """
+    helper = (
+        scratch
+        if scratch is not None
+        else next(q for q in range(5) if q not in (first, second, third, target))
+    )
+    pair = (
+        Instruction("ccx", (first, second, helper)),
+        *(
+            ccz_ir((helper, third, target))
+            if phase
+            else (Instruction("ccx", (helper, third, target)),)
+        ),
+    )
+    if scratch is None:
+        return pair * 2
+    assert measurement_bit is not None
+    return (
+        *pair,
+        *measure_x_clear_ir(scratch, measurement_bit),
+        Instruction(
+            "cz", (first, second), metadata={"conditions": ((measurement_bit, 1),)}
+        ),
+    )
+
+
 def _flip(
     target: int | None,
     *controls: int | bool | ClassicalFieldCoefficient,
@@ -49,22 +89,16 @@ def _flip(
             ),
         )
     first, second, last = wires
-    if scratch is None:
-        # With no clean scratch the source picks the lowest free wire ID.
-        helper = next(q for q in range(5) if q not in (*wires, target))
-        return (
-            Instruction("ccx", (first, second, helper)),
-            Instruction("ccx", (helper, last, target)),
-        ) * 2
-    if measurement_bit is None:
+    if scratch is not None and measurement_bit is None:
         raise ValueError("Measured comparison requires a classical result slot")
-    return (
-        Instruction("ccx", (first, second, scratch)),
-        Instruction("ccx", (scratch, last, target)),
-        *measure_x_clear_ir(scratch, measurement_bit),
-        Instruction(
-            "cz", (first, second), metadata={"conditions": ((measurement_bit, 1),)}
-        ),
+    return _three_control_ir(
+        first,
+        second,
+        last,
+        target,
+        phase=False,
+        scratch=scratch,
+        measurement_bit=measurement_bit,
     )
 
 

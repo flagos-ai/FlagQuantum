@@ -8,7 +8,7 @@
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
-from ..primitives._mixed_gates import _flip
+from ..primitives._mixed_gates import _flip, _three_control_ir
 from ..primitives.measurement import measure_x_clear_ir
 
 
@@ -22,17 +22,16 @@ def _four_operand_phase(
 ) -> tuple[Instruction, ...]:
     if isinstance(mask, (bool, ClassicalFieldCoefficient)):
         return _flip(None, first, second, third, mask)
-    if clean is None:
-        # The source borrows the lowest wire ID outside this gate's operands.
-        helper = next(q for q in range(5) if q not in (first, second, third, mask))
-        return (*_flip(helper, first, second), *_flip(None, helper, third, mask)) * 2
-    if measurement_bit is None:
+    if clean is not None and measurement_bit is None:
         raise ValueError("Masked prefix phase requires a classical result slot")
-    return (
-        *_flip(clean, first, second),
-        *_flip(None, clean, third, mask),
-        *measure_x_clear_ir(clean, measurement_bit),
-        *_flip(None, first, second, ClassicalFieldCoefficient(measurement_bit)),
+    return _three_control_ir(
+        first,
+        second,
+        third,
+        mask,
+        phase=True,
+        scratch=clean,
+        measurement_bit=measurement_bit,
     )
 
 
