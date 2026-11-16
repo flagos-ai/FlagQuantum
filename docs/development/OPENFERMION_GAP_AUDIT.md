@@ -167,9 +167,9 @@ neither root import count nor this delivery update implies full compatibility.
   designed first. Fixed determinant examples do not establish a general
   transform. The [four-mode H2 UCCSD composition](FERMION_H2_UCCSD_ENCODINGS.md)
   uses a native full-register basis conversion and a shared training loop.
-  The [two-qubit JW H2 UCCSD example](FERMION_H2_TAPERED_UCCSD.md) further
+  The [two-qubit H2 UCCSD example](FERMION_H2_TAPERED_UCCSD.md) further
   reduces the ordered excitation generators into the same explicit sector as
-  the Hamiltonian. General circuit conversion, parity and BK tapering, and
+  the Hamiltonian in JW, parity and BK. General circuit conversion and
   automatic sector selection remain outside this example.
 - **Weighted/complex Hubbard:** admit only with a concrete lattice/flux use
   case. Keep edge validation and symbolic assembly in the model module; verify
