@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, cast
 
 from ...compiler.registers.register_binding import WorkspaceEvent
@@ -12,17 +12,43 @@ if TYPE_CHECKING:
     from cirq import LineQubit, Operation, Qid, QubitManager
 
 
+def _output_allocations(
+    events: tuple[WorkspaceEvent, ...], outputs: Mapping[int, Qid]
+) -> dict[int, int]:
+    """Find the final clean lease for each transferred output wire."""
+    pending = set(outputs)
+    result: dict[int, int] = {}
+    for index in range(len(events) - 1, -1, -1):
+        if not pending:
+            break
+        event = events[index]
+        wires = pending.intersection(event.wires)
+        if not wires:
+            continue
+        if event.kind != "allocate" or event.dirty:
+            raise ValueError("Cirq output transfer requires a final live clean lease")
+        result.update((wire, index) for wire in wires)
+        pending.difference_update(wires)
+    if pending:
+        raise ValueError("Cirq output transfer requires a final live clean lease")
+    return result
+
+
 def bind_workspace_operations(
     operations: Sequence[Operation],
     events: tuple[WorkspaceEvent, ...],
-    qubits: Sequence[Qid],
+    inputs: Sequence[Qid],
+    output_groups: Sequence[Mapping[int, Qid]],
     base: QubitManager | None,
 ) -> tuple[Operation, ...]:
     """Remap a one-operation-per-instruction stream at physical lease boundaries."""
+    outputs = {wire: qubit for group in output_groups for wire, qubit in group.items()}
+    final_allocations = _output_allocations(events, outputs)
     manager = InteropQubitManager(base)
-    manager.manage_qubits(qubits)
-    ports = dict(enumerate(qubits))
+    manager.manage_qubits((*inputs, *outputs.values()))
+    ports = dict(enumerate(inputs))
     live: dict[int, Qid] = {}
+    output_aliases: dict[int, Qid] = {}
     result: list[Operation] = []
     start = 0
 
@@ -30,10 +56,12 @@ def bind_workspace_operations(
         wire = cast("LineQubit", q).x
         if wire in ports:
             return ports[wire]
+        if wire in output_aliases:
+            return output_aliases[wire]
         return live[wire]
 
     try:
-        for event in events:
+        for index, event in enumerate(events):
             stop = event.instruction_offset
             if stop is None or not start <= stop <= len(operations):
                 raise ValueError(
@@ -54,6 +82,9 @@ def bind_workspace_operations(
                     manager.qfree(supplied)
                     raise ValueError("Cirq manager returned the wrong workspace size")
                 live.update(zip(event.wires, supplied, strict=True))
+                for wire in event.wires:
+                    if final_allocations.get(wire) == index:
+                        output_aliases[wire] = outputs[wire]
             elif event.kind == "free":
                 if event.wires:
                     if not set(event.wires) <= live.keys():
@@ -62,8 +93,11 @@ def bind_workspace_operations(
             else:
                 raise ValueError("Cirq workspace does not support retired wires")
         result.extend(op.transform_qubits(locate) for op in operations[start:])
-        if live:
-            raise ValueError("Cirq workspace must release every private lease")
+        if live.keys() != outputs.keys():
+            raise ValueError("Cirq workspace may only keep declared output leases live")
+        for group in output_groups:
+            if group:
+                manager.qfree([live.pop(wire) for wire in group])
     except KeyError as exc:
         raise ValueError("Cirq workspace accessed a wire outside its lease") from exc
     finally:

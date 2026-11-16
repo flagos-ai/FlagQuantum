@@ -16,6 +16,7 @@ import numpy as np
 from ...compiler.registers.primitives.power import register_power_ir
 from ...compiler.registers.register_binding import BoundRegisterProgram
 from ...core.ir import CircuitIR
+from ...core.ir.program.registers import RegisterSide
 from ...core.ir.program.signatures import Signature
 from ._register_export import _register_shape
 from ._register_workspace import bind_workspace_operations
@@ -35,6 +36,9 @@ class RegisterCirqGate(Gate):
         self, body: CircuitIR | BoundRegisterProgram, signature: Signature
     ) -> None:
         labels: list[str] = []
+        input_indices: list[int] = []
+        right_indices: list[int] = []
+        output_groups: list[tuple[int, ...]] = []
         names: set[str] = set()
         for register in signature:
             if register.name in names:
@@ -42,30 +46,63 @@ class RegisterCirqGate(Gate):
             names.add(register.name)
             shape = _register_shape(register)
             width = shape[-1]
-            for index in register.all_idxs():
+            first_bit = len(labels)
+            for element_index in register.all_idxs():
+                bits = range(len(labels), len(labels) + width)
+                if register.side & RegisterSide.LEFT:
+                    input_indices.extend(bits)
+                if register.side & RegisterSide.RIGHT:
+                    right_indices.extend(bits)
                 label = register.name
-                if index:
-                    label += f"[{', '.join(map(str, index))}]"
+                if element_index:
+                    label += f"[{', '.join(map(str, element_index))}]"
                 labels.extend([label] * width)
+            if register.side == RegisterSide.RIGHT:
+                output_groups.append(tuple(range(first_bit, len(labels))))
         bound = body if isinstance(body, BoundRegisterProgram) else None
         ir = body if isinstance(body, CircuitIR) else body.circuit
         if bound is None and len(labels) != ir.n_wires:
             raise ValueError(
                 "Cirq gate requires one declared operand per physical wire"
             )
+        output_wires: dict[int, int] = {}
         if bound is not None:
             outputs = tuple(wire for word in bound.outputs for wire in word)
             if (
-                not signature.thru_registers_only
+                any(register.side == RegisterSide.LEFT for register in signature)
                 or bound.classical_outputs
-                or outputs != tuple(range(len(labels)))
+                or len(outputs) != len(right_indices)
                 or len(labels) > ir.n_wires
+                or len(set(outputs)) != len(outputs)
+                or any(not 0 <= wire < ir.n_wires for wire in outputs)
             ):
-                raise ValueError("Cirq workspace gates require unchanged through wires")
+                raise ValueError(
+                    "Cirq workspace gate ports do not match the bound body"
+                )
+            input_wires = {index: wire for wire, index in enumerate(input_indices)}
+            for wire, index in zip(outputs, right_indices, strict=True):
+                if index in input_wires:
+                    if input_wires[index] != wire:
+                        raise ValueError(
+                            "Cirq workspace gates require unchanged through wires"
+                        )
+                elif wire < len(input_indices):
+                    raise ValueError("Cirq right-only output must use a private wire")
+                else:
+                    output_wires[index] = wire
         self._body = ir
         self._bound = bound
         self._signature = signature
         self._labels = tuple(labels)
+        self._input_indices = tuple(input_indices)
+        self._output_groups = (
+            tuple(
+                tuple((output_wires[index], index) for index in group)
+                for group in output_groups
+            )
+            if bound is not None
+            else ()
+        )
 
     def _num_qubits_(self) -> int:
         return len(self._labels)
@@ -96,7 +133,11 @@ class RegisterCirqGate(Gate):
             return bind_workspace_operations(
                 operations,
                 self._bound.events,
-                qubits,
+                tuple(qubits[index] for index in self._input_indices),
+                tuple(
+                    {wire: qubits[index] for wire, index in group}
+                    for group in self._output_groups
+                ),
                 context.qubit_manager if context else None,
             )
         remapped = result.circuit.transform_qubits(lambda q: qubits[q.x])

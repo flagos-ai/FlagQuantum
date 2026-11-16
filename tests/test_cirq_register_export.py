@@ -571,3 +571,114 @@ def test_gate_workspace_context_replays_native_leases(
     np.testing.assert_allclose(
         simulated.final_state_vector, initial, rtol=0, atol=2e-12
     )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("reuse", (False, True))
+def test_gate_transfers_only_final_right_output_lease(
+    cirq: Any, source_export: Any, reuse: bool
+) -> None:
+    from collections.abc import Iterable
+    from dataclasses import replace
+
+    from cirq import GreedyQubitManager, Qid
+    from qualtran.bloqs.basic_gates import IntState
+
+    from flagquantum.compiler.registers.component_basis_vectors import (
+        integer_basis_function,
+    )
+    from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+    from flagquantum.compiler.registers.register_binding import (
+        WorkspaceEvent,
+        bind_register_program,
+    )
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    prepare = integer_basis_function("prepare", opaque_register_type(2), 1)
+    assert prepare.registers is not None
+    signature = Signature(prepare.registers)
+    builder = ComponentProgramBuilder(signature, (prepare,))
+    output = builder.call("prepare", {})
+    bound = bind_register_program(
+        builder.finalize({"val": output}),
+        (),
+        clean=(0, 1),
+        allow_workspace_outputs=True,
+    )
+    assert bound.outputs == ((0, 1),)
+    if reuse:
+        (output_lease,) = bound.events
+        # Use an explicit ordered trace so scheduling the independent output
+        # preparation cannot move its allocation ahead of the private lease.
+        bound = replace(
+            bound,
+            circuit=CircuitIR(
+                2, (Instruction("x", (0,)),) * 2 + bound.circuit.instructions
+            ),
+            events=(
+                WorkspaceEvent(0, "allocate", (0,), False, instruction_offset=0),
+                WorkspaceEvent(3, "free", (0,), False, instruction_offset=2),
+                replace(output_lease, position=4, instruction_offset=2),
+            ),
+        )
+    events: list[tuple[str, tuple[Qid, ...]]] = []
+
+    class Manager(GreedyQubitManager):
+        def qalloc(self, n: int, dim: int = 2) -> list[Qid]:
+            result = list(super().qalloc(n, dim))
+            events.append(("allocate", tuple(result)))
+            return result
+
+        def qfree(self, qubits: Iterable[Qid]) -> None:
+            values = tuple(qubits)
+            if values:
+                events.append(("free", values))
+            super().qfree(values)
+
+    msb, lsb = cirq.NamedQubit("result_msb"), cirq.NamedQubit("result_lsb")
+    manager = Manager(prefix="temp", maximize_reuse=True)
+    emitted = tuple(
+        cirq.decompose_once(
+            RegisterCirqGate(bound, signature).on(msb, lsb),
+            context=cirq.DecompositionContext(manager),
+        )
+    )
+    assert emitted[-1:] == (cirq.X(lsb),)
+    assert events[-2][0] == "allocate"
+    temporaries = events[-2][1]
+    assert events[-1] == ("free", temporaries)
+    order: tuple[Qid, ...]
+    if reuse:
+        assert [(event.kind, event.wires) for event in bound.events] == [
+            ("allocate", (0,)),
+            ("free", (0,)),
+            ("allocate", (0, 1)),
+        ]
+        private = events[0][1][0]
+        assert private in temporaries
+        assert emitted[:-1] == (cirq.X(private),) * 2
+        assert not ({msb, lsb} & set(temporaries))
+        order = (msb, lsb, private)
+        expected = 2
+    else:
+        native_events = events.copy()
+        events.clear()
+        original = source_export.BloqAsCirqGate(IntState(1, 2)).on(msb, lsb)
+        original_ops = cirq.decompose_once(
+            original,
+            context=cirq.DecompositionContext(
+                Manager(prefix="temp", maximize_reuse=True)
+            ),
+        )
+        assert tuple(original_ops) == emitted
+        assert [kind for kind, _ in events] == ["allocate", "allocate", "free"]
+        assert events[0][1] + events[1][1] == native_events[0][1]
+        assert events[-1] == native_events[-1]
+        order = (msb, lsb)
+        expected = 1
+    result = cirq.Simulator(dtype=np.complex128).simulate(
+        cirq.Circuit(emitted), qubit_order=order
+    )
+    want = np.zeros(1 << len(order), dtype=np.complex128)
+    want[expected] = 1
+    np.testing.assert_array_equal(result.final_state_vector, want)
