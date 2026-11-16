@@ -53,6 +53,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_hubbard_trotter", 7, 10, 0),
         ("hubbard_qpe_costs", 7, 1, 3),
         ("register_ising_trotter", 4, 4, 0),
+        ("register_trotter_product", 4, 2, 0),
         ("register_hubbard_qubitization", 9, 4, 0),
         ("register_hubbard_select", 16, 4, 1),
         ("register_first_quantization", 29, 14, 0),
