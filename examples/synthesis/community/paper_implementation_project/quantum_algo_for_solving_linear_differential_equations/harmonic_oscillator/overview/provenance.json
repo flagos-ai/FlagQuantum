@@ -1,0 +1,73 @@
+{
+  "upstream_path": "community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "6643f85e052efaecee95e435c2c513ee668a1d75b07efc7e14995a6dc6584e2a",
+  "git_blob_sha1": "c745fce3f0b04822cb86011d3bfcea5df53ff653",
+  "scope": "All 12 source stages, all 11 time points, five original logical qubits, eight degree-seven Taylor terms, and the exact postselection and analytic comparisons.",
+  "native_semantic_adaptations": "Regenerate the source Householder matrix at every time. Reuse native bit-controlled rotations for all eight original powers, and reverse the encoding with within/apply. Preserve signed amplitudes alongside the original magnitudes and correctly label the potential and kinetic energy.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.quantum_algo_for_solving_linear_differential_equations.harmonic_oscillator.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_harmonic_oscillator_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "sha256": "20f5315136f2d41f5ccb30a3af60f08a70087818febdacd95380135d47f126b9"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "sha256": "0a3aedd9c46ad7592f59bc8d24d3b0677a508416c7553591478d69a29051cfe0"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "446a671c1f57034562dd70d40f0018a237e398cb37915312a41ec9fa3fb4e32a"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "1b836b071f5d9bc97f2e5436e55c1ca4e79a81bdafe94cda0e00a12dbf5a2e28"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "70b7486f947ce46d5c550e06b4059c206555712ce9b37aed866490d38a36f9c3"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "sha256": "4cee4c2da70e1e4fe35da4d42a98f2885f248a242789de082d88c65ad22e7f07"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "sha256": "082fd0f0f36021464f84cbfbcb4bbf225468859f580c7fd8fef2dc83488a8263"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "sha256": "450e02458d4e3b7bcf88626514e6e217fb6d53d9068c0e5fce022ca593c2d9bc"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 9,
+      "sha256": "dc7548444fbd706f1a977c06408c05e025a6e7920de0134d1bb42bf1456b771a"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 10,
+      "sha256": "8cadad74553f3185afc2a8801232923507e1077758310162f2666a18b89ec43d"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 11,
+      "sha256": "bb93637b820af488f518cafd7cfe3d81d3d9ef5d508e1c45135dfba878e1096b"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 12,
+      "sha256": "4f8f1fd2fd85555035ca6c50aca9b0bcd2fb26c144d79040f5a46ebfb7b426b6"
+    }
+  ]
+}
