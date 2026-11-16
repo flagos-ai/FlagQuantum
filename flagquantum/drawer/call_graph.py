@@ -59,6 +59,28 @@ def _call_order(
     return list(sorter.static_order()), successors
 
 
+def format_call_graph_debug_text(
+    root: Node,
+    direct_calls: Mapping[tuple[Node, Node], SymbolicInt],
+    *,
+    title: Callable[[Node], str] = str,
+) -> str:
+    """Print edges by topological generation, parent label, and child label."""
+    order, successors = _call_order(root, direct_calls)
+    generation: dict[Node, int] = {}
+    for node in order:
+        current = generation.get(node, 0)
+        for child in successors.get(node, ()):
+            generation[child] = max(generation.get(child, 0), current + 1)
+    return "\n".join(
+        f"{title(parent)} -- {direct_calls[parent, child]} -> {title(child)}"
+        for parent in sorted(
+            order, key=lambda node: (generation.get(node, 0), title(node))
+        )
+        for child in sorted(successors.get(parent, ()), key=title)
+    )
+
+
 def _code_span(label: str) -> str:
     delimiter = "`" * (1 + max(map(len, re.findall(r"`+", label)), default=0))
     if label.startswith(("`", " ")) or label.endswith(("`", " ")):
