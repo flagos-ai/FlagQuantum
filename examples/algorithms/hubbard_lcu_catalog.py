@@ -8,6 +8,9 @@ from flagquantum.algorithms.primitives.hubbard_prepare import PrepareHubbard
 from flagquantum.algorithms.primitives.hubbard_select import SelectHubbard
 from flagquantum.algorithms.primitives.lcu_block_encoding import LCUBlockEncoding
 from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
+from flagquantum.compiler._component_trace.resource_comparison import (
+    count_emitted_instructions,
+)
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, CostCall
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import Instruction
@@ -175,3 +178,32 @@ def hubbard_lcu_circuit(
         )
     )
     return circuit
+
+
+def hubbard_packed_prepare_circuit(
+    example: HubbardLCUExample, *, adjoint: bool = False
+) -> DynamicCircuit:
+    """Append the preparation stage on selection, junk and clean work in that order."""
+    packed = example.prepare_oracle
+    split = packed.selection_width
+    boundary = split + packed.junk_width
+    work, bits = example.preparation.requirements()
+    circuit = DynamicCircuit(boundary + work)
+    circuit.append(
+        packed.make_on(
+            selection=tuple(range(split)),
+            junk=tuple(range(split, boundary)),
+            workspace=tuple(range(boundary, boundary + work)),
+            classical_bits=tuple(range(bits)),
+            adjoint=adjoint,
+        )
+    )
+    return circuit
+
+
+if __name__ == "__main__":
+    circuit = hubbard_packed_prepare_circuit(HubbardLCUExample(2, packed=True))
+    counts = count_emitted_instructions(circuit.to_ir())
+    assert counts.t_count == 47 and counts.unconditional["measure"] == 3
+    print(f"Packed 2×2 Hubbard PREPARE on {counts.declared_qubits} wires")
+    print(f"{counts.t_count} T/T† and {counts.unconditional['measure']} measurements")

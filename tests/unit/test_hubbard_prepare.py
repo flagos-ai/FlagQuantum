@@ -66,8 +66,9 @@ def test_hubbard_prepare_complex_amplitudes_and_roundtrip(dim):
         PrepareUniformSuperposition,
     )
 
-    prepare = PrepareHubbard(dim, t=2, u=8)
-    source = Source(dim, dim, t=2, u=8)
+    t, u = (1, 4) if dim == 2 else (2, 8)
+    prepare = PrepareHubbard(dim, t=t, u=u)
+    source = Source(dim, dim, t=t, u=u)
     logical = sum(size for _, size in prepare.layout)
     wires = cirq.LineQubit.range(logical)
     context = cirq.DecompositionContext(cirq.GreedyQubitManager(prefix="reference"))
