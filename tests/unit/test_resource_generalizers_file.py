@@ -6,11 +6,15 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+import torch
 
+from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum.circuit import Circuit
 from flagquantum.compiler._component_trace.call_graph import (
     Generalizer,
     compose_cost_generalizer,
 )
+from flagquantum.compiler._component_trace.qec_gate_cost import query_qec_gate_cost
 from flagquantum.compiler._component_trace.resource_classification import (
     ignore_known_cliffords,
 )
@@ -22,6 +26,7 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     PartitionedCall,
     PhaseCall,
     ResourceCall,
+    ResourceSequenceCall,
     RotationCall,
     generalize_approximate_swap,
     generalize_control_values,
@@ -29,6 +34,11 @@ from flagquantum.compiler._component_trace.resource_generalization import (
     ignore_allocation,
     ignore_register_partition,
 )
+from flagquantum.compiler._component_trace.selected_call_count import (
+    count_selected_calls,
+)
+from flagquantum.core.ir import Instruction
+from flagquantum.ecosystem.cirq._decompose import import_cirq_decomposition
 from flagquantum.ecosystem.cirq.resource_keys import (
     CirqResourceCall,
     generalize_cirq_resource_call,
@@ -151,3 +161,74 @@ def test_gate_conversion_preserves_partitions_and_unknown_gates() -> None:
     assert source.cirq_to_bloqs(CirqGateAsBloq(cirq.ISWAP)) == CirqGateAsBloq(
         cirq.ISWAP
     )
+
+
+def test_generic_inverse_keeps_ordered_native_leaves_and_complex_amplitudes() -> None:
+    cirq = pytest.importorskip("cirq")
+    source = pytest.importorskip("qualtran.resource_counting.generalizers")
+    from qualtran import Adjoint
+    from qualtran.cirq_interop import CirqGateAsBloq
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    class Mixed(cirq.Gate):  # type: ignore[name-defined, misc]
+        def _num_qubits_(self) -> int:
+            return 2
+
+        def _decompose_(self, qubits: tuple[object, ...]) -> tuple[object, ...]:
+            left, right = qubits
+            return cirq.H(right), cirq.T(left), cirq.CNOT(left, right)
+
+    gate = cirq.inverse(Mixed())
+    source_key = source.cirq_to_bloqs(CirqGateAsBloq(gate))
+    assert isinstance(source_key, Adjoint)
+    inverse = generalize_cirq_resource_call(CirqResourceCall(gate))
+    t_adjoint = PhaseCall("t", adjoint=True)
+    assert inverse == ResourceSequenceCall(
+        (CliffordCall("cx", 2), t_adjoint, CliffordCall("h", 1))
+    )
+    assert not isinstance(inverse, CirqResourceCall)
+    assert (
+        query_qec_gate_cost(inverse).asdict()
+        == get_cost_value(source_key, QECGatesCost()).asdict()
+        == {"t": 1, "clifford": 2}
+    )
+    assert count_selected_calls(inverse, (PhaseCall("t"), t_adjoint)) == {t_adjoint: 1}
+
+    imported = import_cirq_decomposition(gate)
+    assert imported is not None and imported.report.lossless
+    assert imported.ir.instructions == (
+        Instruction("cx", (0, 1)),
+        Instruction("tdg", (0,)),
+        Instruction("h", (1,)),
+    )
+    initial = torch.tensor([1, 2j, 1 - 1j, 3], dtype=torch.complex128)
+    initial /= initial.norm()
+    circuit = Circuit(2, inputs=initial, dtype=torch.complex128)
+    circuit.append(FieldOperation(2, imported.ir.instructions))
+    expected = torch.as_tensor(cirq.unitary(gate), dtype=torch.complex128) @ initial
+    torch.testing.assert_close(circuit.state().flatten(), expected, rtol=0, atol=2e-12)
+
+
+def test_one_control_clause_is_admitted_and_multiple_clauses_are_refused() -> None:
+    cirq = pytest.importorskip("cirq")
+    source = pytest.importorskip("qualtran.resource_counting.generalizers")
+    from qualtran.cirq_interop import CirqGateAsBloq
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    gate = cirq.ControlledGate(
+        cirq.rx(0.3), control_values=cirq.SumOfProducts(((0, 1),))
+    )
+    native = generalize_cirq_resource_call(CirqResourceCall(gate))
+    assert not isinstance(native, CirqResourceCall)
+    ref = source.cirq_to_bloqs(CirqGateAsBloq(gate))
+    assert (
+        query_qec_gate_cost(native).asdict()
+        == get_cost_value(ref, QECGatesCost()).asdict()
+    )
+    multiple = cirq.ControlledGate(
+        cirq.rx(0.3), control_values=cirq.SumOfProducts(((0, 1), (1, 0)))
+    )
+    with pytest.raises(ValueError, match="single AND clause"):
+        source.cirq_to_bloqs(CirqGateAsBloq(multiple))
+    with pytest.raises(ValueError, match="one AND control clause"):
+        generalize_cirq_resource_call(CirqResourceCall(multiple))

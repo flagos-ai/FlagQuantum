@@ -275,18 +275,25 @@ def _pow_gate(
     if exponent is None:
         return None
     if isinstance(gate, cirq.XPowGate):
-        if _close(shift, 0.0) and _close(exponent, 1.0):
+        if _close(shift, 0.0) and _close(abs(exponent), 1.0):
             return "x", {}
         if _close(shift, -0.5):
             return "rx", {"theta": math.pi * exponent}
     if isinstance(gate, cirq.YPowGate):
-        if _close(shift, 0.0) and _close(exponent, 1.0):
+        if _close(shift, 0.0) and _close(abs(exponent), 1.0):
             return "y", {}
         if _close(shift, -0.5):
             return "ry", {"theta": math.pi * exponent}
     if isinstance(gate, cirq.ZPowGate):
         if _close(shift, 0.0):
-            for fixed_exponent, opcode in ((1.0, "z"), (0.5, "s"), (0.25, "t")):
+            if _close(abs(exponent), 1.0):
+                return "z", {}
+            for fixed_exponent, opcode in (
+                (0.5, "s"),
+                (-0.5, "sdg"),
+                (0.25, "t"),
+                (-0.25, "tdg"),
+            ):
                 if _close(exponent, fixed_exponent):
                     return opcode, {}
         if _close(shift, -0.5):
@@ -301,7 +308,11 @@ def _pow_gate(
         (cirq.CCXPowGate, "ccx"),
     )
     for gate_type, opcode in fixed_types:
-        if isinstance(gate, gate_type) and _close(exponent, 1.0) and _close(shift, 0.0):
+        if (
+            isinstance(gate, gate_type)
+            and _close(abs(exponent), 1.0)
+            and _close(shift, 0.0)
+        ):
             return opcode, {}
     return None
 

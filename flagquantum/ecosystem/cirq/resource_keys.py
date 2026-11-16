@@ -24,6 +24,7 @@ from ...compiler._component_trace.resource_generalization import (
     PhaseCall,
     PredicateControlledCall,
     ResourceCall,
+    ResourceSequenceCall,
     RotationCall,
     ZeroCostCall,
     identity_cost_key,
@@ -52,7 +53,18 @@ def generalize_cirq_resource_call(
     """
     if not isinstance(call, CirqResourceCall):
         return call
-    key = cirq_gate_resource_key(call.gate)
+    cirq = _cirq()
+    gate = call.gate
+    if (
+        isinstance(gate, cirq.ControlledGate)
+        and _single_control_clause(gate.control_values) is None
+    ):
+        raise ValueError("Cirq resource generalization requires one AND control clause")
+    key = cirq_gate_resource_key(gate)
+    if key is None and isinstance(gate, cirq.ops.raw_types._InverseCompositeGate):
+        leaves = cirq_gate_decomposition_resource_keys(gate)
+        if leaves is not None:
+            key = ResourceSequenceCall(leaves)
     if key is None:
         return call
     for layout in reversed(call.layouts):
@@ -99,15 +111,10 @@ def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
         return key
 
     if isinstance(gate, cirq.ControlledGate):
-        controls = gate.control_values
-        if isinstance(controls, cirq.ProductOfSums) and all(
-            len(allowed) == 1 for allowed in controls
-        ):
-            return _controlled_key(
-                cirq_gate_resource_key(gate.sub_gate),
-                tuple(allowed[0] for allowed in controls),
-            )
-        return None
+        controls = _single_control_clause(gate.control_values)
+        if controls is None:
+            return None
+        return _controlled_key(cirq_gate_resource_key(gate.sub_gate), controls)
 
     rotations: dict[type, Literal["rx", "ry", "rz"]] = {
         cirq.Rx: "rx",
@@ -129,6 +136,19 @@ def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
         return ControlledZPowerCall(cast(SymbolicReal, gate.exponent))
     if isinstance(gate, cirq.GlobalPhaseGate):
         return ZeroCostCall("global_phase", (cast(Hashable, gate.coefficient),))
+    return None
+
+
+def _single_control_clause(control_values: object) -> tuple[int, ...] | None:
+    cirq = _cirq()
+    if isinstance(control_values, cirq.ProductOfSums):
+        if all(len(allowed) == 1 for allowed in control_values):
+            return tuple(allowed[0] for allowed in control_values)
+    elif isinstance(control_values, cirq.SumOfProducts):
+        clauses = iter(control_values)
+        first = next(clauses, None)
+        if first is not None and next(clauses, None) is None:
+            return tuple(first)
     return None
 
 
