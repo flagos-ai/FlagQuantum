@@ -20,7 +20,7 @@ from flagquantum.compiler.registers.preparation.prepare_reflection import (
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.test_first_quantization_resource_model import assert_source_model
-from tests.unit.test_sparse_chemistry_prepare import _branch
+from tests.unit.test_sparse_chemistry_prepare import _assert_sparse_signature, _branch
 
 pytestmark = pytest.mark.unit
 
@@ -68,6 +68,11 @@ def test_sparse_walk_locked_aggregate_model(spatial, log):
     ]
     walk = SparseChemistryWalk(_prepare(spatial, log))
     assert walk.alpha == source.sum_of_lcu_coefficients
+    # The original forms the selection union with a set. Match by name.
+    _assert_sparse_signature(
+        sorted(walk.source_signature, key=lambda reg: reg.name),
+        sorted(source.signature, key=lambda reg: reg.name),
+    )
     model = walk.source_resource_model()
     assert_source_model(model.calls[1].component, source.reflect)
     assert_source_model(model, source)
@@ -124,7 +129,8 @@ def _select(state, ports, width):
         ):
             if orbital in ("p", "q") and not flag:
                 continue
-            address = 2 * bit(index, ports[orbital][0]) + bit(index, ports[spin][0])
+            orbital_value = bit(index, ports[orbital][0]) if ports[orbital] else 0
+            address = 2 * orbital_value + bit(index, ports[spin][0])
             targets = ports["sys"]
             amplitude *= (-1) ** sum(bit(index, wire) for wire in targets[:address])
             if is_y:
@@ -215,3 +221,72 @@ def test_complete_sparse_walk_complex_branches_and_inverse(
         assert restored == pytest.approx(
             {i: a * norm for i, a in state.items()}, abs=2e-12
         )
+
+
+@pytest.mark.ftqc_reference
+def test_factory_matches_locked_normalization_and_default_blocking():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.sparse.walk_operator import (
+        get_walk_operator_for_sparse_chem_ham,
+    )
+
+    one, two = _integrals(3)
+    source = get_walk_operator_for_sparse_chem_ham(one, two, 3, 5)
+    native = SparseChemistryWalk.from_integrals(
+        one, two, probability_bits=3, rotation_bits=5
+    )
+    assert (
+        native.prepare.data.log_block_size
+        == source.block_encoding.prepare.log_block_size
+    )
+    assert native.alpha == source.sum_of_lcu_coefficients
+    assert native.prepare.data.rotation_bits == 5
+    assert_source_model(native.source_resource_model(), source)
+
+
+def test_complete_single_spatial_orbital_walk_and_adjoint():
+    walk = SparseChemistryWalk.from_integrals(
+        [[1.0]], np.full((1,) * 4, -0.5), probability_bits=1, log_block_size=0
+    )
+    assert walk.alpha == 1.25
+    logical = sum(bits for _, bits in walk.layout)
+    ports = partition_register(tuple(range(logical)), walk.layout)
+    work, slots = walk.requirements()
+    wires = logical + work
+    scratch, bits = tuple(range(logical, wires)), tuple(range(slots))
+    adjoints = [
+        DynamicCircuit(wires)
+        .append(
+            walk.make_on(
+                ports, workspace=scratch, classical_bits=bits, adjoint=direction
+            )
+        )
+        .to_ir()
+        .instructions
+        for direction in (False, True)
+    ]
+    prep_ports = {name: ports[name] for name, _ in walk.layout[:-1]}
+    prep_work, prep_slots = walk.prepare.requirements()
+    prep = walk.prepare.make_on(
+        prep_ports,
+        workspace=scratch[1 : 1 + prep_work],
+        classical_bits=bits[:prep_slots],
+    ).instructions
+    prep_events = sum(g.name == "measure" for g in prep)
+    signal = _branch(prep, wires, (0,) * prep_events, normalize_measurements=True)
+    state = {
+        index | (system << work): amp * (1 + 1j) / np.sqrt(8)
+        for index, amp in signal.items()
+        for system in range(4)
+    }
+    expected = _reflect(_select(state, ports, wires), signal, (1 << (work + 2)) - 1)
+    for gates, before, after in zip(
+        adjoints, (state, expected), (expected, state), strict=True
+    ):
+        events = sum(g.name == "measure" for g in gates)
+        for pattern in ((0,), (1,), (0, 1), (1, 0)):
+            history = (pattern * events)[:events]
+            observed = _branch(
+                gates, wires, history, before, normalize_measurements=True
+            )
+            assert observed == pytest.approx(after, abs=2e-12)

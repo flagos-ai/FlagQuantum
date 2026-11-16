@@ -8,6 +8,8 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+from numpy.typing import ArrayLike
+
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
@@ -16,8 +18,10 @@ from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_requirements,
     source_uncontrolled_prepare_reflection_cost,
 )
+from ...core.ir.program.signatures import Signature
 from .multiplexers.select_sparse import SelectSparse
 from .qubitization_walk import _BoundQubitizationWalk
+from .sparse_chemistry_data import sparse_chemistry_data
 from .sparse_chemistry_prepare import PrepareSparseChemistry
 
 
@@ -34,6 +38,28 @@ class SparseChemistryWalk:
 
     prepare: PrepareSparseChemistry
 
+    @classmethod
+    def from_integrals(
+        cls,
+        one_body: ArrayLike,
+        two_body: ArrayLike,
+        *,
+        probability_bits: int = 8,
+        rotation_bits: int = 8,
+        drop_threshold: float = 0,
+        log_block_size: int | None = None,
+    ) -> "SparseChemistryWalk":
+        """Build the sparse walk from modified one-body and chemists' integrals."""
+        data = sparse_chemistry_data(
+            one_body,
+            two_body,
+            probability_bits=probability_bits,
+            rotation_bits=rotation_bits,
+            drop_threshold=drop_threshold,
+            log_block_size=log_block_size,
+        )
+        return cls(PrepareSparseChemistry(data))
+
     @property
     def num_spin_orb(self) -> int:
         return 2 * self.prepare.data.spatial_orbitals
@@ -41,6 +67,16 @@ class SparseChemistryWalk:
     @property
     def alpha(self) -> float:
         return self.prepare.data.normalization
+
+    @property
+    def source_signature(self) -> Signature:
+        """Declare the locked walk's union of selectors and its system word."""
+        select = SelectSparse.source_signature(self.num_spin_orb)
+        system = select[-1]
+        selectors = {reg.name: reg for reg in select[:-1]}
+        for reg in self.prepare.selection_registers:
+            selectors.setdefault(reg.name, reg)
+        return Signature((*selectors.values(), system))
 
     @property
     def layout(self) -> RegisterLayout:
@@ -119,10 +155,8 @@ class SparseChemistryWalk:
 
     def source_resource_model(self) -> ComponentCost:
         """Price the locked walk, including its abstract PREPARE adjoint."""
-        select_layout = SelectSparse.source_layout(self.num_spin_orb)
-        prep_layout = self.prepare.selection_layout
-        selection_width = sum(bits for _, bits in prep_layout)
-        width = sum((dict(select_layout) | dict(prep_layout)).values())
+        selection_width = sum(bits for _, bits in self.prepare.selection_layout)
+        width = int(self.source_signature.n_qubits())
         select = SelectSparse.source_resource_model(self.num_spin_orb)
         block = ComponentCost(
             "SelectBlockEncoding", select.qubits, calls=(CostCall(select),)
