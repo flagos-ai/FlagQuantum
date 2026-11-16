@@ -18,6 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_graphs", 13, 10, 0),
         ("register_musical_score", 3, 1, 1),
         ("resource_call_graphs", 3, 2, 0),
+        ("guided_hamiltonian", 9, 4, 0),
         ("register_addition", 20, 6, 3),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
