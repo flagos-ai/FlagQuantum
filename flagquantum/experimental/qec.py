@@ -31,14 +31,16 @@ def run_stim_matching_experiment(
     apply. The solver has no runtime dependency on the PyMatching Python package.
 
     Example:
+        >>> from importlib.util import find_spec
         >>> from flagquantum.experimental.qec import run_stim_matching_experiment
         >>> from flagquantum.qec import DecodingGraph, DetectorErrorModel
         >>> source = "R 0\\nX_ERROR(0.1) 0\\nM 0\\nDETECTOR rec[-1]\\nOBSERVABLE_INCLUDE(0) rec[-1]"
         >>> model = DetectorErrorModel.from_stim_text("error(0.1) D0 L0\\ndetector D0\\nlogical_observable L0")
         >>> graph = DecodingGraph.from_detector_error_model(model)
-        >>> result = run_stim_matching_experiment(source, graph=graph, shots=100, batch_size=32, seed=1)
-        >>> result.logical_failures
-        0
+        >>> native = find_spec('flagquantum.qec.decoders._sparse_blossom')
+        >>> if native is not None and find_spec('stim') is not None:
+        ...     result = run_stim_matching_experiment(source, graph=graph, shots=100, batch_size=32, seed=1)
+        ...     assert result.logical_failures == 0
     """
     if not isinstance(circuit_text, str):
         raise TypeError("circuit_text must be a string")
