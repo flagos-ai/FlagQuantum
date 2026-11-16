@@ -27,7 +27,7 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("m,n", [(1, 1), (2, 3), (3, 3), (4, 5), (8, 8)])
+@pytest.mark.parametrize("m,n", [(1, 1), (2, 3), (3, 3), (4, 4), (4, 5), (8, 8)])
 def test_rz_source_graph_angle_encoding_and_complex_phase(m: int, n: int) -> None:
     pytest.importorskip("qualtran")
     cirq = pytest.importorskip("cirq")
@@ -127,7 +127,7 @@ def test_rz_source_graph_angle_encoding_and_complex_phase(m: int, n: int) -> Non
             kicked[before] = prepared[before] * exp(1j * tau * direction * a / 2**n)
         assert certified_and_channel_map(gates, tuple(basis)) == (tuple(mapped), n - 1)
 
-        if n <= 3:
+        if n <= 4:
             initial = torch.zeros(1 << width, dtype=torch.complex128)
             final = torch.zeros_like(initial)
             initial[list(prepared)] = torch.tensor(
