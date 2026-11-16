@@ -2352,6 +2352,25 @@ focused_tests = "tests/unit/fermion/test_density.py"
 integration_tests = "tests/integration/test_fermion_one_body_density.py"
 development_artifact = "docs/development/FERMION_ONE_BODY_DENSITY.md"
 
+[capabilities.fermion_two_body_density]
+title = "Fermionic two-body density measurement"
+summary = "Build native two-body observables and assemble their expectations into a complex PyTorch tensor for molecular energy reconstruction."
+category = "simulation_and_training"
+user_goals = ["Measure two-body fermionic densities on matched full JW, parity or BK registers", "Reconstruct the energy of a small molecular state while retaining circuit-parameter gradients"]
+public_apis = ["flagquantum.algorithms.fermion.density.two_body_density_observables", "flagquantum.algorithms.fermion.density.two_body_density"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "circuit_parameter_gradients_through_measured_tensor_assembly"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/algorithms/fermion_two_body_density.py"
+documentation = "docs/development/FERMION_TWO_BODY_DENSITY.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Exact local CPU expectations on a full matched JW, prefix-parity or Fenwick BK register. Requires at least two modes and binomial(n, 2)**2 ordered, finite, single-element float32 or float64 CPU expectations of one dtype. Returns a dense complex64 or complex128 tensor. Measurement count and output grow as O(n^4); statevector storage remains exponential. Complex128 evidence covers four modes; float32 coverage is limited to assembly. Observable coefficients are static; circuit-parameter gradients flow through measured-tensor assembly. No automatic encoding or mode-order inference, noise projection, N-representability enforcement, tapered or ancilla registers, sampling, accelerator, distributed or scalability qualification. Native workflow requires neither OpenFermion nor Cirq."
+focused_tests = "tests/unit/fermion/test_density.py"
+integration_tests = "tests/integration/test_fermion_one_body_density.py"
+development_artifact = "docs/development/FERMION_TWO_BODY_DENSITY.md"
+
 [capabilities.fermion_hubbard_graph]
 title = "Spinful Fermi-Hubbard explicit graph"
 summary = "Assemble a static simple-graph Hamiltonian in native fermionic algebra and compose it with existing encodings, measurement and circuit-angle training."

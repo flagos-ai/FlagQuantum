@@ -409,6 +409,8 @@ This catalog is generated from the machine-validated
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Measure complex one-body fermionic densities on matched full JW, parity or BK registers | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
 | Reconstruct one-body energy while retaining circuit-parameter gradients | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
+| Measure two-body fermionic densities on matched full JW, parity or BK registers | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
+| Reconstruct the energy of a small molecular state while retaining circuit-parameter gradients | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
 | Build a spinful model from explicit undirected edges, including branching and disconnected graphs | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Reuse native encodings and train a bounded determinant pair with an independently verified spectator sign | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Discover independent commuting X/Y/Z symmetries of a native Pauli operator | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
@@ -1562,6 +1564,20 @@ Build Hermitian density observables and assemble their native expectations into 
 - **Start:** [quick example](../../examples/algorithms/fermion_one_body_density.py)
 - **Documentation:** [guide](../../docs/development/FERMION_ONE_BODY_DENSITY.md)
 - **Known boundary:** Exact local CPU expectation workflow on a full unreduced register, gamma[p,q]=<a-dagger[p] a[q]> in physical mode order. The caller supplies a preparation matched to the explicit JW, prefix-parity or Fenwick BK encoding and width; same-width encoding/order mismatches cannot be inferred from unlabelled values. The observable producer is static; tensor assembly preserves existing circuit-parameter gradients without making observable coefficients trainable. Requires n_modes**2 ordered finite real single-element CPU float32/float64 expectations of one dtype; returns complex64/complex128. Scientific acceptance uses complex128 through four modes; float32 assembly has unit evidence only. Conjugate symmetry is imposed by the measurement design, with no eigenvalue clipping, particle-number normalization or noise projection. Measurement/output count is O(n**2), encoded strings add width-dependent costs and runtime statevector storage remains exponential. No two-body density, molecular two-body energy, tapered/ancilla register support, automatic ansatz conversion, sampling/noise, hardware, accelerator, distributed or scalability qualification. Native workflow imports neither OpenFermion nor Cirq.
+
+### Fermionic two-body density measurement
+
+Build native two-body observables and assemble their expectations into a complex PyTorch tensor for molecular energy reconstruction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density.two_body_density_observables`, `flagquantum.algorithms.fermion.density.two_body_density`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `circuit_parameter_gradients_through_measured_tensor_assembly`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_two_body_density.py)
+- **Documentation:** [guide](../../docs/development/FERMION_TWO_BODY_DENSITY.md)
+- **Known boundary:** Exact local CPU expectations on a full matched JW, prefix-parity or Fenwick BK register. Requires at least two modes and binomial(n, 2)**2 ordered, finite, single-element float32 or float64 CPU expectations of one dtype. Returns a dense complex64 or complex128 tensor. Measurement count and output grow as O(n^4); statevector storage remains exponential. Complex128 evidence covers four modes; float32 coverage is limited to assembly. Observable coefficients are static; circuit-parameter gradients flow through measured-tensor assembly. No automatic encoding or mode-order inference, noise projection, N-representability enforcement, tapered or ancilla registers, sampling, accelerator, distributed or scalability qualification. Native workflow requires neither OpenFermion nor Cirq.
 
 ### Spinful Fermi-Hubbard explicit graph
 
