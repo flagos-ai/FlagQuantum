@@ -7,12 +7,24 @@
 
 from dataclasses import dataclass
 from math import ceil, isfinite, log2, tau
+from typing import cast
+
+from sympy import Expr
 
 from ....core.ir import Instruction
 from ..._component_trace.resource_model import (
     ComponentCost,
     estimate_component_resources,
 )
+from ..._component_trace.symbolic_math import (
+    SymbolicInt,
+    SymbolicReal,
+    bit_length,
+    smax,
+)
+from ..._component_trace.symbolic_math import ceil as source_ceil
+from ..._component_trace.symbolic_math import log2 as source_log2
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
 from .scaled_phase_addition import (
     _coefficient_word,
     scaled_phase_add_ir,
@@ -27,6 +39,15 @@ class QvrPhaseFormat:
     gradient_width: int
     coefficient_width: int
     coefficient_fraction_bits: int
+
+
+@dataclass(frozen=True)
+class QvrPhaseSizing:
+    """Separate the source width bound, search result, and selected format."""
+
+    format: QvrPhaseFormat
+    formula_width: int
+    optimized_width: int | None
 
 
 def _optimized_width(
@@ -64,10 +85,10 @@ def _optimized_width(
     return result
 
 
-def qvr_phase_format(
+def qvr_phase_sizing(
     cost_width: int, cost_fraction_bits: int, coefficient: float, epsilon: float
-) -> QvrPhaseFormat:
-    """Select widths with the original concrete precision and fallback rules."""
+) -> QvrPhaseSizing:
+    """Report the original concrete bound, search, and fallback."""
     if (
         type(cost_width) is not int
         or type(cost_fraction_bits) is not int
@@ -94,7 +115,7 @@ def qvr_phase_format(
             "QVR source sizing is undefined for a zero quantized coefficient"
         )
     formula = ceil(log2(terms * tau / epsilon))
-    width = formula
+    optimized = None
     if cost_width < 54:
         optimized = _optimized_width(
             (1 << cost_width) - 1,
@@ -103,8 +124,41 @@ def qvr_phase_format(
             gamma_fraction,
             epsilon / tau,
         )
-        width = min(formula, optimized)
-    return QvrPhaseFormat(width, gamma_width, gamma_fraction)
+    width = formula if optimized is None else min(formula, optimized)
+    return QvrPhaseSizing(
+        QvrPhaseFormat(width, gamma_width, gamma_fraction), formula, optimized
+    )
+
+
+def qvr_phase_format(
+    cost_width: int, cost_fraction_bits: int, coefficient: float, epsilon: float
+) -> QvrPhaseFormat:
+    """Select widths with the original concrete precision and fallback rules."""
+    return qvr_phase_sizing(cost_width, cost_fraction_bits, coefficient, epsilon).format
+
+
+def source_symbolic_qvr_gradient_cost(
+    cost_width: SymbolicInt,
+    cost_fraction_bits: SymbolicInt,
+    coefficient: Expr,
+    epsilon: SymbolicReal,
+) -> SymbolicResourceFormula:
+    """Model the source path with a symbolic coefficient, before binding."""
+    from sympy import pi as symbolic_pi
+
+    pi = symbolic_pi if isinstance(epsilon, Expr) else tau / 2
+    phase = source_ceil(source_log2(2 * pi / epsilon))
+    error_terms = (phase + 2) // 2
+    width = source_ceil(source_log2(error_terms * 2 * pi / epsilon))
+    integer_width = cast(SymbolicInt, smax(0, bit_length(abs(coefficient))))
+    coefficient_width = integer_width + cost_width - cost_fraction_bits + phase
+    return SymbolicResourceFormula(
+        and_bloq=0,
+        clifford=0,
+        measurement=0,
+        logical_qubits=cost_width + width,
+        toffoli=((coefficient_width + 2) // 2) * (width - 2),
+    )
 
 
 def source_qvr_phase_gradient_cost(

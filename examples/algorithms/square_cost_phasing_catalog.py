@@ -11,10 +11,6 @@ from flagquantum.compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
-from flagquantum.compiler._component_trace.resource_classification import (
-    classify_resource_gate,
-)
-from flagquantum.compiler._component_trace.resource_generalization import RotationCall
 from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
@@ -28,7 +24,7 @@ from flagquantum.compiler.registers.phase.qvr_phase_gradient import (
     qvr_phase_format,
     source_qvr_phase_gradient_cost,
 )
-from flagquantum.compiler.registers.phase.qvr_zpow import qvr_zpow_schedule
+from flagquantum.compiler.registers.phase.qvr_zpow import source_qvr_zpow_cost
 from flagquantum.compiler.registers.phase.scaled_phase_addition import (
     scaled_phase_add_terms,
 )
@@ -137,25 +133,8 @@ class SquareCostPhasingExample:
                 2 * n, self.fraction, self.coefficient, self.epsilon
             )
         else:
-            schedule = qvr_zpow_schedule(
-                tuple(range(2 * n)),
-                cost_fraction_bits=self.fraction,
-                coefficient=self.coefficient,
-                epsilon=self.epsilon,
-            )
-            if not schedule:
-                raise ValueError("The Square tutorial requires a retained Z rotation")
-            # The reference assigns the same exponent to every declared rotation.
-            family = classify_resource_gate(RotationCall("zpow", schedule[0][1] / 2))
-            count = len(schedule)
-            phase = ComponentCost(
-                "QvrZPow",
-                2 * n,
-                GateCost(
-                    t=count * (family == "t"),
-                    clifford=count * (family == "clifford"),
-                    rotation=count * (family == "rotation"),
-                ),
+            phase = source_qvr_zpow_cost(
+                2 * n, self.fraction, self.coefficient, self.epsilon
             )
         return ComponentCost(
             "PhasingViaCostFunction",
