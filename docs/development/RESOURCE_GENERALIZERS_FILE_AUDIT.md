@@ -20,8 +20,16 @@ Independent tests compare weighted graph folding and admitted SDK gate costs.
 An SDK Clifford remains opaque before conversion. Converting first makes it
 eligible for removal by the native Clifford rule.
 
-Q-0813 retains the general inverse-of-composite and complex Cirq control-set
-conversion boundaries. Opaque adapter keys have no native modeled cost until
-conversion succeeds. The generalizers only rewrite cost identities and emit
-zero primitive gates. Circuit execution and operand binding remain owned by
-the existing execution path.
+Q-0813 admits an exact inverse once its SDK decomposition resolves to
+owned resource keys. The ordered native sequence keeps adjoint T distinct
+from forward T and remains within the existing call-count and QEC query
+paths. A one-clause Cirq predicate converts to a native control pattern.
+Multiple clauses raise a descriptive error, matching locked source admission.
+Unrecognized SDK gates and incomplete decompositions retain opaque adapter
+identity. General SDK wrapper metadata and ancilla lifetime import remain
+tracked by the dedicated Cirq conversion source files.
+
+The model rewrites emit zero primitive gates. The separate inverse import
+binds CNOT, T-adjoint and H in source order, preserving wire operands and
+complex amplitudes through normal append. Self-inverse gates with exponent
+minus one and inverse S/T phases import losslessly at zero global shift.
