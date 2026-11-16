@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **141/213**.
+Validated local Notebook workflows: **142/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -201,7 +201,7 @@ Validated local Notebook workflows: **141/213**.
 | `algorithms/search_and_optimization/QAOA/qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/qaoa/overview/main.py) | validated |
 | `algorithms/search_and_optimization/QAOA/qaoa_knapsack` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_knapsack/main.py) | pending |
 | `algorithms/search_and_optimization/QAOA/qaoa_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/qaoa/qaoa_max_cut/main.py) | pending |
-| `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | [Native program](algorithms/search_and_optimization/dqi/dqi_max_xorsat/main.py) | pending |
+| `algorithms/search_and_optimization/dqi/dqi_max_xorsat` | notebook_workflow | [Native program](algorithms/search_and_optimization/dqi/dqi_max_xorsat/overview/main.py) | validated |
 | `algorithms/search_and_optimization/grover/3_sat_grover` | quantum_program | [Native program](algorithms/search_and_optimization/grover/three_sat_grover/main.py) | pending |
 | `algorithms/search_and_optimization/grover/grover` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover/grover/overview/main.py) | validated |
 | `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/grover/grover_max_cut/main.py) | pending |

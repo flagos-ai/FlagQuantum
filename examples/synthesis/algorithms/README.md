@@ -77,6 +77,7 @@ Native FlagQuantum programs currently available:
 - [overview](quantum_state_preparation/gibbs/quantum_thermal_state_preparation/overview/README.md)
 - [overview](quantum_walks/glued_trees/overview/README.md)
 - [overview](search_and_optimization/qaoa/overview/README.md)
+- [overview](search_and_optimization/dqi/dqi_max_xorsat/overview/README.md)
 - [overview](search_and_optimization/grover/grover/overview/README.md)
 - [overview](search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/README.md)
 
