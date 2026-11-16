@@ -110,6 +110,17 @@ execution is claimed. Under the frozen rule that unresolved source defects keep
 parents open, **Q-0766 remains open**, despite completion of the interface and
 call-chain audit. This does not close G2 or silently fix the upstream reference.
 
+The same limitation occurs at the default 131,072-point resolution. For
+`p(z) = 0.6 + 0.6j*z**65536`, the power term takes values +1 and -1 on
+the sample grid. Both implementations accept the polynomial and leave it
+unscaled. At `z = exp(-i*pi/131072)` the true magnitude is 1.2. The regression
+runs the unchanged source assertions and the native defaults. Hamiltonian
+GQSP uses this sampled scaler, and the GeneralizedQSP factory's optional
+grid check precedes complementary-polynomial verification. The witness
+establishes the scaler and grid check boundary, independently of later
+factory steps. The two helpers retain source parity, and a whole-circle
+certificate remains open.
+
 Default result: 7 failed, 21507 passed, 300 skipped, 1037 warnings in 162.55s (0:02:42). All seven observed failure IDs match the
 previous baseline, with no new observed failure. The run stopped at maxfail;
 it is not a full green default-suite result.

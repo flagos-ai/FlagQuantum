@@ -85,7 +85,8 @@ def test_fft_call_padding_dtype_and_consumer_replacement() -> None:
         data: NDArray[np.float64 | np.complex128 | np.int64],
     ) -> NDArray[np.complex128]:
         np.testing.assert_array_equal(data, calls[0])
-        return transformed.copy()
+        copied: NDArray[np.complex128] = transformed.copy()
+        return copied
 
     for provider in (record, cached):
         scaled = scale_down_to_qsp_polynomial(coefficients, fft=provider, n_points=8)
@@ -137,6 +138,29 @@ def test_finite_grid_misses_between_grid_peak_in_both_implementations() -> None:
         )
         < 1
     )
+
+
+def test_default_fft_grid_can_miss_an_order_one_peak() -> None:
+    from qualtran.linalg.polynomial.qsp_testing import (
+        assert_is_qsp_polynomial as source_assert,
+    )
+    from qualtran.linalg.polynomial.qsp_testing import (
+        scale_down_to_qsp_polynomial as source_scale,
+    )
+
+    # On the 2**17 source grid, z**(2**16) only takes values +1 and -1.
+    power = 2**16
+    coefficients = np.zeros(power + 1, dtype=np.complex128)
+    coefficients[0], coefficients[-1] = 0.6, 0.6j
+    source_assert(coefficients)
+    assert_is_qsp_polynomial(coefficients)
+    expected = source_scale(coefficients)
+    np.testing.assert_array_equal(expected, coefficients)
+    assert scale_down_to_qsp_polynomial(coefficients) is coefficients
+
+    outside_grid = np.exp(-1j * np.pi / (2 * power))
+    peak = abs(coefficients[0] + coefficients[-1] * outside_grid**power)
+    assert peak == pytest.approx(1.2)
 
 
 @pytest.mark.parametrize("n_points", [0, 1, -1])
