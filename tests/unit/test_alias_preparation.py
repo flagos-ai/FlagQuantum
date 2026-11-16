@@ -22,6 +22,7 @@ from flagquantum.compiler.registers.comparison.less_equal import (
     less_equal_requirements,
 )
 from flagquantum.compiler.registers.lookup.source_qrom import source_qrom_workspace_size
+from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 from tests.unit.measurement_checks import forced_branch
@@ -140,8 +141,17 @@ def test_prepare_restore_logical_junk_and_all_small_histories(table):
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("sparse_mode", [False, True])
-def test_source_parent_graph_leaves_and_complex_output(sparse_mode):
+@pytest.mark.parametrize(
+    "sparse_mode,fixture",
+    [
+        (False, "small"),
+        (True, "small"),
+        (False, "factory"),
+        (True, "factory"),
+        (False, "diagram"),
+    ],
+)
+def test_source_parent_graph_leaves_and_complex_output(sparse_mode, fixture):
     pytest.importorskip("qualtran")
     import cirq
     import numpy as np
@@ -158,7 +168,26 @@ def test_source_parent_graph_leaves_and_complex_output(sparse_mode):
     from qualtran.cirq_interop.testing import GateHelper
     from qualtran.resource_counting import QECGatesCost, get_cost_value
 
-    if sparse_mode:
+    if fixture == "factory":
+        from qualtran.bloqs.state_preparation.state_preparation_alias_sampling import (
+            _sparse_state_prep_alias,
+            _state_prep_alias,
+        )
+
+        from examples.algorithms.alias_preparation_catalog import (
+            dense_alias_example,
+            sparse_alias_example,
+        )
+
+        source = _sparse_state_prep_alias() if sparse_mode else _state_prep_alias()
+        table = (sparse_alias_example() if sparse_mode else dense_alias_example()).table
+    elif fixture == "diagram":
+        weights = (0.1, 0.2, 0.3, 0.4)
+        table = alias_sampling_table(weights, precision=0.05)
+        source = StatePreparationAliasSampling.from_probabilities(
+            weights, precision=0.05
+        )
+    elif sparse_mode:
         weights = {3: 1, 0: 3}
         table = sparse_alias_sampling_table(weights, 4, precision=0.25)
         source = SparseStatePreparationAliasSampling.from_sparse_dict(
@@ -237,6 +266,48 @@ def test_source_parent_graph_leaves_and_complex_output(sparse_mode):
     assert counts["rz"] == model.rotation
 
     helper = GateHelper(source)
+    if fixture != "small":
+        from dataclasses import replace
+
+        from examples.algorithms.alias_preparation_catalog import (
+            AliasPreparationExample,
+        )
+        from flagquantum.circuit import Circuit
+        from tests.unit.sparse_register_execution import execute_sparse_register
+
+        assert_source(
+            gates[: compare_start - len(lookup)],
+            tuple(Instruction("h", (q,)) for q in (*address, *sigma)),
+        )
+        forward = AliasPreparationExample(table)
+        circuit = Circuit(forward.qubit_count)
+        circuit.append(forward)
+        assert circuit.to_ir().instructions == gates
+        reverse = Circuit(forward.qubit_count)
+        reverse.append(replace(forward, adjoint=True))
+        reference = (
+            cirq.Simulator(dtype=np.complex128)
+            .simulate(helper.circuit, qubit_order=helper.operation.qubits)
+            .final_state_vector
+        )
+        expected_sparse = {
+            i << len(workspace): complex(amplitude)
+            for i, amplitude in enumerate(reference)
+            if abs(amplitude) > 1e-13
+        }
+        for seed in (0, 1, 27):
+            actual = execute_sparse_register(circuit.to_ir(), {0: 1}, seed=seed)
+            assert (
+                max(
+                    abs(actual.get(i, 0) - expected_sparse.get(i, 0))
+                    for i in actual.keys() | expected_sparse.keys()
+                )
+                < 3e-12
+            )
+            restored = execute_sparse_register(reverse.to_ir(), actual, seed=seed)
+            assert restored.get(0, 0) == pytest.approx(1, abs=3e-12)
+            assert all(abs(value) < 3e-12 for i, value in restored.items() if i)
+        return
     expected = expected_state(table, bound, sparse).reshape(1 << (flag + 1), -1)[:, 0]
     reference = (
         cirq.Simulator(dtype=np.complex128)
