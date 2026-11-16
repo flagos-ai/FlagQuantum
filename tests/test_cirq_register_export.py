@@ -365,3 +365,113 @@ def test_original_positive_integer_swap_power(cirq: Any, source_export: Any) -> 
     np.testing.assert_allclose(
         actual.circuit.unitary(), cirq.unitary(gate**2), atol=2e-12, rtol=0
     )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("width", (1, 2, 3, 4))
+def test_exported_gate_uses_bound_body_or_owned_matrix(
+    cirq: Any, source_export: Any, width: int
+) -> None:
+    import torch
+    from qualtran.cirq_interop._bloq_to_cirq_test import (
+        SwapTest,
+        SwapTestWithOnlyTensorData,
+    )
+
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    expected = source_export.BloqAsCirqGate(SwapTestWithOnlyTensorData(width))
+    signature = Signature.build(x=width, y=width)
+    qids = tuple(cirq.LineQubit.range(2 * width))
+    body = CircuitIR(
+        2 * width,
+        tuple(Instruction("swap", (i, i + width)) for i in range(width)),
+    )
+    gate = RegisterCirqGate(body, signature)
+    np.testing.assert_allclose(cirq.unitary(gate), cirq.unitary(expected))
+    assert (
+        cirq.circuit_diagram_info(gate).wire_symbols
+        == cirq.circuit_diagram_info(expected).wire_symbols
+    )
+    original = source_export.BloqAsCirqGate(SwapTest(width))
+    assert tuple(
+        cirq.decompose(gate.on(*qids), keep=lambda op: op.gate == cirq.SWAP)
+    ) == tuple(cirq.decompose(original.on(*qids), keep=lambda op: op.gate == cirq.SWAP))
+
+    dimension = 1 << (2 * width)
+    rows = np.arange(dimension)
+    columns = (rows % (1 << width)) * (1 << width) + (rows >> width)
+    matrix = torch.zeros((dimension, dimension), dtype=torch.complex128)
+    matrix[rows, columns] = 1
+    tensor_body = CircuitIR(
+        2 * width, (Instruction("matrix", tuple(range(2 * width)), matrix=matrix),)
+    )
+    tensor_gate = RegisterCirqGate(tensor_body, signature)
+    assert cirq.decompose_once(tensor_gate.on(*qids), default=None) is None
+    np.testing.assert_allclose(cirq.unitary(tensor_gate), cirq.unitary(expected))
+
+
+def test_exported_gate_power_and_sided_decomposition(cirq: Any) -> None:
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    a, b = cirq.LineQubit.range(2)
+    body = CircuitIR(2, (Instruction("h", (1,)), Instruction("t", (1,))))
+    through = Signature.build(x=1, y=1)
+    gate = RegisterCirqGate(body, through)
+    assert gate**1 is gate
+    for power in (-2, -1, 2, 3):
+        np.testing.assert_allclose(
+            cirq.unitary(gate**power),
+            np.linalg.matrix_power(cirq.unitary(gate), power),
+            atol=2e-12,
+            rtol=0,
+        )
+    for invalid_power in (0, 0.5, True):
+        with pytest.raises(ValueError, match="positive integer"):
+            gate**invalid_power
+
+    sided = Signature(
+        (
+            through.get_left("x"),
+            Register("y", opaque_register_type(1), side=RegisterSide.RIGHT),
+        )
+    )
+    directional = RegisterCirqGate(body, sided)
+    assert directional._unitary_() is NotImplemented
+    assert list(cirq.decompose_once(directional.on(a, b))) == [cirq.H(b), cirq.T(b)]
+    assert list(cirq.decompose_once((directional**-1).on(a, b))) == [
+        cirq.T(b) ** -1,
+        cirq.H(b),
+    ]
+    with pytest.raises(ValueError, match="through registers"):
+        directional**2
+    with pytest.raises(ValueError, match="one declared operand"):
+        RegisterCirqGate(body, Signature.build(x=1))
+
+
+@pytest.mark.ftqc_reference
+def test_original_uniform_preparation_flattened_workspace_extent(
+    cirq: Any, source_export: Any
+) -> None:
+    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+        PrepareUniformSuperposition,
+    )
+
+    from flagquantum.compiler.registers.preparation.uniform_preparation import (
+        uniform_preparation_ir,
+        uniform_preparation_requirements,
+    )
+
+    source = PrepareUniformSuperposition(n=3, cvs=(1,))
+    flat = source.decompose_bloq().flatten()
+    manager = cirq.GreedyQubitManager(prefix="anc", maximize_reuse=True)
+    converted = flat.to_cirq_circuit(qubit_manager=manager)
+    target_width, work_width, slot_count = uniform_preparation_requirements(3, 1)
+    assert (target_width, work_width, slot_count) == (2, 4, 2)
+    gates = uniform_preparation_ir(
+        3, (1, 2), (3, 4, 5, 6), (0, 1), controls=(0,), control_values=(1,)
+    )
+    assert len(converted.all_qubits()) == len({q for g in gates for q in g.wires}) == 7
+    measurements = tuple(g for g in gates if g.name == "measure")
+    assert len(measurements) == 6
+    assert {g.metadata["classical_bit"] for g in measurements} == {0, 1}

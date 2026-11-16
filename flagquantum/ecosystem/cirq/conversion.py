@@ -621,7 +621,11 @@ def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
 
 
 def _export_cirq(
-    program: Any, *, allow_lossy: bool, include_inverse_phases: bool = False
+    program: Any,
+    *,
+    allow_lossy: bool,
+    include_inverse_phases: bool = False,
+    extent_declared_by_gate: bool = False,
 ) -> CirqExportResult:
     cirq = _cirq()
     ir = ensure_circuit_ir(program)
@@ -636,7 +640,7 @@ def _export_cirq(
             "IR observables and measurements require a separate Cirq execution plan.",
         )
     used_wires = {wire for instruction in ir.instructions for wire in instruction.wires}
-    if used_wires != set(range(ir.n_wires)):
+    if not extent_declared_by_gate and used_wires != set(range(ir.n_wires)):
         _issue(
             issues,
             "idle_wire_extent_not_represented",

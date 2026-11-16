@@ -136,7 +136,16 @@ def test_empty_target_and_invalid_inputs():
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "count,values",
-    [(3, ()), (3, (0,)), (4, (1, 0)), (6, (1, 0)), (5, (1, 0, 1)), (5, ()), (5, (1,))],
+    [
+        (3, ()),
+        (3, (0,)),
+        (3, (1,)),
+        (4, (1, 0)),
+        (6, (1, 0)),
+        (5, (1, 0, 1)),
+        (5, ()),
+        (5, (1,)),
+    ],
 )
 @pytest.mark.parametrize("adjoint", (False, True))
 def test_full_source_complex_map_and_erasure_histories(count, values, adjoint):
