@@ -11,6 +11,7 @@ from flagquantum.algorithms.primitives.ising_evolution import (
 )
 from flagquantum.algorithms.primitives.trotter_product import TrotterProduct
 from flagquantum.circuit import Circuit
+from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.core.ir import Instruction
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.simulation.unitary import get_unitary
@@ -63,20 +64,57 @@ def _assert_source_cost(source, op, circuit):
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("axis,sites", [("x", 1), ("x", 3), ("zz", 2), ("zz", 4)])
-@pytest.mark.parametrize("angle", [0.371, pi / 4, -pi / 2])
+@pytest.mark.parametrize(
+    "axis,sites", [("x", 1), ("x", 3), ("zz", 2), ("zz", 3), ("zz", 4)]
+)
+@pytest.mark.parametrize("angle", [0.04, 0.371, pi / 4, -pi / 2])
 def test_ising_leaf_order_phase_and_resources(axis, sites, angle):
     pytest.importorskip("qualtran")
+    from qualtran import QAny, QBit, Side
     from qualtran.bloqs.chemistry.trotter.ising import IsingXUnitary as SourceX
     from qualtran.bloqs.chemistry.trotter.ising import IsingZZUnitary as SourceZZ
+    from qualtran.resource_counting.generalizers import ignore_split_join
 
-    source = (SourceX if axis == "x" else SourceZZ)(sites, angle)
-    term = (IsingXUnitary if axis == "x" else IsingZZUnitary)(sites)
+    source = (SourceX if axis == "x" else SourceZZ)(sites, angle, eps=1e-6)
+    term = (IsingXUnitary if axis == "x" else IsingZZUnitary)(sites, eps=source.eps)
+    signature = term.signature
+    (port,) = signature
+    (expected_port,) = source.signature
+    assert signature.get_left("system") == signature.get_right("system") == port
+    assert expected_port.side == Side.THRU
+    assert port.dtype.encoding == ("bit" if sites == 1 else "opaque")
+    assert expected_port.dtype == (QBit() if sites == 1 else QAny(sites))
+    assert (port.name, port.bitsize, port.shape) == (
+        expected_port.name,
+        expected_port.bitsize,
+        expected_port.shape,
+    )
+    _, leaves = source.call_graph(max_depth=1, generalizer=ignore_split_join)
+    model = modeled_call_graph(term.resource_model(angle), max_depth=1)
+    assert {node.name: count for node, count in model.leaf_counts.items()} == {
+        type(node).__name__: count for node, count in leaves.items()
+    }
+    declared = term.source_rotation(angle)
+    assert declared.parameter == angle
+    for node in leaves:
+        if type(node).__name__ == "Rx":
+            assert declared.opcode == "rx" and declared.precision == node.eps
+            assert node.angle == angle
+            assert node.eps != source.eps
+        elif type(node).__name__ == "Rz":
+            assert declared.opcode == "rz" and declared.precision == node.eps
+            assert (node.angle, node.eps) == (angle, source.eps)
     mapped = tuple(reversed(range(1, sites + 1)))
     op = term.make_on(system=mapped, angle=angle)
     circuit = Circuit(sites + 1).append(op)
     assert circuit.to_ir().instructions == _source_instructions(source, mapped)
     _assert_source_cost(source, op, circuit)
+    backwards = Circuit(sites + 1).append(
+        term.make_on(system=mapped, angle=angle, adjoint=True)
+    )
+    assert backwards.to_ir().instructions == _source_instructions(
+        source.adjoint(), mapped
+    )
 
     contiguous = Circuit(sites).append(
         term.make_on(system=tuple(range(sites)), angle=angle)
@@ -185,3 +223,13 @@ def test_symbolic_product_matches_original_angles_and_resource_categories():
             source_terms, (1, 0), (coefficient, -0.5), timestep
         )
         assert bound.to_ir().instructions == _source_instructions(numeric, wires)
+
+
+@pytest.mark.ftqc_reference
+def test_ising_zz_source_one_site_reuses_the_same_operand():
+    pytest.importorskip("qualtran")
+    from qualtran._infra.composite_bloq import BloqError
+    from qualtran.bloqs.chemistry.trotter.ising import IsingZZUnitary as SourceZZ
+
+    with pytest.raises(BloqError, match="not an available Soquet.*CNOT.target"):
+        SourceZZ(1, 0.04).decompose_bloq()
