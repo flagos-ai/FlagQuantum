@@ -14,7 +14,7 @@ from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..bits.hamming_weight import hamming_weight_ir, hamming_weight_requirements
 from ..bits.hamming_weight_resource_model import source_hamming_weight_cost
 from .cost_function_phasing import BoundStage, RegisterPorts, cost_function_phasing_ir
-from .qvr_phase_gradient import qvr_phase_gradient_ir
+from .qvr_phase_gradient import qvr_phase_gradient_ir, source_qvr_phase_gradient_cost
 
 
 def source_hamming_weight_phasing_cost(width: int, exponent: float) -> ComponentCost:
@@ -44,6 +44,31 @@ def source_hamming_weight_phasing_cost(width: int, exponent: float) -> Component
             CostCall(source_hamming_weight_cost(width)),
             CostCall(phase, weight, peak - 1),
             CostCall(source_hamming_weight_cost(width, adjoint=True)),
+        ),
+    )
+
+
+def source_hamming_weight_gradient_phasing_cost(
+    width: int, exponent: float, epsilon: float
+) -> ComponentCost:
+    """Compose the declared count, QVR and count adjoint costs.
+
+    The width describes the logical words before measured carry lowering.
+    The original recursive width query can fail on mixed register dtypes.
+    """
+    junk, count = hamming_weight_requirements(width)
+    qvr = source_qvr_phase_gradient_cost(count, 0, exponent / 2, epsilon)
+    gradient = qvr.qubits - count
+    return ComponentCost(
+        "HammingWeightPhasingViaPhaseGradient",
+        width + junk + qvr.qubits,
+        calls=(
+            CostCall(source_hamming_weight_cost(width), bystander_qubits=gradient),
+            CostCall(qvr, bystander_qubits=width + junk),
+            CostCall(
+                source_hamming_weight_cost(width, adjoint=True),
+                bystander_qubits=gradient,
+            ),
         ),
     )
 

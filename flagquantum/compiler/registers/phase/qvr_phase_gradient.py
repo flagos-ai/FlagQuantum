@@ -9,7 +9,12 @@ from dataclasses import dataclass
 from math import ceil, isfinite, log2, tau
 
 from ....core.ir import Instruction
-from .scaled_phase_addition import _coefficient_word, scaled_phase_add_ir
+from ..._component_trace.resource_model import ComponentCost, GateCost
+from .scaled_phase_addition import (
+    _coefficient_word,
+    scaled_phase_add_ir,
+    scaled_phase_add_terms,
+)
 
 
 @dataclass(frozen=True)
@@ -97,6 +102,27 @@ def qvr_phase_format(
         )
         width = min(formula, optimized)
     return QvrPhaseFormat(width, gamma_width, gamma_fraction)
+
+
+def source_qvr_phase_gradient_cost(
+    cost_width: int, cost_fraction_bits: int, coefficient: float, epsilon: float
+) -> ComponentCost:
+    """Model the locked QVR's scaled-add calls independently of lowering."""
+    fmt = qvr_phase_format(cost_width, cost_fraction_bits, coefficient, epsilon)
+    terms = scaled_phase_add_terms(
+        cost_width,
+        cost_fraction_bits,
+        fmt.gradient_width,
+        coefficient,
+        fmt.coefficient_width,
+        fmt.coefficient_fraction_bits,
+    )
+    additions = min(len(terms), (fmt.coefficient_width + 2) // 2)
+    return ComponentCost(
+        "QvrPhaseGradient",
+        cost_width + fmt.gradient_width,
+        GateCost(toffoli=additions * (fmt.gradient_width - 2)),
+    )
 
 
 def qvr_phase_gradient_ir(
