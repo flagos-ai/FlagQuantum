@@ -7,8 +7,17 @@
 """In-place Montgomery-scaled modular inverse with retained reversible history."""
 
 from ....core.ir import Instruction
+from ....core.value_math import SymbolicInt
 from ..bits.bitwise import _validate_wires
 from .inversion.inverse_algorithm import inverse_algorithm_ir, inverse_algorithm_outputs
+
+
+def source_modular_inverse_t_count(
+    width: SymbolicInt, *, exact_swaps: bool = False
+) -> SymbolicInt:
+    """Price the locked Kaliski declaration in default or seven-T swap units."""
+    slope, constant = (67, 13) if exact_swaps else (52, 16)
+    return 2 * width * (slope * width + constant) + 4 * (width - 1)
 
 
 def modular_inverse_outputs(

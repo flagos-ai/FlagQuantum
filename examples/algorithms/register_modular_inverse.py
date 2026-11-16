@@ -11,6 +11,7 @@ import flagquantum as fq
 from flagquantum.compiler.registers.modular.modular_inverse import (
     modular_inverse_ir,
     modular_inverse_outputs,
+    source_modular_inverse_t_count,
 )
 from flagquantum.core.ir import CircuitIR
 
@@ -61,9 +62,9 @@ def main() -> None:
     print("Measured primitive IR:", dict(counts))
     print(
         "Source models: default",
-        2 * n * (52 * n + 16) + 4 * (n - 1),
+        source_modular_inverse_t_count(n),
         "T; exact seven-T swaps",
-        2 * n * (67 * n + 13) + 4 * (n - 1),
+        source_modular_inverse_t_count(n, exact_swaps=True),
         "T.",
     )
     circuit.append(ModularInverse(n, p, adjoint=True))
