@@ -35,9 +35,11 @@ def message_factory(
     fields: tuple[tuple[str, str | type[Any]], ...],
     *,
     oneof: str | None = None,
+    oneof_fields: tuple[str, ...] | None = None,
     optional: tuple[str, ...] = (),
     repeated: tuple[str, ...] = (),
     enums: tuple[tuple[str, tuple[str, ...]], ...] = (),
+    integer_maps: tuple[str, ...] = (),
 ) -> Any:
     """Build a private proto3 descriptor using protobuf's runtime API."""
     descriptors, pools, messages = _protobuf_runtime()
@@ -62,7 +64,9 @@ def message_factory(
             name=field_name,
             number=number,
             label=(
-                proto.LABEL_REPEATED if field_name in repeated else proto.LABEL_OPTIONAL
+                proto.LABEL_REPEATED
+                if field_name in repeated or field_name in integer_maps
+                else proto.LABEL_OPTIONAL
             ),
         )
         if isinstance(field_type, str):
@@ -79,7 +83,24 @@ def message_factory(
             _register_dependency(pool, dependency, dependencies)
             if dependency.name not in schema.dependency:
                 schema.dependency.append(dependency.name)
-        if oneof is not None:
+        if field_name in integer_maps:
+            entry_name = "".join(word.capitalize() for word in field_name.split("_"))
+            entry = message.nested_type.add(name=entry_name + "Entry")
+            entry.options.map_entry = True
+            entry.field.add(
+                name="key", number=1, label=proto.LABEL_OPTIONAL, type=proto.TYPE_INT32
+            )
+            value = entry.field.add(
+                name="value",
+                number=2,
+                label=proto.LABEL_OPTIONAL,
+                type=field.type,
+            )
+            if field.HasField("type_name"):
+                value.type_name = field.type_name
+            field.type = proto.TYPE_MESSAGE
+            field.type_name = f".flagquantum.{name}.{entry.name}"
+        if oneof is not None and (oneof_fields is None or field_name in oneof_fields):
             field.oneof_index = 0
         if field_name in optional:
             field.oneof_index = len(message.oneof_decl)
