@@ -15,6 +15,7 @@ from tests.unit.register_source_graph import walk_source_graph
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
 from tests.unit.test_register_subtraction import assert_source
+from tests.unit.test_sparse_chemistry_prepare import _assert_sparse_signature
 
 pytestmark = pytest.mark.unit
 
@@ -42,6 +43,9 @@ def test_sparse_select_matches_pinned_composition(size, value):
 
     layout, ports, scratch, bits = _layout(size, value)
     source = Source(size, value)
+    _assert_sparse_signature(
+        SelectSparse.source_signature(size, control_value=value), source.signature
+    )
     assert layout == tuple((reg.name, reg.total_bits()) for reg in source.signature)
     if value is not None:
         assert source.decompose_bloq().final_soqs()["control"].binst == LeftDangle
@@ -137,7 +141,7 @@ def test_sparse_select_preserves_superposition_and_cleans_reused_workspace():
 def test_sparse_select_validates_source_ports_and_resources():
     _, ports, scratch, bits = _layout(4, None)
     with pytest.raises(ValueError, match="two spatial orbitals"):
-        SelectSparse.source_requirements(2)
+        SelectSparse.source_resource_model(2)
     with pytest.raises(ValueError, match="control value"):
         SelectSparse.source_layout(4, control_value=True)
     with pytest.raises(ValueError, match="port names"):
@@ -157,8 +161,39 @@ def test_single_spatial_orbital_source_resource_limits() -> None:
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     source = Source(2)
+    _assert_sparse_signature(SelectSparse.source_signature(2), source.signature)
     assert len(source.decompose_bloq().bloq_instances) == 5
     with pytest.raises(AssertionError):
         get_cost_value(source, QECGatesCost())
     with pytest.raises(RuntimeError):
         get_cost_value(source, QubitCount())
+
+
+@pytest.mark.parametrize("value", [None, 0, 1])
+def test_single_spatial_orbital_exact_phase_and_control_passthrough(value):
+    layout, ports, scratch, bits = _layout(2, value)
+    total = sum(width for _, width in layout)
+    assert scratch == bits == ()
+    op = SelectSparse.make_source_on(
+        2, ports, workspace=scratch, classical_bits=bits, control_value=value
+    )
+    gates = DynamicCircuit(total).append(op).to_ir().instructions
+    assert not any(g.name in {"measure", "reset"} for g in gates)
+    state = (
+        torch.arange(1, 1 + (1 << total), dtype=torch.float64).to(torch.complex128) + 1j
+    )
+    state /= state.norm()
+    expected = torch.empty_like(state)
+    for index, amp in enumerate(state):
+        alpha, beta, flag, sys_up, sys_down = (
+            (index >> bit) & 1 for bit in reversed(range(5))
+        )
+        occupancies = sys_up, sys_down
+        sign = (-1) ** (occupancies[beta] + flag * (1 + occupancies[alpha]))
+        expected[index] = 1j * sign * amp
+    torch.testing.assert_close(
+        forced_branch(state, gates, ()), expected, atol=2e-12, rtol=0
+    )
+    torch.testing.assert_close(
+        forced_branch(expected, op.emit(adjoint=True), ()), state, atol=2e-12, rtol=0
+    )

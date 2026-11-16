@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from math import pi
 
 from ....circuit import Circuit
 from ....compiler._component_trace.resource_model import (
@@ -23,7 +24,15 @@ from ....compiler.registers.lookup.bounded_majorana_select import (
     bounded_majorana_workspace,
     source_bounded_majorana_cost,
 )
+from ....compiler.registers.primitives.global_phase import scalar_phase_ir
 from ....core.ir import CircuitIR, Instruction
+from ....core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+    quantum_bit_type,
+)
+from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
 from ....errors import ValidationError
 from .selected_majorana_fermion import SelectedMajoranaFermion
 
@@ -67,41 +76,54 @@ class SelectSparse:
     @staticmethod
     def source_requirements(num_spin_orb: int) -> tuple[int, int]:
         """Return reusable clean wires and classical slots for the source path."""
+        if type(num_spin_orb) is int and num_spin_orb == 2:
+            return 0, 0
         work = bounded_majorana_workspace(num_spin_orb, controlled=True)
         return work, work - 1
 
     @staticmethod
-    def source_layout(
+    def source_signature(
         num_spin_orb: int, *, control_value: int | None = None
-    ) -> RegisterLayout:
-        """Return source ports, including the optional pass-through control."""
-        bounded_majorana_workspace(num_spin_orb, controlled=True)
+    ) -> Signature:
+        """Declare through ports including the optional pass-through control."""
+        if type(num_spin_orb) is not int or num_spin_orb < 2 or num_spin_orb % 2:
+            raise ValueError(
+                "Sparse SELECT requires a positive even number of spin orbitals"
+            )
         if control_value is not None and (
             type(control_value) is not int or control_value not in (0, 1)
         ):
             raise ValueError("Sparse SELECT control value must be zero, one or None")
-        width = (num_spin_orb // 2 - 1).bit_length()
-        return (
-            *((("control", 1),) if control_value is not None else ()),
-            ("p", width),
-            ("q", width),
-            ("r", width),
-            ("s", width),
-            ("alpha", 1),
-            ("beta", 1),
-            ("flag_1b", 1),
-            ("sys", num_spin_orb),
+        spatial = num_spin_orb // 2
+        orbital = bounded_unsigned_register_type((spatial - 1).bit_length(), spatial)
+        bit = bounded_unsigned_register_type(1)
+        control = (
+            () if control_value is None else (Register("control", quantum_bit_type()),)
         )
+        return Signature(
+            (
+                *control,
+                *(Register(name, orbital) for name in ("p", "q", "r", "s")),
+                *(Register(name, bit) for name in ("alpha", "beta", "flag_1b")),
+                Register("sys", opaque_register_type(num_spin_orb)),
+            )
+        )
+
+    @classmethod
+    def source_layout(
+        cls, num_spin_orb: int, *, control_value: int | None = None
+    ) -> RegisterLayout:
+        """Flatten the source signature in binding order."""
+        signature = cls.source_signature(num_spin_orb, control_value=control_value)
+        return tuple((reg.name, int(reg.total_bits())) for reg in signature)
 
     @classmethod
     def source_resource_model(
         cls, num_spin_orb: int, *, control_value: int | None = None
     ) -> ComponentCost:
         """Count the locked SELECT graph without assigning physical wires."""
-        width = sum(
-            bits
-            for _, bits in cls.source_layout(num_spin_orb, control_value=control_value)
-        )
+        signature = cls.source_signature(num_spin_orb, control_value=control_value)
+        width = int(signature.n_qubits())
         active = num_spin_orb + (num_spin_orb - 1).bit_length()
         calls = tuple(
             CostCall(
@@ -137,7 +159,8 @@ class SelectSparse:
         if len(workspace) != work or len(classical_bits) != slots:
             raise ValueError("Sparse SELECT requires matching work wires and slots")
         _validate_wires((*logical, *workspace))
-        _validate_wires(classical_bits)
+        if classical_bits:
+            _validate_wires(classical_bits)
         select = cls(
             ports["p"],
             ports["q"],
@@ -215,6 +238,8 @@ class _BoundSourceSelectSparse:
         """Reverse the self-adjoint Majorana calls and conjugate S if requested."""
         if type(adjoint) is not bool:
             raise ValueError("Sparse SELECT direction must be boolean")
+        if len(self.select.sys) == 2:
+            return self._emit_single_spatial_orbital(adjoint)
         phase = Instruction("sdg" if adjoint else "s", (self.select.flag_1b,))
         gates = [] if adjoint else [phase]
         majoranas = self.select._majoranas()
@@ -236,6 +261,23 @@ class _BoundSourceSelectSparse:
         if adjoint:
             gates.append(phase)
         return tuple(gates)
+
+    def _emit_single_spatial_orbital(self, adjoint: bool) -> tuple[Instruction, ...]:
+        # X Y on a common spin orbital is i Z; the Jordan–Wigner prefixes cancel.
+        # The controlled p/q pair and the one-body S phase combine to controlled -Z.
+        alpha, beta, flag = self.select.alpha, self.select.beta, self.select.flag_1b
+        first, second = self.select.sys
+        route = Instruction("cswap", (alpha, first, second))
+        return (
+            *scalar_phase_ir(flag, -pi / 2 if adjoint else pi / 2),
+            Instruction("z", (first,)),
+            Instruction("cz", (beta, first)),
+            Instruction("cz", (beta, second)),
+            route,
+            Instruction("cz", (flag, first)),
+            route,
+            Instruction("z", (flag,)),
+        )
 
     def resource_model(self) -> ComponentCost:
         """Count source Majorana calls with their inactive ports live."""
