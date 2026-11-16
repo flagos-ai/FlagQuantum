@@ -20,6 +20,15 @@ def _protobuf_runtime() -> tuple[Any, Any, Any]:
     return descriptors, pools, messages
 
 
+def _register_dependency(pool: Any, file: Any, registered: set[str]) -> None:
+    if file.name in registered:
+        return
+    for dependency in file.dependencies:
+        _register_dependency(pool, dependency, registered)
+    pool.AddSerializedFile(file.serialized_pb)
+    registered.add(file.name)
+
+
 @cache
 def message_factory(
     name: str,
@@ -51,10 +60,9 @@ def message_factory(
             field.type = proto.TYPE_MESSAGE
             field.type_name = "." + nested.full_name
             dependency = nested.file
-            if dependency.name not in dependencies:
-                pool.AddSerializedFile(dependency.serialized_pb)
+            _register_dependency(pool, dependency, dependencies)
+            if dependency.name not in schema.dependency:
                 schema.dependency.append(dependency.name)
-                dependencies.add(dependency.name)
         if oneof is not None:
             field.oneof_index = 0
         if field_name in optional:
