@@ -28,6 +28,8 @@ def test_fcidump_workflows_with_external_science_imports_blocked() -> None:
         blocked.remove("numpy")
         from examples.algorithms.fermion_fcidump_training import main as train
         train(encoding="bravyi_kitaev")
+        from examples.algorithms.fermion_h2_tapered_uccsd import main as train_tapered
+        train_tapered()
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
     """
     script = textwrap.dedent(script)
@@ -42,3 +44,4 @@ def test_fcidump_workflows_with_external_science_imports_blocked() -> None:
     assert result.stdout.count("reference energy -0.9000000000 Ha") == 3
     assert "Encoding: bravyi_kitaev" in result.stdout
     assert "Particles: 2.00000000" in result.stdout
+    assert "Register: 4 -> 2 qubits" in result.stdout

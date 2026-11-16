@@ -4,6 +4,7 @@ Run: python -m examples.algorithms.fermion_fcidump_training [FCIDUMP] --encoding
 """
 
 import argparse
+from collections.abc import Callable
 from pathlib import Path
 
 import torch
@@ -57,6 +58,20 @@ def energy(
     return value.reshape(())
 
 
+def train_adam(
+    parameters: torch.Tensor,
+    evaluate: Callable[[torch.Tensor], torch.Tensor],
+    *,
+    steps: int = 160,
+) -> None:
+    """Update the supplied angles with the shared H2 training loop."""
+    optimizer = torch.optim.Adam([parameters], lr=0.05)
+    for _ in range(steps):
+        optimizer.zero_grad()
+        torch.autograd.backward(evaluate(parameters))
+        optimizer.step()
+
+
 def main(path: Path = DEFAULT_FCIDUMP, *, encoding: Encoding = "jordan_wigner") -> None:
     print(
         "premise: two-orbital closed-shell CPU single_device_fast_path on the full register; "
@@ -101,11 +116,7 @@ def main(path: Path = DEFAULT_FCIDUMP, *, encoding: Encoding = "jordan_wigner") 
         determinant = energy(
             torch.zeros_like(parameters), observable, encoding=encoding
         )
-    optimizer = torch.optim.Adam([parameters], lr=0.05)
-    for _ in range(160):
-        optimizer.zero_grad()
-        torch.autograd.backward(energy(parameters, observable, encoding=encoding))
-        optimizer.step()
+    train_adam(parameters, lambda angles: energy(angles, observable, encoding=encoding))
     particles = sum((number(mode) for mode in range(4)), FermionOperator())
     population = to_observable(
         encode_fermion(particles, n_modes=4, encoding=encoding).operator
