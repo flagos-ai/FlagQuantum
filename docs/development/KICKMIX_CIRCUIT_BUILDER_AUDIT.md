@@ -250,9 +250,32 @@ for the scope. The comparison fixture adds one guarded X to observe the
 result. No measurement, quantum work wire or independent source model is
 required by the stores.
 
+## Physical debug records
+
+The locked builder prints bare register vectors in reverse and registered
+members in declaration order. Conditional register printing ends in a
+conditional empty record. Constant printing reuses one dirty result slot.
+A missing register ID emits nothing, and an X-basis result prints through
+its classical slot. The original native executor confirms the prefix,
+optional register line and newline placement for both condition values.
+
+The opt-in format adapter round-trips the six physical `DEBUG_PRINT`
+forms, preserving quantum or classical operands and the inline predicate.
+Positions are indexed across the serialized body so adjacent marks around
+a named empty block remain distinguishable. The locked debug fixture
+round-trips byte for byte. Ten debug lines stay outside the reversible
+operation list. The fixture still contains six effective store/scope
+records and the explicit constant stores remain executable. Debug records
+do not allocate workspace or contribute to the source gate model.
+
+Rendering debug text remains the consumer's responsibility. The adapter
+accepts the physical records emitted by the source writer. Parsing raw
+register shorthand and rendering source stdout in the local runtime
+remain open.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
-C++ allocation scopes, general loop patterns and debug metadata beyond
-named block ranges have separate source assertions. The full public mixed
+C++ allocation scopes, general loop patterns and debug runtime output have
+separate source assertions. The full public mixed
 vector admission and degenerate quantum wire aliases remain outside the
 checked dispatch fixtures.
 The original `CircuitBuilder.*` suite passed all 27 tests with GoogleTest

@@ -30,6 +30,10 @@ class KmxRegister:
     members: tuple[RegisterMember, ...] = ()
 
 
+def _is_register_directive(line: str) -> bool:
+    return line.split(maxsplit=1)[:1] in (["REGISTER"], ["APPEND_TO_REGISTER"])
+
+
 def _validate_registers(
     program: ReversiblePhaseProgram, registers: Sequence[KmxRegister]
 ) -> None:
@@ -95,7 +99,7 @@ def decode_kmx_registers(
                 raise ValueError("KMX register ID is out of range")
             kind: Literal["q", "b"] = "q" if append[1] == "q" else "b"
             members.setdefault(index, []).append((kind, int(append[2])))
-        elif line.split(maxsplit=1)[:1] in (["REGISTER"], ["APPEND_TO_REGISTER"]):
+        elif _is_register_directive(line):
             raise ValueError("Invalid KMX register declaration")
         else:
             body.append(line)
