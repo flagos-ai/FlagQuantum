@@ -13,7 +13,11 @@ from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
-from ..primitives._mixed_gates import _flip, _parity_controlled_flip
+from ..primitives._mixed_gates import (
+    _broadcast_controlled_flip,
+    _flip,
+    _parity_controlled_flip,
+)
 from ..primitives.measurement import measure_x_clear_ir
 from .low_space_comparison import low_space_less_than_ir
 
@@ -210,11 +214,7 @@ def quantum_equal_ir(
         return _flip(target, control)
 
     lhs, rhs = left[::-1], right[::-1]
-    difference = tuple(
-        gate
-        for wire, coefficient in zip(lhs, rhs, strict=True)
-        for gate in _flip(wire, coefficient)
-    )
+    difference = _broadcast_controlled_flip(True, rhs, lhs)
     invert = tuple(Instruction("x", (wire,)) for wire in lhs)
     if width == 1:
         return (
@@ -329,11 +329,7 @@ def mixed_less_than_ir(
         return _flip(target, control, or_equal)
 
     lhs, rhs = left[::-1], right[::-1]
-    difference = tuple(
-        gate
-        for wire, coefficient in zip(lhs, rhs, strict=True)
-        for gate in _flip(wire, coefficient)
-    )
+    difference = _broadcast_controlled_flip(True, rhs, lhs)
     invert = tuple(Instruction("x", (wire,)) for wire in lhs)
     if width == 1:
         scratch = workspace[0] if workspace and not minimize_qubits else None

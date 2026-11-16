@@ -80,13 +80,37 @@ the central three-control stream above. The clean path retains one result
 slot. The dirty path adds zero measurement, reset or result slots. Emitted
 gate counts remain independent of a source analytical model.
 
+## Quantum-target broadcast
+
+The shared CCX and CCZ dispatcher preserves lane order and tag-specific
+length handling. A false shared control emits nothing. A true or classical
+shared control delegates to the equal-length broadcast CX or CZ path. A
+quantum shared control uses the common length. The homogeneous quantum loop
+stores the lane control before the shared control in `CircuitPattern`; the
+mixed lane's scalar path stores the shared control first. The native caller
+infers homogeneous dispatch from the lane tuple.
+
+The unchanged C++ builder oracle compares both gates over four shared control
+tags, four lane layouts and five lengths. All 96 emitted streams match the
+native KMX operands and effective classical guards, and all 64 invalid
+lengths are refused. The mixed layout is also checked over all four
+classical assignments and all 512 complex amplitudes. Neither broadcast
+allocates work wires or performs measurements.
+
+For the mixed lane example with a quantum shared control, X dispatch emits
+one CX, one guarded CX and one CCX. The Z dispatch emits one CZ, one guarded
+CZ and H–CCX–H in native circuit IR. KMX encodes the last three as CCZ1.
+These are emitted counts. The source builder declares no QEC model for
+these operations.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
-Broadcast, X-basis targets, owning C++ scope guards, register declaration
-bookkeeping, loop patterns and debug metadata have separate source assertions.
+Broadcast paths with classical or X-basis targets, owning C++ scope guards,
+register declarations, general loop patterns and debug metadata have
+separate source assertions.
 The original `CircuitBuilder.*` suite passed all 27 tests with GoogleTest
 1.14.0 from the locked Bazel manifest. The build compiled the unchanged
 builder, original tests and test helpers, and linked the remaining native
 objects from the existing reference extension build. The native predicate
 intake passed 631 cases and the focused gate and arithmetic regression passed
-175 cases. The C++ baseline still needs per-family native replacement before
+185 cases. The C++ baseline still needs per-family native replacement before
 the original-test parent closes.

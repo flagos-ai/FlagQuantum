@@ -5,11 +5,16 @@ import torch
 
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient,
+)
 from flagquantum.compiler.registers.phase.masked_prefix_phase import _four_operand_phase
 from flagquantum.compiler.registers.primitives._mixed_gates import (
+    _broadcast_controlled_flip,
     _flip,
     _parity_controlled_flip,
 )
+from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR
 from tests.unit.measurement_checks import forced_branch
 
@@ -153,3 +158,72 @@ def test_builder_parity_three_control_refuses_quantum_alias(
             phase_operand=4 if target is None else True,
             second_control=3,
         )
+
+
+@pytest.mark.parametrize("phase", [False, True])
+@pytest.mark.parametrize("mode", ["false", "true", "classical", "quantum"])
+def test_builder_mixed_broadcast_preserves_all_complex_amplitudes(
+    phase: bool, mode: str
+) -> None:
+    controls: dict[str, int | bool | ClassicalFieldCoefficient] = {
+        "false": False,
+        "true": True,
+        "classical": ClassicalFieldCoefficient(1),
+        "quantum": 1,
+    }
+    ir = _broadcast_controlled_flip(
+        controls[mode],
+        (False, True, ClassicalFieldCoefficient(3), 4),
+        (5, 6, 7, 8),
+        phase=phase,
+    )
+    indices = torch.arange(512)
+    initial = (indices + 1).to(torch.complex128) + 1j * (512 - indices)
+    initial /= initial.norm()
+    for shared_bit in (0, 1):
+        for lane_bit in (0, 1):
+            enabled = {
+                "false": torch.zeros_like(indices),
+                "true": torch.ones_like(indices),
+                "classical": torch.full_like(indices, shared_bit),
+                "quantum": (indices >> 7) & 1,
+            }[mode]
+            enabled_lanes = (
+                enabled,
+                enabled * lane_bit,
+                enabled & ((indices >> 4) & 1),
+            )
+            first, second, third = enabled_lanes
+            if phase:
+                sign = (
+                    (first & (indices >> 2))
+                    ^ (second & (indices >> 1))
+                    ^ (third & indices)
+                )
+                expected = initial * torch.where((sign & 1) != 0, -1, 1)
+            else:
+                flips = (first << 2) | (second << 1) | third
+                expected = initial[indices ^ flips]
+            constants = (
+                ClassicalXor((), 1, bool(shared_bit)).instruction(),
+                ClassicalXor((), 3, bool(lane_bit)).instruction(),
+            )
+            torch.testing.assert_close(
+                forced_branch(initial, (*constants, *ir), ()),
+                expected,
+                rtol=0,
+                atol=3e-15,
+            )
+
+
+@pytest.mark.parametrize("phase", [False, True])
+def test_builder_broadcast_length_depends_on_shared_control_tag(phase: bool) -> None:
+    assert _broadcast_controlled_flip(False, (2, 3), (5,), phase=phase) == ()
+    for shared in (True, ClassicalFieldCoefficient(1)):
+        with pytest.raises(ValueError, match="equal lengths"):
+            _broadcast_controlled_flip(shared, (2, 3), (5,), phase=phase)
+    result = _broadcast_controlled_flip(1, (2, 3), (5,), phase=phase)
+    program = lower_reversible_phase(CircuitIR(6, result))
+    suffix = "Z" if phase else "X"
+    assert encode_kmx(program).splitlines()[1:] == [f"CC{suffix} q2 q1 q5"]
+    assert program.n_bits == 0

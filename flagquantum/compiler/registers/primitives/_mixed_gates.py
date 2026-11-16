@@ -161,3 +161,33 @@ def _parity_controlled_flip(
             parity = _flip(pivot, other)
             return (*parity, *apply(pivot, *controls), *parity)
     return (*apply(first, *controls), *apply(second, *controls))
+
+
+def _broadcast_controlled_flip(
+    control: _Control,
+    controls: tuple[_Control, ...],
+    targets: tuple[int, ...],
+    *,
+    phase: bool = False,
+) -> tuple[Instruction, ...]:
+    """Dispatch the source quantum-target broadcast CCX or CCZ in lane order.
+
+    A quantum shared control visits the common length. Classical and true
+    shared controls delegate to the equal-length CX/CZ broadcast. A false
+    shared control bypasses both emission and the delegated length check.
+    """
+    if control is False:
+        return ()
+    if type(control) is not int and len(controls) != len(targets):
+        raise ValueError("Broadcast controls and targets must have equal lengths")
+    # The locked homogeneous quantum loop packs its lane operand first.
+    lane_first = type(control) is int and all(type(lane) is int for lane in controls)
+    pairs = (
+        ((lane, control) if lane_first else (control, lane), target)
+        for lane, target in zip(controls, targets, strict=False)
+    )
+    return tuple(
+        gate
+        for pair, target in pairs
+        for gate in (_flip(None, *pair, target) if phase else _flip(target, *pair))
+    )

@@ -8,7 +8,11 @@ from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..phase.masked_prefix_phase import masked_prefix_phase_ir
-from ..primitives._mixed_gates import _flip, _parity_controlled_flip
+from ..primitives._mixed_gates import (
+    _broadcast_controlled_flip,
+    _flip,
+    _parity_controlled_flip,
+)
 from ..primitives.measurement import measure_x_clear_ir
 
 
@@ -65,11 +69,7 @@ def _low_space_core(
             *invert,
         )
 
-    difference = tuple(
-        gate
-        for q, coefficient in zip(lhs, rhs, strict=True)
-        for gate in _flip(q, coefficient)
-    )
+    difference = _broadcast_controlled_flip(True, rhs, lhs)
     gates = [
         *invert,
         *difference,
