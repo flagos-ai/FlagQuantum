@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 137
+    assert len(validated) == 138
+    assert (
+        "applications/optimization/rectangles_packing/rectangles_packing_grid",
+        "examples/synthesis/applications/optimization/rectangles_packing/rectangles_packing_grid/overview/main.py",
+    ) in validated
     assert (
         "applications/CFD/qlbm/qlbm",
         "examples/synthesis/applications/cfd/qlbm/overview/main.py",
@@ -677,7 +681,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**137/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**138/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

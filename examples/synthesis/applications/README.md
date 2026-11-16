@@ -89,6 +89,7 @@ Native FlagQuantum programs currently available:
 - [overview](optimization/min_graph_coloring/overview/README.md)
 - [overview](optimization/minimum_dominating_set/overview/README.md)
 - [overview](optimization/qaoa_in_qaoa/overview/README.md)
+- [overview](optimization/rectangles_packing/rectangles_packing_grid/overview/README.md)
 - [overview](optimization/robust_posture_optimization/overview/README.md)
 - [overview](optimization/set_cover/overview/README.md)
 - [overview](optimization/set_partition/overview/README.md)
