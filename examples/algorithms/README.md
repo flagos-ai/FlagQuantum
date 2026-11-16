@@ -442,8 +442,10 @@ gradient/sector tests and the bounded CPU qualification.
 
 [`fermion_h2_tapered_uccsd.py`](fermion_h2_tapered_uccsd.py), run with
 `python -m examples.algorithms.fermion_h2_tapered_uccsd`, trains all three H2
-UCCSD angles on two qubits in an explicit JW spin-parity sector. It reuses
-the full-register Adam loop and reaches about -1.1372701747 Ha for the fixture.
+UCCSD angles on two qubits in an explicit physical spin-parity sector. Use
+`--encoding parity` or `--encoding bravyi_kitaev` to replace the default JW
+encoding. All three reuse the full-register Adam loop and reach about
+-1.1372701747 Ha for the fixture.
 See the [tapered UCCSD guide](../../docs/development/FERMION_H2_TAPERED_UCCSD.md)
 for the comparison with four-qubit training.
 

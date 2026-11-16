@@ -163,7 +163,7 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
     ),
     "fermion_hubbard_graph": ("fixed determinant pair", "single_device_fast_path"),
     "fermion_h2_tapered_uccsd": (
-        "explicit odd spin parities in JW",
+        "explicit odd spin parities",
         "no automatic sector choice or scalability claim",
     ),
     "fermion_h2_sector_training": (
@@ -1929,12 +1929,15 @@ def test_fermion_two_body_density_projects_perturbed_measurements() -> None:
     assert projected == pytest.approx(-0.8944686996, abs=1e-10)
 
 
-def test_tapered_h2_uccsd_trains_on_two_qubits() -> None:
-    output = _run("fermion_h2_tapered_uccsd")
+@pytest.mark.parametrize("encoding", (None, "parity", "bravyi_kitaev"))
+def test_tapered_h2_uccsd_trains_on_two_qubits(encoding: str | None) -> None:
+    args = ("--encoding", encoding) if encoding else ()
+    output = _run("fermion_h2_tapered_uccsd", *args)
+    assert _labelled(output, "Encoding") == (encoding or "jordan_wigner")
     assert _labelled(output, "Register") == "4 -> 2 qubits"
     initial = float(_labelled(output, "Initial energy").removesuffix(" Ha"))
     final = float(_labelled(output, "Final energy").removesuffix(" Ha"))
-    assert initial == pytest.approx(-1.1347755088, abs=1e-9)
+    assert initial == pytest.approx(-1.1347755088, abs=1e-7 if encoding else 1e-9)
     assert final == pytest.approx(-1.1372701747, abs=1e-6)
     assert final < initial - 1e-3
     assert _number(output, "Gradient norm") > 1e-2
