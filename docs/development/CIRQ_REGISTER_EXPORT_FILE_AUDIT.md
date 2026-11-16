@@ -54,6 +54,7 @@ the work wire and releases it after the expanded effect.
 | Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body. Through-only static bodies expose the native matrix after verifying any private workspace. A tensor-backed body can supply a matrix without Cirq leaf decomposition. Workspace-free gates retain integer repetition and adjoint behavior. |
 | Workspace allocation and port transfer | The adapter replays Compiler lifetime events in the Cirq decomposition context. A left-only input is released under explicit ownership. Clean and borrowed private wires may be released and reused. The final clean lease of a right-only output is rebound to the caller's Qid, and its temporary reservation is released in register order. |
 | Diagram symbols | Primitive circuits use Cirq's native exchange and Toffoli rendering. Wrapped register gates label operands in declaration order. A native glyph callback can provide a symbol for each register element. |
+| Gate equality and hash | Serializable native bodies are snapshotted and compared by the existing CircuitIR content hash. The key also includes typed ports, displayed labels, workspace instruction offsets and the feedback namespace. Opaque bodies use object identity. |
 
 ## Verification
 
@@ -78,6 +79,14 @@ left-facing and right-facing text, modular plus and ordinary text boxes.
 The native label of each shaped word element repeats across its two bits,
 matching the source diagram order. The callback supplies presentation
 metadata. The physical decomposition retains the same X operand.
+
+The source Swap witness gives equal hashes and equality for two separately
+constructed identical wrappers. Native wrappers match that behavior over
+owned serializable bodies. A caller's subsequent tensor mutation leaves
+both the original wrapper's matrix and hash intact. Distinct port layouts,
+visible labels, work event offsets and measurement namespaces produce
+distinct comparable descriptors. Native circuits carrying opaque metadata
+remain admitted under object identity.
 
 The original four-control MultiAnd produces seven through/result wires.
 Register export binds the original right-only junk and target qubits and
@@ -200,8 +209,7 @@ Simulation retain ownership of physical binding and dense inspection.
 
 ## Remaining files
 
-- Q-0715 retains dense inspection of dynamic workspace bodies and source
-  wrapper value identity. Guarded measurement
+- Q-0715 retains dense inspection of dynamic workspace bodies. Guarded measurement
   requires a dedicated clean wire in the export scope.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
