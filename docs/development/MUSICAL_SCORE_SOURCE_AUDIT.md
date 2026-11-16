@@ -221,3 +221,26 @@ inventory. Disconnected zero-port calls retain native insertion order because
 the source frozenset supplies no stable equivalent. COMPONENT_REGISTER_SCORE.md
 records acceptance counts, initial failures, resource separation and remaining
 foreign graph/serialized-symbol boundaries.
+
+## Whole-file disposition
+
+Q-0747 accepts the complete definition map above over owned component and
+register scores. The remaining admission boundaries cover foreign
+Bloq/Soquet/dtype objects, mutated foreign graph histories, and custom class
+names with no portable built-in record. Native callers may supply custom lane
+policies and painters. A portable glyph uses the existing built-in symbol class
+and attributes so the JSON carries data usable by both renderers.
+
+An unchanged source custom glyph emits its `TextBox` fallback through
+`MusicalScoreEncoder`. The browser test compares that original serialized score
+with its native JSON round-trip in Chrome using the same fixed ranges and
+unchanged source JavaScript. The complete geometry and text snapshots match,
+including the custom glyph's Unicode text. Neither serialization nor browser
+rendering invokes the local painter. The accepted Matplotlib comparisons run
+the source custom painter and native callback separately and compare Agg pixels.
+Together these cases cover both the portable and local-custom paths.
+
+The whole-file batch passes 796 concentrated cases and the focused Chrome
+comparison. The original test and notebook kernel results are reused from
+Q-0749 and Q-0745. The drawing and export paths add zero primitive gates,
+work wires and measurements.
