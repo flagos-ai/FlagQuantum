@@ -10,6 +10,10 @@ from pathlib import Path
 
 import pytest
 
+from flagquantum.drawer.register_score_data import (
+    MusicalScoreData,
+    export_register_score_json,
+)
 from tests.integration.test_drawer_score_animation import (
     CLOCK,
     REFERENCE,
@@ -29,8 +33,30 @@ from tests.integration.test_drawer_score_loading import run_loading_page
 from tests.integration.test_drawer_score_loading import (
     score_server as score_server,
 )
+from tests.unit.test_drawer_custom_symbols import (
+    native_records,
+    source_badge,
+    source_score,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.ftqc_reference]
+
+
+def test_custom_symbol_json_fallback_matches_both_browser_renderers(
+    browser: str, source_script: str, tmp_path: Path
+) -> None:
+    paint_calls: list[tuple[str, int, int]] = []
+    native = native_records(source_score(source_badge(paint_calls)("θ†")))
+    restored: MusicalScoreData = json.loads(export_register_score_json(native))
+    probe = (
+        "document.getElementById('result').textContent = JSON.stringify(snapshot());"
+    )
+    observed = run_fixed_page(browser, tmp_path, restored, probe)
+    expected = run_fixed_page(browser, tmp_path, native, probe, source=source_script)
+    assert_snapshots([observed], [expected])
+    assert any(port["text"] == "θ†" for port in observed["glyphs"])
+    assert restored == native
+    assert paint_calls == []
 
 
 @pytest.mark.parametrize(
