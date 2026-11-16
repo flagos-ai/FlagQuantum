@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_addition", 20, 6, 3),
         ("register_and", 17, 6, 0),
         ("controlled_via_and", 8, 4, 0),
+        ("control_predicate", 11, 2, 0),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
         ("binary_field_square", 7, 2, 0),
