@@ -5,7 +5,9 @@
 """Original five-bit array workflows use real native component bodies."""
 
 from collections import Counter
+from hashlib import sha1
 from itertools import product
+from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -24,9 +26,25 @@ from flagquantum.core.ir.program import (
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.simulation.component_classical_state import ComponentClassicalState
+from flagquantum.simulation.component_classical_state import (
+    ComponentClassicalState,
+    simulate_component_calls,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def frozen_reference() -> None:
+    root = (
+        Path(__file__).resolve().parents[3] / "ftqc-reference-env/qualtran/simulation"
+    )
+    for name, expected in (
+        ("classical_sim.py", "a1933c22023d54fd7683a5a1aa29ac595a046e24"),
+        ("classical_sim_test.py", "a4209d4ad0c9dbdc7846a62257cc8e94d4d59dd0"),
+    ):
+        raw = (root / name).read_bytes()
+        assert sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == expected
 
 
 def array_record(*, twice: bool = False) -> ProgramRecord:
@@ -306,10 +324,29 @@ def test_original_multidimensional_assertions_with_native_numerical_codecs(
     visits: list[str] = []
 
     def numerical_call(bloq: Any, **values: object) -> tuple[object, ...]:
-        # This is a numerical callback boundary, not wider executable IR
-        # admission. Original fixture type assertions still execute unchanged.
         left = Register("x", native_type, (bloq.n,), RegisterSide.LEFT)
         right = Register("y", native_type, (bloq.n,), RegisterSide.RIGHT)
+        signature = Signature((left, right))
+        if kind in {"bit", "uint", "field"}:
+            leaf_builder = ComponentProgramBuilder(signature, name="forward")
+            leaf = leaf_builder.finalize({"y": leaf_builder.inputs["x"]}).functions[0]
+            builder = ComponentProgramBuilder(signature, (leaf,))
+            record = builder.finalize(builder.call_dict("forward", builder.inputs))
+            outputs, assignments = simulate_component_calls(
+                record,
+                {"main": (0,)},
+                values,
+                lambda _, inputs: bloq.on_classical_vals(**inputs),
+            )
+            assert len(assignments) == 2 * bloq.n
+            visits.append("native-graph")
+            return (outputs["y"],)
+        # The numerical codecs include types refused by the executable Core
+        # port verifier. Run the original fixture's numerical action for them.
+        with pytest.raises(
+            ValueError, match="unsupported executable register descriptor"
+        ):
+            ComponentProgramBuilder(signature)
         inputs = collect_typed_register_value(
             left, bind_typed_register_values(left, values)
         )
@@ -329,7 +366,9 @@ def test_original_multidimensional_assertions_with_native_numerical_codecs(
         source.test_multidimensional_classical_sim_for_gqf()
     else:
         source.test_multidimensional_classical_sim_for_dtypes(source_type)
-    assert visits == ["native-codecs"]
+    assert visits == [
+        "native-graph" if kind in {"bit", "uint", "field"} else "native-codecs"
+    ]
 
 
 @pytest.mark.parametrize(

@@ -36,9 +36,9 @@ than changing the assertion to pretend foreign object identity exists natively.
 | `test_add_ints_unsigned` | Original body: `test_original_exhaustive_add_assertions_with_native_arithmetic`, widths 1–4, all operand pairs. Existing `add_integer_values` supplies arithmetic. |
 | `test_add_ints_signed` | Original body: same replacement, widths 2–4 and all signed operand pairs. |
 | `test_notebook` | Subsequent [Q-0881 asset migration](CLASSICAL_SIMULATION_NOTEBOOK.md) executes all12 original and12 native code cells, disposes13 Markdown cells and renders the native value table. Reference blob9f99d7e8 remains unchanged; Q-0884 is the separate supertensor notebook. |
-| `test_multidimensional_classical_sim_for_dtypes` | Original body: `test_original_multidimensional_assertions_with_native_numerical_codecs`, all six original 5-bit types and complete domains. Original action assertions still check element types. Native typed bind/collect owners supply numerical arrays; this is not wider executable graph admission. |
-| `test_multidimensional_classical_sim_for_large_int` | Original body: same codec entry with exact QInt(100) values, including negative and greater-than-64-bit values, retaining object storage. |
-| `test_multidimensional_classical_sim_for_gqf` | Original body: same codec entry with GF(4), retaining its field array subclass and element identity. Existing binary-field graph tests separately prove executable paths. |
+| `test_multidimensional_classical_sim_for_dtypes` | Original body: `test_original_multidimensional_assertions_with_native_numerical_codecs`, all six original types and complete domains. Bit and unsigned arrays traverse an owned typed call. Signed, ones'-complement, bounded and fixed-point arrays run through the typed numerical codecs after asserting the Core construction refusal. Original actions still check element types. |
+| `test_multidimensional_classical_sim_for_large_int` | Original body: same codec entry with exact QInt(100) values, including negative and greater-than-64-bit values, retaining object storage and the Core port refusal. |
+| `test_multidimensional_classical_sim_for_gqf` | Original body: GF(4) traverses an owned typed call with automatic native field resolution, retaining its field array subclass and element identity. |
 | `test_classical_distribution` | Original body: `test_original_distribution_assertions_with_native_state`, all 100 draws through the existing measurement value action and state owner. Existing seeded tests separately compare full sequences and generator states. |
 | `test_fixed_distribution` | Original body: same state entry translates the supplied fixed-handler map at the test boundary; all 100 original fixed results are checked. |
 | `test_banned_distribution` | Parallel: `test_banned_distribution_rejects_before_output_assignment`. Both engines reject without assigning a result; native non-determinism diagnostics retain native wording. |
@@ -83,8 +83,18 @@ in their original evidence and are rerun without changing those emitters.
 
 ## Remaining acceptance work
 
-Q-0883 remains open: wider typed numerical cases do not establish executable IR
-admission, and parallel tests retain explicit representation differences.
+Q-0883 accepts the original test file's numerical contracts, including its
+notebook case through the independently accepted Q-0881 asset. The six parallel
+comparisons cover the original domains, outputs and failure semantics with
+explicit SSA identity, visit cadence and diagnostic adaptations. Bit, unsigned
+and binary-field array cases use the new pure stored-body evaluator. The
+original wider-type codec assertions still execute, and the test now pins the
+separate Core executable admission refusal for all five affected cases.
+Both frozen Python blobs are checked before the replacement matrix runs.
+The closure run passed 371 focused cases and all 28 unchanged numerical
+source cases. The independently executed source and native notebook evidence
+is reused.
+
 Q-0882 retains the source/native empty-array and input-sentinel differences and
 foreign lazy-decomposition boundaries listed in
 [the source disposition](CLASSICAL_SIM_SOURCE_DISPOSITION.md). An explicit
