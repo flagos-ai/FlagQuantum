@@ -70,6 +70,35 @@ not measured primitive counts.
 
 ## Remaining parent boundaries
 
+### Pure stored-body evaluator
+
+`simulate_component_calls` follows the pure composite entry using the same
+stored graph evaluator as `simulate_phased_component_calls`. Compiler supplies
+the normalized call schedules. Value and phase dispatch, output assignment,
+and recursive failure context use the existing state. Pure bodies reject
+phases after binding outputs, and return no phase contribution to the parent.
+The public-in-module pure helper returns root outputs and the root SSA mapping.
+
+The root fixed-value mapping is never inherited by pure nested calls. Nested
+calls share a separate generator which is lazily created for the evaluation.
+Callers may supply a persistent generator to reproduce long-running streams.
+The source's default generator is process-shared. The comparison snapshots its
+generator state, runs unchanged source execution, and restores the state at
+test teardown. Repeated results and complete generator states agree, including
+when the root is configured with a fixed value that must stay out of the child.
+The phased helper retains the parent's RNG or fixed mapping at every level.
+
+All 64 logical assignments of the three-port Add fixture agree at depths one
+through three. Source traversal stores dangling Soquet aliases; the native
+return stores original root arguments and actual call results once by SSA ID.
+The existing measured branches, complex amplitudes, and work-zero acceptance
+are reused. This evaluator emits zero new primitives and has no separate QEC
+model. The stored pure path does not discover foreign Python decompositions.
+The direct state suite passed 250 cases. The concentrated classical regression
+passed 11,024 cases with 178 existing dependency and numerical warnings.
+
+### Open compatibility conditions
+
 Q-0882 and Q-0883 remain open. The subsequent
 [original-test replacement matrix](CLASSICAL_SIM_TEST_MATRIX.md) accounts for
 all 19 original test functions, with native numerical execution and explicit

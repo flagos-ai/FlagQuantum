@@ -28,6 +28,11 @@ from .classical_typed_values import (
 from .classical_updates import commit_classical_outputs, commit_phased_classical_outputs
 from .finite_field_encoding import FiniteFieldEncoding
 
+_ValueAction = Callable[[FunctionRecord, dict[str, object]], object]
+_PhaseAction = Callable[
+    [FunctionRecord, dict[str, object]], complex | MeasurementOutcomePhase | None
+]
+
 
 class ComponentClassicalState:
     """Numerically evaluate one verified unconditional typed-call entry.
@@ -52,14 +57,8 @@ class ComponentClassicalState:
         record: ProgramRecord,
         order: tuple[int, ...],
         values: Mapping[str, object],
-        value_action: Callable[[FunctionRecord, dict[str, object]], object],
-        phase_action: (
-            Callable[
-                [FunctionRecord, dict[str, object]],
-                complex | MeasurementOutcomePhase | None,
-            ]
-            | None
-        ) = None,
+        value_action: _ValueAction,
+        phase_action: _PhaseAction | None = None,
         *,
         entry: str = "main",
         field_encodings: Mapping[RegisterType, FiniteFieldEncoding] | None = None,
@@ -290,14 +289,8 @@ def simulate_phased_component_calls(
     record: ProgramRecord,
     call_orders: Mapping[str, tuple[int, ...]],
     values: Mapping[str, object],
-    value_action: Callable[[FunctionRecord, dict[str, object]], object],
-    phase_action: (
-        Callable[
-            [FunctionRecord, dict[str, object]],
-            complex | MeasurementOutcomePhase | None,
-        ]
-        | None
-    ) = None,
+    value_action: _ValueAction,
+    phase_action: _PhaseAction | None = None,
     *,
     entry: str = "main",
     instance_ids: Mapping[str, tuple[int, ...]] | None = None,
@@ -319,19 +312,101 @@ def simulate_phased_component_calls(
     decomposition discovery or graph transformation. Missing body schedules
     raise NotImplementedError with the existing recursive cause context. Other
     admission, action and output failures retain ComponentClassicalState rules.
-    Pure source recursion's separate default RNG is outside this phased entry.
     """
+    outputs, state = _simulate_stored_component_calls(
+        record,
+        call_orders,
+        values,
+        value_action,
+        phase_action,
+        entry=entry,
+        instance_ids=instance_ids,
+        field_encodings=field_encodings,
+        rng=rng,
+        fixed_values=fixed_values,
+        phased=True,
+    )
+    return outputs, state.phase
+
+
+def simulate_component_calls(
+    record: ProgramRecord,
+    call_orders: Mapping[str, tuple[int, ...]],
+    values: Mapping[str, object],
+    value_action: _ValueAction,
+    phase_action: _PhaseAction | None = None,
+    *,
+    entry: str = "main",
+    instance_ids: Mapping[str, tuple[int, ...]] | None = None,
+    field_encodings: Mapping[RegisterType, FiniteFieldEncoding] | None = None,
+    rng: np.random.Generator | None = None,
+    fixed_values: Mapping[int, object] | None = None,
+    nested_rng: np.random.Generator | None = None,
+) -> tuple[dict[str, object], dict[ValueRef, object]]:
+    """Evaluate pure classical stored bodies and return the root assignments.
+
+    Pure recursion uses a separate RNG shared across nested body calls.
+    The root's fixed outcomes apply only to the root. The default RNGs
+    belong to this evaluation, and callers can supply persistent generators.
+    Phase contributions retain the pure state's assign-then-reject behavior.
+    """
+    if rng is None and fixed_values is None:
+        rng = np.random.default_rng()
+    outputs, state = _simulate_stored_component_calls(
+        record,
+        call_orders,
+        values,
+        value_action,
+        phase_action,
+        entry=entry,
+        instance_ids=instance_ids,
+        field_encodings=field_encodings,
+        rng=rng,
+        fixed_values=fixed_values,
+        phased=False,
+        nested_rng=nested_rng,
+    )
+    return outputs, state.assignments
+
+
+def _simulate_stored_component_calls(
+    record: ProgramRecord,
+    call_orders: Mapping[str, tuple[int, ...]],
+    values: Mapping[str, object],
+    value_action: _ValueAction,
+    phase_action: _PhaseAction | None,
+    *,
+    entry: str,
+    instance_ids: Mapping[str, tuple[int, ...]] | None,
+    field_encodings: Mapping[RegisterType, FiniteFieldEncoding] | None,
+    rng: np.random.Generator | None,
+    fixed_values: Mapping[int, object] | None,
+    phased: bool,
+    nested_rng: np.random.Generator | None = None,
+) -> tuple[dict[str, object], ComponentClassicalState]:
     orders = dict(call_orders)
     ids = dict(instance_ids or {})
 
     def recurse(
         function: FunctionRecord, inputs: dict[str, object]
-    ) -> tuple[dict[str, object], complex]:
-        return evaluate(function.name, inputs)
+    ) -> tuple[dict[str, object], complex | None]:
+        nonlocal nested_rng
+        if not phased and nested_rng is None:
+            nested_rng = np.random.default_rng()
+        outputs, state = evaluate(
+            function.name,
+            inputs,
+            rng if phased else nested_rng,
+            fixed_values if phased else None,
+        )
+        return outputs, state.phase if phased else None
 
     def evaluate(
-        name: str, inputs: Mapping[str, object]
-    ) -> tuple[dict[str, object], complex]:
+        name: str,
+        inputs: Mapping[str, object],
+        body_rng: np.random.Generator | None,
+        body_fixed_values: Mapping[int, object] | None,
+    ) -> tuple[dict[str, object], ComponentClassicalState]:
         try:
             order = orders[name]
         except KeyError as exc:
@@ -346,12 +421,12 @@ def simulate_phased_component_calls(
             phase_action,
             entry=name,
             field_encodings=field_encodings,
-            phased=True,
+            phased=phased,
             instance_ids=ids.get(name),
-            rng=rng,
-            fixed_values=fixed_values,
+            rng=body_rng,
+            fixed_values=body_fixed_values,
             recurse=recurse,
         )
-        return state.simulate(), state.phase
+        return state.simulate(), state
 
-    return evaluate(entry, values)
+    return evaluate(entry, values, rng, fixed_values)
