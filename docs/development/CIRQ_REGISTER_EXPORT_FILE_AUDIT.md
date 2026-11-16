@@ -30,8 +30,8 @@ turning it into an unconditional gate.
 | Source port order, qubit arrays and named bits | Concrete quantum register layouts, row-major words and explicit physical wire binding. Qid dimensions, aliases, shape and ownership are checked. |
 | Through, left and right port placement | Through ports preserve identity. Left-only ports are excluded from output. Right-only ports use fresh names or caller-owned qubits. The adapter rejects aliasing across supplied ports. |
 | Component conversion and graph order | The adapter consumes native physical IR. Native append and Compiler own decomposition and allocation before conversion. |
-| Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body with exactly the declared operand wires. Through-only gates expose the native matrix, including a tensor-backed body with no Cirq leaf decomposition. The gate retains the source's positive-integer repetition and adjoint behavior for the admitted native bodies. |
-| Workspace allocation | Native allocation stays with Compiler. The controlled uniform-preparation fixture matches the fully flattened source width. A Cirq decomposition context that dynamically leases private wrapper wires remains open. |
+| Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body. Through-only bodies without private workspace expose the native matrix, including a tensor-backed body with no Cirq leaf decomposition. They retain the source's integer repetition and adjoint behavior. |
+| Workspace allocation | The adapter replays Compiler lifetime events in the Cirq decomposition context for static through bodies. Caller Qids remain reserved. Clean and borrowed physical wires may be released and reused. |
 | Diagram symbols | Primitive circuits use Cirq's native exchange and Toffoli rendering. Wrapped register gates label operands in declaration order with the native register name and optional element index. |
 
 ## Verification
@@ -89,12 +89,23 @@ adjoint native runs compare all 64 measurement histories with the original
 complex state, including a spectator and zeroed work wires. Equal final
 width does not establish equality of the external allocation event order.
 
+The adapter uses the compiler's emitted instruction offset for each workspace
+event. The expanded operation position also includes non-emitting register
+operations. An exact lifetime witness performs two sequential leases on one
+private wire. Its clean and borrowed versions each preserve the source's
+allocation/free order and four CX operations. The complete complex state
+matches with a spectator. Clean work returns to zero, and borrowed work
+returns its joint state with the spectator. The wrapper admits only unchanged
+through mappings for this route. Dynamic measurement lifetimes require a
+separate mapping for instruction expansion and classical slots.
+
 ## Remaining files
 
 - Q-0714 awaits the rest of the source package export map, including
   import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain source graph traversal, context-controlled
-  workspace lifetime events, and dynamic arithmetic export. The bound
-  wrapper supports native dense data and compiled primitive bodies.
+- Q-0715 and Q-0716 retain source graph output-transfer behavior, dynamic
+  feedback and arithmetic export, and direct dense inspection of bodies that
+  use private workspace. The static wrapper replays physical leases for
+  unchanged through mappings.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
