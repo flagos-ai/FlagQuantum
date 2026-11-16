@@ -14,7 +14,7 @@ from ...core.classical_control import (
 from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ...core.operator_schema import get_operator_schema
 from ...core.parameters import Parameter, ParameterExpression
-from ._register_feedback import with_feedback
+from ._register_feedback import RegisterFeedback
 from .models import (
     CirqConversionError,
     CirqConversionIssue,
@@ -632,6 +632,7 @@ def _export_cirq(
     include_inverse_phases: bool = False,
     extent_declared_by_gate: bool = False,
     feedback_key_prefix: str | None = None,
+    instruction_offsets: list[int] | None = None,
 ) -> CirqExportResult:
     cirq = _cirq()
     ir = ensure_circuit_ir(program)
@@ -639,13 +640,14 @@ def _export_cirq(
     if include_inverse_phases:
         supported_gates.update(("sdg", "tdg"))
     issues: list[CirqConversionIssue] = []
-    measurement_keys: dict[int, str] = {}
+    feedback = None
     if feedback_key_prefix is not None:
         if allow_lossy or not feedback_key_prefix.isidentifier():
             raise ValueError(
                 "Cirq feedback export requires a key prefix and strict conversion"
             )
         validate_classical_control(ir.instructions, n_qubits=ir.n_wires)
+        feedback = RegisterFeedback()
     if ir.observables or ir.measurements:
         _issue(
             issues,
@@ -682,12 +684,14 @@ def _export_cirq(
         current_measurement_qubits = []
 
     for index, instruction in enumerate(ir.instructions):
+        if instruction_offsets is not None:
+            instruction_offsets.append(len(operations))
         clauses = (
             instruction_condition_clauses(instruction)
             if feedback_key_prefix is not None
             else ()
         )
-        if feedback_key_prefix is not None:
+        if feedback is not None:
             if instruction.name in {"measure", "reset"}:
                 if (
                     len(instruction.wires) != 1
@@ -705,20 +709,16 @@ def _export_cirq(
                 qubit = qubits[instruction.wires[0]]
                 if instruction.name == "measure":
                     write_key = f"{feedback_key_prefix}_{index}"
-                    measurement_keys[instruction.metadata["classical_bit"]] = write_key
+                    feedback.record_measurement(
+                        instruction.metadata["classical_bit"], write_key
+                    )
                     operations.append(cirq.measure(qubit, key=write_key))
                 else:
                     operations.append(cirq.reset(qubit))
                 continue
             if instruction.name == "classical_xor":
-                _issue(
-                    issues,
-                    "unsupported_operation",
-                    "Cirq register feedback requires measurement-defined classical bits.",
-                    index=index,
-                    name=instruction.name,
-                )
-                break
+                feedback.assign(instruction, clauses)
+                continue
         elif (
             "conditions" in instruction.metadata
             or "condition_clauses" in instruction.metadata
@@ -844,10 +844,12 @@ def _export_cirq(
             continue
         gate = _export_gate(cirq, instruction, params)
         operation = gate.on(*(qubits[wire] for wire in instruction.wires))
-        if clauses:
-            operation = with_feedback(cirq, operation, clauses, measurement_keys)
+        if feedback is not None and clauses:
+            operation = feedback.condition_operation(cirq, operation, clauses)
         operations.append(operation)
     flush_measurement()
+    if instruction_offsets is not None:
+        instruction_offsets.append(len(operations))
     report = _report("to_cirq", str(cirq.__version__), issues)
     circuit = cirq.Circuit(cirq.Moment([operation]) for operation in operations)
     _raise_if_lossy(report, allow_lossy=allow_lossy)

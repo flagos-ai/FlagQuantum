@@ -41,8 +41,10 @@ def bind_workspace_operations(
     consumed_inputs: frozenset[int],
     output_groups: Sequence[Mapping[int, Qid]],
     base: QubitManager | None,
+    *,
+    instruction_offsets: Sequence[int] | None = None,
 ) -> tuple[Operation, ...]:
-    """Remap a one-operation-per-instruction stream at physical lease boundaries."""
+    """Remap emitted operations at physical lease boundaries."""
     outputs = {wire: qubit for group in output_groups for wire, qubit in group.items()}
     final_allocations = _output_allocations(events, outputs)
     manager = InteropQubitManager(base)
@@ -64,8 +66,15 @@ def bind_workspace_operations(
 
     try:
         for index, event in enumerate(events):
-            stop = event.instruction_offset
-            if stop is None or not start <= stop <= len(operations):
+            offset = event.instruction_offset
+            if offset is None or offset < 0:
+                raise ValueError("Cirq workspace requires a valid instruction offset")
+            if instruction_offsets is not None and offset >= len(instruction_offsets):
+                raise ValueError("Cirq workspace event offset exceeds the native body")
+            stop = (
+                offset if instruction_offsets is None else instruction_offsets[offset]
+            )
+            if not start <= stop <= len(operations):
                 raise ValueError(
                     "Cirq workspace events require ordered instruction offsets"
                 )

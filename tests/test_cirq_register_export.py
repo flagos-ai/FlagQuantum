@@ -971,3 +971,90 @@ def test_cirq_feedback_keeps_both_polarities_in_disjunctions(cirq: Any) -> None:
             wires,
             feedback_key_prefix="external",
         )
+
+
+def test_gate_feedback_snapshots_xor_and_remaps_workspace_offsets(cirq: Any) -> None:
+    from dataclasses import replace
+    from itertools import product
+
+    import torch
+
+    from flagquantum.compiler.registers.register_binding import (
+        BoundRegisterProgram,
+        WorkspaceEvent,
+    )
+    from flagquantum.core.classical_dataflow import ClassicalXor
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+    from tests.unit.measurement_checks import forced_branch
+
+    def measure(wire: int, slot: int) -> Instruction:
+        return Instruction(
+            "measure", (wire,), metadata={"is_dynamic": True, "classical_bit": slot}
+        )
+
+    assignment = ClassicalXor((0, 2), 2).instruction()
+    assignment = replace(
+        assignment, metadata={**assignment.metadata, "conditions": ((1, 1),)}
+    )
+    prefix = (
+        measure(0, 0),
+        measure(1, 1),
+        measure(2, 2),
+        assignment,
+        Instruction("reset", (0,), metadata={"is_dynamic": True}),
+        measure(0, 0),
+    )
+    conditional = Instruction("x", (4,), metadata={"conditions": ((2, 1),)})
+    body = CircuitIR(5, (*prefix, conditional, Instruction("cx", (4, 3)), conditional))
+    bound = BoundRegisterProgram(
+        body,
+        ((0,), (1,), (2,), (3,)),
+        (
+            WorkspaceEvent(0, "allocate", (4,), False, instruction_offset=len(prefix)),
+            WorkspaceEvent(
+                1, "free", (4,), False, instruction_offset=len(body.instructions)
+            ),
+        ),
+    )
+    signature = Signature.build(a=1, b=1, c=1, answer=1)
+    gate = RegisterCirqGate(bound, signature, feedback_key_prefix="memory")
+    ports = tuple(cirq.LineQubit.range(4))
+    emitted = tuple(cirq.decompose_once(gate.on(*ports)))
+    assert len(emitted) == len(body.instructions) - 1
+    (work,) = {q for op in emitted for q in op.qubits} - set(ports)
+    assert set(cirq.measurement_key_names(cirq.Circuit(emitted))) == {
+        "memory_0",
+        "memory_1",
+        "memory_2",
+        "memory_5",
+    }
+    assert {str(key) for key in cirq.control_keys(emitted[-3])} == {
+        "memory_0",
+        "memory_1",
+        "memory_2",
+    }
+
+    spectator = cirq.NamedQubit("spectator")
+    order = (*ports, work, spectator)
+    amplitudes = np.array([1, 2j], dtype=np.complex128) / np.sqrt(5)
+    simulator = cirq.Simulator(dtype=np.complex128)
+    for a, b, c in product((0, 1), repeat=3):
+        initial = np.zeros(64, dtype=np.complex128)
+        start = 32 * a + 16 * b + 8 * c
+        initial[start : start + 2] = amplitudes
+        expected = np.zeros_like(initial)
+        output = c ^ (a & b)
+        end = 16 * b + 8 * c + 4 * output
+        expected[end : end + 2] = amplitudes
+        actual = simulator.simulate(
+            cirq.Circuit(emitted), qubit_order=order, initial_state=initial.copy()
+        )
+        native = forced_branch(
+            torch.from_numpy(initial), body.instructions, (a, b, c, 0)
+        )
+        np.testing.assert_allclose(
+            actual.final_state_vector, expected, atol=2e-12, rtol=0
+        )
+        np.testing.assert_allclose(
+            actual.final_state_vector, native.numpy(), atol=2e-12, rtol=0
+        )

@@ -130,6 +130,11 @@ class RegisterCirqGate(Gate):
             and any(gate.name == "measure" for gate in self._body.instructions)
         ):
             return NotImplemented
+        offsets: list[int] | None = (
+            []
+            if self._bound is not None and self._feedback_key_prefix is not None
+            else None
+        )
         try:
             result = _export_cirq(
                 self._body,
@@ -137,12 +142,13 @@ class RegisterCirqGate(Gate):
                 include_inverse_phases=True,
                 extent_declared_by_gate=True,
                 feedback_key_prefix=self._feedback_key_prefix,
+                instruction_offsets=offsets,
             )
         except CirqConversionError:
             return NotImplemented
         if self._bound is not None:
             operations = tuple(result.circuit.all_operations())
-            if len(operations) != len(self._body.instructions):
+            if offsets is None and len(operations) != len(self._body.instructions):
                 return NotImplemented
             return bind_workspace_operations(
                 operations,
@@ -154,6 +160,7 @@ class RegisterCirqGate(Gate):
                     for group in self._output_groups
                 ),
                 context.qubit_manager if context else None,
+                instruction_offsets=offsets,
             )
         remapped = result.circuit.transform_qubits(lambda q: qubits[q.x])
         return tuple(remapped.all_operations())
