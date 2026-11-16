@@ -353,7 +353,7 @@ def reference_arithmetic_gates(
         or isinstance(op, cirq.ClassicallyControlledOperation),
     )
     measurements = {}
-    gates = []
+    gates: list[Instruction] = []
     for op in upstream:
         metadata = {}
         if isinstance(op, cirq.ClassicallyControlledOperation):
@@ -362,10 +362,10 @@ def reference_arithmetic_gates(
             op = op.without_classical_controls()
         if isinstance(op.gate, cirq.GlobalPhaseGate):
             assert scalar_phase_anchor is not None and not metadata
-            theta = phase(complex(op.gate.coefficient))
+            angle = phase(complex(op.gate.coefficient))
             # Preserve the exact source scalar using the declared live anchor.
             flip = Instruction("x", (scalar_phase_anchor,))
-            shift = Instruction("phase", (scalar_phase_anchor,), {"theta": theta})
+            shift = Instruction("phase", (scalar_phase_anchor,), {"theta": angle})
             gates.extend((flip, shift, flip, shift))
             continue
         wires = tuple(q.x for q in op.qubits)
