@@ -125,6 +125,40 @@ def get_unitary(
     return circuit.state().transpose(0, 1)
 
 
+def _unitary_with_workspace(
+    program: CircuitIR, logical_width: int, borrowed_wires: frozenset[int]
+) -> torch.Tensor:
+    """Inspect a bounded through matrix with verified workspace restoration."""
+    if not 0 < logical_width <= program.n_wires or any(
+        not logical_width <= wire < program.n_wires for wire in borrowed_wires
+    ):
+        raise ValueError("Invalid workspace layout for unitary inspection")
+
+    matrix = get_unitary(program, device="cpu", dtype=torch.complex128)
+    clean_mask = sum(
+        1 << (program.n_wires - wire - 1)
+        for wire in range(logical_width, program.n_wires)
+        if wire not in borrowed_wires
+    )
+    indices = torch.arange(matrix.shape[0], device=matrix.device)
+    clean = (indices & clean_mask) == 0
+    admitted, rejected = indices[clean], indices[~clean]
+    if rejected.numel():
+        leakage = matrix[rejected[:, None], admitted]
+        if not torch.all(torch.abs(leakage) <= 2e-12):
+            raise ValueError("Unitary body does not restore clean workspace")
+
+    projected = matrix[admitted[:, None], admitted]
+    if not borrowed_wires:
+        return projected
+    stride = 1 << len(borrowed_wires)
+    reduced = projected[::stride, ::stride].contiguous()
+    identity = torch.eye(stride, dtype=projected.dtype, device=projected.device)
+    if not torch.allclose(projected, torch.kron(reduced, identity), atol=2e-12, rtol=0):
+        raise ValueError("Unitary body does not restore borrowed workspace")
+    return reduced
+
+
 def _basis_circuit(
     ir: CircuitIR,
     basis: torch.Tensor,

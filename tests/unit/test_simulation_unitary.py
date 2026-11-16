@@ -8,7 +8,11 @@ import torch
 
 import flagquantum as fq
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
-from flagquantum.simulation.unitary import MAX_UNITARY_QUBITS, get_unitary
+from flagquantum.simulation.unitary import (
+    MAX_UNITARY_QUBITS,
+    _unitary_with_workspace,
+    get_unitary,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -74,6 +78,23 @@ def test_the_two_wire_bell_circuit_matches_h_tensor_identity_then_cnot() -> None
     unitary = get_unitary(fq.Circuit(2).h(0).cx(0, 1))
 
     assert torch.allclose(unitary, _cnot() @ torch.kron(hadamard, identity), atol=_ATOL)
+
+
+def test_workspace_unitary_retains_phase_and_interleaved_borrowed_axes() -> None:
+    circuit = CircuitIR(
+        4,
+        (
+            Instruction("h", (0,)),
+            Instruction("cx", (0, 2)),
+            Instruction("cx", (0, 2)),
+            Instruction("cz", (0, 3)),
+            Instruction("cz", (0, 3)),
+            Instruction("s", (0,)),
+        ),
+    )
+    expected = torch.tensor([[1, 1], [1j, -1j]], dtype=torch.complex128) / math.sqrt(2)
+    actual = _unitary_with_workspace(circuit, 1, frozenset((1, 3)))
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=0)
 
 
 def test_wire_zero_is_the_most_significant_amplitude_bit() -> None:
@@ -253,16 +274,16 @@ def test_exactly_the_ceiling_is_accepted() -> None:
 
 @pytest.mark.parametrize("kind", ("channel", "dynamic", "condition"))
 def test_a_non_unitary_instruction_is_refused_by_index_and_opcode(kind: str) -> None:
-    metadata = {
+    metadata_by_kind: dict[str, dict[str, object]] = {
         "channel": {"is_channel": True},
         "dynamic": {"is_dynamic": True},
         "condition": {"condition_clauses": ({"wire": 0, "value": 1},)},
-    }[kind]
+    }
     ir = CircuitIR(
         n_wires=2,
         instructions=(
             Instruction(name="h", wires=(0,)),
-            Instruction(name="x", wires=(1,), metadata=metadata),
+            Instruction(name="x", wires=(1,), metadata=metadata_by_kind[kind]),
         ),
         dtype="complex64",
     )
