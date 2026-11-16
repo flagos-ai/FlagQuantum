@@ -1453,3 +1453,50 @@ def test_cirq_register_value_identity_includes_workspace_instruction_offsets(
     gate = RegisterCirqGate(first, signature)
     assert gate == RegisterCirqGate(replace(first), signature)
     assert gate != RegisterCirqGate(later, signature)
+
+
+@pytest.mark.ftqc_reference
+def test_cirq_dynamic_workspace_unitary_matches_frozen_cleanup_tensor(
+    cirq: Any, source_export: Any
+) -> None:
+    from dataclasses import replace
+
+    from qualtran.cirq_interop._bloq_to_cirq_test import ComputeUncompute
+
+    from flagquantum.compiler.registers.register_binding import (
+        BoundRegisterProgram,
+        WorkspaceEvent,
+    )
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    compute = multi_and_ir((0, 1), (1, 1), (2,))
+    erase = multi_and_ir((0, 1), (1, 1), (2,), classical_bits=(0,), uncompute=True)
+    body = CircuitIR(3, compute + erase)
+    bound = BoundRegisterProgram(
+        body,
+        ((0,), (1,)),
+        (
+            WorkspaceEvent(0, "allocate", (2,), False, instruction_offset=0),
+            WorkspaceEvent(
+                len(body.instructions) + 1,
+                "free",
+                (2,),
+                False,
+                instruction_offset=len(body.instructions),
+            ),
+        ),
+    )
+    signature = Signature.build(a=1, b=1)
+    gate = RegisterCirqGate(bound, signature, feedback_key_prefix="cleanup")
+    expected = cirq.unitary(source_export.BloqAsCirqGate(ComputeUncompute()))
+    np.testing.assert_allclose(cirq.unitary(gate), expected, atol=2e-12, rtol=0)
+
+    measure_logical = Instruction(
+        "measure", (0,), metadata={"is_dynamic": True, "classical_bit": 0}
+    )
+    negative = RegisterCirqGate(
+        replace(bound, circuit=CircuitIR(3, (measure_logical,))),
+        signature,
+        feedback_key_prefix="measurement",
+    )
+    assert cirq.unitary(negative, default=None) is None

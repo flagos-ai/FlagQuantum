@@ -15,6 +15,7 @@ import numpy as np
 
 from ...compiler.registers.primitives.power import register_power_ir
 from ...compiler.registers.register_binding import BoundRegisterProgram
+from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import CircuitIR, IRSerializationError
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
@@ -254,9 +255,19 @@ class RegisterCirqGate(Gate):
                     if event.kind == "allocate" and event.dirty
                     for wire in event.wires
                 )
-                matrix = _unitary_with_workspace(
-                    self._body, len(self._labels), borrowed
+                dynamic = any(
+                    op.name in {"measure", "reset", "classical_xor"}
+                    or is_classical_control_instruction(op)
+                    for op in self._body.instructions
                 )
+                if dynamic:
+                    from ...simulation._feedback_unitary import _feedback_unitary
+
+                    matrix = _feedback_unitary(self._body, len(self._labels), borrowed)
+                else:
+                    matrix = _unitary_with_workspace(
+                        self._body, len(self._labels), borrowed
+                    )
         except (TypeError, ValueError, NotImplementedError):
             if self._bound is not None:
                 return None
