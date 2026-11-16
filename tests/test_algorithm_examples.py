@@ -1839,8 +1839,12 @@ def test_fermion_fcidump_example_measures_the_input_reference() -> None:
     _assert_premise("fermion_fcidump", output)
 
 
-def test_fcidump_training_recovers_the_small_molecular_correlation_energy() -> None:
-    output = _run("fermion_fcidump_training")
+@pytest.mark.parametrize("encoding", ("jordan_wigner", "parity", "bravyi_kitaev"))
+def test_fcidump_training_recovers_the_small_molecular_correlation_energy(
+    encoding: str,
+) -> None:
+    output = _run("fermion_fcidump_training", "--encoding", encoding)
+    assert _labelled(output, "Encoding") == encoding
     determinant = float(_labelled(output, "Reference determinant").split()[0])
     initial = float(_labelled(output, "Initial energy").split()[0])
     final = float(_labelled(output, "Final energy").split()[0])

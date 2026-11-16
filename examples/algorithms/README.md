@@ -259,17 +259,20 @@ boundary for each.
 
 [`fermion_fcidump_training.py`](fermion_fcidump_training.py) reads the small
 [H2 STO-3G FCIDUMP](data/h2_sto3g.fcidump) and trains the existing UCCSD circuit
-through native JW expectations and PyTorch Adam. Run
+through native expectations and PyTorch Adam. Run
 `python -m examples.algorithms.fermion_fcidump_training`, or pass a two-orbital,
 two-electron restricted FCIDUMP path as its positional argument. The bundled
 example lowers the energy to approximately -1.1372701747 Ha, below the reference
 determinant's -1.1166843871 Ha. It measures gradients against central differences,
 an actual parameter update and particle number 2. Its dense N=2 diagonalization
-only supplies a reference energy; no eigenvector initializes the ansatz.
+only supplies a reference energy; no eigenvector initializes the ansatz. Add
+`--encoding parity` or `--encoding bravyi_kitaev` to use the same UCCSD angles and Adam loop in the matching full-register basis. See
+[the three-encoding H2 guide](../../docs/development/FERMION_H2_UCCSD_ENCODINGS.md)
+for the state, gradient and update comparisons.
 
 The circuit state uses complex128, but existing UCCSD angle ingestion uses
 float32. The fixed example demonstrates convergence only for this input; other
-accepted integral files need not converge or fit the ansatz. This is a CPU/full-JW
+accepted integral files need not converge or fit the ansatz. This is a full-register CPU
 inspection path with an exponential dense reference, without geometry/SCF
 gradients, hardware execution or scalability claims. OpenFermion, Cirq, PySCF,
 SciPy and HDF5 are unnecessary; PyTorch optimizer initialization may import NumPy.

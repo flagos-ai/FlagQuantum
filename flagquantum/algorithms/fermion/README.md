@@ -43,6 +43,13 @@ Add `--project` to the two-body H2 example to compare constraint residuals
 and energies. The projection enforces linear identities, without a positivity
 or N-representability guarantee.
 
+The [H2 UCCSD encoding example](../../../docs/development/FERMION_H2_UCCSD_ENCODINGS.md)
+uses `encode_occupation` to derive a four-wire basis conversion at the end of
+the existing state preparation. The Hamiltonian and number observable use
+the same explicit encoding. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_h2_uccsd_encodings.py -q`
+to compare states, energy, gradients and an Adam update against JW.
+
 Modules are split by numerical responsibility: decomposition.py returns adjacent
 orbital matrices without importing Circuit; lowering.py lifts them to JW gates;
 preparation.py creates Slater determinants and canonical Gaussian vacua.

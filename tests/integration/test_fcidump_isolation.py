@@ -10,7 +10,7 @@ import pytest
 pytestmark = pytest.mark.integration
 
 
-def test_fcidump_measurement_with_external_science_imports_blocked() -> None:
+def test_fcidump_workflows_with_external_science_imports_blocked() -> None:
     script = """
         import importlib.abc
         import runpy
@@ -24,6 +24,11 @@ def test_fcidump_measurement_with_external_science_imports_blocked() -> None:
         sys.meta_path.insert(0, NoExternalScience())
         runpy.run_module("examples.algorithms.fermion_fcidump", run_name="__main__")
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
+        # PyTorch optimizer initialization may import NumPy.
+        blocked.remove("numpy")
+        from examples.algorithms.fermion_fcidump_training import main as train
+        train(encoding="bravyi_kitaev")
+        assert not (blocked & {name.split(".")[0] for name in sys.modules})
     """
     script = textwrap.dedent(script)
     result = subprocess.run(
@@ -35,3 +40,5 @@ def test_fcidump_measurement_with_external_science_imports_blocked() -> None:
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert result.stdout.count("reference energy -0.9000000000 Ha") == 3
+    assert "Encoding: bravyi_kitaev" in result.stdout
+    assert "Particles: 2.00000000" in result.stdout

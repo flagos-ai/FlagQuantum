@@ -165,8 +165,9 @@ neither root import count nor this delivery update implies full compatibility.
 - **General encoded/tapered ansatz:** valuable for extending UCCSD, but the
   full circuit legality, basis transformation and gradient semantics must be
   designed first. Fixed determinant examples do not establish a general
-  transform. Admit a minimal full-register encoding replacement before sector
-  tapering, without changing consumer training code.
+  transform. The [four-mode H2 UCCSD composition](FERMION_H2_UCCSD_ENCODINGS.md)
+  uses a native full-register basis conversion and a shared training loop.
+  General circuit conversion and tapered ansatz synthesis remain separate.
 - **Weighted/complex Hubbard:** admit only with a concrete lattice/flux use
   case. Keep edge validation and symbolic assembly in the model module; verify
   Hermiticity, orientation conjugation and gauge-invariant loop spectra
