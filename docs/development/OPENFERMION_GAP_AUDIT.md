@@ -154,9 +154,9 @@ Step D landed in #1181 as a separate experimental registration. Step E
 landed in #1182 and provides [native two-body measurements and H2 energy reconstruction](FERMION_TWO_BODY_DENSITY.md)
 for small full-register CPU states. A separate Integration change records that
 workflow as experimental (#1183). The independent
-[fixed-particle projection](FERMION_RDM_PROJECTION.md) covers a small static
-CPU linear-constraint slice; stronger representability checks, sampling and
-noise models remain deferred.
+[fixed-particle projection](FERMION_RDM_PROJECTION.md) landed in #1185. Its
+separate experimental registration covers static CPU linear constraints.
+Stronger representability checks, sampling and noise models remain deferred.
 The upstream inventory and its hashes still refer to the original audit pin;
 neither root import count nor this delivery update implies full compatibility.
 

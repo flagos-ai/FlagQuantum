@@ -3,7 +3,12 @@
 ## Current delivery status
 
 The current checked main baseline is
-`41a11c13b24624034ec9d2d613d1add4fc0f763f` on November 16, 2026 (UTC+08:00).
+`7b45cad4f4bcb8db27dd407adac7f586c872036d` on November 16, 2026 (UTC+08:00).
+Fixed-particle density projection merged in
+[#1185](https://github.com/flagos-ai/FlagQuantum/pull/1185). Its experimental
+registration covers opt-in static CPU postprocessing of measured tensors.
+See the [projection acceptance](FERMION_RDM_PROJECTION.md#merged-implementation-acceptance)
+for exact revision evidence and the linear-constraint boundary.
 Native two-body density and bounded H2 energy reconstruction merged in
 [#1182](https://github.com/flagos-ai/FlagQuantum/pull/1182). Its separate
 experimental registration records the exact CPU, full-register scope and
