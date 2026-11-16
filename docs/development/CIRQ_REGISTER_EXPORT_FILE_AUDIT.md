@@ -128,12 +128,15 @@ reset. These are physical counts for the adapted witness.
 The [native tutorial](../../examples/notebooks/cirq_register_interop.ipynb)
 uses the original seeded Cirq circuit, rewrites its iSWAP into exact S, CZ and
 SWAP operations, and checks the complete matrix through import and export.
-It demonstrates named placement, shaped registers, fresh output placement and
-append. It keeps the original modular exponentiation dimensions and call
-declaration, and runs the adapter diagnostic on a smaller native compiled
-instance. The original five-qubit composite QFT and modular exponentiation
-roundtrip remain open. The tutorial's MultiAnd export cell still needs to use
-the newly verified register adapter.
+It demonstrates named placement, shaped registers, fresh output placement
+and append. The five-qubit QFT section checks all 1,024 complex matrix
+elements against the native Fourier circuit and its Cirq wrapper. The
+MultiAnd section exports 39 physical operations with the declared through,
+junk and target ports. The modular exponentiation section retains the
+original large signature and call graph. A valid smaller instance
+compiles with append and roundtrips its owned typed definition through Cirq.
+Its re-export agrees on all 1,155 operations and all 48 distinct feedback
+keys. The executed trajectory leaves workspace zero.
 
 The locked ModExp diagram fixture uses base three, modulus four and a
 two-bit output. One-step source decomposition binds `x0` and `x1` through
@@ -219,10 +222,14 @@ The locked entries and their native owners resolve in the reference runtime.
 The native Cirq package keeps its guarded public exports. Compiler and
 Simulation retain ownership of physical binding and dense inspection.
 
-## Remaining files
+## Tutorial acceptance
 
-- Q-0721 retains the source composite QFT, MultiAnd export and ModExp
-  roundtrip as open tutorial sections. The adaptation shows their diagnostics.
+Q-0721 covers the locked 40-cell tutorial with 24 executable cells. The
+native notebook retains that structure and renders eight SVG circuits in
+an independent kernel with reference imports blocked. The QFT uses the
+owned tensor and wrapper protocols. The measured roundtrip imports the
+wrapper's declared native definition. The source large ModExp remains a
+logical graph and the full physical export witness uses the small instance.
 
 ## Export test family acceptance
 
