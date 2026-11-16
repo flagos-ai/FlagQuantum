@@ -45,6 +45,7 @@ def source_hamming_weight_phasing_cost(width: int, exponent: float) -> Component
             CostCall(phase, weight, peak - 1),
             CostCall(source_hamming_weight_cost(width, adjoint=True)),
         ),
+        family="rotations",
     )
 
 
@@ -70,6 +71,7 @@ def source_hamming_weight_gradient_phasing_cost(
                 bystander_qubits=gradient,
             ),
         ),
+        family="rotations",
     )
 
 

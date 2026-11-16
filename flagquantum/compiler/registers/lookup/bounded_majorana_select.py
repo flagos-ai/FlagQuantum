@@ -162,4 +162,5 @@ def source_bounded_majorana_cost(
         f"SelectedMajoranaFermion({pauli})",
         spin_orbitals + width + controls + work,
         GateCost(and_bloq=ands, clifford=cliffords, measurement=ands),
+        family="multiplexers",
     )

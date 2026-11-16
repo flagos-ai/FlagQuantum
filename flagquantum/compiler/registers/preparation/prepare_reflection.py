@@ -149,4 +149,5 @@ def source_prepare_reflection_cost(
             CostCall(mark, bystander_qubits=live_junk),
             CostCall(prepare_cost, bystander_qubits=int(controlled)),
         ),
+        family="reflection",
     )

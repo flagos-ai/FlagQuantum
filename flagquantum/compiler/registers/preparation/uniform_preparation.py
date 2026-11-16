@@ -229,4 +229,5 @@ def source_uniform_preparation_cost(
         f"PrepareUniformSuperposition({count})",
         width + len(control_values) + work,
         gates,
+        family="state_preparation",
     )

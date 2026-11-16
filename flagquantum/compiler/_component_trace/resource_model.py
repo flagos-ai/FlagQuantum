@@ -7,8 +7,9 @@
 """Evaluate declared component costs independently of emitted instructions."""
 
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from math import isfinite
+from typing import Literal
 
 
 @dataclass(frozen=True)
@@ -52,6 +53,20 @@ class GateCost:
         )
 
 
+ResourceFamily = Literal[
+    "arithmetic",
+    "rotations",
+    "state_preparation",
+    "data_loading",
+    "multi_control_pauli",
+    "multiplexers",
+    "swaps",
+    "reflection",
+    "toffoli",
+    "tgate",
+]
+
+
 @dataclass(frozen=True)
 class ComponentCost:
     """Model for one component with exclusive local gates and sequential children.
@@ -59,6 +74,7 @@ class ComponentCost:
     The local qubit count covers ports and any local peak between calls.
     Child edges explicitly state how many other qubits are live during the call.
     An explicit success probability overrides the product of child probabilities.
+    A declared family sets the default resource classification of the component.
     """
 
     name: str
@@ -66,6 +82,7 @@ class ComponentCost:
     gates: GateCost = GateCost()
     calls: tuple["CostCall", ...] = ()
     success_probability: float | None = None
+    family: ResourceFamily | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)

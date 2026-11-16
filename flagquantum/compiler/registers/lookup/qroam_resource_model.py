@@ -75,7 +75,10 @@ def source_qroam_clean_cost(
     )
     routes = _bank_route_costs(table, target_widths, 1, live)
     return ComponentCost(
-        "QROAMClean", peak, calls=(CostCall(qrom, bystander_qubits=low), *routes)
+        "QROAMClean",
+        peak,
+        calls=(CostCall(qrom, bystander_qubits=low), *routes),
+        family="data_loading",
     )
 
 
@@ -104,6 +107,7 @@ def source_select_swap_qrom_cost(
         peak,
         GateCost(clifford=target * toggles),
         (CostCall(qrom, 2, bystanders), *routes),
+        family="data_loading",
     )
 
 

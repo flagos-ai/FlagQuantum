@@ -83,12 +83,14 @@ def classify_resource_family(
 ) -> str:
     """Use ordered custom rules or the built-in families of typed keys.
 
-    Named component summaries can be assigned families with explicit rules.
+    A component may declare its family independently of its display name.
     An unmatched key has the "other" family.
     """
     if rules is not None:
         return next((family for matches, family in rules if matches(call)), "other")
     match call:
+        case ComponentCost(family=family):
+            return family or "other"
         case ArithmeticCall():
             return "arithmetic"
         case RotationCall():

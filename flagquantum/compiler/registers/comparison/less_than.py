@@ -31,7 +31,9 @@ def source_less_than_constant_cost(width: int, threshold: int) -> ComponentCost:
             clifford=3 * (width + threshold.bit_count()) + 2,
             measurement=width,
         )
-    return ComponentCost("LessThanConstant", width + 1 + work, gates)
+    return ComponentCost(
+        "LessThanConstant", width + 1 + work, gates, family="arithmetic"
+    )
 
 
 def less_than_constant_ir(

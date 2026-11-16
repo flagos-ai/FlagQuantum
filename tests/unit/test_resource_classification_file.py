@@ -2,6 +2,7 @@
 
 from hashlib import sha1
 from pathlib import Path
+from typing import get_args
 
 import pytest
 
@@ -26,6 +27,7 @@ from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
     GateCost,
+    ResourceFamily,
 )
 from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
     source_add_cost,
@@ -111,6 +113,10 @@ def test_typed_defaults_and_custom_first_match_precedence() -> None:
     from qualtran.bloqs.basic_gates import CSwap, Rz, TGate, Toffoli
     from qualtran.bloqs.mcmt.and_bloq import And
 
+    assert set(get_args(ResourceFamily)) == set(
+        source._get_basic_bloq_classification().values()
+    )
+
     pairs = (
         (ArithmeticCall("add", (8, 8)), Add(QInt(8))),
         (
@@ -168,7 +174,12 @@ def test_all_original_default_family_bins_use_native_cost_models() -> None:
     rows = (4, 10, 11, 34)
     identity = ComponentCost("PrepareIdentity", 8)
     fixture = (
-        (ComponentCost("ModelSwap", 21, GateCost(cswap=10)), CSwap(10), 42, "swaps"),
+        (
+            ComponentCost("ModelSwap", 21, GateCost(cswap=10), family="swaps"),
+            CSwap(10),
+            42,
+            "swaps",
+        ),
         (
             source_hamming_weight_phasing_cost(10, 1.11),
             HammingWeightPhasing(10, 1.11),
@@ -183,7 +194,9 @@ def test_all_original_default_family_bins_use_native_cost_models() -> None:
             "data_loading",
         ),
         (
-            ComponentCost("ModelAnd", 3, GateCost(and_bloq=1)),
+            ComponentCost(
+                "ModelAnd", 3, GateCost(and_bloq=1), family="multi_control_pauli"
+            ),
             And(),
             4,
             "multi_control_pauli",
@@ -207,9 +220,12 @@ def test_all_original_default_family_bins_use_native_cost_models() -> None:
             "state_preparation",
         ),
     )
-    leaf_families: dict[ResourceCall, str] = {
-        node: label for node, _, _, label in fixture
-    }
+    for node, upstream, _, label in fixture:
+        assert (
+            classify_resource_family(node)
+            == label
+            == source.classify_bloq(upstream, source._get_basic_bloq_classification())
+        )
 
     root = ComponentCost(
         "root", 21, calls=tuple(CostCall(node, count) for node, _, count, _ in fixture)
@@ -219,5 +235,21 @@ def test_all_original_default_family_bins_use_native_cost_models() -> None:
             tuple((upstream, count) for _, upstream, count, _ in fixture)
         )
     )
-    assert attribute_t_cost(root, leaf_families.get) == expected
+    assert attribute_t_cost(root) == expected
     assert "state_preparation" not in expected
+
+
+def test_semantic_family_belonging_is_independent_of_display_name() -> None:
+    unnamed = ComponentCost("Add", 1, GateCost(t=3))
+    arithmetic = ComponentCost("same display", 1, GateCost(t=3), family="arithmetic")
+    loading = ComponentCost("same display", 1, GateCost(t=3), family="data_loading")
+    assert classify_resource_family(unnamed) == "other"
+    assert classify_resource_family(arithmetic) == "arithmetic"
+    assert classify_resource_family(loading) == "data_loading"
+    assert len({arithmetic, loading}) == 2
+    assert classify_resource_family(arithmetic, ()) == "other"
+    assert (
+        classify_resource_family(arithmetic, ((lambda _: True, "custom"),)) == "custom"
+    )
+    root = ComponentCost("root", 1, calls=(CostCall(arithmetic), CostCall(loading)))
+    assert attribute_t_cost(root) == {"arithmetic": 3, "data_loading": 3}

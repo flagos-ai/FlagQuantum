@@ -210,6 +210,7 @@ def source_multiplexed_cswap_cost(
             clifford=cliffords,
             measurement=ands,
         ),
+        family="swaps",
     )
 
 

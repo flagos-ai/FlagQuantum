@@ -176,4 +176,5 @@ def source_qrom_cost(
             ),
             measurement=splits + reduction,
         ),
+        family="data_loading",
     )

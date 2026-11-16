@@ -81,4 +81,5 @@ def source_bounded_pauli_select_cost(instruction: Instruction) -> ComponentCost:
         "SelectPauliLCU",
         len(instruction.wires) + active_work,
         GateCost(and_bloq=ands, clifford=cliffords, measurement=ands),
+        family="multiplexers",
     )

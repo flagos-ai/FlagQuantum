@@ -45,6 +45,7 @@ def source_add_cost(
                 for field in fields(gates)
             }
         ),
+        family="arithmetic",
     )
 
 
@@ -80,6 +81,7 @@ def source_controlled_add_cost(
             CostCall(addition, bystander_qubits=left_width + 1),
             CostCall(cleanup, left_width, predicate_bystanders),
         ),
+        family="arithmetic",
     )
 
 
@@ -101,6 +103,7 @@ def source_phase_add_cost(
         "AddIntoPhaseGrad",
         max(3, input_width + gradient_width + controlled),
         GateCost(toffoli=(gradient_width - 2) * (1 + controlled)),
+        family="arithmetic",
     )
 
 
@@ -113,6 +116,7 @@ def source_sum_of_squares_cost(width: int, count: int) -> ComponentCost:
         "SumOfSquares",
         count * width + result_width,
         GateCost(toffoli=count * width**2 - width - (count % 3 == 0)),
+        family="arithmetic",
     )
 
 
@@ -125,4 +129,5 @@ def source_product_cost(left: int, right: int) -> ComponentCost:
         "Product",
         left + right + 2 * longest,
         GateCost(toffoli=2 * left * right - longest),
+        family="arithmetic",
     )
