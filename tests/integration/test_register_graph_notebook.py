@@ -71,6 +71,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_global_phase", 7, 1, 0),
         ("register_gradient_givens", 8, 4, 0),
         ("register_elliptic_curve_addition", 6, 2, 0),
+        ("register_elliptic_curve_cryptography", 12, 9, 0),
         ("register_hadamard", 9, 2, 1),
         ("register_identity", 8, 2, 0),
         ("register_measurement", 10, 4, 0),
