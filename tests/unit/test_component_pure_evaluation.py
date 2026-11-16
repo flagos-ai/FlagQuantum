@@ -14,7 +14,7 @@ from flagquantum.simulation import component_pure_evaluation as native
 from flagquantum.simulation.classical_distributions import ClassicalDistribution
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_component_bit_values import identity_record
-from tests.unit.test_component_classical_recursion import source_leaf
+from tests.unit.test_component_classical_recursion import failure_chain, source_leaf
 from tests.unit.test_component_classical_state import add_values
 from tests.unit.test_component_hierarchy_adjoint import wrapped_add
 from tests.unit.test_component_phased_evaluation import orders, wrap
@@ -181,4 +181,14 @@ def test_missing_schedule_retains_recursive_cause(missing: str) -> None:
         native.simulate_pure_component_calls(
             record, schedules, {"x": 1}, lambda f, v: NotImplemented
         )
-    assert failure.value.__cause__ is not None
+    first = (NotImplementedError, f"no classical call order supplied for {missing}")
+    causes: list[tuple[type[BaseException], str]] = [first, (KeyError, repr(missing))]
+    if missing == "outer0":
+        causes.insert(
+            0,
+            (
+                NotImplementedError,
+                "outer0 does not support classical simulation: " + first[1],
+            ),
+        )
+    assert failure_chain(failure.value) == causes

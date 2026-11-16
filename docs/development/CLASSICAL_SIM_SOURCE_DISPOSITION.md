@@ -93,13 +93,19 @@ The shared-evaluator run passed 135 focused and 11,072 concentrated cases.
 
 ### Open compatibility conditions
 
-Q-0882 and Q-0883 remain open. The subsequent
-[original-test replacement matrix](CLASSICAL_SIM_TEST_MATRIX.md) accounts for
-all 19 original test functions, with native numerical execution and explicit
-representation differences. Notebook disposition and remaining foreign
-lazy-decomposition failure paths still need acceptance evidence. Source-only
-execution of the original tests is not native replacement. Numerical codecs can support types that
-Core executable graph admission excludes; this document does not expand Core.
+The [Q-0883 original-test replacement matrix](CLASSICAL_SIM_TEST_MATRIX.md)
+accounts for all 19 original functions, including the independently accepted
+Q-0881 notebook. Its source-only run, native numerical replacements and parallel
+checks are recorded separately. Some numerical codecs support types outside
+Core's executable graph admission.
+
+Q-0882 stays open for source compatibility. The unchanged source translates
+`DecomposeTypeError` and `DecomposeNotImplementedError` into two different
+messages and retains the original cause. Their direct witnesses use the
+source's actual lazy decomposition dispatch. A missing owned root schedule
+instead retains the underlying `KeyError`. A missing owned child schedule also
+adds the child's `NotImplementedError` context. Compiler-owned schedules
+and explicit callbacks remain the native boundary for these failures.
 
 Input distributions use native sentinel ID -1; source fixed-input handling may
 fail because LeftDangle has no instance index. Source empty returned arrays can

@@ -45,6 +45,42 @@ def failure_chain(error: BaseException) -> list[tuple[type[BaseException], str]]
     return result
 
 
+@pytest.mark.parametrize(
+    "category,expected_message",
+    [
+        ("DecomposeTypeError", "identity is not classically simulable."),
+        (
+            "DecomposeNotImplementedError",
+            "identity has no decomposition and does not support classical simulation directly",
+        ),
+    ],
+)
+def test_source_lazy_decomposition_categories_preserve_their_causes(
+    category: str, expected_message: str
+) -> None:
+    import qualtran
+    from qualtran.simulation.classical_sim import ClassicalSimState
+
+    error = getattr(qualtran, category)("source decomposition unavailable")
+
+    def decompose(_: object) -> Any:
+        raise error
+
+    leaf = source_leaf(
+        lambda self, **values: NotImplemented,
+        lambda self, **values: None,
+        decompose,
+    )
+    state = ClassicalSimState.from_cbloq(leaf.as_composite_bloq(), {"x": 1})
+    with pytest.raises(NotImplementedError) as failure:
+        state.simulate()
+    assert failure_chain(failure.value) == [
+        (NotImplementedError, expected_message),
+        (type(error), "source decomposition unavailable"),
+    ]
+    assert failure.value.__cause__ is error
+
+
 @pytest.mark.parametrize("phased", [False, True])
 @pytest.mark.parametrize("stage", ["values", "phase", "recurse"])
 @pytest.mark.parametrize(
