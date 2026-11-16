@@ -95,14 +95,19 @@ def format_call_graph_markdown(
                 for callee in successors[caller]
             )
         )
-    lines.append("#### Counts totals:")
-    lines.extend(
-        sorted(
-            f" - {_code_span(title(node))}: {_markdown_count(count)}"
-            for node, count in leaf_counts.items()
-        )
-    )
+    lines.append(format_counts_markdown(leaf_counts, title=title))
     return "\n".join(lines)
+
+
+def format_counts_markdown(
+    counts: Mapping[Node, SymbolicInt], *, title: Callable[[Node], str] = str
+) -> str:
+    """Format declared totals in display order with symbolic values intact."""
+    rows = sorted(
+        f" - {_code_span(title(node))}: {_markdown_count(count)}"
+        for node, count in counts.items()
+    )
+    return "\n".join(("#### Counts totals:", *rows))
 
 
 def _dot_count(count: SymbolicInt) -> str:
