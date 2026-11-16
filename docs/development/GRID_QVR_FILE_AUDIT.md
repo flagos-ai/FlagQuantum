@@ -1,0 +1,9 @@
+# Grid quantum variable rotation file audit
+
+Q-0431 and Q-0432 cover the rotation declaration and its tests in Qualtran v0.7.0 at `bcb17bb25360ed68ce3bc084645db3e929799389`. The unchanged original test suite returned five passes and three skips. Native comparisons include the original 8-, 16- and 32-bit model cases and the 12-bit documentation example. This closes Q-0432.
+
+The locked source declares a scalar opaque through word named `phi`. For width `w`, its call graph contains a single freshly allocated symbolic `Rz(theta)` child with multiplicity `w`. The native cost declaration records the opaque port width, one child of the same gate class and multiplicity, and the logical peak. These resource tests also verify that consecutive calls to the original allocator produce distinct symbols.
+
+The native grid kinetic and potential append paths share an exact phase emitter. The emitter takes the big-endian `phi` wires and a concrete coefficient in radians per integer unit. It applies `phase(coefficient * 2**bit)` to each wire in order from least to most significant. It needs zero work wires and emits no measurement or feedback. Tests use a permuted three-wire binding and compare all eight complex state entries for positive, negative and zero coefficients. That example emits three phase instructions; the independent 12-bit source budget estimates 12 generic rotations.
+
+The locked source raises `DecomposeNotImplementedError`. Its call graph leaves the angle unbound and supplies no ordered primitive sequence. The native phase convention includes the absolute phase on the register, while an individual `Rz` has a different global phase convention. The cost declaration captures the class and multiplicity, but does not retain the allocator's symbol identity. The source's custom wire label and complete source primitive comparison remain open under Q-0431.
