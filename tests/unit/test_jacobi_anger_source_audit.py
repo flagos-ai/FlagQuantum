@@ -1,6 +1,7 @@
 """Default Bessel call-chain parity, optional dependencies and original consumers."""
 
 import builtins
+import cmath
 import warnings
 from collections.abc import Callable
 from types import ModuleType
@@ -79,6 +80,20 @@ def test_default_degree_records_exact_bessel_visits(
         outcomes.append(value)
         visits.append(calls.copy())
     assert outcomes[0] == outcomes[1] and visits[0] == visits[1]
+
+
+def test_first_small_bessel_term_does_not_certify_truncation() -> None:
+    from qualtran.linalg.polynomial.jacobi_anger_approximations import (
+        degree_jacobi_anger_approximation as source,
+    )
+
+    argument = float(special.jn_zeros(1, 1)[0])
+    precision = 1e-8
+    degree = degree_jacobi_anger_approximation(argument, precision=precision)
+    assert degree == source(argument, precision=precision) == 0
+    assert abs(special.jv(1, argument)) < precision < abs(special.jv(2, argument))
+    at_one = approx_exp_cos_by_jacobi_anger(argument, degree=0)[0]
+    assert abs(at_one - cmath.exp(1j * argument)) > 0.7
 
 
 @pytest.mark.parametrize("operation", ["cos", "sin", "degree"])

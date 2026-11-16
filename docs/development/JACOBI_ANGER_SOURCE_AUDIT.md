@@ -73,6 +73,22 @@ limitations; they are not repaired or used as a global error guarantee. Under
 the frozen rule, implementation parent **Q-0764 remains open**. Test parent
 **Q-0765 closes** because its entire original surface passes with native bindings.
 
+### Finite-domain counterexample
+
+At the first positive zero of J₁ (scaled time approximately
+3.8317059702075125), both implementations select degree zero at precision
+1e-8. In the locked environment, |J₁| is about 7.13e-17 and |J₂| is about
+0.402759. The degree-zero cosine expansion differs from the target by
+about 0.735541 at angle zero. The small first omitted coefficient therefore
+does not certify the rest of the tail, even for finite positive inputs.
+
+The source-matching threshold is used by the Hamiltonian GQSP executable and
+by concrete and symbolic resource declarations. The executable's finite-time
+and positive-precision checks admit this case. A certified numerical path
+would require an independent tail bound and matching degree/cost propagation.
+The regression preserves the observed result of both producers, along with the
+exact source order and exceptions, while Q-0764 remains open.
+
 ## Runnable default path
 
 With SciPy installed by the caller:
