@@ -682,3 +682,130 @@ def test_gate_transfers_only_final_right_output_lease(
     want = np.zeros(1 << len(order), dtype=np.complex128)
     want[expected] = 1
     np.testing.assert_array_equal(result.final_state_vector, want)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("reuse", (False, True))
+def test_gate_releases_left_input_without_freeing_caller_qid(
+    cirq: Any, source_export: Any, reuse: bool
+) -> None:
+    from collections.abc import Iterable
+    from dataclasses import replace
+
+    from cirq import GreedyQubitManager, Qid
+    from qualtran import BloqBuilder, CompositeBloq, QBit, Side
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import IntEffect, XGate
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    from flagquantum.compiler.registers.component_basis_vectors import (
+        integer_basis_function,
+    )
+    from flagquantum.compiler.registers.register_binding import (
+        WorkspaceEvent,
+        bind_register_program,
+    )
+    from flagquantum.core.ir.program import ProgramRecord
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    source_signature = SourceSignature((SourceRegister("val", QBit(), side=Side.LEFT),))
+    source_builder, source_inputs = BloqBuilder.from_signature(source_signature)
+    source_builder.free(source_builder.add(XGate(), q=source_inputs["val"]))
+    reference = source_builder.finalize()
+
+    class Consume:
+        signature = source_signature
+
+        def decompose_bloq(self) -> CompositeBloq:
+            return reference
+
+    released: list[Qid] = []
+
+    class Manager(GreedyQubitManager):
+        def qfree(self, qubits: Iterable[Qid]) -> None:
+            values = tuple(qubits)
+            released.extend(values)
+            super().qfree(values)
+
+    consuming_q = cirq.NamedQubit("input")
+    result_q = cirq.NamedQubit("output")
+    spectator = cirq.NamedQubit("spectator")
+    manager = Manager(prefix="temp", maximize_reuse=True)
+    context = cirq.DecompositionContext(manager)
+    original = source_export.BloqAsCirqGate(Consume()).on(consuming_q)
+    assert tuple(cirq.decompose_once(original, context=context)) == (
+        cirq.X(consuming_q),
+    )
+    assert released == []
+    assert get_cost_value(reference, QECGatesCost()).clifford == 1
+    with pytest.raises(ValueError, match="There is no Cirq equivalent"):
+        cirq.decompose_once(
+            source_export.BloqAsCirqGate(IntEffect(1, 1)).on(consuming_q),
+            context=context,
+        )
+
+    native = integer_basis_function("main", opaque_register_type(1), 1, state=False)
+    assert native.registers is not None
+    signature = Signature(native.registers)
+    bound = bind_register_program(
+        ProgramRecord(functions=(native,)), ((0,),), input_ownership=((0, False),)
+    )
+    assert bound.circuit.instructions == (Instruction("x", (0,)),)
+    (release,) = bound.events
+    assert (release.kind, release.wires, release.instruction_offset) == (
+        "free",
+        (0,),
+        1,
+    )
+
+    qids: tuple[Qid, ...]
+    expected: tuple[object, ...]
+    if reuse:
+        signature = Signature(
+            (
+                *signature,
+                Register("out", opaque_register_type(1), side=RegisterSide.RIGHT),
+            )
+        )
+        bound = replace(
+            bound,
+            circuit=CircuitIR(1, bound.circuit.instructions * 2),
+            outputs=((0,),),
+            events=(
+                release,
+                WorkspaceEvent(
+                    release.position + 1, "allocate", (0,), False, instruction_offset=1
+                ),
+            ),
+        )
+        qids = (consuming_q, result_q)
+        expected = (cirq.X(consuming_q), cirq.X(result_q))
+    else:
+        qids = (consuming_q,)
+        expected = (cirq.X(consuming_q),)
+        missing = RegisterCirqGate(replace(bound, events=()), signature)
+        with pytest.raises(ValueError, match="release every owned left-only input"):
+            cirq.decompose_once(missing.on(*qids), context=context)
+    emitted = tuple(
+        cirq.decompose_once(
+            RegisterCirqGate(bound, signature).on(*qids), context=context
+        )
+    )
+    assert emitted == expected
+    assert consuming_q not in released and result_q not in released
+    assert len(released) == int(reuse)
+    initial = np.zeros(2 ** (len(qids) + 1), dtype=np.complex128)
+    initial[len(initial) // 2 : len(initial) // 2 + 2] = (
+        1 / np.sqrt(2),
+        1j / np.sqrt(2),
+    )
+    want = np.zeros_like(initial)
+    first = 2 * int(reuse)
+    want[first : first + 2] = (1 / np.sqrt(2), 1j / np.sqrt(2))
+    actual = cirq.Simulator(dtype=np.complex128).simulate(
+        cirq.Circuit(emitted),
+        qubit_order=(*qids, spectator),
+        initial_state=initial.copy(),
+    )
+    np.testing.assert_allclose(actual.final_state_vector, want, atol=2e-12, rtol=0)

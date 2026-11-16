@@ -38,6 +38,7 @@ def bind_workspace_operations(
     operations: Sequence[Operation],
     events: tuple[WorkspaceEvent, ...],
     inputs: Sequence[Qid],
+    consumed_inputs: frozenset[int],
     output_groups: Sequence[Mapping[int, Qid]],
     base: QubitManager | None,
 ) -> tuple[Operation, ...]:
@@ -47,6 +48,7 @@ def bind_workspace_operations(
     manager = InteropQubitManager(base)
     manager.manage_qubits((*inputs, *outputs.values()))
     ports = dict(enumerate(inputs))
+    pending_inputs = set(consumed_inputs)
     live: dict[int, Qid] = {}
     output_aliases: dict[int, Qid] = {}
     result: list[Operation] = []
@@ -87,12 +89,19 @@ def bind_workspace_operations(
                         output_aliases[wire] = outputs[wire]
             elif event.kind == "free":
                 if event.wires:
-                    if not set(event.wires) <= live.keys():
-                        raise ValueError("Cirq workspace cannot free an inactive lease")
-                    manager.qfree([live.pop(wire) for wire in event.wires])
+                    if not set(event.wires) <= live.keys() | pending_inputs:
+                        raise ValueError("Cirq workspace cannot free an unowned wire")
+                    released = [
+                        ports.pop(wire) if wire in pending_inputs else live.pop(wire)
+                        for wire in event.wires
+                    ]
+                    pending_inputs.difference_update(event.wires)
+                    manager.qfree(released)
             else:
                 raise ValueError("Cirq workspace does not support retired wires")
         result.extend(op.transform_qubits(locate) for op in operations[start:])
+        if pending_inputs:
+            raise ValueError("Cirq workspace must release every owned left-only input")
         if live.keys() != outputs.keys():
             raise ValueError("Cirq workspace may only keep declared output leases live")
         for group in output_groups:

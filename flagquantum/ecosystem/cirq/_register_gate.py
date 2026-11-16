@@ -66,13 +66,13 @@ class RegisterCirqGate(Gate):
                 "Cirq gate requires one declared operand per physical wire"
             )
         output_wires: dict[int, int] = {}
+        consumed_wires: frozenset[int] = frozenset()
         if bound is not None:
             outputs = tuple(wire for word in bound.outputs for wire in word)
             if (
-                any(register.side == RegisterSide.LEFT for register in signature)
-                or bound.classical_outputs
+                bound.classical_outputs
                 or len(outputs) != len(right_indices)
-                or len(labels) > ir.n_wires
+                or len(input_indices) > ir.n_wires
                 or len(set(outputs)) != len(outputs)
                 or any(not 0 <= wire < ir.n_wires for wire in outputs)
             ):
@@ -80,14 +80,19 @@ class RegisterCirqGate(Gate):
                     "Cirq workspace gate ports do not match the bound body"
                 )
             input_wires = {index: wire for wire, index in enumerate(input_indices)}
+            consumed_wires = frozenset(
+                input_wires[index] for index in input_wires.keys() - set(right_indices)
+            )
             for wire, index in zip(outputs, right_indices, strict=True):
                 if index in input_wires:
                     if input_wires[index] != wire:
                         raise ValueError(
                             "Cirq workspace gates require unchanged through wires"
                         )
-                elif wire < len(input_indices):
-                    raise ValueError("Cirq right-only output must use a private wire")
+                elif wire < len(input_indices) and wire not in consumed_wires:
+                    raise ValueError(
+                        "Cirq right-only output cannot reuse a through wire"
+                    )
                 else:
                     output_wires[index] = wire
         self._body = ir
@@ -95,6 +100,7 @@ class RegisterCirqGate(Gate):
         self._signature = signature
         self._labels = tuple(labels)
         self._input_indices = tuple(input_indices)
+        self._consumed_wires = consumed_wires
         self._output_groups = (
             tuple(
                 tuple((output_wires[index], index) for index in group)
@@ -134,6 +140,7 @@ class RegisterCirqGate(Gate):
                 operations,
                 self._bound.events,
                 tuple(qubits[index] for index in self._input_indices),
+                self._consumed_wires,
                 tuple(
                     {wire: qubits[index] for wire, index in group}
                     for group in self._output_groups
