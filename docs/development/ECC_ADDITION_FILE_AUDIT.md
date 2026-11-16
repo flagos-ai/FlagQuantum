@@ -116,5 +116,37 @@ returns `y=0`. The measured native branch preserves the amplitude and returns
 all temporary wires to zero. This is a counterexample for the executable
 arithmetic chain outside the multiplication-to-subtraction residue promise.
 
-Stages four through six, the combined source graph and the corresponding
+## Stage four
+
+The native stage copies the slope into a separate word before squaring.
+It subtracts the rotated square from `x`, runs the multiplication adjoint
+with its original index and reduction outputs, and clears the copy.
+A second paired multiplication uses the updated `x`; the product is XORed
+into `y` before clearing the multiplication history again. The two products
+share the same workspace, and the input slope is preserved.
+
+At width 3, modulus 3, window 1, the locked source component bodies agree
+with the complete emitted sequence on wire order, operands and feedback.
+The certificate verifies all 72 width-3 and 400 width-4 inputs with residue
+`x` and slope and arbitrary `y` against the source decomposition. Sparse
+executions compare full complex amplitudes and zero workspace. The first
+four stages also compose on permuted wires for all 243 small-domain input
+tuples, with all 777 erasures certified and complete sample amplitudes.
+
+| Width, modulus, window | Native emitted operations | Source model |
+|---|---|---|
+| 3, 3, 1 | 572 T/T†, 1,437 CX, 429 H, 103 X, 143 S, 143 conditional CZ, 143 measurements and 143 resets; 35 bound wires | 143 AND, 789 Clifford, 143 measurements, 27 peak qubits |
+| 4, 5, 1 | 964 T/T†, 241 measurements, 45 bound wires | 241 AND, 1,300 Clifford, 241 measurements, 35 peak qubits |
+| 5, 13, 5 | 1,964 T/T†, 411 measurements, 77 bound wires | 355 AND, 32 Toffoli, 160 T, 2,991 Clifford, 355 measurements, 65 peak qubits |
+
+Two source behaviors are recorded separately. For `(x,y,lam)=(0,1,1)`
+at width 3 and modulus 3, the source callback returns `(1,2,1)` and the
+decomposition returns `(1,3,1)` because the final operation is XOR. The
+native stream follows the decomposition. For `(12,0,9)` at width 5,
+modulus 13, window 5, the physical square is 7 and the updated coordinate
+is 5. The lowered product `(5,9)` is 27; the native state therefore has
+`y=27` and zero work. The one-level source composition uses the child's
+high-level result 1 and yields `y=1`.
+
+Stages five and six, the combined source graph and the corresponding
 native tutorial remain open.

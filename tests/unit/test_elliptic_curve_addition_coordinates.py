@@ -12,6 +12,9 @@ from flagquantum.algorithms.primitives.elliptic_curve_addition_coordinates impor
 from flagquantum.algorithms.primitives.elliptic_curve_addition_flags import (
     EllipticCurveAdditionFlags,
 )
+from flagquantum.algorithms.primitives.elliptic_curve_addition_products import (
+    EllipticCurveAdditionProducts,
+)
 from flagquantum.algorithms.primitives.elliptic_curve_addition_slope import (
     EllipticCurveAdditionSlope,
 )
@@ -233,9 +236,11 @@ def test_locked_ordered_body_operands_feedback_and_resource_model() -> None:
     assert ir.n_wires >= get_cost_value(source, QubitCount())
 
 
-def test_composed_first_three_stages_all_small_residues() -> None:
+@pytest.mark.parametrize("stage_count", [3, 4])
+def test_composed_stages_all_small_residues(stage_count: int) -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.cryptography.ecc.ec_add import (
+        _ECAddStepFour,
         _ECAddStepOne,
         _ECAddStepThree,
         _ECAddStepTwo,
@@ -251,7 +256,7 @@ def test_composed_first_three_stages_all_small_residues() -> None:
     slope = EllipticCurveAdditionSlope(n, p)
     update = EllipticCurveAdditionCoordinates(n, p)
     q2, c2 = update.workspace_requirements()
-    gates = (
+    circuit = (
         DynamicCircuit(width)
         .append(
             init.make_on(
@@ -278,9 +283,21 @@ def test_composed_first_three_stages_all_small_residues() -> None:
                 classical_bits=slots[:c2],
             )
         )
-        .to_ir()
-        .instructions
     )
+    if stage_count == 4:
+        products = EllipticCurveAdditionProducts(n, p)
+        q3, c3 = products.workspace_requirements()
+        circuit.append(
+            products.make_on(
+                x=ports["x"],
+                y=ports["y"],
+                lam=ports["lam"],
+                workspace=work[:q3],
+                classical_bits=slots[:c3],
+            )
+        )
+    gates = circuit.to_ir().instructions
+    source_products = _ECAddStepFour(n, p).decompose_bloq()
     source_flags = _ECAddStepOne(n, p)
     source_slope = _ECAddStepTwo(n, p).decompose_bloq()
     source_update = _ECAddStepThree(n, p).decompose_bloq()
@@ -302,8 +319,15 @@ def test_composed_first_three_stages_all_small_residues() -> None:
         third = source_update.on_classical_vals(
             **{name: sec[name] for name in ("ctrl", "a", "b", "x", "y", "lam")}
         )
+        result = {**described, **sec, **third}
+        if stage_count == 4:
+            result.update(
+                source_products.on_classical_vals(
+                    **{name: result[name] for name in ("x", "y", "lam")}
+                )
+            )
         before.append(pack(inputs, ports, width))
-        after.append(pack({**described, **sec, **third}, ports, width))
+        after.append(pack(result, ports, width))
     basis = tuple(
         tuple((v >> (width - i - 1)) & 1 for i in range(width)) for v in before
     )
