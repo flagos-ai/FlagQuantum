@@ -35,6 +35,17 @@ Mutable foreign strategy overrides and arbitrary optimizer versions are not
 certified. These differences and remaining flattening work keep Q-0887 open;
 additional test counts do not close its parent under the closure rules.
 
+The default training boundary now has a full dense-entry witness. A
+13-bit output has 8,192 amplitudes and a two-entry internal tensor `[3, t]`
+at `t = 0`. The locked source and both native paths produce the same
+complex amplitudes. The derivative of their real amplitude sum with respect
+to `t` is 16,384 on the default native path and zero with explicit
+`simplification_atol=0`. Exact support detection can therefore discard a
+nonzero ambient derivative even when every forward amplitude matches.
+The source forward path is independently verified at reported width 13.
+The existing default policy stays unsimplified, and the source-matching
+support policy remains explicit.
+
 Actual added quantum primitives, measurements, feedback slots and work bits:
 **zero**. Dense output has exponential storage; the wide test holds 2,048 or
 8,192 complex128 values (32,768 or 131,072 bytes), not a process memory bound.

@@ -157,6 +157,51 @@ def test_real_threshold_source_dense_output_and_phase_gradient(
     )
 
 
+def test_default_wide_dense_preserves_zero_entry_gradient() -> None:
+    import qualtran
+    import quimb.tensor as qtn
+    from qualtran.simulation.tensor._dense import quimb_to_dense
+
+    width = 13
+    labels = tuple(range(width))
+    parameter = torch.zeros((), dtype=torch.float64, requires_grad=True)
+    coefficients = torch.stack((parameter.new_tensor(3.0), parameter)).to(
+        torch.complex128
+    )
+    ones = torch.ones((2,) * width, dtype=torch.complex128)
+    transfers = torch.stack((ones, 2 * ones))
+    nodes = (
+        TensorNetworkNode(coefficients, (width,)),
+        TensorNetworkNode(transfers, (width, *labels)),
+    )
+    signature = Signature(
+        (Register("q", RegisterType("uint", width), side=RegisterSide.RIGHT),)
+    )
+    outgoing = {"q": (labels,)}
+    native = contract_register_tensors(nodes, signature, {}, outgoing)
+    simplified = contract_register_tensors(
+        nodes, signature, {}, outgoing, simplification_atol=0
+    )
+    source_signature = qualtran.Signature(
+        (qualtran.Register("q", qualtran.QUInt(width), side=qualtran.Side.RIGHT),)
+    )
+    source = qtn.TensorNetwork(
+        [
+            qtn.Tensor(coefficients.detach().numpy(), (width,)),
+            qtn.Tensor(
+                transfers.numpy(),
+                (width, *(("q", (), i, "r") for i in labels)),
+            ),
+        ]
+    )
+    assert source.contraction_width() == width
+    expected = quimb_to_dense(source, source_signature)
+    np.testing.assert_array_equal(native.detach().numpy(), expected)
+    torch.testing.assert_close(simplified, native, rtol=0, atol=0)
+    assert torch.autograd.grad(native.real.sum(), parameter)[0].item() == 2 << width
+    assert torch.autograd.grad(simplified.real.sum(), parameter)[0].item() == 0.0
+
+
 @pytest.mark.parametrize("mixed", [False, True])
 @pytest.mark.parametrize("bits", [6, 7])
 def test_doubled_and_unitary_groups_before_threshold_and_same_consumer(
