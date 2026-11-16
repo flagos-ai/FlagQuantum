@@ -18,9 +18,25 @@ from .unary_iteration import (
 
 
 def bounded_majorana_workspace(
-    spin_orbitals: int, *, controlled: bool, axis_extents: tuple[int, ...] = ()
+    spin_orbitals: int,
+    *,
+    controlled: bool,
+    axis_extents: tuple[int, ...] = (),
+    selection_width: int | None = None,
 ) -> int:
-    """Return accumulator and unary-tree work for a spatial word and spin bit."""
+    """Return accumulator and unary-tree work for the declared address."""
+    if selection_width is not None:
+        if (
+            axis_extents
+            or type(spin_orbitals) is not int
+            or spin_orbitals < (1 if controlled else 2)
+            or type(selection_width) is not int
+            or selection_width < max(1, (spin_orbitals - 1).bit_length())
+        ):
+            raise ValueError(
+                "Flat Majorana requires a concrete word covering the bounded targets"
+            )
+        return 1 + unary_iteration_workspace(selection_width, 1 if controlled else None)
     if type(spin_orbitals) is not int or spin_orbitals < 4 or spin_orbitals % 2:
         raise ValueError("Bounded Majorana requires at least two spatial orbitals")
     if axis_extents and (
@@ -45,21 +61,28 @@ def bounded_majorana_ir(
     classical_bits: tuple[int, ...],
     *,
     axis_extents: tuple[int, ...] = (),
+    selection_width: int | None = None,
 ) -> tuple[Instruction, ...]:
-    """Emit the source orbital-major, spin-minor traversal and its feedback.
+    """Emit the source flat or orbital-major traversal and its feedback.
 
     Workspace starts with the accumulator and is followed by tree predicates.
     Each predicate owns one classical slot. Spatial padding follows the
     source's bounded traversal, so callers must restrict spatial addresses
     to populated orbitals to obtain the Majorana selection contract.
+    An explicit selection_width admits a flat register with arbitrary
+    concrete target count and preserves extra physical address bits.
     """
     needed = bounded_majorana_workspace(
-        len(target), controlled=control is not None, axis_extents=axis_extents
+        len(target),
+        controlled=control is not None,
+        axis_extents=axis_extents,
+        selection_width=selection_width,
     )
     width = needed - int(control is not None)
-    if len(selection) != width or pauli not in ("X", "Y"):
+    allowed = ("X", "Y") if selection_width is None else ("X", "Y", "Z")
+    if len(selection) != width or pauli not in allowed:
         raise ValueError(
-            "Bounded Majorana requires a spatial word, spin bit and X or Y"
+            "Bounded Majorana requires a matching selection word and supported Pauli"
         )
     if len(workspace) != needed or len(classical_bits) != needed - 1:
         raise ValueError("Bounded Majorana requires matching work wires and slots")
@@ -116,17 +139,27 @@ def bounded_majorana_ir(
 
 
 def source_bounded_majorana_cost(
-    spin_orbitals: int, pauli: str, *, controlled: bool
+    spin_orbitals: int,
+    pauli: str,
+    *,
+    controlled: bool,
+    selection_width: int | None = None,
 ) -> ComponentCost:
     """Count the source calls for one bounded Majorana selection."""
-    work = bounded_majorana_workspace(spin_orbitals, controlled=controlled)
-    if pauli not in ("X", "Y"):
-        raise ValueError("Bounded Majorana requires X or Y")
+    bounded_majorana_workspace(
+        spin_orbitals, controlled=controlled, selection_width=selection_width
+    )
+    active_width = (spin_orbitals - 1).bit_length()
+    width = active_width if selection_width is None else selection_width
+    work = 1 + unary_iteration_workspace(active_width, 1 if controlled else None)
+    allowed = ("X", "Y") if selection_width is None else ("X", "Y", "Z")
+    if pauli not in allowed:
+        raise ValueError("Bounded Majorana requires a supported Pauli")
     controls = int(controlled)
     ands = spin_orbitals - 2 + controls
     cliffords = 3 * spin_orbitals + 2 * ands + 1 + 2 * (1 - controls)
     return ComponentCost(
         f"SelectedMajoranaFermion({pauli})",
-        spin_orbitals + (spin_orbitals - 1).bit_length() + controls + work,
+        spin_orbitals + width + controls + work,
         GateCost(and_bloq=ands, clifford=cliffords, measurement=ands),
     )
