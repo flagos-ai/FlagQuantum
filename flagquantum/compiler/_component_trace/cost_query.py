@@ -14,7 +14,6 @@ from typing import Generic, Protocol, TypeVar, cast
 
 from .call_graph import (
     CallDeclaration,
-    CostGeneralizer,
     Generalizer,
     Node,
     SymbolAllocator,
@@ -34,34 +33,46 @@ Value = TypeVar("Value")
 
 
 @dataclass(frozen=True)
-class CostMetric(Generic[Value]):
+class CostMetric(Generic[Node, Value]):
     """A recursive resource rule and the cost of an omitted component."""
 
-    compute: Callable[[ComponentCost, Callable[[ComponentCost], Value]], Value]
+    compute: Callable[[Node, Callable[[Node], Value]], Value]
     zero: Value
+    validate_static: Callable[[Value], None] | None = None
 
     def cost_cache(
-        self, component: ComponentCost, generalizer: CostGeneralizer
-    ) -> dict[ComponentCost, Value]:
-        """Collect the values visited by this metric from an empty cache."""
-        cache: dict[ComponentCost, Value] = {}
-        query_component_cost(component, self, cache=cache, generalizer=generalizer)
-        return cache
+        self,
+        component: Node,
+        generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None = None,
+        *,
+        cache: dict[Node, Value] | None = None,
+        static_costs: Mapping[Node, Value] | None = None,
+    ) -> dict[Node, Value]:
+        """Return the visited costs, extending the same cache if one is supplied."""
+        stored: dict[Node, Value] = {} if cache is None else cache
+        query_component_cost(
+            component,
+            self,
+            cache=stored,
+            static_costs=static_costs,
+            generalizer=generalizer,
+        )
+        return stored
 
 
-class _BatchMetric(Protocol):
+class _BatchMetric(Protocol[Node]):
     def cost_cache(
-        self, component: ComponentCost, generalizer: CostGeneralizer
-    ) -> Mapping[ComponentCost, object]: ...
+        self, component: Node, generalizer: Generalizer[Node]
+    ) -> Mapping[Node, object]: ...
 
 
 def query_component_cost(
-    component: ComponentCost,
-    metric: CostMetric[Value],
+    component: Node,
+    metric: CostMetric[Node, Value],
     *,
-    cache: MutableMapping[ComponentCost, Value] | None = None,
-    static_costs: Mapping[ComponentCost, Value] | None = None,
-    generalizer: CostGeneralizer | Sequence[CostGeneralizer] | None = None,
+    cache: MutableMapping[Node, Value] | None = None,
+    static_costs: Mapping[Node, Value] | None = None,
+    generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None = None,
 ) -> Value:
     """Generalize, then prefer a seeded cache, static override or recursive cost.
 
@@ -75,6 +86,7 @@ def query_component_cost(
         compose_cost_generalizer(generalizer),
         cache,
         static_costs,
+        validate_static=metric.validate_static,
     )
 
 
@@ -85,6 +97,9 @@ def _query_cost(
     generalize: Generalizer[Node],
     cache: MutableMapping[Node, Value] | None,
     static_costs: Mapping[Node, Value] | None,
+    *,
+    validate_static: Callable[[Value], None] | None = None,
+    is_composite: Callable[[Node], bool] | None = None,
 ) -> Value:
     stored: MutableMapping[Node, Value] = {} if cache is None else cache
     visiting: set[Node] = set()
@@ -93,34 +108,41 @@ def _query_cost(
         node = generalize(original)
         if node is None:
             return zero
-        if node in stored:
+        cacheable = is_composite is None or not is_composite(node)
+        if cacheable and node in stored:
             return stored[node]
         if static_costs is not None and node in static_costs:
             value = static_costs[node]
-        else:
-            if node in visiting:
-                raise ValueError("Component cost query contains a cycle")
-            visiting.add(node)
+            if validate_static is not None:
+                validate_static(value)
+            stored[node] = value
+            return value
+        if node in visiting:
+            raise ValueError("Component cost query contains a cycle")
+        visiting.add(node)
+        try:
             value = compute(node, visit)
+        finally:
             visiting.remove(node)
-        stored[node] = value
+        if cacheable:
+            stored[node] = value
         return value
 
     return visit(root)
 
 
 def query_component_costs(
-    component: ComponentCost,
-    metrics: Iterable[_BatchMetric],
+    component: Node,
+    metrics: Iterable[_BatchMetric[Node]],
     *,
-    generalizer: CostGeneralizer | Sequence[CostGeneralizer] | None = None,
-) -> dict[ComponentCost, dict[_BatchMetric, object]]:
+    generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None = None,
+) -> dict[Node, dict[_BatchMetric[Node], object]]:
     """Collect the visited component rows for each metric in request order.
 
     Each metric gets a fresh cache and may visit a different set of nodes.
     A row contains only metrics that evaluated or retrieved that node.
     """
-    table: dict[ComponentCost, dict[_BatchMetric, object]] = {}
+    table: dict[Node, dict[_BatchMetric[Node], object]] = {}
     generalize = compose_cost_generalizer(generalizer)
     for metric in metrics:
         for node, value in metric.cost_cache(component, generalize).items():
