@@ -5,8 +5,10 @@
 
 """THC SELECT followed by a reflection about the complete prepared signal."""
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+
+from numpy.typing import ArrayLike
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import (
@@ -24,9 +26,11 @@ from ...compiler.registers.preparation.prepare_reflection import (
 )
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.signatures import Signature
 from ...runtime.dynamic.circuit import DynamicCircuit
 from .multiplexers.select_thc import SelectTHC, _Network
-from .multiplexers.thc_resource_model import select_thc_cost
+from .multiplexers.thc_resource_model import select_thc_cost, select_thc_signature
+from .thc_chemistry_data import thc_chemistry_data
 from .thc_chemistry_prepare import PrepareTHCChemistry
 
 
@@ -64,6 +68,48 @@ class THCChemistryWalk:
             )
         if self.measurement_erasure and not self.select_workspace_qubits:
             raise ValueError("THC walk measurement erasure requires SELECT workspace")
+
+    @classmethod
+    def from_integrals(
+        cls,
+        eigenvalues: ArrayLike,
+        eta: ArrayLike,
+        zeta: ArrayLike,
+        *,
+        networks: Sequence[_Network],
+        one_body_networks: Sequence[_Network],
+        probability_bits: int = 8,
+        log_block_size: int | None = None,
+        select_workspace_qubits: int = 0,
+        measurement_erasure: bool = False,
+    ) -> "THCChemistryWalk":
+        """Build signed alias data and bind explicit SELECT rotation networks."""
+        data = thc_chemistry_data(
+            eigenvalues,
+            eta,
+            zeta,
+            probability_bits=probability_bits,
+            log_block_size=log_block_size,
+        )
+        return cls(
+            PrepareTHCChemistry(data),
+            tuple(map(tuple, networks)),
+            tuple(map(tuple, one_body_networks)),
+            select_workspace_qubits,
+            measurement_erasure,
+        )
+
+    @property
+    def source_signature(self) -> Signature:
+        """Declare the frozen signal union with a deterministic order."""
+        data = self.prepare.data
+        select = select_thc_signature(
+            data.num_mu, data.num_spin_orb, data.probability_bits
+        )
+        ports = {reg.name: reg for reg in select[:-2]}
+        for reg in self.prepare.selection_registers:
+            ports.setdefault(reg.name, reg)
+        return Signature((*ports.values(), *select[-2:]))
 
     @property
     def alpha(self) -> float:
@@ -157,8 +203,7 @@ class THCChemistryWalk:
     ) -> ComponentCost:
         """Count the locked walk with its narrower reflection and opaque erase."""
         data = self.prepare.data
-        selection = sum(width for _, width in self.prepare.selection_layout)
-        width = selection + data.num_spin_orb
+        width = int(self.source_signature.n_qubits())
         select = select_thc_cost(
             data.num_mu,
             data.num_spin_orb,

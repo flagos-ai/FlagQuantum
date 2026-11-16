@@ -15,7 +15,7 @@ from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.classical_control import validate_classical_control
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.test_first_quantization_resource_model import assert_source_model
-from tests.unit.test_sparse_chemistry_prepare import _branch
+from tests.unit.test_sparse_chemistry_prepare import _assert_sparse_signature, _branch
 from tests.unit.test_sparse_chemistry_walk import _reflect
 from tests.unit.test_thc_chemistry_prepare import _tensors
 
@@ -59,6 +59,10 @@ def test_source_thc_walk_costs(log, angle_bits, kr1, kr2):
     ] == [SelectBlockEncoding, ReflectionUsingPrepare]
     native = _walk(log)
     assert native.alpha == source.sum_of_lcu_coefficients == 32
+    _assert_sparse_signature(
+        sorted(native.source_signature, key=lambda reg: reg.name),
+        sorted(source.signature, key=lambda reg: reg.name),
+    )
     options = dict(num_bits_theta=angle_bits, kr1=kr1, kr2=kr2)
     assert {
         key: value
@@ -174,3 +178,26 @@ def test_thc_walk_binding_failure_leaves_circuit_unchanged():
     with pytest.raises(ValueError, match="adjacent orbital offsets"):
         circuit.append(inverse)
     assert circuit.to_ir().instructions == before
+
+
+@pytest.mark.ftqc_reference
+def test_integral_factory_matches_locked_normalization_and_gate_budget():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.thc.walk_operator import get_walk_operator_for_thc_ham
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    tensors = _tensors(2)
+    source = get_walk_operator_for_thc_ham(*tensors, 1, 8, kr1=2, kr2=3)
+    native = THCChemistryWalk.from_integrals(
+        *tensors, networks=NETWORKS, one_body_networks=ONE_BODY, probability_bits=1
+    )
+    assert (
+        native.prepare.data.log_block_size
+        == source.block_encoding.prepare.log_block_size
+    )
+    assert native.alpha == source.sum_of_lcu_coefficients
+    assert {
+        name: count
+        for name, count in asdict(native.source_gate_cost(kr1=2, kr2=3)).items()
+        if count
+    } == get_cost_value(source, QECGatesCost()).asdict()
