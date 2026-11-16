@@ -224,3 +224,44 @@ def test_hubbard_interaction_source_signature_and_angles(hamming_weight):
             assert_source_hubbard_cost(model, source)
     with pytest.raises(DecomposeNotImplementedError):
         cls(2, angle, coupling).decompose_bloq()
+
+
+@pytest.mark.ftqc_reference
+def test_hubbard_trotter_notebook_immediate_models():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.trotter.hubbard.hopping import (
+        _hopping_tile,
+        _hopping_tile_hwp,
+        _plaquette,
+    )
+    from qualtran.bloqs.chemistry.trotter.hubbard.interaction import (
+        _interaction,
+        _interaction_hwp,
+    )
+    from qualtran.resource_counting.generalizers import ignore_split_join
+
+    from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
+
+    cases = (
+        (_hopping_tile(), source_hubbard_hopping_tile_cost(8, 0.5)),
+        (_plaquette(), source_hubbard_hopping_plaquette_cost(8)),
+        (_interaction(), source_hubbard_interaction_cost(8, 0.5, 4.0)),
+        (
+            _hopping_tile_hwp(),
+            source_hubbard_hopping_tile_cost(8, 0.15, hamming_weight=True),
+        ),
+        (
+            _interaction_hwp(),
+            source_hubbard_interaction_cost(8, 0.52728, 4.0, hamming_weight=True),
+        ),
+    )
+    for source, model in cases:
+        assert_source_hubbard_cost(model, source)
+        _, source_leaves = source.call_graph(max_depth=1, generalizer=ignore_split_join)
+        native_leaves = modeled_call_graph(model, max_depth=1).leaf_counts
+        assert {node.name: count for node, count in native_leaves.items()} == {
+            type(node).__name__: count for node, count in source_leaves.items()
+        }
+        sources = {type(node).__name__: node for node in source_leaves}
+        for node in native_leaves:
+            assert_source_hubbard_cost(node, sources[node.name])

@@ -50,6 +50,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_thc_chemistry", 18, 9, 2),
         ("register_grid_trotter", 14, 12, 0),
         ("grid_trotter_costs", 5, 7, 3),
+        ("register_hubbard_trotter", 7, 10, 0),
         ("register_hubbard_qubitization", 9, 4, 0),
         ("register_hubbard_select", 16, 4, 1),
         ("register_first_quantization", 29, 14, 0),
