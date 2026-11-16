@@ -113,11 +113,15 @@ class ComplexPhaseOracle:
             raise ValueError("Phase oracle encoder targets need a concrete width")
         return width
 
-    def workspace_requirements(self) -> tuple[int, int]:
+    def workspace_requirements(self, *, controlled: bool = False) -> tuple[int, int]:
         """Return all clean wires and reusable measurement slots for lookup."""
+        if type(controlled) is not bool:
+            raise ValueError("Phase oracle control flag must be boolean")
         encoded = self._encoded_width()
         scratch, slots = arctan_lookup_requirements(encoded, self.arctan_bitsize)
-        return encoded + 1 + self.arctan_bitsize + scratch, slots
+        return encoded + 1 + self.arctan_bitsize + max(scratch, int(controlled)), max(
+            slots, int(controlled)
+        )
 
     def make_on(
         self,
@@ -127,33 +131,53 @@ class ComplexPhaseOracle:
         workspace: tuple[int, ...],
         classical_bits: tuple[int, ...],
         adjoint: bool = False,
+        phase_control: int | None = None,
+        control_value: int = 1,
     ) -> _BoundBlockOperation:
         """Capture the coherent encoder and bind its exact inverse and work.
 
         The encoder may touch its public and encoded target wires. Supply
         these in register order. The internal ArcTan lookup uses a dynamic
-        circuit when it needs measurement feedback.
+        circuit when it needs measurement feedback. An outer phase control
+        leaves compute and erase unconditional, so the inactive output is identity.
         """
-        size, slots = self.workspace_requirements()
+        controlled = phase_control is not None
+        size, slots = self.workspace_requirements(controlled=controlled)
         if len(through) != self.signature.n_qubits():
             raise ValueError("Phase oracle binding must match its public signature")
         if len(workspace) != size or len(classical_bits) != slots:
             raise ValueError("Phase oracle binding must supply its exact workspace")
         if type(adjoint) is not bool:
             raise ValueError("Phase oracle direction must be boolean")
-        _validate_block_work(through, workspace, classical_bits)
+        public = through if phase_control is None else (*through, phase_control)
+        _validate_block_work(public, workspace, classical_bits)
         encoded_size = self._encoded_width()
         encoded = workspace[:encoded_size]
         sign = workspace[encoded_size]
         end = encoded_size + 1 + self.arctan_bitsize
         magnitude = workspace[encoded_size + 1 : end]
-        lookup = arctan_lookup_ir(
-            encoded, sign, magnitude, workspace[end:], classical_bits
+        lookup_work, lookup_slots = arctan_lookup_requirements(
+            encoded_size, self.arctan_bitsize
         )
-        required = max((*through, *workspace)) + 1
+        lookup = arctan_lookup_ir(
+            encoded,
+            sign,
+            magnitude,
+            workspace[end : end + lookup_work],
+            classical_bits[:lookup_slots],
+        )
+        required = max((*public, *workspace)) + 1
         forward = _capture_block(encoder, required, {*through, *encoded})
         inverse = Circuit(required).compose(CircuitIR(required, forward)).adjoint()
-        phase = signed_fractional_phase_ir(sign, magnitude, adjoint=adjoint)
+        phase = signed_fractional_phase_ir(
+            sign,
+            magnitude,
+            adjoint=adjoint,
+            control=phase_control,
+            control_value=control_value,
+            work=workspace[end] if controlled else None,
+            classical_bit=classical_bits[0] if controlled else None,
+        )
         return _BoundBlockOperation(
             (*forward, *lookup, *phase, *lookup, *inverse.to_ir().instructions),
             required,
