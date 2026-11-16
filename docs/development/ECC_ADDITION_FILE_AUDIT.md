@@ -148,5 +148,38 @@ is 5. The lowered product `(5,9)` is 27; the native state therefore has
 `y=27` and zero work. The one-level source composition uses the child's
 high-level result 1 and yields `y=1`.
 
-Stages five and six, the combined source graph and the corresponding
-native tutorial remain open.
+## Stage five
+
+The slope cleanup owns a consumed `lam` port and keeps `lam_r` through.
+The Kaliski inverse and window multiplication retain their physical output
+and history roles until the literal adjoints clear them. The first slope XOR
+uses per-bit two-control X gates. The tangent XOR uses a shared predicate
+with the scalar control first and the big-endian inverse word second,
+active on `(1, 0...0)`. The source then frees the slope. After both
+adjoints, the circuit applies controlled negation, adds `a` and conditionally
+subtracts `b` in source order.
+
+The source implementations of both slope selectors agree with the native
+primitive dependencies, operands and feedback at width 3. The first five
+stages were appended on reversed wires for every point pair of
+`y^2=x^3+x+1` over fields of size 3 and 5, including infinity and encoded
+tangents. All 16 and 81 pairs respectively match the source decomposition.
+The channel certificate establishes zero slope and work on every erasure
+branch. Four sparse executions also compare the full complex state.
+
+| Width, modulus, window | Native emitted operations | Source model |
+|---|---|---|
+| 3, 3, 1 | 3,016 T/T†, 3 CCX, 5,842 CX, 1,716 H, 1,040 X, 460 S, 460 conditional CZ, 460 measurements and 460 resets; 69 bound wires | 460 AND, 3 Toffoli, 168 CSwap, 3,121 Clifford, 460 measurements, 54 peak qubits |
+| 4, 5, 1 | 5,200 T/T†, 4 CCX, 768 measurements, 88 bound wires | 768 AND, 4 Toffoli, 304 CSwap, 5,190 Clifford, 768 measurements, 69 peak qubits |
+| 5, 13, 5 | 8,224 T/T†, 5 CCX, 1,176 measurements, 129 bound wires | 1,148 AND, 21 Toffoli, 480 CSwap, 80 T, 8,307 Clifford, 1,148 measurements, 96 peak qubits |
+
+For `ctrl=1, a=0, b=1, x=y=lam_r=0, lam=2` at width 3 and modulus 3,
+the slope promise fails. The source decomposition rejects `Free(2)`. The
+bound native wires retain the slope 2 and the primitive execution preserves
+its complex amplitude while clearing scratch. The classical stage callback
+omits the consumed slope; it cannot certify that it was erased.
+The arbitrary-residue intake independently found 32 such rejected tuples
+out of 243 after the first four stages.
+
+Stage six, the combined source graph and the corresponding native tutorial
+remain open.
