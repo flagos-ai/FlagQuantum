@@ -392,3 +392,42 @@ def test_the_ceiling_is_exported_so_a_caller_can_check_before_allocating() -> No
     assert simulation.MAX_UNITARY_QUBITS == MAX_UNITARY_QUBITS
     assert MAX_UNITARY_QUBITS == 12
     assert simulation.get_unitary is get_unitary
+
+
+def test_feedback_unitary_certifies_branch_phase_and_borrowed_identity() -> None:
+    from flagquantum.simulation._feedback_unitary import _feedback_unitary
+
+    body = CircuitIR(
+        3,
+        (
+            Instruction("s", (0,)),
+            Instruction("h", (2,)),
+            Instruction(
+                "measure", (2,), metadata={"is_dynamic": True, "classical_bit": 0}
+            ),
+            Instruction("z", (2,), metadata={"conditions": ((0, 1),)}),
+            Instruction("reset", (2,), metadata={"is_dynamic": True}),
+        ),
+    )
+    expected = torch.diag(torch.tensor([1, 1j], dtype=torch.complex128))
+    actual = _feedback_unitary(body, 1, frozenset((1,)))
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=0)
+
+
+def test_feedback_unitary_refuses_leakage_incomplete_branches_and_budget() -> None:
+    from flagquantum.simulation._feedback_unitary import _feedback_unitary
+
+    measure = Instruction(
+        "measure", (1,), metadata={"is_dynamic": True, "classical_bit": 0}
+    )
+    leaking = CircuitIR(2, (Instruction("h", (1,)), measure))
+    with pytest.raises(ValueError, match="restore clean workspace"):
+        _feedback_unitary(leaking, 1, frozenset())
+
+    attenuated = torch.eye(2, dtype=torch.complex128) * 0.5
+    incomplete = CircuitIR(1, (Instruction("matrix", (0,), matrix=attenuated),))
+    with pytest.raises(ValueError, match="probability complete"):
+        _feedback_unitary(incomplete, 1, frozenset())
+
+    with pytest.raises(ValueError, match="branch inspection budget"):
+        _feedback_unitary(CircuitIR(2, (measure,) * 9), 1, frozenset())

@@ -129,29 +129,48 @@ def _unitary_with_workspace(
     program: CircuitIR, logical_width: int, borrowed_wires: frozenset[int]
 ) -> torch.Tensor:
     """Inspect a bounded through matrix with verified workspace restoration."""
-    if not 0 < logical_width <= program.n_wires or any(
-        not logical_width <= wire < program.n_wires for wire in borrowed_wires
+    matrix = get_unitary(program, device="cpu", dtype=torch.complex128)
+    admitted, rejected = _workspace_basis(
+        program.n_wires, logical_width, borrowed_wires
+    )
+    columns = matrix.index_select(1, admitted) if rejected.numel() else matrix
+    return _restore_workspace(columns, admitted, rejected, len(borrowed_wires))
+
+
+def _workspace_basis(
+    width: int, logical_width: int, borrowed_wires: frozenset[int]
+) -> tuple[torch.Tensor, torch.Tensor]:
+    if not 0 < logical_width <= width or any(
+        not logical_width <= wire < width for wire in borrowed_wires
     ):
         raise ValueError("Invalid workspace layout for unitary inspection")
 
-    matrix = get_unitary(program, device="cpu", dtype=torch.complex128)
     clean_mask = sum(
-        1 << (program.n_wires - wire - 1)
-        for wire in range(logical_width, program.n_wires)
+        1 << (width - wire - 1)
+        for wire in range(logical_width, width)
         if wire not in borrowed_wires
     )
-    indices = torch.arange(matrix.shape[0], device=matrix.device)
+    indices = torch.arange(1 << width, device="cpu")
     clean = (indices & clean_mask) == 0
-    admitted, rejected = indices[clean], indices[~clean]
+    return indices[clean], indices[~clean]
+
+
+def _restore_workspace(
+    columns: torch.Tensor,
+    admitted: torch.Tensor,
+    rejected: torch.Tensor,
+    borrowed_width: int,
+) -> torch.Tensor:
+    """Check a branch's admitted columns and reduce over restored workspace."""
     if rejected.numel():
-        leakage = matrix[rejected[:, None], admitted]
+        leakage = columns.index_select(0, rejected)
         if not torch.all(torch.abs(leakage) <= 2e-12):
             raise ValueError("Unitary body does not restore clean workspace")
 
-    projected = matrix[admitted[:, None], admitted]
-    if not borrowed_wires:
+    projected = columns.index_select(0, admitted) if rejected.numel() else columns
+    if not borrowed_width:
         return projected
-    stride = 1 << len(borrowed_wires)
+    stride = 1 << borrowed_width
     reduced = projected[::stride, ::stride].contiguous()
     identity = torch.eye(stride, dtype=projected.dtype, device=projected.device)
     if not torch.allclose(projected, torch.kron(reduced, identity), atol=2e-12, rtol=0):
