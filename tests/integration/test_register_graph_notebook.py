@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("specialized_control", 6, 2, 0),
         ("modular_addition", 27, 10, 0),
         ("modular_inverse", 7, 2, 0),
+        ("modular_multiplication", 17, 6, 0),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
         ("binary_field_square", 7, 2, 0),
