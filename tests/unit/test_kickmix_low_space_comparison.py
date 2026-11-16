@@ -1,6 +1,8 @@
 """Verify the pinned three-clean-wire comparison and its branch cleanup."""
 
+import json
 from collections import Counter
+from hashlib import sha256
 from random import Random
 
 import pytest
@@ -23,6 +25,7 @@ from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.fixtures.kickmix_source_oracle import normalized_stream
 
 pytestmark = pytest.mark.unit
 
@@ -55,7 +58,7 @@ def test_comparison_restores_every_complex_measurement_history(
     )
     circuit = DynamicCircuit(total, inputs=state, dtype=torch.complex128)
     recorded = []
-    slots = []
+    slots: list[int] = []
     for gate in (*measure_x_clear_ir(witness, 0), *ir):
         recorded.append(gate)
         if gate.name == "measure":
@@ -171,3 +174,38 @@ def test_deep_classical_compare_runs_with_native_phase_and_clean_workspace() -> 
         )
     assert sim.read_across_shots(km.q(control), out=int) == pack(enabled)
     assert all(sim.read_across_shots(km.q(wire), out=int) == 0 for wire in workspace)
+
+
+@pytest.mark.parametrize(
+    "width,operations,expected_digest",
+    [
+        (5, 54, "29cb8479258bc9d3df2774188b541c60a24f737fc1040033e434e10d43bb7277"),
+        (8, 95, "a81f9d69ee639f371555d43b5692f8151b28d2a4dad195edf8a69c7ca50669d9"),
+        (13, 164, "eade4676069e92149c45753d06e7bbac1ca53ae87974ad567e9d3b8a08a0ed05"),
+        (19, 224, "f1d541295341809ee02dc16e9869b62709fda87f70816c89b7fd54e957006dc2"),
+        (24, 312, "5d7d9b62308eb19c29b42df6a665ab87c66b5e07960143e622b34efc90ce9e2d"),
+    ],
+)
+def test_strided_prefix_round_trip_matches_locked_source_schedule(
+    width: int, operations: int, expected_digest: str
+) -> None:
+    # C++ gen_cmp_low_space.cc blob 7de1b7a8bd5ba36226385d7c319a5260635ebd8e.
+    # The locked builder was invoked with little-endian inputs, three clean
+    # wires, one external equality bit and no additional quantum control.
+    source_order = tuple(reversed(range(width)))
+    initial = tuple(ClassicalXor((), bit).instruction() for bit in range(width + 1))
+    emitted = low_space_less_than_ir(
+        source_order,
+        tuple(ClassicalFieldCoefficient(bit) for bit in source_order),
+        width,
+        tuple(range(width + 1, width + 4)),
+        or_equal=ClassicalFieldCoefficient(width),
+        measurement_bits=tuple(range(width + 1, width + 7)),
+    )
+    program = lower_reversible_phase(CircuitIR(width + 4, (*initial, *emitted)))
+    lowered = encode_kmx(program).splitlines()[len(initial) + 1 :]
+    assert not any(line.startswith("R ") for line in lowered)
+    stream = normalized_stream("\n".join(lowered))
+    assert len(stream) == operations
+    digest = sha256(json.dumps(stream, separators=(",", ":")).encode()).hexdigest()
+    assert digest == expected_digest

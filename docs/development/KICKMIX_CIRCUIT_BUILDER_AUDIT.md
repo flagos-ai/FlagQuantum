@@ -206,6 +206,28 @@ the lease operations. Source allocation and disarm are compile-time policies;
 this replay uses caller-owned physical slots. Implicit initial-bit admission
 and general source allocator parity remain open.
 
+## Forward and reversed strided comparison loops
+
+The locked `for_each_reversed` iterates source lanes in reverse and keeps the
+original operation order within each lane. A standalone locked builder probe
+uses a nonzero lower bound, stride-two controls, a negative target stride
+and two operations per lane. It emits six operations in each direction.
+Empty and inverted intervals emit nothing and never invoke the recipe.
+
+The low-space comparison now binds its self-inverse prefix CCX sequence
+once per pass and uses the same instructions in reverse lane order during
+cleanup. Forward and reverse prefix blocks therefore share the same physical
+operands. The C++ `gen_cmp_low_space.cc` reference was recompiled with the
+locked builder and `CircuitPattern`. Whole comparison streams match for
+widths 5, 8, 13, 19 and 24 after expanding effective classical guards,
+omitting debug boundaries and accounting for explicit source resets on
+fresh or already-cleared work wires. The tested comparison uses three
+caller-owned clean wires. The source compiler emits 3, 5, 7, 7 and 10
+resets respectively, which native entry/clear contracts supply. The
+individual width cases have 54, 95, 164, 224 and 312 remaining operations
+in both streams. The half-open range and physical operand schedule do not
+add an analytical cost model.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug metadata beyond
 named block ranges have separate source assertions. The full public mixed

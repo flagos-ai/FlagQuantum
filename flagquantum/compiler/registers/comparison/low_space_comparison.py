@@ -79,13 +79,18 @@ def _low_space_core(
         *_flip(c, a),
     ]
 
+    inverse_passes: list[tuple[Instruction, ...]] = []
     for depth, (offset, run) in enumerate(passes):
         qa, qb = (b, a) if depth % 2 == 0 else (a, b)
-        gates.extend(invert[offset + 1 : offset + run + 1])
-        for k in range(min(run, offset)):
-            gates.extend(
-                _flip(lhs[offset + k + 1], lhs[offset - k - 1], lhs[offset + k])
+        inversions = invert[offset + 1 : offset + run + 1]
+        prefix = tuple(
+            Instruction(
+                "ccx", (lhs[offset - k - 1], lhs[offset + k], lhs[offset + k + 1])
             )
+            for k in range(min(run, offset))
+        )
+        gates.extend((*inversions, *prefix))
+        inverse_passes.append((*reversed(prefix), *inversions))
         if depth:
             gates.extend(_flip(qb, qa, lhs[n - depth]))
             gates.extend(measure_x_clear_ir(qa, bits[depth - 1]))
@@ -123,12 +128,8 @@ def _low_space_core(
         )
     )
     gates.extend(measure_x_clear_ir(c, bits[depth]))
-    for offset, run in reversed(passes):
-        for k in reversed(range(min(offset, run))):
-            gates.extend(
-                _flip(lhs[offset + k + 1], lhs[offset - k - 1], lhs[offset + k])
-            )
-        gates.extend(invert[offset + 1 : offset + run + 1])
+    for undo in reversed(inverse_passes):
+        gates.extend(undo)
     gates.extend(_flip(None, lhs[-1], lhs[-2], ClassicalFieldCoefficient(bits[depth])))
     return (*gates, *invert, *difference)
 
