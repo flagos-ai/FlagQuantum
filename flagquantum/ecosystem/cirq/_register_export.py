@@ -60,12 +60,14 @@ def export_register_cirq(
     wire_ports: Mapping[str, Sequence[int]],
     *,
     input_quregs: Mapping[str, Any] | None = None,
+    output_quregs: Mapping[str, Any] | None = None,
     allow_lossy: bool = False,
 ) -> tuple[CirqExportResult, dict[str, _Qureg]]:
     """Place a static export on named register wires and return right ports.
 
     The native circuit owns its physical allocation. Unbound native wires
-    remain temporary lines, and right-only ports have fresh generated names.
+    remain temporary lines. Right-only ports can use caller-supplied qubits
+    or fresh generated names. Through ports keep their input qubits.
     This boundary preserves the ordinary export diagnostics and instruction
     order. A caller-supplied qubit array must match the register's shape with
     its bit axis last.
@@ -73,27 +75,36 @@ def export_register_cirq(
     ir = ensure_circuit_ir(program)
     names = tuple(reg.name for reg in signature)
     left_names = {reg.name for reg in signature.lefts()}
+    right_only = tuple(reg for reg in signature.rights() if reg.name not in left_names)
     if len(names) != len(set(names)) or set(wire_ports) != set(names):
         raise ValueError(
             "Cirq placement requires one native wire binding per unique register"
         )
     if input_quregs is not None and set(input_quregs) != left_names:
         raise ValueError("Cirq input placement must bind exactly the left registers")
+    if output_quregs is not None and set(output_quregs) != {
+        reg.name for reg in right_only
+    }:
+        raise ValueError(
+            "Cirq output placement must bind exactly the right-only registers"
+        )
 
     cirq = _cirq()
     placed: dict[int, Any] = {}
     occupied: set[Any] = set()
     all_ports: dict[str, _Qureg] = {}
-    # Reserve external inputs first so generated outputs cannot capture an input.
-    registers = tuple(signature.lefts()) + tuple(
-        reg for reg in signature.rights() if reg.name not in left_names
+    supplied_ports = {**(input_quregs or {}), **(output_quregs or {})}
+    # Reserve all caller-owned qubits before generating names.
+    registers = sorted(
+        (*signature.lefts(), *right_only),
+        key=lambda reg: reg.name not in supplied_ports,
     )
     for register in registers:
         name = register.name
         shape = _register_shape(register)
-        supplied_port = input_quregs is not None and name in left_names
-        if input_quregs is not None and supplied_port:
-            supplied = input_quregs[name]
+        supplied_port = name in supplied_ports
+        if supplied_port:
+            supplied = supplied_ports[name]
             qubits = np.array(
                 [supplied] if isinstance(supplied, cirq.Qid) else supplied, dtype=object
             )

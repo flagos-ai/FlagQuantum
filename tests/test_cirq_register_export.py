@@ -177,6 +177,31 @@ def test_left_and_right_ports_reserve_input_and_scratch(cirq: Any) -> None:
     assert tuple(placed.circuit.all_operations())[1].qubits == (supplied["ctrl"], out)
     assert placed.report.to_dict() == export_cirq(ir).report.to_dict()
 
+    explicit_out = cirq.LineQubit(2)
+    wires = {"out": (0,), "spent": (1,), "ctrl": (3,)}
+    rebound, explicit_ports = export_register_cirq(
+        ir, signature, wires, output_quregs={"out": explicit_out}
+    )
+    assert tuple(explicit_ports["out"]) == (explicit_out,)
+    assert tuple(explicit_ports["ctrl"]) == (cirq.NamedQubit("ctrl"),)
+    assert tuple(rebound.circuit.all_operations())[1].qubits == (
+        cirq.NamedQubit("ctrl"),
+        explicit_out,
+    )
+    assert cirq.NamedQubit("__fq_work_2") in rebound.circuit.all_qubits()
+    assert rebound.report.to_dict() == placed.report.to_dict()
+
+    with pytest.raises(ValueError, match="distinct qubits"):
+        export_register_cirq(
+            ir,
+            signature,
+            wires,
+            input_quregs=supplied,
+            output_quregs={"out": supplied["ctrl"]},
+        )
+    with pytest.raises(ValueError, match="exactly the right-only registers"):
+        export_register_cirq(ir, signature, wires, output_quregs={"ctrl": explicit_out})
+
 
 @pytest.mark.parametrize(
     "failure", ("shape", "duplicate_qids", "dimension", "native", "missing", "loss")
