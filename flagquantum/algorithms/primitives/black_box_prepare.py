@@ -8,10 +8,14 @@
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 
+from ...circuit import Circuit
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.auto_partition import AutoPartition
 from ...compiler.registers.layout.partition import RegisterLayout
-from ...core.ir import Instruction
+from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 
 PrepareEmitter = Callable[
     [Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
@@ -45,6 +49,45 @@ class BlackBoxPrepare:
     def junk_width(self) -> int:
         return sum(width for _, width in self.junk_layout)
 
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        """Return the opaque packed selection descriptor, including width zero."""
+        return (Register("selection", opaque_register_type(self.selection_width)),)
+
+    @property
+    def junk_registers(self) -> tuple[Register, ...]:
+        """Return the opaque packed junk descriptor, including width zero."""
+        return (Register("junk", opaque_register_type(self.junk_width)),)
+
+    @property
+    def signature(self) -> Signature:
+        """Describe the original scalar packed through ports."""
+        widths = (("selection", self.selection_width), ("junk", self.junk_width))
+        return Signature(
+            tuple(
+                Register(
+                    name,
+                    quantum_bit_type() if width == 1 else opaque_register_type(width),
+                )
+                for name, width in widths
+                if width
+            )
+        )
+
+    def make_on(
+        self,
+        *,
+        selection: tuple[int, ...],
+        junk: tuple[int, ...],
+        workspace: tuple[int, ...] = (),
+        classical_bits: tuple[int, ...] = (),
+        adjoint: bool = False,
+    ) -> "_BoundBlackBoxPrepare":
+        """Bind the packed ports and explicit scratch for circuit.append."""
+        return _BoundBlackBoxPrepare(
+            self, selection, junk, workspace, classical_bits, adjoint
+        )
+
     def emit(
         self,
         selection: tuple[int, ...],
@@ -74,3 +117,32 @@ class BlackBoxPrepare:
         if any(q not in qubits for gate in gates for q in gate.wires):
             raise ValueError("Preparation used a qubit outside the bound registers")
         return gates
+
+
+@dataclass(frozen=True)
+class _BoundBlackBoxPrepare:
+    prepare: BlackBoxPrepare
+    selection: tuple[int, ...]
+    junk: tuple[int, ...]
+    workspace: tuple[int, ...]
+    classical_bits: tuple[int, ...]
+    adjoint: bool
+
+    def append_to(self, circuit: Circuit) -> Circuit:
+        if any(
+            q >= circuit.n_qubits
+            for q in (*self.selection, *self.junk, *self.workspace)
+        ):
+            raise ValueError("PREPARE binding exceeds circuit width")
+        gates = self.prepare.emit(
+            self.selection,
+            self.junk,
+            self.workspace,
+            self.classical_bits,
+            adjoint=self.adjoint,
+        )
+        return circuit.compose(
+            CircuitIR(
+                circuit.n_qubits, gates, metadata={"batch_size": circuit.bsz}
+            ).validate()
+        )
