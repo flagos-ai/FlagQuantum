@@ -11,8 +11,8 @@ from math import hypot, isfinite
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import split_register_pair
 from ...compiler.registers.sorting.permutation import (
+    complete_partial_permutation,
     permutation_ir,
-    source_partial_permutation_cycles,
 )
 from ...core.ir import Instruction
 from .rotation_preparation import RotationPreparation
@@ -41,16 +41,7 @@ class SparseRotationPreparation:
             or self.size > 1 << target_width
         ):
             raise ValueError("Sparse rotation target must fit the state size")
-        cycles = source_partial_permutation_cycles(
-            self.size, dict(enumerate(self.indices))
-        )
-        mapped = {
-            index: cycle[(i + 1) % len(cycle)]
-            for cycle in cycles
-            for i, index in enumerate(cycle)
-        }
-        if any(mapped.get(i, i) != index for i, index in enumerate(self.indices)):
-            raise ValueError("Source partial permutation loses an indexed transition")
+        cycles = complete_partial_permutation(self.size, dict(enumerate(self.indices)))
         norm = hypot(*(abs(value) for value in self.coefficients))
         if not isfinite(norm) or not norm:
             raise ValueError(
@@ -77,7 +68,7 @@ class SparseRotationPreparation:
         workspace: tuple[int, ...],
         classical_bits: tuple[int, ...],
     ) -> tuple[Instruction, ...]:
-        """Prepare on the low target bits, then apply the source cycles."""
+        """Prepare on the low target bits, then apply the completed permutation."""
         width = len(target)
         dense, cycles, low_width = self._components(width)
         work, slots = dense.requirements(0)

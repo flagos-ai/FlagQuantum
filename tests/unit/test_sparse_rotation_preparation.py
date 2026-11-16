@@ -237,12 +237,34 @@ def test_source_loses_a_prefix_and_singleton_lacks_target_port() -> None:
 
     broken = SparseStatePreparationViaRotations((3, 0), (1, 1), 4, 2)
     assert broken._basis_permutation_bloq.cycles == ((0, 3),)
-    with pytest.raises(ValueError, match="loses an indexed transition"):
-        SparseRotationPreparation((3, 0), (1, 1), 4, 2).requirements(2)
     with pytest.raises(BloqError, match="does not accept Soquets"):
         SparseStatePreparationViaRotations((2,), (1,), 3, 2).decompose_bloq()
     with pytest.raises(ValueError, match="at least two"):
         SparseRotationPreparation((2,), (1,), 3, 2).requirements(2)
+
+
+def test_completed_prefix_prepares_requested_complex_state_on_every_branch() -> None:
+    example = SparseRotationExample(SparseRotationPreparation((3, 0), (1, 1j), 4, 3), 2)
+    work, _ = example.preparation.requirements(2)
+    circuit = Circuit(example.qubit_count).append(example)
+    gates = circuit.to_ir().instructions
+    phase_gradient = torch.tensor(
+        [exp(-1j * tau * k / 8) / sqrt(8) for k in range(8)], dtype=torch.complex128
+    )
+    logical = torch.tensor([1j, 0, 0, 1], dtype=torch.complex128) / sqrt(2)
+    initial = torch.zeros(1 << example.qubit_count, dtype=torch.complex128)
+    expected = torch.zeros_like(initial)
+    initial[: 8 << work : 1 << work] = phase_gradient
+    expected[:: 1 << work] = torch.kron(logical, phase_gradient)
+    events = sum(gate.name == "measure" for gate in gates)
+    assert events > 0
+    for history in product((0, 1), repeat=events):
+        torch.testing.assert_close(
+            forced_branch(initial, gates, history),
+            expected / 2 ** (events / 2),
+            rtol=0,
+            atol=2e-12,
+        )
 
 
 @pytest.fixture(scope="module")
