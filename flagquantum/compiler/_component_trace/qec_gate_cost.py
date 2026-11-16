@@ -8,7 +8,8 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping, MutableMapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
+from typing import cast
 
 from .call_graph import Generalizer, compose_cost_generalizer
 from .cost_query import _query_cost
@@ -52,6 +53,35 @@ class QECGateCost:
             measurement=self.measurement + repetitions * other.measurement,
         )
 
+    def __add__(self, other: QECGateCost) -> QECGateCost:
+        if not isinstance(other, QECGateCost):
+            raise TypeError("Gate counts can only be added to other gate counts")
+        return self.plus(other, 1)
+
+    def __mul__(self, repetitions: SymbolicInt) -> QECGateCost:
+        return QECGateCost().plus(self, repetitions)
+
+    __rmul__ = __mul__
+
+    def asdict(self) -> dict[str, SymbolicInt]:
+        """Return only nonzero categories, retaining their declaration order."""
+        counts = {
+            field.name: cast(SymbolicInt, getattr(self, field.name))
+            for field in fields(self)
+        }
+        return {name: count for name, count in counts.items() if count}
+
+    def __str__(self) -> str:
+        return (
+            ", ".join(f"{name}: {count}" for name, count in self.asdict().items())
+            or "-"
+        )
+
+
+def _validate_static_gate_cost(value: QECGateCost) -> None:
+    if not isinstance(value, QECGateCost):
+        raise TypeError(f"Static gate counts require QECGateCost, got {value!r}")
+
 
 def query_qec_gate_cost(
     root: ResourceCall,
@@ -68,7 +98,8 @@ def query_qec_gate_cost(
     """Prefer seeded and static costs, then classify or recurse into callees.
 
     In legacy mode an explicit legacy annotation supplies its T, Clifford,
-    and rotation fields before normal classification. Reuse a cache only
+    and rotation fields before normal classification. Static overrides require
+    a QECGateCost. Reuse a cache only
     with the same declaration rows, overrides, mode and generalizer.
     """
 
@@ -94,8 +125,15 @@ def query_qec_gate_cost(
             gates = gates.plus(child(call), count)
         return gates
 
-    generalize: Generalizer[ResourceCall] = compose_cost_generalizer(generalizer)
-    return _query_cost(root, compute, QECGateCost(), generalize, cache, static_costs)
+    return _query_cost(
+        root,
+        compute,
+        QECGateCost(),
+        compose_cost_generalizer(generalizer),  # type: ignore[misc]
+        cache,
+        static_costs,
+        validate_static=_validate_static_gate_cost,
+    )
 
 
 def _leaf_cost(node: ResourceCall, legacy: bool) -> QECGateCost | None:
