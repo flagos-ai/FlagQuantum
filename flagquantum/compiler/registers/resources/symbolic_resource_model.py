@@ -11,7 +11,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from math import prod
 from typing import cast
 
@@ -79,6 +79,30 @@ def source_add_resource_formula(
             for field in fields(SymbolicResourceFormula)
             if field.name != "logical_qubits"
         },
+    )
+
+
+def source_controlled_add_or_subtract_resource_formula(
+    left_width: SymbolicInt,
+    right_width: SymbolicInt,
+    *,
+    add_when_control_is_on: bool = True,
+) -> SymbolicResourceFormula:
+    """Compose the source Add with the two controlled complements."""
+    if type(add_when_control_is_on) is not bool:
+        raise ValueError("Add/subtract polarity must be boolean")
+    if left_width != right_width and left_width > right_width:
+        raise ValueError("Add/subtract input must be no wider than its accumulator")
+    add = source_add_resource_formula(left_width, right_width)
+    complement_peak = left_width + cast(SymbolicInt, smax(2, right_width + 1))
+    peak = cast(
+        SymbolicInt,
+        smax(left_width + right_width + 1, add.logical_qubits + 1, complement_peak),
+    )
+    return replace(
+        add,
+        clifford=add.clifford + 2 * right_width + 2 * int(add_when_control_is_on),
+        logical_qubits=peak,
     )
 
 
