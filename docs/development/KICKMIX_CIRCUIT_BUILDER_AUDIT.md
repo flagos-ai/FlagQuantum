@@ -42,6 +42,22 @@ These are emitted counts. The builder does not declare an analytical QEC model
 for either routine. Both clean streams use one result slot and one caller-owned
 work wire. Dirty schedules use one borrowed helper and no result slot.
 
+## Two-term parity with one additional control
+
+`parity_ccx` and `parity_ccz` cancel equal tagged parity operands before
+emission. If either parity operand repeats the additional control, the source
+emits the original pair-controlled gate followed by the single-controlled gate.
+The native helper now follows that path. Quantum wire, classical slot and
+Boolean tags remain distinct even when their numeric spellings coincide.
+
+The unchanged builder was compiled for every original two-term parity type
+combination: 64 parity-CCX calls and 256 parity-CCZ calls. Native KMX agreed in
+all 320 cases after expressing condition scopes as effective guards. A second
+oracle ran both alias positions and equal-parity cancellation for both
+operations. The regression checks each of those six streams and all 64 complex
+amplitudes, with zero added work or measurement. Alias-CCX emits CCX1/CX1,
+alias-CCZ emits CCZ1/CZ1, and equal parity emits zero instructions.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 Broadcast and parity controls, owning C++ scope guards, register declaration
 bookkeeping, loop patterns and debug metadata have separate source assertions.

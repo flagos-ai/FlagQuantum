@@ -9,6 +9,8 @@ from ..finite_field.coefficients import ClassicalFieldCoefficient
 from .global_phase import ccz_ir, scalar_sign_ir
 from .measurement import measure_x_clear_ir
 
+_Control = int | bool | ClassicalFieldCoefficient
+
 
 def _three_control_ir(
     first: int,
@@ -52,7 +54,7 @@ def _three_control_ir(
 
 def _flip(
     target: int | None,
-    *controls: int | bool | ClassicalFieldCoefficient,
+    *controls: _Control,
     scratch: int | None = None,
     measurement_bit: int | None = None,
 ) -> tuple[Instruction, ...]:
@@ -104,16 +106,31 @@ def _flip(
 
 def _parity_controlled_flip(
     target: int | None,
-    first: int | bool | ClassicalFieldCoefficient,
-    second: int | bool | ClassicalFieldCoefficient,
-    control: int,
+    first: _Control,
+    second: _Control,
+    control: _Control,
+    *,
+    phase_operand: _Control = True,
 ) -> tuple[Instruction, ...]:
+    """Apply the source parity-CCX or parity-CCZ, retaining tagged aliases."""
+    if target is not None and phase_operand is not True:
+        raise ValueError("A separate phase operand requires a phase target")
+    phase_controls = (phase_operand,) if target is None else ()
+
+    def apply(*operands: _Control) -> tuple[Instruction, ...]:
+        return _flip(target, *operands, *phase_controls)
+
     if type(first) is type(second) and first == second:
         return ()
+    if (type(control) is type(first) and control == first) or (
+        type(control) is type(second) and control == second
+    ):
+        # (x xor y) & x = (x & y) xor x. No parity operand is overwritten.
+        return (*apply(first, second), *apply(control))
     if type(first) is int:
         parity = _flip(first, second)
-        return (*parity, *_flip(target, first, control), *parity)
+        return (*parity, *apply(first, control), *parity)
     if type(second) is int:
         parity = _flip(second, first)
-        return (*parity, *_flip(target, second, control), *parity)
-    return (*_flip(target, first, control), *_flip(target, second, control))
+        return (*parity, *apply(second, control), *parity)
+    return (*apply(first, control), *apply(second, control))

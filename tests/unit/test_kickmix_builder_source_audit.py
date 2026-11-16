@@ -6,11 +6,54 @@ import torch
 from flagquantum.compiler.formats.kmx import encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.phase.masked_prefix_phase import _four_operand_phase
-from flagquantum.compiler.registers.primitives._mixed_gates import _flip
+from flagquantum.compiler.registers.primitives._mixed_gates import (
+    _flip,
+    _parity_controlled_flip,
+)
 from flagquantum.core.ir import CircuitIR
 from tests.unit.measurement_checks import forced_branch
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.parametrize("phase", [False, True])
+@pytest.mark.parametrize("alias", ["first", "second", "equal_parity"])
+def test_builder_parity_alias_order_and_complex_amplitudes(
+    phase: bool, alias: str
+) -> None:
+    first = 5
+    second = first if alias == "equal_parity" else 1
+    control = {"first": first, "second": second, "equal_parity": 3}[alias]
+    target = 4
+    ir = _parity_controlled_flip(
+        None if phase else target,
+        first,
+        second,
+        control,
+        phase_operand=target if phase else True,
+    )
+    suffix = "Z" if phase else "X"
+    original = (
+        []
+        if alias == "equal_parity"
+        else [f"CC{suffix} q5 q1 q4", f"C{suffix} q{control} q4"]
+    )
+    program = lower_reversible_phase(CircuitIR(6, ir))
+    assert encode_kmx(program).splitlines()[1:] == original
+    assert program.n_bits == 0
+
+    basis = torch.arange(64)
+    initial = (basis + 1).to(torch.complex128) + 1j * (64 - basis)
+    initial /= initial.norm()
+    parity = ((basis >> (5 - first)) ^ (basis >> (5 - second))) & 1
+    active = parity & ((basis >> (5 - control)) & 1)
+    if phase:
+        expected = initial * torch.where((active & ((basis >> 1) & 1)).bool(), -1, 1)
+    else:
+        expected = initial[basis ^ (active << 1)]
+    torch.testing.assert_close(
+        forced_branch(initial, ir, ()), expected, rtol=0, atol=1e-16
+    )
 
 
 @pytest.mark.parametrize("phase", [False, True])
