@@ -16,6 +16,8 @@ from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.register_verifier import executable_register_width
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import ssum
+from ....core.value_parameters import is_symbolic_value
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_gate_function import bit_gate_function
 from ..component_graph import _namespace_helpers
@@ -51,6 +53,27 @@ def validate_control_ports(
     return count
 
 
+def control_predicate_signature(
+    controls: tuple[Register, ...], *, uncompute: bool = False
+) -> Signature:
+    """Declare grouped inputs and owned prefix outputs, including symbolic widths."""
+    count = ssum(register.total_qubits() for register in controls)
+    symbolic = is_symbolic_value(count)
+    if (not symbolic and count < 2) or type(uncompute) is not bool:
+        raise ValueError("predicate requires at least two bits and a boolean direction")
+    if {r.name for r in controls} & {"junk", "target"}:
+        raise ValueError("predicate control names conflict with its logical outputs")
+    side = RegisterSide.LEFT if uncompute else RegisterSide.RIGHT
+    junk = (
+        ()
+        if not symbolic and count == 2
+        else (Register("junk", RegisterType("opaque", count - 2), side=side),)
+    )
+    return Signature(
+        (*controls, *junk, Register("target", quantum_bit_type(), side=side))
+    )
+
+
 def control_predicate_program(
     controls: tuple[Register, ...],
     patterns: tuple[ControlRegister, ...],
@@ -67,17 +90,7 @@ def control_predicate_program(
     opaque and unsigned quantum words. Other descriptors raise ValueError.
     """
     count = validate_control_ports(controls, patterns)
-    if count < 2 or type(uncompute) is not bool:
-        raise ValueError("predicate requires at least two bits and a boolean direction")
-    if {r.name for r in controls} & {"junk", "target"}:
-        raise ValueError("predicate control names conflict with its logical outputs")
-    side = RegisterSide.LEFT if uncompute else RegisterSide.RIGHT
-    junk = (
-        (Register("junk", RegisterType("opaque", count - 2), side=side),)
-        if count > 2
-        else ()
-    )
-    registers = (*controls, *junk, Register("target", quantum_bit_type(), side=side))
+    signature = control_predicate_signature(controls, uncompute=uncompute)
     gates = multi_and_ir(
         tuple(range(count)),
         tuple(bit for pattern in patterns for bit in pattern.bits()),
@@ -90,7 +103,7 @@ def control_predicate_program(
         (Register("bits", quantum_bit_type(), (2 * count - 1,)),),
         CircuitIR(2 * count - 1, gates),
     )
-    builder = ComponentProgramBuilder(Signature(registers), (leaf,), name=name)
+    builder = ComponentProgramBuilder(signature, (leaf,), name=name)
     flat = [
         bit
         for register in controls
@@ -99,7 +112,7 @@ def control_predicate_program(
     ]
     if uncompute:
         junk_input = builder.inputs.get("junk")
-        if junk:
+        if count > 2:
             assert isinstance(junk_input, RegisterBinding)
             work = list(builder.split(junk_input))
         else:
@@ -127,11 +140,11 @@ def control_predicate_program(
     target = returned[-1]
     assert isinstance(target, RegisterBinding)
     if uncompute:
-        if junk:
+        if count > 2:
             builder.free(builder.join(prefix))
         builder.free(target)
     else:
-        if junk:
+        if count > 2:
             outputs["junk"] = builder.join(prefix)
         outputs["target"] = target
     return _namespace_helpers(builder.finalize(outputs), name)
