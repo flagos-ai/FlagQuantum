@@ -4,7 +4,9 @@ import pytest
 
 from flagquantum.algorithms.primitives.hubbard_resource_model import (
     source_hubbard_hopping_plaquette_cost,
+    source_hubbard_hopping_plaquette_signature,
     source_hubbard_hopping_tile_cost,
+    source_hubbard_hopping_tile_signature,
     source_hubbard_interaction_cost,
 )
 from flagquantum.compiler._component_trace.resource_model import (
@@ -99,3 +101,68 @@ def test_model_validation():
         source_hubbard_interaction_cost(0, 0.2, 4)
     with pytest.raises(ValueError, match="finite"):
         source_hubbard_hopping_plaquette_cost(float("nan"))
+
+
+@pytest.mark.ftqc_reference
+def test_hubbard_hopping_declared_registers_and_child_parameters():
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError, QAny, QBit, Side
+    from qualtran.bloqs.chemistry.trotter.hubbard.hopping import (
+        HoppingPlaquette,
+        HoppingTile,
+        HoppingTileHWP,
+    )
+    from qualtran.resource_counting import SympySymbolAllocator
+    from sympy import Symbol
+
+    kappa, eps = -0.375, 1e-6
+    plaquette = HoppingPlaquette(kappa, eps=eps)
+    (port,) = source_hubbard_hopping_plaquette_signature()
+    (original,) = plaquette.signature
+    assert port.dtype.encoding == "bit" and isinstance(original.dtype, QBit)
+    assert (port.name, port.bitsize, port.shape) == (
+        original.name,
+        original.bitsize,
+        original.shape,
+    )
+    assert original.side == Side.THRU
+    assert tuple(port.all_idxs()) == tuple(original.all_idxs())
+    (fourier, count), (rz, rotations) = plaquette.build_call_graph(
+        SympySymbolAllocator()
+    ).items()
+    assert (fourier.k, fourier.n, fourier.eps, count) == (0, 1, eps, 4)
+    assert (rz.angle, rz.eps, rotations) == (kappa, eps, 2)
+    with pytest.raises(DecomposeNotImplementedError):
+        plaquette.decompose_bloq()
+
+    for tile in (HoppingTile, HoppingTileHWP):
+        symbolic = Symbol("L", integer=True, positive=True)
+        for length in (2, 8, symbolic):
+            signature = source_hubbard_hopping_tile_signature(length)
+            source = tile(length, kappa / 2, tau=2, eps=eps)
+            (original,) = source.signature
+            (port,) = signature
+            assert signature.get_left("system") == signature.get_right("system")
+            assert original.side == Side.THRU and isinstance(original.dtype, QAny)
+            assert port.dtype.encoding == "opaque"
+            assert (port.name, port.bitsize, port.shape) == (
+                original.name,
+                original.bitsize,
+                original.shape,
+            )
+            assert signature.n_qubits() == source.signature.n_qubits()
+
+        calls = tile(8, kappa / 2, tau=2, eps=eps).build_call_graph(
+            SympySymbolAllocator()
+        )
+        if tile is HoppingTile:
+            assert calls == {plaquette: 32}
+        else:
+            (fourier, count), (phasing, batches) = calls.items()
+            assert (fourier.k, fourier.n, fourier.eps, count) == (0, 1, eps, 128)
+            assert (phasing.bitsize, phasing.exponent, phasing.eps, batches) == (
+                32,
+                kappa,
+                eps,
+                2,
+            )

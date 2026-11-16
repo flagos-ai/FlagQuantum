@@ -17,6 +17,10 @@ from ...compiler._component_trace.resource_model import (
 from ...compiler.registers.phase.hamming_weight_phasing import (
     source_hamming_weight_phasing_cost,
 )
+from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt
 from .fermionic_fourier import source_two_bit_fermionic_fourier_cost
 
 
@@ -51,11 +55,23 @@ def source_hubbard_interaction_cost(
     )
 
 
+def source_hubbard_hopping_plaquette_signature() -> Signature:
+    """Declare the source four-qubit through array."""
+    return Signature((Register("qubits", quantum_bit_type(), shape=(4,)),))
+
+
+def source_hubbard_hopping_tile_signature(length: SymbolicInt) -> Signature:
+    """Declare the source's two opaque spin words at the lattice side width."""
+    if isinstance(length, int) and length % 2:
+        raise ValueError("Only even length lattices are supported")
+    return Signature((Register("system", opaque_register_type(length), shape=(2,)),))
+
+
 def source_hubbard_hopping_plaquette_cost(kappa: float) -> ComponentCost:
     """Count four two-bit Fourier calls and two equal-angle Rz calls."""
     return ComponentCost(
         "HoppingPlaquette",
-        4,
+        int(source_hubbard_hopping_plaquette_signature().n_qubits()),
         calls=(
             CostCall(source_two_bit_fermionic_fourier_cost(0, 1), 4),
             CostCall(_source_rz_cost(kappa), 2),
@@ -74,7 +90,7 @@ def source_hubbard_hopping_tile_cost(
     """Count the locked plaquette or batched phasing graph for a single color."""
     if type(length) is not int or length < 2 or length % 2:
         raise ValueError("Hubbard hopping requires a positive even lattice length")
-    width = 2 * length
+    width = int(source_hubbard_hopping_tile_signature(length).n_qubits())
     color = "pink" if pink else "gold"
     kappa = tau * angle
     plaquettes = length**2 // 2
