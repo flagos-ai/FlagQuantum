@@ -61,6 +61,27 @@ def _forward_logs(
     return tuple(logs)
 
 
+def blocked_qrom_layout(
+    shape: tuple[SymbolicInt, ...],
+    logs: tuple[SymbolicInt, ...],
+    selection_widths: tuple[SymbolicInt, ...] | None,
+) -> tuple[tuple[SymbolicInt, ...], tuple[SymbolicInt, ...], tuple[SymbolicInt, ...]]:
+    """Return bank extents, high selector widths and high table extents."""
+    blocks = _blocks(shape, logs)
+    selectors = (
+        tuple(bit_length(extent - 1) for extent in shape)
+        if selection_widths is None
+        else selection_widths
+    )
+    if len(selectors) != len(shape):
+        raise ValueError("Lookup selection widths must match the shape")
+    high = tuple(width - log for width, log in zip(selectors, logs, strict=True))
+    batch_shape = tuple(
+        _ceil_ratio(extent, block) for extent, block in zip(shape, blocks, strict=True)
+    )
+    return blocks, high, batch_shape
+
+
 def source_blocked_lookup_resource_formula(
     shape: tuple[SymbolicInt, ...],
     target_widths: tuple[SymbolicInt, ...],
@@ -81,19 +102,8 @@ def source_blocked_lookup_resource_formula(
         raise ValueError("A lookup formula requires at least one target")
     if log_block_sizes is None:
         log_block_sizes = _forward_logs(shape, target_widths, dirty)
-    blocks = _blocks(shape, log_block_sizes)
-    selectors = (
-        tuple(bit_length(extent - 1) for extent in shape)
-        if selection_widths is None
-        else selection_widths
-    )
-    if len(selectors) != len(shape):
-        raise ValueError("Lookup selection widths must match the shape")
-    high = tuple(
-        width - log for width, log in zip(selectors, log_block_sizes, strict=True)
-    )
-    batch_shape = tuple(
-        _ceil_ratio(extent, block) for extent, block in zip(shape, blocks, strict=True)
+    blocks, high, batch_shape = blocked_qrom_layout(
+        shape, log_block_sizes, selection_widths
     )
     qrom = source_qrom_resource_formula(
         batch_shape,

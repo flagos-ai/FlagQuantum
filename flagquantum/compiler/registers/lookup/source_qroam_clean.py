@@ -86,30 +86,8 @@ class QroamCleanTable:
     @cached_property
     def batched_data(self) -> tuple[tuple[int, ...], ...]:
         """Return each dataset in high-axes then low-axes order, padding with zero."""
-        strides = tuple(prod(self.shape[i + 1 :]) for i in range(len(self.shape)))
-        low_rows = tuple(product(*(range(block) for block in self.block_shape)))
-        rows: list[int | None] = []
-        for high in product(*(range(extent) for extent in self.batch_shape)):
-            for low in low_rows:
-                index = tuple(
-                    major * block + minor
-                    for major, block, minor in zip(
-                        high, self.block_shape, low, strict=True
-                    )
-                )
-                if any(
-                    i >= extent for i, extent in zip(index, self.shape, strict=True)
-                ):
-                    rows.append(None)
-                else:
-                    rows.append(
-                        sum(
-                            i * stride for i, stride in zip(index, strides, strict=True)
-                        )
-                    )
-        return tuple(
-            tuple(data[row] if row is not None else 0 for row in rows)
-            for data in self.datasets
+        return pack_blocked_datasets(
+            self.shape, self.block_shape, self.batch_shape, self.datasets
         )
 
     def _high_widths(self, widths: tuple[int, ...]) -> tuple[int, ...]:
@@ -129,6 +107,33 @@ class QroamCleanTable:
         return source_qrom_workspace_size(
             control_count, self._high_widths(selection_widths), self.batched_data
         )
+
+
+def pack_blocked_datasets(
+    shape: tuple[int, ...],
+    blocks: tuple[int, ...],
+    batches: tuple[int, ...],
+    datasets: tuple[tuple[int, ...], ...],
+) -> tuple[tuple[int, ...], ...]:
+    """Pad and pack a validated table using high axes before low axes."""
+    strides = tuple(prod(shape[i + 1 :]) for i in range(len(shape)))
+    low_rows = tuple(product(*(range(block) for block in blocks)))
+    rows: list[int | None] = []
+    for high in product(*(range(extent) for extent in batches)):
+        for low in low_rows:
+            index = tuple(
+                major * block + minor
+                for major, block, minor in zip(high, blocks, low, strict=True)
+            )
+            if any(i >= extent for i, extent in zip(index, shape, strict=True)):
+                rows.append(None)
+            else:
+                rows.append(
+                    sum(i * stride for i, stride in zip(index, strides, strict=True))
+                )
+    return tuple(
+        tuple(data[row] if row is not None else 0 for row in rows) for data in datasets
+    )
 
 
 def source_qroam_clean_ir(
