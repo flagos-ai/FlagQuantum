@@ -52,6 +52,7 @@ Native FlagQuantum programs currently available:
 - [overview](machine_learning/quantum_autoencoder/overview/README.md)
 - [overview](amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/README.md)
 - [overview](amplitude_amplification_and_estimation/qmc_user_defined/overview/README.md)
+- [overview](amplitude_amplification/qsvt_fixed_point/overview/README.md)
 - [overview](amplitude_amplification_and_estimation/quantum_counting/overview/README.md)
 - [bernstein_vazirani](foundational/bernstein_vazirani/README.md)
 - [deutsch_jozsa](foundational/deutsch_jozsa/README.md)

@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **147/213**.
+Validated local Notebook workflows: **148/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -17,7 +17,7 @@ Validated local Notebook workflows: **147/213**.
 | `algorithms/QML/quantum_autoencoder/quantum_autoencoder` | notebook_workflow | [Native program](algorithms/machine_learning/quantum_autoencoder/overview/main.py) | validated |
 | `algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/main.py) | validated |
 | `algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/overview/main.py) | validated |
-| `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification/qsvt_fixed_point/main.py) | pending |
+| `algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification` | notebook_workflow | [Native program](algorithms/amplitude_amplification/qsvt_fixed_point/overview/main.py) | validated |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting` | notebook_workflow | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/overview/main.py) | validated |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae` | quantum_program | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_iqae/main.py) | pending |
 | `algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe` | quantum_program | [Native program](algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting_qpe/main.py) | pending |
