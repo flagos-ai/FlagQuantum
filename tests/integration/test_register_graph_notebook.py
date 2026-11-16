@@ -44,6 +44,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("zpow_via_phase_gradient", 8, 2, 0),
         ("prepare_uniform_superposition", 7, 3, 0),
         ("state_preparation_alias_sampling", 13, 4, 0),
+        ("resource_interchange", 15, 2, 0),
         ("state_preparation_via_rotation", 7, 2, 0),
         ("state_preparation_via_rotation_tutorial", 9, 2, 0),
         ("swap_network", 19, 6, 0),
@@ -129,6 +130,9 @@ def test_register_graph_notebook_kernel_without_reference_imports(
 ) -> None:
     nbformat = pytest.importorskip("nbformat")
     preprocessors = pytest.importorskip("nbconvert.preprocessors")
+    if asset == "resource_interchange":
+        pytest.importorskip("qref")
+        pytest.importorskip("bartiq")
     kernel_name = "fq-native-register-graph"
     kernel = tmp_path / "kernels" / kernel_name
     kernel.mkdir(parents=True)
@@ -197,4 +201,14 @@ IPKernelApp.launch_instance()
         html = (tmp_path / "musical_score_example.html").read_text()
         payload = html.split('type="application/json">', 1)[1].split("</script>", 1)[0]
         assert json.loads(payload)["sequential"] == data
+    if asset == "resource_interchange":
+        messages = "".join(
+            output.get("text", "")
+            for cell in cells
+            for output in cell.outputs
+            if output.output_type == "stream"
+        )
+        assert "Qualified assignment 313" in messages
+        assert "Custom uniform T model at N=101 16" in messages
+        assert "Emitted alias primitives" in messages
     nbformat.write(executed, tmp_path / f"executed-{asset}.ipynb")
