@@ -1,7 +1,7 @@
 """Original six-layer graph composition, reachable promises and exact channels."""
 
 from collections import Counter
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import torch
@@ -42,7 +42,10 @@ def layout(n: int) -> tuple[
     tuple[int, ...],
 ]:
     return (
-        *(tuple(range(i * n, (i + 1) * n)) for i in range(4)),
+        tuple(range(n)),
+        tuple(range(n, 2 * n)),
+        tuple(range(2 * n, 3 * n)),
+        tuple(range(3 * n, 4 * n)),
         4 * n,
         4 * n + 1,
         4 * n + 2,
@@ -66,7 +69,7 @@ def original_iteration(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]
     source = _KaliskiIteration(n, p)
     if adjoint:
         source = source.adjoint()
-    bindings = {}
+    bindings: dict[Any, tuple[int, ...]] = {}
     for instance, inputs, _ in source.decompose_bloq().iter_bloqsoqs():
         child = getattr(instance.bloq, "subbloq", instance.bloq)
         if type(child).__name__ == f"_KaliskiIterationStep{6 if adjoint else 2}":
@@ -103,10 +106,10 @@ def original_iteration(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]
                 )
             else:
                 allocations, slots = (), {}
-            gates = reference_arithmetic_gates(
+            arithmetic_gates = reference_arithmetic_gates(
                 bloq, inputs, allocations, slots, preserve_components=step == 4
             )
-            return gates, inputs
+            return arithmetic_gates, inputs
         if step == 3:
             cu, cv, cb, ca, cm, cf, cw, cbit = ordering_layout(n)
             canonical = dict(u=cu, v=cv, b=(cb,), a=(ca,), m=(cm,), f=(cf,))
@@ -163,7 +166,7 @@ def original_iteration(n: int, p: int, adjoint: bool) -> tuple[Instruction, ...]
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("n,p", [(2, 3), (3, 5), (5, 31), (8, 251)])
+@pytest.mark.parametrize("n,p", [(2, 3), (3, 5), (5, 7), (5, 31), (8, 251)])
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_original_full_graph_stream_roles_and_models(
     n: int, p: int, adjoint: bool
@@ -213,7 +216,7 @@ def reachable(n: int, p: int, xs: tuple[int, ...]) -> tuple[tuple[int, ...], ...
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("n,p", [(2, 3), (3, 5), (3, 7), (4, 13), (8, 251)])
+@pytest.mark.parametrize("n,p", [(2, 3), (3, 5), (3, 7), (4, 13), (5, 7), (8, 251)])
 def test_reachable_complete_channels_and_reverse(n: int, p: int) -> None:
     pytest.importorskip("qualtran")
     from qualtran.bloqs.mod_arithmetic.mod_division import _KaliskiIteration
@@ -314,7 +317,7 @@ def test_invalid_layout_rejected(bad: str) -> None:
     elif bad == "bits":
         bits = (40, 40, 41)
     elif bad == "adjoint":
-        adjoint = 1
+        adjoint = cast(bool, 1)
     else:
         p = 2
     with pytest.raises(ValueError):
@@ -348,6 +351,6 @@ def test_off_domain_source_free_is_not_a_reset() -> None:
 def test_output_binding_rejections() -> None:
     _, _, r, _, _, _, _, work, _ = layout(2)
     with pytest.raises(ValueError, match="boolean"):
-        inverse_iteration_outputs(r, work, adjoint=1)
+        inverse_iteration_outputs(r, work, adjoint=cast(bool, 1))
     with pytest.raises(ValueError, match="n>=2"):
         inverse_iteration_outputs(r[:1], work)
