@@ -111,6 +111,19 @@ def multi_control_x_ir(
     )
 
 
+def multi_control_y_ir(
+    controls: tuple[int, ...],
+    values: tuple[int, ...],
+    target: int,
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+) -> tuple[Instruction, ...]:
+    """Apply the source Pauli Y and clear the shared predicate workspace."""
+    return _multi_control_gate_ir(
+        "y", controls, values, target, workspace, classical_bits
+    )
+
+
 def multi_control_z_ir(
     controls: tuple[int, ...],
     values: tuple[int, ...],
