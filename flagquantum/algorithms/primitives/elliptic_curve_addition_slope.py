@@ -23,16 +23,13 @@ from ...compiler.registers.modular.modular_inverse import (
     modular_inverse_outputs,
 )
 from ...compiler.registers.modular.modular_subtraction import modular_subtract_ir
-from ...compiler.registers.modular.single_window_mod_mul import (
-    single_window_qroam_table,
-)
-from ...compiler.registers.modular.windowed_mod_mul import windowed_mod_mul_ir
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import montgomery_register_type, quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from ...dynamic import DynamicCircuit
+from .elliptic_curve_window_product import CurveWindowProduct
 
 
 def addition_slope_signature(width: SymbolicInt) -> Signature:
@@ -79,33 +76,18 @@ class EllipticCurveAdditionSlope:
     window: int = 1
 
     def __post_init__(self) -> None:
-        n, p, w = self.width, self.modulus, self.window
-        if type(n) is not int or n < 2:
-            raise ValueError("Curve addition slope requires width >= 2")
-        if type(p) is not int or p <= 1 or p % 2 == 0 or 2 * p - 1 >= 1 << n:
-            raise ValueError("Curve addition slope requires odd p > 1 and 2p-1 to fit")
-        if type(w) is not int or not 1 <= w <= n or n % w:
-            raise ValueError(
-                "Curve addition slope requires a window dividing the width"
-            )
+        CurveWindowProduct(self.width, self.modulus, self.window)
 
     @property
     def source_signature(self) -> Signature:
         return addition_slope_signature(self.width)
 
-    @property
-    def _bank_words(self) -> int:
-        return single_window_qroam_table(
-            self.width, self.window, self.modulus
-        ).block_shape[0]
-
     def workspace_requirements(self) -> tuple[int, int]:
         """Count clean quantum workspace and reusable classical measurement slots."""
-        n, w = self.width, self.window
-        inverse = 9 * n + 8
-        multiply = 2 * n + 1 + w + self._bank_words * (n + w) + (n + w - 1)
+        n = self.width
+        multiply = CurveWindowProduct(n, self.modulus, self.window)
         _, sub_slots = controlled_modular_requirements(n)
-        return inverse + multiply + 1, max(sub_slots, 2 * n)
+        return 9 * n + 8 + multiply.work_size + 1, max(sub_slots, 2 * n)
 
     def make_on(
         self,
@@ -160,32 +142,13 @@ class EllipticCurveAdditionSlope:
         n, p, w = self.width, self.modulus, self.window
         history, inverse_work = work[: 4 * n], work[4 * n : 9 * n + 8]
         multiply = work[9 * n + 8 : -1]
-        target, indices = multiply[:n], multiply[n : 2 * n]
-        reduced = multiply[2 * n]
-        padding = multiply[2 * n + 1 : 2 * n + 1 + w]
-        bank_start = 2 * n + 1 + w
-        bank_end = bank_start + self._bank_words * (n + w)
-        bank = tuple(
-            multiply[i : i + n + w] for i in range(bank_start, bank_end, n + w)
-        )
-        mul_work = multiply[bank_end:]
+        mul_work = multiply[-(n + w - 1) :]
         equal_flag = work[-1]
         inv_bits = bits[: max(2 * n - 1, n + 1)]
         inv_x, inv_work_returned = modular_inverse_outputs(x, inverse_work)
-        mul_args = (
-            inv_x,
-            y,
-            target,
-            indices,
-            reduced,
-            p,
-            padding,
-            bank,
-            mul_work,
-            bits[: 2 * n],
+        forward_mul, computed, reverse_mul = CurveWindowProduct(n, p, w).emit(
+            inv_x, y, multiply, bits[: 2 * n]
         )
-        forward_mul, computed = windowed_mod_mul_ir(*mul_args)
-        reverse_mul, _ = windowed_mod_mul_ir(*mul_args, adjoint=True)
         equal = equality_ir(
             computed, lam_r, equal_flag, mul_work[: n - 1], bits[: n - 1]
         )
