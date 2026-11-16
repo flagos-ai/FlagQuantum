@@ -4,7 +4,10 @@ from dataclasses import asdict
 
 import pytest
 
-from examples.algorithms.grid_hamiltonian_resources import main
+from examples.algorithms.grid_hamiltonian_resources import (
+    grid_tutorial_call_graph,
+    main,
+)
 from flagquantum.algorithms.primitives.grid_inverse_sqrt import (
     source_grid_inverse_sqrt_newton_cost,
     source_grid_inverse_sqrt_polynomial_cost,
@@ -100,3 +103,51 @@ def test_native_grid_example_reports_separate_costs(capsys):
     assert "QEC T equivalents 9440" in output
     assert "Legacy gates {'t': 9176, 'rotations': 24, 'clifford': 2646}" in output
     assert "Legacy T including synthesized rotations 10424" in output
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "case", ("polynomial", "newton", "rotation", "kinetic", "pair", "potential")
+)
+def test_immediate_grid_tutorial_calls(case):
+    from collections import Counter
+
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
+        _nr_inv_sqrt,
+        _poly_inv_sqrt,
+    )
+    from qualtran.bloqs.chemistry.trotter.grid_ham.kinetic import _kinetic_energy
+    from qualtran.bloqs.chemistry.trotter.grid_ham.potential import (
+        _pair_potential,
+        _potential_energy,
+    )
+    from qualtran.bloqs.chemistry.trotter.grid_ham.qvr import _qvr
+    from qualtran.resource_counting.generalizers import ignore_split_join
+
+    from flagquantum.algorithms.primitives.grid_qvr import source_grid_qvr_cost
+
+    if case == "polynomial":
+        source, model = _poly_inv_sqrt(), source_grid_inverse_sqrt_polynomial_cost(
+            7, 8, 12
+        )
+    elif case == "newton":
+        source, model = _nr_inv_sqrt(), source_grid_inverse_sqrt_newton_cost(7, 8, 12)
+    elif case == "rotation":
+        source, model = _qvr(), source_grid_qvr_cost(12)
+    elif case == "kinetic":
+        source, model = _kinetic_energy(), source_grid_kinetic_cost(12, 17)
+    elif case == "pair":
+        source, model = _pair_potential(), source_grid_pair_potential_cost(7)
+    else:
+        source, model = _potential_energy(), source_grid_potential_cost(12, 17)
+
+    _, source_leaves = source.call_graph(max_depth=1, generalizer=ignore_split_join)
+    expected = Counter()
+    for child, multiplicity in source_leaves.items():
+        expected[type(child).__name__] += multiplicity
+    actual = Counter()
+    native = grid_tutorial_call_graph(model)
+    for child, multiplicity in native.leaf_counts.items():
+        actual[child.name] += multiplicity
+    assert actual == expected

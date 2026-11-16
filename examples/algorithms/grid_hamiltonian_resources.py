@@ -12,6 +12,10 @@ from flagquantum.algorithms.primitives.grid_potential_resource_model import (
     source_grid_pair_potential_cost,
     source_grid_potential_cost,
 )
+from flagquantum.compiler._component_trace.call_graph import (
+    ModeledCallGraph,
+    modeled_call_graph,
+)
 from flagquantum.compiler._component_trace.gate_budget import legacy_gate_budget
 from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
@@ -19,6 +23,15 @@ from flagquantum.compiler._component_trace.resource_model import (
 )
 from flagquantum.compiler._component_trace.terminal_t_cost import rotation_t_cost
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
+
+
+def grid_tutorial_call_graph(model: ComponentCost) -> ModeledCallGraph:
+    """Project the immediate calls with the original tutorial's cast filter."""
+    return modeled_call_graph(
+        model,
+        max_depth=1,
+        generalizer=lambda child: None if child.name == "Cast" else child,
+    )
 
 
 def _print_resources(model: ComponentCost, legacy_model: ComponentCost) -> None:
