@@ -15,11 +15,15 @@ uses independent cost models for all seven original default examples, along
 with the zero-T uniform preparation case. Model tests cover first-match order,
 adjoint identity, the weighted bins, the classified cutoff and zero costs.
 
-Q-0811 retains automatic default assignment for generic component summaries.
-Qualtran derives families from source module paths. Native summaries currently
-require an explicit family rule for preparation, lookup and reflection when
-represented by generic `ComponentCost` keys. The audit fixture declares these
-families using the cost objects themselves.
+Q-0811 also covers default classification of native component summaries.
+The model owns a semantic family from the same ten-family vocabulary as
+the frozen table. Arithmetic, rotations, lookup, preparation, reflection,
+multiplexers and bounded swaps declare their family at their model owner.
+Typed gate keys continue to supply their own classification. Generic summaries
+without a declared family use `other`. The native default does not infer
+family from display text or Python modules. Explicit custom rules still replace
+the default with the first matching rule. The original fixture now uses the
+default native classifier throughout. Additional tests cover same-name summaries with distinct families.
 
 Classification and attribution emit zero primitive gates. Existing state
 preparation and tensor-network effect tests cover physical basis vectors,
