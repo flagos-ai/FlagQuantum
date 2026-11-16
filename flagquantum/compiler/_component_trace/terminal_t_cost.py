@@ -9,7 +9,6 @@
 from collections.abc import Callable, Iterable, Mapping, MutableMapping
 from math import pi
 
-from .call_graph import compose_cost_generalizer
 from .cost_query import _query_cost
 from .resource_classification import classify_resource_gate
 from .resource_decomposition import decomposed_resource_callees
@@ -87,7 +86,7 @@ def query_terminal_t_cost(
             return sum(count * child(call) for call, count in callees)
         return _unit_t_cost(node)
 
-    return _query_cost(root, compute, 0, compose_cost_generalizer(None), cache, None)
+    return _query_cost(root, compute, 0, lambda node: node, cache, None)
 
 
 def _terminal_resource_callees(
