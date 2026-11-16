@@ -8,13 +8,31 @@
 from collections import Counter
 from collections.abc import Callable, Hashable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Generic, TypeVar, cast
+from typing import TYPE_CHECKING, Generic, TypeAlias, TypeVar, cast
 
 from ...core.classical_control import instruction_condition_clauses
 from ...core.ir import CircuitIR
+from ...errors import CapabilityError
 from .resource_model import ComponentCost
 from .symbolic_math import SymbolicInt
 from .trace import ComponentCall, ComponentTrace
+
+if TYPE_CHECKING:
+    from sympy import Symbol
+
+
+class SymbolAllocator:
+    """Allocate deterministic symbolic placeholders within one graph query."""
+
+    def __init__(self) -> None:
+        self._indices: dict[str, int] = {}
+
+    def new_symbol(self, prefix: str) -> "Symbol":
+        from sympy import Symbol
+
+        index = self._indices.get(prefix, 0)
+        self._indices[prefix] = index + 1
+        return Symbol(f"_{prefix}{index}")
 
 
 def summarize_components(
@@ -63,6 +81,8 @@ class ModeledCallGraph:
 Node = TypeVar("Node", bound=Hashable)
 Generalizer = Callable[[Node], Node | None]
 CostGeneralizer = Generalizer[ComponentCost]
+RawCallees: TypeAlias = Mapping[Node, SymbolicInt] | Iterable[tuple[Node, SymbolicInt]]
+CallDeclaration: TypeAlias = Callable[[Node, SymbolAllocator], RawCallees[Node]]
 
 
 @dataclass(frozen=True)
@@ -110,6 +130,51 @@ def _component_calls(node: ComponentCost) -> Iterable[tuple[ComponentCost, int]]
         yield call.component, call.repetitions
 
 
+def _generalize_callees(
+    raw: RawCallees[Node], generalize: Generalizer[Node]
+) -> dict[Node, SymbolicInt]:
+    counts: dict[Node, SymbolicInt] = {}
+    for child, count in raw.items() if isinstance(raw, Mapping) else raw:
+        callee = generalize(child)
+        if callee is not None:
+            counts[callee] = counts.get(callee, 0) + count
+    return counts
+
+
+def _declared_callees(
+    component: Node,
+    declaration: CallDeclaration[Node],
+    allocator: SymbolAllocator,
+    *,
+    ignore_unavailable: bool,
+) -> RawCallees[Node]:
+    try:
+        raw = declaration(component, allocator)
+        return raw if isinstance(raw, Mapping) else tuple(raw)
+    except CapabilityError:
+        if not ignore_unavailable:
+            raise
+        return ()
+
+
+def component_callee_counts(
+    component: Node,
+    declaration: CallDeclaration[Node],
+    *,
+    generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None = None,
+    allocator: SymbolAllocator | None = None,
+    ignore_unavailable: bool = True,
+) -> dict[Node, SymbolicInt]:
+    """Resolve and combine direct declarations in first occurrence order."""
+    raw = _declared_callees(
+        component,
+        declaration,
+        allocator if allocator is not None else SymbolAllocator(),
+        ignore_unavailable=ignore_unavailable,
+    )
+    return _generalize_callees(raw, compose_cost_generalizer(generalizer))
+
+
 def modeled_call_graph(
     component: ComponentCost,
     *,
@@ -134,28 +199,37 @@ def modeled_call_graph(
 
 def symbolic_call_graph(
     component: Node,
-    declared_calls: Mapping[Node, Mapping[Node, SymbolicInt]],
+    declared_calls: Mapping[Node, Mapping[Node, SymbolicInt]] | CallDeclaration[Node],
     *,
     generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None = None,
     keep: Callable[[Node], bool] | None = None,
     max_depth: int | None = None,
+    allocator: SymbolAllocator | None = None,
 ) -> SymbolicCallGraph[Node]:
     """Combine shape-dependent call multiplicities without constructing an IR.
 
     A node absent from declared_calls is terminal. Rewrites replace the node
     key before looking up its outgoing calls. Symbolic weights retain their
     expressions, including weights that may become zero after substitution.
+    A callable declaration receives the same symbol allocator at each node.
+    A declared capability refusal leaves that node terminal.
     """
 
-    def calls(node: Node) -> Iterable[tuple[Node, SymbolicInt]]:
-        return declared_calls.get(node, {}).items()
+    symbols = allocator if allocator is not None else SymbolAllocator()
+
+    def calls(node: Node) -> RawCallees[Node]:
+        if callable(declared_calls):
+            return _declared_callees(
+                node, declared_calls, symbols, ignore_unavailable=True
+            )
+        return declared_calls.get(node, {})
 
     return _build_call_graph(component, calls, generalizer, keep, max_depth)
 
 
 def _build_call_graph(
     component: Node,
-    calls: Callable[[Node], Iterable[tuple[Node, SymbolicInt]]],
+    calls: Callable[[Node], RawCallees[Node]],
     generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None,
     keep: Callable[[Node], bool] | None,
     max_depth: int | None,
@@ -182,10 +256,7 @@ def _build_call_graph(
         if (keep is None or not keep(node)) and (
             max_depth is None or depth < max_depth
         ):
-            for child, count in calls(node):
-                callee = generalize(child)
-                if callee is not None:
-                    children[callee] = children.get(callee, 0) + count
+            children.update(_generalize_callees(calls(node), generalize))
             active.add(node)
             for child in children:
                 visit(child, depth + 1)

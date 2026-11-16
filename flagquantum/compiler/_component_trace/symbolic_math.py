@@ -5,6 +5,8 @@
 
 """Resource-facing imports of shared scalar and symbolic width mathematics."""
 
+from typing import TYPE_CHECKING
+
 from ...core.value_math import SymbolicInt as SymbolicInt
 from ...core.value_math import SymbolicReal as SymbolicReal
 from ...core.value_math import bit_length as bit_length
@@ -13,3 +15,15 @@ from ...core.value_math import floor as floor
 from ...core.value_math import log2 as log2
 from ...core.value_math import smax as smax
 from ...core.value_math import smin as smin
+
+if TYPE_CHECKING:
+    from sympy import Order
+
+
+def asymptotic_order(value: SymbolicReal) -> "Order":
+    """Return the declared expression's order as its variables tend to infinity."""
+    from sympy import Order, oo
+
+    if isinstance(value, (int, float)):
+        return Order(value)
+    return Order(value, *((symbol, oo) for symbol in value.free_symbols))
