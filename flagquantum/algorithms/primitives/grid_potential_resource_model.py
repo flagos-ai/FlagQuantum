@@ -18,13 +18,33 @@ from ...compiler.registers.arithmetic.out_of_place_add_resource_model import (
     source_out_of_place_add_cost,
 )
 from ...compiler.registers.lookup.qrom_resource_model import source_qrom_cost
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from .grid_inverse_sqrt import (
     grid_inverse_sqrt_qrom_data,
     source_grid_inverse_sqrt_newton_cost,
     source_grid_inverse_sqrt_polynomial_cost,
 )
-from .grid_kinetic import _coordinate_width
+from .grid_kinetic import source_grid_kinetic_signature
 from .grid_qvr import source_grid_qvr_cost
+
+
+def source_grid_pair_potential_signature(coordinate: int) -> Signature:
+    """Declare the two ordered three-axis through ports of the source pair."""
+    if type(coordinate) is not int or coordinate < 1:
+        raise ValueError("Grid pair potential requires a positive coordinate width")
+    word = opaque_register_type(coordinate)
+    return Signature(
+        (Register("system_i", word, shape=(3,)), Register("system_j", word, shape=(3,)))
+    )
+
+
+def source_grid_potential_signature(electrons: int, grid_points: int) -> Signature:
+    """Declare the full source through port with the shared grid system layout."""
+    if type(electrons) is not int or electrons < 1:
+        raise ValueError("Grid potential requires a positive electron count")
+    return source_grid_kinetic_signature(electrons, grid_points)
 
 
 def source_grid_pair_potential_cost(
@@ -35,8 +55,7 @@ def source_grid_pair_potential_cost(
     legacy_shims: bool = False,
 ) -> ComponentCost:
     """Model the source pair graph, retaining its shorter coefficient table."""
-    if type(coordinate) is not int or coordinate < 1:
-        raise ValueError("Grid pair potential requires a positive coordinate width")
+    signature = source_grid_pair_potential_signature(coordinate)
     distance = 2 * (coordinate + 1) + 2
     newton = source_grid_inverse_sqrt_newton_cost(
         distance, polynomial, target, legacy_shims=legacy_shims
@@ -53,7 +72,7 @@ def source_grid_pair_potential_cost(
         data,
         legacy_shims=legacy_shims,
     )
-    system = 6 * coordinate
+    system = int(signature.n_qubits())
     difference = coordinate + 1
     addition = source_out_of_place_add_cost(coordinate, legacy_shims=legacy_shims)
     erase = source_out_of_place_add_cost(
@@ -91,10 +110,9 @@ def source_grid_potential_cost(
     legacy_shims: bool = False,
 ) -> ComponentCost:
     """Model one source call for every upper-triangular electron pair."""
-    if type(electrons) is not int or electrons < 1:
-        raise ValueError("Grid potential requires a positive electron count")
-    coordinate = _coordinate_width(grid_points)
-    system = 3 * electrons * coordinate
+    signature = source_grid_potential_signature(electrons, grid_points)
+    coordinate = int(signature.get_left("system").bitsize)
+    system = int(signature.n_qubits())
     if electrons == 1:
         return ComponentCost("PotentialEnergy", system)
     pair = source_grid_pair_potential_cost(
