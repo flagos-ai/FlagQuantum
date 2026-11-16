@@ -15,6 +15,7 @@ from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
 from .hubbard_plaquette import _plaquette_basis
+from .hubbard_resource_model import source_hubbard_hopping_tile_cost
 from .hubbard_trotter import _suzuki_schedule, source_hubbard_suzuki_cost
 
 
@@ -106,7 +107,7 @@ def _interaction_layer(
 
 
 @dataclass(frozen=True)
-class _BoundHubbardStep:
+class _BoundHubbardLayers:
     layers: tuple[_DiagonalLayer, ...]
     work: tuple[int, ...]
     slot_count: int
@@ -140,6 +141,59 @@ class _BoundHubbardStep:
         )
 
 
+def _bind_lattice(
+    length: int,
+    up: tuple[int, ...],
+    down: tuple[int, ...],
+    hamming_weight: bool,
+    workspace: tuple[int, ...],
+) -> tuple[int, int]:
+    if type(length) is not int or length < 2 or length % 2:
+        raise ValueError("Hubbard hopping requires a positive even lattice length")
+    sites = length**2
+    junk, count = hamming_weight_requirements(sites // 2) if hamming_weight else (0, 0)
+    wires = unpartition_register(
+        {"up": up, "down": down, "work": workspace},
+        (("up", sites), ("down", sites), ("work", junk + count)),
+    )
+    return max(wires) + 1, junk
+
+
+class HubbardHoppingTile:
+    """One periodic hopping color on two row-major spin sectors."""
+
+    @staticmethod
+    def make_on(
+        *,
+        length: int,
+        up: tuple[int, ...],
+        down: tuple[int, ...],
+        timestep: float,
+        hubb_t: float = 1,
+        pink: bool = True,
+        hamming_weight: bool = False,
+        workspace: tuple[int, ...] = (),
+        adjoint: bool = False,
+    ) -> _BoundHubbardLayers:
+        """Bind one color, optionally batching each phase pass with clean work."""
+        if not all(isfinite(value) for value in (timestep, hubb_t)):
+            raise ValueError("Hubbard parameters must be finite")
+        required_qubits, slots = _bind_lattice(
+            length, up, down, hamming_weight, workspace
+        )
+        time = -timestep if adjoint else timestep
+        layer = _hopping_layer(up, down, length, int(not pink), -2 * time * hubb_t)
+        return _BoundHubbardLayers(
+            (layer,),
+            workspace,
+            slots,
+            required_qubits,
+            source_hubbard_hopping_tile_cost(
+                length, time, hubb_t, pink=pink, hamming_weight=hamming_weight
+            ),
+        )
+
+
 class HubbardSuzukiStep:
     """A periodic plaquette step with row-major modes in separate spin sectors."""
 
@@ -156,24 +210,17 @@ class HubbardSuzukiStep:
         workspace: tuple[int, ...] = (),
         strip_layer: bool = False,
         adjoint: bool = False,
-    ) -> _BoundHubbardStep:
+    ) -> _BoundHubbardLayers:
         """Bind all modes and optional clean workspace to one Suzuki step.
 
         Hamming-weight phasing reserves clean work of size `junk + count` for
         a batch of `length**2 // 2` modes and reuses it between batches.
         At length two the periodic colors count parallel bonds separately.
         """
-        if type(length) is not int or length < 2 or length % 2:
-            raise ValueError("Hubbard hopping requires a positive even lattice length")
         if not all(isfinite(value) for value in (hubb_u, timestep, hubb_t)):
             raise ValueError("Hubbard parameters must be finite")
-        sites = length**2
-        junk, count = (
-            hamming_weight_requirements(sites // 2) if hamming_weight else (0, 0)
-        )
-        wires = unpartition_register(
-            {"up": up, "down": down, "work": workspace},
-            (("up", sites), ("down", sites), ("work", junk + count)),
+        required_qubits, slots = _bind_lattice(
+            length, up, down, hamming_weight, workspace
         )
         schedule = _suzuki_schedule(strip_layer)
         if adjoint:
@@ -189,11 +236,11 @@ class HubbardSuzukiStep:
                     up, down, length, int(term == "gold"), -2 * time * hubb_t
                 )
             layers.append(layer)
-        return _BoundHubbardStep(
+        return _BoundHubbardLayers(
             tuple(layers),
             workspace,
-            junk,
-            max(wires) + 1,
+            slots,
+            required_qubits,
             source_hubbard_suzuki_cost(
                 length,
                 hubb_u,

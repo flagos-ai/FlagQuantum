@@ -65,6 +65,23 @@ def execute_sparse_register(
                 basis: phase * value if basis & mask == mask else value
                 for basis, value in state.items()
             }
+        elif name == "rz":
+            (mask,) = masks
+            positive = exp(0.5j * op.params["theta"])
+            state = {
+                basis: value * (positive if basis & mask else positive.conjugate())
+                for basis, value in state.items()
+            }
+        elif name == "swap":
+            left, right = masks
+            state = {
+                (
+                    basis ^ (left | right)
+                    if bool(basis & left) != bool(basis & right)
+                    else basis
+                ): value
+                for basis, value in state.items()
+            }
         elif name in ("x", "cx", "ccx"):
             control, target = sum(masks[:-1]), masks[-1]
             state = {
