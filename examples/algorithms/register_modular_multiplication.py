@@ -12,6 +12,7 @@ import flagquantum as fq
 from flagquantum.compiler.registers.modular.modular_multiplication import (
     controlled_modular_multiply_constant_adjoint_ir,
     controlled_modular_multiply_constant_ir,
+    modular_multiplication_requirements,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
@@ -20,10 +21,17 @@ from flagquantum.runtime.dynamic.execution import run_dynamic
 
 @dataclass(frozen=True)
 class ModularMultiplication:
-    """Bind a coherent control, two-bit residue modulo three, and clean work."""
+    """Bind a coherent control, a residue word, and clean work."""
 
     value: int = 2
     inverse: bool = False
+    width: int = 2
+    modulus: int = 3
+
+    @property
+    def qubit_count(self) -> int:
+        work, _ = modular_multiplication_requirements(self.width)
+        return 1 + self.width + work
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         emit = (
@@ -31,7 +39,16 @@ class ModularMultiplication:
             if self.inverse
             else controlled_modular_multiply_constant_ir
         )
-        gates = emit(0, (1, 2), self.value, 3, tuple(range(3, 16)), (0, 1, 2, 3))
+        start = 1 + self.width
+        work, slots = modular_multiplication_requirements(self.width)
+        gates = emit(
+            0,
+            tuple(range(1, start)),
+            self.value,
+            self.modulus,
+            tuple(range(start, start + work)),
+            tuple(range(slots)),
+        )
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 

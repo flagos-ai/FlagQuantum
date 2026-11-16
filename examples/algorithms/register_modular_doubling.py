@@ -12,6 +12,7 @@ import flagquantum as fq
 from flagquantum.compiler.registers.modular.modular_doubling import (
     modular_double_ir,
     modular_double_outputs,
+    modular_double_requirements,
 )
 from flagquantum.compiler.registers.modular.modular_halving import (
     modular_half_ir,
@@ -24,11 +25,12 @@ from flagquantum.runtime.dynamic.execution import run_dynamic
 
 @dataclass(frozen=True)
 class ModularDoubling:
-    """Bind three-bit residues modulo five and caller-owned port roles."""
+    """Bind a residue word and caller-owned clean work."""
 
     target: tuple[int, ...]
     workspace: tuple[int, ...]
     inverse: bool = False
+    modulus: int = 5
 
     @property
     def outputs(self) -> tuple[tuple[int, ...], tuple[int, ...]]:
@@ -38,11 +40,9 @@ class ModularDoubling:
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         emit = modular_half_ir if self.inverse else modular_double_ir
-        return circuit.compose(
-            CircuitIR(
-                circuit.n_qubits, emit(self.target, 5, self.workspace, (0, 1, 2, 3))
-            )
-        )
+        _, slots = modular_double_requirements(len(self.target))
+        gates = emit(self.target, self.modulus, self.workspace, tuple(range(slots)))
+        return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
 def main() -> None:
@@ -63,7 +63,8 @@ def main() -> None:
                 ((y >> (2 - j)) & 1) << (13 - wire) for j, wire in enumerate(out)
             )
             expected[index] = a
-        circuit = DynamicCircuit(14, inputs=state, dtype=torch.complex128).append(op)
+        circuit = DynamicCircuit(14, inputs=state, dtype=torch.complex128)
+        circuit.append(op)
         result = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
         torch.testing.assert_close(
             result.final_states.reshape(8, -1),
@@ -74,9 +75,8 @@ def main() -> None:
         counts = Counter(g.name for g in circuit.to_ir().instructions)
         reverse = ModularDoubling(out, clean, not inverse)
         assert reverse.outputs == (target, work)
-        restored = run_dynamic(
-            circuit.append(reverse), shots=8, seed=41, strategy="trajectory"
-        )
+        circuit.append(reverse)
+        restored = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
         torch.testing.assert_close(
             restored.final_states.reshape(8, -1),
             state.expand(8, -1),
