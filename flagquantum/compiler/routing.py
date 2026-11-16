@@ -34,9 +34,6 @@ from .topology.routing import (
 from .topology.routing import (
     estimate_routing_cost as estimate_routing_cost,
 )
-from .topology.routing import plan_restore_swaps as plan_restore_swaps
-from .topology.routing import plan_sabre_layout as plan_sabre_layout
-from .topology.routing import plan_sabre_swaps as plan_sabre_swaps
 from .topology.routing import (
     record_post_routing_optimization as record_post_routing_optimization,
 )
@@ -46,3 +43,6 @@ from .topology.routing import (
 from .topology.routing import (
     select_routing_strategy as select_routing_strategy,
 )
+from .topology.sabre import plan_restore_swaps as plan_restore_swaps
+from .topology.sabre import plan_sabre_layout as plan_sabre_layout
+from .topology.sabre import plan_sabre_swaps as plan_sabre_swaps
