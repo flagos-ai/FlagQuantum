@@ -15,7 +15,7 @@ import numpy as np
 
 from ...compiler.registers.primitives.power import register_power_ir
 from ...compiler.registers.register_binding import BoundRegisterProgram
-from ...core.ir import CircuitIR
+from ...core.ir import CircuitIR, IRSerializationError
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ._gate_metadata import cirq_wire_label
@@ -126,7 +126,14 @@ class RegisterCirqGate(Gate):
             ]
             if not leases or any(event.dirty for event in leases):
                 raise ValueError("Cirq guarded measurement requires a clean work lease")
-        self._body = ir
+        body_key: str | None
+        try:
+            frozen_body = CircuitIR.from_dict(ir.to_dict())
+            body_key = frozen_body.content_hash
+        except IRSerializationError:
+            frozen_body = ir
+            body_key = None
+        self._body = frozen_body
         self._bound = bound
         self._feedback_key_prefix = feedback_key_prefix
         self._guarded_measurement_work = guarded_measurement_work
@@ -143,6 +150,41 @@ class RegisterCirqGate(Gate):
             if bound is not None
             else ()
         )
+        self._value_key: tuple[object, ...] | None = None
+        if body_key is not None:
+            workspace = (
+                None
+                if bound is None
+                else (
+                    bound.outputs,
+                    tuple(
+                        (event.kind, event.wires, event.dirty, event.instruction_offset)
+                        for event in bound.events
+                    ),
+                )
+            )
+            self._value_key = (
+                body_key,
+                tuple(signature),
+                self._labels,
+                workspace,
+                feedback_key_prefix,
+                guarded_measurement_work,
+            )
+
+    def __eq__(self, other: object) -> bool:
+        if self is other:
+            return True
+        return (
+            isinstance(other, RegisterCirqGate)
+            and self._value_key is not None
+            and self._value_key == other._value_key
+        )
+
+    def __hash__(self) -> int:
+        if self._value_key is None:
+            return object.__hash__(self)
+        return hash(self._value_key)
 
     def _num_qubits_(self) -> int:
         return len(self._labels)

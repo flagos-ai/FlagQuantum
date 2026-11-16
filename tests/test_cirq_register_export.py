@@ -1382,3 +1382,74 @@ def test_register_gate_renders_frozen_shaped_wire_glyphs(
     assert cirq.circuit_diagram_info(gate**-1).wire_symbols == expected
     qids = tuple(cirq.LineQubit.range(8))
     assert tuple(cirq.decompose_once(gate.on(*qids))) == (cirq.X(qids[6]),)
+
+
+@pytest.mark.ftqc_reference
+def test_cirq_register_gate_uses_owned_value_identity(
+    cirq: Any, source_export: Any
+) -> None:
+    import torch
+    from qualtran.bloqs.basic_gates import Swap
+
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    source_a, source_b = (source_export.BloqAsCirqGate(Swap(1)) for _ in range(2))
+    assert source_a == source_b and hash(source_a) == hash(source_b)
+    signature = Signature.build(a=1, b=1)
+    body = CircuitIR(2, (Instruction("swap", (0, 1)),))
+    gate_a = RegisterCirqGate(body, signature)
+    gate_b = RegisterCirqGate(
+        CircuitIR.from_dict(body.to_dict()), Signature.build(a=1, b=1)
+    )
+    assert gate_a == gate_b and hash(gate_a) == hash(gate_b)
+    assert len({gate_a, gate_b}) == 1
+    assert gate_a != RegisterCirqGate(body, Signature.build(data=2))
+    assert gate_a != RegisterCirqGate(body, signature, feedback_key_prefix="key")
+    assert gate_a != RegisterCirqGate(
+        body,
+        signature,
+        wire_symbol=lambda register, index: ("TextBox", {"text": "custom"}),
+    )
+
+    raw = torch.tensor([[0, 1], [1, 0]], dtype=torch.complex128)
+    matrix_body = CircuitIR(1, (Instruction("matrix", (0,), matrix=raw),))
+    matrix_signature = Signature.build(q=1)
+    matrix_gate = RegisterCirqGate(matrix_body, matrix_signature)
+    identical = RegisterCirqGate(
+        CircuitIR.from_dict(matrix_body.to_dict()), matrix_signature
+    )
+    before = hash(matrix_gate)
+    raw.copy_(torch.eye(2, dtype=torch.complex128))
+    assert matrix_gate == identical and hash(matrix_gate) == before
+    assert matrix_gate != RegisterCirqGate(matrix_body, matrix_signature)
+    np.testing.assert_array_equal(cirq.unitary(matrix_gate), cirq.unitary(cirq.X))
+
+    opaque = CircuitIR(2, body.instructions, metadata={"opaque": object()})
+    opaque_gate = RegisterCirqGate(opaque, signature)
+    assert opaque_gate == opaque_gate
+    assert opaque_gate != RegisterCirqGate(opaque, signature)
+    assert [
+        op.gate for op in cirq.decompose_once(opaque_gate.on(*cirq.LineQubit.range(2)))
+    ] == [cirq.SWAP]
+
+
+def test_cirq_register_value_identity_includes_workspace_instruction_offsets(
+    cirq: Any,
+) -> None:
+    from dataclasses import replace
+
+    from flagquantum.compiler.registers.register_binding import (
+        BoundRegisterProgram,
+        WorkspaceEvent,
+    )
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    body = CircuitIR(2, (Instruction("x", (0,)), Instruction("x", (0,))))
+    allocate = WorkspaceEvent(0, "allocate", (1,), False, instruction_offset=0)
+    free = WorkspaceEvent(3, "free", (1,), False, instruction_offset=2)
+    first = BoundRegisterProgram(body, ((0,),), (allocate, free))
+    later = replace(first, events=(replace(allocate, instruction_offset=1), free))
+    signature = Signature.build(q=1)
+    gate = RegisterCirqGate(first, signature)
+    assert gate == RegisterCirqGate(replace(first), signature)
+    assert gate != RegisterCirqGate(later, signature)
