@@ -1,0 +1,17 @@
+{
+  "command": [
+    "<redacted-path>",
+    "-m",
+    "pytest",
+    "tests/api_contract/test_synthesis_phase_admission_proposal.py",
+    "tests/api_contract/test_synthesis_qmod_admission_proposal.py",
+    "tests/api_contract/test_synthesis_run_admission_proposal.py",
+    "-q",
+    "--junitxml=../training-review-historical-consumers-before.xml"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 1,
+  "reason": "process_exit",
+  "elapsed_seconds": 2.01,
+  "child_reaped": true
+}

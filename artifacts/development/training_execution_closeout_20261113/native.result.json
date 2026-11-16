@@ -1,0 +1,13 @@
+{
+  "command": [
+    "<redacted-path>",
+    "../training-review-native-profile.py",
+    "--library-root",
+    "/tmp/fq-native-qualification-lib"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 0,
+  "reason": "process_exit",
+  "elapsed_seconds": 4.03,
+  "child_reaped": true
+}

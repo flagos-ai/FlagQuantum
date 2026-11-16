@@ -1,0 +1,18 @@
+{
+  "command": [
+    "<redacted-path>",
+    "-m",
+    "pytest",
+    "-m",
+    "smoke or unit",
+    "-n",
+    "6",
+    "-q",
+    "--junitxml=../training-review-default.xml"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 1,
+  "reason": "process_exit",
+  "elapsed_seconds": 361.21,
+  "child_reaped": true
+}

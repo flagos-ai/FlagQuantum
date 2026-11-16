@@ -86,8 +86,8 @@ def test_all_basis_columns_and_complex_interference(name: str, width: int) -> No
     ports = (*program.registers["selector"], *data) if combined else data
     reference.any(*ports, matrix=transform_matrix(width, name))
     torch.testing.assert_close(
-        fq.run(generated).statevector(),
-        fq.run(reference).statevector(),
+        generated.state(),
+        reference.state(),
         atol=1e-12,
         rtol=0,
     )

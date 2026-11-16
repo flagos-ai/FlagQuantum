@@ -193,6 +193,58 @@ integration_tests = "tests/test_backends.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/architecture/RUNTIME_ARCHITECTURE.md"
 
+[capabilities.external_initial_state]
+title = "External statevector execution inputs"
+summary = "Execute an ordinary static Circuit with a per-call CPU initial state and replay its input-compatible plan."
+category = "simulation_and_training"
+user_goals = ["Supply a quantum state as execution data", "Reuse a plan for compatible inputs", "Differentiate input and gate parameters"]
+public_apis = ["run", "ExecutionPlan", "save", "load"]
+runtime_modes = ["statevector"]
+hardware = ["cpu"]
+gradient_support = "first_order_native_pytorch"
+distribution_semantics = "single_device_fast_path"
+quick_start = "flagquantum/runtime/README.md"
+documentation = "docs/development/EXECUTION_INITIAL_STATE_PROPOSAL.md"
+level = "experimental"
+owner = "Runtime maintainers"
+limitations = "Exact unbatched CPU PyTorch statevectors and probability outputs only; ordinary static Circuit sources only. Matching complex precision and unit norm are required. Dynamic/QEC external inputs, precompiled sources, structured/matrix operations, other engines, accelerators, distribution, noise, shots and remote loading are unsupported. Plans record input requirements, not amplitudes; caller resupplies compatible input. Marked plan-only FQX saves are refused. Minimum state-plus-copy budget is not a kernel workspace, autograd or RSS bound. No release, performance or scalability claim."
+focused_tests = "tests/api_contract/test_execution_initial_state.py"
+
+[capabilities.runtime_angle_inputs]
+title = "Named runtime angle inputs"
+summary = "Bind declared symbolic gate angles per execution and reuse an accepted symbolic plan."
+category = "simulation_and_training"
+user_goals = ["Bind named scalar angles", "Reuse one plan across optimizer steps", "Preserve caller-owned PyTorch gradients"]
+public_apis = ["run", "Parameter", "ParameterExpression", "ExecutionPlan", "save", "load"]
+runtime_modes = ["statevector"]
+hardware = ["cpu"]
+gradient_support = "first_order_native_pytorch"
+distribution_semantics = "single_device_fast_path"
+quick_start = "flagquantum/runtime/README.md"
+documentation = "docs/development/EXECUTION_RUNTIME_INPUTS_PROPOSAL.md"
+level = "experimental"
+owner = "Runtime maintainers"
+limitations = "Exact unbatched CPU PyTorch statevectors and probability outputs for ordinary static Circuit sources only. All symbolic names must be bound each run using finite Python floats or matching real scalar CPU tensors. Plans retain no supplied values or graphs. Optimization is disabled. External initial states, tensor literals, structured/matrix/dynamic operations, synthesis Program, other engines, accelerators, distribution, noise, shots, observables and remote binding are unsupported. Marked plan-only FQX saves are refused. State-memory preflight does not bound kernel temporary memory, autograd or process RSS. No release or speedup claim."
+focused_tests = "tests/api_contract/test_execution_runtime_inputs.py"
+
+[capabilities.training_parameter_checkpoint]
+title = "Training parameter checkpoint state"
+summary = "Resume qualified quantum training with frozen parameters, ordered optimizer bindings and transactional failure recovery."
+category = "simulation_and_training"
+user_goals = ["Resume a partially frozen model", "Preserve optimizer moments", "Reject reordered optimizer parameters before loading"]
+public_apis = ["Module"]
+runtime_modes = ["statevector", "mps", "tensor_network"]
+hardware = ["cpu"]
+gradient_support = "native_pytorch_step_boundary_resume"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/local/train_parameters.py"
+documentation = "docs/guides/TRAINING_PARAMETERS.md"
+level = "experimental"
+owner = "Runtime maintainers"
+limitations = "V3 qualification covers certified captured builders and ordinary named symbolic Circuit templates with default construction initial state and no source Tensor literals. V1/v2 keep caller-owned flags. Unqualified frozen sources refuse save. Exact optimizer names/order are required. Aliases, duplicate/unregistered optimizer references, custom state hooks/loading methods/optimizers and shared or custom storage are refused. Successful restore clears gradients; accumulated gradients and live graphs are not resumed. The quantum-owner identity does not fingerprint arbitrary classical host code. Local CPU conformance does not promote accelerator, distributed, cross-Torch-version, performance or release support."
+focused_tests = "tests/unit/test_training_parameter_state.py"
+integration_tests = "tests/integration/test_training_parameter_lifecycle.py"
+
 [capabilities.research_capability_services]
 title = "Research capability discovery, execution, and evidence"
 summary = "Discover and execute the bounded local ground-state research slice through one transport-neutral service contract with preflight, scientific validation, and tamper-evident evidence."

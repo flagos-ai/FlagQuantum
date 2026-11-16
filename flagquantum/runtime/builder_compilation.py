@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterator, Mapping
+import hashlib
+import json
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from contextvars import ContextVar
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING, Any
@@ -11,12 +13,41 @@ import torch
 
 from ..core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ..core.operator_schema import get_operator_schema
-from ..core.parameters import ParameterExpression
+from ..core.parameters import ParameterExpression, bind_parameter_value
 from ..errors import ExecutionError
 
 if TYPE_CHECKING:
     from ..circuit import Circuit
     from .module import Module
+
+
+def _reset_builder_capture(owner: Module) -> None:
+    object.__setattr__(owner, "_builder_program", None)
+    owner._builder_program_signature = None
+    owner._captured_builder = None
+    owner._training_program = None
+    owner._jax_constant_snapshots.clear()
+    owner._builder_bound_circuit = None
+    owner._builder_bindings.clear()
+    owner._builder_slots = ()
+
+
+def _bind_named_instructions(
+    instructions: Iterable[Instruction], values: Mapping[str, torch.Tensor]
+) -> tuple[Instruction, ...]:
+    """Materialize one call's named angles without copying or detaching tensors."""
+    # Core validates evaluated expressions as well as their input leaves: finite
+    # inputs can overflow. Admission rules belong to each public entry point.
+    return tuple(
+        Instruction(
+            name=instruction.name,
+            wires=instruction.wires,
+            params=bind_parameter_value(instruction.params, values),
+            matrix=instruction.matrix,
+            metadata=instruction.metadata,
+        )
+        for instruction in instructions
+    )
 
 
 class BuilderBindings:
@@ -317,6 +348,7 @@ def _remember_local_ir(
             )
         tensors, _, _ = _builder_tensor_inputs(parameters, inputs)
         if safe and sum(t.numel() * t.element_size() for t in tensors) <= budget:
+            owner._checkpoint_source = owner._captured_builder
             owner._last_ir_snapshot = None
             owner._last_ir_factory = deferred_ir_snapshot(
                 program, ir, tensors, len(owner._builder_slots)
@@ -403,3 +435,59 @@ def _bind_current_builder(
         _refuse_non_finite_bound_parameters(owner._builder_bound_circuit)
     owner._builder_bound_circuit._invalidate_execution_cache(instructions_changed=False)
     return owner._builder_bound_circuit
+
+
+def _parameter_checkpoint_signature(owner: Module, *, prepare: bool) -> str | None:
+    from ..circuit import Circuit
+
+    description: dict[str, Any]
+    if type(owner.circuit_builder) is Circuit:
+        source = owner.circuit_builder
+        ir = source.to_ir()
+
+        def contains_tensor(value: Any) -> bool:
+            if isinstance(value, torch.Tensor):
+                return True
+            if isinstance(value, Mapping):
+                return any(contains_tensor(item) for item in value.values())
+            if isinstance(value, (tuple, list)):
+                return any(contains_tensor(item) for item in value)
+            return False
+
+        if (
+            not source.parameter_names
+            or source.circuit_param.get("inputs") is not None
+            or any(
+                contains_tensor((item.params, item.matrix, item.metadata))
+                for item in ir.instructions
+            )
+            or contains_tensor(ir.metadata)
+        ):
+            return None
+        if not prepare and (
+            not isinstance(owner._checkpoint_source, CircuitIR)
+            or owner._checkpoint_source.to_dict() != ir.to_dict()
+        ):
+            raise ValueError("symbolic checkpoint template changed since execution")
+        description = {
+            "kind": "symbolic_circuit",
+            "encoding": 1,
+            "ir": ir.to_dict(),
+        }
+    else:
+        if not prepare and owner._checkpoint_source is not owner._captured_builder:
+            raise ValueError("checkpoint capture has not consumed the current program")
+        digest = owner._checkpoint_signature(prepare=prepare)
+        if (
+            not prepare
+            and owner._captured_builder is not None
+            and digest != owner._captured_checkpoint_digest
+        ):
+            raise ValueError("captured checkpoint program changed since capture")
+        if digest is None:
+            return None
+        description = {"kind": "captured_builder", "encoding": 2, "digest": digest}
+    encoded = json.dumps(
+        description, sort_keys=True, separators=(",", ":"), allow_nan=False
+    )
+    return hashlib.sha256(encoded.encode("utf-8")).hexdigest()

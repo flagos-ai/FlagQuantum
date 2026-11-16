@@ -11,6 +11,7 @@ from flagquantum import _api, synth
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.selection import select_arithmetic
 from flagquantum.services.synthesis import _complete
+from tools.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -62,7 +63,9 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
     )
 
     assert not _validate_authorized_synthesis_python_program(program)
-    assert str(inspect.signature(fq.run)) == PROPOSAL["unchanged_run_signature"]
+    assert str(inspect.signature(fq.run)) == _initial_state_run_signature(
+        PROPOSAL["unchanged_run_signature"]
+    )
     assert (
         str(inspect.signature(synth.Program.probabilities))
         == PROPOSAL["unchanged_probabilities_signature"]

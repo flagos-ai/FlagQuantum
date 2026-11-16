@@ -106,8 +106,19 @@ def run(
     target_qubits: Sequence[int] | None = None,
     shots: int | None = None,
     name: str | None = None,
+    initial_state: Tensor | None = None,
+    inputs: Mapping[str, float | Tensor] | None = None,
 ) -> ExecutionResult:
     """Execute locally, or compile and execute on one named remote target.
+
+    Args:
+        initial_state: Per-execution normalized CPU statevector for an ordinary
+            static Circuit or an input-compatible ExecutionPlan. Shape and
+            precision must match the program. Plans retain the requirement,
+            not the input amplitudes; supply an input again on replay.
+        inputs: Named real scalar angles declared with ``fq.Parameter``. This
+            CPU statevector route preserves PyTorch gradients. Supply all names
+            on every execution; external initial states cannot be combined yet.
 
     Examples:
         >>> import flagquantum as fq
@@ -122,7 +133,67 @@ def run(
         >>> _ = dynamic.conditional("x", 1, classical_bit=0)
         >>> fq.run(dynamic, shots=8).samples.shape
         torch.Size([8, 2])
+
+        Reuse an external-input plan with a fresh state:
+
+        >>> import torch
+        >>> initial = torch.tensor([0, 1], dtype=torch.complex64)
+        >>> circuit = fq.Circuit(1, dtype=torch.complex64).x(0)
+        >>> result = fq.run(circuit, initial_state=initial)
+        >>> fq.run(result.plan, initial_state=initial).statevector().shape
+        torch.Size([1, 2])
+
+        Bind fresh angles without replanning the accepted symbolic plan:
+
+        >>> program = fq.Circuit(1).ry(0, fq.Parameter("theta"))
+        >>> first = fq.run(program, inputs={"theta": 0.4})
+        >>> fq.run(first.plan, inputs={"theta": 0.8}).statevector().shape
+        torch.Size([1, 2])
     """
+
+    if inputs is not None:
+        from .circuit import Circuit
+        from .errors import CapabilityError
+        from .runtime.execution_plan import ExecutionPlan
+
+        if initial_state is not None:
+            raise CapabilityError("inputs and initial_state cannot be combined yet")
+        if type(program_or_plan) is not Circuit and not isinstance(
+            program_or_plan, ExecutionPlan
+        ):
+            raise CapabilityError(
+                "runtime inputs accept ordinary Circuit sources or compatible ExecutionPlans only"
+            )
+        if any(
+            value is not None
+            for value in (noise_model, compiler, target, target_qubits, shots, name)
+        ):
+            raise CapabilityError(
+                "runtime inputs have no noise, shots or remote execution route"
+            )
+
+    if initial_state is not None:
+        from .circuit import Circuit
+        from .errors import CapabilityError
+        from .runtime.execution_plan import ExecutionPlan
+
+        if not isinstance(initial_state, Tensor):
+            raise TypeError(
+                "initial_state must be a torch.Tensor or torch.nn.Parameter"
+            )
+        if type(program_or_plan) is not Circuit and not isinstance(
+            program_or_plan, ExecutionPlan
+        ):
+            raise CapabilityError(
+                "external initial_state accepts ordinary Circuit sources or compatible ExecutionPlans only"
+            )
+        if any(
+            value is not None
+            for value in (noise_model, compiler, target, target_qubits, shots, name)
+        ):
+            raise CapabilityError(
+                "external initial_state has no noise, shots or remote execution route"
+            )
 
     # A synthesis product has already loaded its canonical owner. Ordinary
     # circuit execution must not import application services to identify it.
@@ -191,6 +262,13 @@ def run(
         if isinstance(program_or_plan, ExecutionPlan):
             if outputs is not None:
                 raise TypeError("outputs must be None when executing an ExecutionPlan")
+            if inputs is not None:
+                return run_local(
+                    program_or_plan,
+                    options=options,
+                    noise_model=noise_model,
+                    inputs=inputs,
+                )
             return run_local(program_or_plan, options=options, noise_model=noise_model)
         if noise_model is not None:
             raise CapabilityError("native Ising execution has no noise-model route")
@@ -261,6 +339,22 @@ def run(
             )
         from .runtime.execution import run as run_local
 
+        if inputs is not None:
+            return run_local(
+                program_or_plan,
+                options=options,
+                measurements=measurements,
+                noise_model=noise_model,
+                inputs=inputs,
+            )
+        if initial_state is not None:
+            return run_local(
+                program_or_plan,
+                options=options,
+                measurements=measurements,
+                noise_model=noise_model,
+                initial_state=initial_state,
+            )
         return run_local(
             program_or_plan,
             options=options,
