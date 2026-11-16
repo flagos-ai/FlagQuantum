@@ -14,6 +14,10 @@ from .register_graph import RegisterConnection
 from .register_score import RegisterStep
 
 
+def _port_label(name: str, index: tuple[int, ...]) -> str:
+    return name + ("[" + ", ".join(map(str, index)) + "]" if index else "")
+
+
 def signature_instance_table(
     signature: Signature,
     step: RegisterStep,
@@ -60,14 +64,7 @@ def signature_instance_table(
         }
         for register in registers:
             for index in register.all_idxs():
-                label = (
-                    ""
-                    if hidden
-                    else escape(
-                        register.name
-                        + ("[" + ", ".join(map(str, index)) + "]" if index else "")
-                    )
-                )
+                label = "" if hidden else escape(_port_label(register.name, index))
                 sides[register.side].append(
                     (bindings[register.name, register.side, index], label)
                 )

@@ -5,7 +5,7 @@
 
 """Export instance-level register dependencies with explicit Graphviz ports."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from html import escape
 from itertools import zip_longest
@@ -80,19 +80,31 @@ def _export_register_graph_dot(
     attributes: Callable[[RegisterConnection], str],
     *,
     table: Callable[[int, RegisterStep, dict[str, str]], str] | None = None,
+    input_labels: Mapping[str, str] | None = None,
+    output_labels: Mapping[str, str] | None = None,
 ) -> str:
     """Share instance/port geometry across explicit edge presentations."""
     ports = {line.register: f"p{i}" for i, line in enumerate(score.lines)}
     lines = ["digraph registers {", "  rankdir=LR;"]
-    for prefix, boundary in (("in", -1), ("out", len(score.columns))):
+    for prefix, boundary, formal_labels in (
+        ("in", -1, input_labels),
+        ("out", len(score.columns), output_labels),
+    ):
         lines.append("  { rank=same;")
-        for line in score.lines:
-            position = line.start if prefix == "in" else line.end
-            if position == boundary:
-                label = escape(line.register)
-                lines.append(
-                    f"    {prefix}_{ports[line.register]} [shape=plain, label=<{label}>];"
-                )
+        labels = (
+            formal_labels
+            if formal_labels is not None
+            else {
+                line.register: line.register
+                for line in score.lines
+                if (line.start if prefix == "in" else line.end) == boundary
+            }
+        )
+        for register, name in labels.items():
+            label = escape(name)
+            lines.append(
+                f"    {prefix}_{ports[register]} [shape=plain, label=<{label}>];"
+            )
         lines.append("  }")
     for column in score.columns:
         label = (
