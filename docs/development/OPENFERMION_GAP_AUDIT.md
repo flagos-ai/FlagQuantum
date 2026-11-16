@@ -151,9 +151,9 @@ complex CPU density assembly with circuit-parameter gradients. It adds no
 OpenFermion/Cirq dependency, new RDM class or execution implementation.
 
 Step D landed in #1181 as a separate experimental registration. Step E
-provides [native two-body measurements and H2 energy reconstruction](FERMION_TWO_BODY_DENSITY.md)
-for small full-register CPU states. Measured-data constraint projection and
-separate capability registration are outside the implementation scope.
+landed in #1182 and provides [native two-body measurements and H2 energy reconstruction](FERMION_TWO_BODY_DENSITY.md)
+for small full-register CPU states. A separate Integration change records that
+workflow as experimental. Measured-data constraint projection remains deferred.
 The upstream inventory and its hashes still refer to the original audit pin;
 neither root import count nor this delivery update implies full compatibility.
 
