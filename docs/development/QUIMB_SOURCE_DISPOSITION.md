@@ -40,12 +40,16 @@ A trainable phase perturbation additionally checks complete numerical output and
 weighted gradients against an analytic formula; both default and explicit
 simplification policies are exercised. This does not modify the reference S gate.
 
-All two physical measurement branches retain their complete complex amplitudes;
-the unused clean bit remains zero. These physical checks bind the original graph
-with caller-owned zero inputs and exercise `circuit.append(op)`. The initialized
-graph's pool-owned destructive measurement still raises the existing retirement
-ownership-contract refusal. Numerical zero initialization does not authorize
-retiring a physical pool allocation. No ownership bypass is added or claimed.
+Both physical measurement branches retain their complete complex amplitudes;
+the unused clean bit remains zero. The checks bind the original graph with
+caller-owned zero inputs and the initialized graph with pool-owned clean inputs.
+All use `circuit.append(op)`. The initialized graph still requires an explicit
+ownership policy. The existing `retire` policy keeps each outcome on its retired
+wire. The existing `reset` policy restores that wire to zero in both branches.
+The idle output transfers to the caller and the CBit slot is preserved exactly
+when the signature returns it. With explicit discard, no classical slot returns.
+The tests compare both full complex branch vectors and the allocation and
+retirement events for X and Z.
 
 ## Source defects and stricter native boundaries
 
@@ -64,9 +68,10 @@ retiring a physical pool allocation. No ownership bypass is added or claimed.
 - Arbitrary external supplier discovery and foreign graph objects remain outside
   native IR. Selected providers are explicit and fail closed when unavailable.
 
-Q-0891 remains open under closure rule5: source defects and the physical retirement
-boundary remain unresolved. The empty-output negative record Q-0891.04 remains
-unchecked. Complete source disposition does not mean those defects were repaired.
+Q-0891 remains open under closure rule5 for the source empty-output, zero-width
+and direct-input discard defects. The native initialized graph's explicit
+retirement and reset policies are covered. The empty-output negative record
+Q-0891.04 remains unchecked.
 
 ## Measured resources and model estimates
 
@@ -79,6 +84,9 @@ Separately, the upstream initialized graph's QEC model reports **4 Clifford,
 1 measurement, 0 T** for both bases. That model includes two IntState preparations
 and treats MeasureX coarsely. These estimates are not the emitted gate counts.
 Numerical output storage, contraction cost and graph metadata are not gate costs.
+For the initialized native graph, explicit retirement emits the same gates.
+Explicit reset adds one physical reset. The source model above has no separate
+pool-reset operation.
 
 Existing tests retain measured-Add per-gate ordering, all small joint measurement
 histories, complex amplitudes, clean work and source cost evidence. The historical

@@ -2,7 +2,7 @@
 
 from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 import pytest
@@ -184,9 +184,7 @@ def test_initialized_phase_measurement_outputs_and_discard(
         rtol=0,
         atol=5e-16,
     )
-    # Numerical initialization does not grant physical retirement ownership for
-    # a pool-allocated word. Keep that existing refusal; bind the original graph
-    # with caller-owned zero inputs for the physical branch comparison.
+    # The default ownership policy still requires an explicit retirement choice.
     with pytest.raises(ValueError, match="retirement ownership contract"):
         bind_register_program(
             initialized,
@@ -207,6 +205,35 @@ def test_initialized_phase_measurement_outputs_and_discard(
     assert Circuit(3).append(FieldOperation(3, gates)).to_ir().instructions == gates
     initial = torch.zeros(8, dtype=like.dtype)
     initial[0] = 1
+    policies: tuple[Literal["retire", "reset"], ...] = ("retire", "reset")
+    owned = {
+        policy: bind_register_program(
+            initialized,
+            (),
+            entry="from_zero",
+            clean=(0, 1, 2),
+            allow_workspace_outputs=True,
+            measured_workspace=policy,
+        )
+        for policy in policies
+    }
+    for policy, allocation in owned.items():
+        owned_gates = allocation.circuit.instructions
+        assert tuple(g for g in owned_gates if g.name != "reset") == gates
+        assert Counter(g.name for g in owned_gates) == (
+            counts + Counter({"reset": 1}) if policy == "reset" else counts
+        )
+        assert allocation.outputs == bound.outputs
+        assert allocation.classical_outputs == bound.classical_outputs
+        assert [(event.kind, event.wires) for event in allocation.events] == [
+            ("allocate", (0,)),
+            ("allocate", (1,)),
+            ("free" if policy == "reset" else "retire", (0,)),
+        ]
+        assert (
+            Circuit(3).append(FieldOperation(3, owned_gates)).to_ir().instructions
+            == owned_gates
+        )
     # Each physical branch retains its exact complex phase and unused work is0.
     for bit in (0, 1):
         branch = forced_branch(initial, gates, (bit,))
@@ -218,9 +245,17 @@ def test_initialized_phase_measurement_outputs_and_discard(
             if basis == "z"
             else (1 + (1j if bit == 0 else -1j)) / 2
         )
-        torch.testing.assert_close(
-            nonzero[0], torch.tensor(exact, dtype=like.dtype), rtol=0, atol=4e-16
-        )
+        amplitude = torch.tensor(exact, dtype=like.dtype)
+        torch.testing.assert_close(nonzero[0], amplitude, rtol=0, atol=4e-16)
+        for policy, allocation in owned.items():
+            owned_branch = forced_branch(
+                initial, allocation.circuit.instructions, (bit,)
+            )
+            expected_branch = torch.zeros_like(initial)
+            expected_branch[4 * bit if policy == "retire" else 0] = amplitude
+            torch.testing.assert_close(
+                owned_branch, expected_branch, rtol=0, atol=4e-16
+            )
     model = get_cost_value(reference, QECGatesCost())
     assert model.measurement == 1 and model.clifford == 4
     assert model.total_t_count() == 0
