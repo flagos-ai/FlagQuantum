@@ -6,11 +6,14 @@ import pytest
 
 from flagquantum.algorithms.primitives.multiplexers.thc_resource_model import (
     select_thc_cost,
+    select_thc_signature,
     thc_rotations_cost,
+    thc_rotations_signature,
 )
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
+from tests.unit.test_sparse_chemistry_prepare import _assert_sparse_signature
 
 pytestmark = pytest.mark.unit
 
@@ -35,15 +38,47 @@ def test_thc_model_without_tables() -> None:
         (1, 2, 8, 1, 2, 3),
     ],
 )
+@pytest.mark.parametrize("control_value", [None, 0, 1])
 def test_thc_model_matches_locked_source(
-    num_mu: int, spin_orb: int, bits: int, keep: int, kr1: int, kr2: int
+    num_mu: int,
+    spin_orb: int,
+    bits: int,
+    keep: int,
+    kr1: int,
+    kr2: int,
+    control_value: int | None,
 ) -> None:
     pytest.importorskip("qualtran")
+    from qualtran import LeftDangle
+    from qualtran.bloqs.bookkeeping import Allocate, Free
     from qualtran.bloqs.chemistry.thc.select_bloq import SelectTHC, THCRotations
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    source = SelectTHC(num_mu, spin_orb, bits, keep, kr1, kr2)
-    component = select_thc_cost(num_mu, spin_orb, bits, keep, kr1=kr1, kr2=kr2)
+    source = SelectTHC(
+        num_mu, spin_orb, bits, keep, kr1, kr2, control_val=control_value
+    )
+    signature = select_thc_signature(
+        num_mu, spin_orb, keep, control_value=control_value
+    )
+    _assert_sparse_signature(signature, source.signature)
+    graph = source.decompose_bloq()
+    if control_value is not None:
+        assert graph.final_soqs()["control"].binst == LeftDangle
+    stages = tuple(graph.iter_bloqsoqs())
+    rotations = [
+        (ports, outputs)
+        for node, ports, outputs in stages
+        if isinstance(node.bloq, THCRotations)
+    ]
+    assert len(rotations) == 4
+    assert isinstance(rotations[0][0]["data"].binst.bloq, Allocate)
+    for (_, previous), (ports, _) in zip(rotations[:-1], rotations[1:], strict=True):
+        assert ports["data"] == previous[1]
+    (free_ports,) = (ports for node, ports, _ in stages if isinstance(node.bloq, Free))
+    assert free_ports["reg"] == rotations[-1][1][1]
+    component = select_thc_cost(
+        num_mu, spin_orb, bits, keep, kr1=kr1, kr2=kr2, control_value=control_value
+    )
     estimate = estimate_component_resources(component)
     assert {key: value for key, value in asdict(estimate.gates).items() if value} == (
         get_cost_value(source, QECGatesCost()).asdict()
@@ -73,6 +108,9 @@ def test_thc_model_matches_locked_source(
         assert leaf == rotation
         source_rotation = THCRotations(
             num_mu, spin_orb, bits, kr1, kr2, two_body, adjoint
+        )
+        _assert_sparse_signature(
+            thc_rotations_signature(num_mu, spin_orb, bits), source_rotation.signature
         )
         costs = estimate_component_resources(rotation)
         source_gates = get_cost_value(source_rotation, QECGatesCost())

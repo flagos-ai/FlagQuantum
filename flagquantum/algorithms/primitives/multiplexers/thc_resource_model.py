@@ -12,7 +12,76 @@ from ....compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
+from ....core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+    quantum_bit_type,
+)
+from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
 from ..chemistry_number_phase import ChemistryNumberPhase
+
+
+def _spatial_orbitals(num_mu: int, num_spin_orb: int) -> int:
+    if any(type(value) is not int or value < 1 for value in (num_mu, num_spin_orb)):
+        raise ValueError("THC dimensions must be positive integers")
+    if num_spin_orb % 2:
+        raise ValueError("THC requires paired spin orbitals")
+    return num_spin_orb // 2
+
+
+def thc_rotations_signature(
+    num_mu: int, num_spin_orb: int, num_bits_theta: int
+) -> Signature:
+    """Describe the source rotation leaf's shared data and through ports."""
+    orbitals = _spatial_orbitals(num_mu, num_spin_orb)
+    if type(num_bits_theta) is not int or num_bits_theta < 2:
+        raise ValueError("THC requires at least two angle bits")
+    return Signature(
+        (
+            Register("nu_eq_mp1", quantum_bit_type()),
+            Register("data", opaque_register_type(num_bits_theta)),
+            Register("sel", opaque_register_type(num_mu.bit_length())),
+            Register("trg", opaque_register_type(orbitals)),
+        )
+    )
+
+
+def select_thc_signature(
+    num_mu: int,
+    num_spin_orb: int,
+    keep_bitsize: int,
+    *,
+    control_value: int | None = None,
+) -> Signature:
+    """Describe the source selection order and its optional pass-through bit."""
+    orbitals = _spatial_orbitals(num_mu, num_spin_orb)
+    if type(keep_bitsize) is not int or keep_bitsize < 1:
+        raise ValueError("THC keep width must be a positive integer")
+    if control_value is not None and (
+        type(control_value) is not int or control_value not in (0, 1)
+    ):
+        raise ValueError("THC SELECT control value must be zero, one or None")
+    control = (
+        () if control_value is None else (Register("control", quantum_bit_type()),)
+    )
+    bit = bounded_unsigned_register_type(1)
+    orbital = bounded_unsigned_register_type(num_mu.bit_length(), num_mu + 1)
+    system = opaque_register_type(orbitals)
+    return Signature(
+        (
+            *control,
+            Register("succ", bit),
+            Register("nu_eq_mp1", bit),
+            Register("mu", orbital),
+            Register("nu", orbital),
+            *(Register(name, bit) for name in ("plus_mn", "plus_a", "plus_b")),
+            Register("sigma", bounded_unsigned_register_type(keep_bitsize)),
+            Register("rot", bit),
+            Register("sys_a", system),
+            Register("sys_b", system),
+        )
+    )
 
 
 def thc_rotations_cost(
@@ -26,19 +95,11 @@ def thc_rotations_cost(
     adjoint: bool = False,
 ) -> ComponentCost:
     """Build the locked lookup and addition estimate for one THC rotation leaf."""
-    if any(
-        type(value) is not int or value < 1
-        for value in (num_mu, num_spin_orb, kr1, kr2)
-    ):
-        raise ValueError(
-            "THC dimensions and erasure block sizes must be positive integers"
-        )
-    if num_spin_orb % 2 or type(num_bits_theta) is not int or num_bits_theta < 2:
-        raise ValueError(
-            "THC requires paired spin orbitals and at least two angle bits"
-        )
+    signature = thc_rotations_signature(num_mu, num_spin_orb, num_bits_theta)
+    if any(type(value) is not int or value < 1 for value in (kr1, kr2)):
+        raise ValueError("THC erasure block sizes must be positive integers")
     orbitals = num_spin_orb // 2
-    width = 1 + num_bits_theta + num_mu.bit_length() + orbitals
+    width = int(signature.n_qubits())
     if adjoint:
         if two_body_only:
             lookup_cost = ceil(num_mu / kr1) + ceil(num_spin_orb / (2 * kr1)) + kr1
@@ -64,6 +125,7 @@ def select_thc_cost(
     *,
     kr1: int = 1,
     kr2: int = 1,
+    control_value: int | None = None,
 ) -> ComponentCost:
     """Build the locked THC SELECT model from dimensions and erasure block sizes.
 
@@ -72,10 +134,9 @@ def select_thc_cost(
     source rotation leaf declares Toffoli counts for lookup and phase-gradient
     addition. It has no executable decomposition or measurement count.
     """
-    if type(keep_bitsize) is not int or keep_bitsize < 1:
-        raise ValueError(
-            "THC dimensions and erasure block sizes must be positive integers"
-        )
+    signature = select_thc_signature(
+        num_mu, num_spin_orb, keep_bitsize, control_value=control_value
+    )
     calls = (
         CostCall(
             thc_rotations_cost(
@@ -112,9 +173,7 @@ def select_thc_cost(
     reflect_two = ChemistryNumberPhase((1, 0), orbitals).resource_model(
         "ApplyControlledZs(1,0)"
     )
-    # Five selection flags, one rotation flag, two addresses and both systems.
-    signature_width = 6 + keep_bitsize + 2 * address_width + num_spin_orb
-    live_width = signature_width + num_bits_theta
+    live_width = int(signature.n_qubits()) + num_bits_theta
     return ComponentCost(
         "SelectTHC",
         live_width,
