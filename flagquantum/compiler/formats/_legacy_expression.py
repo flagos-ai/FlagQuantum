@@ -51,6 +51,19 @@ def _check_integer_size(value: Expr) -> None:
         raise SerializationError("Legacy symbolic integer exceeds the decode budget")
 
 
+def _check_power_budget(left: Expr | int | float, right: Expr | int | float) -> None:
+    from sympy import Rational
+
+    if isinstance(right, (int, Rational)) and (
+        abs(right) > _MAX_INTEGER_BITS
+        or isinstance(left, (int, Rational))
+        and abs(right) > 1
+        and abs(right) * max(left.numerator.bit_length(), left.denominator.bit_length())
+        > _MAX_INTEGER_BITS
+    ):
+        raise SerializationError("Legacy symbolic exponent exceeds the decode budget")
+
+
 def parse_legacy_expression(text: str) -> Expr:
     """Build trusted SymPy nodes from syntax without evaluating Python calls."""
     import sympy
@@ -74,20 +87,8 @@ def parse_legacy_expression(text: str) -> Expr:
             return value if isinstance(node.op, ast.UAdd) else -value
         elif isinstance(node, ast.BinOp) and type(node.op) in _BINARY:
             left, right = evaluate(node.left), evaluate(node.right)
-            if (
-                isinstance(node.op, ast.Pow)
-                and right.is_Rational
-                and (
-                    abs(right) > _MAX_INTEGER_BITS
-                    or left.is_Rational
-                    and abs(right) > 1
-                    and abs(right) * max(left.p.bit_length(), left.q.bit_length())
-                    > _MAX_INTEGER_BITS
-                )
-            ):
-                raise SerializationError(
-                    "Legacy symbolic exponent exceeds the decode budget"
-                )
+            if isinstance(node.op, ast.Pow):
+                _check_power_budget(left, right)
             result = _BINARY[type(node.op)](left, right)
             _check_integer_size(result)
             return result

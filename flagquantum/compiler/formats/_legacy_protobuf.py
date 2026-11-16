@@ -8,6 +8,19 @@ from ...errors import SerializationError
 
 
 @cache
+def _protobuf_runtime() -> tuple[Any, Any, Any]:
+    """Load the optional descriptor backend only when a wire adapter is used."""
+    try:
+        descriptors = import_module("google.protobuf.descriptor_pb2")
+        pools = import_module("google.protobuf.descriptor_pool")
+        messages = import_module("google.protobuf.message_factory")
+    except ImportError as error:
+        raise ImportError("Legacy protobuf interchange requires protobuf") from error
+
+    return descriptors, pools, messages
+
+
+@cache
 def message_factory(
     name: str,
     fields: tuple[tuple[str, str | type[Any]], ...],
@@ -16,12 +29,7 @@ def message_factory(
     optional: tuple[str, ...] = (),
 ) -> Any:
     """Build a private proto3 descriptor using protobuf's runtime API."""
-    try:
-        descriptors = import_module("google.protobuf.descriptor_pb2")
-        pools = import_module("google.protobuf.descriptor_pool")
-        messages = import_module("google.protobuf.message_factory")
-    except ImportError as error:
-        raise ImportError("Legacy protobuf interchange requires protobuf") from error
+    descriptors, pools, messages = _protobuf_runtime()
 
     schema = descriptors.FileDescriptorProto(
         name=f"flagquantum/{name}.proto", package="flagquantum", syntax="proto3"
