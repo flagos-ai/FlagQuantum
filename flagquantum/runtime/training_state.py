@@ -809,11 +809,12 @@ def _restore_training_checkpoint(
         _restore_rng(original_rng)
         raise
     if is_v3:
+        from .builder_compilation import _reset_builder_capture
         from .module import Module
 
         # Match historical restore invalidation without applying a tensor cast.
         if isinstance(owner, Module):
-            owner._reset_builder_capture()
+            _reset_builder_capture(owner)
     return seed, precision
 
 

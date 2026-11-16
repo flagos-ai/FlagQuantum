@@ -29,6 +29,7 @@ from .builder_compilation import (
     _install_captured_bindings,
     _parameter_checkpoint_signature,
     _remember_local_ir,
+    _reset_builder_capture,
     _tensor_constant_key,
     can_defer_ir_snapshot,
     deferred_ir_snapshot,
@@ -338,18 +339,8 @@ class Module(torch.nn.Module):
         self._jax_kernel = None
         self._jax_kernel_signature = None
         self._jax_ir_template = None
-        self._reset_builder_capture()
+        _reset_builder_capture(self)
         return self
-
-    def _reset_builder_capture(self) -> None:
-        object.__setattr__(self, "_builder_program", None)
-        self._builder_program_signature = None
-        self._captured_builder = None
-        self._training_program = None
-        self._jax_constant_snapshots.clear()
-        self._builder_bound_circuit = None
-        self._builder_bindings.clear()
-        self._builder_slots = ()
 
     @staticmethod
     def _finite_gradient_hook(gradient: torch.Tensor) -> torch.Tensor:

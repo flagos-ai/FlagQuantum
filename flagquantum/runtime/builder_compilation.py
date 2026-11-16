@@ -21,6 +21,17 @@ if TYPE_CHECKING:
     from .module import Module
 
 
+def _reset_builder_capture(owner: Module) -> None:
+    object.__setattr__(owner, "_builder_program", None)
+    owner._builder_program_signature = None
+    owner._captured_builder = None
+    owner._training_program = None
+    owner._jax_constant_snapshots.clear()
+    owner._builder_bound_circuit = None
+    owner._builder_bindings.clear()
+    owner._builder_slots = ()
+
+
 def _bind_named_instructions(
     instructions: Iterable[Instruction], values: Mapping[str, torch.Tensor]
 ) -> tuple[Instruction, ...]:
