@@ -79,7 +79,7 @@ def _branch(
                 updated[index | mask] += (-amp if index & mask else amp) / sqrt(2)
             elif gate.name == "x" or (gate.name == "cx" and index & masks[0]):
                 updated[index ^ mask] += amp
-            elif gate.name == "cy" and index & masks[0]:
+            elif gate.name == "y" or (gate.name == "cy" and index & masks[0]):
                 updated[index ^ mask] += amp * (-1j if index & mask else 1j)
             elif gate.name == "ccx" and all(index & control for control in masks[:-1]):
                 updated[index ^ mask] += amp
