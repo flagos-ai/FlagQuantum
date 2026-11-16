@@ -176,6 +176,18 @@ leases. A leaked clean CX and a phase entangling borrowed work both refuse
 matrix inspection. A separate complex phase fixture covers interleaved
 clean and borrowed axes. Inspection uses the native dense width limit.
 
+For a small dynamic through body, dense inspection projects every admitted
+measurement and reset history on the full set of logical basis columns. It
+checks clean and borrowed restoration, then requires each nonzero branch
+matrix to be proportional to the same unitary and the branch probabilities
+to sum to one. The normalized first nonzero branch supplies the phase of
+the returned representative. This matrix describes the logical channel
+with classical records discarded. The computation is capped at eight
+effects and a worst-case count of 1,048,576 complex branch amplitudes.
+The original measured ComputeUncompute tensor matches the checked matrix.
+Direct logical measurement, leaked work and incomplete branch mass refuse
+inspection.
+
 The source X/Free composite and the native owned left-only body each emit
 one X on the caller's input before releasing that input. Neither passes the
 caller Qid to the underlying qubit manager. The source model contains one
@@ -209,12 +221,18 @@ Simulation retain ownership of physical binding and dense inspection.
 
 ## Remaining files
 
-- Q-0715 retains dense inspection of dynamic workspace bodies. Guarded measurement
-  requires a dedicated clean wire in the export scope.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
 
 ## Export test family acceptance
+
+Q-0715 covers the native export responsibilities in the table and the
+checked dynamic through matrix. The admitted path uses owned register
+bodies, explicit classical keys, concrete binary placement and verified
+workspace leases. Source-adapter value identity, diagram callbacks,
+decomposition, and Clifford workspace cleanup have native counterparts.
+Guarded measurement takes a dedicated clean wire. The dense branch budget
+and the locked source export refusals remain documented boundaries.
 
 Q-0716 covers the complete frozen test file, including its notebook receipt.
 The native witnesses exercise the original swap and tensor-only widths,
