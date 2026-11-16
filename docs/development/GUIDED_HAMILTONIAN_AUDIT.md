@@ -50,3 +50,31 @@ and source fixture serialization. The locked suite explicitly skips
 decomposition-dependent count and dtype tests and expects serialization
 failure for examples using KXorInstance. The source tutorial has been
 recovered by blob and executes independently.
+
+## Guided query-cost tutorial (Q-0542)
+
+The native tutorial retains all 20 original cell positions, both oracle
+signatures, the guide, and the amplified and standalone phase-estimation
+resource tables. Its helper extends the existing guided call graph with
+tutorial-specific generalized leaves. It keeps the position oracle
+and its inverse distinct, for both bare and controlled calls. The
+entry oracle is self-adjoint. The three identity preparations retain
+their walk, guide, and whole-signature scopes.
+
+The locked tutorial's 14 amplified and 10 phase-only leaves each agree
+symbolically with the native exact tables and the separately computed
+upper bounds. The rewrite uses the source's temporary integer-width
+substitution before replacing the power-of-two window budget. This
+preserves the simplifications in nested floor and logarithm
+expressions. Controlled query counts remain exact. If the amplification
+count is r, the controlled entry count is 4r+2 and the controlled
+position counts are 2r+2 forward and 2r inverse.
+
+The native tutorial independently executes 10 code cells and renders the
+four-port guided signature. The three output tables contain 14 exact,
+14 bounded, and 10 bounded phase-only rows. The original tutorial
+kernel result is recorded above. Its oracles are declarations and emit
+no primitives. Q-0538 now has both native notebook counterparts and
+remains open for the original KXorInstance serialization expected
+failures. Q-0537 still requires the distinct k-XOR oracle dependency
+chain.
