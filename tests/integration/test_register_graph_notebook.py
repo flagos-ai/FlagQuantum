@@ -47,6 +47,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_double_factorization", 11, 4, 1),
         ("register_single_factorization", 8, 4, 0),
         ("register_chemistry_resources", 12, 1, 7),
+        ("register_thc_chemistry", 18, 9, 2),
         ("register_hubbard_qubitization", 9, 4, 0),
         ("register_hubbard_select", 16, 4, 1),
         ("register_first_quantization", 29, 14, 0),
