@@ -100,9 +100,10 @@ class SymbolicCallGraph(Generic[Node]):
         return sum(count * unit_cost(node) for node, count in self.leaf_counts.items())
 
 
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/resource_counting/_generalization.py
 def compose_cost_generalizer(
     generalizer: Generalizer[Node] | Sequence[Generalizer[Node]] | None,
-) -> Generalizer[Node]:
+) -> Callable[[Node | None], Node | None]:
     """Apply ordered rewrites until a component is omitted."""
     if generalizer is None:
         generalizers: Sequence[Generalizer[Node]] = ()
@@ -111,14 +112,12 @@ def compose_cost_generalizer(
     else:
         generalizers = generalizer
 
-    def apply(node: Node) -> Node | None:
-        current = node
+    def apply(node: Node | None) -> Node | None:
         for transform in generalizers:
-            updated = transform(current)
-            if updated is None:
+            if node is None:
                 return None
-            current = updated
-        return current
+            node = transform(node)
+        return node
 
     return apply
 
