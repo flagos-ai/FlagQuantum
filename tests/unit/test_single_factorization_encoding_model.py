@@ -6,11 +6,14 @@ import pytest
 
 from flagquantum.algorithms.primitives.single_factorization_encoding_model import (
     source_single_factorization_block_encoding_cost,
+    source_single_factorization_block_signature,
     source_single_factorization_one_body_cost,
+    source_single_factorization_one_body_signature,
 )
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
+from tests.unit.test_single_factorization_resource_model import assert_source_signature
 
 pytestmark = pytest.mark.unit
 
@@ -63,7 +66,15 @@ def test_locked_one_body_graph(forward, inverse, adjoint):
     model = source_single_factorization_one_body_cost(
         50, 10, 12, 7, forward_blocks=forward, inverse_blocks=inverse
     )
+    signature = source_single_factorization_one_body_signature(50, 10)
+    assert_source_signature(signature, source.signature)
+    assert_source_signature(signature[3:-1], source.selection_registers)
+    assert_source_signature(signature[3:-1], source.signal_state.prepare.signature)
     _assert_source_graph(model, source)
+    with pytest.raises(NotImplementedError):
+        _ = source.alpha
+    with pytest.raises(NotImplementedError):
+        _ = source.epsilon
 
 
 @pytest.mark.ftqc_reference
@@ -99,6 +110,10 @@ def test_locked_full_encoding_graph(orbitals, aux, alias, rotations, forward, in
         forward_blocks=forward,
         inverse_blocks=inverse,
     )
+    signature = source_single_factorization_block_signature(aux, orbitals)
+    assert_source_signature(signature, source.signature)
+    assert_source_signature(signature[1:-1], source.selection_registers)
+    assert_source_signature(signature[1:-1], source.signal_state.prepare.signature)
     instructions = _assert_source_graph(model, source)
     assert set(instructions[2][1]) == {"control", "reg0_", "reg1_", "reg2_", "reg3_"}
     assert instructions[2][1]["control"].reg.name == "succ_l"
@@ -106,3 +121,21 @@ def test_locked_full_encoding_graph(orbitals, aux, alias, rotations, forward, in
         _ = source.alpha
     with pytest.raises(NotImplementedError):
         _ = source.epsilon
+
+
+@pytest.mark.ftqc_reference
+def test_encoding_narrow_signatures_keep_explicit_zero_width_addresses():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.sf.single_factorization import (
+        SingleFactorizationBlockEncoding,
+        SingleFactorizationOneBody,
+    )
+
+    assert_source_signature(
+        source_single_factorization_one_body_signature(0, 2),
+        SingleFactorizationOneBody(0, 2, 4).signature,
+    )
+    assert_source_signature(
+        source_single_factorization_block_signature(0, 2),
+        SingleFactorizationBlockEncoding(2, 0, 4).signature,
+    )

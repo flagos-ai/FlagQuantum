@@ -48,16 +48,18 @@ def _assert_model(model, source):
 
 
 def assert_source_signature(native, source):
-    from qualtran import QAny, QBit
+    from qualtran import BQUInt, QAny, QBit
+
+    def source_dtype(reg):
+        if reg.dtype.encoding == "uint":
+            return BQUInt(reg.bitsize, dict(reg.dtype.parameters)["bound"])
+        if reg.dtype.encoding == "bit":
+            return QBit()
+        assert reg.dtype.encoding == "opaque"
+        return QAny(reg.bitsize)
 
     assert [
-        (
-            reg.name,
-            reg.side.value,
-            reg.shape,
-            QBit() if reg.dtype.encoding == "bit" else QAny(reg.bitsize),
-        )
-        for reg in native
+        (reg.name, reg.side.value, reg.shape, source_dtype(reg)) for reg in native
     ] == [(reg.name, reg.side.value, reg.shape, reg.dtype) for reg in source]
 
 

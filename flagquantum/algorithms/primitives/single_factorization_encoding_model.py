@@ -13,7 +13,15 @@ from ...compiler._component_trace.resource_model import (
 from ...compiler.registers.preparation.prepare_reflection import (
     source_prepare_reflection_cost,
 )
+from ...core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+    quantum_bit_type,
+)
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from .single_factorization_resource_model import (
+    _auxiliary_width,
     _controlled_swap_cost,
     _spatial_width,
     source_single_factorization_inner_prepare_cost,
@@ -22,6 +30,49 @@ from .single_factorization_resource_model import (
 )
 
 _HADAMARD = ComponentCost("Hadamard", 1, GateCost(clifford=1))
+
+
+def source_single_factorization_one_body_signature(
+    auxiliaries: int, spin_orbitals: int
+) -> Signature:
+    """Describe the separately bounded source selectors and two spin banks."""
+    n = _spatial_width(spin_orbitals)
+    spatial = spin_orbitals // 2
+    bit = quantum_bit_type()
+    factor = bounded_unsigned_register_type(
+        _auxiliary_width(auxiliaries), auxiliaries + 1
+    )
+    orbital = bounded_unsigned_register_type(n, spatial)
+    flag = bounded_unsigned_register_type(1)
+    return Signature(
+        (
+            *(Register(name, bit) for name in ("succ_l", "l_ne_zero", "succ_pq")),
+            Register("l", factor),
+            Register("p", orbital),
+            Register("q", orbital),
+            *(Register(name, flag) for name in ("rot_aa", "swap_pq", "spin")),
+            Register("sys", opaque_register_type(spatial), shape=(2,)),
+        )
+    )
+
+
+def source_single_factorization_block_signature(
+    auxiliaries: int, spin_orbitals: int
+) -> Signature:
+    """Describe the full source block's shaped control, address, and system ports."""
+    n = _spatial_width(spin_orbitals)
+    bit = quantum_bit_type()
+    return Signature(
+        (
+            Register("ctrl", bit, shape=(3,)),
+            Register("l", opaque_register_type(_auxiliary_width(auxiliaries))),
+            Register("pq", opaque_register_type(n), shape=(2,)),
+            Register("rot_aa", bit, shape=(2,)),
+            Register("swap_pq", bit),
+            Register("spin", bit),
+            Register("sys", opaque_register_type(spin_orbitals // 2), shape=(2,)),
+        )
+    )
 
 
 def source_single_factorization_one_body_cost(
@@ -42,8 +93,10 @@ def source_single_factorization_one_body_cost(
     )
     swap = _controlled_swap_cost(n)
     select = source_single_factorization_select_cost(spin_orbitals)
-    # Three flags, l, p/q, rot_aa, swap_pq, spin, and the spin orbitals.
-    width = 6 + auxiliaries.bit_length() + 2 * n + spin_orbitals
+    signature = source_single_factorization_one_body_signature(
+        auxiliaries, spin_orbitals
+    )
+    width = int(signature.n_qubits())
     return ComponentCost(
         "SingleFactorizationOneBody",
         width,
@@ -85,7 +138,8 @@ def source_single_factorization_block_encoding_cost(
         forward_blocks=forward_blocks,
         inverse_blocks=inverse_blocks,
     )
-    width = body.qubits + 1
+    signature = source_single_factorization_block_signature(auxiliaries, spin_orbitals)
+    width = int(signature.n_qubits())
     prepare = source_single_factorization_outer_prepare_cost(auxiliaries, alias_bits)
     unprepare = source_single_factorization_outer_prepare_cost(
         auxiliaries, alias_bits, adjoint=True
