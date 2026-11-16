@@ -114,3 +114,31 @@ four evolution times, both precisions and five locked random draws
 per combination. All 80 complete GQSP matrices agree with Qualtran.
 Q-0541 retains the full randomized block-encoded Hamiltonian
 projection grid and the native controlled Hubbard resource query.
+
+## Complete randomized grid and resource test disposition
+
+Q-0541 is accepted as a test-file batch. The locked test suite ran
+all 42 cases, with 39 passes and three expected failures. The two count
+expected failures are source harness policy. The symbolic serialization
+expected failure is an upstream capability limit. Both dispositions
+are preserved in the reference run. Native declarations are compared
+directly against the source; the symbolic model has no serialization
+claim.
+
+| Source test coverage | Native or locked evidence |
+| --- | --- |
+| Concrete and symbolic factories | Locked autotester results, native Hubbard signatures and every depth-one and depth-two call |
+| Random unitary polynomial grid | Exact coefficients and all 80 native full matrices from the locked draws, including the four slow parameter cases |
+| Random Hamiltonian evolution grid | All 60 draws exercise native PREPARE, controlled SELECT, walk reflection and GQSP via append; every complex matrix column equals the source and the leading block agrees with the independent exponential within 1e-4 |
+| Plain T complexity and symbolic cost | Full gate categories and peak 28, plus legacy T conversion, the modern symbolic T-equivalent total and its asymptotic order |
+| Controlled Hubbard resource cost | Every child multiplicity, complete gate categories and peak width compared with locked QECGatesCost and QubitCount |
+
+The controlled degree-127 model declares 4,074 controlled swaps, 7,751
+Ands, 24,283 Cliffords, 3,570 rotations and 7,751 measurements, with
+peak width 30. The two forward controls share one conjunction. The
+controlled adjoint decomposes into separately controlled SELECT and
+reflection. These values are declared costs. The measured Hubbard
+example above retains its own IR counters.
+
+Q-0540 remains open at the source clean-release boundary for outer
+PREPARE temp. Q-0541's test coverage preserves that witness.
