@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pytest
+from numpy.typing import NDArray
 
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.control.multi_control import multi_and_ir
@@ -905,36 +906,54 @@ def test_cirq_feedback_replays_each_and_branch(
     weights = np.arange(1, 9).astype(np.complex128) + 1j * np.arange(8, 0, -1)
     initial[:, :, 0, :] = (weights / np.linalg.norm(weights)).reshape(2, 2, 2)
     for history in product((0, 1), repeat=2):
-        state = initial.reshape(-1).copy()
-        bits = iter(history)
-        classical = cirq.ClassicalDataDictionaryStore()
-        last = 0
-        for operation in emitted:
-            if cirq.is_measurement(operation):
-                last = next(bits)
-                selector = (slice(None), slice(None), 1 - last, slice(None))
-                state.reshape((2,) * 4)[selector] = 0
-                classical.record_measurement(
-                    cirq.measurement_key_obj(operation), (last,), operation.qubits
-                )
-                continue
-            if isinstance(operation, cirq.ClassicallyControlledOperation):
-                if not all(
-                    condition.resolve(classical)
-                    for condition in operation.classical_controls
-                ):
-                    continue
-                operation = operation.without_classical_controls()
-            if isinstance(operation.gate, cirq.ResetChannel):
-                if last == 0:
-                    continue
-                operation = cirq.X(qids[2])
-            state = cirq.Circuit(operation).unitary(qubit_order=order) @ state
+        state = _cirq_feedback_branch(cirq, emitted, order, initial, history)
         native = forced_branch(
             torch.from_numpy(initial.reshape(-1)), body.instructions, history
         )
         np.testing.assert_allclose(state, native.numpy(), atol=2e-12, rtol=0)
         np.testing.assert_allclose(state, initial.reshape(-1) / 2, atol=2e-12, rtol=0)
+
+
+def _cirq_feedback_branch(
+    cirq: Any,
+    emitted: tuple[Any, ...],
+    order: tuple[Any, ...],
+    initial: NDArray[np.complex128],
+    history: tuple[int, ...],
+) -> NDArray[np.complex128]:
+    """Project each measurement and apply resets only on collapsed wires."""
+    state: NDArray[np.complex128] = initial.reshape(-1).copy()
+    bits = iter(history)
+    shape = (2,) * len(order)
+    classical = cirq.ClassicalDataDictionaryStore()
+    for operation in emitted:
+        if cirq.is_measurement(operation):
+            bit = next(bits)
+            (qubit,) = operation.qubits
+            np.moveaxis(state.reshape(shape), order.index(qubit), 0)[1 - bit] = 0
+            classical.record_measurement(
+                cirq.measurement_key_obj(operation), (bit,), operation.qubits
+            )
+            continue
+        if isinstance(operation, cirq.ClassicallyControlledOperation):
+            if not all(
+                condition.resolve(classical)
+                for condition in operation.classical_controls
+            ):
+                continue
+            operation = operation.without_classical_controls()
+        if isinstance(operation.gate, cirq.ResetChannel):
+            (qubit,) = operation.qubits
+            zero, one = np.moveaxis(state.reshape(shape), order.index(qubit), 0)
+            if np.linalg.norm(one) <= 1e-14:
+                continue
+            np.testing.assert_allclose(zero, 0, atol=1e-14, rtol=0)
+            operation = cirq.X(qubit)
+        state = np.asarray(
+            cirq.Circuit(operation).unitary(qubit_order=order) @ state,
+            dtype=np.complex128,
+        )
+    return state
 
 
 def test_cirq_feedback_keeps_both_polarities_in_disjunctions(cirq: Any) -> None:
@@ -1058,3 +1077,111 @@ def test_gate_feedback_snapshots_xor_and_remaps_workspace_offsets(cirq: Any) -> 
         np.testing.assert_allclose(
             actual.final_state_vector, native.numpy(), atol=2e-12, rtol=0
         )
+
+
+def test_cirq_guarded_measurement_preserves_the_inactive_instrument(cirq: Any) -> None:
+    from dataclasses import replace
+    from itertools import product
+
+    import torch
+
+    from flagquantum.compiler.registers.register_binding import (
+        BoundRegisterProgram,
+        WorkspaceEvent,
+    )
+    from flagquantum.core.classical_dataflow import ClassicalXor
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+    from tests.unit.measurement_checks import forced_branch
+
+    effect = {"is_dynamic": True, "guarded_effect": True, "conditions": ((0, 1),)}
+    body = CircuitIR(
+        4,
+        (
+            Instruction(
+                "measure", (0,), metadata={"is_dynamic": True, "classical_bit": 0}
+            ),
+            ClassicalXor((), 2, constant=True).instruction(),
+            Instruction("measure", (1,), metadata={**effect, "classical_bit": 2}),
+            Instruction("x", (2,), metadata={"conditions": ((2, 1),)}),
+            Instruction("reset", (1,), metadata=effect),
+        ),
+    )
+    signature = Signature.build(guard=1, data=1, answer=1)
+    wires = {"guard": (0,), "data": (1,), "answer": (2,)}
+    qids = tuple(cirq.LineQubit.range(4))
+    placement = dict(zip(wires, qids[:3], strict=True))
+    exported, _ = export_register_cirq(
+        body,
+        signature,
+        wires,
+        input_quregs=placement,
+        feedback_key_prefix="guarded",
+        guarded_measurement_work=3,
+    )
+    emitted = tuple(exported.circuit.all_operations())
+    assert len(emitted) == 6 and exported.report.lossless
+    assert emitted[1] == cirq.CNOT(qids[1], qids[3]).with_classical_controls(
+        "guarded_0"
+    )
+    assert emitted[2:4] == (cirq.measure(qids[3], key="guarded_2"), cirq.reset(qids[3]))
+    assert emitted[-1] == cirq.reset(qids[1]).with_classical_controls("guarded_0")
+    assert {str(key) for key in cirq.control_keys(emitted[-2])} == {
+        "guarded_0",
+        "guarded_2",
+    }
+    with pytest.raises(CirqConversionError) as caught:
+        export_register_cirq(body, signature, wires, feedback_key_prefix="guarded")
+    assert any(
+        "requires a clean work wire" in issue.message
+        for issue in caught.value.report.issues
+    )
+
+    allocation = WorkspaceEvent(0, "allocate", (3,), False, instruction_offset=2)
+    bound = BoundRegisterProgram(
+        body,
+        ((0,), (1,), (2,)),
+        (allocation, WorkspaceEvent(1, "free", (3,), False, instruction_offset=3)),
+    )
+    with pytest.raises(ValueError, match="clean work lease"):
+        RegisterCirqGate(
+            replace(bound, events=(replace(allocation, dirty=True), *bound.events[1:])),
+            signature,
+            feedback_key_prefix="guarded",
+            guarded_measurement_work=3,
+        )
+    gate = RegisterCirqGate(
+        bound,
+        signature,
+        feedback_key_prefix="guarded",
+        guarded_measurement_work=3,
+    )
+    wrapped = tuple(cirq.decompose_once(gate.on(*qids[:3])))
+    (work,) = {q for operation in wrapped for q in operation.qubits} - set(qids[:3])
+    assert (
+        tuple(
+            op.transform_qubits(lambda qubit: qids[3] if qubit == work else qubit)
+            for op in wrapped
+        )
+        == emitted
+    )
+
+    spectator = cirq.NamedQubit("spectator")
+    initial = np.zeros((2,) * 5, dtype=np.complex128)
+    weights = np.arange(1, 9, dtype=np.complex128) + 1j * np.arange(8, 0, -1)
+    initial[:, :, 0, 0, :] = (weights / np.linalg.norm(weights)).reshape(2, 2, 2)
+    for history in product((0, 1), repeat=2):
+        state = _cirq_feedback_branch(
+            cirq, emitted, (*qids, spectator), initial, history
+        )
+        native = forced_branch(
+            torch.from_numpy(initial.reshape(-1)), body.instructions, history
+        )
+        np.testing.assert_allclose(state, native.numpy(), atol=2e-12, rtol=0)
+        assert not np.any(state.reshape(initial.shape)[:, :, :, 1, :])
+        if history == (0, 0):
+            np.testing.assert_allclose(
+                state.reshape(initial.shape)[0, :, 1, 0, :],
+                initial[0, :, 0, 0, :],
+                atol=2e-12,
+                rtol=0,
+            )

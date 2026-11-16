@@ -19,8 +19,16 @@ class RegisterFeedback:
     def __init__(self) -> None:
         self._slots: dict[int, str | Boolean] = {}
 
-    def record_measurement(self, slot: int, key: str) -> None:
-        self._slots[slot] = key
+    def record_measurement(self, slot: int, key: str, clauses: _Clauses = ()) -> None:
+        if not clauses:
+            self._slots[slot] = key
+            return
+
+        from sympy import ITE, Eq, Symbol
+
+        self._slots[slot] = ITE(
+            self._condition(clauses), Eq(Symbol(key), 1), self._expression(slot)
+        )
 
     def _expression(self, slot: int) -> Boolean:
         from sympy import Eq, Symbol

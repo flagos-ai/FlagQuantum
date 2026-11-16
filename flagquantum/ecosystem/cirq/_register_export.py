@@ -62,6 +62,7 @@ def export_register_cirq(
     input_quregs: Mapping[str, Any] | None = None,
     output_quregs: Mapping[str, Any] | None = None,
     feedback_key_prefix: str | None = None,
+    guarded_measurement_work: int | None = None,
     allow_lossy: bool = False,
 ) -> tuple[CirqExportResult, dict[str, _Qureg]]:
     """Place an export on named register wires and return right ports.
@@ -75,6 +76,8 @@ def export_register_cirq(
     With a feedback key prefix, each measurement receives a unique key formed
     from the prefix and its instruction index. Classical conditions read the
     latest write to their native slot.
+    Guarded measurement may use a caller-owned clean physical wire outside
+    the register ports. The adapter restores that wire to zero.
     """
     ir = ensure_circuit_ir(program)
     names = tuple(reg.name for reg in signature)
@@ -139,6 +142,9 @@ def export_register_cirq(
             occupied.add(qubit)
         all_ports[name] = qubits
 
+    if guarded_measurement_work is not None and guarded_measurement_work in placed:
+        raise ValueError("Cirq guarded measurement work cannot be a register port")
+
     for wire in range(ir.n_wires):
         if wire in placed:
             continue
@@ -155,6 +161,7 @@ def export_register_cirq(
         allow_lossy=allow_lossy,
         include_inverse_phases=True,
         feedback_key_prefix=feedback_key_prefix,
+        guarded_measurement_work=guarded_measurement_work,
     )
     circuit = exported.circuit.transform_qubits(lambda qubit: placed[qubit.x])
     return CirqExportResult(circuit, cast(CirqConversionReport, exported.report)), {

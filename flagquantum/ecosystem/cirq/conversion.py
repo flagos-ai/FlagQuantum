@@ -632,6 +632,7 @@ def _export_cirq(
     include_inverse_phases: bool = False,
     extent_declared_by_gate: bool = False,
     feedback_key_prefix: str | None = None,
+    guarded_measurement_work: int | None = None,
     instruction_offsets: list[int] | None = None,
 ) -> CirqExportResult:
     cirq = _cirq()
@@ -655,6 +656,21 @@ def _export_cirq(
             "IR observables and measurements require a separate Cirq execution plan.",
         )
     used_wires = {wire for instruction in ir.instructions for wire in instruction.wires}
+    if guarded_measurement_work is not None:
+        if (
+            feedback is None
+            or type(guarded_measurement_work) is not int
+            or not 0 <= guarded_measurement_work < ir.n_wires
+            or guarded_measurement_work in used_wires
+        ):
+            raise ValueError(
+                "Cirq guarded measurement requires an unused clean wire and feedback"
+            )
+        if any(
+            gate.name == "measure" and gate.metadata.get("guarded_effect") is True
+            for gate in ir.instructions
+        ):
+            used_wires.add(guarded_measurement_work)
     if not extent_declared_by_gate and used_wires != set(range(ir.n_wires)):
         _issue(
             issues,
@@ -693,15 +709,11 @@ def _export_cirq(
         )
         if feedback is not None:
             if instruction.name in {"measure", "reset"}:
-                if (
-                    len(instruction.wires) != 1
-                    or clauses
-                    or instruction.matrix is not None
-                ):
+                if len(instruction.wires) != 1 or instruction.matrix is not None:
                     _issue(
                         issues,
                         "unsupported_operation",
-                        "Cirq register feedback requires an unconditional one-wire measurement or reset.",
+                        "Cirq register feedback requires a one-wire measurement or reset.",
                         index=index,
                         name=instruction.name,
                     )
@@ -709,12 +721,37 @@ def _export_cirq(
                 qubit = qubits[instruction.wires[0]]
                 if instruction.name == "measure":
                     write_key = f"{feedback_key_prefix}_{index}"
+                    if clauses:
+                        if guarded_measurement_work is None:
+                            _issue(
+                                issues,
+                                "unsupported_operation",
+                                "Cirq guarded measurement requires a clean work wire.",
+                                index=index,
+                                name=instruction.name,
+                            )
+                            break
+                        work = qubits[guarded_measurement_work]
+                        controlled_copy = feedback.condition_operation(
+                            cirq, cirq.CNOT(qubit, work), clauses
+                        )
+                        operations.extend(
+                            (
+                                controlled_copy,
+                                cirq.measure(work, key=write_key),
+                                cirq.reset(work),
+                            )
+                        )
+                    else:
+                        operations.append(cirq.measure(qubit, key=write_key))
                     feedback.record_measurement(
-                        instruction.metadata["classical_bit"], write_key
+                        instruction.metadata["classical_bit"], write_key, clauses
                     )
-                    operations.append(cirq.measure(qubit, key=write_key))
                 else:
-                    operations.append(cirq.reset(qubit))
+                    reset = cirq.reset(qubit)
+                    if clauses:
+                        reset = feedback.condition_operation(cirq, reset, clauses)
+                    operations.append(reset)
                 continue
             if instruction.name == "classical_xor":
                 feedback.assign(instruction, clauses)

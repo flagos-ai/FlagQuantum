@@ -38,6 +38,7 @@ class RegisterCirqGate(Gate):
         signature: Signature,
         *,
         feedback_key_prefix: str | None = None,
+        guarded_measurement_work: int | None = None,
     ) -> None:
         labels: list[str] = []
         input_indices: list[int] = []
@@ -99,9 +100,25 @@ class RegisterCirqGate(Gate):
                     )
                 else:
                     output_wires[index] = wire
+        if guarded_measurement_work is not None:
+            if (
+                bound is None
+                or type(guarded_measurement_work) is not int
+                or guarded_measurement_work < len(input_indices)
+                or guarded_measurement_work in output_wires.values()
+            ):
+                raise ValueError("Cirq guarded measurement requires private bound work")
+            leases = [
+                event
+                for event in bound.events
+                if event.kind == "allocate" and guarded_measurement_work in event.wires
+            ]
+            if not leases or any(event.dirty for event in leases):
+                raise ValueError("Cirq guarded measurement requires a clean work lease")
         self._body = ir
         self._bound = bound
         self._feedback_key_prefix = feedback_key_prefix
+        self._guarded_measurement_work = guarded_measurement_work
         self._signature = signature
         self._labels = tuple(labels)
         self._input_indices = tuple(input_indices)
@@ -142,6 +159,7 @@ class RegisterCirqGate(Gate):
                 include_inverse_phases=True,
                 extent_declared_by_gate=True,
                 feedback_key_prefix=self._feedback_key_prefix,
+                guarded_measurement_work=self._guarded_measurement_work,
                 instruction_offsets=offsets,
             )
         except CirqConversionError:
