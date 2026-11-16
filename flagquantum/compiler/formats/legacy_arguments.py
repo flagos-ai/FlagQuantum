@@ -37,14 +37,20 @@ def _complex_message() -> Any:
 
 def serialize_integer_argument(value: SymbolicInt) -> bytes:
     """Write the integer oneof arm or the admitted SymPy expression text."""
-    factory = _integer_message()
+    message = _integer_message()()
+    _write_integer_argument(message, value)
+    return cast(bytes, message.SerializeToString())
+
+
+def _write_integer_argument(message: Any, value: SymbolicInt) -> None:
     sympy = modules.get("sympy")
     if sympy is not None and isinstance(value, sympy.Expr):
         text = str(value)
         parse_legacy_expression(text)
-        return cast(bytes, factory(sympy_expr=text).SerializeToString())
+        message.sympy_expr = text
+        return
     try:
-        return cast(bytes, factory(int_val=index(value)).SerializeToString())
+        message.int_val = index(value)
     except (TypeError, ValueError, OverflowError) as error:
         raise SerializationError(
             "Integer argument requires a signed int64 or SymPy expression"
@@ -53,7 +59,12 @@ def serialize_integer_argument(value: SymbolicInt) -> bytes:
 
 def deserialize_integer_argument(data: bytes) -> SymbolicInt:
     """Read the selected arm, preserving explicitly encoded integer zero."""
-    message = parse_message(_integer_message(), data, "Integer argument")
+    return _read_integer_argument(
+        parse_message(_integer_message(), data, "Integer argument")
+    )
+
+
+def _read_integer_argument(message: Any) -> SymbolicInt:
     choice = message.WhichOneof("val")
     if choice == "int_val":
         return int(message.int_val)
