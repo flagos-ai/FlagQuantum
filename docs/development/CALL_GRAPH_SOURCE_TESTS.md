@@ -16,8 +16,8 @@ workflow remains `python -m examples.algorithms.resource_call_graphs`.
 
 | Source definition | Native execution |
 | --- | --- |
-| test_format_counts_sigma | Shared conjunction recipe and graph leaf counts feed the existing combined Markdown formatter's totals section |
-| test_format_counts_graph_markdown | The same native graph feeds its direct-call section |
+| test_format_counts_sigma | Shared conjunction recipe and graph leaf counts feed the standalone totals formatter |
+| test_format_counts_graph_markdown | The same native graph feeds the standalone direct-call formatter |
 | _get_node_labels_from_pydot_graph | Original helper consumes a test-only native DOT inspection view, retaining random.shuffle |
 | test_graphviz_call_graph_no_data | Existing native symbolic graph and DOT exporter compute all node labels |
 | test_graphviz_call_graph_with_data | Explicit caller annotations pass through the existing native DOT exporter |

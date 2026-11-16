@@ -46,10 +46,11 @@ width accounting, while its category graph uses arbitrary Clifford leaves.
 Symbolic CSwapApprox uses the source signature/callee width fallback. Tests
 preserve these sparse rows explicitly instead of adding inferred width labels.
 The native callback makes the existing width owner's boundary explicit.
-Automatic inference across every typed resource and foreign graph remains open.
-Custom titles use the existing callback. Native class names, metric identities,
-error wording and HTML table presentation remain documented adaptations.
-Arbitrary subclass node-property overrides retain their separate open scope.
+Automatic inference requires a supported native width binding. Custom titles
+and complete node-property overrides use the existing callbacks. Native class
+names, metric identities, error wording and HTML table presentation remain
+documented adaptations. See CALL_GRAPH_DRAWING_FILE_AUDIT.md for the full
+definition map and admission boundaries.
 
 The original seven source test functions and helper remain unchanged. Their
 native execution now uses this production factory for QEC queries and table
@@ -98,7 +99,6 @@ Existing gate-sequence, full complex-amplitude, measurement-branch, work-zero
 and `circuit.append(op)` checks pass in the concentrated suite. Resource graph
 formatting uses declarations without numerical quantum execution.
 
-Q-0734.04 records this capability. Q-0734 stays open for universal width
-admission and arbitrary property overrides. Foreign admission, CDDL renderer
-packaging, browser interaction, historical QFT 190 versus 496 and the historical
+Q-0734.04 records this capability. Foreign admission, CDDL renderer packaging,
+browser interaction, historical QFT 190 versus 496 and the historical
 full-default 600-second timeout retain their independent open records.
