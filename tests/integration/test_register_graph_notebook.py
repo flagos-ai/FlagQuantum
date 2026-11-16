@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("resource_call_graphs", 3, 2, 0),
         ("guided_hamiltonian", 9, 4, 0),
         ("tutorial_guided_hamiltonian", 10, 1, 0),
+        ("hamiltonian_simulation_by_gqsp", 7, 2, 0),
         ("register_addition", 20, 6, 3),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),

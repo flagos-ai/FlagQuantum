@@ -51,3 +51,27 @@ Hubbard controlled-resource coverage, and the slow reference cases. The
 full matrix test here covers the small bound fixture and two parameter
 pairs. It uses the existing controlled walk and SU2 emitters for native
 primitive lowering.
+
+## Native notebook and complete source suite
+
+Q-0539 closes with the native 12-cell notebook. It contains both locked
+2-by-2 Hubbard examples, the concrete and symbolic signatures, the
+concrete one-layer resource graph, and the symbolic depth-two leaf
+table. The native helper uses the existing Hubbard signature and
+PREPARE cost authority. The preserved source takes a set union
+of the selection registers, so the native display uses deterministic
+Hubbard order and the comparison checks every named port, its width,
+side, and bounded-integer range. Signal and target remain at the ends.
+
+For both examples, the reference test checks every edge and leaf at
+both depths. The expansion includes controlled inverse SELECT and
+reflection, separate controlled Ry directions and PREPARE inverses,
+CSwap widths, and rotation-angle-generalized SU2 children. The concrete
+example has degree 127 and 255 SU2 calls. The independent native kernel
+ran all seven code cells and rendered two SVGs.
+
+The four slow source cases also passed. Together with the earlier
+non-slow run, the original suite has 39 passes and three expected
+failures. Q-0540 and Q-0541 retain the native Hubbard measured append
+path, projected execution evidence, and full native randomized matrix
+coverage.
