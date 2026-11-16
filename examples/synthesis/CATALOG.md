@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **146/213**.
+Validated local Notebook workflows: **147/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -85,6 +85,7 @@ Validated local Notebook workflows:
 - [overview](algorithms/quantum_primitives/gradient_estimation/overview/README.md)
 - [overview](algorithms/quantum_primitives/hadamard_test/overview/README.md)
 - [overview](algorithms/quantum_primitives/swap_test/overview/README.md)
+- [overview](algorithms/quantum_state_preparation/adapt_vqe/overview/README.md)
 - [overview](algorithms/quantum_state_preparation/fermionic_gaussian/overview/README.md)
 - [overview](algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation/overview/README.md)
 - [overview](algorithms/quantum_walks/glued_trees/overview/README.md)

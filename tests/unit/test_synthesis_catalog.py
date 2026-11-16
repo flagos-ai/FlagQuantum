@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 146
+    assert len(validated) == 147
+    assert (
+        "algorithms/quantum_state_preparation/adapt_vqe/adapt_vqe",
+        "examples/synthesis/algorithms/quantum_state_preparation/adapt_vqe/overview/main.py",
+    ) in validated
     assert (
         "applications/physical_systems/hhl_lanchester/hhl_lanchester",
         "examples/synthesis/applications/physical_systems/hhl_lanchester/overview/main.py",
@@ -713,7 +717,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**146/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**147/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
