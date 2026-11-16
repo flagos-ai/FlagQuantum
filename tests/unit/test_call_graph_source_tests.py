@@ -38,6 +38,7 @@ from flagquantum.drawer.call_graph import (
     export_call_graph_dot,
     export_resource_call_graph_dot,
     format_call_graph_markdown,
+    format_counts_markdown,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -114,17 +115,13 @@ def native_conjunction_graph(
 
 
 def native_sigma(sigma: Mapping[ResourceCall, SymbolicInt]) -> str:
-    # Select the totals section from the existing combined native formatter.
-    return format_call_graph_markdown(
-        ConjunctionCall((1, 1)), {}, sigma, title=reference_title
-    )
+    return format_counts_markdown(sigma, title=reference_title)
 
 
 def native_markdown(graph: SymbolicCallGraph[ResourceCall]) -> str:
-    text = format_call_graph_markdown(
-        graph.root, graph.direct_calls, graph.leaf_counts, title=reference_title
+    return format_call_graph_markdown(
+        graph.root, graph.direct_calls, title=reference_title
     )
-    return text.split("#### Counts totals:", 1)[0]
 
 
 def native_annotated_dot(
@@ -136,7 +133,9 @@ def native_annotated_dot(
     no arbitrary register-graph liveness inference.
     """
     root, declarations = declared_example()
-    graph = symbolic_call_graph(root, declarations, max_depth=max_depth)
+    graph: SymbolicCallGraph[ResourceCall] = symbolic_call_graph(
+        root, declarations, max_depth=max_depth
+    )
     widths: dict[ResourceCall, int] = {}
 
     def width(node: ResourceCall, child: Callable[[ResourceCall], int]) -> int:
@@ -185,7 +184,9 @@ class NativeView:
         bloq_data: Mapping[object, Mapping[str, object]] | None = None,
     ) -> None:
         root, declarations = declared_example()
-        self.native = symbolic_call_graph(root, declarations)
+        self.native: SymbolicCallGraph[ResourceCall] = symbolic_call_graph(
+            root, declarations
+        )
         annotations = None
         if bloq_data is not None:
             by_name = {str(node): values for node, values in bloq_data.items()}

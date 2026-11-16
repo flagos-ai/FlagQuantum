@@ -99,11 +99,15 @@ def _markdown_count(count: SymbolicInt, *, edge: bool = False) -> str:
 def format_call_graph_markdown(
     root: Node,
     direct_calls: Mapping[tuple[Node, Node], SymbolicInt],
-    leaf_counts: Mapping[Node, SymbolicInt],
+    leaf_counts: Mapping[Node, SymbolicInt] | None = None,
     *,
     title: Callable[[Node], str] = str,
 ) -> str:
-    """Format direct calls in topological order and append weighted leaf totals."""
+    """Format direct calls in topological order, optionally with leaf totals.
+
+    Omitting leaf counts produces the standalone direct-call listing. An
+    explicitly supplied empty mapping still produces the totals heading.
+    """
     order, successors = _call_order(root, direct_calls)
     lines = []
     for caller in order:
@@ -117,6 +121,8 @@ def format_call_graph_markdown(
                 for callee in successors[caller]
             )
         )
+    if leaf_counts is None:
+        return "".join(f"{line}\n" for line in lines)
     lines.append(format_counts_markdown(leaf_counts, title=title))
     return "\n".join(lines)
 
