@@ -17,6 +17,7 @@ from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
 from ...core._composition import inverted_instruction
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.signatures import Signature
 from ...core.parameters import Parameter, ParameterExpression
 
 EvolutionAngle: TypeAlias = int | float | Parameter | ParameterExpression
@@ -33,6 +34,22 @@ class AngleBoundTerm(Protocol):
     ) -> tuple[Instruction, ...]: ...
 
     def resource_model(self, angle: EvolutionAngle) -> ComponentCost: ...
+
+
+def _term_signature(term: AngleBoundTerm) -> Signature:
+    layout = term.layout
+    signature = getattr(term, "signature", None)
+    if signature is None:
+        return Signature.build(**dict(layout))
+    if not isinstance(signature, Signature):
+        raise TypeError("Trotter term signature must be a Signature")
+    if (
+        not signature.thru_registers_only
+        or signature.n_cbits()
+        or tuple((port.name, port.total_qubits()) for port in signature) != layout
+    ):
+        raise ValueError("Trotter term signature must match its quantum through layout")
+    return signature
 
 
 @dataclass(frozen=True)
@@ -101,8 +118,19 @@ class TrotterProduct:
     def __post_init__(self) -> None:
         if not self.terms:
             raise ValueError("A Trotter product requires at least one term")
-        if any(term.layout != self.layout for term in self.terms):
-            raise ValueError("Trotter terms must have identical register layouts")
+        signature = self.signature
+        for term in self.terms[1:]:
+            if term.layout != self.layout:
+                raise ValueError("Trotter terms must have identical register layouts")
+            if _term_signature(term) != signature:
+                raise ValueError(
+                    "Trotter terms must have identical register signatures"
+                )
+
+    @property
+    def signature(self) -> Signature:
+        """Expose the native through signature inferred from the first term."""
+        return _term_signature(self.terms[0])
 
     @property
     def layout(self) -> RegisterLayout:
@@ -123,7 +151,7 @@ class TrotterProduct:
     ) -> ComponentCost:
         return ComponentCost(
             "TrotterizedUnitary",
-            sum(width for _, width in self.layout),
+            int(self.signature.n_qubits()),
             calls=tuple(
                 CostCall(term.resource_model(angle)) for term, angle in schedule
             ),
