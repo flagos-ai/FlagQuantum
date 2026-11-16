@@ -30,8 +30,9 @@ turning it into an unconditional gate.
 | Source port order, qubit arrays and named bits | Concrete quantum register layouts, row-major words and explicit physical wire binding. Qid dimensions, aliases, shape and ownership are checked. |
 | Through, left and right port placement | Through ports preserve identity. Left-only ports are excluded from output. Right-only ports use fresh names or caller-owned qubits. The adapter rejects aliasing across supplied ports. |
 | Component conversion and graph order | The adapter consumes native physical IR. Native append and Compiler own decomposition and allocation before conversion. |
-| Source Cirq gate wrappers, tensor fallback and allocation | Arbitrary external gate objects, tensor-only gates and source clean/dirty reuse are separate from native physical placement and remain open. |
-| Diagram symbols | The exported primitive circuits use Cirq's native diagram rendering for exchange and Toffoli. |
+| Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body with exactly the declared operand wires. Through-only gates expose the native matrix, including a tensor-backed body with no Cirq leaf decomposition. The gate retains the source's positive-integer repetition and adjoint behavior for the admitted native bodies. |
+| Workspace allocation | Native allocation stays with Compiler. The controlled uniform-preparation fixture matches the fully flattened source width. A Cirq decomposition context that dynamically leases private wrapper wires remains open. |
+| Diagram symbols | Primitive circuits use Cirq's native exchange and Toffoli rendering. Wrapped register gates label operands in declaration order with the native register name and optional element index. |
 
 ## Verification
 
@@ -41,6 +42,15 @@ a square of the wrapper's swap, and both Toffoli diagram modes. The full
 unitaries use a caller-selected qubit order, including original disjoint
 external line ranges. A separate shaped register checks the ordered
 terminal measurement operands and exact key.
+
+For one- through four-bit word swaps, the bound gate agrees with both the
+locked decomposable and tensor-only wrappers. The bound native circuit
+emits the source's swaps on the same ordered operands. A separate native
+matrix body has no Cirq leaf decomposition and supplies the same complete
+unitary through the wrapper. A phase-sensitive H/T body checks signed
+integer powers and the adjoint gate, with an idle declared operand. The
+right-only witness preserves supplied qubits in its decomposition and
+returns no direct matrix hook.
 
 The original four-control MultiAnd produces seven through/result wires.
 Register export binds the original right-only junk and target qubits and
@@ -71,12 +81,20 @@ Full source flattening raises `Too-large classical value encountered in val`.
 Native execution refuses a modulus that exceeds the word encoding. Valid
 modulus fixtures already compare the native measured execution channel.
 
+For the original controlled preparation of three values, source Cirq uses
+3, 5, 7, and 7 wires at its opaque, decomposed, once-flattened, and fully
+flattened levels. The final native body uses seven wires with four clean
+work wires. Six measurements reuse two classical slots. Forward and
+adjoint native runs compare all 64 measurement histories with the original
+complex state, including a spectator and zeroed work wires. Equal final
+width does not establish equality of the external allocation event order.
+
 ## Remaining files
 
 - Q-0714 awaits the rest of the source package export map, including
   import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain source graph wrapper, tensor fallback, allocation
-  lifetime reuse and dynamic arithmetic export coverage. Current named
-  placement assigns the wires the native circuit already owns.
+- Q-0715 and Q-0716 retain source graph traversal, context-controlled
+  workspace lifetime events, and dynamic arithmetic export. The bound
+  wrapper supports native dense data and compiled primitive bodies.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
