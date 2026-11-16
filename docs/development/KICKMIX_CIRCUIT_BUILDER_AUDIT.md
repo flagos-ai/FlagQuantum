@@ -273,6 +273,30 @@ accepts the physical records emitted by the source writer. Parsing raw
 register shorthand and rendering source stdout in the local runtime
 remain open.
 
+## Mixed SWAP and controlled SWAP
+
+The locked `swap.cc` (blob `9021c1181802fe771e352e88f5f6dfa51b7d7e92`)
+exchanges classical bits and measured X-basis slots through three ordered
+conditional inversions. Each lane reads the values produced by preceding
+lanes. When both operands alias the same classical slot, the source
+clears that slot. The native emitter preserves its three source operations
+and the final value for all four assignments. It retains mixed lane order
+and uses its existing classical XOR owner for the writes.
+
+A false controlled SWAP emits nothing. True emits SWAP, a classical slot
+emits guarded SWAP, and a quantum control emits CSWAP. Two lanes match the
+locked operands and all 32 complex amplitudes for each of those four
+controls. The ordered physical swap primitive now also serves rotations.
+The source emits a single physical SWAP per quantum lane, three
+conditional inversions per classical or X-basis lane, and two corresponding
+physical operations for the tested controlled two-lane broadcast. No
+additional work wire or measurement is required. These are emitted counts. The separate Qualtran SWAP model is unchanged.
+
+On a mismatched mixed lane the source builder may retain operations emitted
+by earlier lanes. The native immutable emitter rejects the call before
+publishing any stream. Raw quantum self-alias behavior remains outside the
+supported gate contract. K-0208 remains open for both source boundaries.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug runtime output have
 separate source assertions. The full public mixed

@@ -11,6 +11,7 @@ from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
 from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.swap import _broadcast_controlled_swap_ir
 
 
 def _shift_parity(
@@ -50,15 +51,16 @@ def _shifted_reverse(
     if not target:
         return ()
     cut = offset % len(target)
-    gates = []
+    gates: list[Instruction] = []
     for part in (target[:cut], target[cut:]):
-        for index in range(len(part) // 2):
-            pair = (part[-1 - index], part[index])
-            gates.append(
-                Instruction("swap", pair)
-                if control is None
-                else Instruction("cswap", (control, *pair))
+        pairs = len(part) // 2
+        gates.extend(
+            _broadcast_controlled_swap_ir(
+                True if control is None else control,
+                part[::-1][:pairs],
+                part[:pairs],
             )
+        )
     return tuple(gates)
 
 
