@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from ...core.classical_control import validate_classical_control
@@ -20,12 +20,13 @@ from .program_calls import _expand
 
 @dataclass(frozen=True)
 class WorkspaceEvent:
-    """One physical lifetime event, retaining the declared source dirty flag."""
+    """A lifetime indexed by expanded operation and emitted instruction offset."""
 
     position: int
     kind: Literal["allocate", "free", "retire"]
     wires: tuple[int, ...]
     dirty: bool
+    instruction_offset: int | None = field(default=None, repr=False, compare=False)
 
 
 @dataclass(frozen=True)
@@ -223,7 +224,11 @@ class _PhysicalBinding:
                 self.empty_leases.append(lease)
             self.events.append(
                 WorkspaceEvent(
-                    position, "allocate", lease.wires, operation.workspace_dirty
+                    position,
+                    "allocate",
+                    lease.wires,
+                    operation.workspace_dirty,
+                    instruction_offset=len(self.instructions),
                 )
             )
         elif opcode == "free_register":
@@ -237,7 +242,13 @@ class _PhysicalBinding:
             self.adopted.difference_update(wires)
             assert operation.workspace_dirty is not None
             self.events.append(
-                WorkspaceEvent(position, "free", wires, operation.workspace_dirty)
+                WorkspaceEvent(
+                    position,
+                    "free",
+                    wires,
+                    operation.workspace_dirty,
+                    instruction_offset=len(self.instructions),
+                )
             )
         elif opcode == "split_register":
             wires = self.wires[operation.operands[0]]
@@ -283,6 +294,7 @@ class _PhysicalBinding:
                         "free" if self.measured_workspace == "reset" else "retire",
                         wires,
                         False,
+                        instruction_offset=len(self.instructions),
                     )
                 )
         elif opcode == "constant":

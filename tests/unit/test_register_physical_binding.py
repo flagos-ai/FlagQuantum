@@ -570,6 +570,7 @@ def test_repeated_private_workspace_calls_schedule_before_expansion_and_reuse_po
     ] * 2
     assert bound.circuit.instructions == (Instruction("cx", (2, 0)),) * 4
     assert tuple(event.position for event in bound.events) == (1, 6, 9, 14)
+    assert tuple(event.instruction_offset for event in bound.events) == (0, 2, 2, 4)
     state = torch.zeros(8, dtype=torch.complex128)
     state[:4] = torch.tensor([1, 2j, 3 + 1j, -4j])
     torch.testing.assert_close(
