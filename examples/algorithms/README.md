@@ -363,7 +363,9 @@ combines native one- and two-body densities to reconstruct the energy of a
 four-mode H2 determinant pair. It reports -0.8766911918 Ha and an angle
 gradient of 0.5945439485 Ha/rad. The matched JW and BK preparations give the
 same result. See the [two-body density guide](../../docs/development/FERMION_TWO_BODY_DENSITY.md)
-for the index convention and O(n^4) dense output cost.
+for the index convention and O(n^4) dense output cost. Add `--project` to
+compare raw and projected [fixed-particle densities](../../docs/development/FERMION_RDM_PROJECTION.md)
+after a deterministic perturbation.
 
 [`fermion_hubbard_ring_training.py`](fermion_hubbard_ring_training.py), run with
 `python -m examples.algorithms.fermion_hubbard_ring_training`, composes the

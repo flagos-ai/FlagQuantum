@@ -1910,6 +1910,16 @@ def test_fermion_two_body_density_reconstructs_molecular_energy() -> None:
     _assert_premise("fermion_two_body_density", output)
 
 
+def test_fermion_two_body_density_projects_perturbed_measurements() -> None:
+    output = _run("fermion_two_body_density", "--encoding", "parity", "--project")
+    assert _number(output, "Input contraction residual") > 0.1
+    assert _number(output, "Projected contraction residual") < 1e-10
+    raw = float(_labelled(output, "Input energy").removesuffix(" Ha"))
+    projected = float(_labelled(output, "Projected energy").removesuffix(" Ha"))
+    assert raw == pytest.approx(-1.0730413218, abs=1e-10)
+    assert projected == pytest.approx(-0.8944686996, abs=1e-10)
+
+
 def test_the_example_directory_is_covered_and_indexed() -> None:
     scripts = sorted(path.name for path in EXAMPLES.glob("*.py"))
     expected = sorted(f"{name}.py" for name in SCRIPTS)
