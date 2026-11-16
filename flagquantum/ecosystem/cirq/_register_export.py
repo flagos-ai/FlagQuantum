@@ -15,7 +15,7 @@ from numpy.typing import NDArray
 from ...core.ir import ensure_circuit_ir
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
-from .conversion import _cirq, export_cirq
+from .conversion import _cirq, _export_cirq
 from .models import CirqConversionReport, CirqExportResult
 
 _Qureg = NDArray[np.object_]
@@ -146,7 +146,7 @@ def export_register_cirq(
         placed[wire] = qubit
         occupied.add(qubit)
 
-    exported = export_cirq(ir, allow_lossy=allow_lossy)
+    exported = _export_cirq(ir, allow_lossy=allow_lossy, include_inverse_phases=True)
     circuit = exported.circuit.transform_qubits(lambda qubit: placed[qubit.x])
     return CirqExportResult(circuit, cast(CirqConversionReport, exported.report)), {
         reg.name: all_ports[reg.name] for reg in signature.rights()

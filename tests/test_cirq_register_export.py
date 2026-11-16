@@ -114,16 +114,42 @@ def test_original_allocating_multi_and(cirq: Any, source_export: Any) -> None:
         atol=2e-12,
         rtol=0,
     )
+    placed, ports = export_register_cirq(
+        native,
+        signature,
+        {"ctrl": (0, 1, 2, 3), "junk": (4, 5), "target": (6,)},
+        input_quregs=inputs,
+        output_quregs={name: orig_ports[name] for name in ("junk", "target")},
+    )
+    source_leaves = cirq.decompose(
+        original,
+        keep=lambda op: op.gate in {cirq.H, cirq.S, cirq.T, cirq.T**-1, cirq.CNOT},
+    )
+    assert list(placed.circuit.all_operations()) == source_leaves
+    assert placed.report.lossless
+    assert [q for name in ports for q in ports[name].flat] == expected_order
+    np.testing.assert_allclose(
+        placed.circuit.unitary(qubit_order=expected_order),
+        cirq.Circuit(source_leaves).unitary(qubit_order=expected_order),
+        atol=2e-12,
+        rtol=0,
+    )
+
+
+def test_register_export_preserves_inverse_phase_operands(cirq: Any) -> None:
+    ir = CircuitIR(2, (Instruction("tdg", (0,)), Instruction("sdg", (1,))))
+    placed, _ = export_register_cirq(
+        ir, Signature.build(x=1, y=1), {"x": (0,), "y": (1,)}
+    )
+    x, y = cirq.NamedQubit("x"), cirq.NamedQubit("y")
+    assert list(placed.circuit.all_operations()) == [cirq.T(x) ** -1, cirq.S(y) ** -1]
+    assert placed.report.lossless
     with pytest.raises(CirqConversionError) as caught:
-        export_register_cirq(
-            native,
-            signature,
-            {"ctrl": (0, 1, 2, 3), "junk": (4, 5), "target": (6,)},
-            input_quregs=inputs,
-        )
-    issues = caught.value.report.issues
-    assert {issue.code for issue in issues} == {"unsupported_operation"}
-    assert all(issue.operation_name in {"sdg", "tdg"} for issue in issues)
+        export_cirq(ir)
+    assert {issue.operation_name for issue in caught.value.report.issues} == {
+        "sdg",
+        "tdg",
+    }
 
 
 @pytest.mark.ftqc_reference

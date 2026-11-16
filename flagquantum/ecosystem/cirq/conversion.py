@@ -608,14 +608,26 @@ def _export_gate(cirq: Any, instruction: Instruction, params: list[Any]) -> Any:
         return cirq.rz(params[0])
     if instruction.name == "rzz":
         return cirq.ZZPowGate(exponent=params[0] / math.pi, global_shift=-0.5)
+    if instruction.name == "sdg":
+        return cirq.S**-1
+    if instruction.name == "tdg":
+        return cirq.T**-1
     return gates[instruction.name]
 
 
 def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
     """Convert FlagQuantum IR to a static Cirq ``Circuit``."""
+    return _export_cirq(program, allow_lossy=allow_lossy)
 
+
+def _export_cirq(
+    program: Any, *, allow_lossy: bool, include_inverse_phases: bool = False
+) -> CirqExportResult:
     cirq = _cirq()
     ir = ensure_circuit_ir(program)
+    supported_gates = set(_CIRQ_SYMBOL_TO_FLAGQUANTUM.values())
+    if include_inverse_phases:
+        supported_gates.update(("sdg", "tdg"))
     issues: list[CirqConversionIssue] = []
     if ir.observables or ir.measurements:
         _issue(
@@ -729,10 +741,7 @@ def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
                 name=instruction.name,
             )
             continue
-        if (
-            instruction.name not in _CIRQ_SYMBOL_TO_FLAGQUANTUM.values()
-            or instruction.matrix is not None
-        ):
+        if instruction.name not in supported_gates or instruction.matrix is not None:
             _issue(
                 issues,
                 "unsupported_operation",
