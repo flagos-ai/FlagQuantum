@@ -20,10 +20,12 @@ from tests.unit.measurement_checks import forced_branch
 pytestmark = pytest.mark.unit
 
 
-def _binding(size: int, additional_control: bool) -> SelectSingleFactorization:
+def _binding(
+    size: int, additional_control: bool, signed: bool = False
+) -> SelectSingleFactorization:
     width = (size // 2 - 1).bit_length()
     spin = 2 * width
-    start = spin + 3 + int(additional_control)
+    start = spin + 3 + int(additional_control) + int(signed)
     work = SelectSingleFactorization.workspace_size(
         size, additional_control=additional_control
     )
@@ -36,14 +38,16 @@ def _binding(size: int, additional_control: bool) -> SelectSingleFactorization:
         system=tuple(range(start, start + size)),
         workspace=tuple(range(start + size, start + size + work)),
         l_ne_zero=spin + 3 if additional_control else None,
+        coefficient_sign=start - 1 if signed else None,
     )
 
 
 @pytest.mark.parametrize(
-    "size,additional_control", list(product((2, 4), (False, True)))
+    "size,additional_control,signed",
+    [(*case, False) for case in product((2, 4), (False, True))] + [(2, True, True)],
 )
-def test_every_measurement_history(size, additional_control):
-    op = _binding(size, additional_control)
+def test_every_measurement_history(size, additional_control, signed):
+    op = _binding(size, additional_control, signed)
     wires = op.workspace[-1] + 1
     gates = DynamicCircuit(wires).append(op).to_ir().instructions
     extra = int(additional_control)
@@ -58,19 +62,21 @@ def test_every_measurement_history(size, additional_control):
     expected = torch.zeros_like(state)
     data_width = size + len(op.workspace)
     flag_width = 2 + extra
-    for p, q, spin, flags, data in product(
+    for p, q, spin, flags, sign, data in product(
         range(size // 2),
         range(size // 2),
         range(2),
         range(1 << flag_width),
+        range(1 << int(signed)),
         range(1 << size),
     ):
         address = 2 * (p * (size // 2) + q) + spin
-        prefix = ((address << flag_width) | flags) << data_width
+        prefix = (((address << flag_width) | flags) << int(signed) | sign) << data_width
         index = prefix | (data << len(op.workspace))
         amplitude = complex(index + 1, index % 7 - 3)
         state[index] = amplitude
         if flags == (1 << flag_width) - 1:
+            amplitude *= (-1) ** sign
             i, j = sorted((2 * p + spin, 2 * q + spin))
             between = sum((data >> (size - 1 - k)) & 1 for k in range(i + 1, j))
             left, right = 1 << (size - 1 - i), 1 << (size - 1 - j)

@@ -38,16 +38,26 @@ def _controlled_swap_cost(width: int) -> ComponentCost:
     return ComponentCost("CSwap", 2 * width + 1, GateCost(cswap=width))
 
 
+def source_single_factorization_select_signature(
+    spin_orbitals: int, *, additional_control: bool = False
+) -> Signature:
+    """Return the source through ports for either value of additional_control."""
+    width = _spatial_width(spin_orbitals)
+    if type(additional_control) is not bool:
+        raise ValueError("Single factorization SELECT control flag must be boolean")
+    return Signature.build(p=width, q=width, spin=1, succ_pq=1, succ_l=1)
+
+
 def source_single_factorization_select_cost(
     spin_orbitals: int, *, additional_control: bool = False
 ) -> ComponentCost:
     """Keep the locked SELECT width and Toffoli formula for either control flag."""
-    width = _spatial_width(spin_orbitals)
-    if type(additional_control) is not bool:
-        raise ValueError("Single factorization SELECT control flag must be boolean")
+    signature = source_single_factorization_select_signature(
+        spin_orbitals, additional_control=additional_control
+    )
     return ComponentCost(
         "SelectSingleFactorization",
-        2 * width + 3,
+        int(signature.n_qubits()),
         calls=(CostCall(_TOFFOLI, 2 * (spin_orbitals - 2)),),
     )
 

@@ -10,6 +10,7 @@ from flagquantum.algorithms.primitives.single_factorization_resource_model impor
     source_single_factorization_outer_prepare_cost,
     source_single_factorization_outer_prepare_signature,
     source_single_factorization_select_cost,
+    source_single_factorization_select_signature,
 )
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
@@ -46,7 +47,7 @@ def _assert_model(model, source):
         )
 
 
-def assert_prepare_signature(native, source):
+def assert_source_signature(native, source):
     from qualtran import QAny, QBit
 
     assert [
@@ -72,7 +73,7 @@ def test_inner_source_model(params, adjoint):
     source = InnerPrepareSingleFactorization(*params)
     source = source.adjoint() if adjoint else source
     signature = source_single_factorization_inner_prepare_signature(*params[:2])
-    assert_prepare_signature(
+    assert_source_signature(
         signature.adjoint() if adjoint else signature, source.signature
     )
     _assert_model(
@@ -90,7 +91,7 @@ def test_outer_source_model(auxiliaries, alias, adjoint):
     source = OuterPrepareSingleFactorization(auxiliaries, alias)
     source = source.adjoint() if adjoint else source
     signature = source_single_factorization_outer_prepare_signature(auxiliaries)
-    assert_prepare_signature(
+    assert_source_signature(
         signature.adjoint() if adjoint else signature, source.signature
     )
     _assert_model(
@@ -108,11 +109,16 @@ def test_select_source_model(spin_orbitals, control):
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.sf.select_bloq import SelectSingleFactorization
 
+    source = SelectSingleFactorization(spin_orbitals, additional_control=control)
+    signature = source_single_factorization_select_signature(
+        spin_orbitals, additional_control=control
+    )
+    assert_source_signature(signature, source.signature)
     _assert_model(
         source_single_factorization_select_cost(
             spin_orbitals, additional_control=control
         ),
-        SelectSingleFactorization(spin_orbitals, additional_control=control),
+        source,
     )
 
 
@@ -136,11 +142,11 @@ def test_prepare_signature_omits_source_zero_width_ports():
         OuterPrepareSingleFactorization,
     )
 
-    assert_prepare_signature(
+    assert_source_signature(
         source_single_factorization_inner_prepare_signature(0, 2),
         InnerPrepareSingleFactorization(0, 2, 4).signature,
     )
-    assert_prepare_signature(
+    assert_source_signature(
         source_single_factorization_outer_prepare_signature(0),
         OuterPrepareSingleFactorization(0, 4).signature,
     )
