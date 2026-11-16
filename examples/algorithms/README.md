@@ -440,6 +440,13 @@ not a differentiable lifting API. Only circuit angles are trainable. See the
 [training scope](../../docs/development/FERMION_PAULI_TRAINING.md) for independent
 gradient/sector tests and the bounded CPU qualification.
 
+[`fermion_h2_tapered_uccsd.py`](fermion_h2_tapered_uccsd.py), run with
+`python -m examples.algorithms.fermion_h2_tapered_uccsd`, trains all three H2
+UCCSD angles on two qubits in an explicit JW spin-parity sector. It reuses
+the full-register Adam loop and reaches about -1.1372701747 Ha for the fixture.
+See the [tapered UCCSD guide](../../docs/development/FERMION_H2_TAPERED_UCCSD.md)
+for the comparison with four-qubit training.
+
 [`fermion_h2_sector_training.py`](fermion_h2_sector_training.py), run with
 `python -m examples.algorithms.fermion_h2_sector_training`, reads the fixed H2
 FCIDUMP fixture and explicitly selects odd alpha/beta spin parities. The register

@@ -132,6 +132,7 @@ SCRIPTS = (
     "fermion_pauli_discovery",
     "fermion_pauli_training",
     "fermion_h2_sector_training",
+    "fermion_h2_tapered_uccsd",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -161,6 +162,10 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "Statevector storage remains exponential",
     ),
     "fermion_hubbard_graph": ("fixed determinant pair", "single_device_fast_path"),
+    "fermion_h2_tapered_uccsd": (
+        "explicit odd spin parities in JW",
+        "no automatic sector choice or scalability claim",
+    ),
     "fermion_h2_sector_training": (
         "Only the reduced circuit angle is trainable",
         "discovery does not infer sectors or transform UCCSD",
@@ -1922,6 +1927,19 @@ def test_fermion_two_body_density_projects_perturbed_measurements() -> None:
     projected = float(_labelled(output, "Projected energy").removesuffix(" Ha"))
     assert raw == pytest.approx(-1.0730413218, abs=1e-10)
     assert projected == pytest.approx(-0.8944686996, abs=1e-10)
+
+
+def test_tapered_h2_uccsd_trains_on_two_qubits() -> None:
+    output = _run("fermion_h2_tapered_uccsd")
+    assert _labelled(output, "Register") == "4 -> 2 qubits"
+    initial = float(_labelled(output, "Initial energy").removesuffix(" Ha"))
+    final = float(_labelled(output, "Final energy").removesuffix(" Ha"))
+    assert initial == pytest.approx(-1.1347755088, abs=1e-9)
+    assert final == pytest.approx(-1.1372701747, abs=1e-6)
+    assert final < initial - 1e-3
+    assert _number(output, "Gradient norm") > 1e-2
+    assert _number(output, "Parameter update norm") > 0.1
+    _assert_premise("fermion_h2_tapered_uccsd", output)
 
 
 def test_the_example_directory_is_covered_and_indexed() -> None:

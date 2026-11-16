@@ -50,6 +50,12 @@ the same explicit encoding. Change the initial angles and run
 `python -m pytest tests/integration/test_fermion_h2_uccsd_encodings.py -q`
 to compare states, energy, gradients and an Adam update against JW.
 
+The [tapered JW H2 UCCSD example](../../../docs/development/FERMION_H2_TAPERED_UCCSD.md)
+also reduces the three ordered excitation generators into the Hamiltonian's
+explicit spin-parity sector before constructing a two-qubit circuit. Run
+`python -m pytest tests/integration/test_fermion_h2_tapered_uccsd.py -q` after
+changing the fixture angles to check the lifted state and the shared Adam step.
+
 Modules are split by numerical responsibility: decomposition.py returns adjacent
 orbital matrices without importing Circuit; lowering.py lifts them to JW gates;
 preparation.py creates Slater determinants and canonical Gaussian vacua.
