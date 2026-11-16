@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **142/213**.
+Validated local Notebook workflows: **143/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -206,7 +206,7 @@ Validated local Notebook workflows: **142/213**.
 | `algorithms/search_and_optimization/grover/grover` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover/grover/overview/main.py) | validated |
 | `algorithms/search_and_optimization/grover/grover_max_cut` | quantum_program | [Native program](algorithms/search_and_optimization/grover/grover_max_cut/main.py) | pending |
 | `algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa` | notebook_workflow | [Native program](algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/main.py) | validated |
-| `algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation` | notebook_workflow | Pending | pending |
+| `algorithms/search_and_optimization/quantum_likelihood_estimation/quantum_likelihood_estimation` | notebook_workflow | [Native program](algorithms/search_and_optimization/quantum_likelihood_estimation/overview/main.py) | validated |
 | `applications/CFD/QLS_for_hybrid_solvers/banded_be` | python_unclassified | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/cheb_utils` | python_unclassified | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/chebyshev_approximation` | notebook_workflow | Pending | pending |

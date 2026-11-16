@@ -80,6 +80,7 @@ Native FlagQuantum programs currently available:
 - [overview](search_and_optimization/dqi/dqi_max_xorsat/overview/README.md)
 - [overview](search_and_optimization/grover/grover/overview/README.md)
 - [overview](search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/README.md)
+- [overview](search_and_optimization/quantum_likelihood_estimation/overview/README.md)
 
 ## Additional FlagQuantum teaching examples
 
