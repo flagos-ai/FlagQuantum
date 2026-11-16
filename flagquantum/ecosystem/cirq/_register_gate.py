@@ -7,7 +7,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
@@ -16,8 +16,9 @@ import numpy as np
 from ...compiler.registers.primitives.power import register_power_ir
 from ...compiler.registers.register_binding import BoundRegisterProgram
 from ...core.ir import CircuitIR
-from ...core.ir.program.registers import RegisterSide
+from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
+from ._gate_metadata import cirq_wire_label
 from ._register_export import _register_shape
 from ._register_workspace import bind_workspace_operations
 from .conversion import _cirq, _export_cirq
@@ -25,6 +26,12 @@ from .models import CirqConversionError
 
 if TYPE_CHECKING:
     from cirq import CircuitDiagramInfo, DecompositionContext, Gate, Qid
+
+    from ...drawer.register_score_data import SymbolClass
+
+    _WireSymbol = Callable[
+        [Register, tuple[int, ...]], tuple[SymbolClass, dict[str, str | int | bool]]
+    ]
 else:
     Gate = _cirq().Gate
 
@@ -37,6 +44,7 @@ class RegisterCirqGate(Gate):
         body: CircuitIR | BoundRegisterProgram,
         signature: Signature,
         *,
+        wire_symbol: _WireSymbol | None = None,
         feedback_key_prefix: str | None = None,
         guarded_measurement_work: int | None = None,
     ) -> None:
@@ -58,9 +66,12 @@ class RegisterCirqGate(Gate):
                     input_indices.extend(bits)
                 if register.side & RegisterSide.RIGHT:
                     right_indices.extend(bits)
-                label = register.name
-                if element_index:
-                    label += f"[{', '.join(map(str, element_index))}]"
+                if wire_symbol is None:
+                    label = register.name
+                    if element_index:
+                        label += f"[{', '.join(map(str, element_index))}]"
+                else:
+                    label = cirq_wire_label(*wire_symbol(register, element_index))
                 labels.extend([label] * width)
             if register.side == RegisterSide.RIGHT:
                 output_groups.append(tuple(range(first_bit, len(labels))))
@@ -120,6 +131,7 @@ class RegisterCirqGate(Gate):
         self._feedback_key_prefix = feedback_key_prefix
         self._guarded_measurement_work = guarded_measurement_work
         self._signature = signature
+        self._wire_symbol = wire_symbol
         self._labels = tuple(labels)
         self._input_indices = tuple(input_indices)
         self._consumed_wires = consumed_wires
@@ -229,5 +241,7 @@ class RegisterCirqGate(Gate):
         instructions = register_power_ir(self._body, abs(power), adjoint=power < 0)
         signature = self._signature if power > 0 else self._signature.adjoint()
         return RegisterCirqGate(
-            replace(self._body, instructions=instructions), signature
+            replace(self._body, instructions=instructions),
+            signature,
+            wire_symbol=self._wire_symbol,
         )

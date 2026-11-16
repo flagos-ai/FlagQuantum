@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from math import prod
 from typing import TYPE_CHECKING
 
@@ -21,6 +22,22 @@ from .conversion import _cirq
 
 if TYPE_CHECKING:
     from ...drawer.register_score_data import SymbolClass
+
+
+def cirq_wire_label(
+    glyph: SymbolClass, attributes: Mapping[str, str | int | bool]
+) -> str:
+    """Translate the locked per-register wire glyph to a Cirq label."""
+    if glyph == "Circle":
+        return "@" if attributes.get("filled", True) else "(0)"
+    if glyph == "ModPlus":
+        return "X"
+    if glyph in {"TextBox", "RarrowTextBox", "LarrowTextBox"}:
+        label = attributes.get("text")
+        if not isinstance(label, str):
+            raise ValueError("Cirq text-box glyph requires a text label")
+        return label
+    raise NotImplementedError(f"Cirq wire glyph {glyph!r} is unsupported")
 
 
 def cirq_gate_signature(gate: object) -> Signature:

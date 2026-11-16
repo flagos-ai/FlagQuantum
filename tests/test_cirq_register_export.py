@@ -1304,3 +1304,81 @@ def test_valid_modexp_register_export_preserves_source_output_and_feedback(
     )
     assert len(actual.measurements) == 48
     np.testing.assert_allclose(actual.final_state_vector, expected, atol=2e-12, rtol=0)
+
+
+@pytest.mark.ftqc_reference
+def test_register_gate_renders_frozen_shaped_wire_glyphs(
+    cirq: Any, source_export: Any
+) -> None:
+    from qualtran import QAny, QBit
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.drawing import Circle, LarrowTextBox, ModPlus, RarrowTextBox, TextBox
+
+    from flagquantum.drawer.register_score_data import SymbolClass
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+
+    reference_signature = SourceSignature(
+        (
+            SourceRegister("ctrl", QBit(), shape=(2,)),
+            SourceRegister("word", QAny(2), shape=(2,)),
+            SourceRegister("target", QBit()),
+            SourceRegister("phase", QBit()),
+        )
+    )
+
+    class ReferenceGlyphs:
+        signature = reference_signature
+
+        def wire_symbol(self, register: Any, index: tuple[int, ...] = ()) -> Any:
+            if register.name == "ctrl":
+                return Circle(filled=index == (0,))
+            if register.name == "word":
+                return (
+                    RarrowTextBox("incoming")
+                    if index == (0,)
+                    else LarrowTextBox("outgoing")
+                )
+            return ModPlus() if register.name == "target" else TextBox("phase")
+
+    def glyph(
+        register: Register, index: tuple[int, ...]
+    ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+        if register.name == "ctrl":
+            return "Circle", {"filled": index == (0,)}
+        if register.name == "word":
+            if index == (0,):
+                return "RarrowTextBox", {"text": "incoming"}
+            return "LarrowTextBox", {"text": "outgoing"}
+        if register.name == "target":
+            return "ModPlus", {}
+        return "TextBox", {"text": "phase"}
+
+    bit = opaque_register_type(1)
+    signature = Signature(
+        (
+            Register("ctrl", bit, shape=(2,)),
+            Register("word", opaque_register_type(2), shape=(2,)),
+            Register("target", bit),
+            Register("phase", bit),
+        )
+    )
+    gate = RegisterCirqGate(
+        CircuitIR(8, (Instruction("x", (6,)),)), signature, wire_symbol=glyph
+    )
+    original = source_export.BloqAsCirqGate(ReferenceGlyphs())
+    expected = (
+        "@",
+        "(0)",
+        "incoming",
+        "incoming",
+        "outgoing",
+        "outgoing",
+        "X",
+        "phase",
+    )
+    assert cirq.circuit_diagram_info(original).wire_symbols == expected
+    assert cirq.circuit_diagram_info(gate).wire_symbols == expected
+    assert cirq.circuit_diagram_info(gate**-1).wire_symbols == expected
+    qids = tuple(cirq.LineQubit.range(8))
+    assert tuple(cirq.decompose_once(gate.on(*qids))) == (cirq.X(qids[6]),)
