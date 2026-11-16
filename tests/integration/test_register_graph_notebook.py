@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("tutorial_guided_hamiltonian", 10, 1, 0),
         ("hamiltonian_simulation_by_gqsp", 7, 2, 0),
         ("register_addition", 20, 6, 3),
+        ("register_and", 17, 6, 0),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
         ("binary_field_square", 7, 2, 0),
