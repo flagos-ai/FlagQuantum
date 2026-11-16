@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ctypes
 from importlib import import_module
 
 import torch
@@ -77,7 +78,8 @@ class SparseBlossomDecoder:
         shape = (detection_events.shape[0], self._graph.num_observables)
         if not shape[0]:
             return torch.empty(shape, dtype=torch.bool, device="cpu")
-        dense = detection_events.to(torch.uint8).contiguous().numpy().tobytes()
+        contiguous = detection_events.to(torch.uint8).contiguous()
+        dense = ctypes.string_at(contiguous.data_ptr(), contiguous.numel())
         try:
             predictions = self._decode(self._matcher, dense)
         except ValueError as error:

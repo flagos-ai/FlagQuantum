@@ -19,8 +19,11 @@ pytestmark = pytest.mark.integration
 pytest.importorskip("flagquantum.qec.decoders._sparse_blossom")
 
 
-def test_batched_matching_without_pymatching(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_batched_matching_without_optional_packages(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setitem(sys.modules, "pymatching", None)
+    monkeypatch.setattr(torch.Tensor, "numpy", None)
     graph = DecodingGraph(
         3,
         2,
