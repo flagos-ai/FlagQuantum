@@ -1,0 +1,11 @@
+# Grid kinetic energy file audit
+
+This batch covers Q-0427 and Q-0428, the kinetic implementation and its tests, from Qualtran v0.7.0 at `bcb17bb25360ed68ce3bc084645db3e929799389`. Q-0428 closes with the original examples and their native comparison. Q-0427 remains open for the source phase and cleanup boundaries below.
+
+The source declares one opaque through register `system` shaped `(electrons, 3)`. Each axis word has `(grid_points - 1).bit_length() + 1` wires. The source documentation calls the extra bit a sign bit. The actual `SumOfSquares` accepts the axis words as unsigned values, which the native circuit also uses. FlagQuantum binds wires in electron, axis, then big-endian word order. The native scratch and sum register belong to the caller and are restored by the operation.
+
+The locked top-level decomposition sends each electron's three axes to `SumOfSquares`, routes its result to `QuantumVariableRotation`, and passes the returned phase register to `Free`. The direct source comparisons check both shaped endpoints, axes, result/phase widths, child order and operands. They include the three original parameter cases, the documentation example and smaller sizes, and compare gate classes and logical peaks. The unchanged original suite returned six passes and two skips.
+
+The native dynamic operator supports `circuit.append(op)`. It uses exponentiated unsigned phase weights supplied by the caller and reapplies the sum computation to erase its result. Forward and adjoint on the two-electron, one-bit grid preserve complex amplitudes and clear scratch on all 16 measurement histories. The two-bit test covers all coordinate values with sampled histories and verifies independent ownership of an occupied classical slot.
+
+The two-electron fixture emits 16 T-family instructions and four measurements. The source budget estimates two Toffoli and a peak of ten logical qubits. Its QVR leaves give rotation multiplicity without fixed angles. Its source `Free` is also a different operation from the native uncomputation. Together these boundaries prevent comparison against a complete locked primitive stream. The source's custom whole-operation wire label remains outside this batch.

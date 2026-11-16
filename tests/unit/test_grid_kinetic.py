@@ -10,6 +10,7 @@ import torch
 from flagquantum.algorithms.primitives.grid_kinetic import (
     GridKineticEnergy,
     source_grid_kinetic_cost,
+    source_grid_kinetic_signature,
 )
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.arithmetic.integer_square import (
@@ -25,20 +26,50 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("electrons,points", [(1, 1), (2, 2), (3, 4), (12, 17)])
+@pytest.mark.parametrize(
+    "electrons,points", [(1, 1), (2, 2), (3, 4), (2, 21), (6, 17), (8, 25), (12, 17)]
+)
 def test_locked_kinetic_graph(electrons, points):
     pytest.importorskip("qualtran")
+    from qualtran import QAny, Side
     from qualtran.bloqs.chemistry.trotter.grid_ham.kinetic import KineticEnergy
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     source = KineticEnergy(electrons, points)
     native = source_grid_kinetic_cost(electrons, points)
-    instances = tuple(
-        instance.bloq for instance, _, _ in source.decompose_bloq().iter_bloqsoqs()
+    signature = source_grid_kinetic_signature(electrons, points)
+    (native_system,) = signature
+    (source_system,) = source.signature
+    assert source_system.side == Side.THRU
+    assert signature.get_left("system") == signature.get_right("system")
+    assert isinstance(source_system.dtype, QAny)
+    assert native_system.dtype.encoding == "opaque"
+    assert (native_system.bitsize, native_system.shape) == (
+        source_system.bitsize,
+        source_system.shape,
     )
-    assert [type(op).__name__ for op in instances] == [
+    assert tuple(native_system.all_idxs()) == tuple(source_system.all_idxs())
+    steps = tuple(source.decompose_bloq().iter_bloqsoqs())
+    assert [type(instance.bloq).__name__ for instance, _, _ in steps] == [
         call.component.name for call in native.calls
     ]
+    for electron, (square, rotate, free) in enumerate(
+        zip(steps[::3], steps[1::3], steps[2::3], strict=True)
+    ):
+        _, square_inputs, (_, sum_word) = square
+        _, rotation_inputs, (phase_word,) = rotate
+        _, free_inputs, outputs = free
+        assert [word.idx for word in square_inputs["input"]] == [
+            (electron, axis) for axis in range(3)
+        ]
+        assert rotation_inputs["phi"] == sum_word
+        assert free_inputs["reg"] == phase_word
+        assert (
+            sum_word.reg.bitsize
+            == phase_word.reg.bitsize
+            == 2 * native_system.bitsize + 2
+        )
+        assert outputs == ()
     result = estimate_ftqc_resources(native)
     expected = get_cost_value(source, QECGatesCost())
     for field in (

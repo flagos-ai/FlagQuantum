@@ -19,6 +19,9 @@ from ...compiler.registers.arithmetic.integer_square import (
 from ...compiler.registers.layout.partition import unpartition_register
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from ...dynamic import DynamicCircuit
 from .grid_qvr import grid_qvr_ir, source_grid_qvr_cost
 
@@ -29,12 +32,26 @@ def _coordinate_width(grid_points: int) -> int:
     return (grid_points - 1).bit_length() + 1
 
 
-def source_grid_kinetic_cost(electrons: int, grid_points: int) -> ComponentCost:
-    """Model the ordered source square sum, QVR and Free for each electron."""
+def source_grid_kinetic_signature(electrons: int, grid_points: int) -> Signature:
+    """Declare the source through port in electron, axis, and wire order."""
     if type(electrons) is not int or electrons < 1:
         raise ValueError("Grid kinetic energy requires a positive electron count")
-    coordinate = _coordinate_width(grid_points)
-    system = electrons * 3 * coordinate
+    return Signature(
+        (
+            Register(
+                "system",
+                opaque_register_type(_coordinate_width(grid_points)),
+                shape=(electrons, 3),
+            ),
+        )
+    )
+
+
+def source_grid_kinetic_cost(electrons: int, grid_points: int) -> ComponentCost:
+    """Model the ordered source square sum, QVR and Free for each electron."""
+    signature = source_grid_kinetic_signature(electrons, grid_points)
+    coordinate = int(signature.get_left("system").bitsize)
+    system = int(signature.n_qubits())
     result = 2 * coordinate + 2
     electron = (
         CostCall(
