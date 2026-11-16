@@ -81,7 +81,11 @@ def source_gradient_gates(
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("n,exponent", [(1, 1.0), (3, -0.75), (4, 1.0), (8, 0.625)])
+@pytest.mark.parametrize(
+    "n,exponent",
+    [(1, 1.0), (3, -0.75), (4, 1.0), (8, 0.625)]
+    + list(product((6, 7, 8), (-0.5, 1, 0.1))),
+)
 @pytest.mark.parametrize("controlled", [False, True])
 def test_pinned_gradient_gates_and_resource_model(
     n: int, exponent: float, controlled: bool
@@ -125,7 +129,11 @@ def test_pinned_gradient_gates_and_resource_model(
         assert (model.t, model.rotation) == (0, 8)
 
 
-@pytest.mark.parametrize("n,exponent", [(1, 0.625), (3, -0.75), (4, 1.0), (8, -1.0)])
+@pytest.mark.parametrize(
+    "n,exponent",
+    [(1, 0.625), (3, -0.75), (4, 1.0), (8, -1.0)]
+    + list(product((6, 7, 8), (-0.5, 1, 0.1))),
+)
 @pytest.mark.parametrize("controlled", [False, True])
 def test_gradient_complex_phases_and_measured_branches(
     n: int, exponent: float, controlled: bool
@@ -163,14 +171,15 @@ def test_gradient_complex_phases_and_measured_branches(
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("exponent", [-1.0, 1.0, -0.625])
-def test_source_state_preparation_and_unpreparation(exponent: float) -> None:
+@pytest.mark.parametrize(
+    "n,exponent", list(product((6, 7, 8), (0.124, -0.124, -1.0, 1.0))) + [(5, -0.625)]
+)
+def test_source_state_preparation_and_unpreparation(n: int, exponent: float) -> None:
     pytest.importorskip("qualtran")
     np = pytest.importorskip("numpy")
     from qualtran.bloqs.rotations.phase_gradient import PhaseGradientState
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
-    n = 5
     wires = tuple(range(n))
     source = PhaseGradientState(n, exponent=exponent)
     reference, _ = source_gradient_gates(source, {}, {"phase_grad": wires})

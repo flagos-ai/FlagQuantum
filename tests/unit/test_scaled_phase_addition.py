@@ -2,16 +2,21 @@
 
 from collections import Counter
 from itertools import product
+from typing import TypedDict
 
 import pytest
 import torch
 
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
 from flagquantum.compiler.registers.phase.phase_addition import phase_add_workspace_size
 from flagquantum.compiler.registers.phase.scaled_phase_addition import (
     scaled_phase_add_ir,
     scaled_phase_add_terms,
+    source_scaled_phase_add_cost,
 )
-from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir import CircuitIR, Instruction
 from tests.unit.measurement_checks import certified_and_channel_map, forced_branch
 from tests.unit.sparse_register_execution import execute_sparse_register
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -19,8 +24,22 @@ from tests.unit.test_register_subtraction import assert_source
 
 pytestmark = pytest.mark.unit
 
+
+class ScaledAddArguments(TypedDict):
+    input_fraction_bits: int
+    coefficient: float
+    coefficient_width: int
+    coefficient_fraction_bits: int
+
+
 CASES = [
+    (4, 4, 7, 0.123, 6, 6, False),
+    (2, 2, 8, 1.3868682, 8, 8, False),
+    (4, 4, 9, -9.0949456, 8, 5, False),
+    (6, 6, 4, 2.5, 3, 2, False),
+    (4, 0, 4, 1.3868682, 8, 7, False),
     (2, 2, 2, 0.5, 2, 2, False),
+    (2, 2, 2, 2.0, 2, 2, False),
     (3, 3, 4, 0.75, 3, 3, False),
     (5, 2, 3, 1.875, 5, 4, False),
     (5, 3, 5, -2.75, 5, 3, True),
@@ -96,7 +115,7 @@ def test_scaled_source_schedule_and_complex_roundtrip(
     )
     work = tuple(range(m + n, m + n + required))
     bits = tuple(range(40, 40 + required))
-    params = dict(
+    params = ScaledAddArguments(
         input_fraction_bits=f,
         coefficient=gamma,
         coefficient_width=k,
@@ -106,7 +125,7 @@ def test_scaled_source_schedule_and_complex_roundtrip(
     inverse = scaled_phase_add_ir(source, gradient, work, bits, adjoint=True, **params)
 
     for reverse, stream in ((False, gates), (True, inverse)):
-        expected = []
+        expected: list[Instruction] = []
         for op in reversed(operations) if reverse else operations:
             leaf = op.gate
             assert isinstance(leaf, AddIntoPhaseGrad)
@@ -135,8 +154,13 @@ def test_scaled_source_schedule_and_complex_roundtrip(
     assert counts["reset"] == events
     assert Counter(g.name for g in inverse) == counts
     model = get_cost_value(reference, QECGatesCost())
-    assert model.toffoli == (n - 2) * min(len(terms), (k + 2) // 2)
-    assert model.measurement == 0
+    declaration = source_scaled_phase_add_cost(m, f, n, gamma, k, kf)
+    ((source_child, repetitions),) = reference.bloq_counts().items()
+    assert source_child == AddIntoPhaseGrad(m, n)
+    assert declaration.calls[0].repetitions == repetitions
+    modeled = estimate_component_resources(declaration)
+    assert modeled.gates.toffoli == model.toffoli
+    assert modeled.gates.measurement == model.measurement == 0
 
     width = m + n + required
     before, after = [], []
@@ -222,14 +246,14 @@ def test_scaled_phase_validation() -> None:
         scaled_phase_add_terms(2, 2, 0, 0.5, 2, 2)
     with pytest.raises(ValueError, match="finite"):
         scaled_phase_add_terms(2, 2, 2, float("inf"), 2, 2)
-    params = dict(
+    params = ScaledAddArguments(
         input_fraction_bits=2,
         coefficient=0.5,
         coefficient_width=2,
         coefficient_fraction_bits=2,
     )
     with pytest.raises(ValueError, match="adjoint"):
-        scaled_phase_add_ir((0, 1), (2, 3), (4,), (0,), **params, adjoint=1)
+        scaled_phase_add_ir((0, 1), (2, 3), (4,), (0,), **params, adjoint=1)  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="distinct"):
         scaled_phase_add_ir((0, 1), (2, 3), (0,), (0,), **params)
     with pytest.raises(ValueError, match="work wires"):

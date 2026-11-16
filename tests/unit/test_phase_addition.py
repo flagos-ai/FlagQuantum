@@ -2,6 +2,7 @@
 
 from collections import Counter
 from itertools import product
+from typing import TypedDict
 
 import pytest
 import torch
@@ -19,9 +20,26 @@ from tests.unit.test_register_subtraction import assert_source
 pytestmark = pytest.mark.unit
 
 
+class PhaseAddArguments(TypedDict):
+    right_shift: int
+    sign: int
+    control: int | None
+    control_value: int
+
+
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
-    "m,n,shift", [(1, 1, 0), (2, 5, 0), (5, 2, 0), (3, 4, 2), (2, 3, 3), (8, 8, 2)]
+    "m,n,shift",
+    [
+        (1, 1, 0),
+        (2, 5, 0),
+        (4, 4, 0),
+        (4, 7, 0),
+        (5, 2, 0),
+        (3, 4, 2),
+        (2, 3, 3),
+        (8, 8, 2),
+    ],
 )
 @pytest.mark.parametrize("cv", [None, 0, 1])
 @pytest.mark.parametrize("sign", [-1, 1])
@@ -43,14 +61,15 @@ def test_fixed_point_action_components_and_complex_channel(
     q = phase_add_workspace_size(m, n, right_shift=shift, controlled=controlled)
     work = tuple(range(int(controlled) + m + n, int(controlled) + m + n + q))
     bits = tuple(range(40, 40 + q))
-    kwargs = dict(
+    kwargs = PhaseAddArguments(
         right_shift=shift,
         sign=sign,
         control=control,
         control_value=1 if cv is None else cv,
     )
     gates = phase_add_ir(a, b, work, bits, **kwargs)
-    inverse = phase_add_ir(a, b, work, bits, **{**kwargs, "sign": -sign})
+    kwargs["sign"] = -sign
+    inverse = phase_add_ir(a, b, work, bits, **kwargs)
     reference = AddIntoPhaseGrad(m, n, right_shift=shift, sign=sign, controlled_by=cv)
     with pytest.raises(DecomposeNotImplementedError, match="does not declare"):
         reference.decompose_bloq()
@@ -133,7 +152,7 @@ def test_fixed_point_action_components_and_complex_channel(
     amps = torch.complex(w, w * (w % 5 - 2))
     amps /= amps.norm()
     start, end = addresses(initial), addresses(expected_rows)
-    if width <= 10 and q <= 4:
+    if width <= 11 and q <= 4:
         state = torch.zeros(1 << (width + 1), dtype=torch.complex128)
         expected_state = torch.zeros_like(state)
         state[start] = amps
@@ -174,7 +193,7 @@ def test_phase_add_validation() -> None:
     with pytest.raises(ValueError, match="nonnegative"):
         phase_add_workspace_size(1, 3, right_shift=-1)
     with pytest.raises(ValueError, match="boolean"):
-        phase_add_workspace_size(1, 3, controlled=1)
+        phase_add_workspace_size(1, 3, controlled=1)  # type: ignore[arg-type]
     with pytest.raises(ValueError, match="sign"):
         phase_add_ir((0,), (1,), (), (), sign=0)
     with pytest.raises(ValueError, match="control value"):
