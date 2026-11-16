@@ -1,5 +1,6 @@
 """Unsigned constant addition against pinned source gates and complex trajectories."""
 
+from cmath import phase
 from collections import Counter
 from importlib.metadata import version
 from math import pi
@@ -61,6 +62,7 @@ def reference_arithmetic_gates(
     preserve_components: bool = False,
     keep_exchange_leaves: bool = False,
     keep_pauli_leaves: bool = False,
+    scalar_phase_anchor: int | None = None,
 ) -> tuple[Instruction, ...]:
     """Read unmodified pinned arithmetic with explicit quantum/classical binding."""
     pytest.importorskip("qualtran")
@@ -342,6 +344,10 @@ def reference_arithmetic_gates(
         context=context,
         intercepting_decomposer=source_component,
         keep=lambda op: op.gate in names
+        or (
+            scalar_phase_anchor is not None
+            and isinstance(op.gate, cirq.GlobalPhaseGate)
+        )
         or cirq.is_measurement(op)
         or isinstance(op.gate, cirq.ResetChannel)
         or isinstance(op, cirq.ClassicallyControlledOperation),
@@ -354,6 +360,14 @@ def reference_arithmetic_gates(
             (key,) = cirq.control_keys(op)
             metadata["conditions"] = ((measurements[key], 1),)
             op = op.without_classical_controls()
+        if isinstance(op.gate, cirq.GlobalPhaseGate):
+            assert scalar_phase_anchor is not None and not metadata
+            theta = phase(complex(op.gate.coefficient))
+            # Preserve the exact source scalar using the declared live anchor.
+            flip = Instruction("x", (scalar_phase_anchor,))
+            shift = Instruction("phase", (scalar_phase_anchor,), {"theta": theta})
+            gates.extend((flip, shift, flip, shift))
+            continue
         wires = tuple(q.x for q in op.qubits)
         if cirq.is_measurement(op):
             bit = measurement_slots[wires[0]]
