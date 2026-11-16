@@ -50,13 +50,17 @@ actions, over-40-bit refusal before enumeration, and signed/typed codecs.
 
 ## Phase and execution boundaries
 
-A classical value mapping cannot recover a quantum phase. Source Z's classical
-identity becomes an identity table, which differs from its quantum Z matrix;
-Hadamard has no applicable deterministic classical action. Existing positive
-and negative source tests retain those facts. Native enumeration neither
-normalizes a non-injective table nor claims it is unitary. Known phase-free
-X/swap/Toffoli/Add/Xor tables are compared with the unchanged source quantum
-path, complete complex input amplitudes and phase gradients.
+A classical value mapping cannot recover a quantum phase. Source Z's direct
+value callback returns the input, but the complete source tensor entry rejects
+Z when the classical simulator sees its phase contribution. Hadamard has no
+applicable deterministic classical action. An explicit caller-supplied value
+callback bypasses that phase check by design. In the native mixed component
+consumer, supplying Z's identity value table preserves the output populations
+but gives the opposite off-diagonal sign to the physical Z channel on a
+complex superposition. X's full component channel matches the original
+unchanged source, including coherence. Native enumeration neither normalizes
+a non-injective table nor claims it is unitary. Known phase-free swap, Toffoli,
+Add and XOR comparisons retain full complex amplitudes and gradients.
 
 Existing measured-Add execution checks preserve actual gate order, operands,
 feedback, all small measurement branches, clean work and `circuit.append(op)`.

@@ -1,5 +1,6 @@
 """Complete classical tensor source boundaries without repairing the reference."""
 
+from collections.abc import Callable, Mapping
 from typing import Any
 
 import numpy as np
@@ -142,3 +143,88 @@ def test_full_direction_layout_dense_and_leaf_disposition(
             np.testing.assert_array_equal(node.tensor.numpy(), original.data)
             assert node.labels == tuple(labels[index] for index in original.inds)
         assert native_calls == source_calls
+
+
+@pytest.mark.parametrize("gate", ["x", "z"])
+def test_mixed_component_action_retains_probabilities_but_not_z_phase(
+    gate: str,
+) -> None:
+    from qualtran.bloqs.basic_gates import XGate, ZGate
+    from qualtran.simulation.tensor._tensor_from_classical import (
+        bloq_to_dense_via_classical_action,
+    )
+
+    from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+    from flagquantum.compiler.registers.component_gate_function import bit_gate_function
+    from flagquantum.core.ir import CircuitIR, Instruction
+    from flagquantum.core.ir.program import FunctionRecord
+    from flagquantum.core.ir.program.register_types import quantum_bit_type
+    from flagquantum.core.ir.program.registers import Register
+    from flagquantum.core.ir.program.signatures import Signature
+    from flagquantum.simulation.tensor_network.classical_action_tensor import (
+        classical_action_tensor_node,
+    )
+    from flagquantum.simulation.tensor_network.component_dense import (
+        contract_component_superoperator,
+    )
+    from flagquantum.simulation.tensor_network.models import TensorNetworkNode
+
+    source = XGate() if gate == "x" else ZGate()
+    signature = Signature((Register("q", quantum_bit_type()),))
+    leaf = bit_gate_function(
+        gate, tuple(signature), CircuitIR(1, (Instruction(gate, (0,)),))
+    )
+    builder = ComponentProgramBuilder(signature, (leaf,))
+    record = builder.finalize(builder.call_dict(gate, builder.inputs))
+    like = torch.empty((), dtype=torch.complex128)
+
+    def action(**inputs: object) -> tuple[object, ...]:
+        value = inputs["q"]
+        assert isinstance(value, (int, np.integer))
+        return (int(value) ^ int(gate == "x"),)
+
+    def supply(
+        function: FunctionRecord,
+        incoming: Mapping[str, tuple[tuple[int, ...], ...]],
+        outgoing: Mapping[str, tuple[tuple[int, ...], ...]],
+        fresh: Callable[[], int],
+    ) -> tuple[TensorNetworkNode, ...]:
+        assert function.name == gate
+        return (
+            classical_action_tensor_node(
+                signature,
+                incoming,
+                outgoing,
+                action,
+                decode,
+                encode,
+                like,
+                operation_name=gate,
+            ),
+        )
+
+    actual = contract_component_superoperator(record, (0,), supply, like)
+    if gate == "x":
+        source_table = torch.as_tensor(
+            bloq_to_dense_via_classical_action(source), dtype=like.dtype
+        )
+    else:
+        assert all(source.on_classical_vals(q=bit) == {"q": bit} for bit in (0, 1))
+        with pytest.raises(ValueError, match="imparts a phase"):
+            bloq_to_dense_via_classical_action(source)
+        source_table = torch.eye(2, dtype=like.dtype)
+    expected = torch.einsum("ai,bj->abij", source_table, source_table.conj())
+    torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+    reference = torch.as_tensor(
+        source.tensor_contract(superoperator=True), dtype=like.dtype
+    )
+    state = torch.tensor([1 + 2j, -3 + 4j], dtype=like.dtype) / 30**0.5
+    density = state[:, None] * state.conj()[None, :]
+    observed = torch.einsum("abij,ij->ab", actual, density)
+    physical = torch.einsum("abij,ij->ab", reference, density)
+    torch.testing.assert_close(observed.diagonal(), physical.diagonal(), rtol=0, atol=0)
+    if gate == "x":
+        torch.testing.assert_close(observed, physical, rtol=0, atol=0)
+    else:
+        assert observed[0, 1].item() != 0
+        torch.testing.assert_close(observed[0, 1], -physical[0, 1], rtol=0, atol=0)
