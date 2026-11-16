@@ -1,0 +1,53 @@
+# Hamiltonian simulation by GQSP
+
+The native Algorithms owner binds a coherent walk emitter, its named logical
+ports, and a prepared signal. The bound operation runs through
+`Circuit.append`. The caller supplies clean outer PREPARE junk and walk
+workspace. Outer junk stays live across GQSP. Walk workspace is restored
+after each walk invocation and can be reused between calls.
+
+The unchanged Qualtran v0.7.0 source at
+`bcb17bb25360ed68ce3bc084645db3e929799389` declares Allocate, Always(PREPARE),
+GQSP, Always(PREPARE†), and Free. FlagQuantum maps allocation and release to
+caller-provided slots. The Jacobi–Anger degree uses signed scaled time and
+half the specified precision. The cosine coefficients use negative scaled
+time, grid normalization, and the source's secondary factor
+`1-2*precision`. GQSP uses the existing complement and phase recursion at
+half precision with the source's `1e-4` verification tolerance.
+
+## Evidence
+
+For a one-bit selection and a one-bit target, the native path binds the
+existing walk owner on permuted physical wires. The test checks source
+polynomial coefficients, the complementary polynomial, each SU2 angle
+and its placement around the walk, and all ordered walk control operands.
+It verifies both a positive-controlled inverse walk and a zero-controlled
+forward walk. The test compares all eight complex columns to the
+unmodified source and checks the projected block against `exp(-iHt)`.
+Outer and reflection junk return to zero across all columns. This fixture
+is coherent and has no measurement branches.
+
+| Time | Precision | Degree | Declared walk calls by polarity | Declared SU2 calls | Emitted primitive count |
+| --- | --- | --- | --- | --- | --- |
+| 0.75 | 1e-5 | 7 | 7 each | 15 | 249 |
+| -0.75 | 1e-7 | 9 | 9 each | 19 | 317 |
+
+The native primitive totals include both outer PREPAREs, decomposed absolute
+signal phase and rotations, and physical walk reflection gates. The source
+graph also declares one forward and one inverse PREPARE. Both concrete and
+symbolic Hubbard factories agree on all five direct declared costs.
+
+The unchanged upstream non-slow test suite completed with 35 passes,
+3 expected failures, and 4 slow cases deselected. The locked 12-cell
+notebook executed all seven code cells in an independent kernel.
+
+## Outstanding file evidence
+
+Q-0539 needs the native 12-cell notebook, including the concrete Hubbard
+signature and the symbolic depth-two cost table. Q-0540 needs the native
+Hubbard end-to-end binding and its measured PREPARE/SELECT dependencies.
+Q-0541 needs the native random-unitary and Hamiltonian test matrices,
+Hubbard controlled-resource coverage, and the slow reference cases. The
+full matrix test here covers the small bound fixture and two parameter
+pairs. It uses the existing controlled walk and SU2 emitters for native
+primitive lowering.
