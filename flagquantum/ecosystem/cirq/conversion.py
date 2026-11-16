@@ -454,8 +454,22 @@ def import_cirq(circuit: Any, *, allow_lossy: bool = False) -> CirqImportResult:
     cirq = _cirq()
     if not isinstance(circuit, cirq.Circuit):
         raise TypeError("from_cirq requires cirq.Circuit")
+    return _import_static_cirq(cirq, circuit, allow_lossy=allow_lossy)
+
+
+def _import_static_cirq(
+    cirq: Any,
+    circuit: Any,
+    *,
+    allow_lossy: bool = False,
+    wire_order: tuple[Any, ...] | None = None,
+) -> CirqImportResult:
     issues: list[CirqConversionIssue] = []
-    wires = _qubit_map(cirq, circuit, issues)
+    wires = (
+        _qubit_map(cirq, circuit, issues)
+        if wire_order is None
+        else {qubit: index for index, qubit in enumerate(wire_order)}
+    )
     instructions: list[Instruction] = []
     indexed_operations = tuple(
         operation for moment in circuit for operation in moment.operations

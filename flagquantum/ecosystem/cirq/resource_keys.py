@@ -27,6 +27,7 @@ from ...compiler._component_trace.resource_generalization import (
     identity_cost_key,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ._decompose import decompose_cirq_once
 from .conversion import _cirq
 
 
@@ -130,3 +131,36 @@ def _single_positive_key(key: ResourceCall | None) -> ResourceCall | None:
     if key.opcode == "swap_bit":
         return FixedTCall("fredkin")
     return None
+
+
+def cirq_gate_decomposition_resource_keys(
+    gate: object,
+) -> tuple[ResourceCall, ...] | None:
+    """Resolve known leaves without retaining Cirq objects in the resource graph."""
+    cirq = _cirq()
+
+    def visit(
+        value: object, ancestors: tuple[object, ...]
+    ) -> tuple[ResourceCall, ...] | None:
+        key = cirq_gate_resource_key(value)
+        if key is not None:
+            return (key,)
+        if not isinstance(value, cirq.Gate) or value in ancestors:
+            return None
+        if any(dimension != 2 for dimension in cirq.qid_shape(value)):
+            return None
+        operations = decompose_cirq_once(value)
+        if operations is None:
+            return None
+        leaves: list[ResourceCall] = []
+        path = (*ancestors, value)
+        for operation in operations:
+            if not isinstance(operation, cirq.GateOperation) or operation.tags:
+                return None
+            child = visit(operation.gate, path)
+            if child is None:
+                return None
+            leaves.extend(child)
+        return tuple(leaves)
+
+    return visit(gate, ())
