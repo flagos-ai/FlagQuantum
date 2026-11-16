@@ -11,11 +11,11 @@ Qualtran v0.7.0 `drawing/classical_sim_graph.py` at commit
 | --- | --- |
 | `__init__` | Caller runs existing Simulation `ComponentClassicalState`; Drawer receives the resulting assignment mapping explicitly |
 | `cxn_label` | Drawer resolves the connection's producer SSA value and stringifies its assignment |
-| `cxn_edge` | Existing register graph geometry with value label, floating label, font size 10, dark-blue text, dot arrowhead and arrow size 0.25 |
+| `cxn_edge` | Shared compact component graph with value label, floating label, font size 10, dark-blue text, dot arrowhead and arrow size 0.25 |
 
-The new owner is `flagquantum/drawer/classical_component_graph.py`. The existing
-`register_graph.py` shares its renderer through one private edge-attribute
-callback; the ordinary width-labeled export retains its signature and output.
+The owner is `flagquantum/drawer/classical_component_graph.py`. Its edge attributes
+feed the existing compact `component_graph.py` renderer. The width, typed and
+classical drawings share formal boundary names, port tables and connections.
 Component score, register lifetimes, instance ordinals and lane assignment remain
 owned by their existing modules. No numerical execution or external source
 objects enter Drawer. No second graph IR, state evaluator or backend registry is
@@ -49,7 +49,10 @@ The complete original MultiAnd fixture is retained: four controls, three And
 instances and thirteen connections. Both activation patterns `(1,1,1,1)` and
 `(1,1,0,1)` cover all sixteen input bit strings. Every connection's register,
 producer, consumer and value is compared to the unchanged source drawer. Edge
-presentation attributes are compared to the original `cxn_edge` result.
+presentation attributes are compared to the original `cxn_edge` result. For both
+control patterns the tests also compare each compact instance table and all
+formal boundary labels with those produced by the unchanged source graph.
+Only the instance display names and Graphviz identifiers are normalized.
 
 A two-X THRU chain explicitly checks values `0,1,0`; reading a consumer output
 would give incorrect labels. Drawing is rerun with numerical execution disabled.
@@ -60,10 +63,12 @@ are tested. The closed graph is rendered through real Graphviz. The sole origina
 a native boundary replacement, retaining the original MultiAnd input `[1,1,0,1]`.
 Only DOT quoting is normalized for that source test's numeric-label regex.
 
-Q-0736 remains open for the general foreign Bloq/PrettyGraphDrawer admission and
-constructor interface. The original drawing notebook is a separate inventory
-asset and is not marked complete here. Q-0737's single concrete test is audited at
-its own file scope; it does not certify the still-open general drawing parent.
+Q-0736 covers the whole drawing implementation over admitted native component
+records. The frozen source blob is `a816c62ceedc1a950bc6ade22fd1182c81211c7f`.
+The explicit assignment input and component record are its native constructor
+boundary. Automatic conversion of foreign Bloq objects remains outside that
+boundary. Q-0737 covers the original test, Q-0741 the drawing notebook,
+and Q-0742 the shared Graphviz layout.
 
 ## Physical behavior and accounting
 
@@ -79,9 +84,14 @@ For the rendered four-control positive predicate, actual native instructions are
 H6, T6, Tdg6, CX18 and S3, with no measurement or feedback in the forward graph.
 The unchanged source model reports AND 3. Both accounts retain their own layer;
 no conversion of AND 3 into a claimed measured primitive total is made. Rendering
-with Graphviz 16.1.0 produces thirteen value-labeled edges; the output boundaries
-use native lifetime names such as `call0:target` instead of source aliases `junk`.
-This is inherited component-score naming, not a promise of identical pixels.
+with Graphviz 16.1.0 produces thirteen value-labeled edges. Output boundaries
+display formal labels such as `junk[0]`. Underlying lane identifiers maintain
+native score identity.
+
+The concentrated Drawer, component classical and Graphviz suite passed 914
+cases, including the unchanged source assertions. Strict typing, formatting,
+Compiler ownership, architecture, the internal IR contract and the public API
+baseline passed. The existing suite reported 382 dependency warnings.
 
 ## Local acceptance
 
