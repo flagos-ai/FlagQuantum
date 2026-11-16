@@ -103,10 +103,40 @@ CZ and H–CCX–H in native circuit IR. KMX encodes the last three as CCZ1.
 These are emitted counts. The source builder declares no QEC model for
 these operations.
 
+## Deferred block marks and register declarations
+
+The locked `RaiiDeferredMark` emits an entry immediately and emits one exit
+on release. Moving the guard transfers exit ownership. Named empty blocks
+emit adjacent entry and exit lines. An empty name suppresses both marks.
+The original nested fixture and a C++ probe with a moved guard and an
+unnamed block produce the same eight-line stream.
+
+The optional KMX block-mark codec maps those events to the compiler's
+existing `ComponentCall` ranges, indexed by lowered operations. It preserves
+nested ordering, zero-width named ranges and the source's five escapes for
+quoted text. The standard reversible-phase codec still owns executable
+operand and scope validation. Exports with marks require explicitly bound
+KMX operation ranges. Translating ranges across lowering and encoding
+trace parameters are outside the current format adapter.
+
+The original native executor reports identical basis outcomes and zero
+phase with the eight-line fixture. Its two executable operations are
+X1 and CX1, with six debug marks, no measurements and no allocation.
+There is no separate resource model for debug marks.
+
+Dense declarations keep names and membership. The locked C++ probe also
+reserves r0 before appending a two-wire register named `quantum` and one
+classical bit named `classical`. It reports the name `quantum` on r0 and
+the two wires on r1. The dense control probe appends a zero-width named r0,
+then assigns both the name and the wires to r1. The reserved case follows
+from appending the name to the end of `register_data` before the membership
+routine grows it to the reserved ID. Declaration lowering and source
+compatibility for sparse IDs remain open.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 Broadcast paths with classical or X-basis targets, owning C++ scope guards,
-register declarations, general loop patterns and debug metadata have
-separate source assertions.
+register declarations, general loop patterns and debug metadata beyond
+named block ranges have separate source assertions.
 The original `CircuitBuilder.*` suite passed all 27 tests with GoogleTest
 1.14.0 from the locked Bazel manifest. The build compiled the unchanged
 builder, original tests and test helpers, and linked the remaining native
