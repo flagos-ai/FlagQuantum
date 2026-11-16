@@ -5,6 +5,7 @@
 
 """Route the indexed word into row zero with relative-phase exchanges."""
 
+from collections.abc import Iterator
 from math import prod
 
 from ....core.ir import Instruction
@@ -95,23 +96,32 @@ def _swap_sequence(
         raise ValueError("Swap with zero target words must have equal widths")
     _validate_wires(tuple(wire for word in (*selections, *targets) for wire in word))
 
-    exchanges: list[tuple[int, int, int]] = []
+    exchanges = [
+        (selections[axis][-1 - bit], left, right)
+        for axis, bit, left, right in swap_with_zero_stages(
+            tuple(map(len, selections)), shape
+        )
+    ]
+    if adjoint:
+        exchanges.reverse()
+    return exchanges
 
-    def visit(axis: int, start: int) -> None:
+
+def swap_with_zero_stages(
+    selection_widths: tuple[int, ...], shape: tuple[int, ...]
+) -> Iterator[tuple[int, int, int, int]]:
+    """Yield source axis, LSB index and flat locations for each exchange."""
+
+    def visit(axis: int, start: int) -> Iterator[tuple[int, int, int, int]]:
         if axis == len(shape):
             return
         stride = prod(shape[axis + 1 :])
         extent = shape[axis]
         for row in range(extent):
-            visit(axis + 1, start + row * stride)
-        for bit, control in enumerate(reversed(selections[axis])):
+            yield from visit(axis + 1, start + row * stride)
+        for bit in range(selection_widths[axis]):
             half = 1 << bit
             for row in range(0, extent - half, 2 * half):
-                exchanges.append(
-                    (control, start + row * stride, start + (row + half) * stride)
-                )
+                yield axis, bit, start + row * stride, start + (row + half) * stride
 
-    visit(0, 0)
-    if adjoint:
-        exchanges.reverse()
-    return exchanges
+    yield from visit(0, 0)
