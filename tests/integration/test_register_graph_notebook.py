@@ -34,6 +34,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_phase_block_encoding", 6, 2, 0),
         ("register_product_block_encoding", 8, 2, 0),
         ("register_sparse_matrix_block_encoding", 9, 2, 0),
+        ("register_sparse_chemistry", 8, 4, 0),
         ("register_hermitian_sparse_matrix", 7, 2, 0),
         ("register_tensor_product_block_encoding", 8, 2, 0),
         ("register_unitary_block_encoding", 7, 2, 0),
