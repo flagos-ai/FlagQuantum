@@ -23,9 +23,8 @@ retains its v1 gate partition. No external qubit object enters native IR.
 The public static exporter rejects instructions with classical conditions.
 Its explicit lossy mode reports and drops the conditional operation. The
 private register adapter can opt into strict feedback export with a caller
-supplied key prefix. It supports unconditional measurements and resets on
-individual wires, classical XOR assignments, and conditions that read
-defined slots. Each
+supplied key prefix. It supports single-wire measurements and resets,
+classical XOR assignments, and conditions that read defined slots. Each
 measurement receives a key derived from its instruction index. Overwriting
 a slot preserves the earlier measurement record and points subsequent
 conditions at the latest key. Callers supply distinct prefixes for circuits
@@ -37,6 +36,15 @@ and the old destination. A later measurement overwrite cannot alter either
 expression. The assignment emits zero Cirq operations. The exporter records
 the emitted operation offset of each native instruction, so lease events
 still occur at the correct point when a classical assignment emits no gate.
+
+A guarded reset uses a Cirq classical condition directly. A guarded
+measurement uses one dedicated clean work wire. It emits conditional CX
+to that wire, measures it and resets it. The new classical value selects
+the work measurement on the active branch and the old slot on the
+inactive branch. No operation on the original data wire runs on the
+inactive branch. The direct register adapter takes a caller-owned work
+wire outside the ports. A wrapped program provides a clean lease for
+the work wire and releases it after the expanded effect.
 
 | Source responsibility | Native support |
 | --- | --- |
@@ -91,6 +99,16 @@ the native slot holding `a` before reading the assigned result. The Cirq
 condition still references the original measurement. The test compares the
 full native and Cirq branch vectors, including a work wire allocated after
 the classical-only instruction and cleared before release.
+
+The guarded-effect witness checks the four possible branch labels with
+complex amplitudes and a spectator. Three labels have support. On the
+inactive branch the old slot controls the result and the data retains its
+coherence. On active branches the measured data resets, with the
+unmodified complex amplitudes in each projected sector. All branches have
+zero work. A single guarded measurement emits one conditional CX, one
+measurement and one reset on the work wire. Its native IR declares one
+guarded measurement. The separate guarded reset emits one conditional
+reset. These are physical counts for the adapted witness.
 
 The [native tutorial](../../examples/notebooks/cirq_register_interop.ipynb)
 uses the original seeded Cirq circuit, rewrites its iSWAP into exact S, CZ and
@@ -149,8 +167,8 @@ effect. The source witness uses explicit X and Free operations.
 
 - Q-0714 awaits the rest of the source package export map, including
   import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain guarded measurements and resets, unsupported
-  arithmetic primitives, and direct dense inspection
-  of bodies that use private workspace.
+- Q-0715 and Q-0716 retain unsupported arithmetic primitives and direct
+  dense inspection of bodies that use private workspace. Guarded
+  measurement requires a dedicated clean wire in the export scope.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
