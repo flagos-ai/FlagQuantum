@@ -6,6 +6,7 @@
 """Map supported Cirq gates to FlagQuantum's declared resource identities."""
 
 from collections.abc import Hashable
+from dataclasses import dataclass
 from typing import Literal, cast
 
 from ...compiler._component_trace.compound_control_resource import (
@@ -19,6 +20,7 @@ from ...compiler._component_trace.resource_generalization import (
     ControlledZPowerCall,
     ControlledZRotationCall,
     FixedTCall,
+    PartitionedCall,
     PhaseCall,
     PredicateControlledCall,
     ResourceCall,
@@ -29,6 +31,33 @@ from ...compiler._component_trace.resource_generalization import (
 from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ._decompose import decompose_cirq_once
 from .conversion import _cirq
+
+
+@dataclass(frozen=True)
+class CirqResourceCall:
+    """An SDK gate awaiting explicit recognition at the Ecosystem boundary."""
+
+    gate: Hashable
+    # Outer-to-inner partition layouts around the wrapped gate.
+    layouts: tuple[Hashable, ...] = ()
+
+
+def generalize_cirq_resource_call(
+    call: ResourceCall | CirqResourceCall,
+) -> ResourceCall | CirqResourceCall:
+    """Resolve a wrapped SDK gate in place in an ordered resource rewrite chain.
+
+    Unsupported gates stay opaque within Ecosystem. Known gates enter the
+    native resource model with their surrounding partition layouts intact.
+    """
+    if not isinstance(call, CirqResourceCall):
+        return call
+    key = cirq_gate_resource_key(call.gate)
+    if key is None:
+        return call
+    for layout in reversed(call.layouts):
+        key = PartitionedCall(key, layout)
+    return key
 
 
 def cirq_gate_resource_key(gate: object) -> ResourceCall | None:
