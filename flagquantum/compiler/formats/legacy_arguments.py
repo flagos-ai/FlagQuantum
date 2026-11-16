@@ -75,18 +75,26 @@ def _read_integer_argument(message: Any) -> SymbolicInt:
 
 def serialize_array_argument(value: NDArray[Any]) -> bytes:
     """Write a NumPy .npy payload in the standalone bytes field."""
+    message = _array_message()()
+    _write_array_argument(message, value)
+    return cast(bytes, message.SerializeToString())
+
+
+def _write_array_argument(message: Any, value: NDArray[Any]) -> None:
     with BytesIO() as stream:
         try:
             np.save(stream, value, allow_pickle=False)
         except (TypeError, ValueError, OverflowError) as error:
             raise SerializationError("Invalid array argument") from error
-        message = _array_message()(ndarray=stream.getvalue())
-    return cast(bytes, message.SerializeToString())
+        message.ndarray = stream.getvalue()
 
 
 def deserialize_array_argument(data: bytes) -> NDArray[Any]:
     """Read a NumPy array, rejecting pickle and non-array containers."""
-    message = parse_message(_array_message(), data, "Array argument")
+    return _read_array_argument(parse_message(_array_message(), data, "Array argument"))
+
+
+def _read_array_argument(message: Any) -> NDArray[Any]:
     with BytesIO(message.ndarray) as stream:
         try:
             result = np.load(stream, allow_pickle=False)

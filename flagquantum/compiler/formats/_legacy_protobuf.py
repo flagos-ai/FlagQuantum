@@ -36,6 +36,7 @@ def message_factory(
     *,
     oneof: str | None = None,
     optional: tuple[str, ...] = (),
+    repeated: tuple[str, ...] = (),
 ) -> Any:
     """Build a private proto3 descriptor using protobuf's runtime API."""
     descriptors, pools, messages = _protobuf_runtime()
@@ -51,7 +52,11 @@ def message_factory(
     dependencies: set[str] = set()
     for number, (field_name, field_type) in enumerate(fields, start=1):
         field = message.field.add(
-            name=field_name, number=number, label=proto.LABEL_OPTIONAL
+            name=field_name,
+            number=number,
+            label=(
+                proto.LABEL_REPEATED if field_name in repeated else proto.LABEL_OPTIONAL
+            ),
         )
         if isinstance(field_type, str):
             field.type = getattr(proto, f"TYPE_{field_type}")
