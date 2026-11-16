@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_musical_score", 3, 1, 1),
         ("resource_call_graphs", 3, 2, 0),
         ("call_graph_protocol", 10, 5, 0),
+        ("qubit_count_protocol", 5, 2, 1),
         ("guided_hamiltonian", 9, 4, 0),
         ("tutorial_guided_hamiltonian", 10, 1, 0),
         ("hamiltonian_simulation_by_gqsp", 7, 2, 0),
