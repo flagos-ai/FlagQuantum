@@ -24,11 +24,19 @@ The public static exporter rejects instructions with classical conditions.
 Its explicit lossy mode reports and drops the conditional operation. The
 private register adapter can opt into strict feedback export with a caller
 supplied key prefix. It supports unconditional measurements and resets on
-individual wires and conditions that read measurement-defined slots. Each
+individual wires, classical XOR assignments, and conditions that read
+defined slots. Each
 measurement receives a key derived from its instruction index. Overwriting
 a slot preserves the earlier measurement record and points subsequent
 conditions at the latest key. Callers supply distinct prefixes for circuits
 whose measurement records will be composed.
+
+Each classical XOR assignment snapshots a Boolean expression over immutable
+measurement keys. Conditional assignment selects between the new expression
+and the old destination. A later measurement overwrite cannot alter either
+expression. The assignment emits zero Cirq operations. The exporter records
+the emitted operation offset of each native instruction, so lease events
+still occur at the correct point when a classical assignment emits no gate.
 
 | Source responsibility | Native support |
 | --- | --- |
@@ -77,6 +85,13 @@ two T, two T-dagger, one measurement and one reset. The mixed pair adds
 four X. The separate locked model gives one And for compute and one
 Clifford plus one measurement for erase in both variants.
 
+The native XOR witness checks all eight inputs of the conditional update
+`c ← c XOR (a AND b)` with complex spectator amplitudes. It overwrites
+the native slot holding `a` before reading the assigned result. The Cirq
+condition still references the original measurement. The test compares the
+full native and Cirq branch vectors, including a work wire allocated after
+the classical-only instruction and cleared before release.
+
 The [native tutorial](../../examples/notebooks/cirq_register_interop.ipynb)
 uses the original seeded Cirq circuit, rewrites its iSWAP into exact S, CZ and
 SWAP operations, and checks the complete matrix through import and export.
@@ -109,9 +124,8 @@ private wire. Its clean and borrowed versions each preserve the source's
 allocation/free order and four CX operations. The complete complex state
 matches with a spectator. Clean work returns to zero, and borrowed work
 returns its joint state with the spectator. Through wires retain their input
-mapping. The private feedback path emits one Cirq operation for each
-admitted instruction, so native lease offsets also apply to measured
-workspace bodies under that contract.
+mapping. The private feedback path records the mapping from native instruction
+offsets to emitted Cirq operations for measured workspace bodies.
 
 For the original two-bit `IntState(1, 2)`, both wrappers emit one X on the
 same caller-supplied least-significant bit and give the full `|01⟩` result.
@@ -135,8 +149,8 @@ effect. The source witness uses explicit X and Free operations.
 
 - Q-0714 awaits the rest of the source package export map, including
   import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain guarded measurements and resets, classical XOR
-  dataflow, unsupported arithmetic primitives, and direct dense inspection
+- Q-0715 and Q-0716 retain guarded measurements and resets, unsupported
+  arithmetic primitives, and direct dense inspection
   of bodies that use private workspace.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
