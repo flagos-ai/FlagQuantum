@@ -39,13 +39,22 @@ def _source_rz_cost(angle: float) -> ComponentCost:
     )
 
 
+def _spin_signature(length: SymbolicInt) -> Signature:
+    return Signature((Register("system", opaque_register_type(length), shape=(2,)),))
+
+
+def source_hubbard_interaction_signature(length: SymbolicInt) -> Signature:
+    """Declare the two side-width through words in both interaction variants."""
+    return _spin_signature(length)
+
+
 def source_hubbard_interaction_cost(
     length: int, angle: float, hubb_u: float, *, hamming_weight: bool = False
 ) -> ComponentCost:
     """Count one Rz per site or two batches of Hamming-weight phasing."""
     if type(length) is not int or length < 1:
         raise ValueError("Hubbard lattice length must be a positive integer")
-    width = 2 * length
+    width = int(source_hubbard_interaction_signature(length).n_qubits())
     exponent = angle * hubb_u
     if hamming_weight:
         phase = source_hamming_weight_phasing_cost(length**2 // 2, exponent)
@@ -64,7 +73,7 @@ def source_hubbard_hopping_tile_signature(length: SymbolicInt) -> Signature:
     """Declare the source's two opaque spin words at the lattice side width."""
     if isinstance(length, int) and length % 2:
         raise ValueError("Only even length lattices are supported")
-    return Signature((Register("system", opaque_register_type(length), shape=(2,)),))
+    return _spin_signature(length)
 
 
 def source_hubbard_hopping_plaquette_cost(kappa: float) -> ComponentCost:

@@ -7,6 +7,7 @@ import torch
 
 from flagquantum.algorithms.primitives.hubbard_lattice import (
     HubbardHoppingTile,
+    HubbardInteraction,
     HubbardSuzukiStep,
 )
 from flagquantum.circuit import Circuit
@@ -245,3 +246,130 @@ def test_hopping_color_routes_distinct_periodic_cycles(pink, cycle):
         abs(actual.get(i, 0) - expected.get(i, 0)) < 8e-12
         for i in actual.keys() | expected.keys()
     )
+
+
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_standalone_interaction_full_matrix_and_erase_histories(adjoint):
+    time, coupling = 0.23, -1.7
+    angles = dict(
+        length=2,
+        up=_UP,
+        down=_DOWN,
+        timestep=time,
+        hubb_u=coupling,
+        adjoint=adjoint,
+    )
+    signed = -time if adjoint else time
+    energies = torch.tensor(
+        [4 - 2 * ((word >> 4) ^ (word & 15)).bit_count() for word in range(256)],
+        dtype=torch.float64,
+    )
+    diagonal = torch.exp(1j * signed * coupling / 4 * energies)
+    ordinary = HubbardInteraction.make_on(**angles)
+    circuit = Circuit(8).append(ordinary)
+    ir = circuit.to_ir()
+    pairs = list(zip(_UP, _DOWN, strict=True))
+    assert [(gate.name, gate.wires) for gate in ir.instructions] == [
+        *(("cx", pair) for pair in pairs),
+        *(("rz", (wire,)) for wire in _DOWN),
+        *(("cx", pair) for pair in reversed(pairs)),
+    ]
+    assert all(
+        gate.params["theta"] == -signed * coupling / 2
+        for gate in ir.instructions
+        if gate.name == "rz"
+    )
+    torch.testing.assert_close(
+        get_unitary(circuit, dtype=torch.complex128),
+        torch.diag(diagonal),
+        atol=8e-12,
+        rtol=0,
+    )
+
+    measured = HubbardInteraction.make_on(
+        **angles, hamming_weight=True, workspace=_WORK
+    )
+    circuit = DynamicCircuit(11).append(measured)
+    emitted = circuit.to_ir()
+    report = estimate_ftqc_resources(measured, emitted_ir=emitted)
+    assert report.emitted is not None
+    assert report.emitted.t_count == 8
+    assert report.emitted.unconditional["measure"] == 2
+    assert report.logical.gates.measurement == 2
+    assert report.logical.peak_logical_qubits == 5
+    amps = torch.arange(1, 257, dtype=torch.float64)
+    state = torch.complex(amps.remainder(17) - 5, amps)
+    state /= state.norm()
+    incoming = torch.zeros(2048, dtype=torch.complex128)
+    incoming[::8] = state
+    expected = torch.zeros_like(incoming)
+    expected[::8] = state * diagonal
+    for history in product((0, 1), repeat=2):
+        torch.testing.assert_close(
+            forced_branch(incoming, emitted.instructions, history),
+            expected / 2,
+            atol=8e-12,
+            rtol=0,
+        )
+
+
+@pytest.mark.parametrize("hamming_weight", (False, True))
+def test_odd_lattice_interaction_keeps_the_last_site(hamming_weight):
+    from cmath import exp
+    from math import sqrt
+
+    from tests.unit.sparse_register_execution import execute_sparse_register
+
+    system = 18
+    workspace = tuple(range(system, system + 6)) if hamming_weight else ()
+    width = system + len(workspace)
+    time, coupling = -0.367, 1.31
+    up, down = tuple(range(9)), tuple(range(9, 18))
+    op = HubbardInteraction.make_on(
+        length=3,
+        up=up,
+        down=down,
+        timestep=time,
+        hubb_u=coupling,
+        hamming_weight=hamming_weight,
+        workspace=workspace,
+    )
+    ir = DynamicCircuit(width).append(op).to_ir()
+    labels = tuple(word << len(workspace) for word in (0, 1, 256, 257, 511, 131073))
+    incoming = {word: (1j**j) / sqrt(len(labels)) for j, word in enumerate(labels)}
+    expected = {}
+    for word, amplitude in incoming.items():
+        data = word >> len(workspace)
+        parity = ((data >> 9) ^ (data & 511)).bit_count()
+        expected[word] = amplitude * exp(1j * time * coupling / 4 * (9 - 2 * parity))
+    for seed in (1, 8):
+        actual = execute_sparse_register(ir, incoming, seed=seed)
+        assert all(
+            abs(actual.get(i, 0) - expected.get(i, 0)) < 8e-12
+            for i in actual.keys() | expected.keys()
+        )
+    if hamming_weight:
+        assert [
+            (gate.wires, gate.params["theta"])
+            for gate in ir.instructions
+            if gate.name == "rz"
+        ] == [((down[-1],), -time * coupling / 2)]
+
+
+def test_single_site_interaction_uses_one_direct_phase():
+    time, coupling = 0.31, 1.5
+    arguments = dict(length=1, up=(0,), down=(1,), timestep=time, hubb_u=coupling)
+    op = HubbardInteraction.make_on(**arguments)
+    circuit = Circuit(2).append(op)
+    target = time * coupling / 4
+    diagonal = torch.exp(
+        1j * torch.tensor([target, -target, -target, target], dtype=torch.float64)
+    )
+    torch.testing.assert_close(
+        get_unitary(circuit, dtype=torch.complex128),
+        torch.diag(diagonal),
+        atol=8e-12,
+        rtol=0,
+    )
+    with pytest.raises(ValueError, match="positive concrete width"):
+        HubbardInteraction.make_on(**arguments, hamming_weight=True)

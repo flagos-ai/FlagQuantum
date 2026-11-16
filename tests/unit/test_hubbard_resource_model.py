@@ -8,6 +8,7 @@ from flagquantum.algorithms.primitives.hubbard_resource_model import (
     source_hubbard_hopping_tile_cost,
     source_hubbard_hopping_tile_signature,
     source_hubbard_interaction_cost,
+    source_hubbard_interaction_signature,
 )
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
@@ -166,3 +167,60 @@ def test_hubbard_hopping_declared_registers_and_child_parameters():
                 eps,
                 2,
             )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("hamming_weight", (False, True))
+def test_hubbard_interaction_source_signature_and_angles(hamming_weight):
+    pytest.importorskip("qualtran")
+    from qualtran import DecomposeNotImplementedError, QAny, Side
+    from qualtran.bloqs.chemistry.trotter.hubbard.interaction import (
+        Interaction,
+        InteractionHWP,
+    )
+    from qualtran.resource_counting import SympySymbolAllocator
+    from sympy import Symbol
+
+    cls = InteractionHWP if hamming_weight else Interaction
+    angle, coupling, eps = -0.27, 2.0, 1e-6
+    for length in (2, 3, 8, Symbol("L", positive=True, integer=True)):
+        source = cls(length, angle, coupling, eps=eps)
+        signature = source_hubbard_interaction_signature(length)
+        (actual,) = signature
+        (expected,) = source.signature
+        assert isinstance(expected.dtype, QAny)
+        assert expected.side == Side.THRU
+        assert signature.get_left("system") == signature.get_right("system") == actual
+        assert actual.dtype.encoding == "opaque"
+        assert (actual.name, actual.bitsize, actual.shape) == (
+            expected.name,
+            expected.bitsize,
+            expected.shape,
+        )
+        assert tuple(actual.all_idxs()) == tuple(expected.all_idxs())
+        if type(length) is int:
+            model = source_hubbard_interaction_cost(
+                length, angle, coupling, hamming_weight=hamming_weight
+            )
+            ((child, repetitions),) = source.build_call_graph(
+                SympySymbolAllocator()
+            ).items()
+            (call,) = model.calls
+            assert call.component.name == type(child).__name__
+            assert call.repetitions == repetitions
+            if hamming_weight:
+                assert (child.bitsize, child.exponent, child.eps, repetitions) == (
+                    length**2 // 2,
+                    angle * coupling,
+                    eps,
+                    2,
+                )
+            else:
+                assert (child.angle, child.eps, repetitions) == (
+                    angle * coupling,
+                    eps,
+                    length**2,
+                )
+            assert_source_hubbard_cost(model, source)
+    with pytest.raises(DecomposeNotImplementedError):
+        cls(2, angle, coupling).decompose_bloq()

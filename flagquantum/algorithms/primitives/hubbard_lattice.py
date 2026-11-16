@@ -15,7 +15,10 @@ from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
 from ...dynamic import DynamicCircuit
 from .hubbard_plaquette import _plaquette_basis
-from .hubbard_resource_model import source_hubbard_hopping_tile_cost
+from .hubbard_resource_model import (
+    source_hubbard_hopping_tile_cost,
+    source_hubbard_interaction_cost,
+)
 from .hubbard_trotter import _suzuki_schedule, source_hubbard_suzuki_cost
 
 
@@ -50,7 +53,7 @@ def _gather(wires: tuple[int, ...], order: tuple[int, ...]) -> Iterator[Instruct
 @dataclass(frozen=True)
 class _DiagonalLayer:
     basis: tuple[Instruction, ...]
-    groups: tuple[tuple[int, ...], tuple[int, ...]]
+    groups: tuple[tuple[int, ...], ...]
     theta: float
 
     def emit(
@@ -58,7 +61,7 @@ class _DiagonalLayer:
     ) -> Iterator[Instruction]:
         yield from self.basis
         for group in self.groups:
-            if work:
+            if work and len(group) > 1:
                 # Rz(theta) = exp(-i theta/2) * diag(1, exp(i theta)).
                 yield from scalar_phase_ir(group[0], -len(group) * self.theta / 2)
                 yield from hamming_weight_phasing_ir(
@@ -101,7 +104,7 @@ def _interaction_layer(
     middle = len(down) // 2
     return _DiagonalLayer(
         tuple(Instruction("cx", (a, b)) for a, b in zip(up, down, strict=True)),
-        (down[:middle], down[middle:]),
+        (down[:middle], down[middle : 2 * middle], down[2 * middle :]),
         theta,
     )
 
@@ -141,6 +144,11 @@ class _BoundHubbardLayers:
         )
 
 
+def _require_even_lattice(length: int) -> None:
+    if type(length) is not int or length < 2 or length % 2:
+        raise ValueError("Hubbard hopping requires a positive even lattice length")
+
+
 def _bind_lattice(
     length: int,
     up: tuple[int, ...],
@@ -148,8 +156,8 @@ def _bind_lattice(
     hamming_weight: bool,
     workspace: tuple[int, ...],
 ) -> tuple[int, int]:
-    if type(length) is not int or length < 2 or length % 2:
-        raise ValueError("Hubbard hopping requires a positive even lattice length")
+    if type(length) is not int or length < 1:
+        raise ValueError("Hubbard lattice length must be a positive integer")
     sites = length**2
     junk, count = hamming_weight_requirements(sites // 2) if hamming_weight else (0, 0)
     wires = unpartition_register(
@@ -176,6 +184,7 @@ class HubbardHoppingTile:
         adjoint: bool = False,
     ) -> _BoundHubbardLayers:
         """Bind one color, optionally batching each phase pass with clean work."""
+        _require_even_lattice(length)
         if not all(isfinite(value) for value in (timestep, hubb_t)):
             raise ValueError("Hubbard parameters must be finite")
         required_qubits, slots = _bind_lattice(
@@ -190,6 +199,45 @@ class HubbardHoppingTile:
             required_qubits,
             source_hubbard_hopping_tile_cost(
                 length, time, hubb_t, pink=pink, hamming_weight=hamming_weight
+            ),
+        )
+
+
+class HubbardInteraction:
+    """Shifted on-site interaction on two row-major spin sectors."""
+
+    @staticmethod
+    def make_on(
+        *,
+        length: int,
+        up: tuple[int, ...],
+        down: tuple[int, ...],
+        timestep: float,
+        hubb_u: float,
+        hamming_weight: bool = False,
+        workspace: tuple[int, ...] = (),
+        adjoint: bool = False,
+    ) -> _BoundHubbardLayers:
+        """Bind exp(i * timestep * hubb_u/4 * sum(ZZ)) on matched sites.
+
+        Hamming-weight phasing uses two equal batches and applies a direct
+        rotation to the remaining site for odd lattices. The source estimate
+        retains its original two-batch expression.
+        """
+        if not all(isfinite(value) for value in (timestep, hubb_u)):
+            raise ValueError("Hubbard parameters must be finite")
+        required_qubits, slots = _bind_lattice(
+            length, up, down, hamming_weight, workspace
+        )
+        time = -timestep if adjoint else timestep
+        layer = _interaction_layer(up, down, -time * hubb_u / 2)
+        return _BoundHubbardLayers(
+            (layer,),
+            workspace,
+            slots,
+            required_qubits,
+            source_hubbard_interaction_cost(
+                length, time, hubb_u, hamming_weight=hamming_weight
             ),
         )
 
@@ -217,6 +265,7 @@ class HubbardSuzukiStep:
         a batch of `length**2 // 2` modes and reuses it between batches.
         At length two the periodic colors count parallel bonds separately.
         """
+        _require_even_lattice(length)
         if not all(isfinite(value) for value in (hubb_u, timestep, hubb_t)):
             raise ValueError("Hubbard parameters must be finite")
         required_qubits, slots = _bind_lattice(
