@@ -50,7 +50,7 @@ def execute_sparse_register(
         elif name == "reset":
             (mask,) = masks
             state = {basis & ~mask: value for basis, value in state.items()}
-        elif name in ("phase", "s", "sdg", "z", "cz", "t", "tdg"):
+        elif name in ("phase", "cphase", "s", "sdg", "z", "cz", "t", "tdg"):
             mask = sum(masks)
             phases = {
                 "s": 1j,
