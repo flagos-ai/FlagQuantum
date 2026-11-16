@@ -9,19 +9,23 @@ from collections.abc import Callable, Sequence
 from math import pi
 from typing import Literal
 
+from .arithmetic_call import ArithmeticCall
 from .call_graph import (
     Generalizer,
     _build_call_graph,
-    compose_cost_generalizer,
 )
 from .cost_query import GATE_COST, query_component_cost
 from .resource_generalization import (
     CliffordCall,
+    ConjunctionCall,
     ControlledRotationCall,
+    ControlledSwapCall,
     DeclaredResourceCalls,
+    FixedTCall,
     PhaseCall,
     ResourceCall,
     RotationCall,
+    ZeroCostCall,
     _inside_partition,
     _resource_callees,
     ignore_allocation,
@@ -63,6 +67,48 @@ def classify_resource_gate(
     return "rotation"
 
 
+def is_resource_state_or_effect(call: ResourceCall) -> bool:
+    """Recognize the X/Z basis vectors and covectors in the resource model."""
+    return isinstance(call, ZeroCostCall) and call.opcode in {
+        "x_state",
+        "z_state",
+        "x_effect",
+        "z_effect",
+    }
+
+
+def classify_resource_family(
+    call: ResourceCall,
+    rules: Sequence[tuple[Callable[[ResourceCall], bool], str]] | None = None,
+) -> str:
+    """Use ordered custom rules or the built-in families of typed keys.
+
+    Named component summaries can be assigned families with explicit rules.
+    An unmatched key has the "other" family.
+    """
+    if rules is not None:
+        return next((family for matches, family in rules if matches(call)), "other")
+    match call:
+        case ArithmeticCall():
+            return "arithmetic"
+        case RotationCall():
+            return "rotations"
+        case ConjunctionCall():
+            return "multi_control_pauli"
+        case (
+            ControlledSwapCall()
+            | CliffordCall(opcode="swap_bit")
+            | FixedTCall(opcode="fredkin")
+        ):
+            return "swaps"
+        case FixedTCall(opcode="toffoli"):
+            return "toffoli"
+        case PhaseCall(opcode="t"):
+            return "tgate"
+        case _:
+            return "other"
+
+
 def ignore_known_cliffords(call: ResourceCall) -> ResourceCall | None:
     """Omit source-recognized Clifford keys, recursing through partitions."""
     if classify_resource_gate(call) == "clifford":
@@ -72,7 +118,7 @@ def ignore_known_cliffords(call: ResourceCall) -> ResourceCall | None:
 
 def attribute_t_cost(
     root: ResourceCall,
-    family: Callable[[ResourceCall], str | None],
+    family: Callable[[ResourceCall], str | None] = classify_resource_family,
     *,
     declared_calls: DeclaredResourceCalls | None = None,
     unit_t_cost: Callable[[ResourceCall], SymbolicInt] | None = None,
@@ -92,17 +138,17 @@ def attribute_t_cost(
     def keep(node: ResourceCall) -> bool:
         return family(node) not in {None, "other"}
 
+    rules: list[Generalizer[ResourceCall]] = [
+        ignore_register_partition,
+        ignore_allocation,
+        ignore_known_cliffords,
+    ]
+    if callable(generalizer):
+        rules.append(generalizer)
+    elif generalizer is not None:
+        rules.extend(generalizer)
     graph = _build_call_graph(
-        root,
-        lambda node: _resource_callees(node, declared_calls),
-        (
-            ignore_register_partition,
-            ignore_allocation,
-            ignore_known_cliffords,
-            compose_cost_generalizer(generalizer),
-        ),
-        keep,
-        None,
+        root, lambda node: _resource_callees(node, declared_calls), rules, keep, None
     )
     by_family: dict[str, SymbolicInt] = {}
     for node, repetitions in graph.leaf_counts.items():
