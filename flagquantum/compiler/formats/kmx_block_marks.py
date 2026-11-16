@@ -9,12 +9,10 @@ from collections.abc import Sequence
 
 from .._component_trace.trace import ComponentCall
 from ..artifacts.reversible_phase import ReversiblePhaseProgram
+from ._kmx_text import QUOTED_UNIT, escape_kmx_text, unescape_kmx_text
 from .kmx import decode_kmx, encode_kmx
 
-_ESCAPES = {"\n": r"\n", "\r": r"\r", "#": r"\P", '"': r"\Q", "\\": r"\B"}
-_ESCAPE = str.maketrans(_ESCAPES)
-_UNESCAPE = {escaped: char for char, escaped in _ESCAPES.items()}
-_MARK = re.compile(r'INFO_TAG "@(enter|exit):((?:[^"\\#\r\n]|\\[nrPQB])+)"')
+_MARK = re.compile(rf'INFO_TAG "@(enter|exit):({QUOTED_UNIT}+)"')
 
 
 def encode_kmx_block_marks(
@@ -31,7 +29,7 @@ def encode_kmx_block_marks(
             if not child.name or child.parameters:
                 raise ValueError("KMX block marks require a name and no parameters")
             lines.extend(operations[start : child.start])
-            name = child.name.translate(_ESCAPE)
+            name = escape_kmx_text(child.name)
             lines.append(f'INFO_TAG "@enter:{name}"\n')
             emit(child.start, child.stop, child.children)
             lines.append(f'INFO_TAG "@exit:{name}"\n')
@@ -58,7 +56,7 @@ def decode_kmx_block_marks(
             operations.append(line)
             continue
         action, label = mark.groups()
-        name = re.sub(r"\\.", lambda match: _UNESCAPE[match[0]], label)
+        name = unescape_kmx_text(label)
         if action == "enter":
             stack.append((name, len(operations), []))
         else:

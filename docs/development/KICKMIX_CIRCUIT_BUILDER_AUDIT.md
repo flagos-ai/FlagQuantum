@@ -124,19 +124,38 @@ phase with the eight-line fixture. Its two executable operations are
 X1 and CX1, with six debug marks, no measurements and no allocation.
 There is no separate resource model for debug marks.
 
-Dense declarations keep names and membership. The locked C++ probe also
-reserves r0 before appending a two-wire register named `quantum` and one
-classical bit named `classical`. It reports the name `quantum` on r0 and
+### Physical register declaration stream
+
+The KMX declaration adapter keeps a register's name and ordered quantum or
+classical members at its numeric ID. It emits memberships before the name,
+uses explicit lines for empty IDs and accepts the last declaration of a
+name for the same ID. Repeated members are kept. A final nonempty name
+shared across two IDs is refused, as in the locked source reader. Names
+reuse the block-mark codec's quoted text grammar.
+
+The original writer and native adapter agree byte for byte on sparse mixed
+members and on a circuit with both declarations and nested block marks.
+Members refer to declared executable widths and can include unused wires
+and classical slots. These declarations add no instructions and do not
+initialize classical slots. The existing typed binding layer still owns
+logical ports and workspace lifetimes. The tests verify the resulting
+operation stream, input slots and execution against the locked simulator.
+The adapter requires the versioned widths header.
+
+Dense source declarations keep names and membership. The unchanged C++
+probe reserves r0 before appending a two-wire register named `quantum` and
+one classical bit named `classical`. It reports the name `quantum` on r0 and
 the two wires on r1. The dense control probe appends a zero-width named r0,
 then assigns both the name and the wires to r1. The reserved case follows
 from appending the name to the end of `register_data` before the membership
-routine grows it to the reserved ID. Declaration lowering and source
-compatibility for sparse IDs remain open.
+routine grows it to the reserved ID. The native adapter round-trips the
+wire format by ID. The source allocation-time name displacement remains
+an upstream defect.
 
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
-Broadcast paths with classical or X-basis targets, owning C++ scope guards,
-register declarations, general loop patterns and debug metadata beyond
-named block ranges have separate source assertions.
+Classical and X-basis broadcast targets, other C++ scope guards, general
+loop patterns and debug metadata beyond named block ranges have separate
+source assertions.
 The original `CircuitBuilder.*` suite passed all 27 tests with GoogleTest
 1.14.0 from the locked Bazel manifest. The build compiled the unchanged
 builder, original tests and test helpers, and linked the remaining native
