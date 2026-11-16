@@ -93,6 +93,6 @@ the required `2 -> 0` edge. Reversing insertion order yields `(2, 0, 1)`. The ra
 native helper and existing validated wrapper preserve this source defect. The
 source docstring also passes unsupported keyword `N=10`, which raises TypeError;
 it is not a working example and is not copied as a native usage instruction.
-Neither issue is repaired in the reference. Under the frozen closure criteria,
-Q-0759 remains open despite full helper call-chain parity. Q-0760, the original
-two-test file, closes. No new scenario IDs or parent denominator are introduced.
+Neither issue is repaired in the reference. At this audit, full helper call-chain parity closed Q-0760, the original
+two-test file. The later [partial permutation completion](PARTIAL_PERMUTATION_COMPLETION.md)
+resolves the known Q-0759 production gap and retains the original witnesses.
