@@ -181,5 +181,49 @@ omits the consumed slope; it cannot certify that it was erased.
 The arbitrary-residue intake independently found 32 such rejected tuples
 out of 243 after the first four stages.
 
-Stage six, the combined source graph and the corresponding native tutorial
-remain open.
+## Stage six and the composed operation
+
+The last stage unsets the common control, applies the four ordered
+three-word zero predicates and restores the right-infinity coordinates via
+controlled XOR. Two independent `f1 & f2` conjunction lifetimes control
+the coordinate subtraction and addition. The source equality and final
+fanout-and-erase sequence act on the five logical flags. The primitive
+comparison covers all four three-word predicates and their first-use
+control order and feedback. The controlled arithmetic, concatenated
+equality and multi-And use the previously verified component bodies.
+
+The user-facing operation appends all six steps with one
+`circuit.append(op)`. It binds five Montgomery through registers in source
+order and reserves the five flags and slope beside the largest local
+scratch requirement. It preserves the actual source release operands when
+a source promise fails. The one-level symbolic signature and all six
+weighted call-graph edges were independently checked against Qualtran.
+
+The curve (y^2=x^3+x+1) gives two independent input sets. At modulus 3
+all 16 point pairs match the affine point formula and clear the flags,
+slope and scratch. At modulus 5 the 81 native outputs match the staged
+source decomposition, including its actual flag values at `Free`.
+The source rejects 18 pairs because a flag reaches `Free` nonzero, and
+its staged coordinates disagree with the high-level callback for 12
+pairs. For example, infinity plus `(2,1)` returns the right coordinates
+and retains `f1=1`. Adding `(0,1)` to `(2,4)` produces `(2,4)`
+in the staged source and `(4,3)` in the affine callback. Width 4 has
+Montgomery factor 1 modulo 5 in this example. The native primitive
+certificate covers all 97 pairs across all erasure branches. Sparse
+executions additionally check full complex amplitudes on permuted wires.
+
+| Width, modulus, window | Native emitted operations | Source model |
+|---|---|---|
+| 3, 3, 1 | 7,640 T/T†, 19 CCX, 15,590 CX, 4,638 H, 2,781 X, 1,322 S, 1,322 conditional CZ, 1,322 measurements and 1,322 resets; 74 bound wires | 1,322 AND, 19 Toffoli, 336 CSwap, 8,783 Clifford, 1,322 measurements, 58 peak qubits |
+| 4, 5, 1 | 12,864 T/T†, 24 CCX, 26,048 CX, 7,672 H, 4,109 X, 2,152 S, 2,152 conditional CZ, 2,152 measurements and 2,152 resets; 93 bound wires | 2,152 AND, 24 Toffoli, 608 CSwap, 14,143 Clifford, 2,152 measurements, 73 peak qubits |
+
+## Tutorial and acceptance
+
+The [native tutorial](../../examples/notebooks/register_elliptic_curve_addition.ipynb)
+preserves the two source declarations, graphical signatures, one-level call
+graph and leaf counts. It also binds the verified small example and reports
+emitted operations. The six executable cells and both SVGs pass in a fresh
+kernel with reference packages forbidden. This closes the tutorial row.
+The full implementation and test rows stay open for the observed source
+defects, wider-window arithmetic and the remainder of the original slow
+test matrix.
