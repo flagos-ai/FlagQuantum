@@ -101,6 +101,38 @@ def indexed_component_ir(
     return tuple(gates)
 
 
+def indexed_target_component_ir(
+    axes: tuple[tuple[int, ...], ...],
+    extents: tuple[int, ...],
+    targets: tuple[int, ...],
+    emit_controlled: Callable[[int, int, int], tuple[Instruction, ...]],
+    *,
+    controls: tuple[int, ...] = (),
+    workspace: tuple[int, ...],
+    classical_bits: tuple[int, ...],
+    adjoint: bool = False,
+) -> tuple[Instruction, ...]:
+    """Bind a controlled child to its selected target in C-order layout.
+
+    The child receives the flattened index, positive predicate, and selected
+    target wire. It owns the emitted child direction and any child storage.
+    """
+    if len(targets) != prod(extents):
+        raise ValueError("Target-position dispatch needs one target per address")
+    _validate_wires(
+        (*targets, *controls, *(wire for axis in axes for wire in axis), *workspace)
+    )
+    return indexed_component_ir(
+        axes,
+        extents,
+        lambda index, predicate: emit_controlled(index, predicate, targets[index]),
+        controls=controls,
+        workspace=workspace,
+        classical_bits=classical_bits,
+        adjoint=adjoint,
+    )
+
+
 def indexed_pauli_targets_ir(
     axes: tuple[tuple[int, ...], ...],
     extents: tuple[int, ...],
@@ -121,21 +153,17 @@ def indexed_pauli_targets_ir(
         raise ValueError(
             "Target-position dispatch needs one Pauli and target per address"
         )
-    _validate_wires(
-        (*targets, *controls, *(wire for axis in axes for wire in axis), *workspace)
-    )
 
-    def emit(index: int, predicate: int) -> tuple[Instruction, ...]:
+    def emit(index: int, predicate: int, target: int) -> tuple[Instruction, ...]:
         gate = paulis[index]
-        return (
-            ()
-            if gate == "i"
-            else (Instruction("c" + gate, (predicate, targets[index])),)
-        )
+        if gate == "i":
+            return ()
+        return (Instruction("c" + gate, (predicate, target)),)
 
-    return indexed_component_ir(
+    return indexed_target_component_ir(
         axes,
         extents,
+        targets,
         emit,
         controls=controls,
         workspace=workspace,
