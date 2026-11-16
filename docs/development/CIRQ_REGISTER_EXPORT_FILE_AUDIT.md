@@ -31,7 +31,7 @@ turning it into an unconditional gate.
 | Through, left and right port placement | Through ports preserve identity. Left-only ports are excluded from output. Right-only ports use fresh names or caller-owned qubits. The adapter rejects aliasing across supplied ports. |
 | Component conversion and graph order | The adapter consumes native physical IR. Native append and Compiler own decomposition and allocation before conversion. |
 | Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body. Through-only bodies without private workspace expose the native matrix, including a tensor-backed body with no Cirq leaf decomposition. They retain the source's integer repetition and adjoint behavior. |
-| Workspace allocation and output transfer | The adapter replays Compiler lifetime events in the Cirq decomposition context. Clean and borrowed private wires may be released and reused. The final clean lease of a right-only output is rebound to the caller's Qid, and its temporary reservation is released in register order. |
+| Workspace allocation and port transfer | The adapter replays Compiler lifetime events in the Cirq decomposition context. A left-only input is released under explicit ownership. Clean and borrowed private wires may be released and reused. The final clean lease of a right-only output is rebound to the caller's Qid, and its temporary reservation is released in register order. |
 | Diagram symbols | Primitive circuits use Cirq's native exchange and Toffoli rendering. Wrapped register gates label operands in declaration order with the native register name and optional element index. |
 
 ## Verification
@@ -108,13 +108,22 @@ component. An explicit replay fixture first leases the same native physical
 ID as private work. Its two X gates stay on scratch and erase it before
 the final lease is mapped to the caller's output.
 
+The source X/Free composite and the native owned left-only body each emit
+one X on the caller's input before releasing that input. Neither passes the
+caller Qid to the underlying qubit manager. The source model contains one
+Clifford. A separate ordered replay reuses that physical wire number for a
+right-only port and emits the second X on the distinct output Qid. The
+spectator's complex amplitudes are preserved and the consumed input is
+zero. The locked source `IntEffect` still refuses Cirq export of its basis
+effect. The source witness uses explicit X and Free operations.
+
 ## Remaining files
 
 - Q-0714 awaits the rest of the source package export map, including
   import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain consumed left-port transfer, dynamic feedback
-  and arithmetic export, and direct dense inspection of bodies that use
-  private workspace. The static wrapper replays physical leases for
-  unchanged through mappings and right-only output transfer.
+- Q-0715 and Q-0716 retain dynamic feedback and arithmetic export, and
+  direct dense inspection of bodies that use private workspace. The static
+  wrapper replays physical leases for unchanged through mappings, explicitly
+  owned left-input release, and right-only output transfer.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
