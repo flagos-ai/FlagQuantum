@@ -47,6 +47,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("state_preparation_via_rotation", 7, 2, 0),
         ("state_preparation_via_rotation_tutorial", 9, 2, 0),
         ("swap_network", 19, 6, 0),
+        ("cirq_register_interop", 24, 6, 0),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
         ("binary_field_square", 7, 2, 0),
@@ -130,12 +131,17 @@ def test_register_graph_notebook_kernel_without_reference_imports(
     kernel_name = "fq-native-register-graph"
     kernel = tmp_path / "kernels" / kernel_name
     kernel.mkdir(parents=True)
-    startup = """
+    blocked_imports: tuple[str, ...] = ("qualtran", "quimb")
+    if asset == "cirq_register_interop":
+        pytest.importorskip("cirq")
+    else:
+        blocked_imports += ("cirq",)
+    startup = f"""
 import builtins
 original_import = builtins.__import__
 def native_import(name, *args, **kwargs):
-    if name.split('.')[0] in {'qualtran', 'quimb', 'cirq'}:
-        raise AssertionError(f'Native graph kernel imported {name}')
+    if name.split('.')[0] in {blocked_imports!r}:
+        raise AssertionError(f'Native graph kernel imported {{name}}')
     return original_import(name, *args, **kwargs)
 builtins.__import__ = native_import
 from ipykernel.kernelapp import IPKernelApp
