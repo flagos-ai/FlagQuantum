@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 149
+    assert len(validated) == 150
+    assert (
+        "algorithms/quantum_differential_equations_solvers/lchs/lchs",
+        "examples/synthesis/algorithms/quantum_differential_equations_solvers/lchs/overview/main.py",
+    ) in validated
     assert (
         "algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp",
         "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp/overview/main.py",
@@ -725,7 +729,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**149/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**150/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
