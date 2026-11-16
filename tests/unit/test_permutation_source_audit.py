@@ -194,7 +194,9 @@ def test_original_permutation_tests_with_native_bindings(
     consumer()
 
 
-@pytest.mark.parametrize("kind", ["three_cycle", "two_cycles", "partial"])
+@pytest.mark.parametrize(
+    "kind", ["three_cycle", "two_cycles", "partial", "completed_prefix"]
+)
 def test_discovered_cycles_emit_original_gates_all_branches_and_costs(
     kind: str,
 ) -> None:
@@ -208,16 +210,26 @@ def test_discovered_cycles_emit_original_gates_all_branches_and_costs(
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     dense = [1, 2, 0, 3] if kind == "three_cycle" else [1, 0, 3, 2]
-    cycles = (
-        tuple(partial_permutation_cycles({0: 1, 1: 2}))
-        if kind == "partial"
-        else tuple(permutation_cycles(dense))
-    )
-    expected_cycles = (
-        tuple(source_partial({0: 1, 1: 2}))
-        if kind == "partial"
-        else tuple(source_dense(dense))
-    )
+    if kind == "completed_prefix":
+        from flagquantum.compiler.registers.sorting.permutation import (
+            complete_partial_permutation,
+        )
+
+        mapping = {0: 1, 1: 3, 2: 0}
+        assert tuple(source_partial(mapping)) == ((0, 1, 3),)
+        cycles = complete_partial_permutation(4, mapping)
+        expected_cycles = ((2, 0, 1, 3),)
+    else:
+        cycles = (
+            tuple(partial_permutation_cycles({0: 1, 1: 2}))
+            if kind == "partial"
+            else tuple(permutation_cycles(dense))
+        )
+        expected_cycles = (
+            tuple(source_partial({0: 1, 1: 2}))
+            if kind == "partial"
+            else tuple(source_dense(dense))
+        )
     assert cycles == expected_cycles
     gates = permutation_ir((0, 1), cycles, 2, (3,), (40,), size=4)
     source = Permutation(4, expected_cycles, bitsize=2)

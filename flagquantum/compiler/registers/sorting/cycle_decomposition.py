@@ -34,10 +34,29 @@ def partial_permutation_cycles(
     callers requiring a valid partial permutation must enforce their own domain.
     The seen set and current path use O(number of visited nodes) storage.
     """
+    yield from _partial_cycles(mapping)
+
+
+def complete_injection_cycles(mapping: Mapping[int, int]) -> Iterator[tuple[int, ...]]:
+    """Close each path of a validated injection from its actual head."""
+    yield from _partial_cycles(
+        mapping, {target: source for source, target in mapping.items()}
+    )
+
+
+def _partial_cycles(
+    mapping: Mapping[int, int], predecessors: Mapping[int, int] | None = None
+) -> Iterator[tuple[int, ...]]:
     seen: set[int] = set()
     for node in mapping:
         if node in seen:
             continue
+        if predecessors is not None:
+            start = node
+            while node in predecessors:
+                node = predecessors[node]
+                if node == start:
+                    break
         cycle = []
         while node not in seen:
             seen.add(node)

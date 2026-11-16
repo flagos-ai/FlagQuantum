@@ -11,7 +11,7 @@ from collections.abc import Mapping
 from ....core.ir import Instruction
 from ..bits.bitwise import controlled_xor_constant_ir
 from ..comparison.equality import equality_constant_ir
-from .cycle_decomposition import partial_permutation_cycles
+from .cycle_decomposition import complete_injection_cycles, partial_permutation_cycles
 
 
 def source_partial_permutation_cycles(
@@ -25,6 +25,24 @@ def source_partial_permutation_cycles(
 
     Source: Qualtran v0.7.0 qualtran/linalg/permutation.py.
     """
+    _validate_partial_permutation(size, mapping)
+    return tuple(partial_permutation_cycles(mapping))
+
+
+def complete_partial_permutation(
+    size: int, mapping: Mapping[int, int]
+) -> tuple[tuple[int, ...], ...]:
+    """Complete an injection with disjoint cycles, preserving every given edge.
+
+    Each path tail maps to its own head, leaving isolated vertices fixed.
+    Components keep first encounter order. Closed cycles keep the orientation
+    and starting vertex of the first encountered key.
+    """
+    _validate_partial_permutation(size, mapping)
+    return tuple(complete_injection_cycles(mapping))
+
+
+def _validate_partial_permutation(size: int, mapping: Mapping[int, int]) -> None:
     if type(size) is not int or size < 1:
         raise ValueError("Permutation size must be a positive integer")
     if len(set(mapping.values())) != len(mapping) or any(
@@ -33,8 +51,6 @@ def source_partial_permutation_cycles(
         for value in edge
     ):
         raise ValueError("Partial permutation must be injective and in range")
-
-    return tuple(partial_permutation_cycles(mapping))
 
 
 def permutation_cycle_ir(
