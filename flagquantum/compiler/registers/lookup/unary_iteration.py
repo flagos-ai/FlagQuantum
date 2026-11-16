@@ -113,22 +113,42 @@ def append_bounded_unary_tree(
     classical_bits: tuple[int, ...],
     visit_leaf: Callable[[int, int], None],
     *,
+    lower: int = 0,
     break_early: Callable[[int, int], bool] | None = None,
     adjoint: bool = False,
 ) -> None:
-    """Visit the source's bounded tree or reverse its component sequence."""
+    """Visit a half-open interval in source order or the reverse traversal.
+
+    The interval lower bound and extent are address values. An empty or
+    inverted interval contributes no gates and does not invoke the child.
+    """
+    if lower >= extent:
+        return
+    capacity = 1 << len(selection)
+    if lower < 0 or extent > capacity:
+        raise ValueError("Unary iteration interval must fit the selection register")
     compute_values = (1, 1) if adjoint else (1, 0)
     erase_values = (1, 0) if adjoint else (1, 1)
 
     def visit(predicate: int, depth: int, start: int, stop: int) -> None:
-        if stop <= extent and (
-            stop - start == 1 or (break_early is not None and break_early(start, stop))
+        if stop <= lower or extent <= start:
+            return
+        if (
+            lower <= start
+            and stop <= extent
+            and (
+                stop - start == 1
+                or (break_early is not None and break_early(start, stop))
+            )
         ):
             visit_leaf(start, predicate)
             return
         middle = (start + stop) // 2
         if extent <= middle:
             visit(predicate, depth + 1, start, middle)
+            return
+        if middle <= lower:
+            visit(predicate, depth + 1, middle, stop)
             return
         wire, work = selection[depth], workspace[depth]
         halves = ((start, middle), (middle, stop))
@@ -143,7 +163,6 @@ def append_bounded_unary_tree(
             )
         )
 
-    capacity = 1 << len(selection)
     if control is not None:
         visit(control, 0, 0, capacity)
         return
