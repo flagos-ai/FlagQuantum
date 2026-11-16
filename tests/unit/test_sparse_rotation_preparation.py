@@ -1,17 +1,30 @@
+# Copyright 2024 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Includes the Qualtran v0.7.0 sparse rotation preparation test fixture.
+
 """Concrete sparse rotation preparation graph, amplitudes, and costs."""
 
 from cmath import exp
 from collections import Counter
+from hashlib import sha1
+from importlib.metadata import version
 from itertools import product
-from math import tau
+from math import sqrt, tau
+from pathlib import Path
 from typing import Any
 
 import pytest
 import torch
 
+from examples.algorithms.sparse_rotation_preparation_catalog import (
+    SparseRotationExample,
+    sparse_rotation_example,
+)
 from flagquantum.algorithms.primitives.sparse_rotation_preparation import (
     SparseRotationPreparation,
 )
+from flagquantum.circuit import Circuit
+from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
@@ -24,44 +37,23 @@ from tests.unit.test_rotation_preparation import (
     execute_rotation_sparse,
     source_rotation_preparation_gates,
 )
+from tests.unit.test_rotation_resource_model import assert_source_cost
 
 pytestmark = pytest.mark.unit
 
 
-@pytest.mark.ftqc_reference
-@pytest.mark.parametrize(
-    "indices,coefficients,size,width,phase_width",
-    [
-        ((0, 1), (1 + 1j, 1 - 1j), 2, 1, 2),
-        ((2, 1), (1 + 1j, 1 - 1j), 3, 2, 2),
-        ((3, 1, 4), (1, 1j, -1), 5, 3, 2),
-        ((2, 1), (1 + 1j, 1 - 1j), 3, 4, 8),
-    ],
-)
-def test_source_sparse_preparation(
-    indices: tuple[int, ...],
-    coefficients: tuple[complex, ...],
-    size: int,
-    width: int,
-    phase_width: int,
-) -> None:
-    pytest.importorskip("qualtran")
-    np = pytest.importorskip("numpy")
-    cirq = pytest.importorskip("cirq")
+def assert_sparse_source_stream(
+    source: Any, native: SparseRotationPreparation, width: int
+) -> tuple[tuple[Instruction, ...], int]:
+    import cirq
+    import numpy as np
     from qualtran.bloqs.arithmetic.permutation import Permutation
     from qualtran.bloqs.bookkeeping import Partition
-    from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations import (
-        SparseStatePreparationViaRotations,
-    )
     from qualtran.bloqs.state_preparation.state_preparation_via_rotation import (
         StatePreparationViaRotations,
     )
-    from qualtran.resource_counting import QECGatesCost, get_cost_value
 
-    source = SparseStatePreparationViaRotations(
-        indices, coefficients, size, phase_width, width
-    )
-    native = SparseRotationPreparation(indices, coefficients, size, phase_width)
+    phase_width = native.phase_width
     work_size, slot_count = native.requirements(width)
     target = tuple(range(width))
     gradient = tuple(range(width, width + phase_width))
@@ -69,7 +61,11 @@ def test_source_sparse_preparation(
     work = tuple(range(data_size, data_size + work_size))
     bits = tuple(range(slot_count))
     ports = {"target_state": target, "phase_gradient": gradient}
-    actual = native.emit(target, gradient, work, bits)
+    example = SparseRotationExample(native, width)
+    circuit = Circuit(example.qubit_count)
+    circuit.append(example)
+    actual = circuit.to_ir().instructions
+    assert actual == native.emit(target, gradient, work, bits)
     children = []
 
     def leaf(
@@ -122,7 +118,7 @@ def test_source_sparse_preparation(
 
     # Bind the source dense phase flag to the same prefix slice as the native stage.
     dense_work, _ = SparseRotationPreparation(
-        tuple(range(len(indices))), coefficients, size, phase_width
+        tuple(range(len(native.indices))), native.coefficients, native.size, phase_width
     ).requirements(width)
     expected, returned = walk_source_graph(source, ports, ports, leaf)
     assert dense_work <= work_size
@@ -131,6 +127,38 @@ def test_source_sparse_preparation(
     assert [g for g in actual if g.name == "rx"] == [
         g for g in expected if g.name == "rx"
     ]
+    return actual, work_size
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "indices,coefficients,size,width,phase_width",
+    [
+        ((0, 1), (1 + 1j, 1 - 1j), 2, 1, 2),
+        ((2, 1), (1 + 1j, 1 - 1j), 3, 2, 2),
+        ((3, 1, 4), (1, 1j, -1), 5, 3, 2),
+        ((2, 1), (1 + 1j, 1 - 1j), 3, 4, 8),
+    ],
+)
+def test_source_sparse_preparation(
+    indices: tuple[int, ...],
+    coefficients: tuple[complex, ...],
+    size: int,
+    width: int,
+    phase_width: int,
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations import (
+        SparseStatePreparationViaRotations,
+    )
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    source = SparseStatePreparationViaRotations(
+        indices, coefficients, size, phase_width, width
+    )
+    native = SparseRotationPreparation(indices, coefficients, size, phase_width)
+    actual, work_size = assert_sparse_source_stream(source, native, width)
+    data_size = width + phase_width
     counts = Counter(gate.name for gate in actual)
     model = get_cost_value(source, QECGatesCost())
     assert counts["measure"] == model.measurement + (source.dense_bitsize + 1) * (
@@ -215,3 +243,124 @@ def test_source_loses_a_prefix_and_singleton_lacks_target_port() -> None:
         SparseStatePreparationViaRotations((2,), (1,), 3, 2).decompose_bloq()
     with pytest.raises(ValueError, match="at least two"):
         SparseRotationPreparation((2,), (1,), 3, 2).requirements(2)
+
+
+@pytest.fixture(scope="module")
+def locked_sparse_source() -> Any:
+    import kickmix
+    from qualtran.bloqs.state_preparation import sparse_state_preparation_via_rotations
+
+    assert version("qualtran") == "0.7.0"
+    assert kickmix.__version__ == "0.1" and hasattr(kickmix, "Simulator")
+    source = Path(sparse_state_preparation_via_rotations.__file__)
+    for path, digest in (
+        (source, "e5d631263c199129e23c246bfab0fd36fd5f774a"),
+        (
+            source.with_name(f"{source.stem}_test.py"),
+            "ea6a6748f0837615f45e7e6082188b5cc7cfc1d9",
+        ),
+    ):
+        raw = path.read_bytes()
+        assert sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == digest
+    return sparse_state_preparation_via_rotations
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("wide", (False, True))
+def test_original_sparse_factories(locked_sparse_source: Any, wide: bool) -> None:
+    source = (
+        locked_sparse_source._sparse_state_prep_via_rotations_with_large_target_bitsize()
+        if wide
+        else locked_sparse_source._sparse_state_prep_via_rotations()
+    )
+    example = sparse_rotation_example(wide=wide)
+    native = example.preparation
+    assert (
+        native.indices,
+        native.coefficients,
+        native.size,
+        native.phase_width,
+        example.target_width,
+    ) == (
+        source.sparse_indices,
+        source.nonzero_coeffs,
+        source.N,
+        source.phase_bitsize,
+        source.target_bitsize,
+    )
+    assert [(port.name, port.bitsize, port.side.name) for port in source.signature] == [
+        ("target_state", example.target_width, "THRU"),
+        ("phase_gradient", 2, "THRU"),
+    ]
+    gates, work = assert_sparse_source_stream(source, native, example.target_width)
+    assert_source_cost(example.resource_model(), source)
+    assert not any(
+        wire >= example.data_width + work for gate in gates for wire in gate.wires
+    )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("target_width", (None, 4, 6))
+def test_original_sparse_state_grid(
+    locked_sparse_source: Any, target_width: int | None
+) -> None:
+    import attrs
+    import numpy as np
+    from qualtran.bloqs.state_preparation.sparse_state_preparation_via_rotations_test import (
+        get_prepared_state_vector,
+    )
+
+    # Preserve the original floating-point coefficients for angle quantization.
+    amplitudes = (
+        (-0.42677669529663675 - 0.1767766952966366j),
+        0,
+        (0.17677669529663664 - 0.4267766952966367j),
+        (0.17677669529663675 - 0.1767766952966368j),
+        0,
+        0,
+        (0.07322330470336305 - 0.07322330470336309j),
+        (0.4267766952966366 - 0.17677669529663692j),
+        0,
+        (0.42677669529663664 + 0.17677669529663675j),
+        0,
+        (0.0732233047033631 + 0.17677669529663678j),
+        (-0.07322330470336308 - 0.17677669529663678j),
+        0,
+    )
+    source = locked_sparse_source.SparseStatePreparationViaRotations.from_sparse_array(
+        amplitudes, 3
+    )
+    if target_width is not None:
+        source = attrs.evolve(source, target_bitsize=target_width)
+    width = int(source.target_bitsize)
+    nonzero = tuple((index, value) for index, value in enumerate(amplitudes) if value)
+    native = SparseRotationPreparation(
+        tuple(index for index, _ in nonzero),
+        tuple(value for _, value in nonzero),
+        len(amplitudes),
+        3,
+    )
+    example = SparseRotationExample(native, width)
+    gates, work = assert_sparse_source_stream(source, native, width)
+    assert_source_cost(example.resource_model(), source)
+    original = np.pad(amplitudes, (0, (1 << width) - len(amplitudes)))
+    result = get_prepared_state_vector(source)
+    np.testing.assert_allclose(result, original, atol=2e-12, rtol=0)
+
+    gradient = tuple(exp(-1j * tau * i / 8) / sqrt(8) for i in range(8))
+    input_state = {i << work: phase for i, phase in enumerate(gradient)}
+    expected = {
+        ((address << 3) | i) << work: complex(value) * phase
+        for address, value in enumerate(result)
+        if abs(value) > 2e-12
+        for i, phase in enumerate(gradient)
+    }
+    for seed in (0, 1, 27):
+        actual = execute_rotation_sparse(gates, example.qubit_count, input_state, seed)
+        assert (
+            max(
+                abs(actual.get(index, 0) - expected.get(index, 0))
+                for index in actual.keys() | expected.keys()
+            )
+            < 2e-12
+        )
