@@ -14,7 +14,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 from ...compiler._component_trace.resource_model import ComponentCost
-from ...compiler.registers.layout.partition import RegisterLayout
+from ...compiler.registers.layout.partition import RegisterLayout, unpartition_register
 from ...compiler.registers.lookup.qroam_bank_binding import (
     bind_clean_banks,
     clean_bank_output_layout,
@@ -72,11 +72,26 @@ class SparseChemistryData:
         )
 
     def lookup_table(self) -> QroamCleanTable:
-        """Create the concrete clean lookup with all output banks retained."""
+        """Create the complete source lookup used by the resource model."""
         if self.spatial_orbitals < 2:
             raise ValueError("Sparse chemistry lookup requires nonempty orbital words")
         return QroamCleanTable(
             (len(self.coefficients),), (self.log_block_size,), self.datasets
+        )
+
+    def executable_lookup_table(self) -> QroamCleanTable:
+        """Omit the fixed-zero orbital datasets when there is one spatial orbital."""
+        if self.spatial_orbitals != 1:
+            return self.lookup_table()
+        columns = tuple(
+            column
+            for (_, width), column in zip(
+                self.target_layout, self.datasets, strict=True
+            )
+            if width
+        )
+        return QroamCleanTable(
+            (len(self.coefficients),), (self.log_block_size,), columns
         )
 
     @property
@@ -96,7 +111,7 @@ class SparseChemistryData:
         uncompute: bool = False,
     ) -> tuple[Instruction, ...]:
         """Load clean banks or coherently erase matching signed lookup outputs."""
-        table = self.lookup_table()
+        table = self.executable_lookup_table()
         banks = self._bind_lookup_banks(address, outputs)
         emit = source_qroam_clean_uncompute_ir if uncompute else source_qroam_clean_ir
         return emit(table, (), (address,), banks, workspace, classical_bits)
@@ -111,7 +126,7 @@ class SparseChemistryData:
     ) -> tuple[Instruction, ...]:
         """Measure and clear the matching lookup outputs in their declared order."""
         return qroam_clean_measurement_erase_ir(
-            self.lookup_table(),
+            self.executable_lookup_table(),
             (),
             (address,),
             self._bind_lookup_banks(address, outputs),
@@ -127,8 +142,16 @@ class SparseChemistryData:
     ) -> tuple[tuple[tuple[int, ...], ...], ...]:
         if len(address) != self.address_width:
             raise ValueError("Sparse chemistry address width must match the row count")
+        targets = self.target_layout
+        if self.spatial_orbitals == 1:
+            unpartition_register(outputs, self.lookup_output_layout)
+            targets = tuple((name, width) for name, width in targets if width)
+            live_outputs = clean_bank_output_layout(
+                targets, 1 << self.log_block_size, junk_prefix="jnk_"
+            )
+            outputs = {name: outputs[name] for name, _ in live_outputs}
         return bind_clean_banks(
-            outputs, self.target_layout, 1 << self.log_block_size, junk_prefix="jnk_"
+            outputs, targets, 1 << self.log_block_size, junk_prefix="jnk_"
         )
 
     def lookup_cost(self) -> ComponentCost:

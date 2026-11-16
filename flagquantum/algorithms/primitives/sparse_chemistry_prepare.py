@@ -7,6 +7,7 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import cached_property
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import (
@@ -31,6 +32,14 @@ from ...compiler.registers.preparation.uniform_preparation import (
 )
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+    quantum_bit_type,
+    unsigned_register_type,
+)
+from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.signatures import Signature
 from .sparse_chemistry_data import SparseChemistryData
 
 
@@ -40,29 +49,91 @@ class PrepareSparseChemistry:
 
     data: SparseChemistryData
 
+    @cached_property
+    def selection_registers(self) -> tuple[Register, ...]:
+        """Preserve the bounded row index and source through selectors."""
+        data = self.data
+        bit = bounded_unsigned_register_type(1)
+        return (
+            Register(
+                "d",
+                bounded_unsigned_register_type(data.address_width, len(data.indices)),
+            ),
+            Register("sigma", bounded_unsigned_register_type(data.probability_bits)),
+            *(
+                Register(name, bit)
+                for name in (
+                    "alpha",
+                    "beta",
+                    "rot_aa",
+                    "swap_pq",
+                    "swap_rs",
+                    "swap_pqrs",
+                )
+            ),
+        )
+
+    @cached_property
+    def qroam_target_registers(self) -> tuple[Register, ...]:
+        """Declare the selected cell of each dataset in source order."""
+        targets = []
+        for name, width in self.data.target_layout:
+            if name in ("p", "q", "r", "s"):
+                dtype = unsigned_register_type(width)
+            elif name in ("theta", "flag_1b", "alt_theta", "alt_flag_1b"):
+                dtype = quantum_bit_type()
+            else:
+                dtype = opaque_register_type(width)
+            targets.append(Register(name, dtype, side=RegisterSide.RIGHT))
+        return tuple(targets)
+
+    @cached_property
+    def qroam_extra_target_registers(self) -> tuple[Register, ...]:
+        """Keep the retained cells grouped by dataset with the same dtype."""
+        extra_cells = (1 << self.data.log_block_size) - 1
+        if not extra_cells:
+            return ()
+        return tuple(
+            Register(
+                f"jnk_{reg.name}",
+                reg.dtype,
+                shape=(*reg.shape, extra_cells),
+                side=RegisterSide.RIGHT,
+            )
+            for reg in self.qroam_target_registers
+        )
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return (
+            Register("less_than", quantum_bit_type()),
+            *self.qroam_target_registers,
+            *self.qroam_extra_target_registers,
+        )
+
+    @cached_property
+    def signature(self) -> Signature:
+        """Declare source input/output direction independently of physical binding."""
+        return Signature((*self.selection_registers, *self.junk_registers))
+
     @property
     def selection_layout(self) -> RegisterLayout:
-        return (
-            ("d", self.data.address_width),
-            ("sigma", self.data.probability_bits),
-            ("alpha", 1),
-            ("beta", 1),
-            ("rot_aa", 1),
-            ("swap_pq", 1),
-            ("swap_rs", 1),
-            ("swap_pqrs", 1),
+        return tuple(
+            (reg.name, int(reg.total_bits())) for reg in self.selection_registers
         )
 
     @property
     def junk_layout(self) -> RegisterLayout:
-        return (("less_than", 1), *self.data.lookup_output_layout)
+        return tuple((reg.name, int(reg.total_bits())) for reg in self.junk_registers)
 
     def requirements(self) -> tuple[int, int]:
         """Return reusable clean scratch and classical slots."""
         _, uniform_work, uniform_slots = uniform_preparation_requirements(
             len(self.data.indices)
         )
-        lookup = self.data.lookup_table().workspace_size(0, (self.data.address_width,))
+        lookup = self.data.executable_lookup_table().workspace_size(
+            0, (self.data.address_width,)
+        )
         compare_work, compare_slots = less_equal_requirements(
             self.data.probability_bits, self.data.probability_bits
         )
@@ -145,7 +216,7 @@ class PrepareSparseChemistry:
             classical_bits[:uniform_slots],
             adjoint=adjoint,
         )
-        lookup_work = data.lookup_table().workspace_size(0, (len(address),))
+        lookup_work = data.executable_lookup_table().workspace_size(0, (len(address),))
         lookup_outputs = {name: ports[name] for name, _ in data.lookup_output_layout}
         if bank_bits is None:
             lookup = data.lookup_ir(
@@ -179,6 +250,8 @@ class PrepareSparseChemistry:
         )
 
         def swap(control: int, left: str, right: str) -> tuple[Instruction, ...]:
+            if not ports[left] and not ports[right]:
+                return ()
             return controlled_swap_ir(control, ports[left], ports[right])
 
         flip = Instruction("x", (flag,))
@@ -240,7 +313,7 @@ class PrepareSparseChemistry:
         )
         mu = data.probability_bits
         orbital_width = (data.spatial_orbitals - 1).bit_length()
-        width = sum(bits for _, bits in (*self.selection_layout, *self.junk_layout))
+        width = int(self.signature.n_qubits())
         before_lookup = sum(bits for _, bits in self.selection_layout) + 1
         bystanders = before_lookup - data.address_width
         compare_width = 2 * mu + 1

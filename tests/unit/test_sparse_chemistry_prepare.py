@@ -116,6 +116,24 @@ def _branch(
     return state
 
 
+def _assert_sparse_signature(native, reference):
+    from qualtran import BQUInt, QAny, QBit, QUInt
+
+    def source_type(reg):
+        kind = reg.dtype.encoding
+        if kind == "uint":
+            bound = dict(reg.dtype.parameters).get("bound")
+            return QUInt(reg.bitsize) if bound is None else BQUInt(reg.bitsize, bound)
+        if kind == "bit":
+            return QBit()
+        assert kind == "opaque"
+        return QAny(reg.bitsize)
+
+    assert [
+        (reg.name, source_type(reg), reg.shape, reg.side.value) for reg in native
+    ] == [(reg.name, reg.dtype, reg.shape, reg.side.value) for reg in reference]
+
+
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("spatial,log", [(2, 0), (2, 1), (3, 0), (3, 1)])
 def test_prepare_forward_source_graph_and_resources(spatial, log):
@@ -143,6 +161,20 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
     operation = PrepareSparseChemistry(data)
     reference = PrepareSparse.from_hamiltonian_coeffs(
         2 * spatial, one, two, num_bits_state_prep=1, log_block_size=log
+    )
+    _assert_sparse_signature(
+        operation.selection_registers, reference.selection_registers
+    )
+    _assert_sparse_signature(operation.junk_registers, reference.junk_registers)
+    _assert_sparse_signature(
+        operation.qroam_target_registers, reference.qroam_target_registers
+    )
+    _assert_sparse_signature(
+        operation.qroam_extra_target_registers, reference.qroam_extra_target_registers
+    )
+    _assert_sparse_signature(operation.signature, reference.signature)
+    _assert_sparse_signature(
+        operation.signature.adjoint(), reference.adjoint().signature
     )
     layout = (*operation.selection_layout, *operation.junk_layout)
     assert layout == tuple((reg.name, reg.total_bits()) for reg in reference.signature)
@@ -282,7 +314,9 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
 def _expected_unblocked(data, layout, work, events):
     """Compute the signed alias selection and symmetry action classically."""
     result = {}
-    for row, sigma, pq, rs, pqrs in product(range(4), *(range(2) for _ in range(4))):
+    for row, sigma, pq, rs, pqrs in product(
+        range(len(data.indices)), *(range(2) for _ in range(4))
+    ):
         values = dict(
             zip(
                 (name for name, _ in data.target_layout),
@@ -310,7 +344,7 @@ def _expected_unblocked(data, layout, work, events):
         index = 0
         for name, bits in layout:
             index = (index << bits) | values.get(name, 0)
-        result[index << work] = (-1) ** sign / sqrt(64 * 2**events)
+        result[index << work] = (-1) ** sign / sqrt(len(data.indices) * 16 * 2**events)
     return result
 
 
@@ -418,3 +452,79 @@ def test_measurement_adjoint_consumes_lookup_banks(log, include_two_body):
             )
             restored = _branch(erase, n_qubits, erase_history, prepared)
             assert restored == pytest.approx(expected, abs=2e-12)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(("spatial", "log"), [(1, 0), (2, 2)])
+def test_signature_preserves_empty_orbitals_and_multiple_retained_cells(spatial, log):
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
+
+    one = np.eye(spatial)
+    two = np.zeros((spatial,) * 4)
+    two[0, 0, 0, 0] = -0.5
+    if spatial == 2:
+        one[1, 0] = one[0, 1] = -0.75
+    data = sparse_chemistry_data(one, two, probability_bits=2, log_block_size=log)
+    native = PrepareSparseChemistry(data)
+    reference = PrepareSparse.from_hamiltonian_coeffs(
+        2 * spatial, one, two, num_bits_state_prep=2, log_block_size=log
+    )
+    _assert_sparse_signature(native.signature, reference.signature)
+    _assert_sparse_signature(native.signature.adjoint(), reference.adjoint().signature)
+    assert native.junk_layout[1:] == data.lookup_output_layout
+    if spatial == 1:
+        with pytest.raises(KeyError, match="target0_"):
+            reference.decompose_bloq()
+
+
+@pytest.mark.parametrize("two_body", [0.0, -0.5])
+def test_single_orbital_prepares_and_clears_without_empty_bank_binding(two_body):
+    one = np.array([[1.0]])
+    two = np.full((1,) * 4, two_body)
+    data = sparse_chemistry_data(one, two, probability_bits=1, log_block_size=0)
+    op = PrepareSparseChemistry(data)
+    layout = (*op.selection_layout, *op.junk_layout)
+    width = sum(bits for _, bits in layout)
+    ports = partition_register(tuple(range(width)), layout)
+    work, slots = op.requirements()
+    wires = width + work
+    kwargs = {
+        "workspace": tuple(range(width, wires)),
+        "classical_bits": tuple(range(slots)),
+    }
+    raw = DynamicCircuit(wires).append(op.make_on(ports, **kwargs)).to_ir()
+    inverse = (
+        DynamicCircuit(wires)
+        .append(op.make_coherent_adjoint_on(ports, **kwargs))
+        .to_ir()
+    )
+    bank_width = sum(bits for _, bits in data.lookup_output_layout)
+    measured = (
+        DynamicCircuit(wires)
+        .append(
+            op.make_measurement_adjoint_on(
+                ports, **kwargs, bank_bits=tuple(range(slots, slots + bank_width))
+            )
+        )
+        .to_ir()
+    )
+    events = sum(g.name == "measure" for g in raw.instructions)
+    coherent_events = sum(g.name == "measure" for g in inverse.instructions)
+    measured_events = sum(g.name == "measure" for g in measured.instructions)
+    assert (events, coherent_events, measured_events, work) == (1, 1, 6, 2)
+    assert measured_events == coherent_events + bank_width
+    for stage in (raw, inverse, measured):
+        assert sum(g.name in {"t", "tdg"} for g in stage.instructions) == 11
+    expected = _expected_unblocked(data, layout, work, events)
+    for history in product((0, 1), repeat=events):
+        prepared = _branch(raw.instructions, wires, history)
+        assert prepared == pytest.approx(expected, abs=2e-12)
+        for circuit, count in [(inverse, coherent_events), (measured, measured_events)]:
+            for reverse_history in product((0, 1), repeat=count):
+                restored = _branch(
+                    circuit.instructions, wires, reverse_history, prepared
+                )
+                assert restored == pytest.approx(
+                    {0: 2 ** (-(events + count) / 2)}, abs=2e-12
+                )
