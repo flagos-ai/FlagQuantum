@@ -51,7 +51,7 @@ the work wire and releases it after the expanded effect.
 | Source port order, qubit arrays and named bits | Concrete quantum register layouts, row-major words and explicit physical wire binding. Qid dimensions, aliases, shape and ownership are checked. |
 | Through, left and right port placement | Through ports preserve identity. Left-only ports are excluded from output. Right-only ports use fresh names or caller-owned qubits. The adapter rejects aliasing across supplied ports. |
 | Component conversion and graph order | The adapter consumes native physical IR. Native append and Compiler own decomposition and allocation before conversion. |
-| Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body. Through-only bodies without private workspace expose the native matrix, including a tensor-backed body with no Cirq leaf decomposition. They retain the source's integer repetition and adjoint behavior. |
+| Source Cirq gate wrappers and tensor fallback | `RegisterCirqGate` adapts an owned bound body. Through-only static bodies expose the native matrix after verifying any private workspace. A tensor-backed body can supply a matrix without Cirq leaf decomposition. Workspace-free gates retain integer repetition and adjoint behavior. |
 | Workspace allocation and port transfer | The adapter replays Compiler lifetime events in the Cirq decomposition context. A left-only input is released under explicit ownership. Clean and borrowed private wires may be released and reused. The final clean lease of a right-only output is rebound to the caller's Qid, and its temporary reservation is released in register order. |
 | Diagram symbols | Primitive circuits use Cirq's native exchange and Toffoli rendering. Wrapped register gates label operands in declaration order with the native register name and optional element index. |
 
@@ -154,6 +154,13 @@ component. An explicit replay fixture first leases the same native physical
 ID as private work. Its two X gates stay on scratch and erase it before
 the final lease is mapped to the caller's output.
 
+Static through-unitary inspection checks that every clean wire exits in zero
+and the admitted matrix factors as identity on borrowed wires. The
+workspace witness matches the full logical matrix for clean and borrowed
+leases. A leaked clean CX and a phase entangling borrowed work both refuse
+matrix inspection. A separate complex phase fixture covers interleaved
+clean and borrowed axes. Inspection uses the native dense width limit.
+
 The source X/Free composite and the native owned left-only body each emit
 one X on the caller's input before releasing that input. Neither passes the
 caller Qid to the underlying qubit manager. The source model contains one
@@ -165,10 +172,30 @@ effect. The source witness uses explicit X and Free operations.
 
 ## Remaining files
 
-- Q-0714 awaits the rest of the source package export map, including
-  import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain unsupported arithmetic primitives and direct
-  dense inspection of bodies that use private workspace. Guarded
-  measurement requires a dedicated clean wire in the export scope.
+- Q-0714 awaits the package-entry export map.
+- Q-0715 retains dense inspection of dynamic workspace bodies, source
+  wrapper value identity and custom glyph callbacks. Guarded measurement
+  requires a dedicated clean wire in the export scope.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
+
+## Export test family acceptance
+
+Q-0716 covers the complete frozen test file, including its notebook receipt.
+The native witnesses exercise the original swap and tensor-only widths,
+integer power admission, Toffoli glyphs, MultiAnd output binding, measured
+cleanup, private workspace, and register-construction rejection cases.
+
+The original modulus-four ModExp diagram is a one-level wrapper witness.
+Its full decomposition retains the locked width refusal described above.
+An additional valid ModExp with base two, modulus three, one exponent bit
+and two output bits checks the original one-level operand schedule. Full
+source Cirq export of the valid graph refuses the source basis effect.
+The native path exports 1,155 operations with exact operands and
+measurement keys. A complete 17-wire complex trajectory, including a
+spectator, matches the source classical output isometry and leaves all
+13 work wires clear. The 48 measurement outcomes are retained
+individually. The source model separately gives 206 T-equivalent gates,
+48 measurements and a peak of 16 wires. The full physical gate comparison
+uses the compiler's source-derived primitive trace. The numerical witness
+samples one trajectory of this larger circuit.
