@@ -58,13 +58,35 @@ operations. The regression checks each of those six streams and all 64 complex
 amplitudes, with zero added work or measurement. Alias-CCX emits CCX1/CX1,
 alias-CCZ emits CCZ1/CZ1, and equal parity emits zero instructions.
 
+## Two-term parity with two additional controls
+
+The three-control parity calls use the first quantum parity operand as their
+temporary XOR target. Sharing that pivot with either additional quantum
+control is refused before emission, matching both original CCCX and CCCZ
+failure paths. When both parity operands are classical, the source emits the
+two corresponding products in order. The native helper retains that order.
+
+An unchanged builder oracle covers all 256 parity-CCCX and 1,024 parity-CCCZ
+tag combinations with each of the dirty and clean policies. All 2,560 native
+streams agree after scope expansion and accounting for the 14 initial source
+resets under the native zero-entry contract. The reset is only needed in the
+source's clean, all-quantum central schedule. Both measured branches match the
+full 256-amplitude result and clear the designated work wire. The dirty test
+borrows a wire which is still the second parity operand and verifies that its
+coherence and the final parity uncompute are preserved.
+
+For the full-quantum fixtures the parity compute and uncompute add CX2 to
+the central three-control stream above. The clean path retains one result
+slot. The dirty path adds zero measurement, reset or result slots. Emitted
+gate counts remain independent of a source analytical model.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
-Broadcast and parity controls, owning C++ scope guards, register declaration
+Broadcast, X-basis targets, owning C++ scope guards, register declaration
 bookkeeping, loop patterns and debug metadata have separate source assertions.
 The original `CircuitBuilder.*` suite passed all 27 tests with GoogleTest
 1.14.0 from the locked Bazel manifest. The build compiled the unchanged
 builder, original tests and test helpers, and linked the remaining native
 objects from the existing reference extension build. The native predicate
 intake passed 631 cases and the focused gate and arithmetic regression passed
-163 cases. The C++ baseline still needs per-family native replacement before
+175 cases. The C++ baseline still needs per-family native replacement before
 the original-test parent closes.

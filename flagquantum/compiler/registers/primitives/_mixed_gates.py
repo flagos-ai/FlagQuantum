@@ -73,6 +73,18 @@ def _flip(
     if target is None:
         if not wires:
             return scalar_sign_ir(0, conditions=bits)
+        if len(wires) == 4:
+            if scratch is not None and measurement_bit is None:
+                raise ValueError("Measured phase requires a classical result slot")
+            return _three_control_ir(
+                wires[0],
+                wires[1],
+                wires[2],
+                wires[3],
+                phase=True,
+                scratch=scratch,
+                measurement_bit=measurement_bit,
+            )
         if len(wires) == 3:
             return ccz_ir((wires[0], wires[1], wires[2]), conditions=bits)
         return (
@@ -111,26 +123,41 @@ def _parity_controlled_flip(
     control: _Control,
     *,
     phase_operand: _Control = True,
+    second_control: _Control | None = None,
+    scratch: int | None = None,
+    measurement_bit: int | None = None,
 ) -> tuple[Instruction, ...]:
-    """Apply the source parity-CCX or parity-CCZ, retaining tagged aliases."""
+    """Dispatch the source parity gates with one or two additional controls."""
     if target is not None and phase_operand is not True:
         raise ValueError("A separate phase operand requires a phase target")
     phase_controls = (phase_operand,) if target is None else ()
+    controls = (control,) if second_control is None else (control, second_control)
 
     def apply(*operands: _Control) -> tuple[Instruction, ...]:
-        return _flip(target, *operands, *phase_controls)
+        return _flip(
+            target,
+            *operands,
+            *phase_controls,
+            scratch=scratch,
+            measurement_bit=measurement_bit,
+        )
 
-    if type(first) is type(second) and first == second:
-        return ()
-    if (type(control) is type(first) and control == first) or (
-        type(control) is type(second) and control == second
-    ):
-        # (x xor y) & x = (x & y) xor x. No parity operand is overwritten.
-        return (*apply(first, second), *apply(control))
-    if type(first) is int:
-        parity = _flip(first, second)
-        return (*parity, *apply(first, control), *parity)
-    if type(second) is int:
-        parity = _flip(second, first)
-        return (*parity, *apply(second, control), *parity)
-    return (*apply(first, control), *apply(second, control))
+    if second_control is None:
+        if type(first) is type(second) and first == second:
+            return ()
+        if (type(control) is type(first) and control == first) or (
+            type(control) is type(second) and control == second
+        ):
+            # (x xor y) & x = (x & y) xor x. Do not overwrite a parity operand.
+            return (*apply(first, second), *apply(control))
+    for pivot, other in ((first, second), (second, first)):
+        if type(pivot) is int:
+            if second_control is not None and any(
+                type(extra) is int and pivot == extra for extra in controls
+            ):
+                raise ValueError(
+                    "Quantum parity operand overlaps an additional control"
+                )
+            parity = _flip(pivot, other)
+            return (*parity, *apply(pivot, *controls), *parity)
+    return (*apply(first, *controls), *apply(second, *controls))

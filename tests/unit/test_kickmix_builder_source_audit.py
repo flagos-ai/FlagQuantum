@@ -94,3 +94,62 @@ def test_builder_three_control_stream_and_all_branch_amplitudes(
         )
         if clean:
             assert torch.count_nonzero(branch[1::2]) == 0
+
+
+@pytest.mark.parametrize("phase", [False, True])
+@pytest.mark.parametrize("clean", [False, True])
+def test_builder_parity_three_control_with_live_second_operand(
+    phase: bool, clean: bool
+) -> None:
+    # With no clean scratch, the source borrows q1 while it is still the
+    # second parity operand. Its coherent state must survive both uses.
+    helper = 7 if clean else 1
+    ir = _parity_controlled_flip(
+        None if phase else 4,
+        0,
+        1,
+        2,
+        phase_operand=4 if phase else True,
+        second_control=3,
+        scratch=helper if clean else None,
+        measurement_bit=0 if clean else None,
+    )
+    pair = [f"CCX q0 q2 q{helper}", f"{'CCZ' if phase else 'CCX'} q{helper} q3 q4"]
+    original = [*pair, "HMR q7 b0", "CZ q0 q2 if b0"] if clean else pair * 2
+    program = lower_reversible_phase(CircuitIR(8, ir))
+    assert encode_kmx(program).splitlines()[1:] == ["CX q1 q0", *original, "CX q1 q0"]
+    assert program.n_bits == int(clean)
+
+    indices = torch.arange(256)
+    initial = (indices + 1).to(torch.complex128) + 1j * (256 - indices)
+    if clean:
+        initial[1::2] = 0
+    initial /= initial.norm()
+    parity = ((indices >> 7) ^ (indices >> 6)) & 1
+    active = parity & ((indices >> 5) & 1) & ((indices >> 4) & 1)
+    if phase:
+        expected = initial * torch.where((active & ((indices >> 3) & 1)).bool(), -1, 1)
+    else:
+        expected = initial[indices ^ (active << 3)]
+    for history in ((0,), (1,)) if clean else ((),):
+        actual = forced_branch(initial, ir, history)
+        torch.testing.assert_close(
+            actual, expected / (2**0.5 if clean else 1), rtol=0, atol=3e-15
+        )
+        if clean:
+            assert torch.count_nonzero(actual[1::2]) == 0
+
+
+@pytest.mark.parametrize("target", [4, None])
+def test_builder_parity_three_control_refuses_quantum_alias(
+    target: int | None,
+) -> None:
+    with pytest.raises(ValueError, match="parity operand overlaps"):
+        _parity_controlled_flip(
+            target,
+            0,
+            1,
+            0,
+            phase_operand=4 if target is None else True,
+            second_control=3,
+        )
