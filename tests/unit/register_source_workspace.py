@@ -10,6 +10,7 @@ import numpy as np
 
 from flagquantum.core.ir import Instruction
 from tests.unit.register_source_graph import (
+    SourceLeaf,
     SourcePorts,
     SourceResult,
     source_partition_leaf,
@@ -58,6 +59,8 @@ def source_workspace_gates(
     ports: SourcePorts,
     clean: tuple[int, ...],
     borrowed: tuple[int, ...],
+    *,
+    custom_leaf: SourceLeaf | None = None,
 ) -> tuple[tuple[Instruction, ...], tuple[LifetimeEvent, ...]]:
     """Read original graphs and allocate classical slots per measurement event.
 
@@ -84,6 +87,10 @@ def source_workspace_gates(
         bloq: Any, inputs: SourcePorts, desired: SourcePorts
     ) -> SourceResult | None:
         nonlocal slot
+        if custom_leaf is not None:
+            override = custom_leaf(bloq, inputs, desired)
+            if override is not None:
+                return override
         partition = source_partition_leaf(bloq, inputs, desired)
         if partition is not None:
             return partition
