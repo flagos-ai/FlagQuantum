@@ -9,6 +9,7 @@ import sys
 from importlib import import_module
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import ModuleType
 from typing import Literal
 from unittest.mock import patch
 
@@ -89,6 +90,82 @@ def _verify_shot_file_reading(native: object) -> None:
     )
 
 
+def _verify_shot_data_writing(native: ModuleType) -> None:
+    from flagquantum.qec.execution.shot_data import write_shot_data_file
+
+    expected: dict[Literal["01", "b8", "r8", "ptb64", "hits", "dets"], bytes] = {
+        "01": b"111\n" * 64,
+        "b8": b"\x07" * 64,
+        "r8": b"\x00\x00\x00\x00" * 64,
+        "ptb64": b"\xff" * 24,
+        "hits": b"0,1,2\n" * 64,
+        "dets": b"shot D0 D1 D2\n" * 64,
+    }
+    with TemporaryDirectory() as directory:
+        for encoding, witness in expected.items():
+            with patch.object(
+                native, "write_shot_records", wraps=native.write_shot_records
+            ) as write:
+                path = Path(directory) / encoding
+                write_shot_data_file(
+                    data=torch.ones((64, 3), dtype=torch.bool),
+                    path=path,
+                    format=encoding,
+                    num_detectors=3,
+                )
+                write.assert_called_once()
+                assert path.read_bytes() == witness
+    print("embedded shot-data writing: six formats, exact bytes, actual native calls")
+
+
+def _verify_compiled_dem_sampler(native: ModuleType) -> None:
+    from flagquantum.qec import DemError, DetectorErrorModel
+
+    model = DetectorErrorModel(1, 1, (DemError(1.0, (0,), (0,)),))
+    with patch.object(native, "prepare_dem", wraps=native.prepare_dem) as prepared:
+        sampler = model.compile_sampler(seed=7)
+        prepared.assert_called_once()
+    with patch.object(native, "sample_dem", wraps=native.sample_dem) as called:
+        detectors, logicals, errors = sampler.sample(
+            64, bit_packed=True, return_errors=True
+        )
+        called.assert_called_once()
+    assert (
+        errors is not None
+        and detectors.tolist() == logicals.tolist() == errors.tolist() == [[1]] * 64
+    )
+    replayed = sampler.sample(64, bit_packed=True, recorded_errors_to_replay=errors)
+    assert torch.equal(replayed[0], detectors) and torch.equal(replayed[1], logicals)
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        replay = root / "input"
+        replay.write_bytes(b"\x01" * 64)
+        formats: tuple[Literal["01", "b8", "r8", "ptb64", "hits", "dets"], ...] = (
+            "01",
+            "b8",
+            "r8",
+            "ptb64",
+            "hits",
+            "dets",
+        )
+        for encoding in formats:
+            with patch.object(
+                native, "write_dem", wraps=native.write_dem
+            ) as called_write:
+                sampler.sample_write(
+                    64,
+                    det_out_file=root / encoding,
+                    det_out_format=encoding,
+                    obs_out_file=None,
+                    replay_err_in_file=replay,
+                    replay_err_in_format="b8",
+                )
+                called_write.assert_called_once()
+    print(
+        "embedded DEM sampling: preparation, packed replay, six file formats, actual native calls"
+    )
+
+
 def main() -> None:
     assert importlib.util.find_spec("stim") is None
     try:
@@ -104,6 +181,8 @@ def main() -> None:
     assert native_path.is_relative_to(Path(sys.prefix).resolve())
     assert native.upstream_commit == "e2fc1eca7fd21684d433aa5f10f4504ea4860d07"
     _verify_shot_file_reading(native)
+    _verify_shot_data_writing(native)
+    _verify_compiled_dem_sampler(native)
     circuit = DynamicCircuit(1).x(0).measure(0)
     with patch.object(native, "prepare", wraps=native.prepare) as prepare:
         sampler = circuit.compile_sampler(seed=7)

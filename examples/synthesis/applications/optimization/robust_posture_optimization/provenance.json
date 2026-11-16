@@ -1,0 +1,6 @@
+{
+  "upstream_path": "applications/optimization/robust_posture_optimization/robust_posture_optimization.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "6e047b27451e74d53252f8b0cef828cb2d065bdfcd956b5e614564e5fbbf92e9",
+  "scope": "Quantum program at two nonzero parameter bindings; notebook optimization, sampling and sessions remain pending."
+}

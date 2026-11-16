@@ -1,7 +1,6 @@
-"""Compare Qmod and native qfunc against the independent Circuit."""
+"""Compare native FlagQuantum and independent Circuit amplitudes."""
 
 import math
-from pathlib import Path
 
 import torch
 
@@ -12,13 +11,9 @@ from examples.synthesis.algorithms.amplitude_amplification.amplification_iterati
     zero,
 )
 from flagquantum import synth
-from flagquantum.services.synthesis import _synthesize
-
-QMOD = Path(__file__).with_name("source.qmod").read_text(encoding="utf-8")
 
 
 def run_example() -> None:
-    # Physical order is flag, data; A applies H(data) followed by CX(data,flag).
     a = torch.tensor(
         [[1, 1, 0, 0], [0, 0, 1, -1], [0, 0, 1, 1], [1, -1, 0, 0]],
         dtype=torch.complex128,
@@ -31,10 +26,7 @@ def run_example() -> None:
         for _ in range(k):
             circuit.any(0, 1, matrix=grover)
         expected = fq.run(circuit).statevector().reshape(-1)
-        for p in (
-            synth.synthesize(function),
-            _synthesize(QMOD, source_format="qmod", classical_inputs={"k": k}),
-        ):
+        for p in (synth.synthesize(function),):
             result = fq.run(p)
             state = result.statevector().reshape(4, -1)
             torch.testing.assert_close(state[:, 0], expected, atol=1e-12, rtol=0)
@@ -42,7 +34,7 @@ def run_example() -> None:
             print(k, dict(p.probabilities(result, registers=("flag",))))
             print(p.report["resources"])
     print(
-        "Native scalar phase composition, Qmod and Circuit agree, including absolute round signs."
+        "Native qfunc and Circuit agree, including absolute phase and clean workspace."
     )
 
 

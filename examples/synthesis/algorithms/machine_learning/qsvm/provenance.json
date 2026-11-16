@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/QML/qsvm/qsvm.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "fd528a5b08119b8766ac91ab294647e86ec2ebe5a30539858b63117b762e6f67",
+  "native_entrypoint": "examples.synthesis.algorithms.machine_learning.qsvm.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_pauli_kernels.py",
+  "scope": "Complete original one-bit feature-overlap kernel with both real-array data bindings and the exact reversed inverse encoding. The full QSVM data/training Notebook remains pending.",
+  "native_semantic_adaptations": "Reuse existing real-array binding, mutable helper capture, primitive rotations and Observable Suzuki-Trotter support. Single Pauli terms are exact exponentials, not approximations of noncommuting sums. Preserve logical bit order, full register widths, declared order and absolute phase; no source importer in user examples."
+}

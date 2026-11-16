@@ -165,3 +165,20 @@ def test_large_untimed_file_is_spread_instead_of_forming_one_long_tail(
     ]
     assert all(len(shard) == 16 for shard in shards)
     assert sorted(n for shard in shards for n in shard) == sorted(nodes)
+
+
+def test_measured_heavy_cases_in_one_file_can_use_separate_slots(tmp_path, monkeypatch):
+    from tools import ci_coverage_plan
+
+    monkeypatch.setenv("GITHUB_SHA", "e" * 40)
+    monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+    nodes = tuple(f"tests/test_full_state.py::test_case[{i}]" for i in range(16))
+    hints = {
+        node: seconds for node, seconds in zip(nodes[:3], (603, 479, 468), strict=True)
+    }
+    monkeypatch.setattr(ci_coverage_plan, "load_duration_hints", lambda: (0.05, hints))
+    directory = tmp_path / "plan"
+    assert write_plan(nodes, directory, 4) == 4
+    shards = [verify_plan(directory, i).read_text().splitlines() for i in range(4)]
+    assert sorted(n for shard in shards for n in shard) == sorted(nodes)
+    assert all(sum(node in shard for node in nodes[:3]) <= 1 for shard in shards)

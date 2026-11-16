@@ -545,3 +545,197 @@ No numerical kernel, public source schema or native array-QPE export is added.
 See the [source scope and runnable comparison](../../flagquantum/ecosystem/_qmod/PROFILE_HISTORY.md#bounded-ordinary-qpe-composition)
 and [limitations](../reference/KNOWN_LIMITATIONS.md#ordinary-qpe-source-boundary).
 Global corpus counts remain separate from these three original acceptance cases.
+
+## Native synthesis Fourier slice
+
+The unreleased Python qfunc entry `qft` reuses checked `qreg.qft` and the shared
+Fourier kernel. The four-qubit original and complete two-cell source Notebook
+have a native counterpart at `python -m examples.synthesis.functions.qft.main`.
+Acceptance compares all basis columns for widths 1..4 and complex coherent
+inputs against an independent dense Fourier matrix, including absolute phase,
+offset wires and zero workspace. Original/native resources remain 4 qubits,
+12 operations and depth 8. The maturity is local CPU semantic verification;
+partial views, Const targets and new controlled/inverse helper forms are outside
+this admission. See the [contract](../api-changes/FQ-SYNTH-NATIVE-FOURIER-20261109.md).
+
+## Native power-of-two modulo slice
+
+Unreleased Python expression and qfunc capture rewrite unsigned `%` by literal
+positive powers of two to checked bitwise AND. All small input pairs, complex
+coherent inputs under both schedules, divisor-one encoding and wider masks are
+validated independently. The native examples preserve both retained arithmetic
+expression paths and the five-bit input domains of the modulo example. General
+or quantum divisors remain outside this local CPU profile. See the
+[contract](../api-changes/FQ-SYNTH-NATIVE-POWER-TWO-MODULO-20261109.md).
+
+## Native bounded unitary slice
+
+Unreleased Python `unitary(matrix,target)` reuses existing matrix verification,
+indexed `qreg.unitary` effects and absolute-phase-preserving gate synthesis.
+Original unitary and three-layer quantum-volume programs have native counterparts.
+Independent direct matrix Circuits verify retained complex data, complete small
+matrix columns, complex coherence, helper composition, offset/sliced wires and
+consistent least-significant-first array/list views. Host constructors, mutable
+global matrices and unsupported ownership fail closed. The maturity is local CPU
+semantic validation; complete application Notebooks require separate acceptance.
+See the [contract](../api-changes/FQ-SYNTH-NATIVE-UNITARY-20261109.md).
+
+## Native unsigned conditional values
+
+Typed qfunc fresh assignment reuses scalar `qint.select` for Python conditional
+values. The unchanged minimum original has a native counterpart; independent
+reversible truth tables verify ties, nested values, wider branches, complex
+coherent states under both objectives, helper composition and clean workspace.
+Ownership and resource ceilings remain checked. Maturity is local CPU semantic
+validation, with no signed/fractional or dynamic host-branch claim. See the
+[contract](../api-changes/FQ-SYNTH-NATIVE-CONDITIONAL-VALUES-20261109.md).
+
+## Native bounded modular powers
+
+Native `modular_exp` reuses checked register permutations and scratch scheduling.
+The retained example and full local Notebook sampling/assertion workflow have
+native counterparts. Independent permutation matrices cover all small columns,
+padding states, nontrivial coherent phases, helper composition and width bounds.
+Maturity is local CPU semantic validation with resource refusal checks; this does
+not establish scalable Shor performance or hardware execution. See the
+[contract](../api-changes/FQ-SYNTH-NATIVE-MODULAR-EXP-20261109.md).
+
+
+## Native bounded real and predicate-gated phases
+
+Unreleased native Python phase arithmetic and phase-only control reuse the
+Compiler-owned Boolean-polynomial expansion also used by the Qmod adapter.
+Sparse unsigned-word and scalar-array reads may share physical bits; constant
+and conditional constant phases remain absolute. Writable helpers preserve
+borrowing rules and their existing adjoint/control limits. Bounds are 24 total
+input bits, 8 predicate bits, degree 8, 256 monomials, 20,000 products and 128 native
+expression depth. These are local CPU semantic checks, not hardware performance
+or general native qstruct/signed/fractional support. Independent Circuit states
+cover complete ADAPT-QAOA, MaxCut and constrained Knapsack programs; full Notebook
+optimizer workflows require separate acceptance. See the
+[phase contract](../api-changes/FQ-SYNTH-NATIVE-POLYNOMIAL-PHASE-20261109.md) and
+[guarded phase contract](../api-changes/FQ-SYNTH-NATIVE-GUARDED-PHASE-20261109.md).
+
+## Native checked unitary region slice
+
+Maturity: `development_evidence`. Native adjoint and pure-gate within/apply reuse
+shared Compiler inverse rules on initialized storage, including static writable
+helpers, QFT, explicit matrices, Pauli rotations and constant global phases.
+Retained QCE, credit-card and randomized-benchmarking programs have independent
+absolute-amplitude Circuit checks in
+`tests/integration/test_synthesis_native_unitary_regions.py`. Existing arithmetic
+cleanup and Const-only inverse regressions remain required. Closed generated
+predicate scratch now composes under inverse and within/apply, with fresh local
+identities and verified zero cleanup; direct QFT also accepts bounded composite
+comparison predicates. The native Fourier-LCU example has independent complete
+state checks, two nonzero weight/data models and actual workspace-budget refusal
+in `tests/integration/test_synthesis_native_fourier_lcu.py`; the source and native
+resource gap remains explicit. User allocation, Output publication, general
+callbacks and ownership changes refuse. This does not
+promote runtime gradients, hardware, scalability or complete Notebook coverage.
+
+## Native predicate-controlled walk slice
+
+Maturity: `development_evidence`. Bounded comparison/composite predicate-X reuses
+Compiler graph capture, indexed control-X and direct compute/uncompute cleanup.
+Borrowed numeric input resolution uses complete raw registers and actual widths;
+root and formal names need not match. Native hypercube and qfold programs have
+unchanged-source and independent Circuit amplitude checks in
+`tests/integration/test_synthesis_native_predicate_walks.py`; branch XOR,
+coherence, borrowed roles, bounds and inverse-region safety are covered by
+`tests/integration/test_synthesis_native_predicate_x.py`. Actual width, work,
+operations, depth and memory constraints remain authoritative. In-place increments,
+free/reset, arbitrary higher-order callbacks, full Notebook workflows, hardware
+and resource-optimality claims remain outside this slice.
+
+## Borrowed native expression XOR
+
+Maturity: `development_evidence`. Static all-inout helpers reuse `qreg.xor`
+for complete raw unsigned scalar destinations and expressions with complete
+register inputs. Active formal roles and aliases survive nested helper capture;
+nonzero XOR targets, phase-weighted coherent inputs, disjointness and actual
+resource limits are covered in
+`tests/integration/test_synthesis_native_expression_xor.py`. Partial/permuted
+views, array writes, formatted arithmetic and mutable-helper control/inverse
+remain explicit gaps. No additional native corpus coverage is credited merely
+for this primitive.
+
+## Native modular walk updates
+
+Maturity: `development_evidence`. Native bounded static modular increments and
+decrements reuse verified gate/control-X effects on complete raw unsigned words.
+Single-update helper controls reuse bounded predicate scratch and cleanup.
+`tests/integration/test_synthesis_native_modular_increment.py` verifies complete
+basis domains, coherent controls, absolute phases and refusal boundaries.
+`tests/integration/test_synthesis_native_grid_walk.py` compares the unchanged
+two-dimensional walk, native program and independent Circuit at full original
+widths with retained coin environment and zero compiler work. Resource costs are
+recorded separately; no optimality, complete Notebook or QLBM acceptance follows
+from this slice alone.
+
+## Native exact interval MPS admission
+
+Local CPU semantic coverage includes native qfunc programs wider than 32 bits
+whose connected physical gate intervals are each at most twelve sites. Services
+reuses Runtime's existing exact bond proof and shared planning authority. Four
+admission tests verify complete occupied-support complex amplitudes and unit
+support probability on an 83-bit program, no truncation or dense conversion,
+insufficient-memory and unproved-long-interval refusal, and unchanged small
+statevector routing. Sixteen basis-MPS and four original zero-walk regressions
+also pass. This is local exact execution evidence, not application cancellation,
+Notebook completion, accelerator or distributed scalability evidence.
+
+Run `python -m pytest tests/integration/test_synthesis_native_interval_mps.py tests/integration/test_synthesis_native_basis_mps.py tests/integration/test_synthesis_qmod_tensor_zero_walk.py -q`.
+
+## Native scalar reset channel
+
+Local CPU semantic evidence covers Bell-partner mixed states, repeated resets,
+mutable helper use, ownership/reversible-scope/control refusals and density
+memory/operation budgets. Ten new reset tests, four exact-interval MPS tests,
+seven Qmod thermal/reset regressions and twelve public API tests pass. The
+implementation reuses existing channel lowering and density execution; no new
+numerical backend or thermal-algorithm completion is claimed.
+
+Run `python -m pytest tests/integration/test_synthesis_native_reset.py tests/integration/test_synthesis_native_interval_mps.py tests/integration/test_synthesis_qmod_thermal_reset.py tests/unit/test_public_api_candidate.py -q`.
+
+
+## Native bounded truth predicates and coherent workspace execution
+
+Maturity: `development_evidence`. Eight-bit exact predicate evaluation reuses
+Boolean word arithmetic and bounded disjoint covers. Independent basis-XOR and
+complex Circuit tests check all 256 assignments, arbitrary target values,
+absolute phase, clean work and actual gate/width refusals. All three register
+schedules retain the same limits. Closed-boundary normalization reuses existing
+exact cancellation rather than changing the source budget or optimality claim.
+
+Simulation's computational-fiber checker covers CH and CRZ with full dense
+Circuit comparisons, control interference and unsafe/dirty-fiber refusals.
+These are local CPU correctness results, not accelerator or distributed claims.
+The complete native double-slit program has separate independent mathematical
+and Circuit acceptance tests; the related application Notebook remains a
+separate workflow.
+
+## Native unsigned numeric borrows
+
+Maturity: `development_evidence`. Raw unsigned QNum helpers borrow static
+subwords and explicitly ordered storage without a data copy or allocation.
+Predicates resolve formal-relative slices; bounded modular increments preserve
+nonselected bits, wraparound and cross-component carry. Independent Circuit
+permutations check complete basis domains and complex coherent inputs, including
+controlled updates, adjoint, within/apply and clean workspace. Indexed in-place
+preparation composes on partial storage and through nested controls with its
+existing eight-location bound. Const, initialization, format, overlap, Output
+escape and actual resource refusals remain checked. Signed/fractional sliced
+arithmetic and dynamic views remain unsupported. These local CPU tests do not
+establish native Vlasov acceptance or release readiness.
+
+## Native pure-callback phase consistency
+
+Maturity: `development_evidence`. Whole-register and sliced borrowed helpers
+reuse the existing direct phase capture while expanding pure callbacks. Plain
+word phases and bounded predicate phases retain conditional scalar phase under
+QPE powers, without an artificial arithmetic scratch lifetime. Independent
+matrix powers and Fourier references cover quantum counting, Grover-operator
+QPE and nonzero coherent inputs. Nested phase-only helpers and adjoints have
+separate complex-state tests. This does not admit general QPE scratch, change
+the 4096 expanded-effect ceiling or establish native Vlasov acceptance.

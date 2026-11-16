@@ -28,3 +28,8 @@ part of reusable structure identity.
 
 [Supported constructs and lowering details](IMPLEMENTATION.md) describe the
 bounded profiles, parameter flow, and migration constraints.
+
+`unitary_effects.py` owns the closed inverse rules for checked register-unitary
+effects. Native construction and the external source adapter share these rules;
+source-specific diagnostics and storage binding checks remain at their capture
+boundaries. No execution or new IR representation is introduced.

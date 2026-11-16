@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/linear_pauli_rotations/linear_pauli_rotations.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "0ca012b95dedab4226fe65e97ae62cfcb890633a78db4882d0bfddac29f584bb",
+  "native_entrypoint": "examples.synthesis.functions.linear_pauli_rotations.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_indexed_rotations.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Compose each affine Y rotation from its offset and six weighted one-bit controls. Static borrowed scalar helper locations reuse checked Pauli effects. Preserve unsigned six-bit significance and three target slopes/offsets. Additional input preparation is optional for independent semantic checks; the default matches the original fresh-zero input. No source importer, physical lines or work qubits."
+}

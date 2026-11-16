@@ -527,6 +527,22 @@ EVIDENCE: tuple[KernelEvidence, ...] = (
             "benchmarks/results/local/flagtree_tle_sharded_adjoint_a800.json",
         ),
     ),
+    _evidence(
+        "FQKI-TRITON-SV-003-C",
+        "tests/unit/test_statevector_cx_fp64.py::test_cx_sequence",
+        gradient_tests=("tests/unit/test_statevector_cx_fp64.py::test_cx_derivatives",),
+    ),
+    _evidence(
+        "FQKI-TRITON-SV-090-A",
+        "tests/unit/test_statevector_ry_fp64.py::test_fused_actions",
+    ),
+    _evidence(
+        "FQKI-TRITON-GR-090-A",
+        "tests/unit/test_statevector_ry_fp64.py::test_fused_actions",
+        gradient_tests=(
+            "tests/unit/test_statevector_ry_fp64.py::test_rotation_derivatives",
+        ),
+    ),
 )
 
 

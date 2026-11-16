@@ -1,0 +1,14 @@
+{
+  "upstream_path": "community/basic_examples/superposition/superposition.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "6c36cef20594d7ce7d14c4cd9fc0227e96d8f15b",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "b4f5dc5c5004550bd156902f3f42d57b83fee5d0b36da2f08b80ff9d6d55bc02"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.community.basic_examples.superposition.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "scope": "Complete local tutorial workflow: composed preparation, synthesis and visualization. Text circuit drawing replaces the upstream cloud viewer. Native execution, analytical state and independent Circuit additionally verify the quantum result."
+}

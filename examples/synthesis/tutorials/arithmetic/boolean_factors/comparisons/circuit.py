@@ -1,14 +1,10 @@
-"""Compare Qmod and native qfunc against the independent Circuit."""
-
-from pathlib import Path
+"""Compare native FlagQuantum and independent Circuit amplitudes."""
 
 import torch
 
 import flagquantum as fq
 from examples.synthesis.tutorials.arithmetic.boolean_factors.main import main
-from flagquantum.synth import (
-    synthesize,
-)
+from flagquantum.synth import synthesize
 
 
 def circuit_reference() -> fq.Circuit:
@@ -21,24 +17,19 @@ def circuit_reference() -> fq.Circuit:
     return circuit
 
 
-QMOD = Path(__file__).with_name("source.qmod").read_text(encoding="utf-8")
-
-
 def run_example() -> None:
     expected = fq.run(circuit_reference()).statevector().reshape(-1)
-    for source in (main, QMOD):
-        program = (
-            synthesize(source, source_format="qmod", memory_limit_bytes=64 * 1024**2)
-            if isinstance(source, str)
-            else synthesize(source, memory_limit_bytes=64 * 1024**2)
-        )
+    for source in (main,):
+        program = synthesize(source, memory_limit_bytes=64 * 1024**2)
         actual = fq.run(program).statevector().reshape(-1)
         workspace = program.circuit.n_wires - 4
         embedded = torch.zeros_like(actual)
         embedded[:: 1 << workspace] = expected
         torch.testing.assert_close(actual, embedded, atol=1e-12, rtol=0)
         print(program.report["resources"])
-    print("Native qfunc and Qmod match Circuit, including clean workspace.")
+    print(
+        "Native qfunc and Circuit agree, including absolute phase and clean workspace."
+    )
 
 
 if __name__ == "__main__":

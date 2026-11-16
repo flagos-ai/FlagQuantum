@@ -1,0 +1,7 @@
+{
+  "upstream_path": "applications/finance/credit_card_fraud/credit_card_fraud.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "e51f68346a2580027b751bda6aacd9cf8c1e610ef828c8a6260203c8bd88e140",
+  "scope": "Complete retained quantum program; companion workflows pending.",
+  "native_semantic_adaptations": "Retain both real[3] data inputs, two feature layers and all six ordered commuting Pauli factors per layer. Six native product-formula calls replace the source multi-call. The inverse reverses layers, Hadamards and rotations. Two nonzero data pairs are checked."
+}

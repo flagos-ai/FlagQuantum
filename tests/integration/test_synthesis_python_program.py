@@ -1,5 +1,6 @@
 """Whole Python qfunc workflows share preparation, arithmetic and checked run/read."""
 
+from pathlib import Path
 from typing import Literal
 
 import pytest
@@ -7,17 +8,20 @@ import torch
 
 import flagquantum as fq
 from examples.synthesis.tutorials.composition.python_program.comparisons.circuit import (
-    QMOD,
     circuit_reference,
 )
 from examples.synthesis.tutorials.composition.python_program.main import main
 from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python_program import program_definition
 
 pytestmark = pytest.mark.integration
+QMOD = (
+    Path(__file__).resolve().parents[1]
+    / "fixtures/classiq_qmod/example_references/tutorials/composition/python_program/comparisons/source.qmod"
+).read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize("objective", ["width", "depth"])

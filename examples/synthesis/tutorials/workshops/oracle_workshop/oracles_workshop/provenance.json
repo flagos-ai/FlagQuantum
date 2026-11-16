@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/workshops/oracle_workshop/oracles_workshop.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "b998fb0d44784390446d1c1f79c157c7007c831762709870f32e4cb0b8aa8322",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.oracle_workshop.oracles_workshop.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_phase_predicates.py",
+  "scope": "Quantum program only; the associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve uniform preparation, two Grover iterations and the mathematical comparison x-y==2, including negative unmarked differences. The phase predicate uses no marker or workspace; an independent truth table and dense oracle/reflection matrices verify all amplitudes."
+}

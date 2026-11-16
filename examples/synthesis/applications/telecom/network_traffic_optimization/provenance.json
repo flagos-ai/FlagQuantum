@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/telecom/network_traffic_optimization/network_traffic_optimization.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "7dab65c073d8084c2137b6c5d3024b403c1eb13bb37a4ffae8521d2faf194ed2",
+  "native_entrypoint": "examples.synthesis.applications.telecom.network_traffic_optimization.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_flow_costs.py",
+  "scope": "Complete retained 24-bit 5-layer quantum program. Two nonzero parameter vectors and both width/depth objectives; raw full-state comparison with independent factored classical costs and Circuit parities. Complete Notebook optimizer workflow remains pending.",
+  "native_semantic_adaptations": "Parameters retain interleaved gamma/beta order. Native static loops replace repeat/apply_to_all. Source coefficients, widths and layers are unchanged. No source importer in user examples. Each reference factor enumerates at most six logical bits, with independent Walsh spin-parity Circuit construction; no Compiler algorithms reused. Retain source rounded edge weights, all three flow commodities, and cubic congestion equivalent to a capacity-two threshold, including the all-three-selected state. It is not reduced to a purely quadratic cost."
+}

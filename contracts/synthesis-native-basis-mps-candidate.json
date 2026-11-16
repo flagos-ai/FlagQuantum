@@ -1,0 +1,14 @@
+{
+  "schema": "flagquantum.synthesis_native_basis_mps_admission",
+  "version": "1.0",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-BASIS-MPS-20261110.md",
+  "profile": "exact_computational_basis_mps",
+  "initial_state": "raw_circuit_ir_implicit_zero",
+  "gate_arities": {"i": 1, "x": 1, "z": 1, "ccx": 3},
+  "intermediate_bond_bound": 1,
+  "minimum_physical_wires": 33,
+  "allow_approximate": false,
+  "allow_backend_fallback": false,
+  "implementation_authorized": true,
+  "release_authorized": false
+}

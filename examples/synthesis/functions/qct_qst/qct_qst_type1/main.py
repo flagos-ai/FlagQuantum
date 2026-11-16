@@ -1,0 +1,61 @@
+"""Native high-level qct_qst_type1 over the complete retained amplitude vector."""
+
+import flagquantum as fq
+from flagquantum import synth
+from flagquantum.synth import Output, QNum, prepare_amplitudes, qct_qst_type1, qfunc
+
+AMPLITUDES = (
+    0.271876012077983,
+    0.111698296053364,
+    0.088554482817766,
+    0.215213054529158,
+    0.280854283813349,
+    0.16516523550762,
+    0.382854352438831,
+    0.267332399091042,
+    0.187738165823386,
+    0.212529084186698,
+    0.186003700679956,
+    0.395147524523994,
+    0.237707710537212,
+    0.032345631409255,
+    0.215741396713795,
+    0.399996124724427,
+)
+
+
+@qfunc
+def main(x: Output[QNum]) -> None:
+    prepare_amplitudes(
+        [
+            0.271876012077983,
+            0.111698296053364,
+            0.088554482817766,
+            0.215213054529158,
+            0.280854283813349,
+            0.16516523550762,
+            0.382854352438831,
+            0.267332399091042,
+            0.187738165823386,
+            0.212529084186698,
+            0.186003700679956,
+            0.395147524523994,
+            0.237707710537212,
+            0.032345631409255,
+            0.215741396713795,
+            0.399996124724427,
+        ],
+        0.0,
+        x,
+    )
+    qct_qst_type1(x)
+
+
+def build_program() -> synth.Program:
+    return synth.synthesize(main, max_workspace=0)
+
+
+if __name__ == "__main__":
+    program = build_program()
+    result = fq.run(program)
+    print(dict(program.probabilities(result, registers=("x",))))

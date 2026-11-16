@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/gqsp/gqsp.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "6f051bfbd054d9511f4166d8678202841ecaa457cf2cb0d32be0c994d449f3d3",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.gqsp.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_gqsp.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve seven phase triples, seven-bit unsigned fraction and default negative_power3. For this fixed u(x)=phase(2*pi*x), native root phase arithmetic x*(1-ind) and -x*ind gives coherent positive/negative controls. Native rotate retains X/U/X/Z order including absolute global phase. Both unchanged-source/native/independentCircuit fullstates and two further nonzero phase models with indicator0/1 and negative_power0/3/7 pass. Source boundary negative_power7 repeats phase row0 after the initial rotation and is preserved. No arbitrary higher-order GQSP callback, dynamic-loop, Compiler or API claim."
+}

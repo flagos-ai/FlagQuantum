@@ -1,0 +1,77 @@
+{
+  "schema": "flagquantum.qec.dem-sampling.v1-candidate",
+  "approval": {
+    "proposal_sha256": "cfd7b071023e7658501ea2419bbc513d9efdeced495a548036a45a11631aca73",
+    "status": "explicitly approved by API owner on 2026-11-12"
+  },
+  "owner": "integration; Core model facade, Simulation numerical implementation",
+  "methods": {
+    "compile_sampler": [
+      "self",
+      "seed"
+    ],
+    "sample": [
+      "self",
+      "shots",
+      "bit_packed",
+      "return_errors",
+      "recorded_errors_to_replay"
+    ],
+    "sample_write": [
+      "self",
+      "shots",
+      "det_out_file",
+      "det_out_format",
+      "obs_out_file",
+      "obs_out_format",
+      "err_out_file",
+      "err_out_format",
+      "replay_err_in_file",
+      "replay_err_in_format"
+    ]
+  },
+  "outputs": [
+    "detectors",
+    "observables",
+    "errors_or_none"
+  ],
+  "error_columns": "Canonical model.errors order; never input tuple or upstream text order.",
+  "formats": [
+    "01",
+    "b8",
+    "r8",
+    "ptb64",
+    "hits",
+    "dets"
+  ],
+  "source_files": 98,
+  "translation_units": 37,
+  "limits": {
+    "principal_bytes": 67108864,
+    "output_bytes": 1073741824,
+    "replay_file_bytes": 1073741824,
+    "dem_text_bytes": 1048576,
+    "dimension": 65536,
+    "targets": 262144,
+    "stripe_shots": 1024
+  },
+  "preserved": [
+    "dem_sampling signature, RNG and DemSample fields",
+    "all stated error_id serialization refusals",
+    "existing exports and historical API baselines"
+  ],
+  "differences_from_stim": [
+    "CPU Torch results/replay",
+    "owned canonical mechanism order",
+    "no destination replacement",
+    "bounded dimensions and memory",
+    "existing model rejection domain"
+  ],
+  "zero_shots": "Empty outputs and no RNG advance",
+  "failure": "Early validation preserves handle; execution/publication error invalidates; no automatic fallback or retry.",
+  "additive_methods": {
+    "DetectorErrorModel": {
+      "compile_sampler": "(self, *, seed: 'int | None' = None) -> 'CompiledDemSampler'"
+    }
+  }
+}

@@ -44,7 +44,7 @@ inside the existing register program. A later frontend can admit the action
 without requiring a caller-owned flag, manual uncomputation or another executor.
 There is no new public builder, decorator or role syntax in this slice.
 
-Run `python -m examples.synthesis.tutorials.control.register_phase.main` for the **private contributor
+Run `python -m tools.synthesis_compiler_examples.register_phase.main` for the **private contributor
 trial**. Its owned-IR producer declares four outputs, prepares x/y, copies a
 basis reference from x, calls the predicate phase, flips x, computes a product,
 calls the predicate again on product/y, then applies H to y for interference.

@@ -27,10 +27,10 @@ routing and cleanup, rather than the arithmetic block alone.
 ## Runnable expert workflow
 
 ```bash
-python -m examples.synthesis.tutorials.workspace.execution_contract.main
+python -m tools.synthesis_compiler_examples.execution_contract.main
 ```
 
-The [complete example](../../examples/synthesis/tutorials/workspace/execution_contract/main.py) uses the
+The [complete example](../../tools/synthesis_compiler_examples/execution_contract/main.py) uses the
 existing `fq.plan` and `fq.run(plan)` entry points:
 
 ```python

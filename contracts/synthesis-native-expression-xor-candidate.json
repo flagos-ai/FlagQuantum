@@ -1,0 +1,19 @@
+{
+  "schema": "flagquantum.synthesis_native_expression_xor_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "operation": "initialized_unsigned_root_output ^= checked_unsigned_expression",
+  "internal_effect": "qreg.xor",
+  "semantics": "target XOR zero_extended_expression; no truncation or target alias",
+  "target_zero_assumption": false,
+  "self_inverse": true,
+  "borrowed_helpers": false,
+  "signed_scaled_expressions": false,
+  "new_physical_ir_opcode": false,
+  "authority": "existing checked arithmetic and Boolean XOR lowering",
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-EXPRESSION-XOR-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

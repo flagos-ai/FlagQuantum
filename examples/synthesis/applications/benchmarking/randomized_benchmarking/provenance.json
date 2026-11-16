@@ -1,0 +1,7 @@
+{
+  "upstream_path": "applications/benchmarking/randomized_benchmarking/randomized_benchmarking.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "0736cf0c45627639f7fa7a300702f166fa8cf459baf09708fffdbe5e75c486f5",
+  "scope": "Complete retained quantum program; companion workflows pending.",
+  "native_semantic_adaptations": "Retain all25 forward operations and their inverse, including identity gates. A local SX helper explicitly retains exp(i*pi/4). Gate-level Circuit SX is the independent reference; absolute phases are never aligned away."
+}

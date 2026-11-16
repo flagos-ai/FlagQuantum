@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/quantum_state_preparation/gibbs/quantum_thermal_state_preparation.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "2a966c74216e513a8e492982791cdb0d85a8273fa89dd852ce908de88c68ccb9",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_state_preparation.gibbs.quantum_thermal_state_preparation.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_thermal.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Nested record fields are exposed as named arrays and scalar flags, retaining raw Bohr Fourier/table indexing, all 50 cycles and 400 actual reset channels. An exact energy polynomial and two bounded three-bit Pauli selection matrices replace expanded gate helpers. No dense whole-block matrix or pure-state substitution is used. Acceptance checks full density matrices and encoded-block absolute phase."
+}

@@ -1,0 +1,4 @@
+qfunc main(output q:qbit[1]) {
+  allocate(q);hadamard_transform(q);
+  suzuki_trotter([PauliTerm {pauli=[Pauli::Z],coefficient=1}],0.37,1,1,q);
+}

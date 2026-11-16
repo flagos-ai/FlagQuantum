@@ -1,0 +1,6 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/multiplication/multiplication_2vars_example.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5322769f60fad0608e6c2446fb7b04d85828a277e00f401d1baed3b562016233",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

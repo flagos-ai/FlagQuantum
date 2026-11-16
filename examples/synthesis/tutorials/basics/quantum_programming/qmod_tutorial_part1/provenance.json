@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "2787ceb72a1199c2268bd0dc89b604c25a42da1bb539810518b2ba6eeacbfcc7",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.qmod_tutorial_part1.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_phase_applications.py",
+  "scope": "Complete retained fixed four-bit phase/interference program. Polynomial pi*(product of all four bits + bit3) represents both source controlled constants exactly, including their cancellation on 1111. This algebraic native expression does not claim general array control syntax. The original has no configurable classical parameters. Full teaching Notebook remains pending.",
+  "native_semantic_adaptations": "Reuse existing checked native polynomial phase, numeric/array allocation and loop/evolution effects. Explicit native storage is not general qstruct, numeric-array or array-control support. All source coefficients, phase conventions and layers are retained. No source importer is used in user examples."
+}

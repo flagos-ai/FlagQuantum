@@ -41,7 +41,11 @@ from flagquantum.simulation.statevector.operations import (
     _combine_rank_pair_gate_eager,
     _instruction_matrix,
 )
-from flagquantum.simulation.statevector.program import _StatevectorCZGraphStep
+from flagquantum.simulation.statevector.program import (
+    _StatevectorCZGraphStep,
+    _StatevectorDisjointDenseStep,
+    _StatevectorFusedGateStep,
+)
 from flagquantum.simulation.statevector.two_qubit_cpu import (
     _apply_adjacent_two_qubit_matrix_cpu,
     _apply_strided_two_qubit_matrix_cpu,
@@ -275,9 +279,21 @@ def test_native_fused_rotation_batch_layer_does_not_bypass_autograd(
     )
 
 
+@pytest.mark.parametrize("native_available", (False, True), ids=("portable", "native"))
 def test_native_fused_rotation_layer_only_promotes_terminal_regions(
     monkeypatch: pytest.MonkeyPatch,
+    native_available: bool,
 ) -> None:
+    if native_available:
+        if not native_cpu_one_qubit_layer_available():
+            pytest.skip(
+                "The optional native CPU one-qubit layer operator is unavailable."
+            )
+    else:
+        monkeypatch.setattr(
+            fixed_layer_cpu, "native_cpu_one_qubit_layer_available", lambda: False
+        )
+
     circuit = Circuit(6, bsz=3, dtype=torch.complex128)
     for wire in range(6):
         circuit.ry(wire, 0.1 + 0.01 * wire)
@@ -287,29 +303,56 @@ def test_native_fused_rotation_layer_only_promotes_terminal_regions(
         circuit.ry(wire, 0.3 + 0.01 * wire)
         circuit.rz(wire, -0.4 - 0.01 * wire)
 
+    monkeypatch.setenv("FQ_CPU_NATIVE_PARAMETERIZED_ONE_QUBIT_LAYER", "1")
     monkeypatch.setenv("FQ_CPU_NATIVE_FUSED_ROTATION_LAYER", "1")
-    circuit.state(refresh=True)
+    actual = circuit.state(refresh=True)
+    native_region_count = circuit._last_statevector_runtime[
+        "native_cpu_parameterized_one_qubit_layer_regions"
+    ]
     program = next(
         value
         for key, value in circuit._backend_programs.items()
         if key and key[0] == "statevector"
     )
     native_regions = tuple(
-        step for step in program if bool(getattr(step, "native_parameterized", False))
+        step
+        for step in program
+        if isinstance(step, _StatevectorDisjointDenseStep) and step.native_parameterized
     )
 
+    monkeypatch.setenv("FQ_CPU_NATIVE_FUSED_ROTATION_LAYER", "0")
+    expected = circuit.state(refresh=True)
+    torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
+
+    if not native_available:
+        assert native_regions == ()
+        assert native_region_count == 0
+        return
+
     assert tuple(len(step.regions) for step in native_regions) == (6,)
-    assert all(
-        tuple(instruction.name for instruction in region.instructions) == ("ry", "rz")
-        for region in native_regions[0].regions
-    )
+    for region in native_regions[0].regions:
+        assert isinstance(region, _StatevectorFusedGateStep)
+        assert tuple(instruction.name for instruction in region.instructions) == (
+            "ry",
+            "rz",
+        )
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("native_available", (False, True), ids=("portable", "native"))
 def test_native_rotation_clifford_tiles_match_rollback_and_preserve_input(
     monkeypatch: pytest.MonkeyPatch,
     dtype: torch.dtype,
+    native_available: bool,
 ) -> None:
+    if native_available:
+        if not native_cpu_one_qubit_layer_available():
+            pytest.skip(
+                "The optional native CPU one-qubit layer operator is unavailable."
+            )
+    else:
+        monkeypatch.setenv("FQ_NATIVE_CPU_ONE_QUBIT_LAYER", "0")
+
     generator = torch.Generator().manual_seed(9127)
     inputs = (
         torch.randn((3, 256), generator=generator)
@@ -332,7 +375,13 @@ def test_native_rotation_clifford_tiles_match_rollback_and_preserve_input(
     tolerance = 2e-5 if dtype == torch.complex64 else 2e-12
     torch.testing.assert_close(actual, expected, atol=tolerance, rtol=tolerance)
     torch.testing.assert_close(inputs, original, atol=0, rtol=0)
-    if native_cpu_one_qubit_layer_available():
+    if not native_available:
+        assert all(
+            not getattr(step, "fused_cx_controls", ())
+            for program in circuit._backend_programs.values()
+            for step in program
+        )
+    else:
         selected_program = next(
             value
             for key, value in circuit._backend_programs.items()

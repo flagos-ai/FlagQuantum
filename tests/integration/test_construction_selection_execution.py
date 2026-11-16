@@ -11,7 +11,6 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis.tutorials.workspace.selection.main import polynomial, pressure
 from flagquantum.compiler._construction.constraints import CircuitLimits
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.selection import select_arithmetic
@@ -19,6 +18,7 @@ from flagquantum.compiler._construction.target import Target
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.runtime.execution_plan_contract import plan_execution_program
 from flagquantum.services._synthesis_execution import inspect_execution
+from tools.synthesis_compiler_examples.selection.main import polynomial, pressure
 
 pytestmark = pytest.mark.integration
 BASIS = ("x", "h", "s", "sdg", "t", "tdg", "ry", "rz", "cx", "u3", "swap")
@@ -69,7 +69,7 @@ def _assert_prediction(plan, product):
 
 def test_selection_example_executes_both_constraint_driven_choices() -> None:
     run = subprocess.run(
-        [sys.executable, "-m", "examples.synthesis.tutorials.workspace.selection.main"],
+        [sys.executable, "-m", "tools.synthesis_compiler_examples.selection.main"],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,
@@ -215,7 +215,7 @@ def test_cost_example_reproduces_full_matrix_and_current_manual_comparison() -> 
         [
             sys.executable,
             "-m",
-            "examples.synthesis.tutorials.workspace.selection_costs.main",
+            "tools.synthesis_compiler_examples.selection_costs.main",
         ],
         cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
@@ -249,7 +249,7 @@ def test_cost_example_reproduces_full_matrix_and_current_manual_comparison() -> 
 
 
 def test_manual_baseline_and_selected_polynomial_share_real_coherent_outputs() -> None:
-    from examples.synthesis.tutorials.workspace.selection_costs.main import (
+    from tools.synthesis_compiler_examples.selection_costs.main import (
         manual_polynomial,
     )
 

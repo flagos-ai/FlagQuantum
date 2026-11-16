@@ -138,7 +138,7 @@ def project(state, angle):
     return state * torch.exp(1j * angle * (aux_after_compute.to(torch.float64) - 0.5))
 
 
-def reference(source, cycles=95):
+def reference(source: str, cycles: int = 95) -> torch.Tensor:
     phases = [
         float(x.strip().strip("()"))
         for x in re.search(r"qsvt_inversion_expanded___0\(\[([^]]+)\]", source)

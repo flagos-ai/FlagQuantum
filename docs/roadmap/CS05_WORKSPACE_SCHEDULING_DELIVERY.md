@@ -23,7 +23,7 @@ unequal widths, zero products and explicit helper calls.
 Run the complete developer trial:
 
 ```bash
-python -m examples.synthesis.tutorials.workspace.workspace.main
+python -m tools.synthesis_compiler_examples.workspace.main
 ```
 
 It prints both candidates for three unsigned input widths, re-emits each with

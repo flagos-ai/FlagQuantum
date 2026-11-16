@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/grover_mixer_qaoa/gm_qaoa.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "2cc21d5787bc600ce85865478190a8ae8ab1f7a3d581cfe99b35ca8524786d4f",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.grover_mixer_qaoa.gm_qaoa.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_grover_mixer.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve the full16-column Dicke preparation unitary and its inverse, original rounded rotation constants,3 cost/mixer layers and6 bound angles. Existing S/adjoint/CRX composition implements controlled RY exactly. Replace source temporary low/high register rebinding with an equivalent bounded zero predicate and conditional phase including the RZ half-angle offset. Independent Circuit uses direct controlled RY and an explicitly enumerated mixer diagonal. Two nonzero parameter sets preserve absolute amplitudes and single-excitation probabilities. Zero workspace trades additional operations/depth for one fewer physical qubit; no general resource improvement is claimed. No new Compiler/export/opcode."
+}

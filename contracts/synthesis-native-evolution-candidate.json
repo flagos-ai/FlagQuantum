@@ -1,0 +1,14 @@
+{
+  "schema": "flagquantum.synthesis_native_evolution_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [
+    "suzuki_trotter"
+  ],
+  "signatures": {
+    "suzuki_trotter": "(operator: 'Observable', time: 'float', order: 'int', repetitions: 'int', target: 'QNum | QArray[QBit]', /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-EVOLUTION-20261109.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

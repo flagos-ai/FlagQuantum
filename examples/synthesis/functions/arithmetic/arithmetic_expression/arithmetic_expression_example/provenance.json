@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a451bc15baa06de8659f5daa5f0759592a156b6e0b854bbea66858ec567c86cc",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.arithmetic_expression.arithmetic_expression_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_modulo.py",
+  "scope": "Complete local computational Notebook workflow: native quantum expression, synthesis, execution and 1000 seeded samples from executed named probabilities.",
+  "native_semantic_adaptations": "Preserve source unsigned integer domains and power-of-two remainder. Native fresh assignment prepares the same input values as allocation followed by XOR on zero. No native in-place XOR admission. Local seeded sampling replaces the cloud sampler; no hardware or remote service claim.",
+  "git_blob_sha1": "f34cf0e291d4220769713864abe533eb5d70527e",
+  "notebook_path": "functions/function_usage_examples/arithmetic/arithmetic_expression/arithmetic_expression_example.ipynb",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "9cffb183ae29f4df1817cf41f2c19cfecddabb08cfe7a05d36199966970b5e52"
+    },
+    {
+      "index": 3,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ]
+}

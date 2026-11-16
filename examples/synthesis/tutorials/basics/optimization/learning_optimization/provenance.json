@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/optimization/learning_optimization.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "5e08e5464c90509809a56be2976a7f82e8ed135b65ce380c9f2acf50a26fb621",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.optimization.learning_optimization.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_phase_applications.py",
+  "scope": "Complete retained eight-bit one-layer constraint optimization quantum program. Source two 2-bit numbers become native numeric ports x0,x1 and four slack bits become native slack array. Preserve the slack weights 1,2,4,3, residual offset 2 and penalty 20. Exact sum-X at beta/2 implements RX(beta), possibly changing local fused operation widths/counts; no hardware resource equivalence claim. Full Notebook optimizer remains pending.",
+  "native_semantic_adaptations": "Reuse existing checked native polynomial phase, numeric/array allocation and loop/evolution effects. Explicit native storage is not general qstruct, numeric-array or array-control support. All source coefficients, phase conventions and layers are retained. No source importer is used in user examples."
+}

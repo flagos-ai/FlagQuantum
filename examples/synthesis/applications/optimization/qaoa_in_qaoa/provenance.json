@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "a5de2295ec5484ce708ab519b7081fc149b08f196a067360fe89b574f55ceab6",
+  "native_entrypoint": "examples.synthesis.applications.optimization.qaoa_in_qaoa.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_penalty_qaoa.py",
+  "scope": "Complete 6-bit 2-layer quantum ansatz with every one of the 12 original cost terms and 4 bound angles. Two nonzero parameter vectors match the original and independent Circuit over all complex amplitudes, including identity phase and logical bit order. Complete Notebook optimization workflow remains pending.",
+  "native_semantic_adaptations": "Existing static Observable evolution, bounded quantum helpers, initial Hadamards, RX and static loops express exp(-i gamma H) followed by RX(beta). No new special-purpose synthesis API, production lowering or budget increase. Circuit references independently transform bounded Boolean spin truth tables; source data and native Observable coefficients are checked against frozen original literals. Zero workspace, both objective instruction sequences and actual resource refusals are verified. No user example imports Qmod."
+}

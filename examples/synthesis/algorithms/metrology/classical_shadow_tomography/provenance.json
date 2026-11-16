@@ -1,0 +1,6 @@
+{
+  "upstream_path": "algorithms/metrology/classical_shadow_tomography.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "47bb2be6b50c7e3753d5244b68035c7686a7350273a50f4a2e7c0494ce960464",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

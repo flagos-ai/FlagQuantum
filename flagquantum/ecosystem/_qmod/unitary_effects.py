@@ -4,31 +4,19 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import replace
 from typing import TYPE_CHECKING
 
 from ...compiler._hybrid.model import Operation, Value
+from ...compiler._hybrid.unitary_effects import (
+    PURE_EFFECTS as PURE_EFFECTS,
+)
+from ...compiler._hybrid.unitary_effects import (
+    inverse_effects as _compiler_inverse_effects,
+)
 from .syntax import Statement, Token, reject
 
 if TYPE_CHECKING:
     from .context import _Adapt
-
-PURE_EFFECTS = frozenset(
-    {
-        "qreg.gate",
-        "qreg.pair_gate",
-        "qreg.control_x",
-        "qreg.array_phase_flip",
-        "qreg.phase",
-        "qreg.control_phase",
-        "qreg.pauli_rotation",
-        "qreg.qft",
-        "qreg.inverse_qft",
-        "qreg.control_qft",
-        "qreg.inplace_prepare_amplitudes",
-        "qreg.unitary",
-    }
-)
 
 
 def preserves_basis_labels(op: Operation, readonly: set[tuple[Value, int]]) -> bool:
@@ -117,69 +105,18 @@ def emit_controlled_pauli(
             )
 
 
-def _inverse_specs(
-    token: Token, operations: Sequence[Operation]
-) -> list[tuple[str, Operation, dict[str, object]]]:
-    inverses: list[tuple[str, Operation, dict[str, object]]] = []
-    for op in reversed(operations):
-        attributes: dict[str, object] = dict(op.attributes)
-        opcode = op.name
-        if op.name in {"qreg.qft", "qreg.inverse_qft"}:
-            opcode = "qreg.inverse_qft" if op.name == "qreg.qft" else "qreg.qft"
-        elif op.name == "qreg.unitary":
-            attributes["matrix"] = tuple(
-                tuple((real, -imag) for real, imag in column)
-                for column in zip(*op.attributes["matrix"], strict=True)
-            )
-        elif op.name in {
-            "qreg.gate",
-            "qreg.control_qft",
-            "qreg.inplace_prepare_amplitudes",
-        }:
-            if attributes.pop("inverse", False) is not True:
-                attributes["inverse"] = True
-        elif op.name == "qreg.array_phase_flip" or (
-            op.name == "qreg.control_x"
-            and "indices" in attributes
-            or op.name == "qreg.pair_gate"
-            and attributes.get("gate")
-            in {
-                "cx",
-                "cz",
-                "swap",
-            }
-        ):
-            pass
-        elif op.name in {"qreg.phase", "qreg.control_phase", "qreg.pauli_rotation"} or (
-            op.name == "qreg.pair_gate"
-            and attributes.get("gate") in {"crx", "cry", "rzz"}
-        ):
-            angle = op.attributes.get("angle", math.pi)
-            if not isinstance(angle, (float, int)) or isinstance(angle, bool):
-                reject(token, "scope", "inverse requires a finite real rotation angle")
-            attributes["angle"] = -angle
-        else:
-            reject(
-                token,
-                "scope",
-                "invert cannot allocate or change ownership and requires checked reversible gates",
-            )
-        inverses.append((opcode, op, attributes))
-    return inverses
-
-
 def inverse_effects(
     token: Token, operations: Sequence[Operation]
 ) -> tuple[Operation, ...]:
-    return tuple(
-        replace(op, name=opcode, attributes=attributes)
-        for opcode, op, attributes in _inverse_specs(token, operations)
-    )
+    try:
+        return _compiler_inverse_effects(operations)
+    except ValueError as error:
+        reject(token, "scope", str(error))
 
 
 def emit_inverse(owner: _Adapt, token: Token, operations: Sequence[Operation]) -> None:
-    for opcode, op, attributes in _inverse_specs(token, operations):
-        owner.effect_op(opcode, token, op.operands[1:], **attributes)
+    for op in inverse_effects(token, operations):
+        owner.effect_op(op.name, token, op.operands[1:], **op.attributes)
 
 
 def is_reversible_scope(statement: Statement) -> bool:

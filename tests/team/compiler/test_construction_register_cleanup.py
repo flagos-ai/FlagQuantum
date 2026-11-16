@@ -5,12 +5,6 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis.tutorials.composition.register_cleanup.main import (
-    cleanup_composition,
-    copy_reference,
-    flag_value,
-    less,
-)
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import (
     Schedule,
@@ -32,6 +26,12 @@ from flagquantum.compiler._hybrid.model import (
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.core.ir import Instruction
 from tests.register_program_cases import Registers, pressure
+from tools.synthesis_compiler_examples.register_cleanup.main import (
+    cleanup_composition,
+    copy_reference,
+    flag_value,
+    less,
+)
 
 pytestmark = pytest.mark.unit
 

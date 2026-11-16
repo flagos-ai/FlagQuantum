@@ -1,16 +1,10 @@
-"""Compare Qmod and native qfunc against the independent Circuit."""
-
-from pathlib import Path
+"""Compare native FlagQuantum and independent Circuit amplitudes."""
 
 import torch
 
 import flagquantum as fq
-from examples.synthesis.tutorials.composition.integer_composition.main import (
-    main,
-)
+from examples.synthesis.tutorials.composition.integer_composition.main import main
 from flagquantum import synth
-
-QMOD = Path(__file__).with_name("source.qmod").read_text(encoding="utf-8")
 
 
 def run_example() -> None:
@@ -19,10 +13,7 @@ def run_example() -> None:
         .statevector()
         .reshape(-1)
     )
-    programs = (
-        synth.synthesize(QMOD, source_format="qmod"),
-        synth.synthesize(main),
-    )
+    programs = (synth.synthesize(main),)
     for program in programs:
         state = fq.run(program).statevector().reshape(-1)
         workspace = program.circuit.n_wires - 2
@@ -31,7 +22,7 @@ def run_example() -> None:
         torch.testing.assert_close(state, expected, atol=1e-12, rtol=0)
         print(program.report["resources"])
     print(
-        "Qmod integer composition, static native qfunc and Circuit agree, including global phase."
+        "Native qfunc and Circuit agree, including absolute phase and clean workspace."
     )
 
 

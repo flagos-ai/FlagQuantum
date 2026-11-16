@@ -1,0 +1,6 @@
+{
+  "upstream_path": "functions/qmod_library_reference/qmod_core_library/standard_gates/CRX.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "eebfba2ef3f88d6360b0e0a250122276bd85c1e2b6a64aa7fafdd29f45b598bc",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

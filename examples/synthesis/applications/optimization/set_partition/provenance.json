@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/set_partition/set_partition.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "9f81dad6502af4db63851b572bad3dac6b50ec69a0b01cd7a888c78bf5ee215e",
+  "native_entrypoint": "examples.synthesis.applications.optimization.set_partition.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qaoa_models.py",
+  "scope": "Complete retained 10-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "The sole fixed-width bit-array field is represented explicitly as Output[QArray[QBit]] named v, in the same physical and logical bit order; no general qstruct support is claimed. Native loops express repeat/apply_to_all and parameters retain source gamma-then-beta ordering. Preserve every weight, target67 and all three layers."
+}

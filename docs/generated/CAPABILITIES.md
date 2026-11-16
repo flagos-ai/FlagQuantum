@@ -37,8 +37,8 @@ This catalog is generated from the machine-validated
 | Inspect exact predicate phase construction and clean workspace | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis/tutorials/control/controlled_predicate/main.py) |
 | Mark a high-level predicate without writing gates or uncomputation | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis/tutorials/control/controlled_predicate/main.py) |
 | Fit a coherent one-bit control mask under a workspace ceiling | Coherent predicate phase synthesis | Development evidence | [Run example](../../examples/synthesis/tutorials/control/controlled_predicate/main.py) |
-| Run bounded local Qmod files or explicit source text | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/synthesis/tutorials/getting_started/source_trial/main.py) |
-| Distinguish parsed, lowered and actually verified original-source evidence | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../examples/synthesis/tutorials/getting_started/source_trial/main.py) |
+| Run bounded local Qmod files or explicit source text | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../tools/synthesis_import_examples/source_trial/main.py) |
+| Distinguish parsed, lowered and actually verified original-source evidence | Bounded native Qmod source and checked execution | Development evidence | [Run example](../../tools/synthesis_import_examples/source_trial/main.py) |
 | Inspect a circuit diagram in a terminal | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Render a figure for a document or notebook | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
 | Check a program's wiring and gate order by eye | Circuit drawing | Experimental | [Read guide](../../flagquantum/drawer/README.md) |
@@ -51,6 +51,15 @@ This catalog is generated from the machine-validated
 | Simulate a small or medium circuit exactly | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Train a parameterized quantum circuit | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Run local VQE and quantum machine learning | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
+| Supply a quantum state as execution data | External statevector execution inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Reuse a plan for compatible inputs | External statevector execution inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Differentiate input and gate parameters | External statevector execution inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Bind named scalar angles | Named runtime angle inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Reuse one plan across optimizer steps | Named runtime angle inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Preserve caller-owned PyTorch gradients | Named runtime angle inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Resume a partially frozen model | Training parameter checkpoint state | Experimental | [Run example](../../examples/local/train_parameters.py) |
+| Preserve optimizer moments | Training parameter checkpoint state | Experimental | [Run example](../../examples/local/train_parameters.py) |
+| Reject reordered optimizer parameters before loading | Training parameter checkpoint state | Experimental | [Run example](../../examples/local/train_parameters.py) |
 | Discover an executable scientific operation | Research capability discovery, execution, and evidence | Production supported | [Read guide](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
 | Preflight a bounded VQE request before numerical work | Research capability discovery, execution, and evidence | Production supported | [Read guide](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
 | Execute VQE with exact-reference and energy-variance validation | Research capability discovery, execution, and evidence | Production supported | [Read guide](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
@@ -405,8 +414,28 @@ This catalog is generated from the machine-validated
 | Check orbital gradients against finite differences | Real orbital-parameter gradients | Experimental | [Run example](../../examples/algorithms/fermion_orbital_rotation.py) |
 | Build a spinful open chain with explicit hopping, interaction and chemical potential | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard open chain | Experimental | [Run example](../../examples/algorithms/fermion_hubbard.py) |
+| Build a spinful periodic ring with each bond counted once | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
+| Measure complex one-body fermionic densities on matched full JW, parity or BK registers | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
+| Reconstruct one-body energy while retaining circuit-parameter gradients | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
+| Measure two-body fermionic densities on matched full JW, parity or BK registers | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
+| Reconstruct the energy of a small molecular state while retaining circuit-parameter gradients | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
+| Correct one- and two-body densities that violate fixed-particle linear identities | Fixed-particle fermionic density projection | Experimental | [Read guide](../../docs/development/FERMION_RDM_PROJECTION.md) |
+| Compare raw and projected constraint residuals and molecular energies | Fixed-particle fermionic density projection | Experimental | [Read guide](../../docs/development/FERMION_RDM_PROJECTION.md) |
+| Build a spinful model from explicit undirected edges, including branching and disconnected graphs | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
+| Reuse native encodings and train a bounded determinant pair with an independently verified spectator sign | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
+| Discover independent commuting X/Y/Z symmetries of a native Pauli operator | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
+| Restrict the binary candidate span and choose returned positive-generator eigenvalues explicitly | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
+| Discover a basis of diagonal symmetries of a native encoded operator | Diagonal fermion Z2 symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PARITY_DISCOVERY.md) |
+| Restrict discovery to an explicit candidate parity span and choose sector eigenvalues separately | Diagonal fermion Z2 symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PARITY_DISCOVERY.md) |
+| Build spinless chains and rings with one mode per site and unshifted neighboring density interactions | Spinless t-V chains and rings | Experimental | [Read guide](../../docs/development/FERMION_SPINLESS.md) |
+| Measure fixed-particle states through JW, parity and BK encoding | Spinless t-V chains and rings | Experimental | [Read guide](../../docs/development/FERMION_SPINLESS.md) |
 | Migrate existing OpenFermion operators into native algebra | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
 | Export native operators without changing their physical action | Optional OpenFermion operator conversion | Experimental | [Read guide](../../flagquantum/ecosystem/README.md) |
+| Reuse populated molecular integrals without implicit file access | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
+| Replace external molecular input while preserving native Hamiltonian and measurement consumers | Populated OpenFermion molecular data input | Experimental | [Read guide](../../flagquantum/ecosystem/chemistry/README.md) |
+| Migrate an existing InteractionOperator without pruning small coefficients | OpenFermion interaction operator input | Experimental | [Read guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md) |
+| Replace external operator input while preserving native encoding and UCCSD training consumers | OpenFermion interaction operator input | Experimental | [Read guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md) |
 
 ## Build and compile
 
@@ -454,7 +483,7 @@ Spell gates and states a target cannot express in the gates that target publishe
 
 ### Constrained coherent integer synthesis
 
-Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit unsigned comparisons and chains composed with and/or/not, coherent conditional values and static bounded range loops, then execute and read named registers through the existing runtime.
+Construct a checked reversible arithmetic circuit from bounded Python unsigned arithmetic and one-bit unsigned comparisons and chains composed with and/or/not, coherent conditional values and static bounded range loops, then execute and read named registers through the existing runtime. Root unsigned scalar Outputs also admit reversible expression XOR into initialized, nonzero or coherent targets.
 
 - **Maturity:** Development evidence
 - **Public API:** `flagquantum.synth.synthesize`, `flagquantum.synth.Program.probabilities`, `fq.run`
@@ -464,7 +493,7 @@ Construct a checked reversible arithmetic circuit from bounded Python unsigned a
 - **Distribution semantics:** `single_device_fast_path`
 - **Start:** [quick example](../../examples/synthesis/tutorials/composition/python_program/main.py)
 - **Documentation:** [guide](../../flagquantum/synth/README.md)
-- **Known boundary:** Python qfunc programs now admit in-program allocation/Hadamard preparation, fresh unsigned arithmetic and static Output/Const helper composition. QBit and generic or literal-width unsigned QNum annotations share existing Compiler register/effect verification and kernels; no Python bodies are executed. Root outputs are signature ports, and scalar preparation overrides are refused. Source/effect/model bounds and final memory/resource limits apply. Input/free/drop, arrays/views, locals, explicit phase/control/inverse, host callbacks, runtime classical parameters and general Python remain outside the typed profile. Multiplication by classical powers of two >=2 uses shifted copies without generic multiplication scratch when the full unsigned operand bound is positive; other cases retain generic lowering. Range-proven positive constant additions reuse result-only X/CX copies when constant bits are disjoint from the complete unsigned domain mask; zero, overlapping and quantum-quantum additions retain ripple lowering. This reduces some workspace costs without optimality or process peak-memory guarantees. Python capture admits positive literal powers 1..8, evaluating the base once and expanding through at most seven existing multiplications with full-domain and model budgets; exponent one reuses its operand. Bool, zero, negative, fractional, configured/computed and larger exponents remain refused. Unreleased unsigned-integer CPU profile with bounded Python syntax including all six unsigned comparisons and chained interval predicates and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
+- **Known boundary:** Native joint target sequences for inplace real/probability preparation and unitary flatten whole numeric/bit/array ports and existing explicit array views in least-significant-first order. Existing indexed effects enforce distinct initialized writable locations; nested/alias/Const/uninitialized selections refuse. Direct inplace subviews remain refused; vectors retain2..256 and matrices2..32 bounds. Lanchester preserves separate rabbits/time_index output names and entangled32entry preparation,all matrix/table entries,16physical/4work bits,20213operations/depth18016;independent complete states and exact field/phase marginals match original and two nonzero inputs. No record class or new numerical kernel is added. Native select_rotation admits finite static X/Y/Z raw-word tables on one-to-eight distinct initialized selector bits and a disjoint writable target, reusing the exact Walsh/Gray sequence extracted from Ecosystem into Compiler. Root pure within/adjoint matrix-QPE composes existing inverse effects without storage changes. Four matrix HHL native programs preserve all matrix/table entries and full environmental states; the rounded hhl_example input is explicitly normalized as approved while the original stays refused. The four-data-bit portfolio still needs three clean matrix-decomposition work bits. General controlled tables, implicit qstruct storage, flexible QPE callbacks and complete Notebook workflows remain pending. Native root matrix-only qpe accepts one zero-argument static unitary lambda and an allocated/unused whole1to8bit all-fractional signed/unsigned counter. Existing controlled matrix powers1to128 and inverse_qft retain numeric metadata,environment and actual costs. Two matrix originals/native keep9physical347ops/depth322 and11physical26898ops/depth23711,zero work. General callbacks,flexible powers,nested helper QPE and numeric-helper borrowing remain pending. Native root typed hidden handles and explicit drop reuse qreg.hidden/qreg.drop. Matching zero-argument constructors are captured without host execution; definite initialization and one root drop are required. Drop retains entangled environment without reset/uncompute/reuse; physical and memory costs remain charged, separate from clean workspace. Signature/view/Const drops, Output-helper escape, post-drop access and nested ownership changes refuse. The native swap program explicitly normalizes source rounded vectors as approved, preserves7physical/0work bits and full environmental amplitudes; native67operations/depth39 versus approved37operations/depth16 is semantic acceptance, not resource parity; unchanged original still refuses. Generic numeric-register helper borrowing remains refused; native matrix-QPE uses a dedicated checked composition without weakening that contract. Native control(bit, lambda: unitary(matrix,target)) and one-bit complement reuse bounded qreg.unitary block matrices with at most five combined selector/target qubits. Initialized writable selector and disjoint targets are required; Const selectors, computed predicates and multibit truth tests remain refused. All conditional global phases and actual unitary decomposition work remain checked. Harmonic oscillator preserves all64encoding entries and all32input columns; three binary-weighted controlled RY rotations replace eight equivalent branch matrices. Original/native both7physical/2work bits; native387operations/depth335 versus original3821operations/depth3339. This measured rotation-composition reduction is not global optimality or full Notebook acceptance. Native in-place real amplitude/probability preparation applies the existing exact unitary to initialized writable whole registers of2..256 entries, including plain mutable helpers and root inverses; quantum controls, Const and views remain refused. Static plain integer bindings and scoped loop indices specialize unsigned expression ASTs without host execution or float coercion. Native tridiagonal explicitly normalizes original rounded amplitudes as in the approved revision; unchanged originals remain refused. Its7physical/0work bits and23604operations/depth19568 trade fewer qubits for more operations versus approved10physical,17250operations/depth13899. Efficient typed predicate capture in mutable helpers remains a gap. Native root expression XOR admits only initialized owned unsigned scalar Outputs and existing checked unsigned expressions, with no target/input alias or truncation. It is self-inverse under root adjoint/within, restores actual work and invalidates dependent cleanup proofs without establishing a fresh-zero proof. Signed/scaled XOR expressions, arrays, subviews and borrowed mutable helpers remain refused; literal raw masks retain existing behavior. The concrete native square-root QSVT uses 17 physical/7 work qubits versus 13 physical/3 work qubits in its source, while operations/depth fall to 1437/1194 versus 2243/2053; these are measured tradeoffs, not an optimality claim. Native root unsigned arithmetic locals also admit standard Annotated[QNum, literal_width], normalized to existing local compute/uncompute/release; signed/scaled, symbolic and extra metadata remain refused. The concrete 26-phase fixed-point QSVT uses 21 physical/14 work qubits and 14015 operations/depth 10218 versus source 10 physical/3 work qubits and 20542 operations/depth 16850. Both preserve exact absolute phase and clean hidden work in local CPU comparisons; complete Notebook workflows remain pending. Native real phase expansion reuses the Compiler Boolean-factor pass after monomial-budget refusal: up to eight shared cubes of three-to-six distinct signed Boolean literals, exact fresh predicate computation and reverse cleanup. Small expressions and existing bounds retain their path. Facility Location has complete two-binding independent Circuit acceptance for all five layers, twelve decisions and five clean work bits. No factoring of conditional budget refusals or signed/scaled numeric words is added. The existing Boolean candidate keeps its twelve-bit intermediate-word ceiling; higher masks can require conservative lowering and fail physical memory budgets before allocation. Native suzuki_trotter/qdrift admit nonempty static slices and ordered bit lists/tuples in one initialized writable owner; local Observable indices map to view order, preserving spectator identity, absolute phase and fixed-seed sampling. Cross-owner, duplicate, invalid and Const views refuse. Small-owner compact products retain the existing precision guard and budgets. Fermi-Hubbard num_iter=1/2 has independent full-state Circuit acceptance over eight bits and zero scratch; associated Notebook workflow remains pending. Python qfunc programs now admit in-program allocation/Hadamard preparation, fresh unsigned arithmetic and static Output/Const helper composition. QBit and generic or literal-width unsigned QNum annotations share existing Compiler register/effect verification and kernels; no Python bodies are executed. Root outputs are signature ports, and scalar preparation overrides are refused. Source/effect/model bounds and final memory/resource limits apply. Input/free/drop, runtime classical feedback and general Python remain outside the typed profile. Unreleased native exact numeric admission includes signed integer allocation, fitting literal raw XOR, full-domain subtraction/negation, mixed-sign bitwise/equality, unsigned exact binary multiply and min/max. QNum width/sign/fraction annotations use checked scalar declaration metadata; explicit numeric_probabilities reads exact Fraction keys while raw probabilities remain unchanged. Scaled arithmetic inputs, general signed operators, numeric helpers/locals and signed/scaled phase/control reads remain refused. Typed synth.min/max preserve two-operand syntax without executing host comparisons. Unreleased native additions include bounded QBit arrays/views, sized locals, checked Const-only adjoint composition, static loops/branches and finite synthesis-time scalar/array parameter binding. Sparse real phase arithmetic and phase-only control may share read-only predicate/expression bits, including writable helper aliases; integer predicates use at most eight input bits, while the full phase uses at most 24 bits, degree 8, 256 monomials and 20,000 intermediate products. Host callbacks, chained native phase-guard comparisons, implicit multi-bit truth tests and arbitrary mutable-helper control or effectful adjoint remain refused. Pure unitary regions admit checked static mutable helpers and direct gates on existing initialized storage, retaining constant global phases; allocation and Output publication are refused. Literal-power phase expressions use the existing bounded sparse polynomial lowering. These are local CPU semantic admissions, not hardware or optimality certification. Multiplication by classical powers of two >=2 uses shifted copies without generic multiplication scratch when the full unsigned operand bound is positive; other cases retain generic lowering. Range-proven positive constant additions reuse result-only X/CX copies when constant bits are disjoint from the complete unsigned domain mask; zero, overlapping and quantum-quantum additions retain ripple lowering. This reduces some workspace costs without optimality or process peak-memory guarantees. Unsigned fresh-computation capture admits positive literal powers 1..8, evaluating the base once and expanding through at most seven existing multiplications with full-domain and model budgets; exponent one reuses its operand. Bool, zero, negative, fractional, configured/computed and larger exponents remain refused. Unreleased unsigned-integer CPU profile with bounded Python syntax including all six unsigned comparisons and chained interval predicates and one-bit and/or/not expressions, one-bit conditional value selection, static single-level classical ranges with scoped carried values, known input preparations and finite checked candidates; no arbitrary Python or statement-level Boolean control flow, general Qmod, Program/.fq serialization, noise, measurements, directed or allocated-layout admission, or optimality guarantee. A Program executes its checked plan and refuses execution overrides; changed constraints require resynthesis. Two independent developer trials and release review remain pending.
 
 ### Coherent predicate phase synthesis
 
@@ -566,6 +595,48 @@ Run exact circuits and differentiable quantum workloads on a CPU or one GPU.
 - **Start:** [quick example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py)
 - **Documentation:** [guide](../../examples/single_machine_quantum_ai/README.md)
 - **Known boundary:** Capacity is bounded by one device; distributed capacity claims use the sharded capability. The paired complex64/complex128 CPU grid in artifacts/development/representation_agreement_precision/ covers open-boundary transverse-field Ising at h=0.7, widths 4-20, depths 2/4, nearest-neighbour throughout and all-to-all at widths 4/8, with bond caps 4/16 and identical float32-initialized angles. Each precision has 22 untruncated cells: maximum relative energy spread is 4.10343e-06 for complex64 and 1.10583e-14 for complex128. The six truncated cells per precision reach 0.225926 and 0.28199 respectively; higher precision does not eliminate truncation error. Wider all-to-all configurations are explicitly skipped because contraction repeats per Pauli term. These measured bounds do not cover arbitrary circuits or GPU execution. CI exercises a subgrid in both precisions. Corrected state, observable and parameter-gradient conformance is recorded in artifacts/development/representation_conformance_cpu_20261102/: widths 4/8, depths 2/4, caps 4/16, both interaction structures and three seeds at both precisions, 48 complete cells per precision with 39 untruncated and nine truncated. State, observables, autograd, local scans and finite differences use the same grad-enabled forward. In untruncated cells the maximum MPS/TN gradient relative L2 errors are 3.99256e-15/2.27939e-15 at complex128 and 3.60876e-06/1.23751e-06 at complex64; normalized fidelity deficit is at most 3.33067e-16 and 2.25264e-13 respectively, with norm drift reported separately. Exact-map parameter shift agrees to 2.92733e-15 and 1.67403e-06 inside width eight. The explicitly authorized truncated rule remains approximate: three chain cells have step-consistent same-map derivative error 0.0887126-0.136455 at complex128. Six truncated all-to-all cells per precision carry near-degenerate actual intermediate SVD warnings; unstable double-precision finite differences are domain boundaries with no derivative-error aggregate. Float32 central differences are skipped as unsupported precision. Final ideal-state Schmidt gaps and finite local scans do not prove absence of intermediate degeneracy or existence/nonexistence of a derivative. Earlier October gradient artifacts are retained as historical evidence with corrected interpretation. The earlier precision grid measures forward-only execution rather than this training-forward path. Matched sharded/unsharded CPU MPS values and gradients at worlds 2/3/4, caps 2/64, are recorded in artifacts/development/mps_placement_conformance_cpu_20261102/ with full provenance, launch commands, tolerances, ownership, memory and communication metadata; relative placement errors are below 6e-16 in this small corpus. These bounds do not cover arbitrary circuits, GPU or accelerator execution, widths above the recorded corpus, optimizer steps or multi-step training, and do not promote performance or scalability claims.
+
+### External statevector execution inputs
+
+Execute an ordinary static Circuit with a per-call CPU initial state and replay its input-compatible plan.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.run`, `fq.ExecutionPlan`, `fq.save`, `fq.load`
+- **Runtime modes:** `statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `first_order_native_pytorch`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../flagquantum/runtime/README.md)
+- **Documentation:** [guide](../../docs/development/EXECUTION_INITIAL_STATE_PROPOSAL.md)
+- **Known boundary:** Exact unbatched CPU PyTorch statevectors and probability outputs only; ordinary static Circuit sources only. Matching complex precision and unit norm are required. Dynamic/QEC external inputs, precompiled sources, structured/matrix operations, other engines, accelerators, distribution, noise, shots and remote loading are unsupported. Plans record input requirements, not amplitudes; caller resupplies compatible input. Marked plan-only FQX saves are refused. Minimum state-plus-copy budget is not a kernel workspace, autograd or RSS bound. No release, performance or scalability claim.
+
+### Named runtime angle inputs
+
+Bind declared symbolic gate angles per execution and reuse an accepted symbolic plan.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.run`, `fq.Parameter`, `fq.ParameterExpression`, `fq.ExecutionPlan`, `fq.save`, `fq.load`
+- **Runtime modes:** `statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `first_order_native_pytorch`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../flagquantum/runtime/README.md)
+- **Documentation:** [guide](../../docs/development/EXECUTION_RUNTIME_INPUTS_PROPOSAL.md)
+- **Known boundary:** Exact unbatched CPU PyTorch statevectors and probability outputs for ordinary static Circuit sources only. All symbolic names must be bound each run using finite Python floats or matching real scalar CPU tensors. Plans retain no supplied values or graphs. Optimization is disabled. External initial states, tensor literals, structured/matrix/dynamic operations, synthesis Program, other engines, accelerators, distribution, noise, shots, observables and remote binding are unsupported. Marked plan-only FQX saves are refused. State-memory preflight does not bound kernel temporary memory, autograd or process RSS. No release or speedup claim.
+
+### Training parameter checkpoint state
+
+Resume qualified quantum training with frozen parameters, ordered optimizer bindings and transactional failure recovery.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.Module`
+- **Runtime modes:** `statevector`, `mps`, `tensor_network`
+- **Hardware:** `cpu`
+- **Gradient support:** `native_pytorch_step_boundary_resume`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/local/train_parameters.py)
+- **Documentation:** [guide](../../docs/guides/TRAINING_PARAMETERS.md)
+- **Known boundary:** V3 qualification covers certified captured builders and ordinary named symbolic Circuit templates with default construction initial state and no source Tensor literals. V1/v2 keep caller-owned flags. Unqualified frozen sources refuse save. Exact optimizer names/order are required. Aliases, duplicate/unregistered optimizer references, custom state hooks/loading methods/optimizers and shared or custom storage are refused. Successful restore clears gradients; accumulated gradients and live graphs are not resumed. The quantum-owner identity does not fingerprint arbitrary classical host code. Local CPU conformance does not promote accelerator, distributed, cross-Torch-version, performance or release support.
 
 ### Research capability discovery, execution, and evidence
 
@@ -1482,14 +1553,14 @@ Run native complex PyTorch simulation, gradients, hybrid training, noise, TEBD, 
 Sample reference-normalized detector flips and derive an exact DEM from one bounded native Clifford source and explicit measurement maps.
 
 - **Maturity:** Development evidence
-- **Public API:** `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`, `flagquantum.qec.execution.measurement_conversion.CompiledMeasurementsToDetectionEventsConverter.convert_file`, `flagquantum.qec.execution.shot_data.read_shot_data_file`, `flagquantum.qec.execution.shot_data.iter_shot_data_file`
+- **Public API:** `flagquantum.qec.DetectorErrorModel.compile_sampler`, `flagquantum.qec.execution.dem_sampling.CompiledDemSampler`, `flagquantum.Circuit.compile_detector_sampler`, `flagquantum.Circuit.detector_error_model`, `flagquantum.qec.execution.detector_sampling.CompiledDetectorSampler`, `flagquantum.qec.execution.measurement_conversion.CompiledMeasurementsToDetectionEventsConverter.convert_file`, `flagquantum.qec.execution.shot_data.read_shot_data_file`, `flagquantum.qec.execution.shot_data.iter_shot_data_file`, `flagquantum.qec.execution.shot_data.write_shot_data_file`
 - **Runtime modes:** `stabilizer`
 - **Hardware:** `cpu`
 - **Gradient support:** `unsupported`
 - **Distribution semantics:** `single_process`
 - **Start:** [quick example](../../examples/qec/native_detector_sampling.py)
 - **Documentation:** [guide](../../docs/development/QEC_NATIVE_DETECTOR_EXECUTION_PROPOSAL.md)
-- **Known boundary:** Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Selected PTB64 output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
+- **Known boundary:** Reusable independent DEM sampling adds canonical error replay and six-format streams under the existing independence refusal and 64 MiB principal/1 GiB file guards. macOS arm64 offline wheel/sdist and installed acceptance passed, including actual embedded calls without the Stim Python package; maturity is unchanged. Explicit Z records, default-state CPU PyTorch batch1, fixed Clifford/reset/single-slot X feedback and one-/two-qubit Pauli channels only. Exact DEM refusal is separate from sampling admission. No approximation, general feedback, mixed non-Clifford routing, performance, threshold or full parity claim. File conversion accepts six inputs and five outputs and passed actual-main installed acceptance in #1120. Shot-file reading is a new approved candidate with native/installed acceptance pending; zero columns refuse and the iterator requires an embedded build. Caller-owned shot-data writing is approved and under implementation: CPU dense bool or packed uint8, six Stim 1.16.0 formats, 64 MiB principal payload and 1 GiB output bounds, no destination replacement; installed acceptance is pending. Selected PTB64 conversion output and sweep files are refused. Snapshot and aggregate output guards are 1 GiB each; principal tables are guarded at 64 MiB, not process RSS. Two outputs publish sequentially without replacement. Existing maturity is retained for the previously evidenced scope.
 
 ### Real orbital-parameter gradients
 
@@ -1518,6 +1589,118 @@ Construct an open-chain Hamiltonian in the native fermionic algebra and measure 
 - **Start:** [quick example](../../examples/algorithms/fermion_hubbard.py)
 - **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_CHAIN.md)
 - **Known boundary:** Finite static real coefficients, interleaved spins and open one-dimensional chains only. No periodic boundaries, spinless variant, arbitrary graph or model optimizer. The constructor is symbolic; dense reference diagonalization and arbitrary-state preparation in the two-site example have exponential inspection cost and establish no many-body scalability, accelerator or distributed claim. No OpenFermion or Cirq dependency.
+
+### Spinful Fermi-Hubbard periodic ring
+
+Construct a static periodic ring in native fermionic algebra and reuse the existing measurement example with --periodic.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_ring`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_HUBBARD_RING.md)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_RING.md)
+- **Known boundary:** At least three sites, finite static real coefficients and interleaved spins only; each undirected ring bond is counted once, with unshifted U. One/two-site cycles are refused. No coefficient gradients, spinless variant, arbitrary graph, twisted boundary phases, magnetic field or model optimizer. Circuit-angle gradients in the composed native execution test do not make Hamiltonian coefficients trainable. The --periodic example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish many-body scalability, accelerator, distributed or full upstream model API compatibility. No OpenFermion or Cirq dependency.
+
+### Fermionic one-body density measurement
+
+Build Hermitian density observables and assemble their native expectations into a complex PyTorch tensor for one-body energy reconstruction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density.one_body_density_observables`, `flagquantum.algorithms.fermion.density.one_body_density`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `circuit_parameter_gradients_through_measured_tensor_assembly`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_one_body_density.py)
+- **Documentation:** [guide](../../docs/development/FERMION_ONE_BODY_DENSITY.md)
+- **Known boundary:** Exact local CPU expectation workflow on a full unreduced register, gamma[p,q]=<a-dagger[p] a[q]> in physical mode order. The caller supplies a preparation matched to the explicit JW, prefix-parity or Fenwick BK encoding and width; same-width encoding/order mismatches cannot be inferred from unlabelled values. The observable producer is static; tensor assembly preserves existing circuit-parameter gradients without making observable coefficients trainable. Requires n_modes**2 ordered finite real single-element CPU float32/float64 expectations of one dtype; returns complex64/complex128. Scientific acceptance uses complex128 through four modes; float32 assembly has unit evidence only. Conjugate symmetry is imposed by the measurement design, with no eigenvalue clipping, particle-number normalization or noise projection. Measurement/output count is O(n**2), encoded strings add width-dependent costs and runtime statevector storage remains exponential. No two-body density, molecular two-body energy, tapered/ancilla register support, automatic ansatz conversion, sampling/noise, hardware, accelerator, distributed or scalability qualification. Native workflow imports neither OpenFermion nor Cirq.
+
+### Fermionic two-body density measurement
+
+Build native two-body observables and assemble their expectations into a complex PyTorch tensor for molecular energy reconstruction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density.two_body_density_observables`, `flagquantum.algorithms.fermion.density.two_body_density`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `circuit_parameter_gradients_through_measured_tensor_assembly`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_two_body_density.py)
+- **Documentation:** [guide](../../docs/development/FERMION_TWO_BODY_DENSITY.md)
+- **Known boundary:** Exact local CPU expectations on a full matched JW, prefix-parity or Fenwick BK register. Requires at least two modes and binomial(n, 2)**2 ordered, finite, single-element float32 or float64 CPU expectations of one dtype. Returns a dense complex64 or complex128 tensor. Measurement count and output grow as O(n^4); statevector storage remains exponential. Complex128 evidence covers four modes; float32 coverage is limited to assembly. Observable coefficients are static; circuit-parameter gradients flow through measured-tensor assembly. No automatic encoding or mode-order inference, noise projection, N-representability enforcement, tapered or ancilla registers, sampling, accelerator, distributed or scalability qualification. Native workflow requires neither OpenFermion nor Cirq.
+
+### Fixed-particle fermionic density projection
+
+Project measured one- and two-body densities jointly onto known particle-number constraints without modifying the input tensors.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density_projection.project_fixed_particle_densities`
+- **Runtime modes:** `local_cpu_tensor`
+- **Hardware:** `cpu`
+- **Gradient support:** `static_inputs_only`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_RDM_PROJECTION.md)
+- **Documentation:** [guide](../../docs/development/FERMION_RDM_PROJECTION.md)
+- **Known boundary:** Opt-in postprocessing of finite static dense CPU complex128 tensors in physical mode order, on two through eight modes with an explicit integer particle count between two and the mode count. Rejects autograd inputs and outputs that fail the absolute 1e-10 constraint tolerance. Returns new tensors and uses a fixed distance metric with equal weight in the one-mode and independent pair matrices. Dense work and storage are O(m^4). Enforces Hermiticity, pair antisymmetry, fixed-number traces and contraction consistency; no positivity, N-representability, noise-model or energy-accuracy guarantee. Run the H2 demonstration with --project. No dependency on OpenFermion or Cirq.
+
+### Spinful Fermi-Hubbard explicit graph
+
+Assemble a static simple-graph Hamiltonian in native fermionic algebra and compose it with existing encodings, measurement and circuit-angle training.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.fermi_hubbard_graph`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_hubbard_graph.py)
+- **Documentation:** [guide](../../docs/development/FERMION_HUBBARD_GRAPH.md)
+- **Known boundary:** Explicit finite undirected simple graphs with uniform static real t, U and mu and interleaved spins only. Empty graphs and isolated sites are valid; self edges, duplicate/reversed edges and invalid endpoints are refused even at zero hopping. Supply explicit encoding width 2*n_sites. No weighted/complex edges, flux, coefficient gradients, general encoded ansatz transformation or graph solver. Independent small occupation matrices and three-encoding checks establish bounded correctness. The CPU training example supports JW, prefix parity and Fenwick BK encodings with explicitly matched preparations of one manually specified determinant pair without dense eigenstate preparation; its minimum -1.6 is not the graph ground energy. Only the circuit angle is differentiable. No accelerator, distributed, scalability or full upstream compatibility claim; no OpenFermion or Cirq dependency.
+
+### Commuting Pauli symmetry discovery
+
+Discover a deterministic independent commuting subgroup of encoded Pauli symmetries and select joint sectors with existing native reduction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.stabilizer.discover_pauli_symmetries`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_PAULI_DISCOVERY.md)
+- **Documentation:** [guide](../../docs/development/FERMION_PAULI_DISCOVERY.md)
+- **Known boundary:** Exact canonical static native Pauli coefficients and an explicit encoded-qubit width only. Returns a deterministic maximum-size independent commuting subgroup, not the full potentially anticommuting centralizer or every conserved observable. Independent signed candidates restrict their binary span modulo scalar phases; signs are discarded and the output basis can contain products. Eigenvalues must be chosen explicitly for returned positive words. No unique chemically preferred choice, particle-number inference, automatic ground-sector selection or matched-ansatz transform. Symbolic discovery allocates no dense state; the three-qubit example uses bounded dense diagonalization, native measurement and lifting solely for correctness inspection. No coefficient/SCF gradients, external quantum/chemistry dependency, full upstream compatibility, accelerator/distributed qualification, performance or capacity claim. Existing Z-only discovery and reduction contracts are unchanged.
+
+### Diagonal fermion Z2 symmetry discovery
+
+Discover independent encoded Z symmetries and feed explicit sectors into the existing native parity reduction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.symmetry.discover_z_parities`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_PARITY_DISCOVERY.md)
+- **Documentation:** [guide](../../docs/development/FERMION_PARITY_DISCOVERY.md)
+- **Known boundary:** Z-only encoded Pauli symmetries, exact canonical static coefficients and explicit register width only. Optional independent candidate words restrict discovery to their binary product span; identity is omitted. Qubit labels are encoded indices, not occupation modes. Discovery chooses no eigenvalues: particle number N fixes only total parity (-1)**N, not exact particle number or other symmetry sectors. No automatic number-conservation proof, ground-sector selection, general X/Y discovery, matched tapered ansatz, coefficient gradients or full upstream compatibility. Symbolic discovery constructs no Fock matrices; the two-site example uses bounded exponential-cost reduced-state diagonalization for correctness inspection. Native discovery requires neither OpenFermion nor Cirq. No accelerator, distributed, performance or capacity claim.
+
+### Spinless t-V chains and rings
+
+Construct static spinless nearest-neighbor models in native fermionic algebra and measure the same two-particle state through three encodings.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.hubbard.spinless_fermion_chain`, `flagquantum.algorithms.fermion.hubbard.spinless_fermion_ring`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_SPINLESS.md)
+- **Documentation:** [guide](../../docs/development/FERMION_SPINLESS.md)
+- **Known boundary:** One mode per site, finite static real t/V/mu and unshifted nearest-neighbor densities only. Open chains allow one site; rings require at least three and count each closing hopping/density bond once. Explicit encoding width is n_sites, including zero operators. No coefficient gradients, arbitrary graphs, twisted phases, particle-hole convention, automatic ansatz or model solver. Circuit-angle gradients in the composed execution scenario do not differentiate static Hamiltonian coefficients. The three-site example uses dense diagonalization and arbitrary-state preparation at exponential inspection cost; bounded CPU correctness does not establish accelerator, distributed, performance, capacity or full upstream model compatibility. Native workflows require neither OpenFermion nor Cirq.
 
 
 ## Distributed execution
@@ -1661,7 +1844,7 @@ Translate a bounded pinned native Qmod subset into the verified Compiler constru
 - **Hardware:** `cpu`
 - **Gradient support:** `not_applicable`
 - **Distribution semantics:** `single_device_fast_path`
-- **Start:** [quick example](../../examples/synthesis/tutorials/getting_started/source_trial/main.py)
+- **Start:** [quick example](../../tools/synthesis_import_examples/source_trial/main.py)
 - **Documentation:** [guide](../../flagquantum/ecosystem/_qmod/README.md)
 - **Known boundary:** Uppercase PHASE/RZ accept nonnegative integer or fixed-decimal literals 0..2**53 radians on initialized qbits; exact decimal bounds precede float64 conversion and a 78-character literal cap. Negative, exponent-form, symbolic, computed and quantum angles, numeric/array/Const targets and decimal data arithmetic remain refused. Both names are reserved. Unreleased pinned-source subset only, with one main, bounded acyclic scalar Const/fresh-Output helpers and fresh unsigned scalar outputs, unsigned binary comparisons and ordered phase(expression, pi) on initialized exactly-one-bit quantum expressions. The lowercase phase statement preserves basis values and exact signs with local workspace cleanup; arbitrary coefficients, multibit results, fixed classical phases and explicit phase basis/line targets are refused. Use default value mode; the Python-only output_mode flag remains refused for Qmod. Helpers are independently verified even when unused, require initialized fixed-width Const actuals and disjoint fresh Outputs with exact kinds/widths, and delegate calls and expansion to Compiler. Const preserves basis values, allowing phase/entanglement; gate/write/consume roles are refused. Main remains Output-only. Limits are 32 definitions and existing Compiler node/visit bounds. No general standard library, arrays/views, consuming Input, implicit mutable borrowing, free/drop or .fq support. Native comparisons reuse existing equal/less kernels with full unsigned domains and one-bit flags; unparenthesized chains and keyword and/or/not are refused. Direct and nested comparisons may appear in exactly-one-bit phase arguments as a FlagQuantum-native extension to the pinned import profile, using existing Compiler predicate cleanup. This is not upstream Classiq grammar admission or extra original-source compatibility evidence. Function-level scalar locals and bounded within/apply admit fresh quantum-expression preparations, phase or Const-only helper actions, exact inverse cleanup and proven-zero reuse. Helper calls may contain supported scopes. Local references cannot escape scopes; widths persist across repeated names and locals do not appear in named outputs. Unused declarations allocate nothing. Literal/allocation/gate/helper preparations, arbitrary apply writes, nesting in preparation and manual uncompute/release remain refused. Apply-only lexical nesting is bounded to depth 32; inner cleanup restores parent ownership and preserves live outer references. Positive literal powers 1..8 expand into at most seven existing multiplications with complete intermediate domains; exponent one reuses its operand. Zero, symbolic/computed and larger exponents are refused. Existing node/width/workspace/memory guards still apply; no optimal multiplication-chain claim. One-bit &, |, ^ and ~ compose initialized unsigned domains through existing multiply/equal/add/less kernels. Both operands are checked eagerly; multibit operands, signed complement and in-place XOR remain refused. Unary tree depth and existing expansion/resource guards apply. Original corpus: eight of 216 pinned file paths parsed, lowered, executed and full-state verified on exact CPU complex128, including two additional tutorial paths. These are seven distinct blobs out of 208; execution_tutorial is byte-identical to synthesis_tutorial, and the added tutorials do not establish new algorithm families. Both file and text inputs pass at unchanged sizes; baseline uses 1/23/24 allocated qubits, comparator uses 10 allocated/9 used, and the two added tutorials each use 23 allocated qubits. The added unchanged PHASE original uses one qubit and zero workspace; coherent probes separately verify its absolute and relative phases. The added unchanged RZ original uses one qubit and zero workspace, with global-phase verification. A whole-corpus frontend-only audit admits eight and refuses 208 at their first blocker; admission alone is not execution. The signed two-variable comparator remains unsupported. Services reuses the same checked Program and named reader with a default 512 MiB planned-state buffer ceiling; this is not a process peak-memory guarantee. Synthetic probes do not increase original counts. Source-version context is declared, not authenticated; retained manifests separately check original bytes. No all-corpus, release or hardware claim.
 
@@ -1943,7 +2126,35 @@ Convert external fermionic and Pauli operators at an explicit optional ecosystem
 - **Distribution semantics:** `not_applicable`
 - **Start:** [quick-start guide](../../flagquantum/ecosystem/README.md)
 - **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
-- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. No MolecularData, InteractionOperator, circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
+- **Known boundary:** Explicitly optional conversion of FermionOperator and QubitOperator only, verified with separately installed OpenFermion 1.7.1. No native dependency on OpenFermion or Cirq; upstream's own installation may include Cirq. Finite static numeric coefficients only. This entry covers only the four fermionic/Pauli converters; InteractionOperator import and MolecularData input have separate capability entries. No circuits, external execution, automatic installation or complete upstream compatibility. Idle register width is supplied separately by the consumer. Small dense matrices are correctness references, not scalability evidence.
+
+### Populated OpenFermion molecular data input
+
+Import cached real spatial integrals from an existing OpenFermion MolecularData object into the native MolecularProblem consumed by active-space and encoded measurement workflows.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.chemistry.molecular_data.from_openfermion_molecular_data`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick-start guide](../../flagquantum/ecosystem/chemistry/README.md)
+- **Documentation:** [guide](../../flagquantum/ecosystem/chemistry/README.md)
+- **Known boundary:** One-way import of already populated OpenFermion 1.7.1 MolecularData objects only. Real dense closed-shell spatial integrals, multiplicity one and lowest-orbital reference occupations only. The adapter reads cached integral fields without implicit loading, runs no electronic-structure calculation and retains no upstream arrays. The default budget is 32 spatial orbitals before integral copies; dense O(n^4) storage remains required. No file discovery, writing, complex/open-shell or spin-orbital input, geometry/integral gradients, amplitudes, density matrices or full upstream compatibility. OpenFermion and its transitive dependencies are separately installed only for this optional boundary; native chemistry does not require OpenFermion or Cirq. No production or scalability claim.
+
+### OpenFermion interaction operator input
+
+Import finite number-conserving spin-orbital tensor coefficients into the existing native fermionic algebra for encoding, measurement and circuit-angle training consumers.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.ecosystem.openfermion.from_openfermion_interaction`
+- **Runtime modes:** `not_applicable`
+- **Hardware:** `cpu`
+- **Gradient support:** `unsupported`
+- **Distribution semantics:** `not_applicable`
+- **Start:** [quick-start guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Documentation:** [guide](../../docs/development/OPENFERMION_OBJECT_INTEROP.md)
+- **Known boundary:** One-way import of actual OpenFermion 1.7.1 InteractionOperator objects with a finite scalar constant and dense numeric real or complex NumPy arrays of matching (n,n) and (n,n,n,n) shapes, including n=0. Two-body values multiply a-dagger[p] a-dagger[q] a[r] a[s] directly; no half factor, integral permutation or Hermiticity assumption is applied. This is spin-orbital operator input, not spatial molecular integrals. Native ladder algebra owns signs and canonicalization. Validation reads O(n^4) entries; native storage follows nonzero canonical terms, and external arrays are not retained. Consumer register width is explicit. No reverse tensor export, coefficient gradients, upstream execution, circuits or complete upstream compatibility. Hermitian observable validation and circuit-angle training remain native consumer responsibilities. OpenFermion and its transitive packages are separately installed only at this optional boundary; native execution requires neither OpenFermion nor Cirq. No production, accelerator or scalability claim.
 
 
 ## Validated public performance claims

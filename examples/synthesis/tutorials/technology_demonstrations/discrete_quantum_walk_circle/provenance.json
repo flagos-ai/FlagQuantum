@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "3f3c42c6a51ad3c3004914c9d1299f618ef25b4df0f858714039927f148bff1e",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.discrete_quantum_walk_circle.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_circle_walk.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Keep original6/10/11-bit unsigned or7-bit signed position and coin. Exact QFT/conditional linear phase/inverse QFT implements modular +1 for coin0 and -1 for coin1. Bound t=0/1/2 for both signed originals and preserve the balanced initial H,S coin. Root numeric ports retain verified signed decoding; numeric helper aliases are not admitted. Independent Circuit uses explicit modular permutations at up to7 position bits and the analytically derived one-step state for original10/11-bit cases. Tests retain global phase, coherent coin/position, sign boundaries, wraparound, hidden original work cleanup and actual budgets. No new opcode or production Compiler change."
+}

@@ -1,0 +1,6 @@
+qfunc main(output a:qbit, output b:qbit, output c:qbit, output d:qbit) {
+  allocate(a);allocate(b);allocate(c);allocate(d);
+  H(a);H(b);H(c);H(d);
+  selected:qnum<1>;
+  within {selected=a*b*c*d;} apply {phase(selected,0.37);}
+}

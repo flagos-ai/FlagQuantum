@@ -844,3 +844,44 @@ def execute_product_state_program(
     return _canonicalize_component(
         final_component, use_gather=enable_deferred_swap
     ).state
+
+
+def execute_zero_state_product_prefix(
+    program: Sequence[_StatevectorProgramStep],
+    output: torch.Tensor,
+    parameter_bindings: tuple[torch.Tensor, ...] | None,
+    n_qubits: int,
+    owns_input: bool,
+) -> tuple[torch.Tensor, Sequence[_StatevectorProgramStep], bool]:
+    """Build a separable prefix only for an owned zero-state initialization."""
+    if (
+        owns_input
+        and output.shape[0] == 1
+        and output.shape[-1] >= 1 << 22
+        and output.device.type == "flagos"
+        and output.dtype == torch.complex128
+    ):
+        product_prefix_length = 0
+        for candidate in program:
+            if isinstance(candidate, _StatevectorGateStep):
+                wires = candidate.instruction.wires
+            elif isinstance(candidate, _StatevectorFusedGateStep):
+                wires = candidate.wires
+            else:
+                break
+            if len(wires) != 1:
+                break
+            product_prefix_length += 1
+        if product_prefix_length >= 2:
+            output = execute_product_state_program(
+                program[:product_prefix_length],
+                n_qubits=n_qubits,
+                device=output.device,
+                dtype=output.dtype,
+                parameter_bindings=parameter_bindings,
+                enable_fixed_clifford=False,
+                enable_clifford_matching=False,
+            )
+            program = program[product_prefix_length:]
+            owns_input = False
+    return output, program, owns_input

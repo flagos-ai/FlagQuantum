@@ -1,0 +1,10 @@
+{
+  "upstream_path": "applications/CFD/qlbm/qlbm.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5a3ac4d0d71a5841a8d65eb4ff35f015bd9d605ff83d265c358b1023d403eebf",
+  "approved_sha256": "8cb0e28d772910f81a5369f0a51a691be20a6b3b24eb3a9bcaee25f9bf6e0d36",
+  "native_entrypoint": "examples.synthesis.applications.cfd.qlbm.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qlbm.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve all twelve data bits and thirteen original stream/reflection steps. Four velocity amplitudes of 0.5 follow the approved normalization correction; unchanged original 0.25 amplitudes remain rejected. Geometric boundary rules and periodic shifts are native coherent helpers. Independent permutation Circuit checks absolute complete amplitudes and clean work. Default native19physical/7cleanwork/3342operations/depth2770. Test aligns source record-field physical allocation using declared register mappings. Frozen source schedule independently checked as thirteen rounds."
+}

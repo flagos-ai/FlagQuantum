@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/foundational/quantum_teleportation/quantum_teleportation.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "7b30cdd5fb3ab8df192f36d9859b4db6b091fb3b5c50604aaa41e17e4b08d40c",
+  "native_entrypoint": "examples.synthesis.algorithms.foundational.quantum_teleportation.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_period_feedback.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Explicit deferred-measurement implementation of the private-outcome output channel. Coherent controlled Pauli corrections retain both dropped Alice qubits as environment. This matches the checked source adapter purification; independently enumerated actual measurement branches verify the measured output channel, including an entangled external reference. No physical mid-circuit measurement, classical messaging or generic measure API is claimed."
+}

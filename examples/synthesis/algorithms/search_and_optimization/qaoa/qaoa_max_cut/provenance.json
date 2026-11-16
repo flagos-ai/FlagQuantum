@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/QAOA/qaoa_max_cut.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "28d6de28d50734a8b0c27e85bd81f3ca047af754b7b2e18284865b02ce178e32",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.qaoa.qaoa_max_cut.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_static_algorithms.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Specialize the original fixed MaxCut callback as a direct typed cost helper, keeping all six graph edges, normalization by6, four gamma/beta layers, preparation and mixer helpers. Independent Circuit computes cuts classically and emits parity phases plus RX gates. No general quantum callable parameters or source importer in user examples."
+}

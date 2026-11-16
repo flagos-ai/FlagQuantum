@@ -1,0 +1,33 @@
+"""Compare native FlagQuantum and independent Circuit amplitudes."""
+
+import math
+
+import torch
+
+import flagquantum as fq
+from examples.synthesis.functions.state_preparation.prepare_uniform_trimmed_state.main import (
+    main,
+)
+from flagquantum import synth
+from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
+
+
+def run_example() -> None:
+    expected = torch.zeros(1 << 4, dtype=torch.complex128)
+    expected[0:3] = 1 / math.sqrt(3)
+    circuit = fq.Circuit(4, dtype=torch.complex128)
+    append_arbitrary_state(circuit, expected, range(4))
+    reference = fq.run(circuit).statevector().flatten()
+    torch.testing.assert_close(reference, expected, atol=1e-07, rtol=0)
+    for program in (synth.synthesize(main),):
+        actual = fq.run(program).statevector().flatten()
+        torch.testing.assert_close(actual, expected, atol=1e-12, rtol=0)
+        torch.testing.assert_close(actual, reference, atol=1e-07, rtol=0)
+        print(program.report["resources"])
+    print(
+        "Native qfunc and Circuit agree, including absolute phase and clean workspace."
+    )
+
+
+if __name__ == "__main__":
+    run_example()

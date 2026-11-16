@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/qpe/qpe.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "5fe81fd2206951fa368f9e190b6d274202866d7991a750468c8072aad83d3700",
+  "native_entrypoint": "examples.synthesis.functions.qpe.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_numeric_phase.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "The two frozen sources are identical concrete diagonal-Hamiltonian QPE instances. Combine their commuting controlled evolution into an exact polynomial of the typed fractional counter and input bits, then apply inverse QFT. Preserve unsigned two-bit phase with two fractional bits, absolute phase, named output order and exact Fraction readout. No generic QPE callback export or source importer is implied."
+}

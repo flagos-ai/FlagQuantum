@@ -1,0 +1,37 @@
+{
+  "upstream_path": "algorithms/foundational/bernstein_vazirani/bernstein_vazirani.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "13fbe0785d5230fe9b82b49360fc68957c91d507a0d0503ccaa5c605809c36c0",
+  "notebook_path": "algorithms/foundational/bernstein_vazirani/bernstein_vazirani.ipynb",
+  "git_blob_sha1": "ac23744665f6c4ecfe265d7196e26beb962633fe",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "73582cdf60d223a375f69b48bc0330906bed96dc70f35aee698e8f79c6df6b1c"
+    },
+    {
+      "index": 9,
+      "sha256": "c4e02f0f47746a3bf1dc5a22b2aca9f38d2dc6f94b9b259db6175434f59a0dcb"
+    },
+    {
+      "index": 11,
+      "sha256": "e432845ecd2e775244bbd622df551516a7e71cf941903d172a10e58bb273e6b3"
+    },
+    {
+      "index": 13,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 15,
+      "sha256": "22724e5d0fe1e1b70527b921aca92c9c2af8c3a9aa19f171650718c6a0c7d79d"
+    },
+    {
+      "index": 16,
+      "sha256": "e53ad125254905313540dd9effebfd795b9c7b9cf1a2d1190fe7a3074cc6ba36"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.algorithms.foundational.bernstein_vazirani.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "scope": "Complete local computational Notebook workflow: quantum composition, synthesis, text visualization, seeded sampling from exact named probabilities, and classical decision/recovery. Local drawing and sampling replace cloud services; no hardware result is claimed. Concrete tutorial oracles are specialized; general quantum callable ports are not added.",
+  "native_semantic_adaptations": "Use an equivalent linear phase oracle instead of a CX predicate with a minus-state auxiliary. Explicit Hadamard transforms replace gate-preparation within/apply."
+}

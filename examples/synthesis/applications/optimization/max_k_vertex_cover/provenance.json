@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/max_k_vertex_cover/max_k_vertex_cover.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a5c412d2a16aef7e486cd938b8df141cd05d5a346b7c44d3c03a1de23049eedb",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_k_vertex_cover.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qaoa_models.py",
+  "scope": "Complete retained 10-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "The sole fixed-width bit-array field is represented explicitly as Output[QArray[QBit]] named v, in the same physical and logical bit order; no general qstruct support is claimed. Native loops express repeat/apply_to_all and parameters retain source gamma-then-beta ordering. Preserve all21uncovered-edge terms, cardinality target5 and penalty10."
+}

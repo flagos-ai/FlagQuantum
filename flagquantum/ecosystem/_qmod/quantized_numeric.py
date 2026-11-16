@@ -6,78 +6,31 @@ import math
 from collections.abc import Mapping
 from dataclasses import dataclass
 from fractions import Fraction
-from itertools import product
+from functools import partial
 from typing import TYPE_CHECKING
 
+from ...compiler._construction.fixed_point import (
+    LITERAL_BITS,
+    FixedPointBranches,
+    FixedPointExpression,
+    FixedPointScalar,
+)
+from ...compiler._construction.fixed_point_program import (
+    FixedPointScope,
+    emit_fixed_point_tables,
+)
 from .angles import REAL_LITERAL
-from .masked_selection import emit_truth_xor
 from .syntax import Expression, Function, Parameter, Statement, Token, reject
 
 if TYPE_CHECKING:
     from ...compiler._hybrid.model import Value
     from .context import _Adapt
 
-# Qmod's default precision for the pinned native profile. Source numeric
-# literals are represented at up to twenty bits before the profile truncation.
-FRACTION_BITS = 8
-_LITERAL_BITS = 20
-_MAX_BRANCH_BITS = 5
-_ROWS = 1 << _MAX_BRANCH_BITS
-
-
-@dataclass(frozen=True)
-class _Scalar:
-    width: int
-    signed: bool
-    fraction: int
-    low: Fraction
-    high: Fraction
-    values: tuple[Fraction, ...]
-
 
 @dataclass(frozen=True)
 class NumericProgram:
     bits: int
-    outputs: tuple[_Scalar, ...]
-
-
-def _truncate(value: Fraction, bits: int) -> Fraction:
-    scale = 1 << bits
-    return Fraction((value * scale).__floor__(), scale)
-
-
-def _number(token: Token, value: Fraction) -> _Scalar:
-    literal_scale = 1 << _LITERAL_BITS
-    native = Fraction(int(value * literal_scale), literal_scale)
-    quantized = _truncate(native, FRACTION_BITS)
-    fraction = quantized.denominator.bit_length() - 1
-    return _scalar(token, quantized, quantized, fraction, (quantized,) * _ROWS)
-
-
-def _scalar(
-    token: Token,
-    low: Fraction,
-    high: Fraction,
-    fraction: int,
-    values: tuple[Fraction, ...],
-) -> _Scalar:
-    fraction = min(fraction, FRACTION_BITS)
-    scale = 1 << fraction
-    lower, upper = int(low * scale), int(high * scale)
-    signed = lower < 0
-    if signed:
-        width = max((~lower).bit_length(), max(upper, 0).bit_length()) + 1
-    else:
-        width = upper.bit_length()
-    width = max(width, fraction, 1)
-    if width > 20:
-        reject(token, "budget.precision", "quantized output format exceeds twenty bits")
-    if any(
-        value * scale != int(value * scale) or value < low or value > high
-        for value in values
-    ):
-        reject(token, "precision", "quantized result does not fit the inferred format")
-    return _Scalar(width, signed, fraction, low, high, values)
+    outputs: tuple[FixedPointScalar, ...]
 
 
 def _literal(node: Expression) -> Fraction | None:
@@ -96,108 +49,27 @@ def _literal(node: Expression) -> Fraction | None:
     return None
 
 
-def _expression(node: Expression, values: Mapping[str, _Scalar]) -> _Scalar:
-    literal = _literal(node)
-    if literal is not None:
-        return _number(node.token, literal)
-    name, args = node.token.text, node.children
-    if not args and name in values:
-        return values[name]
-    if name == "-" and len(args) == 1:
-        operand = _expression(args[0], values)
-        return _scalar(
-            node.token,
-            -operand.high,
-            -operand.low,
-            operand.fraction,
-            tuple(-value for value in operand.values),
-        )
-    if name == "**" and len(args) == 2:
-        base = _expression(args[0], values)
-        degree = _literal(args[1])
-        if degree is None or degree.denominator != 1 or not 1 <= degree <= 4:
-            reject(
-                node.token,
-                "precision",
-                "quantized power requires a literal degree in 1..4",
-            )
-        exponent = int(degree)
-        fraction = min(base.fraction * exponent, FRACTION_BITS)
-        edges = [base.low**exponent, base.high**exponent]
-        if exponent % 2 == 0 and base.low < 0 < base.high:
-            edges.append(Fraction())
-        return _scalar(
-            node.token,
-            _truncate(min(edges), fraction),
-            _truncate(max(edges), fraction),
-            fraction,
-            tuple(_truncate(value**exponent, fraction) for value in base.values),
-        )
-    if name in {"+", "-", "*"} and len(args) == 2:
-        left, right = (_expression(child, values) for child in args)
-        pairs = tuple(zip(left.values, right.values, strict=True))
-        fraction = max(left.fraction, right.fraction)
-        if name == "+":
-            return _scalar(
-                node.token,
-                left.low + right.low,
-                left.high + right.high,
-                fraction,
-                tuple(a + b for a, b in pairs),
-            )
-        if name == "-":
-            return _scalar(
-                node.token,
-                left.low - right.high,
-                left.high - right.low,
-                fraction,
-                tuple(a - b for a, b in pairs),
-            )
-        fraction = min(left.fraction + right.fraction, FRACTION_BITS)
-        bounds = [
-            a * b for a, b in product((left.low, left.high), (right.low, right.high))
-        ]
-        return _scalar(
-            node.token,
-            _truncate(min(bounds), fraction),
-            _truncate(max(bounds), fraction),
-            fraction,
-            tuple(_truncate(a * b, fraction) for a, b in pairs),
-        )
-    reject(node.token, "precision", "unsupported lexical quantized numeric expression")
+_ARITHMETIC: FixedPointExpression[Expression] = FixedPointExpression(
+    text=lambda node: node.token.text,
+    children=lambda node: node.children,
+    literal=_literal,
+    reject=lambda node, code, message: reject(node.token, code, message),
+)
 
 
 class _Planner:
     def __init__(self, definitions: Mapping[str, Function]) -> None:
         self.definitions = definitions
-        self.bits = 0
+        self.branches = FixedPointBranches()
         self.steps = 0
         self.used: set[str] = set()
-        self.dropped: list[_Scalar] = []
-
-    def fresh_uniform(self, token: Token) -> _Scalar:
-        if self.bits == _MAX_BRANCH_BITS:
-            reject(
-                token,
-                "budget.precision",
-                "quantized preparation exceeds five independent basis bits",
-            )
-        bit = self.bits
-        self.bits += 1
-        return _scalar(
-            token,
-            Fraction(0),
-            Fraction(1),
-            0,
-            tuple(Fraction(row >> bit & 1) for row in range(_ROWS)),
-        )
 
     def function(
         self,
         syntax: Function,
-        inputs: Mapping[str, _Scalar],
+        inputs: Mapping[str, FixedPointScalar],
         active: tuple[str, ...],
-    ) -> tuple[_Scalar, ...]:
+    ) -> tuple[FixedPointScalar, ...]:
         name = syntax.name.text
         if (
             name in active
@@ -222,33 +94,26 @@ class _Planner:
             reject(
                 syntax.name, "type", "quantized helpers require inferred numeric ports"
             )
-        initialized = dict(inputs)
-        retired: set[str] = set()
-        zero_allocations: set[str] = set()
+        scope = FixedPointScope(self.branches, roles, inputs)
+        initialized = scope.values
 
         def reserve(node: Expression) -> str:
-            target = node.token.text
-            if (
-                node.children
-                or roles.get(target) not in {"local", "output"}
-                or target in initialized
-                or target in retired
-            ):
+            if node.children:
                 reject(
-                    node.token,
-                    "ownership",
-                    "quantized assignment requires a fresh local or Output",
+                    node.token, "ownership", "quantized assignment needs a whole word"
                 )
-            return target
+            return scope.reserve(
+                node.token.text,
+                lambda code, message: reject(node.token, code, message),
+            )
 
-        def read(node: Expression) -> _Scalar:
-            if node.children or node.token.text not in initialized:
-                reject(
-                    node.token,
-                    "ownership",
-                    "quantized call requires one live numeric variable",
-                )
-            return initialized[node.token.text]
+        def read(node: Expression) -> FixedPointScalar:
+            if node.children:
+                reject(node.token, "ownership", "quantized read needs a whole word")
+            return scope.read(
+                node.token.text,
+                lambda code, message: reject(node.token, code, message),
+            )
 
         for statement in syntax.statements:
             self.steps += 1
@@ -264,14 +129,17 @@ class _Planner:
                 if (
                     parameter.kind != "qnum"
                     or parameter.width is not None
-                    or parameter.name.text in roles
+                    or parameter.name.text in scope.roles
                 ):
                     reject(
                         parameter.name,
                         "type",
                         "quantized local must be a fresh inferred qnum",
                     )
-                roles[parameter.name.text] = "local"
+                scope.declare(
+                    parameter.name.text,
+                    partial(reject, parameter.name),
+                )
                 continue
             if statement != Statement(token, args):
                 reject(
@@ -287,21 +155,17 @@ class _Planner:
                 )
             if token.text == "=" and len(args) == 2:
                 target = reserve(args[0])
-                initialized[target] = _expression(args[1], initialized)
+                initialized[target] = _ARITHMETIC.evaluate(args[1], initialized)
             elif token.text == "allocate" and len(args) == 2 and _literal(args[0]) == 1:
                 target = reserve(args[1])
-                initialized[target] = _number(token, Fraction())
-                zero_allocations.add(target)
+                scope.allocate(target, partial(reject, token))
             elif token.text == "hadamard_transform" and len(args) == 1:
-                target = args[0].token.text
-                if args[0].children or target not in zero_allocations:
-                    reject(
-                        token,
-                        "ownership",
-                        "quantized Hadamard needs a fresh one-bit allocation",
-                    )
-                zero_allocations.remove(target)
-                initialized[target] = self.fresh_uniform(token)
+                if args[0].children:
+                    reject(token, "ownership", "quantized Hadamard needs a whole word")
+                scope.hadamard(
+                    args[0].token.text,
+                    partial(reject, token),
+                )
             elif token.text == "prepare_state" and len(args) == 3:
                 vector, bound, destination = args
                 if (
@@ -315,13 +179,16 @@ class _Planner:
                         "amplitudes",
                         "quantized preparation needs an exact uniform bit",
                     )
-                initialized[reserve(destination)] = self.fresh_uniform(token)
+                scope.prepare_uniform(
+                    reserve(destination),
+                    partial(reject, token),
+                )
             elif token.text == "drop" and len(args) == 1:
-                if roles.get(args[0].token.text) != "local":
-                    reject(token, "ownership", "quantized drop requires an owned local")
-                self.dropped.append(read(args[0]))
-                retired.add(args[0].token.text)
-                initialized.pop(args[0].token.text)
+                read(args[0])
+                scope.drop(
+                    args[0].token.text,
+                    partial(reject, token),
+                )
             elif token.text in self.definitions:
                 helper = self.definitions[token.text]
                 if len(args) != len(helper.parameters) or len(
@@ -375,7 +242,7 @@ def try_numeric_program(definitions: Mapping[str, Function]) -> NumericProgram |
     def non_dyadic(node: Expression) -> bool:
         literal = _literal(node)
         if literal is not None:
-            return literal.denominator > 1 << _LITERAL_BITS
+            return literal.denominator > 1 << LITERAL_BITS
         return any(non_dyadic(child) for child in node.children)
 
     if not any(
@@ -393,23 +260,16 @@ def try_numeric_program(definitions: Mapping[str, Function]) -> NumericProgram |
         return None
     planner = _Planner(definitions)
     outputs = planner.function(main, {}, ())
-    if planner.used != definitions.keys() or not planner.bits:
+    if planner.used != definitions.keys() or not planner.branches.bits:
         reject(
             main.name,
             "ownership",
             "quantized profile requires one closed reachable program",
         )
-    rows = 1 << planner.bits
-    labels = {
-        tuple(item.values[row] for item in planner.dropped) for row in range(rows)
-    }
-    if len(labels) != rows:
-        reject(
-            main.name,
-            "ownership",
-            "dropped numeric state must distinguish every prepared branch",
-        )
-    return NumericProgram(planner.bits, outputs)
+    planner.branches.verify_discarded(
+        lambda code, message: reject(main.name, code, message)
+    )
+    return NumericProgram(planner.branches.bits, outputs)
 
 
 def emit_numeric_program(owner: _Adapt, program: NumericProgram) -> None:
@@ -422,7 +282,7 @@ def emit_numeric_program(owner: _Adapt, program: NumericProgram) -> None:
     reads = tuple((selector, bit) for bit in range(program.bits))
     for _, bit in reads:
         owner.effect_op("qreg.gate", token, (selector,), index=bit, gate="h")
-    shared: dict[tuple[int, ...], tuple[Value, int]] = {}
+    outputs = []
     for port, output in zip(owner.syntax.parameters, program.outputs, strict=True):
         target = owner.register(port.name, output.width, allow_fractional_output=True)
         if output.fraction:
@@ -430,21 +290,22 @@ def emit_numeric_program(owner: _Adapt, program: NumericProgram) -> None:
         if output.signed:
             owner.signed.add(port.name.text)
         owner.effect_op("qreg.allocate", token, (target,))
-        raw = [
-            int(value * (1 << output.fraction))
-            for value in output.values[: 1 << program.bits]
-        ]
-        for bit in range(output.width):
-            table = tuple((value >> bit) & 1 for value in raw)
-            if not any(table):
-                continue
-            same = shared.get(table)
-            inverse = shared.get(tuple(1 - value for value in table))
-            if inverse is not None:
-                owner.effect_op("qreg.gate", token, (target,), gate="x", index=bit)
-            if (source := same or inverse) is not None:
-                owner.emit_indexed_x(token, (source, (target, bit)))
-            else:
-                emit_truth_xor(owner, token, reads, (target, bit), list(table))
-                shared[table] = (target, bit)
+        outputs.append((output, tuple((target, bit) for bit in range(output.width))))
+
+    def flip(target: tuple[Value, int]) -> None:
+        owner.effect_op("qreg.gate", token, (target[0],), gate="x", index=target[1])
+
+    def controlled(
+        controls: tuple[tuple[Value, int], ...], pattern: int, target: tuple[Value, int]
+    ) -> None:
+        combined = (*controls, target)
+        owner.effect_op(
+            "qreg.control_x",
+            token,
+            tuple(value for value, _ in combined),
+            indices=tuple(bit for _, bit in combined),
+            control_state=pattern,
+        )
+
+    emit_fixed_point_tables(reads, outputs, flip=flip, controlled=controlled)
     owner.effect_op("qreg.drop", token, (selector,))

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/number_theory_and_cryptography/elliptic_curves/elliptic_curve_discrete_log.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "be99a721797ac274895534830a76c6b252f3015d719fc7cc23b0b235af263b1d",
+  "native_entrypoint": "examples.synthesis.algorithms.number_theory_and_cryptography.elliptic_curves.elliptic_curve_discrete_log.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_elliptic.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve p=7 curve, generator, two 3-bit phase words and both nonsingular seed orbits. Native full group translations use infinity sentinel63 and identity outside the curve; this explicitly extends unproved exceptional affine source branches. Gray-path transpositions preserve full coherent point permutations. Raw scalar arrays decode word/8; point stores x+8*y. Three clean workspace bits instead of original two; no production changes."
+}

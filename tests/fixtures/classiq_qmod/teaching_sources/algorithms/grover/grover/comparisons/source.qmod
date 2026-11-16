@@ -1,0 +1,5 @@
+qperm mark(const v:qbit[]) {control(v[0] & v[1]) {phase(pi);}}
+qfunc main(output q:qbit[2]) {
+  allocate(q);hadamard_transform(q);
+  grover_operator(lambda(v) {mark(v);},hadamard_transform,q);
+}

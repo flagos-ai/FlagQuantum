@@ -38,14 +38,18 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- Synthesis support modules (`operations.py`, `physics.py`, `data.py`, `curve.py`,
+  `portfolio_reference.py`, and `quadratic_reference.py`) define source helpers or
+  mathematical data. Some `comparisons/circuit.py` entrypoints delegate to shared
+  references, and `synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py`
+  defines its quantum function through the synthesis namespace.
+
 - [`algorithms/fermion_orbital_rotation.py`](algorithms/fermion_orbital_rotation.py)
   differentiates a real orbital angle through domain tensor functions.
 
 - [`qec/dynamic_measurement_conversion.py`](qec/dynamic_measurement_conversion.py)
   converts repeated-slot dynamic records to reference-normalized detector and
   observable flips using explicit measurement ordinals.
-- [`synthesis/run_qmod.py`](synthesis/run_qmod.py) verifies catalog source hashes
-  and delegates execution to the existing Qmod corpus audit tool.
 
 - [`qec/compiled_measurement_sampler.py`](qec/compiled_measurement_sampler.py)
   reuses one Clifford sampler for dense records, packed records and a b8 file
@@ -985,3 +989,6 @@ Stim 1.16.0. External repeated-slot records 010 produce detectors 10 and logical
 The example performs bounded file conversion, not sampling or a research study.
 
 - `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build and PyMatching required).
+- `qec/shot_file_encoding.py`: write caller-owned Torch shot rows in Stim-compatible formats and read them back (Stim 1.16.0 extra or embedded build required).
+
+- `qec/compiled_dem_sampler.py`: record and replay canonical error columns, write bounded detector/error files, and decode packed batches; expected `shots 64 batches 4 logical_failures 0` (embedded build or Stim 1.16.0, plus PyMatching).

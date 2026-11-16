@@ -1,0 +1,7 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/vqls/vqls_with_lcu.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "9dcfb911d4df8d719b95331e5a1291158a33a91de7efa64f2e7d6ef33b14a0ae",
+  "scope": "Retained quantum ansatz only; complete companion Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Native R(theta,pi/2) expresses RY. Native H/CX/H expresses CZ; all three rotation layers and both ordered entangler layers are retained."
+}

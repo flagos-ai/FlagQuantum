@@ -5,10 +5,6 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis.tutorials.composition.local_registers.main import (
-    local_composition,
-    local_marker,
-)
 from flagquantum.compiler._construction.lowering import Schedule
 from flagquantum.compiler._construction.register_expansion import expand_register_calls
 from flagquantum.compiler._construction.register_lowering import (
@@ -30,6 +26,10 @@ from flagquantum.compiler._hybrid.model import (
 )
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.register_program_cases import Registers
+from tools.synthesis_compiler_examples.local_registers.main import (
+    local_composition,
+    local_marker,
+)
 
 pytestmark = pytest.mark.unit
 

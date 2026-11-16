@@ -366,3 +366,33 @@ def comparison_xor(
         prefix(index)
     gates.append(Instruction("x", (equality[0],)))
     return tuple(gates)
+
+
+def borrowed_less_xor(
+    a: tuple[int, ...], b: tuple[int, ...], target: int, carry: int
+) -> tuple[Instruction, ...]:
+    """Restore disjoint unsigned operands and zero carry after toggling target."""
+    if not a or len(a) != len(b):
+        raise ValueError("borrowed comparison requires nonempty equal-width words")
+    wires = (*a, *b, target, carry)
+    if any(isinstance(wire, bool) or not isinstance(wire, int) for wire in wires):
+        raise TypeError("borrowed comparison qubits must be Python integers")
+    if min(wires) < 0 or len(set(wires)) != len(wires):
+        raise ValueError("borrowed comparison qubits must be nonnegative and disjoint")
+    flips = tuple(Instruction("x", (wire,)) for wire in a)
+    majority = tuple(
+        gate
+        for left, right in zip(reversed(a), reversed(b), strict=True)
+        for gate in (
+            Instruction("cx", (carry, left)),
+            Instruction("cx", (carry, right)),
+            Instruction("ccx", (left, right, carry)),
+        )
+    )
+    return (
+        *flips,
+        *majority,
+        Instruction("cx", (carry, target)),
+        *reversed(majority),
+        *reversed(flips),
+    )

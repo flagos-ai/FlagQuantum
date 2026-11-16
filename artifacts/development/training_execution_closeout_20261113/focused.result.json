@@ -1,0 +1,33 @@
+{
+  "command": [
+    "<redacted-path>",
+    "-m",
+    "pytest",
+    "tests/unit/test_training_state.py",
+    "tests/unit/test_training_parameter_state.py",
+    "tests/unit/test_training_parameter_state_contract_fake.py",
+    "tests/unit/test_hybrid_models.py",
+    "tests/unit/test_checkpoint_identity_contract_fake.py",
+    "tests/unit/test_checkpoint_platform_rng.py",
+    "tests/unit/test_module_training_candidate.py",
+    "tests/unit/test_module_runtime_contracts.py",
+    "tests/unit/test_module_runtime_binding.py",
+    "tests/integration/test_cpu_vertical_slice.py",
+    "tests/integration/test_gradient_modes.py",
+    "tests/integration/test_custom_initial_state_admission.py",
+    "tests/integration/test_training_parameter_lifecycle.py",
+    "tests/api_contract/test_execution_initial_state.py",
+    "tests/api_contract/test_execution_runtime_inputs.py",
+    "tests/unit/test_execution_initial_state_contract_fake.py",
+    "tests/unit/test_execution_runtime_inputs_contract_fake.py",
+    "tests/unit/test_evidence_provenance.py",
+    "tests/unit/test_evidence_revisions.py",
+    "-q",
+    "--junitxml=../training-review-focused.xml"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 0,
+  "reason": "process_exit",
+  "elapsed_seconds": 93.67,
+  "child_reaped": true
+}

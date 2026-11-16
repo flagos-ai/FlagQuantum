@@ -1,0 +1,9 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/variational_data_encoding/encode_on_bloch.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "b12cc64a7224e9402fb163eda78684349315a126768a2a4913dd02ee3359bd63",
+  "scope": "Quantum program only; the combined variational-data-encoding Notebook is a separate pending workflow.",
+  "native_semantic_adaptations": "Preserve seven features and four output qubits. Apply RX/RZ to three feature pairs and RX(2*pi*data[6]) to the odd tail. No angle reduction or phase alignment is used.",
+  "native_entrypoint": "examples.synthesis.functions.data_encoding.encode_on_bloch.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_data_encoding.py"
+}

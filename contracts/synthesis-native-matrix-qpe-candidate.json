@@ -1,0 +1,22 @@
+{
+  "schema": "flagquantum.synthesis_native_matrix_qpe_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [
+    "qpe"
+  ],
+  "signatures": {
+    "qpe": "(callback: 'Callable[[], None]', phase_result: 'QNum', /) -> 'None'"
+  },
+  "phase_bits_max": 8,
+  "callback": "one static unitary call in zero-argument lambda",
+  "effects": [
+    "qreg.gate",
+    "qreg.unitary",
+    "qreg.inverse_qft"
+  ],
+  "numeric_metadata_preserved": true,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-MATRIX-QPE-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

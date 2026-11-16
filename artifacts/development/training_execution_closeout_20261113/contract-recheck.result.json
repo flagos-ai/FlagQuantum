@@ -1,0 +1,17 @@
+{
+  "command": [
+    "<redacted-path>",
+    "-m",
+    "pytest",
+    "tests/unit/test_execution_initial_state_contract_fake.py",
+    "tests/unit/test_execution_runtime_inputs_contract_fake.py",
+    "tests/unit/test_training_parameter_state_contract_fake.py",
+    "-q",
+    "--junitxml=../training-review-contract-recheck.xml"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 0,
+  "reason": "process_exit",
+  "elapsed_seconds": 3.02,
+  "child_reaped": true
+}

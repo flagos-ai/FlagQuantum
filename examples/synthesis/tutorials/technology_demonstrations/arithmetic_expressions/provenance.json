@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/arithmetic_expressions/arithmetic_expressions.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "9645adb6017fc3b4d61af89e6e4f9e13a4c8ed08dfea05e89a0d0a542168897c",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.arithmetic_expressions.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_exact_numbers.py",
+  "scope": "Quantum program only; associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Use typed native max with the original nested arithmetic expression. Preserve full unsigned domains and predicate output. Independent Boolean truth table covers all eight coherent inputs and both XOR target values. No new lowering or expression-specific optimization."
+}

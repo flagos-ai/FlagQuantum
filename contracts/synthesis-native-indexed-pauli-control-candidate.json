@@ -1,0 +1,16 @@
+{
+  "schema": "flagquantum.synthesis_native_indexed_pauli_control_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [],
+  "signature_changes": {},
+  "operation": "control(array[index], lambda: R(theta, phi, target))",
+  "condition": "exactly one checked static bit location",
+  "mutable_helpers": "direct Pauli-axis rotation with checked scalar borrowed locations; controlling helper calls remains excluded",
+  "authority": "existing static view resolver and qreg.pauli_rotation verifier/lowering",
+  "maximum_predicate_bits": 8,
+  "new_ir_or_opcode": false,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-INDEXED-PAULI-CONTROL-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "22e4cc216165feb902b6319eaf0ca9cbb8f90e42b23e4a27f1e0d440676e8ade",
+  "scope": "Complete computational Notebook workflow: define a native quantum function and synthesize it. The native user script additionally executes it and reads named probabilities. Existing independent Circuit acceptance checks complete complex amplitudes, absolute phase, bit order and clean workspace. No cloud, plotting, data or sampling workflow occurs in the reviewed Notebook.",
+  "notebook_path": "functions/qmod_library_reference/classiq_open_library/hadamard_transform/hadamard_transform.ipynb",
+  "git_blob_sha1": "8d5931571156674449be5d9b5952e082d9613e20",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "f32bcd453e84edd94c3779d6613899c9e966969691f819c715b53b1941fc58e4"
+    },
+    {
+      "index": 3,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.hadamard_transform.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state."
+}

@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/quantum_primitives/linear_combination_of_unitaries/linear_combination_of_unitaries.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "cf263dae4a2539543029545a0a50d262e100ba81e9c303a1bd07a25a75580256",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_primitives.linear_combination_of_unitaries.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_fourier_lcu.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Keep original four controller probabilities and identity/QFT/inverseQFT branches. Native within/apply prepares/unprepares controller, and adjoint inverts a comparison-controlled QFT. Closed generated predicate scratch is checked, freshened on inverse emission, uncomputed and released;user storage ownership does not change. Native range predicates avoid changing public Python equality typing. Complete source/native/Circuit states, two nonzero weights/data models,all data columns,named marginals,zero-workspace-amplitude and actual budgets pass. Native8work bits versus source0 is explicit;no resource or Notebook claim."
+}

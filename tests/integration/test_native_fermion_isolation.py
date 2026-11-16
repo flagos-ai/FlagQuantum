@@ -85,6 +85,9 @@ def test_native_workflow_without_external_science_packages() -> None:
         orbital_example()
         from examples.algorithms.fermion_hubbard import main as hubbard_example
         hubbard_example()
+        from examples.algorithms.fermion_two_body_density import main as density_example
+        for encoding in ENCODINGS:
+            density_example(encoding)
         assert not (blocked & {name.split(".")[0] for name in sys.modules})
     """
     script = textwrap.dedent(script)

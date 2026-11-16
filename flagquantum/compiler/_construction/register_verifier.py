@@ -13,6 +13,7 @@ from .._hybrid.model import (
     Value,
     ValueId,
 )
+from .borrowed_unitary import unitary_template_parts
 from .gate_tape import check_gate_tape
 from .pauli_rotation import checked_support
 from .profile import _fail, _width
@@ -73,6 +74,7 @@ def _verify_body(
     registers: list[Value] = list(borrowed)
     returned: list[Value] = list(borrowed)
     local_storage: set[Value] = set()
+    formatted: set[Value] = set()
     initialized = {v.id for v in borrowed}
     reversible: dict[ValueId, frozenset[ValueId]] = {}
     labels: set[str] = set()
@@ -140,6 +142,8 @@ def _verify_body(
                     op,
                 )
             registers.append(value)
+            if op.attributes.get("numeric_format", (False, 0)) != (False, 0):
+                formatted.add(value)
             if op.name == "qreg.declare":
                 fields = record_fields(op)
                 projected = (
@@ -232,6 +236,37 @@ def _verify_body(
                     registers.remove(source)
                     initialized.remove(source.id)
                 initialized.update(v.id for v in outputs)
+            elif op.name == "qreg.unitary_call":
+                callee = op.attributes["callee"]
+                if not isinstance(callee, str) or callee not in helpers:
+                    _fail("register.callee", "unitary call requires a known helper", op)
+                const, writable, _ = unitary_template_parts(helpers[callee])
+                formal = (*const, *writable)
+                if len(operands) != len(formal) or any(
+                    actual.type != expected.type
+                    for actual, expected in zip(operands, formal, strict=True)
+                ):
+                    _fail(
+                        "register.signature",
+                        "unitary call roles or widths disagree",
+                        op,
+                    )
+                if len(set(operands)) != len(operands):
+                    _fail("register.alias", "unitary call actuals must be disjoint", op)
+                if any(value.id not in initialized for value in operands):
+                    _fail(
+                        "register.uninitialized",
+                        "unitary call requires initialized storage",
+                        op,
+                    )
+                writes = operands[len(const) :]
+                if any(value in borrowed for value in writes):
+                    _fail(
+                        "register.const",
+                        "Const cannot be passed as writable storage",
+                        op,
+                    )
+                changed = writes
             elif op.name in {"qreg.call", "qreg.control_call"}:
                 controlled = op.name == "qreg.control_call"
                 if controlled:
@@ -924,6 +959,29 @@ def _verify_body(
                         "invalid uniform interval or width above eight",
                         op,
                     )
+                changed = (destination,)
+            elif op.name == "qreg.xor":
+                # The expression graph encodes source scales and signedness.
+                # Only the XOR destination must retain raw unsigned semantics.
+                if destination in formatted:
+                    _fail(
+                        "register.numeric", "expression XOR requires unsigned words", op
+                    )
+                if destination in borrowed:
+                    _fail("register.const", "Const cannot be an XOR target", op)
+                if destination.id not in initialized:
+                    _fail(
+                        "register.uninitialized", "XOR reads uninitialized storage", op
+                    )
+                check_call(op, arguments, destination)
+                if any(value in formatted for value in arguments):
+                    body = symbols[op.attributes["callee"]].body.blocks[0]
+                    if _width(body.operations[-1].operands[0].type, max_qubits) != 1:
+                        _fail(
+                            "register.numeric",
+                            "expression XOR requires unsigned value inputs or a one-bit predicate",
+                            op,
+                        )
                 changed = (destination,)
             elif op.name == "qreg.gate":
                 if destination in borrowed:

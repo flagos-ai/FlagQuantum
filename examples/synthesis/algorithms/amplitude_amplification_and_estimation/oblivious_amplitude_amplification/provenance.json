@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "2eb114b6709e3b13fea4099471c413b77b2e009d2d2235e4da35e6582d8827f8",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification_and_estimation.oblivious_amplitude_amplification.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_oaa.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain original four real data amplitudes, equal Pauli weights and ordered XX/XZ/ZX/ZZ selection. Factor SELECT into two independent X-or-Z choices: after X, a one-bit-controlled exact ZX matrix selects Z. Preserve phase of ZX rather than substituting a Pauli rotation with an extra branch phase. Native ordinary helpers compose block encoding,adjoint and within/apply block-only reflection;no arbitrary higher-order OAA API or source decorators. Unchanged-source/native/independent fullstates,all16data/block operator columns,two nonzero real models with repetitions0/1/2,named marginals,zero work and actual budgets pass. No production change or general optimization claim."
+}

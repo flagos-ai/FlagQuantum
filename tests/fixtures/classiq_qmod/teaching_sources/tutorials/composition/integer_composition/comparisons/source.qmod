@@ -1,0 +1,6 @@
+qfunc twist(steps:int, q:qbit[2]) {
+  power(steps) {phase(0.6*q[0]*q[1]);}
+}
+qfunc main(output q:qbit[2]) {
+  allocate(q);hadamard_transform(q);twist(2,q);
+}

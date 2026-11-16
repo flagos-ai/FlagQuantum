@@ -4,7 +4,6 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis.tutorials.composition.const_calls.main import const_composition
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.register_expansion import expand_register_calls
 from flagquantum.compiler._construction.register_profile import (
@@ -23,6 +22,7 @@ from flagquantum.compiler._hybrid.model import (
 )
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.register_program_cases import Registers
+from tools.synthesis_compiler_examples.const_calls.main import const_composition
 
 pytestmark = pytest.mark.unit
 

@@ -1,29 +1,17 @@
-# Grover
+# grover
 
 One Grover round in Qmod, native qfunc and an independent public Circuit.
 
-Profile: **High-level Python example**.
+The native form composes existing high-level phase functions; no native Grover
+export or Python callback port is claimed by this Qmod compatibility slice.
 
-Run from the repository root.
+## Run
 
 ```sh
 python -m examples.synthesis.algorithms.grover.grover.main
-```
-
-Start with [main.py](main.py) for the native qfunc program.
-
-The independent [Circuit comparison](comparisons/circuit.py) executes the
-[Qmod source](comparisons/source.qmod) and the same imported native program,
-then checks complete complex states, absolute phase and clean workspace.
-
-```sh
 python -m examples.synthesis.algorithms.grover.grover.comparisons.circuit
 ```
 
-The native example uses the currently supported scalar qfunc composition.
-The Qmod example may use higher-level library calls with a broader source profile.
-
-Qmod provenance and license are retained with the
-[Classiq fixtures](../../../../../tests/fixtures/classiq_qmod).
-The small inline comparisons are illustrative programs. Copies of original
-fixtures retain their exact source text.
+The independent Circuit comparison checks complete complex amplitudes,
+absolute phase and hidden workspace. It uses the native program directly.
+Original importer comparisons are retained separately as test evidence.

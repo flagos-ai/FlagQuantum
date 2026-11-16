@@ -1,0 +1,9 @@
+{
+  "upstream_path": "tutorials/workshops/grover_workshop/grover_workshop.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "d91986e3901f5eda691500013b20f111bb1fb6c679b32d44a603173dea6d5ad8",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.grover_workshop.grover_workshop.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_grover_workshop.py",
+  "scope": "Quantum program only; the associated Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Translate the seven-qubit equality oracle c == 2*a + b to a bounded native predicate phase, then use the exact positive-sign uniform-state reflection. The native program computes the phase directly without the original kickback scratch register; its output state matches the source and an independent dense Circuit, with zero workspace."
+}

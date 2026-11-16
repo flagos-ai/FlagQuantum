@@ -1,9 +1,69 @@
-# Synthesis applications
+# Applications
 
-The [complete original Qmod catalog](../CATALOG.md) includes **61** classified
-applications cases, with source, execution and native/Circuit availability.
-The table below lists the existing teaching examples.
+Native FlagQuantum programs currently available:
 
-| Example | Entry profile |
-| --- | --- |
-| [machine_learning/autoencoder](machine_learning/autoencoder/README.md) | High-level Python example |
+- [quantum_double_slit_experiment](cfd/double_slit_experiment/quantum_double_slit_experiment/README.md)
+- [heat_eq_qsvt](cfd/heat_eq_qsvt/README.md)
+- [qlbm](cfd/qlbm/README.md)
+- [quantum_volume](benchmarking/quantum_volume/README.md)
+- [randomized_benchmarking](benchmarking/randomized_benchmarking/README.md)
+- [molecular_energy_curve](chemistry/molecular_energy_curve/README.md)
+- [molecule_eigensolver](chemistry/molecule_eigensolver/README.md)
+- [protein_folding](chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/README.md)
+- [qfold](chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/README.md)
+- [qpe_for_molecules](chemistry/qpe_for_molecules/README.md)
+- [quantum_drude_oscillator](chemistry/quantum_drude_oscillator/README.md)
+- [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
+- [second_quantized_hamiltonian](chemistry/second_quantized_hamiltonian/README.md)
+- [tensor_hypercontraction](chemistry/tensor_hypercontraction/README.md)
+- [link_monitoring](cybersecurity/link_monitoring/README.md)
+- [patch_min_vertex_cover](cybersecurity/patching_management/patch_min_vertex_cover/README.md)
+- [whitebox_fuzzing](cybersecurity/whitebox_fuzzing/README.md)
+- [partial_exponential_state_preparation](finance/autocallable_options/partial_exponential_state_preparation/README.md)
+- [quantum_autocallable_option_pricing](finance/autocallable_options/quantum_autocallable_option_pricing/README.md)
+- [brownian_chebyshev_polynomials](finance/brownian_chebyshev_polynomials/README.md)
+- [credit_card_fraud](finance/credit_card_fraud/README.md)
+- [portfolio_optimization_with_hhl](finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/README.md)
+- [option_pricing](finance/option_pricing/README.md)
+- [portfolio_optimization](finance/portfolio_optimization/README.md)
+- [hhl_portfolio](finance/portfolio_optimization_hhl/hhl_portfolio/README.md)
+- [rainbow_options_bruteforce_method](finance/rainbow_options/rainbow_options_bruteforce_method/README.md)
+- [rainbow_options_direct_method](finance/rainbow_options/rainbow_options_direct_method/README.md)
+- [rainbow_options_integration_method](finance/rainbow_options/rainbow_options_integration_method/README.md)
+- [value_at_risk](finance/value_at_risk/README.md)
+- [facility_location](logistics/facility_location/README.md)
+- [task_scheduling_problem](logistics/task_scheduling_problem/README.md)
+- [traveling_salesman_problem](logistics/traveling_salesman_problem/README.md)
+- [vehicle_routing_problem](logistics/vehicle_routing_problem/README.md)
+- [adapt_qaoa](optimization/adapt_qaoa/README.md)
+- [electric_grid_optimization](optimization/electric_grid_optimization/README.md)
+- [integer_linear_programming](optimization/integer_linear_programming/README.md)
+- [kidney_exchange_problem](optimization/kidney_exchange/kidney_exchange_problem/README.md)
+- [evidence_scaling_labs](optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/README.md)
+- [max_clique](optimization/max_clique/README.md)
+- [max_independent_set](optimization/max_independent_set/README.md)
+- [max_induced_k_color_subgraph](optimization/max_induced_k_color_subgraph/README.md)
+- [max_k_vertex_cover](optimization/max_k_vertex_cover/README.md)
+- [min_graph_coloring](optimization/min_graph_coloring/README.md)
+- [minimum_dominating_set](optimization/minimum_dominating_set/README.md)
+- [qaoa_in_qaoa](optimization/qaoa_in_qaoa/README.md)
+- [rectangles_packing_grid](optimization/rectangles_packing/rectangles_packing_grid/README.md)
+- [robust_posture_optimization](optimization/robust_posture_optimization/README.md)
+- [set_cover](optimization/set_cover/README.md)
+- [set_partition](optimization/set_partition/README.md)
+- [variational_quantum_imaginary_time_evolution](optimization/variational_quantum_imaginary_time_evolution/README.md)
+- [fermi_hubbard_1d](physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/README.md)
+- [hhl_lanchester](physical_systems/hhl_lanchester/README.md)
+- [ising_model](physical_systems/ising_model/README.md)
+- [quantum_sawtooth_map](physical_systems/quantum_chaos/quantum_sawtooth_map/README.md)
+- [vlasov_ampere](plasma/vlasov_ampere/README.md)
+- [network_traffic_optimization](telecom/network_traffic_optimization/README.md)
+- [radio_access_network_positioning_antennas](telecom/radio_access_network/radio_access_network_positioning_antennas/README.md)
+- [resiliency_planning](telecom/resiliency_planning/README.md)
+- [resiliency_planning_amd](telecom/resiliency_planning/resiliency_planning_amd/README.md)
+
+## Validated local Notebook workflows
+
+- [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
+
+See the [full migration inventory](../MIGRATION_STATUS.md).

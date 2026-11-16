@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/chemistry/molecular_energy_curve/molecular_energy_curve.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "59cbf33ec5c867a45da3e381e2b7ec01cecacf9d3dbf4a6de04b425c6cd6c850",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.molecular_energy_curve.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_molecular_ansatz.py",
+  "scope": "Complete retained one-qubit molecular quantum ansatz. Two nonzero angles, both width/depth objectives, exact original/native/independent Circuit complex amplitudes, clean workspace, accepted one-instruction budget and insufficient-memory refusal are checked. Complete chemistry Notebook data/energy/optimization workflow remains pending.",
+  "native_semantic_adaptations": "The retained preparation helper initializes |1>; the original one-term multi_suzuki_trotter is expressed by existing native suzuki_trotter(-0.5*Y,theta,1,1). Independent X then RY(-theta) preserves the generator sign and absolute phase. This does not add a general multi_suzuki_trotter API. Both upstream paths happen to have byte-identical quantum sources but remain separate inventory cases. No production Compiler/API/budget changes; native user examples contain no source importer."
+}

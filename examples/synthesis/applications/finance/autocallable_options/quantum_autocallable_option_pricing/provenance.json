@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/finance/autocallable_options/quantum_autocallable_option_pricing.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "eeb66f5e3446a3498ece2269b97599cc6d0ef2d8895265276ecf605872bce386",
+  "native_entrypoint": "examples.synthesis.applications.finance.autocallable_options.quantum_autocallable_option_pricing.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_autocallable.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain all three original four-outcome distributions and the four-bit exponential reference. Quantize each affine coefficient toward zero at the source two-fractional-bit precision, then derive unsigned cumulative comparison bounds. Coherent predicates replace redundant deterministic sum/branch registers; the complete eleven-bit private purification remains. Keep strict call/barrier boundaries, sign-bit-flipped integration threshold, nonzero marker XOR, complex coherent marker phase and exact signed amplification reflection. Full source/native/independent branch-Circuit states pass for original and alternative nonzero shifts at k0/1/2; all64input boundaries, scratch zero, public density, alias/Output rejection and actual budgets pass. Native24physical/13cleanwork costs remain separate from frozen original costs. No compiler/runtime/default-budget change, no full Notebook or resource-optimality claim."
+}

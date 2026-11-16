@@ -1,0 +1,6 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/special_state_preparations/prepare_uniform_interval_state.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "dbb60094531485db6b44a48ac940f2a13562143a4d4deae3ecbc5ad4038c2a28",
+  "scope": "Quantum program only; notebook workflow is separate."
+}

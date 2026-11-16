@@ -1,0 +1,23 @@
+{
+  "schema": "flagquantum.synthesis_native_rotation_table_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "added_exports": [
+    "select_rotation"
+  ],
+  "signatures": {
+    "select_rotation": "(axis: \"Literal['X', 'Y', 'Z']\", angles: 'Sequence[float]', selector: 'QNum | QArray[QBit]', target: 'QBit', /) -> 'None'"
+  },
+  "selector_width_max": 8,
+  "axis_values": [
+    "X",
+    "Y",
+    "Z"
+  ],
+  "selector_numeric_semantics": "raw storage word",
+  "shared_lowering_owner": "compiler",
+  "qpe_pure_regions_admitted": true,
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-ROTATION-TABLE-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

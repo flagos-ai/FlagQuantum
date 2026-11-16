@@ -416,9 +416,8 @@ def _declines_vocabulary(
 def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None:
     """The exact replacement of one same-qubit run, or None to leave it.
 
-    None covers refusal as well as no gain: a run a single z-rotation/pulse
-    vocabulary already spells, and a run whose replacement would not be shorter.
-    Every instruction here is foldable and readable, so there is no third case.
+    Decline a replacement that is not shorter, changes its permitted vocabulary,
+    or loses a resolvable component during Euler extraction.
     """
 
     product = _run_product(instructions)
@@ -432,6 +431,17 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
     if len(replacement) >= len(instructions):
         return None
     if _declines_vocabulary(instructions, replacement):
+        return None
+    reconstructed = _run_product(list(replacement))
+    assert reconstructed is not None
+    # Euler extraction can amplify roundoff on small pivots. Retain the source
+    # when reconstruction loses a resolvable component or absolute phase;
+    # repeated short folds otherwise amplify that loss across a program.
+    if any(
+        abs(product[row][column] - reconstructed[row][column]) > 8 * math.ulp(1.0)
+        for row in range(2)
+        for column in range(2)
+    ):
         return None
     return replacement
 

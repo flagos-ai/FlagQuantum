@@ -1,0 +1,23 @@
+{
+  "schema": "flagquantum.execution_runtime_inputs",
+  "version": "1.0",
+  "status": "implemented_candidate",
+  "proposal": "contracts/execution-runtime-inputs-proposal.json",
+  "authorization_record": "docs/api-changes/FQ-EXECUTION-RUNTIME-INPUTS-20261112.md",
+  "implementation_authorized": true,
+  "release_authorized": false,
+  "previous_run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None, initial_state: 'Tensor | None' = None) -> 'ExecutionResult'",
+  "run_signature": "(program_or_plan: 'Circuit | CircuitIR | ExecutionPlan | IsingBraidProgram | LindbladPlan | SynthesisProgram', *, options: 'ExecutionOptions | None' = None, outputs: 'OutputRequest | Sequence[OutputRequest] | None' = None, noise_model: 'NoiseModel | None' = None, compiler: 'str | None' = None, target: 'str | None' = None, target_qubits: 'Sequence[int] | None' = None, shots: 'int | None' = None, name: 'str | None' = None, initial_state: 'Tensor | None' = None, inputs: 'Mapping[str, float | Tensor] | None' = None) -> 'ExecutionResult'",
+  "plan_signature_unchanged": true,
+  "outer_plan_schema_unchanged": true,
+  "runtime_inputs_extension": {
+    "namespace": "flagquantum.execution",
+    "kind": "runtime_inputs",
+    "version": "1.0",
+    "payload": {
+      "parameters": "sorted_unique_symbolic_names"
+    }
+  },
+  "scope": "exact_unbatched_cpu_pytorch_statevector_real_scalar_angles",
+  "consumer_tests": "tests/api_contract/test_execution_runtime_inputs.py"
+}

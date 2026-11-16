@@ -1,0 +1,9 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "1406ca98e970189c574fbcaa2b58daca07c4cb84c1a703a30fb135905c4852f7",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification_and_estimation.quantum_counting.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_amplification.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Native existing qfunc composition prepares A once and repeats -A R0 A\u2020 Z_indicator with bounded static k. Source records become separate unsigned numeric fields without changing raw physical storage or predicates. Predicate XOR uses H/phase kickback and preserves nonzero markers. All128VaR probabilities and the prefix-conditioned complete preparation are retained. QMCI retains one-bit x/y and x*x+y*y<4,which marks every source input;no correction to the source mathematical setup is implied. k=0/1/2 original/native/independent full states,absolute phases,marginals,retained environment,work cleanup,two nonzero marker/data columns and actual operation budgets pass. No new public API or production lowering;no optimality/performance claim."
+}

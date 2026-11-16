@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "bc376abfa2ddbc8250b6fc720a2c8578853e526aad66ce29c8729f05e9a36ad6",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.quantum_drude_oscillator.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_drude.py",
+  "scope": "Quantum program only; complete energy/optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Preserve forty parameters, ten ordered pair layers and six outputs. Literal helper argument arrays replace static classical array slices; quantum array slices remain checked views. R(theta,pi/2) expresses exact RY with additional rotations, without a resource parity claim."
+}

@@ -5,6 +5,7 @@ from __future__ import annotations
 import operator
 from collections.abc import Mapping
 from importlib import import_module
+from itertools import product
 from types import ModuleType
 from typing import TYPE_CHECKING, SupportsIndex
 
@@ -77,6 +78,61 @@ def from_openfermion_fermion(source: object) -> FermionOperator:
                 raise ValueError("ladder action must be 0 (annihilate) or 1 (create)")
             product = product * (create(mode) if action else annihilate(mode))
         terms.extend(product.terms)
+    return FermionOperator(tuple(terms))
+
+
+def from_openfermion_interaction(source: object) -> FermionOperator:
+    """Import number-conserving spin-orbital coefficients without pruning.
+
+    The two-body coefficient multiplies ``a†[p] a†[q] a[r] a[s]`` directly:
+    no integral permutation or additional factor of one half is applied.
+    Requires OpenFermion only when called. Dense numeric NumPy arrays must
+    have matching square one-body and four-index two-body shapes. Malformed
+    objects, unsupported tensor keys/dtypes and nonfinite coefficients raise
+    TypeError or ValueError. No external arrays are modified or retained.
+
+    A runnable import/encode/measure workflow, requiring the optional upstream
+    environment, is in ``docs/development/OPENFERMION_OBJECT_INTEROP.md`` under
+    "InteractionOperator import extension". Its expected energy is 1.25.
+    """
+    upstream = _upstream()
+    if not isinstance(source, upstream.InteractionOperator):
+        raise TypeError("source must be an OpenFermion InteractionOperator")
+    tensors = getattr(source, "n_body_tensors", None)
+    if not isinstance(tensors, Mapping):
+        raise TypeError("InteractionOperator n_body_tensors must be a mapping")
+    if set(tensors) != {(), (1, 0), (1, 1, 0, 0)}:
+        raise ValueError(
+            "InteractionOperator requires constant, one-body and two-body tensors only"
+        )
+    # NumPy is owned by the explicitly installed upstream boundary, never Core.
+    numpy = import_module("numpy")
+    one, two = tensors[(1, 0)], tensors[(1, 1, 0, 0)]
+    if not isinstance(one, numpy.ndarray) or not isinstance(two, numpy.ndarray):
+        raise TypeError("InteractionOperator tensors must be dense NumPy arrays")
+    if one.ndim != 2 or one.shape[0] != one.shape[1]:
+        raise ValueError("InteractionOperator one-body tensor must be square")
+    width = one.shape[0]
+    if two.shape != (width,) * 4:
+        raise ValueError(
+            "InteractionOperator two-body shape must match the one-body width"
+        )
+    if one.dtype.kind not in "iufc" or two.dtype.kind not in "iufc":
+        raise TypeError(
+            "InteractionOperator tensors require real or complex numeric dtypes"
+        )
+    terms = [FermionTerm(scalar(tensors[()]))]
+    for p, q in product(range(width), repeat=2):
+        coefficient = scalar(one[p, q])
+        if coefficient:
+            terms.append(FermionTerm(coefficient, (p,), (q,)))
+    for p, q, r, s in product(range(width), repeat=4):
+        coefficient = scalar(two[p, q, r, s])
+        if coefficient:
+            monomial = (
+                coefficient * create(p) * create(q) * annihilate(r) * annihilate(s)
+            )
+            terms.extend(monomial.terms)
     return FermionOperator(tuple(terms))
 
 

@@ -1,17 +1,12 @@
-"""Compare Qmod and native qfunc against the independent Circuit."""
+"""Compare native FlagQuantum and independent Circuit amplitudes."""
 
 import math
-from pathlib import Path
 
 import torch
 
 import flagquantum as fq
-from examples.synthesis.algorithms.grover.predicate_oracle.main import (
-    main,
-)
+from examples.synthesis.algorithms.grover.predicate_oracle.main import main
 from flagquantum import synth
-
-QMOD = Path(__file__).with_name("source.qmod").read_text(encoding="utf-8")
 
 
 def run_example() -> None:
@@ -23,17 +18,14 @@ def run_example() -> None:
     )
     circuit.any(0, 1, matrix=diffuser)
     reference = fq.run(circuit).statevector().reshape(-1)
-    for program in (
-        synth.synthesize(QMOD, source_format="qmod"),
-        synth.synthesize(main),
-    ):
+    for program in (synth.synthesize(main),):
         actual = fq.run(program).statevector().reshape(-1)
         expected = torch.zeros_like(actual)
-        expected[:: 1 << (program.circuit.n_wires - 2)] = reference
+        expected[:: 1 << program.circuit.n_wires - 2] = reference
         torch.testing.assert_close(actual, expected, atol=1e-12, rtol=0)
         print(program.report["resources"])
     print(
-        "Predicate Qmod, native qfunc intent and Circuit agree, including global phase and clean scratch."
+        "Native qfunc and Circuit agree, including absolute phase and clean workspace."
     )
 
 

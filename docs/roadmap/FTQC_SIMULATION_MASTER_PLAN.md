@@ -1159,3 +1159,58 @@ FTS-02/R04/M0-M5 remain unchanged. No research, performance, threshold or comple
 parity claim is added. Next: publish this qualified candidate, complete its
 actual-main acceptance, then propose arbitrary-data file writing and review the
 remaining pinned upstream inventory.
+
+## Caller-owned shot-data writing candidate — 2026-11-11
+
+The user approved the 27-path writer package under proposal SHA-256
+`b22e6af76b65abd4a93ff97e9825197f83fe815b509b226f33b65b2818eeba83`.
+It adds `write_shot_data_file` for CPU bool and packed uint8 tensors across the
+six locked Stim 1.16.0 encodings, reusing the current 96-file embedded closure.
+Fake and source conformance have passed, including fixed bytes and the SDK
+replacement route. The embedded build, no-SDK wheel verifier, installed
+profiles, broad smoke/unit and integration tiers, final-head example and PR
+publication remain pending. No merge is authorized. The existing 64 MiB
+principal estimate and 1 GiB output estimate remain request guards, not RSS
+claims. FTS-02/R04/M0-M5 and research status do not advance.
+
+## Approved native DEM sampling delivery (2026-11-12)
+
+PR #1152 is merged as `39b16b446733c215a14c59332bcf69c350f62069`.
+Actual-main source acceptance passed 345 tests with one expected SDK-only skip,
+using accepted binaries rather than a fresh main wheel. The next approved
+32-path bundle adds reusable independent-DEM sampling, error recording/replay
+and six-format streamed files. It reuses two unchanged Stim 1.16.0 templates
+(98 source files, 37 translation units). The approved compatibility amendment
+adds one existing test path, bringing implementation scope to 33 paths.
+macOS arm64 offline wheel/sdist and
+installed native acceptance passed: core 79 passed/1 expected SDK-only skip,
+SDK profile 80 passed. Complete smoke/unit passed 19,971 tests
+(172 skipped); integration passed 7,459 (279 skipped).
+No Stim Python package is present in the accepted core installation; real
+`prepare_dem`, `sample_dem` and `write_dem` calls were recorded. Existing
+exclusive-group `dem_sampling` and rejection rules remain. Final-head example
+and PR publication are the remaining delivery steps; merge is not authorized.
+See [the approved implementation proposal](../development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md).
+Full upstream DEM text/REPEAT compatibility, categorical native sampling,
+Pauli/Tableau/FlipSimulator algebra, mixed non-Clifford routing and platform
+expansion remain explicit gaps. No maturity or full-parity claim is promoted.
+
+## Recovered embedded noiseless execution candidate — 2026-11-13
+
+This slice replaces an implementation behind the existing stabilizer sampling
+boundary. It preserves the local CPU path, terminal measurement ordering,
+marker-free SDK implementation, positioned-noise behavior and existing
+16,384-wire regression. It introduces no numerical core or horizontal public
+abstraction and makes no capacity, performance or maturity promotion.
+
+The initial 11-path scope includes two separately approved SDK-test isolation
+repairs, for 13 paths. Fresh qualification replaces the unavailable prior
+artifacts: 208 focused tests, one offline macOS arm64 wheel/sdist build, no-SDK
+embedded installation 82 passed, embedded with SDK 246 passed, and marker-free
+SDK 246 passed. Actual native calls and the 16,384-wire regression are recorded
+separately from replacement fakes. Complete smoke/unit passed 20,567 tests, with
+296 selected-node skips and 36 collection skips. Integration completed 12,274
+unique nodes across disjoint groups (12,028 passed, 246 skipped); historical
+failed attempts and approved recoveries remain retained. Final-head publication
+and actual-main acceptance remain separate gates, with merge separately
+authorized. Existing capability maturity and all broader FTQC gaps remain.

@@ -15,6 +15,16 @@
           127672433030,
           127672434207
         ]
+      },
+      {
+        "run_id": 43206088293,
+        "commit": "f4a33fbdb4c9e28571f00c81bcffbff189b7d097",
+        "recorded_at": "2026-11-12",
+        "selection": "Linux pull-request coverage; attempt 2; pytest --durations=50; QLBM and packed QSVT cases",
+        "job_ids": [
+          131177346964
+        ],
+        "assigned_ci_cpus": 12
       }
     ]
   },
@@ -172,6 +182,19 @@
     "tests/unit/test_stabilizer_execution_mode.py::test_planning_succeeds_past_the_width_an_amplitude_count_cannot_serialize": 6.87,
     "tests/unit/test_static_mps.py::test_bucketed_scheduler_matches_unbucketed_loss_and_gradient": 7.99,
     "tests/unit/test_tensor_network_peak_admission.py::test_an_undeclared_limit_enforces_nothing": 8.24,
-    "tests/unit/test_tensor_network_peak_admission.py::test_the_declared_limit_binds_the_order_that_runs": 12.82
+    "tests/unit/test_tensor_network_peak_admission.py::test_the_declared_limit_binds_the_order_that_runs": 12.82,
+    "tests/integration/test_synthesis_native_qlbm.py::test_approved_source_native_and_independent_complete_state": 602.8,
+    "tests/integration/test_synthesis_native_qlbm.py::test_signed_boundary_and_coherent_inputs[0]": 478.76,
+    "tests/integration/test_synthesis_native_qlbm.py::test_signed_boundary_and_coherent_inputs[1]": 467.63,
+    "tests/integration/test_synthesis_native_packed_qsvt.py::test_resource_budgets[memory-paper]": 125.79,
+    "tests/integration/test_synthesis_native_packed_qsvt.py::test_resource_budgets[depth-paper]": 111.14,
+    "tests/integration/test_synthesis_native_qlbm.py::test_resource_budgets_refuse[qubits]": 25.35,
+    "tests/integration/test_synthesis_native_qlbm.py::test_resource_budgets_refuse[workspace]": 25.28,
+    "tests/integration/test_synthesis_native_qlbm.py::test_resource_budgets_refuse[memory]": 15.86,
+    "tests/integration/test_synthesis_native_qlbm.py::test_resource_budgets_refuse[depth]": 14.16,
+    "tests/integration/test_synthesis_native_qlbm.py::test_resource_budgets_refuse[operations]": 13.89,
+    "tests/integration/test_synthesis_native_packed_qsvt.py::test_resource_budgets[memory-heat]": 2.27,
+    "tests/integration/test_synthesis_native_packed_qsvt.py::test_resource_budgets[depth-heat]": 2.19,
+    "tests/integration/test_synthesis_native_packed_qsvt.py::test_resource_budgets[operations-heat]": 2.15
   }
 }

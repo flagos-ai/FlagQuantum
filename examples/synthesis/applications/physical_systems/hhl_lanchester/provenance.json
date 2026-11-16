@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/physical_systems/hhl_lanchester/hhl_lanchester.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "c352c8cfc2834da2a086ccda08d95d25c97816dc5daa767ad026a2838b9a8dfd",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.hhl_lanchester.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_lanchester.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Flatten the source group record into separate named native rabbits and time_index outputs with preserved physical order and unsigned width. Explicit least-significant-first (rabbits,time_index) sequence jointly prepares all32 original amplitudes and applies every32x32 matrix entry. Original64rotation angles and six unsigned fractional phase bits retained. MatrixQPE uses existing four decomposition work bits. Source/native/reference complete complex states match without phase alignment; original and two nonzero real vectors,exact numeric field/phase marginals and clean work verified. Original/native both16physical,4work,20213operations,depth18016. No opaque merged output,no new record class or numerical kernel,no Notebook or performance claim."
+}

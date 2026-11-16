@@ -1,0 +1,25 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e67dd3b8cfb6d161076583dcc8c3da15f667eb962841d7d9fa40477386962845",
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.modular_exp.modular_exp_example.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_modular_exp.py",
+  "scope": "Complete local three-cell Notebook workflow: prepare uniform powers and x=1, modular exponentiation, synthesize/execute, seeded sampling and verify the modular relation.",
+  "native_semantic_adaptations": "Preserve modulus five, base four, both three-bit unsigned registers and power/x output order. Fresh x initialization has the same semantics as allocation followed by XOR one. Use the shared modular permutation; 1000 seeded local samples replace the cloud sampler and ordinary tuple assertions replace dataframe queries. No hardware or cloud claim.",
+  "git_blob_sha1": "8a10636e6f68998978ed17e966ebf98d649f7e56",
+  "notebook_path": "functions/function_usage_examples/arithmetic/modular_exp/modular_exp_example.ipynb",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "f73454c1b4f366479e41b81e51f3e66bfd2b8e8eb2f2bf1bfad9f69b3f115de6"
+    },
+    {
+      "index": 3,
+      "sha256": "cdd0e47667bccb5f8c4d9ea717d146060a426a2f165e12380fccc88f499b570d"
+    },
+    {
+      "index": 5,
+      "sha256": "2263ed105a80429fe9c920ce9362dea665c440173f5c51e72b79f40a56e86281"
+    }
+  ]
+}

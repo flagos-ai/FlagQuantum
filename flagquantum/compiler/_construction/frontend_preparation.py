@@ -7,7 +7,14 @@ import math
 from typing import TYPE_CHECKING
 
 from .frontend_python import _error
-from .program_types import prepare_amplitudes, prepare_bell_state, prepare_ghz_state
+from .frontend_views import locations, packed_locations
+from .program_types import (
+    inplace_prepare_amplitudes,
+    inplace_prepare_state,
+    prepare_amplitudes,
+    prepare_bell_state,
+    prepare_ghz_state,
+)
 from .register_profile import MAX_PREPARED_AMPLITUDES, register_width
 
 if TYPE_CHECKING:
@@ -89,18 +96,34 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
             owner.source, node, "program.signature", "expected vector, bound and target"
         )
     vector, tolerance, output = node.args
-    if (
-        not isinstance(vector, (ast.List, ast.Tuple))
-        or not 2 <= len(vector.elts) <= MAX_PREPARED_AMPLITUDES
-        or len(vector.elts) & (len(vector.elts) - 1)
+    bound_vector = (
+        owner.classical.get(vector.id) if isinstance(vector, ast.Name) else None
+    )
+    if isinstance(vector, (ast.List, ast.Tuple)):
+        vector_size = len(vector.elts)
+    elif isinstance(bound_vector, tuple):
+        vector_size = len(bound_vector)
+    else:
+        _error(
+            owner.source,
+            vector,
+            "program.prepare",
+            "use a literal real vector or a bound classical real array",
+        )
+    if not 2 <= vector_size <= MAX_PREPARED_AMPLITUDES or vector_size & (
+        vector_size - 1
     ):
         _error(
             owner.source,
             vector,
             "program.prepare",
-            "use a literal real vector of power-of-two length in 2..256",
+            "use a real vector of power-of-two length in 2..256",
         )
-    values = tuple(_number(owner, item) for item in vector.elts)
+    if isinstance(vector, (ast.List, ast.Tuple)):
+        values = tuple(_number(owner, item) for item in vector.elts)
+    else:
+        assert isinstance(bound_vector, tuple)
+        values = bound_vector
     bound = _number(owner, tolerance)
     if bound < 0:
         _error(
@@ -109,7 +132,7 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
             "program.prepare",
             "preparation bound must be nonnegative",
         )
-    if function is not prepare_amplitudes:
+    if function not in (prepare_amplitudes, inplace_prepare_amplitudes):
         try:
             normalized = math.isclose(math.fsum(values), 1.0, rel_tol=0, abs_tol=1e-12)
         except OverflowError:
@@ -124,6 +147,47 @@ def capture_preparation(owner: _Body, node: ast.Call, function: object) -> None:
         values = tuple(math.sqrt(value) for value in values)
         bound = 0.0
     width = len(values).bit_length() - 1
+    if function in (inplace_prepare_amplitudes, inplace_prepare_state):
+        targets = (
+            packed_locations(owner, output)
+            if isinstance(output, (ast.List, ast.Tuple))
+            else locations(owner, output)
+        )
+        if len(targets) != width or len(set(targets)) != len(targets):
+            _error(
+                owner.source,
+                output,
+                "program.prepare",
+                "inplace preparation needs distinct bits matching the vector width",
+            )
+        target = targets[0][0]
+        whole = targets == tuple((target, bit) for bit in range(register_width(target)))
+        if not whole or isinstance(output, (ast.List, ast.Tuple)):
+            ordered = tuple(reversed(targets))
+            owner.emit(
+                "qreg.inplace_prepare_amplitudes",
+                node,
+                tuple(value for value, _ in ordered),
+                amplitudes=values,
+                bound=bound,
+                indices=tuple(index for _, index in ordered),
+            )
+            return
+        if register_width(target) != width:
+            _error(
+                owner.source,
+                output,
+                "program.width",
+                "vector width must match the target",
+            )
+        owner.emit(
+            "qreg.inplace_prepare_amplitudes",
+            node,
+            (target,),
+            amplitudes=values,
+            bound=bound,
+        )
+        return
     target = owner.register(output, width)
     if register_width(target) != width:
         _error(

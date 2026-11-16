@@ -1,5 +1,6 @@
 """Compatibility imports for :mod:`flagquantum.compiler.registers._arithmetic_kernels`."""
 
+from .registers._arithmetic_kernels import borrowed_less_xor as borrowed_less_xor
 from .registers._arithmetic_kernels import (
     comparison_xor as comparison_xor,
 )

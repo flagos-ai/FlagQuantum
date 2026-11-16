@@ -1,0 +1,9 @@
+{
+  "upstream_path": "community/paper_implementation_project/block_encoding/laplacian_BE_Nx4_Ny4.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "84a29820a360508a798b9c2fcb13f5696522b7501869aec3831604f778daa737",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.block_encoding.laplacian_4x4.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_laplacian_4x4.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain all9logical bits. Selector QArray index0 is lowbit, physical readout order is high-to-low. Expose source j as j1(high2),j0(low2). Complete-register QFTs with checked carry/borrow predicates reproduce full-register and coordinate shifts. Centered real phase between Hadamards reproduces all3RX table entries, including negative identity at2pi and absolute phase. Preserve XOR boundary flag, selector parity toggle and exact8column preparation inverse. Independent Circuit enumerates512basis columns with original modular arithmetic and direct RX matrices. Native9physical/0work,896operations/depth725 versus original12physical,139operations/depth113; no gate optimality claim."
+}

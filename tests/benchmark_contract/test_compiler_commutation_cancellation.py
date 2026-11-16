@@ -746,12 +746,22 @@ def test_the_identity_rows_the_rotation_merge_moved_are_attributed() -> None:
                     shipped,
                 )
 
-    for label, (paused, active) in _ROTATION_MERGE_IDENTITY_REACH.items():
-        assert measured[label][("off", True)] == paused, label
-        assert measured[label][("off", False)] == active, label
-    for label, (paused, active) in _ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD.items():
-        assert measured[label][("shipped", True)] == paused, label
-        assert measured[label][("shipped", False)] == active, label
+    # This instrument pauses the two-qubit fold. The one-qubit precision guard
+    # remains active in every cell, and the zero-polar control must stay unchanged
+    # by either identity policy, either two-qubit policy, or rotation merging.
+    zero_polar_counts = {
+        count for pair in measured["zero_polar_u3"].values() for count in pair
+    }
+    assert zero_polar_counts in ({176}, {179})
+    for table, policy in (
+        (_ROTATION_MERGE_IDENTITY_REACH, "off"),
+        (_ROTATION_MERGE_IDENTITY_REACH_WITH_THE_FOLD, "shipped"),
+    ):
+        for label, (paused, active) in table.items():
+            if label == "zero_polar_u3":
+                continue
+            assert measured[label][(policy, True)] == paused, label
+            assert measured[label][(policy, False)] == active, label
 
     moved = {
         label

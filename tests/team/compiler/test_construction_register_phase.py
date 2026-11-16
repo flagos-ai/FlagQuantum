@@ -5,7 +5,6 @@ from dataclasses import replace
 
 import pytest
 
-from examples.synthesis.tutorials.control.register_phase.main import phase_composition
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.lowering import Schedule
 from flagquantum.compiler._construction.register_lowering import (
@@ -28,6 +27,7 @@ from flagquantum.compiler._hybrid.model import (
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.compiler.topology.coupling import CouplingMap
 from tests.register_program_cases import Registers
+from tools.synthesis_compiler_examples.register_phase.main import phase_composition
 
 pytestmark = pytest.mark.unit
 

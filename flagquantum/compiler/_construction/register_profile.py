@@ -7,14 +7,18 @@ inspected or certified by this structural verifier.
 
 import math
 from collections.abc import Sequence
+from dataclasses import replace
 from types import MappingProxyType
 
 import torch
 
 from .._hybrid.model import (
+    QUANTUM_EFFECT,
+    Block,
     HybridProgram,
     IRType,
     Operation,
+    Region,
     Value,
     ValueId,
 )
@@ -54,10 +58,12 @@ _ATTRIBUTES = MappingProxyType(
         "qreg.array_phase_flip": frozenset(),
         "qreg.control_phase": frozenset({"angle"}),
         "qreg.replay": frozenset({"callee", "count"}),
+        "qreg.unitary_call": frozenset({"callee"}),
         "qreg.gate_tape": frozenset({"workspace", "templates", "schedule"}),
         "qreg.reset": frozenset({"index"}),
         "qreg.gate": frozenset({"gate", "index"}),
         "qreg.compute": frozenset({"callee"}),
+        "qreg.xor": frozenset({"callee"}),
         "qreg.uncompute": frozenset(),
         "qreg.phase": frozenset({"callee"}),
         "qreg.control_call": frozenset({"callee"}),
@@ -354,6 +360,76 @@ def register_ports(
     return names, values, position
 
 
+def _borrowed_program(
+    operations: Sequence[Operation],
+    readonly: Sequence[Value],
+    writable: Sequence[Value],
+    *,
+    name: str = "$borrow",
+) -> HybridProgram:
+    """Model initialized borrowed storage without assuming actual zero entry.
+
+    This envelope models incoming writable storage as already initialized.
+    Its allocation operations prove
+    initialization structurally; they make no zero-state assumption about the
+    actual caller storage or the captured unitary effects.
+    """
+    scope = name
+    occupied = {value.id.scope for value in (*readonly, *writable)}
+    occupied.update(
+        value.id.scope
+        for operation in operations
+        for value in (*operation.operands, *operation.results)
+    )
+    while scope in occupied:
+        scope += "$"
+    entry = Value(ValueId(scope, 0), QUANTUM_EFFECT)
+    effect = entry
+    counter = 1
+    checked: list[Operation] = []
+    for index, value in enumerate(writable):
+        checked.append(
+            Operation(
+                "qreg.declare", results=(value,), attributes={"name": f"$inout{index}"}
+            )
+        )
+        following = Value(ValueId(scope, counter), QUANTUM_EFFECT)
+        counter += 1
+        checked.append(Operation("qreg.allocate", (effect, value), (following,)))
+        effect = following
+    for operation in operations:
+        if not operation.operands:
+            checked.append(operation)
+            continue
+        following = Value(ValueId(scope, counter), QUANTUM_EFFECT)
+        counter += 1
+        checked.append(
+            replace(
+                operation,
+                operands=(effect, *operation.operands[1:]),
+                results=(following,),
+            )
+        )
+        effect = following
+    checked.append(Operation("qreg.return", (effect, *readonly, *writable)))
+    return HybridProgram(name, Region((Block((entry, *readonly), tuple(checked)),)))
+
+
+def _verify_borrowed_effects(
+    operations: Sequence[Operation],
+    functions: Sequence[HybridProgram],
+    readonly: Sequence[Value],
+    writable: Sequence[Value],
+) -> None:
+    """Check borrowed effects with the existing Const and lifecycle verifier."""
+    from .register_verifier import _verify_body
+
+    envelope = _borrowed_program(operations, readonly, writable)
+    arithmetic = tuple(f for f in functions if not is_register_function(f))
+    helpers = {f.name: f for f in functions if is_register_function(f)}
+    _verify_body(envelope, arithmetic, helpers, 256, const_entry=True)
+
+
 def verify_register_program(
     program: HybridProgram,
     functions: Sequence[HybridProgram] = (),
@@ -411,7 +487,12 @@ def verify_register_program(
             active.add(name)
             depth = 1
             for op in helpers[name].body.blocks[0].operations:
-                if op.name in {"qreg.call", "qreg.control_call", "qreg.replay"}:
+                if op.name in {
+                    "qreg.call",
+                    "qreg.control_call",
+                    "qreg.replay",
+                    "qreg.unitary_call",
+                }:
                     callee = op.attributes.get("callee")
                     if not isinstance(callee, str) or callee not in helpers:
                         _fail(
@@ -519,6 +600,25 @@ def verify_operation_attributes(op: Operation) -> None:
     ):
         assert attributes is not None
         attributes = attributes | {"fields", "record_type"}
+    if op.name in {"qreg.declare", "qreg.hidden"} and "numeric_format" in op.attributes:
+        numeric = op.attributes["numeric_format"]
+        if (
+            len(op.results) != 1
+            or not isinstance(numeric, tuple)
+            or len(numeric) != 2
+            or type(numeric[0]) is not bool
+            or type(numeric[1]) is not int
+            or not 0 <= numeric[1] <= register_width(op.results[0], op)
+            or "fields" in op.attributes
+            or "record_type" in op.attributes
+        ):
+            _fail(
+                "register.numeric",
+                "numeric format requires a scalar (bool, bounded fractional bits)",
+                op,
+            )
+        assert attributes is not None
+        attributes = attributes | {"numeric_format"}
     if op.name == "qreg.hidden" and "workspace" in op.attributes:
         if op.attributes["workspace"] is not True:
             _fail(
@@ -542,7 +642,7 @@ def verify_operation_attributes(op: Operation) -> None:
             if len(op.operands) > 1
             else frozenset({"angle"})
         )
-    if op.name == "qreg.call" and "inverse" in op.attributes:
+    if op.name in {"qreg.call", "qreg.unitary_call"} and "inverse" in op.attributes:
         if op.attributes["inverse"] is not True:
             _fail("register.adjoint", "inverse call marker must be true", op)
         attributes = frozenset({"callee", "inverse"})

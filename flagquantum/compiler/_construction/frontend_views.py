@@ -4,13 +4,15 @@ from __future__ import annotations
 
 import ast
 from collections.abc import Sequence
+from dataclasses import replace
 from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING
 
 from .._hybrid.model import Value
+from .frontend_classical import bind_helper
 from .frontend_ports import _Port, _resolve
 from .frontend_python import _error, _QuantumFunction
-from .register_profile import register_width
+from .register_profile import _verify_borrowed_effects, register_width
 
 if TYPE_CHECKING:
     from .frontend_program import _Body
@@ -39,6 +41,7 @@ def _require_builtin(owner: _Body, node: ast.Name, expected: object) -> None:
     if (
         node.id in visible
         or node.id in owner.loop_variables
+        or node.id in owner.classical
         or resolved is not expected
     ):
         _error(
@@ -56,11 +59,22 @@ def static_integer(owner: _Body, node: ast.expr, depth: int = 0) -> int:
     if isinstance(node, ast.Constant):
         value = node.value
     elif isinstance(node, ast.Name):
-        value = owner.loop_variables.get(node.id)
+        if node.id in owner.classical and type(owner.classical[node.id]) is not int:
+            _error(
+                owner.source,
+                node,
+                "program.loop",
+                "real parameters cannot be static integers",
+            )
+        value = owner.classical.get(node.id, owner.loop_variables.get(node.id))
         if value is None and node.id not in (
             owner.aliases if owner.aliases is not None else owner.ports
         ):
             value = _resolve(owner.definition, node)
+    elif isinstance(node, ast.Subscript):
+        from .frontend_classical import classical_number
+
+        value = classical_number(owner, node, depth + 1)
     elif isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.USub, ast.UAdd)):
         value = static_integer(owner, node.operand, depth + 1)
         if isinstance(node.op, ast.USub):
@@ -83,7 +97,14 @@ def static_integer(owner: _Body, node: ast.expr, depth: int = 0) -> int:
         and not node.keywords
     ):
         _require_builtin(owner, node.func, len)
-        value = len(locations(owner, node.args[0], depth + 1))
+        argument = node.args[0]
+        if isinstance(argument, ast.Name) and argument.id in owner.classical:
+            array = owner.classical[argument.id]
+            if not isinstance(array, tuple):
+                _error(owner.source, node, "program.binding", "len requires an array")
+            value = len(array)
+        else:
+            value = len(locations(owner, argument, depth + 1))
     if type(value) is not int or abs(value) > 4096:
         _error(
             owner.source,
@@ -92,6 +113,29 @@ def static_integer(owner: _Body, node: ast.expr, depth: int = 0) -> int:
             "expected a static integer in -4096..4096",
         )
     return value
+
+
+def packed_locations(owner: _Body, node: ast.expr) -> tuple[tuple[Value, int], ...]:
+    """Flatten an explicit storage sequence in logical least-significant order."""
+    if isinstance(node, (ast.List, ast.Tuple)):
+        if not 1 <= len(node.elts) <= 8:
+            _error(
+                owner.source,
+                node,
+                "program.view",
+                "use one to eight explicit storage elements",
+            )
+        if any(isinstance(item, (ast.List, ast.Tuple)) for item in node.elts):
+            _error(
+                owner.source,
+                node,
+                "program.view",
+                "nested storage sequences are not admitted",
+            )
+        return tuple(
+            location for item in node.elts for location in locations(owner, item)
+        )
+    return locations(owner, node)
 
 
 def locations(
@@ -123,12 +167,31 @@ def locations(
                     "a scalar element cannot be indexed again",
                 )
             base = base.value
-        if not isinstance(base, ast.Name) or base.id not in owner.array_names:
+        ports = owner.alias_ports if owner.aliases is not None else owner.ports
+        assert ports is not None
+        numeric = (
+            isinstance(base, ast.Name)
+            and base.id in ports
+            and ports[base.id].kind == "qnum"
+        )
+        if numeric:
+            assert isinstance(base, ast.Name)
+            port = ports[base.id]
+            if port.signed or port.fractional_bits:
+                _error(
+                    owner.source,
+                    node,
+                    "program.view",
+                    "numeric bit views require an unsigned integer register",
+                )
+        if not isinstance(base, ast.Name) or (
+            base.id not in owner.array_names and not numeric
+        ):
             _error(
                 owner.source,
                 node,
                 "program.view",
-                "index or slice a declared QArray[QBit]",
+                "index or slice a declared QArray[QBit] or unsigned integer QNum",
             )
         view = locations(owner, node.value, depth + 1)
         if isinstance(node.slice, ast.Slice):
@@ -195,6 +258,7 @@ def capture_loop(owner: _Body, node: ast.For) -> None:
         not isinstance(node.target, ast.Name)
         or node.target.id in visible
         or node.target.id in owner.loop_variables
+        or node.target.id in owner.classical
         or node.target.id in {"range", "len"}
         or not isinstance(node.iter, ast.Call)
         or not isinstance(node.iter.func, ast.Name)
@@ -218,6 +282,16 @@ def capture_loop(owner: _Body, node: ast.For) -> None:
         _error(owner.source, node, "program.loop", "one range exceeds 256 iterations")
     if len(owner.loop_variables) >= 8:
         _error(owner.source, node, "program.loop", "loop nesting exceeds eight")
+    from .frontend_repeated_effects import capture_reset_loop
+
+    if capture_reset_loop(owner, node, sequence):
+        return
+    expand_loop(owner, node, sequence)
+
+
+def expand_loop(owner: _Body, node: ast.For, sequence: range) -> None:
+    """Expand checked static iterations and charge their complete construction work."""
+    assert isinstance(node.target, ast.Name)
     try:
         for index in sequence:
             owner.owner.loop_steps += 1
@@ -237,13 +311,16 @@ def capture_loop(owner: _Body, node: ast.For) -> None:
 def inline_mutable(
     owner: _Body, node: ast.Call, definition: _QuantumFunction, ports: Sequence[_Port]
 ) -> None:
-    """Expand gate-only borrowed helpers into the caller's checked owned effects."""
-    if any(port.role != "inout" for port in ports) or len(node.args) != len(ports):
+    """Expand checked borrowed helpers into the caller's owned effects."""
+    from .frontend_evolution import flush_evolutions
+    from .frontend_increment import is_increment_helper
+
+    if any(port.role == "output" for port in ports):
         _error(
             owner.source,
             node,
             "program.borrow",
-            "mutable helpers require only plain quantum ports and matching arguments",
+            "mutable helpers borrow Const or plain quantum ports without Outputs",
         )
     if id(definition) in owner.owner.active or len(owner.owner.active) >= 32:
         _error(
@@ -251,11 +328,6 @@ def inline_mutable(
             node,
             "program.recursion",
             "helper calls must be acyclic with depth at most 32",
-        )
-    owner.owner.inline_calls += 1
-    if owner.owner.inline_calls > 256:
-        _error(
-            owner.source, node, "budget", "mutable helper expansion exceeds 256 calls"
         )
     if id(definition) not in owner.owner.seen:
         owner.owner.seen.add(id(definition))
@@ -267,10 +339,102 @@ def inline_mutable(
                 "budget",
                 "program definitions exceed 4096 AST nodes",
             )
+    classical, arguments = bind_helper(owner, node, definition)
     bindings = {
-        port.name: locations(owner, argument)
-        for port, argument in zip(ports, node.args, strict=True)
+        port.name: (
+            packed_locations(owner, argument)
+            if port.kind == "qnum"
+            else locations(owner, argument)
+        )
+        for port, argument in zip(ports, arguments, strict=True)
     }
+    explicit_numeric = {
+        port.name
+        for port, argument in zip(ports, arguments, strict=True)
+        if port.kind == "qnum" and isinstance(argument, (ast.List, ast.Tuple))
+    }
+    increment_helper = is_increment_helper(definition)
+    specialized = []
+    for port, argument in zip(ports, arguments, strict=True):
+        view = bindings[port.name]
+        if len(set(view)) != len(view):
+            _error(
+                owner.source,
+                node,
+                "program.borrow",
+                "helper views require distinct physical locations",
+            )
+        actual = next(
+            owner.ports[name]
+            for name, value in owner.registers.items()
+            if value == view[0][0]
+        )
+        whole = view == tuple(
+            (view[0][0], bit) for bit in range(register_width(view[0][0]))
+        )
+        base = argument
+        while isinstance(base, ast.Subscript):
+            base = base.value
+        visible = owner.alias_ports if owner.aliases is not None else owner.ports
+        assert visible is not None
+        actual_kind = (
+            visible[base.id].kind if isinstance(base, ast.Name) else actual.kind
+        )
+        if (
+            increment_helper
+            and port.kind == "qnum"
+            and actual_kind != "qnum"
+            and port.name not in explicit_numeric
+        ):
+            _error(
+                owner.source,
+                node,
+                "program.kind",
+                "QNum helpers require a QNum actual; use a writable raw unsigned QNum",
+            )
+        if port.width is not None and port.width != len(view):
+            _error(
+                owner.source,
+                node,
+                "program.width",
+                "helper formal and actual widths disagree",
+            )
+        if port.kind != "qarray" and whole:
+            if port.width is not None and (port.signed, port.fractional_bits) != (
+                actual.signed,
+                actual.fractional_bits,
+            ):
+                _error(
+                    owner.source,
+                    node,
+                    "program.numeric.format",
+                    "declared and actual helper numeric formats must agree",
+                )
+            port = replace(
+                port,
+                width=len(view),
+                signed=actual.signed,
+                fractional_bits=actual.fractional_bits,
+            )
+        if port.kind == "qnum" and not whole:
+            if (
+                port.signed
+                or port.fractional_bits
+                or any(
+                    candidate.signed or candidate.fractional_bits
+                    for name, candidate in owner.ports.items()
+                    if owner.registers.get(name) in {value for value, _ in view}
+                )
+            ):
+                _error(
+                    owner.source,
+                    node,
+                    "program.numeric.format",
+                    "partial or composed numeric views require raw unsigned storage",
+                )
+            port = replace(port, width=len(view))
+        specialized.append(port)
+    ports = tuple(specialized)
     occupied: set[tuple[Value, int]] = set()
     readonly = {
         owner.registers[p.name]
@@ -288,7 +452,14 @@ def inline_mutable(
                 "program.width",
                 "helper formal and actual widths disagree",
             )
-        if any(value in readonly for value, _ in view) or occupied.intersection(view):
+        if port.role == "inout" and any(value in readonly for value, _ in view):
+            _error(
+                owner.source,
+                node,
+                "program.borrow",
+                "Const cannot be passed as writable helper storage",
+            )
+        if occupied.intersection(view):
             _error(
                 owner.source,
                 node,
@@ -296,26 +467,154 @@ def inline_mutable(
                 "mutable helper arguments must be disjoint writable locations",
             )
         occupied.update(view)
+    const_values = tuple(
+        dict.fromkeys(
+            value
+            for port in ports
+            if port.role == "const"
+            for value, _ in bindings[port.name]
+        )
+    )
+    writable_values = tuple(
+        dict.fromkeys(
+            value
+            for port in ports
+            if port.role == "inout"
+            for value, _ in bindings[port.name]
+        )
+    )
+    if set(const_values).intersection(writable_values):
+        _error(
+            owner.source,
+            node,
+            "program.borrow",
+            "Const and writable helper views must use separate registers",
+        )
+    whole_registers = all(
+        view == tuple((view[0][0], bit) for bit in range(register_width(view[0][0])))
+        for view in bindings.values()
+    )
+    cache_key = (id(definition), tuple(ports), tuple(sorted(classical.items())))
+    compact = (
+        whole_registers
+        and bool(writable_values)
+        and not owner.owner.expanded_callbacks
+        and not any(port.signed or port.fractional_bits for port in ports)
+    )
+    if compact and cache_key in owner.owner.unitary_templates:
+        template = owner.owner.unitary_templates[cache_key]
+        owner.emit(
+            "qreg.unitary_call",
+            node,
+            (*const_values, *writable_values),
+            callee=template.name,
+        )
+        return
+    owner.owner.inline_calls += 1
+    if owner.owner.inline_calls > 256:
+        _error(
+            owner.source, node, "budget", "mutable helper expansion exceeds 256 calls"
+        )
+    if whole_registers:
+        # Whole-register functions can use the ordinary capture context, including
+        # fresh lexical scratch, without leaking formal names into caller state.
+        from .frontend_program import _Body
+
+        concrete = tuple(
+            replace(port, width=len(bindings[port.name])) for port in ports
+        )
+        child = _Body(
+            owner.owner,
+            definition,
+            f"{owner.name}.borrow{owner.owner.inline_calls}",
+            concrete,
+            classical,
+        )
+        child.registers = {port.name: bindings[port.name][0][0] for port in ports}
+        child.borrowed_unitary = True
+        child.effect, child.counter = owner.effect, owner.counter
+        storage = dict(child.registers), dict(child.ports), dict(child.widths)
+        owner.owner.active.add(id(definition))
+        try:
+            child.statements(definition.source.node.body)
+            flush_evolutions(child)
+        finally:
+            owner.owner.active.remove(id(definition))
+        if (
+            storage != (child.registers, child.ports, child.widths)
+            or child.hidden
+            or child.dropped
+        ):
+            _error(
+                owner.source,
+                node,
+                "program.borrow",
+                "borrowed helpers must close all local storage without ownership changes",
+            )
+        _verify_borrowed_effects(
+            child.operations, owner.owner.functions, const_values, writable_values
+        )
+        if (
+            compact
+            and 32 <= len(child.operations) <= 512
+            and len(owner.owner.unitary_templates) < 32
+        ):
+            from .._hybrid.unitary_effects import unitary_regions
+            from .register_profile import _borrowed_program
+
+            # Channel/ownership effects stay on the existing expanded path.
+            # Only a successful closed-unitary proof permits sharing the body.
+            try:
+                unitary_regions(child.operations)
+            except ValueError:
+                pass
+            else:
+                name = (
+                    f"{owner.owner.entry}.$unitary{len(owner.owner.unitary_templates)}"
+                )
+                template = _borrowed_program(
+                    child.operations, const_values, writable_values, name=name
+                )
+                owner.owner.unitary_templates[cache_key] = template
+                owner.owner.functions.append(template)
+        owner.operations.extend(child.operations)
+        owner.effect, owner.counter = child.effect, child.counter
+        return
+    start = len(owner.operations)
     saved = (
         owner.definition,
         owner.source,
         owner.aliases,
+        owner.alias_ports,
         owner.array_names,
         owner.loop_variables,
+        owner.classical,
     )
     owner.definition, owner.source = definition, definition.source
     owner.aliases = bindings
+    owner.alias_ports = {port.name: port for port in ports}
     owner.array_names = {port.name for port in ports if port.kind == "qarray"}
     owner.loop_variables = {}
+    owner.classical = classical
     owner.owner.active.add(id(definition))
     try:
         owner.statements(definition.source.node.body)
+        flush_evolutions(owner)
+        if const_values:
+            _verify_borrowed_effects(
+                owner.operations[start:],
+                owner.owner.functions,
+                const_values,
+                writable_values,
+            )
     finally:
         owner.owner.active.remove(id(definition))
         (
             owner.definition,
             owner.source,
             owner.aliases,
+            owner.alias_ports,
             owner.array_names,
             owner.loop_variables,
+            owner.classical,
         ) = saved

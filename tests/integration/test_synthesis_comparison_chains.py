@@ -21,7 +21,7 @@ from flagquantum.compiler._construction.lowering import (
 )
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_python import _cell
 
 pytestmark = pytest.mark.integration

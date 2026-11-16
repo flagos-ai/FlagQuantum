@@ -1,0 +1,12 @@
+{
+  "schema": "flagquantum.synthesis_native_pauli_views_admission",
+  "version": "1.0",
+  "namespace": "flagquantum.synth",
+  "expanded_signatures": {
+    "suzuki_trotter": "(operator: 'Observable', time: 'float', order: 'int', repetitions: 'int', target: 'QNum | QArray[QBit] | Sequence[QBit]', /) -> 'None'",
+    "qdrift": "(operator: 'Observable', time: 'float', samples: 'int', target: 'QNum | QArray[QBit] | Sequence[QBit]', seed: 'int' = 0, /) -> 'None'"
+  },
+  "authorization_record": "docs/api-changes/FQ-SYNTH-NATIVE-PAULI-VIEWS-20261110.md",
+  "implementation_authorized": true,
+  "release_authorized": false
+}

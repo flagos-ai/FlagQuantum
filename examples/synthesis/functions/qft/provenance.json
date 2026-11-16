@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/qft/qft.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e846e39be758089825defcb4af4757206edf1c715cb8aab7f2d24318ff9f467e",
+  "git_blob_sha1": "267c88e5b0d9c7c46616cc5ee0775690c602c231",
+  "notebook_path": "functions/qmod_library_reference/classiq_open_library/qft/qft.ipynb",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "7c464ac96f0ed0d62f4054c3cc3197d650599d382aa41f9b582cf1ba2beba673"
+    },
+    {
+      "index": 3,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.qft.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_fourier.py",
+  "scope": "Complete local computational Notebook workflow: allocate four qubits, apply QFT and synthesize. Local execution and a Fourier-matrix Circuit comparison additionally verify the program.",
+  "native_semantic_adaptations": "Use FlagQuantum qfunc and shared checked Fourier lowering. The source Notebook only constructs and synthesizes; local execution is an additional validation, with no cloud or training claim."
+}

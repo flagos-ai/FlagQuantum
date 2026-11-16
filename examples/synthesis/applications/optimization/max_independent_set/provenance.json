@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/optimization/max_independent_set/max_independent_set.qmod",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "7b8e0009104bad9a85beb515f31274d8834e446465d9165505d2792e9b306b2b",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_independent_set.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_qaoa_models.py",
+  "scope": "Complete retained 8-bit 3-layer quantum program. Full classical optimization Notebook workflow remains pending.",
+  "native_semantic_adaptations": "The sole fixed-width bit-array field is represented explicitly as Output[QArray[QBit]] named v, in the same physical and logical bit order; no general qstruct support is claimed. Native loops express repeat/apply_to_all and parameters retain source gamma-then-beta ordering. Retain every source edge and all three layers."
+}

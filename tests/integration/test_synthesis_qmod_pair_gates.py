@@ -9,16 +9,16 @@ import pytest
 import torch
 
 import flagquantum as fq
-from examples.synthesis.tutorials.qmod.qmod_pair_gates.main import (
-    QMOD_PAIR,
-    native_pair,
-    pair_circuit,
-)
 from flagquantum import synth
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.synth import CRX, CX, SWAP, Output, QBit, allocate, qfunc
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
+from tools.synthesis_import_examples.qmod_pair_gates.main import (
+    QMOD_PAIR,
+    native_pair,
+    pair_circuit,
+)
 
 pytestmark = pytest.mark.integration
 CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"

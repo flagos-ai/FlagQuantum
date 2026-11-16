@@ -8,7 +8,7 @@ import flagquantum as fq
 from flagquantum import _api, synth
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 
@@ -132,7 +132,7 @@ def test_double_phase_cancels_and_interference_reveals_sign():
 
 
 def test_gate_free_public_example_entangles_two_named_registers():
-    from examples.synthesis.tutorials.qmod.qmod_phase.main import SOURCE
+    from tools.synthesis_import_examples.qmod_phase.main import SOURCE
 
     program = synth.synthesize(SOURCE, source_format="qmod", max_qubits=2)
     result = fq.run(program)

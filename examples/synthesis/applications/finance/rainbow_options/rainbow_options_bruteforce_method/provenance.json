@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/finance/rainbow_options/rainbow_options_bruteforce_method.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "b10c6c8fdde7bbf02cefc9f5dc81ecc3ecca1481ba6b1902acfe35825c8d0304",
+  "native_entrypoint": "examples.synthesis.applications.finance.rainbow_options.rainbow_options_bruteforce_method.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_rainbow.py",
+  "scope": "Quantum program only; complete Notebook workflow remains pending.",
+  "native_semantic_adaptations": "Retain both original four-element distributions and all eight raw rotation angles. Exactly enumerate max(x1,(x1+x2)/2-3/2) with Fraction at classical model construction, multiply by2 for the original three-bit fractional selector raw value, and compose a16angle joint table. This data-derived finite composition preserves the original scale reinterpretation without computing quantum data on the host. No formula simplification or new Compiler/API. Both unchanged originals, native programs and independent Circuit fullstates k0/1/2 pass; all16joint selectors with marker0/1, two nonzero coherent loader inputs, clean work and actual budgets are tested. Dropped data remains in the state environment; no financial estimator or optimization claim."
+}

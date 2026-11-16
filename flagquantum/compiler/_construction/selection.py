@@ -325,15 +325,51 @@ def select_register_program(
     # diagnostic rather than mistaking a resource budget for invalid semantics.
     verify_register_program(program, functions)
     expanded = expand_register_calls(program, functions)
-    if any(
-        op.name
-        in {"qreg.phase", "qreg.unitary", "qreg.inverse_qft", "qreg.control_qft"}
-        or (op.name == "qreg.control_phase" and "indices" in op.attributes)
-        for op in expanded.body.blocks[0].operations
-    ):
+    pending = [expanded]
+    symbols = {function.name: function for function in functions}
+    visited: set[str] = set()
+    phase_sensitive = False
+    while pending:
+        current = pending.pop()
+        if current.name in visited:
+            continue
+        visited.add(current.name)
+        for op in current.body.blocks[0].operations:
+            phase_sensitive |= op.name in {
+                "qreg.phase",
+                "qreg.unitary",
+                "qreg.inverse_qft",
+                "qreg.control_qft",
+            } or (op.name == "qreg.control_phase" and "indices" in op.attributes)
+            if op.name == "qreg.unitary_call":
+                pending.append(symbols[op.attributes["callee"]])
+    if phase_sensitive:
         _check_phase_target(target)
     mapping, _, position = register_ports(program)
     position += semantic_hidden_width(expanded)
+    # An unconstrained construction capacity preserves compact default masks.
+    # A tighter width/work ceiling bounds the faster clean decomposition.
+    clean_qubits = (
+        None
+        if (
+            constraints.limits.max_qubits is None
+            or constraints.limits.max_qubits >= budget.qubits
+        )
+        and constraints.max_workspace is None
+        else min(
+            budget.qubits,
+            (
+                constraints.limits.max_qubits
+                if constraints.limits.max_qubits is not None
+                else budget.qubits
+            ),
+            (
+                position + constraints.max_workspace
+                if constraints.max_workspace is not None
+                else budget.qubits
+            ),
+        )
+    )
     identities = (
         program.semantic_identity,
         *(f.semantic_identity for f in sorted(functions, key=lambda f: f.name)),
@@ -346,6 +382,7 @@ def select_register_program(
             n_qubits=budget.qubits,
             max_operations=budget.operations,
             scheduling=strategy,
+            _clean_qubits=clean_qubits,
         )
 
     def build_boolean() -> RegisterCandidate:
@@ -355,6 +392,7 @@ def select_register_program(
             n_qubits=budget.qubits,
             max_operations=budget.operations,
             boolean_values=True,
+            _clean_qubits=clean_qubits,
         )
 
     return _select_candidates(

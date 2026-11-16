@@ -1,0 +1,9 @@
+{
+  "upstream_path": "applications/benchmarking/quantum_volume/quantum_volume.qmod",
+  "upstream_commit": "2bfd835e73b6882fcc515a725098b04766c238e7",
+  "original_sha256": "23bc75bf6f7d753210c05c81859ce301c3c8ca56d78caad9c2a3b988130f8814",
+  "native_entrypoint": "examples.synthesis.applications.benchmarking.quantum_volume.main",
+  "acceptance_test": "tests/integration/test_synthesis_native_unitary.py",
+  "scope": "Quantum program only; complete associated Notebook workflow remains separately pending.",
+  "native_semantic_adaptations": "Retain all complex matrix entries, output widths and matrix-wire ordering. Native immutable tuple matrix uses shared checked unitary lowering. Preserve the original three helper iterations and explicit target[1],target[2] qubit order."
+}
