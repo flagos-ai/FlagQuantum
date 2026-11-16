@@ -64,6 +64,7 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
+- [overview](cfd/qls_for_hybrid_solvers/verify_block_encoding/overview/README.md)
 - [overview](benchmarking/quantum_volume/overview/README.md)
 - [overview](benchmarking/randomized_benchmarking/overview/README.md)
 - [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
