@@ -1,0 +1,58 @@
+{
+  "upstream_path": "algorithms/quantum_walks/glued_trees/glued_trees.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "32309d19d537993381511db38fcf8f3193242049",
+  "original_sha256": "e91bc6b48a901c6d14162258861e627e41be78f5d58d5f7ee8243bbf897e3a10",
+  "scope": "All eight source stages: regenerate the six-qubit glued tree with seed 0 and its full 1,088-term Pauli expansion, use the original 200 cached twenty-qubit terms, execute both thirteen-point time grids with ten order-one Suzuki\u2013Trotter repetitions, and draw 8,192 actual local samples per point.",
+  "native_semantic_adaptations": "The six-qubit graph and coefficients are computed from scratch using a full Pauli basis, ignoring only numerical zeros below 1e-14. Equal-magnitude terms use the stable order of the native lexicographic Pauli enumeration; no claim of matching a historical SDK tie order. Each six-qubit Trotter slice uses two bounded synthesis calls, then the public Circuit API composes all ten slices before one coherent run. The twenty-qubit walk uses the unmodified ordered 200-term source cache subset, with source license and pins. Each point specializes the time at synthesis and samples with a seeded local stream. The figures show measured exit fractions and exact state probabilities.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_walks.glued_trees.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_walks/glued_trees/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_glued_trees_notebook.py",
+  "source_data": {
+    "original_source_cache": "83d29b737eb501ac639d235773bfd46e55e902b1fcb2c1f918c424ae690f7add",
+    "converted_ordered_cache": "31378e41aecc401cf867951835757b902726d7f1b38205f3f7d07e8b24378c3d",
+    "license": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0"
+  },
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "bb76e5d9262c506b082a14552045ff3fcdbc7cf5ea64cd73c5c5075137d82367"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "sha256": "1a21c23dd54ae7e37ab2ed96f59a06c96fd30437af3fb1848e07bf511ba36ecb"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "9a330d6914514abb5ef060cfa136f6c92f642f2e2f431585be16efcc6b5414e1"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "sha256": "568393a13af09aa60381510dd04fe17786e29d1b9eb9486f64b24195872100e2"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 5,
+      "sha256": "bf67c49167562c4394d07a385b49f406e16818ffdf53972095a56df21d688263"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "sha256": "8f5a6048876b3b1ab82f4cb40704965476c13431ad7f119a2f6b95cd3c644d70"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 7,
+      "sha256": "4da55b269cfc638fd3c6a48a0dd4c20653b11a339e2495d00bd0989ef6d2e523"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 8,
+      "sha256": "1df06ba40faac40f3bddac055c75049e64c998c9a37190fddcee9e54d8f25973"
+    }
+  ]
+}

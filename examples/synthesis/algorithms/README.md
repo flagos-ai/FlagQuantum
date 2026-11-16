@@ -70,6 +70,7 @@ Native FlagQuantum programs currently available:
 - [overview](quantum_primitives/gradient_estimation/overview/README.md)
 - [overview](quantum_primitives/hadamard_test/overview/README.md)
 - [overview](quantum_primitives/swap_test/overview/README.md)
+- [overview](quantum_walks/glued_trees/overview/README.md)
 - [overview](search_and_optimization/qaoa/overview/README.md)
 - [overview](search_and_optimization/grover/grover/overview/README.md)
 - [overview](search_and_optimization/grover_mixer_qaoa/gm_qaoa/overview/README.md)
