@@ -383,8 +383,8 @@ def inverse_module(module: ProgramRecord) -> ProgramRecord:
     from flagquantum.compiler.registers.component_adjoint import (
         adjoint_component_hierarchy,
     )
-    from flagquantum.compiler.registers.layout.component_auto_partition import (
-        _partition_program,
+    from flagquantum.compiler.registers.layout.component_partition import (
+        partition_component_program,
     )
 
     adjoints = {"ch": "ch", "cp": "cp_inverse"}
@@ -394,7 +394,7 @@ def inverse_module(module: ProgramRecord) -> ProgramRecord:
             name = f.name.replace("_split", "_join")
             assert f.registers is not None
             if name not in functions:
-                for inverse in _partition_program(
+                for inverse in partition_component_program(
                     tuple(Signature(f.registers).rights()), name, True
                 ).functions:
                     functions[inverse.name] = inverse

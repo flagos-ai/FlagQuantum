@@ -18,8 +18,10 @@ from flagquantum.compiler.registers.component_expansion import (
 )
 from flagquantum.compiler.registers.layout.auto_partition import AutoPartition
 from flagquantum.compiler.registers.layout.component_auto_partition import (
-    _partition_program,
     auto_partition_component_program,
+)
+from flagquantum.compiler.registers.layout.component_partition import (
+    partition_component_program,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir.program import ProgramRecord, verify_program_record
@@ -61,7 +63,9 @@ def directional_fixture(
     inverses = tuple(
         f
         for i, parts in enumerate(registers)
-        for f in _partition_program(parts, f"__fq_partition_0_join{i}", True).functions
+        for f in partition_component_program(
+            parts, f"__fq_partition_0_join{i}", True
+        ).functions
     )
     module = replace(module, functions=(*module.functions, *inverses))
     return module, source, child

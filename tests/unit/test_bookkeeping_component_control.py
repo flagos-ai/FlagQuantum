@@ -18,8 +18,8 @@ from flagquantum.compiler.registers.component_rebindings import (
 from flagquantum.compiler.registers.control.component_bookkeeping import (
     bookkeeping_component_control_system,
 )
-from flagquantum.compiler.registers.layout.component_auto_partition import (
-    _partition_program,
+from flagquantum.compiler.registers.layout.component_partition import (
+    partition_component_program,
 )
 from flagquantum.compiler.registers.layout.component_workspace import (
     allocate_word_function,
@@ -74,7 +74,7 @@ def fixture(kind: Kind, width: int, dirty: bool) -> tuple[ProgramRecord, Any]:
     )
     source_registers = tuple(_source(Signature(parts)).signature(Signature(parts)))
     source = Partition(width, source_registers, partition=kind == "partition")
-    return _partition_program(parts, "leaf", kind == "unpartition"), source
+    return partition_component_program(parts, "leaf", kind == "unpartition"), source
 
 
 @pytest.mark.parametrize("kind,width,dirty", CASES)
