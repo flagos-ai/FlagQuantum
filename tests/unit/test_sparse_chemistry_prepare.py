@@ -91,6 +91,10 @@ def _branch(
                 updated[destination] += amp
             elif gate.name == "reset":
                 updated[index & ~mask] += amp
+            elif gate.name == "rx":
+                half_angle = gate.params["theta"] / 2
+                updated[index] += amp * cos(half_angle)
+                updated[index ^ mask] -= 1j * amp * sin(half_angle)
             elif gate.name == "rz":
                 theta = gate.params["theta"]
                 updated[index] += amp * exp((1j if index & mask else -1j) * theta / 2)
