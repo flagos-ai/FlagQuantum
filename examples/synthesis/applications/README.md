@@ -78,6 +78,7 @@ Native FlagQuantum programs currently available:
 - [overview](finance/portfolio_optimization/overview/README.md)
 - [overview](finance/value_at_risk/overview/README.md)
 - [overview](logistics/facility_location/overview/README.md)
+- [overview](logistics/traveling_salesman_problem/overview/README.md)
 - [overview](optimization/adapt_qaoa/overview/README.md)
 - [overview](optimization/electric_grid_optimization/overview/README.md)
 - [overview](optimization/integer_linear_programming/overview/README.md)
