@@ -1,0 +1,32 @@
+name: QEC Sparse Blossom wheel check
+
+on:
+  push:
+    branches: ["ci/qec-sparse-blossom-wheel-check"]
+
+permissions:
+  contents: read
+
+jobs:
+  installed-wheel:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build and install the Windows release wheel
+        uses: pypa/cibuildwheel@v4.3.0
+        with:
+          only: cp310-win_amd64
+          output-dir: wheelhouse
+      - name: Verify release artifacts
+        run: python tools/verify_distribution_artifacts.py wheelhouse
+      - uses: actions/upload-artifact@v4
+        with:
+          name: flagquantum-sparse-blossom-windows-amd64
+          path: wheelhouse/*.whl
+          retention-days: 7

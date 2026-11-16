@@ -1,0 +1,216 @@
+// Copyright 2026 FlagQuantum Contributors
+// SPDX-License-Identifier: Apache-2.0
+
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
+#include <algorithm>
+#include <cmath>
+#include <memory>
+#include <stdexcept>
+#include <vector>
+
+#include "pymatching/sparse_blossom/matcher/mwpm.h"
+
+namespace {
+
+constexpr char capsule_name[] = "flagquantum.qec.sparse_blossom";
+constexpr pm::signed_weight_int max_half_weight = (1 << 24) - 1;
+constexpr size_t observable_capacity = sizeof(pm::obs_int) * 8;
+
+struct Edge {
+    size_t first;
+    size_t second;
+    double weight;
+    std::vector<size_t> observables;
+};
+
+struct Matcher {
+    pm::Mwpm solver;
+    size_t detectors;
+    size_t observables;
+};
+
+void dispose_matcher(PyObject* capsule) {
+    delete static_cast<Matcher*>(PyCapsule_GetPointer(capsule, capsule_name));
+}
+
+std::unique_ptr<Matcher> make_matcher(
+    size_t detectors, size_t observables, const std::vector<Edge>& edges) {
+    // Use PyMatching 2.4's weight discretization. Even weights make collisions
+    // occur at integer times.
+    double maximum = 0;
+    bool integral = true;
+    for (const auto& edge : edges) {
+        maximum = std::max(maximum, edge.weight);
+        integral &= std::round(edge.weight) == edge.weight;
+    }
+    double scale = integral ? 1.0 : max_half_weight / maximum;
+    pm::MatchingGraph graph(detectors, observables, 2 * scale);
+    for (const auto& edge : edges) {
+        auto weight = 2 * static_cast<pm::signed_weight_int>(std::round(scale * edge.weight));
+        if (edge.second != detectors) {
+            graph.add_edge(edge.first, edge.second, weight, edge.observables);
+        }
+    }
+    // Match the upstream insertion order, including for tied paths.
+    for (const auto& edge : edges) {
+        if (edge.second == detectors) {
+            auto weight = 2 * static_cast<pm::signed_weight_int>(std::round(scale * edge.weight));
+            graph.add_boundary_edge(edge.first, weight, edge.observables);
+        }
+    }
+    return std::make_unique<Matcher>(
+        Matcher{pm::Mwpm(pm::GraphFlooder(std::move(graph))), detectors, observables});
+}
+
+PyObject* create(PyObject*, PyObject* arguments) {
+    Py_ssize_t detectors;
+    Py_ssize_t observables;
+    PyObject* records;
+    if (!PyArg_ParseTuple(arguments, "nnO!", &detectors, &observables, &PyTuple_Type, &records)) {
+        return nullptr;
+    }
+    if (detectors < 1 || observables < 1 || observables > static_cast<Py_ssize_t>(observable_capacity)) {
+        PyErr_SetString(PyExc_ValueError, "Expected at least one detector and 1 to 64 observables.");
+        return nullptr;
+    }
+
+    try {
+        std::vector<Edge> edges;
+        const auto edge_count = PyTuple_Size(records);
+        edges.reserve(edge_count);
+        for (Py_ssize_t index = 0; index < edge_count; ++index) {
+            Py_ssize_t first;
+            Py_ssize_t second;
+            double weight;
+            PyObject* labels;
+            if (!PyArg_ParseTuple(PyTuple_GetItem(records, index), "nndO!",
+                                  &first, &second, &weight, &PyTuple_Type, &labels)) {
+                return nullptr;
+            }
+            if (first < 0 || first >= second || second > detectors ||
+                !std::isfinite(weight) || weight < 0 || weight > max_half_weight) {
+                PyErr_SetString(PyExc_ValueError, "Invalid detector edge or weight.");
+                return nullptr;
+            }
+            Edge edge{static_cast<size_t>(first), static_cast<size_t>(second), weight, {}};
+            for (Py_ssize_t label = 0; label < PyTuple_Size(labels); ++label) {
+                const auto id = PyLong_AsSsize_t(PyTuple_GetItem(labels, label));
+                if (PyErr_Occurred()) {
+                    return nullptr;
+                }
+                if (id < 0 || id >= observables) {
+                    PyErr_SetString(PyExc_ValueError, "Logical observable index is outside the graph.");
+                    return nullptr;
+                }
+                edge.observables.push_back(static_cast<size_t>(id));
+            }
+            edges.push_back(std::move(edge));
+        }
+        auto matcher = make_matcher(detectors, observables, edges);
+        PyObject* capsule = PyCapsule_New(matcher.get(), capsule_name, dispose_matcher);
+        if (capsule != nullptr) {
+            matcher.release();
+        }
+        return capsule;
+    } catch (const std::bad_alloc&) {
+        return PyErr_NoMemory();
+    } catch (const std::exception& error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+pm::obs_int decode_row(pm::Mwpm& solver, const std::vector<size_t>& events) {
+    solver.flooder.queue.cur_time = 0;
+    for (size_t detector : events) {
+        solver.create_detection_event(&solver.flooder.graph.nodes[detector]);
+    }
+    for (auto event = solver.flooder.run_until_next_mwpm_notification();
+         event.event_type != pm::NO_EVENT; event = solver.flooder.run_until_next_mwpm_notification()) {
+        solver.process_event(event);
+    }
+    if (solver.node_arena.allocated.size() != solver.node_arena.available.size()) {
+        solver.reset();
+        throw std::invalid_argument("No perfect matching exists for this syndrome.");
+    }
+    pm::MatchingResult result;
+    for (size_t detector : events) {
+        const auto& node = solver.flooder.graph.nodes[detector];
+        if (node.region_that_arrived) {
+            result += solver.shatter_blossom_and_extract_matches(node.region_that_arrived_top);
+        }
+    }
+    return result.obs_mask;
+}
+
+PyObject* decode_batch(PyObject*, PyObject* arguments) {
+    PyObject* capsule;
+    PyObject* input;
+    if (!PyArg_ParseTuple(arguments, "OO!", &capsule, &PyBytes_Type, &input)) {
+        return nullptr;
+    }
+    auto* matcher = static_cast<Matcher*>(PyCapsule_GetPointer(capsule, capsule_name));
+    if (matcher == nullptr) {
+        return nullptr;
+    }
+    char* data;
+    Py_ssize_t size;
+    if (PyBytes_AsStringAndSize(input, &data, &size) < 0) {
+        return nullptr;
+    }
+    if (static_cast<size_t>(size) % matcher->detectors != 0) {
+        PyErr_SetString(PyExc_ValueError, "Syndrome bytes do not match the graph width.");
+        return nullptr;
+    }
+    const size_t shots = static_cast<size_t>(size) / matcher->detectors;
+    if (shots > PY_SSIZE_T_MAX / matcher->observables) {
+        return PyErr_NoMemory();
+    }
+    PyObject* output = PyBytes_FromStringAndSize(nullptr, shots * matcher->observables);
+    if (output == nullptr) {
+        return nullptr;
+    }
+    char* predictions = PyBytes_AsString(output);
+    try {
+        std::vector<size_t> events;
+        events.reserve(matcher->detectors);
+        for (size_t shot = 0; shot < shots; ++shot) {
+            events.clear();
+            for (size_t detector = 0; detector < matcher->detectors; ++detector) {
+                if (*data++) {
+                    events.push_back(detector);
+                }
+            }
+            auto mask = decode_row(matcher->solver, events);
+            for (size_t observable = 0; observable < matcher->observables; ++observable) {
+                *predictions++ = (mask >> observable) & 1;
+            }
+        }
+        return output;
+    } catch (const std::bad_alloc&) {
+        Py_DECREF(output);
+        return PyErr_NoMemory();
+    } catch (const std::exception& error) {
+        Py_DECREF(output);
+        PyErr_SetString(PyExc_ValueError, error.what());
+        return nullptr;
+    }
+}
+
+PyMethodDef methods[] = {
+    {"create", create, METH_VARARGS, "Compile a graph for sparse blossom matching."},
+    {"decode_batch", decode_batch, METH_VARARGS, "Decode dense rows of detector bits."},
+    {nullptr, nullptr, 0, nullptr},
+};
+
+PyModuleDef module = {
+    PyModuleDef_HEAD_INIT, "_sparse_blossom", nullptr, -1, methods,
+};
+
+}  // namespace
+
+PyMODINIT_FUNC PyInit__sparse_blossom() {
+    return PyModule_Create(&module);
+}

@@ -217,6 +217,7 @@ def test_build_backend_supports_spdx_license_metadata() -> None:
         "flagquantum/drawer/tex/licenses/*.txt",
         "third_party/openfermion/LICENSE",
         "third_party/openfermion/NOTICE",
+        "flagquantum/qec/decoders/csrc/vendor/pymatching-2.4.0/LICENSE",
     ]
     assert "setuptools>=77.0.3" in project["build-system"]["requires"]
 
@@ -361,18 +362,21 @@ def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:
     path it opens is the one the runtime loads.
     """
 
-    checked: list[str] = []
+    checked: list[tuple[bool, str]] = []
     monkeypatch.setattr(BuildExtension, "run", lambda self: None)
-    for inplace, expected in ((True, 1), (False, 0)):
+    for inplace in (True, False):
         command = _build_ext_command(inplace=inplace)
         monkeypatch.setattr(
             command,
             "_require_loadable_artifact",
-            lambda ext, name=f"{expected}": checked.append(name),
+            lambda ext, inplace=inplace: checked.append((inplace, ext.name)),
         )
         command.run()
 
-    assert checked == ["1"]
+    assert checked == [
+        (True, "flagquantum.simulation.native_cpu._C"),
+        (True, "flagquantum.qec.decoders._sparse_blossom"),
+    ]
 
 
 def test_an_inplace_build_relinks_an_artifact_linked_by_an_earlier_build(
