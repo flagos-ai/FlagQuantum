@@ -79,7 +79,10 @@ def test_same_training_consumer_resumes_through_both_codecs(
         assert (
             payload["parameter_training"] == _save(source, left)["parameter_training"]
         )
+        if not symbolic:
+            assert target._captured_builder is not None
         target.load_checkpoint(path, optimizer=right)
+        assert target._captured_builder is None
     assert not next(target.parameters()).requires_grad
     assert all(parameter.grad is None for parameter in target.parameters())
     # Native unfreezing retains the restored optimizer moments.

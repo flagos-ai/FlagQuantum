@@ -808,6 +808,12 @@ def _restore_training_checkpoint(
                 optimizer.load_state_dict(original_optimizer_state)
         _restore_rng(original_rng)
         raise
+    if is_v3:
+        from .module import Module
+
+        # Match historical restore invalidation without applying a tensor cast.
+        if isinstance(owner, Module):
+            owner._reset_builder_capture()
     return seed, precision
 
 
