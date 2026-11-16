@@ -91,19 +91,19 @@ class ReversiblePhaseProgram:
             if op.condition_bit is not None and not is_defined(op.condition_bit):
                 raise ValueError("Condition read before definition")
             if op.opcode in {"bit_store0", "bit_store1", "bit_invert"}:
-                initializes = op.opcode != "bit_invert"
-                if len(definitions) > 1 and initializes:
-                    raise ValueError(
-                        "Condition scopes cannot initialize classical bits"
-                    )
                 if op.result_bit is None or not 0 <= op.result_bit < self.n_bits:
                     raise ValueError("Invalid classical result bit")
-                if initializes and op.condition_bit is not None:
-                    raise ValueError(
-                        "Conditional classical initialization is unsupported"
-                    )
-                if op.opcode == "bit_invert" and not is_defined(op.result_bit):
-                    raise ValueError("Classical inversion reads an undefined bit")
+                if not is_defined(op.result_bit):
+                    if op.opcode == "bit_invert":
+                        raise ValueError("Classical inversion reads an undefined bit")
+                    if len(definitions) > 1:
+                        raise ValueError(
+                            "Condition scopes cannot initialize classical bits"
+                        )
+                    if op.condition_bit is not None:
+                        raise ValueError(
+                            "Conditional classical initialization is unsupported"
+                        )
                 definitions[-1].add(op.result_bit)
                 continue
             if op.opcode == "hmr":

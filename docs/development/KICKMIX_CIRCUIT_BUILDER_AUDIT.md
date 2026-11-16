@@ -228,6 +228,28 @@ individual width cases have 54, 95, 164, 224 and 312 remaining operations
 in both streams. The half-open range and physical operand schedule do not
 add an analytical cost model.
 
+## Guarded classical stores
+
+The locked `bit_store_and` sequence first defines the destination
+with `BIT_STORE0`, then enters a scope for the first input and emits
+`BIT_STORE1` conditioned on the second input. The KMX target preserves
+both stores and binds the guarded write through the existing
+`ClassicalXor` assignment. A guarded store may overwrite a defined slot.
+Introducing the first definition under a guard is still refused.
+
+The two reference streams cover the AND sequence and a guarded zero store
+whose inline predicate aliases the destination. The latter also overwrites
+the outer guard's original slot inside the scope. A snapshot retains the
+outer guard's entry value. The locked native simulator and the local
+binder agree for all four input assignments per stream, including
+both complex amplitudes of a downstream controlled X.
+
+The source AND emits two classical stores and one scope pair, using one
+caller-owned result slot. Local execution uses one classical snapshot
+for the scope. The comparison fixture adds one guarded X to observe the
+result. No measurement, quantum work wire or independent source model is
+required by the stores.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug metadata beyond
 named block ranges have separate source assertions. The full public mixed

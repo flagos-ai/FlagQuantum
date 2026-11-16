@@ -58,23 +58,25 @@ def bind_reversible_phase_execution(
         result = None if op.result_bit is None else classical_offset + op.result_bit
         if op.opcode in {"bit_store0", "bit_store1", "bit_invert"}:
             assert result is not None
-            sources = (result,) if op.opcode == "bit_invert" else ()
-            if predicate is not None:
-                sources = (*sources, predicate)
-            assignment = ClassicalXor(
-                sources,
-                result,
-                constant=op.opcode == "bit_store1"
-                or (op.opcode == "bit_invert" and predicate is None),
-            ).instruction()
-            if scopes:
+            guards = tuple(scopes)
+            sources: tuple[int, ...]
+            if op.opcode == "bit_invert":
+                sources = (result,) if predicate is None else (result, predicate)
+                constant = predicate is None
+            else:
+                sources = ()
+                constant = op.opcode == "bit_store1"
+                if predicate is not None:
+                    guards = (*guards, predicate)
+            assignment = ClassicalXor(sources, result, constant=constant).instruction()
+            if guards:
                 assignment = Instruction(
                     assignment.name,
                     assignment.wires,
                     assignment.params,
                     metadata={
                         **assignment.metadata,
-                        "conditions": tuple((slot, 1) for slot in scopes),
+                        "conditions": tuple(sorted((slot, 1) for slot in guards)),
                     },
                 )
             gates.append(assignment)

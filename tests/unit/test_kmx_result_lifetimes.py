@@ -10,7 +10,7 @@ from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
-from flagquantum.core.classical_dataflow import parse_classical_xor
+from flagquantum.core.classical_dataflow import ClassicalXor, parse_classical_xor
 from tests.unit.measurement_checks import forced_branch
 
 pytestmark = pytest.mark.unit
@@ -91,10 +91,13 @@ def test_recycled_hmr_slot_preserves_all_complex_measurement_branches() -> None:
 @pytest.mark.parametrize(
     "payload,reason",
     [
-        ("BIT_STORE1 b1", "Invalid classical result bit"),
-        ("BIT_STORE0 b0\nBIT_STORE1 b0 if b0", "Conditional classical initialization"),
+        ("BIT_STORE1 b3", "Invalid classical result bit"),
         (
-            "BIT_STORE0 b0\nPUSH_CONDITION if b0\nBIT_STORE1 b0\nPOP_CONDITION",
+            "BIT_STORE0 b0\nBIT_STORE1 b1 if b0",
+            "Conditional classical initialization",
+        ),
+        (
+            "BIT_STORE0 b0\nPUSH_CONDITION if b0\nBIT_STORE1 b1\nPOP_CONDITION",
             "cannot initialize",
         ),
         ("X q0 if b0", "read before definition"),
@@ -104,4 +107,56 @@ def test_initialization_keeps_existing_definition_rules(
     payload: str, reason: str
 ) -> None:
     with pytest.raises(ValueError, match=reason):
-        decode_kmx(_HEADER + payload)
+        decode_kmx(
+            'INFO_TAG "@flagquantum:reversible-phase-v1 wires=3 bits=3"\n' + payload
+        )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("clear", [False, True])
+def test_guarded_stores_overwrite_only_defined_destinations(clear: bool) -> None:
+    km = pytest.importorskip("kickmix")
+    assert km.__version__ == "0.1" and hasattr(km, "Simulator")
+    assert list(Path(km.__file__).parent.glob("*.so"))
+    header = 'INFO_TAG "@flagquantum:reversible-phase-v1 wires=1 bits=3 inputs=0,1"\n'
+    if clear:
+        # The inline guard aliases its destination. The enclosing guard
+        # snapshots b0 before the next store overwrites it.
+        payload = (
+            "BIT_STORE1 b2\n"
+            "PUSH_CONDITION if b0\n"
+            "BIT_STORE0 b0\n"
+            "BIT_STORE0 b2 if b2\n"
+            "POP_CONDITION\n"
+            "X q0 if b2\n"
+        )
+    else:
+        # Locked CircuitBuilder::bit_store_and plus a read of the result.
+        payload = (
+            "BIT_STORE0 b2\n"
+            "PUSH_CONDITION if b0\n"
+            "BIT_STORE1 b2 if b1\n"
+            "POP_CONDITION\n"
+            "X q0 if b2\n"
+        )
+    program = decode_kmx(header + payload)
+    assert encode_kmx(program) == header + payload
+    gates = bind_reversible_phase_execution(program, classical_offset=2)
+    initial = torch.tensor([1, 2j], dtype=torch.complex128)
+    initial /= initial.norm()
+    for first, second in product((0, 1), repeat=2):
+        expected = 1 ^ first if clear else first & second
+        sim = km.Simulator(batch_size=1, seed=1)
+        sim.write_across_shots(km.b(0), first)
+        sim.write_across_shots(km.b(1), second)
+        sim.do(km.Circuit(payload))
+        assert sim.read_across_shots(km.b(2), out=int) == expected
+        assert sim.read_across_shots(km.q(0), out=int) == expected
+        assert sim.read_shot_phase(0) == 0
+
+        setup = (
+            ClassicalXor((), 2, bool(first)).instruction(),
+            ClassicalXor((), 3, bool(second)).instruction(),
+        )
+        state = forced_branch(initial, (*setup, *gates), ())
+        torch.testing.assert_close(state, initial.flip((0,)) if expected else initial)
