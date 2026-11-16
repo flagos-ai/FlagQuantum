@@ -171,6 +171,16 @@ def reference_arithmetic_gates(
 
         gate = getattr(op, "gate", None)
         bloq = gate.bloq if isinstance(gate, BloqAsCirqGate) else gate
+        if keep_exchange_leaves:
+            from qualtran import Controlled
+            from qualtran.bloqs.basic_gates import TGate
+
+            if isinstance(bloq, Controlled) and isinstance(bloq.subbloq, TGate):
+                assert bloq.ctrl_spec.get_single_ctrl_val() == 1
+                # The source declares controlled T as an atomic Bloq. Keep its
+                # controlled phase rather than asking Cirq to decompose it.
+                exponent = -0.25 if bloq.subbloq.is_adjoint else 0.25
+                return (cirq.CZPowGate(exponent=exponent).on(*op.qubits),)
         if keep_pauli_leaves and (
             isinstance(bloq, Identity)
             or isinstance(gate, cirq.IdentityGate)
