@@ -40,6 +40,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("phasing_via_cost_function", 8, 3, 0),
         ("programmable_rotation_gate_array", 6, 2, 0),
         ("quantum_variable_rotation", 16, 4, 4),
+        ("rz_via_phase_gradient", 6, 2, 0),
         ("binary_field_addition", 7, 2, 0),
         ("binary_field_add_constant", 7, 2, 0),
         ("binary_field_square", 7, 2, 0),
