@@ -628,6 +628,18 @@ def export_cirq(program: Any, *, allow_lossy: bool = False) -> CirqExportResult:
         current_measurement_qubits = []
 
     for index, instruction in enumerate(ir.instructions):
+        if (
+            "conditions" in instruction.metadata
+            or "condition_clauses" in instruction.metadata
+        ):
+            _issue(
+                issues,
+                "unsupported_operation",
+                "Cirq v1 export does not preserve FlagQuantum classical controls.",
+                index=index,
+                name=instruction.name,
+            )
+            continue
         if instruction.name == "measure":
             measurement_started = True
             key = instruction.metadata.get("measurement_key")
