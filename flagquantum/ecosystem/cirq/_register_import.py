@@ -22,6 +22,7 @@ from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
+from ._decompose import decompose_cirq_once
 from ._register_export import _register_shape
 from .conversion import _cirq, _lower_gate, _raise_if_lossy, _report
 from .models import CirqConversionIssue
@@ -60,7 +61,7 @@ def import_cirq_register_optree(
     in_quregs: Mapping[str, object] | None = None,
     out_quregs: Mapping[str, object] | None = None,
 ) -> ProgramRecord:
-    """Import supported unitary operations with explicit register placement.
+    """Import admitted gates and single-wire reset with explicit placement.
 
     Qureg arrays use the register shape followed by the ordered bit axis.
     Without a signature, sorted circuit qubits form one through register.
@@ -107,13 +108,18 @@ def import_cirq_register_optree(
         gate = operation.gate
         qubits = operation.qubits
         if isinstance(gate, cirq.GlobalPhaseGate):
-            if cirq.is_parameterized(gate.coefficient) or not live:
-                raise ValueError(
-                    "Cirq global phase requires a concrete coefficient and a live wire"
-                )
-            qubits = (next(iter(live)),)
+            if cirq.is_parameterized(gate.coefficient):
+                raise ValueError("Cirq global phase requires a concrete coefficient")
+            # A phase-only program allocates a clean scalar carrier from the pool.
+            qubits = (next(iter(live)) if live else object(),)
             exponent = global_phase_exponent(complex(gate.coefficient))
             instructions = global_phase_ir(float(exponent), anchor=0)
+        elif (
+            isinstance(gate, cirq.ResetChannel)
+            and len(qubits) == 1
+            and qubits[0].dimension == 2
+        ):
+            instructions = (Instruction("reset", (0,), metadata={"is_dynamic": True}),)
         else:
             if not qubits or any(qubit.dimension != 2 for qubit in qubits):
                 raise ValueError(
@@ -160,3 +166,48 @@ def import_cirq_register_optree(
     for word in live.values():
         builder.free(word)
     return builder.finalize(returns)
+
+
+def import_cirq_register_gate(
+    value: object,
+    *,
+    signature: Signature | None = None,
+    in_quregs: Mapping[str, object] | None = None,
+    out_quregs: Mapping[str, object] | None = None,
+) -> ProgramRecord | None:
+    """Import one declared SDK decomposition with explicit native ownership.
+
+    The raw gate contract exposes the original operands as through wires.
+    A supplied signature can express sided ports. Temporary decomposition
+    wires outside those ports use the optree importer's clean lifetimes.
+    """
+    cirq = _cirq()
+    if isinstance(value, cirq.Gate):
+        value = value.on(*cirq.LineQid.for_gate(value))
+    if not isinstance(value, cirq.GateOperation) or value.tags:
+        raise ValueError(
+            "Cirq register decomposition requires an untagged gate operation"
+        )
+    if signature is None:
+        if in_quregs is not None or out_quregs is not None:
+            raise ValueError("Cirq qureg placement requires a signature")
+        width = len(value.qubits)
+        shape = (width,) if width > 1 else ()
+        ports = () if width == 0 else (Register("q", quantum_bit_type(), shape=shape),)
+        signature = Signature(ports)
+        in_quregs = out_quregs = (
+            {"q": np.asarray(value.qubits, dtype=object).reshape((*shape, 1))}
+            if width
+            else {}
+        )
+    elif in_quregs is None or out_quregs is None:
+        raise ValueError("Cirq signature placement requires input and output quregs")
+    operations = decompose_cirq_once(value)
+    if operations is None:
+        return None
+    return import_cirq_register_optree(
+        cirq.Circuit(cirq.Moment((operation,)) for operation in operations),
+        signature=signature,
+        in_quregs=in_quregs,
+        out_quregs=out_quregs,
+    )
