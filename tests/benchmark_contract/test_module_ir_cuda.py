@@ -322,7 +322,12 @@ def test_cuda_public_train_keeps_eager_ownership_and_checkpoint_recovery(
                 tmp_path / "step3.pt", optimizer=optimizer, step=3, seed=11
             )
             payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
-            assert payload["version"] == "flagquantum.training_state.v2"
+            assert payload["version"] == "flagquantum.training_state.v3"
+            names = [name for name, _ in model.named_parameters()]
+            assert payload["parameter_training"] == {
+                "requires_grad": dict.fromkeys(names, True),
+                "optimizer_parameters": [names],
+            }
             assert payload["ir_hash"] == execution.provenance["ir_hash"]
             record["checkpoint_version"] = payload["version"]
             record["checkpoint_ir_hash"] = payload["ir_hash"]
