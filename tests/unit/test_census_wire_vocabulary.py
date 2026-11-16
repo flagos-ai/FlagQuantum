@@ -482,7 +482,10 @@ def test_every_declaration_kind_is_on_the_attribute_ledger() -> None:
         "flagquantum/remote/qpu/http.py::HttpQuantumProvider::default_n_wires",
         "instance",
     ) in retired
-    assert "flagquantum/compiler/topology/routing.py::CouplingMap::n_wires" not in owned["field"]
+    assert (
+        "flagquantum/compiler/topology/routing.py::CouplingMap::n_wires"
+        not in owned["field"]
+    )
     # The exclusion list is split across two of the three kinds, and an instance
     # attribute is the one kind that has never reached a payload.
     assert {site.declaration for site in scanned.excluded} == {"field", "member"}
