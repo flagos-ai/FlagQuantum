@@ -20,9 +20,10 @@ from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import ProgramRecord
 from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_types import quantum_bit_type
-from ...core.ir.program.registers import Register
+from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ._decompose import decompose_cirq_once
+from ._gate_metadata import cirq_gate_signature
 from ._register_export import _register_shape
 from .conversion import _cirq, _lower_gate, _raise_if_lossy, _report
 from .models import CirqConversionIssue
@@ -178,7 +179,7 @@ def import_cirq_register_gate(
     """Import one declared SDK decomposition with explicit native ownership.
 
     The raw gate contract exposes the original operands as through wires.
-    A supplied signature can express sided ports. Temporary decomposition
+    A supplied signature can express sided ports and defaults to operand order. Temporary decomposition
     wires outside those ports use the optree importer's clean lifetimes.
     """
     cirq = _cirq()
@@ -191,15 +192,28 @@ def import_cirq_register_gate(
     if signature is None:
         if in_quregs is not None or out_quregs is not None:
             raise ValueError("Cirq qureg placement requires a signature")
-        width = len(value.qubits)
-        shape = (width,) if width > 1 else ()
-        ports = () if width == 0 else (Register("q", quantum_bit_type(), shape=shape),)
-        signature = Signature(ports)
-        in_quregs = out_quregs = (
-            {"q": np.asarray(value.qubits, dtype=object).reshape((*shape, 1))}
-            if width
-            else {}
-        )
+        signature = cirq_gate_signature(value.gate)
+    if in_quregs is None and out_quregs is None:
+        incoming: dict[str, object] = {}
+        outgoing: dict[str, object] = {}
+        offset = 0
+        for register in signature:
+            shape = _register_shape(register)
+            limit = offset + int(np.prod(shape))
+            wires = value.qubits[offset:limit]
+            if len(wires) != limit - offset:
+                raise ValueError(
+                    "Cirq gate operands do not match the declared signature"
+                )
+            placed = np.asarray(wires, dtype=object).reshape(shape)
+            if register.side & RegisterSide.LEFT:
+                incoming[register.name] = placed
+            if register.side & RegisterSide.RIGHT:
+                outgoing[register.name] = placed
+            offset = limit
+        if offset != len(value.qubits):
+            raise ValueError("Cirq gate operands do not match the declared signature")
+        in_quregs, out_quregs = incoming, outgoing
     elif in_quregs is None or out_quregs is None:
         raise ValueError("Cirq signature placement requires input and output quregs")
     operations = decompose_cirq_once(value)
