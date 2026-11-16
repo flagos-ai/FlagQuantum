@@ -58,7 +58,7 @@ def decode_kmx(text: str) -> ReversiblePhaseProgram:
             if len(operands) != 2:
                 raise ValueError("Z_POW requires one qubit and an exact decimal angle")
             angle = PhaseAngle128.from_rounded_decimal_half_turns(operands.pop())
-        if opcode in {"HMR", "BIT_STORE0", "BIT_INVERT"} and operands:
+        if opcode in {"HMR", "BIT_STORE0", "BIT_STORE1", "BIT_INVERT"} and operands:
             result = _parse_operand(operands.pop(), "b")
         operations.append(
             ReversiblePhaseOperation(

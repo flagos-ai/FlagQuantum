@@ -18,6 +18,7 @@ REVERSIBLE_OPCODE_ARITIES = {
     "hmr": 1,
     "r": 1,
     "bit_store0": 0,
+    "bit_store1": 0,
     "bit_invert": 0,
     "push_condition": 0,
     "pop_condition": 0,
@@ -89,14 +90,15 @@ class ReversiblePhaseProgram:
                 continue
             if op.condition_bit is not None and not is_defined(op.condition_bit):
                 raise ValueError("Condition read before definition")
-            if op.opcode in {"bit_store0", "bit_invert"}:
-                if len(definitions) > 1 and op.opcode == "bit_store0":
+            if op.opcode in {"bit_store0", "bit_store1", "bit_invert"}:
+                initializes = op.opcode != "bit_invert"
+                if len(definitions) > 1 and initializes:
                     raise ValueError(
                         "Condition scopes cannot initialize classical bits"
                     )
                 if op.result_bit is None or not 0 <= op.result_bit < self.n_bits:
                     raise ValueError("Invalid classical result bit")
-                if op.opcode == "bit_store0" and op.condition_bit is not None:
+                if initializes and op.condition_bit is not None:
                     raise ValueError(
                         "Conditional classical initialization is unsupported"
                     )

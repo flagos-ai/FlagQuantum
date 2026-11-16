@@ -178,6 +178,34 @@ and X1 in KMX with the corresponding classical guards. In circuit IR each
 NEG is represented by four scalar-sign primitives. The source defines
 no separate analytical model for these dispatch rules.
 
+## Classical result lifetimes
+
+The source allocators share one LIFO pool. Dirty reuse preserves the slot
+value. Clean reuse emits a zero store, and freshly reserved storage relies on
+the source's initial classical state. Moving a lease transfers its release;
+disarming a lease keeps the result out of the pool. The C++ intake exercises
+all of these transitions. The guarded HMR lease pops its condition before
+returning its slot, so the next HMR can reuse that slot without retaining
+the old predicate.
+
+The format and execution binder replay both source streams with the existing
+classical store and X-measurement owners. KMX now retains the source
+`BIT_STORE1` opcode on import and export and binds it to one constant XOR
+assignment. The native compiler's ordinary XOR emission remains canonical.
+The local binder uses explicit width, initialization and scope definitions
+and allocates its guard snapshot above caller-owned result slots. Four
+unnormalized complex HMR branches agree with the analytical projection and
+clear both measured wires. The native executor also verifies the dirty-read
+and following clean-clear results on the unchanged store fixture.
+
+The source lease fixture emits two classical stores and two guarded X gates.
+The measurement fixture emits HMR2, one condition pair, one Z and one NEG,
+using one result slot. Local execution binds the condition through one
+temporary classical snapshot. There is no source analytical cost model for
+the lease operations. Source allocation and disarm are compile-time policies;
+this replay uses caller-owned physical slots. Implicit initial-bit admission
+and general source allocator parity remain open.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug metadata beyond
 named block ranges have separate source assertions. The full public mixed
