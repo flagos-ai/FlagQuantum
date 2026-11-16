@@ -39,6 +39,25 @@ def local_operation_order(
     Isolated operations use declaration order because source frozenset ties
     have no portable order. Call bodies retain their own separate schedule.
     """
+    steps, edges, ordered_nodes = _function_connections(
+        function, functions, logical_graph=logical_graph
+    )
+    schedule = schedule_width_steps(steps, edges, group_components=False)
+    return tuple(
+        ordered_nodes[index]
+        for group in schedule
+        for index in group
+        if 0 <= ordered_nodes[index] < len(function.blocks[0].operations)
+    )
+
+
+def _function_connections(
+    function: FunctionRecord,
+    functions: Mapping[str, FunctionRecord],
+    *,
+    logical_graph: bool,
+) -> tuple[list[WidthStep], list[WidthConnection], tuple[int, ...]]:
+    """Share SSA lifetime connections between scheduling and model estimates."""
     block = function.blocks[0]
     widths = _argument_widths(function, logical_graph)
     producers = dict.fromkeys(block.arguments, -1)
@@ -78,14 +97,7 @@ def local_operation_order(
                 block.operations[node], functions, logical_graph=logical_graph
             )
         steps.append(step)
-    schedule = schedule_width_steps(steps, edges, group_components=False)
-    ordered_nodes = tuple(nodes)
-    return tuple(
-        ordered_nodes[index]
-        for group in schedule
-        for index in group
-        if 0 <= ordered_nodes[index] < len(block.operations)
-    )
+    return steps, edges, tuple(nodes)
 
 
 def _argument_widths(
