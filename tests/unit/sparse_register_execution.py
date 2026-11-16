@@ -98,6 +98,26 @@ def execute_sparse_register(
                 ): value
                 for basis, value in state.items()
             }
+        elif name == "any":
+            matrix = op.matrix
+            assert matrix is not None
+            combined = sum(masks)
+            addresses = tuple(
+                sum(mask for i, mask in enumerate(reversed(masks)) if row >> i & 1)
+                for row in range(1 << len(masks))
+            )
+            # Keep the operand ordering, including nonconsecutive target wires.
+            columns = {address: column for column, address in enumerate(addresses)}
+            updated = defaultdict(complex)
+            for basis, value in state.items():
+                column = columns[basis & combined]
+                for row, address in enumerate(addresses):
+                    coefficient = complex(matrix[row][column])
+                    if coefficient:
+                        updated[(basis & ~combined) | address] += coefficient * value
+            state = {
+                basis: value for basis, value in updated.items() if abs(value) > 1e-16
+            }
         else:
             raise AssertionError(f"Unexpected gate {name}")
     return state
