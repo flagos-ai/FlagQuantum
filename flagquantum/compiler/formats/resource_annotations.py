@@ -5,45 +5,19 @@
 
 """Interchange for standalone legacy three-count resource annotations."""
 
-from functools import cache
-from importlib import import_module
 from typing import Any, cast
 
 from ...errors import SerializationError
 from .._component_trace.resource_model import GateCost
+from ._legacy_protobuf import message_factory, parse_message
 
 _FIELDS = ("clifford", "rotations", "t")
 
 
-@cache
 def _annotation_factory() -> Any:
     """Build the wire schema in its own lazy descriptor pool."""
-    try:
-        descriptors = import_module("google.protobuf.descriptor_pb2")
-        pool_module = import_module("google.protobuf.descriptor_pool")
-        messages = import_module("google.protobuf.message_factory")
-    except ImportError as error:
-        raise ImportError(
-            "Legacy resource annotation interchange requires protobuf"
-        ) from error
-
-    schema = descriptors.FileDescriptorProto(
-        name="flagquantum/resource_annotation.proto",
-        package="flagquantum",
-        syntax="proto3",
-    )
-    message = schema.message_type.add(name="ResourceAnnotation")
-    field_proto = descriptors.FieldDescriptorProto
-    for number, name in enumerate(_FIELDS, start=1):
-        message.field.add(
-            name=name,
-            number=number,
-            type=field_proto.TYPE_INT64,
-            label=field_proto.LABEL_OPTIONAL,
-        )
-    registered = pool_module.DescriptorPool().Add(schema)
-    return messages.GetMessageClass(
-        registered.message_types_by_name["ResourceAnnotation"]
+    return message_factory(
+        "ResourceAnnotation", tuple((name, "INT64") for name in _FIELDS)
     )
 
 
@@ -67,14 +41,7 @@ def serialize_resource_annotation(cost: GateCost) -> bytes:
 
 def deserialize_resource_annotation(data: bytes) -> GateCost:
     """Decode standalone annotation bytes into the three corresponding counts."""
-    if not isinstance(data, bytes):
-        raise TypeError("Resource annotation requires bytes")
-    factory = _annotation_factory()
-    decoding = import_module("google.protobuf.message")
-    try:
-        annotation = factory.FromString(data)
-    except decoding.DecodeError as error:
-        raise SerializationError("Invalid resource annotation payload") from error
+    annotation = parse_message(_annotation_factory(), data, "Resource annotation")
     return GateCost(
         clifford=annotation.clifford,
         rotation=annotation.rotations,
