@@ -37,6 +37,7 @@ def message_factory(
     oneof: str | None = None,
     optional: tuple[str, ...] = (),
     repeated: tuple[str, ...] = (),
+    enums: tuple[tuple[str, tuple[str, ...]], ...] = (),
 ) -> Any:
     """Build a private proto3 descriptor using protobuf's runtime API."""
     descriptors, pools, messages = _protobuf_runtime()
@@ -45,6 +46,12 @@ def message_factory(
         name=f"flagquantum/{name}.proto", package="flagquantum", syntax="proto3"
     )
     message = schema.message_type.add(name=name)
+    enum_names = set()
+    for enum_name, values in enums:
+        enum_names.add(enum_name)
+        enum = message.enum_type.add(name=enum_name)
+        for number, value in enumerate(values):
+            enum.value.add(name=value, number=number)
     if oneof is not None:
         message.oneof_decl.add(name=oneof)
     proto = descriptors.FieldDescriptorProto
@@ -59,7 +66,11 @@ def message_factory(
             ),
         )
         if isinstance(field_type, str):
-            field.type = getattr(proto, f"TYPE_{field_type}")
+            if field_type in enum_names:
+                field.type = proto.TYPE_ENUM
+                field.type_name = f".flagquantum.{name}.{field_type}"
+            else:
+                field.type = getattr(proto, f"TYPE_{field_type}")
         else:
             nested = field_type.DESCRIPTOR
             field.type = proto.TYPE_MESSAGE
