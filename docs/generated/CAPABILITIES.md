@@ -420,6 +420,8 @@ This catalog is generated from the machine-validated
 | Reconstruct one-body energy while retaining circuit-parameter gradients | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
 | Measure two-body fermionic densities on matched full JW, parity or BK registers | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
 | Reconstruct the energy of a small molecular state while retaining circuit-parameter gradients | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
+| Correct one- and two-body densities that violate fixed-particle linear identities | Fixed-particle fermionic density projection | Experimental | [Read guide](../../docs/development/FERMION_RDM_PROJECTION.md) |
+| Compare raw and projected constraint residuals and molecular energies | Fixed-particle fermionic density projection | Experimental | [Read guide](../../docs/development/FERMION_RDM_PROJECTION.md) |
 | Build a spinful model from explicit undirected edges, including branching and disconnected graphs | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Reuse native encodings and train a bounded determinant pair with an independently verified spectator sign | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Discover independent commuting X/Y/Z symmetries of a native Pauli operator | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
@@ -1629,6 +1631,20 @@ Build native two-body observables and assemble their expectations into a complex
 - **Start:** [quick example](../../examples/algorithms/fermion_two_body_density.py)
 - **Documentation:** [guide](../../docs/development/FERMION_TWO_BODY_DENSITY.md)
 - **Known boundary:** Exact local CPU expectations on a full matched JW, prefix-parity or Fenwick BK register. Requires at least two modes and binomial(n, 2)**2 ordered, finite, single-element float32 or float64 CPU expectations of one dtype. Returns a dense complex64 or complex128 tensor. Measurement count and output grow as O(n^4); statevector storage remains exponential. Complex128 evidence covers four modes; float32 coverage is limited to assembly. Observable coefficients are static; circuit-parameter gradients flow through measured-tensor assembly. No automatic encoding or mode-order inference, noise projection, N-representability enforcement, tapered or ancilla registers, sampling, accelerator, distributed or scalability qualification. Native workflow requires neither OpenFermion nor Cirq.
+
+### Fixed-particle fermionic density projection
+
+Project measured one- and two-body densities jointly onto known particle-number constraints without modifying the input tensors.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density_projection.project_fixed_particle_densities`
+- **Runtime modes:** `local_cpu_tensor`
+- **Hardware:** `cpu`
+- **Gradient support:** `static_inputs_only`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_RDM_PROJECTION.md)
+- **Documentation:** [guide](../../docs/development/FERMION_RDM_PROJECTION.md)
+- **Known boundary:** Opt-in postprocessing of finite static dense CPU complex128 tensors in physical mode order, on two through eight modes with an explicit integer particle count between two and the mode count. Rejects autograd inputs and outputs that fail the absolute 1e-10 constraint tolerance. Returns new tensors and uses a fixed distance metric with equal weight in the one-mode and independent pair matrices. Dense work and storage are O(m^4). Enforces Hermiticity, pair antisymmetry, fixed-number traces and contraction consistency; no positivity, N-representability, noise-model or energy-accuracy guarantee. Run the H2 demonstration with --project. No dependency on OpenFermion or Cirq.
 
 ### Spinful Fermi-Hubbard explicit graph
 

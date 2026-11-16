@@ -45,5 +45,15 @@ non-finite data, autograd inputs, unsupported shapes and outputs outside an
 absolute residual tolerance of 1e-10. Dense work and storage grow as O(m^4).
 The result satisfies the declared linear identities; it has no positivity or
 N-representability guarantee, and energy error need not improve. No dependency,
-stable API, runtime, or automatic correction is added. Capability registration
-belongs to a separate Integration change.
+stable API, runtime, or automatic correction is added. The capability is
+registered separately as experimental.
+
+## Merged implementation acceptance
+
+Implementation [#1185](https://github.com/flagos-ai/FlagQuantum/pull/1185)
+merged at `7b45cad4f4bcb8db27dd407adac7f586c872036d`. Its final head
+`a67d2047e409dc1a063f94ae004d7eb62622c44d` passed 239 checks with three
+conditional skips. The merge tree matches the verified PR tree.
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43807297709),
+75 focused tests, and the protected API baseline passed on the merged revision.
+This evidence supports the experimental static CPU scope described above.

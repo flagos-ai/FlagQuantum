@@ -2423,6 +2423,25 @@ focused_tests = "tests/unit/fermion/test_density.py"
 integration_tests = "tests/integration/test_fermion_one_body_density.py"
 development_artifact = "docs/development/FERMION_TWO_BODY_DENSITY.md"
 
+[capabilities.fermion_fixed_particle_rdm_projection]
+title = "Fixed-particle fermionic density projection"
+summary = "Project measured one- and two-body densities jointly onto known particle-number constraints without modifying the input tensors."
+category = "simulation_and_training"
+user_goals = ["Correct one- and two-body densities that violate fixed-particle linear identities", "Compare raw and projected constraint residuals and molecular energies"]
+public_apis = ["flagquantum.algorithms.fermion.density_projection.project_fixed_particle_densities"]
+runtime_modes = ["local_cpu_tensor"]
+hardware = ["cpu"]
+gradient_support = "static_inputs_only"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/development/FERMION_RDM_PROJECTION.md"
+documentation = "docs/development/FERMION_RDM_PROJECTION.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Opt-in postprocessing of finite static dense CPU complex128 tensors in physical mode order, on two through eight modes with an explicit integer particle count between two and the mode count. Rejects autograd inputs and outputs that fail the absolute 1e-10 constraint tolerance. Returns new tensors and uses a fixed distance metric with equal weight in the one-mode and independent pair matrices. Dense work and storage are O(m^4). Enforces Hermiticity, pair antisymmetry, fixed-number traces and contraction consistency; no positivity, N-representability, noise-model or energy-accuracy guarantee. Run the H2 demonstration with --project. No dependency on OpenFermion or Cirq."
+focused_tests = "tests/unit/fermion/test_density_projection.py"
+integration_tests = "tests/test_algorithm_examples.py"
+development_artifact = "docs/development/FERMION_RDM_PROJECTION.md"
+
 [capabilities.fermion_hubbard_graph]
 title = "Spinful Fermi-Hubbard explicit graph"
 summary = "Assemble a static simple-graph Hamiltonian in native fermionic algebra and compose it with existing encodings, measurement and circuit-angle training."
