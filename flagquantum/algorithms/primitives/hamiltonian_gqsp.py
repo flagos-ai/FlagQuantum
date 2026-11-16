@@ -18,8 +18,10 @@ from ...compiler._component_trace.call_graph import (
 )
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import RegisterLayout, partition_register
+from ...core.classical_control import is_classical_control_instruction
 from ...core.ir import CircuitIR, Instruction
 from ...core.value_math import SymbolicInt, SymbolicReal
+from ...dynamic import DynamicCircuit
 from ...simulation.numerics.jacobi_anger_coefficients import (
     approx_exp_cos_by_jacobi_anger,
 )
@@ -128,6 +130,7 @@ class HamiltonianGQSP:
         prepare_junk: tuple[int, ...] = (),
         prepare_workspace: tuple[int, ...] = (),
         walk_workspace: tuple[int, ...] = (),
+        prepare_classical_bits: tuple[int, ...] = (),
     ) -> _BoundHamiltonianGQSP:
         """Bind big-endian walk ports and compose the existing three-stage path."""
         logical = (signal, *target, *prepare_junk)
@@ -137,10 +140,16 @@ class HamiltonianGQSP:
         selection = tuple(
             wire for name, _ in self.prepare.selection_layout for wire in ports[name]
         )
-        prepare = self.prepare.emit(selection, prepare_junk, prepare_workspace, ())
+        prepare = self.prepare.emit(
+            selection, prepare_junk, prepare_workspace, prepare_classical_bits
+        )
         walk = self.gqsp.emit(signal, target, walk_workspace)
         unprepare = self.prepare.emit(
-            selection, prepare_junk, prepare_workspace, (), adjoint=True
+            selection,
+            prepare_junk,
+            prepare_workspace,
+            prepare_classical_bits,
+            adjoint=True,
         )
         return _BoundHamiltonianGQSP(
             (*prepare, *walk, *unprepare),
@@ -156,6 +165,10 @@ class _BoundHamiltonianGQSP:
     def append_to(self, circuit: Circuit) -> Circuit:
         if circuit.n_qubits < self.required_qubits:
             raise ValueError("Hamiltonian GQSP binding exceeds circuit width")
+        if not isinstance(circuit, DynamicCircuit) and any(
+            is_classical_control_instruction(gate) for gate in self.instructions
+        ):
+            raise ValueError("Measured Hamiltonian GQSP requires a DynamicCircuit")
         return circuit.compose(
             CircuitIR(
                 circuit.n_qubits,
