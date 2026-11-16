@@ -1,0 +1,78 @@
+{
+  "upstream_path": "algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "5a2333d2f00dc6344d7123269c48dd4eed4cb401ea6c731c2af78deb8133fb43",
+  "git_blob_sha1": "d32ff085ec7efddab354205344d3750407520ca0",
+  "scope": "All 13 source stages, the original four-term Hamiltonian, time 22 and Laurent degree 33, freshly fitted 67 rotations and the full five-qubit native evolution.",
+  "native_semantic_adaptations": "Use spectral Fourier completion, stable endpoint stripping and independent coefficient reconstruction. Reuse native PREPARE/SELECT, use reflection conjugation for the inverse walk and execute both native signal branches. Use a reproducible local input from the original four-amplitude domain.",
+  "native_entrypoint": "examples.synthesis.algorithms.hamiltonian_simulation.hamiltonian_simulation_with_block_encoding.hamiltonian_simulation_gqsp.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/hamiltonian_simulation/hamiltonian_simulation_with_block_encoding/hamiltonian_simulation_gqsp/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_gqsp_hamiltonian_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "native_code_cell": 1,
+      "sha256": "423a375a6569eae58f71bb3891a3cffdfa1f91cfe73cb8e13373e5bf78517f05"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "ab07f4fa444c7a5b34cd824d9927a39fff8d20e0326a366cdc1dac5c88996653"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "72d2dd93f90292ac91be27b3a3423ecbdf05b09a105ec3b5709de68f111eb985"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "cf6f457fa65af0b63829339ce65a57a5bbf730eee562d82f0250309f0856f1ce"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "bd3a4ef1d1c278d82d9b8332129afbe33042e54f63e2b642e144cf15d9797de2"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "sha256": "869f74e35faed18e439490146ceae2b49bc854c8edb012c6524dcc5a036219ae"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "sha256": "f2cf8ef00dfcf2265d362e4776534824ad780847a3534bf1bfbe2a3ed25fe141"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "sha256": "6543e4d5b2d08b5008fc7da4f284640769f6e7a0bd9e4074ac1049bbfa027f6a"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 9,
+      "sha256": "87f66ebad9cc20b993792a1939e7f00d4bc2c69f0d7a17e3b7e11777d05e74b3"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 10,
+      "sha256": "a57bf964019b79dddb19337b3223a015711e9bae7b8526c24a10b9e2cbaaa775"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 11,
+      "sha256": "f1f8f136071ee2c0e1775ac308f82d48c7a0376bd08cb85625aa46aeba86bba1"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 12,
+      "sha256": "3a68f9b6cb457489e3e006eaeaeaa38d949ea164cc7ff36b6552c6cc659e9667"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 13,
+      "sha256": "1e9b1b04af612c9247326e6079541d9e4d44b3c37b5eba81d2093fa57b7d2079"
+    }
+  ]
+}
