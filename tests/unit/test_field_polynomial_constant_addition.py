@@ -36,7 +36,7 @@ def test_constant_polynomial_gate_order_and_exact_resource_model(
     from galois import Poly
     from qualtran import QGF, QGFPoly
     from qualtran.bloqs.basic_gates import XGate
-    from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import GF2PolyAddK
+    from qualtran.bloqs.gf_poly_arithmetic import GF2PolyAddK
     from qualtran.cirq_interop import BloqAsCirqGate
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
@@ -75,7 +75,7 @@ def test_unknown_constant_matches_locked_symbolic_bound() -> None:
     import sympy
     from galois import Poly
     from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.gf_poly_arithmetic.gf2_poly_add_k import GF2PolyAddK
+    from qualtran.bloqs.gf_poly_arithmetic import GF2PolyAddK
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
 
     n, m = sympy.symbols("n m", positive=True, integer=True)

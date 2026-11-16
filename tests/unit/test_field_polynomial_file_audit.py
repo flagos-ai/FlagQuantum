@@ -54,15 +54,66 @@ def complete_locked_assets() -> None:
         rows = [
             row
             for row in csv.DictReader(handle)
-            if row["编号"] in {f"Q-{i:04d}" for i in range(526, 535)}
+            if row["编号"] in {f"Q-{i:04d}" for i in range(525, 535)}
         ]
-    assert len(rows) == 9
+    assert len(rows) == 10
     for row in rows:
         data = (REFERENCE / row["源文件"]).read_bytes()
         assert (
             hashlib.sha1(b"blob " + str(len(data)).encode() + b"\0" + data).hexdigest()
             == row["源对象"]
         )
+
+
+def test_frozen_polynomial_package_exports_each_definition() -> None:
+    from qualtran.bloqs import gf_poly_arithmetic as package
+    from qualtran.bloqs.gf_poly_arithmetic import (
+        gf2_poly_add,
+        gf2_poly_add_k,
+        gf_poly_split_and_join,
+    )
+
+    exported = {
+        name: value
+        for name, value in vars(package).items()
+        if isinstance(value, type) and value.__module__.startswith(package.__name__)
+    }
+    assert exported == {
+        "GF2PolyAdd": gf2_poly_add.GF2PolyAdd,
+        "GF2PolyAddK": gf2_poly_add_k.GF2PolyAddK,
+        "GFPolyJoin": gf_poly_split_and_join.GFPolyJoin,
+        "GFPolySplit": gf_poly_split_and_join.GFPolySplit,
+    }
+
+
+@pytest.mark.parametrize("degree,width", [(0, 1), (1, 2), (2, 3)])
+def test_package_register_addition_preserves_source_operands(
+    degree: int, width: int
+) -> None:
+    import cirq
+    from qualtran import QGF, QGFPoly
+    from qualtran.bloqs.gf_poly_arithmetic import GF2PolyAdd
+
+    layout = FieldPolynomialLayout(degree, width)
+    size = layout.logical_width
+    f_x = tuple(reversed(range(0, 2 * size, 2)))
+    g_x = tuple(range(1, 2 * size, 2))
+    original = GF2PolyAdd(QGFPoly(degree, QGF(2, width)))
+    reference, outputs = (
+        original.decompose_bloq()
+        .flatten()
+        .to_cirq_circuit_and_quregs(
+            f_x=np.array([cirq.LineQubit(wire) for wire in f_x]),
+            g_x=np.array([cirq.LineQubit(wire) for wire in g_x]),
+        )
+    )
+    operations = tuple(reference.all_operations())
+    assert all(op.gate == cirq.CNOT for op in operations)
+    assert [
+        (gate.name, gate.wires) for gate in gf2_polynomial_add_ir(f_x, g_x, layout)
+    ] == [("cx", tuple(q.x for q in op.qubits)) for op in operations]
+    assert tuple(q.x for q in outputs["f_x"]) == f_x
+    assert tuple(q.x for q in outputs["g_x"]) == g_x
 
 
 def test_complete_original_test_inventory() -> None:
@@ -219,11 +270,10 @@ def test_complete_split_join_factories_and_classical_assertions() -> None:
 @pytest.mark.parametrize("join", [False, True])
 def test_original_full_view_tensor_and_native_identity(join: bool) -> None:
     from qualtran import QGF, QGFPoly
-    from qualtran.bloqs.gf_poly_arithmetic.gf_poly_split_and_join import GFPolySplit
+    from qualtran.bloqs.gf_poly_arithmetic import GFPolyJoin, GFPolySplit
 
-    original = GFPolySplit(QGFPoly(2, QGF(2, 2)))
-    if join:
-        original = original.adjoint()
+    view = GFPolyJoin if join else GFPolySplit
+    original = view(QGFPoly(2, QGF(2, 2)))
     layout = FieldPolynomialLayout(2, 2)
     for index in range(64):
         assert layout.pack_basis(layout.unpack_basis(index)) == index

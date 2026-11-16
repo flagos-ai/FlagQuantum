@@ -162,3 +162,24 @@ Initial diagnostics identified the missing canonical field-child adjoint order,
 array signature rendering and a mutable-circuit test expectation. They were
 corrected before acceptance. Strict-check namespace/type diagnostics were also
 resolved. The frozen reference remains unchanged.
+
+## Package entrance closure (Q-0525)
+
+The pinned initializer blob `44c084de068fdc8e4581a7c9fe6b6815fecc6c49`
+re-exports four classes. The package test verifies the entire export set and
+the identity of each definition. Their direct native owners are:
+
+| Export | Native owner | Executable evidence |
+| --- | --- | --- |
+| GF2PolyAdd | `gf2_polynomial_add_ir` | Flattened source CNOT order and both output wire maps agree at (degree, coefficient width) = (0, 1), (1, 2), and (2, 3) with reversed, interleaved wires. |
+| GF2PolyAddK | `gf2_polynomial_add_constant_ir` | The package export supplies the ordered source X operands and output map for the five existing constant cases. |
+| GFPolySplit | `FieldPolynomialLayout.split` and `FiniteFieldPolynomialEncoding.to_gf_coefficients` | The package export contracts to the 64-dimensional identity with the corresponding native bit view. |
+| GFPolyJoin | `FieldPolynomialLayout.join` and `FiniteFieldPolynomialEncoding.from_gf_coefficients` | The inverse view from the package export has the same identity tensor and preserves every complex amplitude through append. |
+
+The unchanged coefficient owners emit one CNOT per coefficient bit for register
+addition and one X per set constant bit for constant addition. Views emit zero
+primitives. Source model counts and logical widths are covered by the existing
+independent QEC comparisons. All four paths use caller-owned wires and have no
+measurement branches. The concentrated regression passed 272 tests. The
+implementation and original-test boundaries above remain open for their own
+file rows.
