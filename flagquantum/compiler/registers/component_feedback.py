@@ -20,6 +20,7 @@ from ...core.ir.program.registers import Register, RegisterType
 from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicInt
 from .component_builder import BindingCollection, ComponentProgramBuilder
+from .component_control import _control_names
 from .component_gate_function import bit_gate_function
 
 
@@ -33,17 +34,7 @@ def classical_control_signature(
             dtype.quantum_bits != 0 or ("storage", "classical") not in dtype.parameters
         ):
             raise ValueError("Feedback control requires a classical data type")
-    occupied = {reg.name for reg in child}
-    names: tuple[str, ...]
-    if len(controls) == 1 and "ctrl" not in occupied:
-        names = ("ctrl",)
-    else:
-        candidates = (
-            f"ctrl{i}"
-            for i in count(2 if "ctrl" in occupied else 1)
-            if f"ctrl{i}" not in occupied
-        )
-        names = tuple(next(candidates) for _ in controls)
+    names = _control_names(tuple(child), len(controls))
     return Signature(
         (
             *(

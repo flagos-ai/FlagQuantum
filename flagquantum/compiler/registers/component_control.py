@@ -15,8 +15,9 @@ import numpy as np
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import FunctionRecord, ProgramRecord, verify_program_record
 from ...core.ir.program.register_types import quantum_bit_type
-from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt
 from .component_builder import BindingCollection, ComponentProgramBuilder
 from .component_expansion import _has_call_decomposition
 from .component_gate_function import bit_gate_function
@@ -46,6 +47,28 @@ def _control_names(registers: tuple[Register, ...], count: int) -> tuple[str, ..
         if f"ctrl{index}" not in names:
             result.append(f"ctrl{index}")
     return tuple(result)
+
+
+def quantum_control_signature(
+    child: Signature,
+    controls: tuple[tuple[RegisterType, tuple[SymbolicInt, ...]], ...],
+) -> Signature:
+    """Prepend collision-free named quantum controls, retaining shapes and dtypes."""
+    if any(
+        dtype.classical_bits or dict(dtype.parameters).get("storage") == "classical"
+        for dtype, _ in controls
+    ):
+        raise ValueError("Predicate control requires a quantum data type")
+    names = _control_names(tuple(child), len(controls))
+    return Signature(
+        (
+            *(
+                Register(name, dtype, shape)
+                for name, (dtype, shape) in zip(names, controls, strict=True)
+            ),
+            *child,
+        )
+    )
 
 
 def control_component_program(

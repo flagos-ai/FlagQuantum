@@ -9,11 +9,12 @@ from collections.abc import Callable, Mapping
 
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_control import (
     ControlAdder,
-    _control_names,
     control_component_via_predicate,
+    quantum_control_signature,
 )
 from ..component_graph import _call_entry
 from .component_predicate import validate_control_ports
@@ -58,11 +59,12 @@ def extend_component_control_system(
     if {r.name for r in existing_controls} & {r.name for r in function.registers}:
         raise ValueError("existing control names conflict with forward data ports")
     descriptors = (*additional_controls, *existing_controls)
-    names = _control_names(function.registers, len(descriptors))
-    combined = tuple(
-        Register(name, register.dtype, register.shape)
-        for name, register in zip(names, descriptors, strict=True)
+    signature = quantum_control_signature(
+        Signature(function.registers),
+        tuple((register.dtype, register.shape_symbolic) for register in descriptors),
     )
+    combined = tuple(signature)[: len(descriptors)]
+    names = tuple(register.name for register in combined)
     module = control_component_via_predicate(
         record, controlled, combined, (*additional_patterns, *existing_patterns), entry
     )
