@@ -75,6 +75,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("register_factoring_via_modexp", 6, 2, 0),
         ("register_rsa_phase_estimation", 6, 4, 0),
         ("register_qroam_clean", 6, 2, 0),
+        ("register_qrom", 5, 2, 0),
         ("register_hadamard", 9, 2, 1),
         ("register_identity", 8, 2, 0),
         ("register_measurement", 10, 4, 0),
