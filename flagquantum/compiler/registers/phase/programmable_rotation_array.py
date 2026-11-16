@@ -47,6 +47,7 @@ def programmable_rotation_array_ir(
     rotation: Callable[[int, tuple[int, ...], int], tuple[Instruction, ...]],
     interleaved: tuple[tuple[Instruction, ...], ...],
     interleaved_target: tuple[int, ...] = (),
+    rotation_workspace: tuple[int, ...] = (),
 ) -> tuple[Instruction, ...]:
     """Emit the pinned rotation-array generator on bound registers.
 
@@ -54,7 +55,9 @@ def programmable_rotation_array_ir(
     and one entry per valid selection. The rotation callback emits the
     controlled base gate to power 2**(-1-bit_power), preserving its phase
     convention. Interleavers may act on target and interleaved_target.
-    Load and QROM workspace start and finish clean.
+    Load and QROM workspace start and finish clean. A rotation may borrow
+    the declared subset of QROM workspace and its associated classical slots
+    between lookups. It must restore those wires before returning.
     """
     if (
         not angles
@@ -75,6 +78,8 @@ def programmable_rotation_array_ir(
             "Rotation array requires one interleaver per adjacent angle row"
         )
     _validate_wires((*selection, *load, *target, *workspace, *interleaved_target))
+    if not set(rotation_workspace).issubset(workspace):
+        raise ValueError("Rotation workspace must be drawn from the QROM workspace")
     if (
         len(classical_bits) != len(workspace)
         or len(set(classical_bits)) != len(classical_bits)
@@ -84,6 +89,12 @@ def programmable_rotation_array_ir(
             "Rotation array requires one distinct classical slot per work wire"
         )
     interleave_wires = {*target, *interleaved_target}
+    rotation_wires = {*target, *rotation_workspace}
+    rotation_slots = {
+        bit
+        for wire, bit in zip(workspace, classical_bits, strict=True)
+        if wire in rotation_workspace
+    }
     if any(
         wire not in interleave_wires
         for stage in interleaved
@@ -117,10 +128,20 @@ def programmable_rotation_array_ir(
                 last_index = index
             stage = rotation(control, target, power)
             if any(
-                wire not in (control, *target) for gate in stage for wire in gate.wires
+                wire != control and wire not in rotation_wires
+                for gate in stage
+                for wire in gate.wires
             ):
                 raise ValueError(
                     "Rotation array gate used a wire outside its control and target"
+                )
+            if rotation_workspace and any(
+                gate.name == "measure"
+                and gate.metadata.get("classical_bit") not in rotation_slots
+                for gate in stage
+            ):
+                raise ValueError(
+                    "Rotation measurement used an undeclared workspace slot"
                 )
             gates.extend(stage)
     return tuple(gates)
