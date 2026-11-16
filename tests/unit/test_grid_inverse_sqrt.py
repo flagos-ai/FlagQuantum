@@ -5,7 +5,9 @@ import pytest
 from flagquantum.algorithms.primitives.grid_inverse_sqrt import (
     grid_inverse_sqrt_qrom_data,
     source_grid_inverse_sqrt_newton_cost,
+    source_grid_inverse_sqrt_newton_signature,
     source_grid_inverse_sqrt_polynomial_cost,
+    source_grid_inverse_sqrt_polynomial_signature,
 )
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
@@ -34,10 +36,10 @@ def test_source_inverse_sqrt_coefficient_tables(address, precision):
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("widths", [(4, 8, 12), (5, 15, 22), (7, 8, 4)])
+@pytest.mark.parametrize("widths", [(4, 8, 12), (5, 15, 22), (7, 8, 4), (7, 8, 12)])
 def test_source_inverse_sqrt_resource_graphs(widths):
     pytest.importorskip("qualtran")
-    from qualtran import DecomposeNotImplementedError
+    from qualtran import DecomposeNotImplementedError, QAny, Side
     from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
         NewtonRaphsonApproxInverseSquareRoot,
         PolynmomialEvaluationInverseSquareRoot,
@@ -49,16 +51,31 @@ def test_source_inverse_sqrt_resource_graphs(widths):
         get_cost_value,
     )
 
-    for native, original in (
+    for native, signature, original in (
         (
             source_grid_inverse_sqrt_newton_cost(*widths),
+            source_grid_inverse_sqrt_newton_signature(*widths),
             NewtonRaphsonApproxInverseSquareRoot(*widths),
         ),
         (
             source_grid_inverse_sqrt_polynomial_cost(*widths),
+            source_grid_inverse_sqrt_polynomial_signature(*widths),
             PolynmomialEvaluationInverseSquareRoot(*widths),
         ),
     ):
+        assert all(isinstance(register.dtype, QAny) for register in original.signature)
+        assert all(register.side == Side.THRU for register in original.signature)
+        assert all(register.dtype.encoding == "opaque" for register in signature)
+        assert signature.thru_registers_only
+        assert [
+            (register.name, register.bitsize, register.shape) for register in signature
+        ] == [
+            (register.name, register.bitsize, register.shape)
+            for register in original.signature
+        ]
+        assert [register.name for register in signature.lefts()] == [
+            register.name for register in signature.rights()
+        ]
         with pytest.raises(DecomposeNotImplementedError):
             original.decompose_bloq()
         calls = original.build_call_graph(SympySymbolAllocator())

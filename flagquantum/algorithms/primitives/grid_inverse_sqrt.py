@@ -11,6 +11,9 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
 )
 from ...compiler.registers.arithmetic.arithmetic_resource_model import source_add_cost
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 
 _LOW_DECIMAL = (
     "0.99994132489119882162",
@@ -63,6 +66,28 @@ def _real_product_cost(width: int) -> ComponentCost:
     )
 
 
+def source_grid_inverse_sqrt_polynomial_signature(
+    distance_width: int,
+    coefficient_width: int,
+    output_width: int,
+) -> Signature:
+    """Declare the locked polynomial resource model's ordered through ports."""
+    if any(
+        type(width) is not int or width < 1
+        for width in (distance_width, coefficient_width, output_width)
+    ):
+        raise ValueError(
+            "Grid inverse-square-root polynomial widths must be positive integers"
+        )
+    return Signature(
+        (
+            Register("x_sq", opaque_register_type(distance_width)),
+            Register("in_coeff", opaque_register_type(coefficient_width), shape=(4,)),
+            Register("out", opaque_register_type(output_width)),
+        )
+    )
+
+
 def source_grid_inverse_sqrt_polynomial_cost(
     distance_width: int,
     coefficient_width: int,
@@ -71,16 +96,12 @@ def source_grid_inverse_sqrt_polynomial_cost(
     legacy_shims: bool = False,
 ) -> ComponentCost:
     """Count the three source real products and three signed additions."""
-    if any(
-        type(width) is not int or width < 1
-        for width in (distance_width, coefficient_width, output_width)
-    ):
-        raise ValueError(
-            "Grid inverse-square-root polynomial widths must be positive integers"
-        )
+    signature = source_grid_inverse_sqrt_polynomial_signature(
+        distance_width, coefficient_width, output_width
+    )
     return ComponentCost(
         "PolynmomialEvaluationInverseSquareRoot",
-        distance_width + 4 * coefficient_width + output_width,
+        int(signature.n_qubits()),
         calls=(
             CostCall(_real_product_cost(coefficient_width), 3),
             CostCall(
@@ -93,6 +114,28 @@ def source_grid_inverse_sqrt_polynomial_cost(
     )
 
 
+def source_grid_inverse_sqrt_newton_signature(
+    distance_width: int,
+    polynomial_width: int,
+    target_width: int,
+) -> Signature:
+    """Declare the locked Newton resource model's ordered through ports."""
+    if any(
+        type(width) is not int or width < 1
+        for width in (distance_width, polynomial_width, target_width)
+    ):
+        raise ValueError(
+            "Grid inverse-square-root Newton widths must be positive integers"
+        )
+    return Signature(
+        (
+            Register("x_sq", opaque_register_type(distance_width)),
+            Register("poly", opaque_register_type(polynomial_width)),
+            Register("target", opaque_register_type(target_width)),
+        )
+    )
+
+
 def source_grid_inverse_sqrt_newton_cost(
     distance_width: int,
     polynomial_width: int,
@@ -101,13 +144,9 @@ def source_grid_inverse_sqrt_newton_cost(
     legacy_shims: bool = False,
 ) -> ComponentCost:
     """Count the locked square, scale, two real products and one signed add."""
-    if any(
-        type(width) is not int or width < 1
-        for width in (distance_width, polynomial_width, target_width)
-    ):
-        raise ValueError(
-            "Grid inverse-square-root Newton widths must be positive integers"
-        )
+    signature = source_grid_inverse_sqrt_newton_signature(
+        distance_width, polynomial_width, target_width
+    )
     square = ComponentCost(
         "SquareRealNumber",
         3 * polynomial_width,
@@ -122,7 +161,7 @@ def source_grid_inverse_sqrt_newton_cost(
     )
     return ComponentCost(
         "NewtonRaphsonApproxInverseSquareRoot",
-        distance_width + polynomial_width + target_width,
+        int(signature.n_qubits()),
         calls=(
             CostCall(square),
             CostCall(scale),
