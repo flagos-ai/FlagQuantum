@@ -8,6 +8,8 @@
 from math import isfinite
 
 from ....core.ir import Instruction
+from ..._component_trace.resource_model import ComponentCost, CostCall
+from ..arithmetic.arithmetic_resource_model import source_phase_add_cost
 from ..bits.bitwise import _validate_wires
 from .phase_addition import phase_add_ir, phase_add_workspace_size
 
@@ -72,6 +74,35 @@ def scaled_phase_add_terms(
             count = min(kept, gradient_width - right_shift)
             terms.append((slice(start, start + count), right_shift))
     return tuple(terms)
+
+
+def source_scaled_phase_add_cost(
+    input_width: int,
+    input_fraction_bits: int,
+    gradient_width: int,
+    coefficient: float,
+    coefficient_width: int,
+    coefficient_fraction_bits: int,
+) -> ComponentCost:
+    """Model the bounded full-width AddIntoPhaseGrad calls declared by the source."""
+    terms = scaled_phase_add_terms(
+        input_width,
+        input_fraction_bits,
+        gradient_width,
+        coefficient,
+        coefficient_width,
+        coefficient_fraction_bits,
+    )
+    return ComponentCost(
+        "AddScaledValIntoPhaseReg",
+        input_width + gradient_width,
+        calls=(
+            CostCall(
+                source_phase_add_cost(input_width, gradient_width),
+                min(len(terms), (coefficient_width + 2) // 2),
+            ),
+        ),
+    )
 
 
 def scaled_phase_add_ir(
