@@ -379,6 +379,25 @@ def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:
     ]
 
 
+def test_msvc_sparse_blossom_uses_cxx20_only_for_its_compilation(monkeypatch) -> None:
+    command = _build_ext_command(inplace=False)
+    original_flags = "/O2 /std:c++17 /Brepro"
+    observed: list[list[str]] = []
+    monkeypatch.setenv("CL", original_flags)
+    monkeypatch.setattr(
+        BuildExtension,
+        "build_extension",
+        lambda self, ext: observed.append(os.environ["CL"].split()),
+    )
+    with monkeypatch.context() as windows:
+        windows.setattr(os, "name", "nt")
+        windows.setattr(sys, "platform", "win32")
+        command.build_extension(command.extensions[0])
+        command.build_extension(command.extensions[1])
+    assert observed == [original_flags.split(), ["/O2", "/Brepro", "/std:c++20"]]
+    assert os.environ["CL"] == original_flags
+
+
 def test_an_inplace_build_relinks_an_artifact_linked_by_an_earlier_build(
     monkeypatch, tmp_path
 ) -> None:

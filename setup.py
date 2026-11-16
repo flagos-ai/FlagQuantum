@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -18,6 +19,7 @@ from torch.utils.cpp_extension import BuildExtension, CppExtension
 
 _EMBEDDED_STIM_NAME = "flagquantum.simulation.stabilizer._embedded_stim"
 _NATIVE_CPU_NAME = "flagquantum.simulation.native_cpu._C"
+_SPARSE_BLOSSOM_NAME = "flagquantum.qec.decoders._sparse_blossom"
 _EMBEDDED_STIM_CSRCDIR = Path("flagquantum/simulation/stabilizer/csrc")
 _SPARSE_BLOSSOM_CSRCDIR = Path("flagquantum/qec/decoders/csrc")
 _BUILD_EMBEDDED_STIM = os.environ.get("FQ_BUILD_EMBEDDED_STIM") == "1"
@@ -72,7 +74,7 @@ def _sparse_blossom_extension() -> Extension:
         if hashlib.sha256((vendor / path).read_bytes()).hexdigest() != digest:
             raise RuntimeError(f"Sparse Blossom source digest mismatch: {path}")
     return Extension(
-        "flagquantum.qec.decoders._sparse_blossom",
+        _SPARSE_BLOSSOM_NAME,
         [
             str(_SPARSE_BLOSSOM_CSRCDIR / "sparse_blossom.cpp"),
             *(str(vendor / path) for path in lock["translation_units"]),
@@ -277,7 +279,21 @@ class ReproducibleBuildExtension(BuildExtension):
             # build chose. Removing only the linked output forces the link this
             # build configured and leaves the object files to be reused.
             Path(self.get_ext_fullpath(ext.name)).unlink(missing_ok=True)
-        super().build_extension(ext)
+        if os.name == "nt" and ext.name == _SPARSE_BLOSSOM_NAME:
+            # This MSVC build path reads CL even when setuptools drops the
+            # extension's compiler post-arguments.
+            original = os.environ.get("CL")
+            flags = re.sub(r"(?i)(?<!\S)[/-]std:\S+", "", original or "").strip()
+            os.environ["CL"] = " ".join(filter(None, (flags, "/std:c++20")))
+            try:
+                super().build_extension(ext)
+            finally:
+                if original is None:
+                    os.environ.pop("CL", None)
+                else:
+                    os.environ["CL"] = original
+        else:
+            super().build_extension(ext)
         if sys.platform == "darwin":
             extension_path = Path(self.get_ext_fullpath(ext.name))
             if TORCH_USES_OPENMP and ext.name == _NATIVE_CPU_NAME:
