@@ -73,6 +73,7 @@ def source_workspace_gates(
         XGate,
         ZPowGate,
     )
+    from qualtran.bloqs.basic_gates.swap import TwoBitSwap
     from qualtran.bloqs.bookkeeping import Allocate, Free
     from qualtran.bloqs.mcmt import And
 
@@ -122,6 +123,8 @@ def source_workspace_gates(
             return (Instruction("ch", (*inputs["ctrl"], *inputs["target"])),), inputs
         if isinstance(bloq, Hadamard):
             return (Instruction("h", inputs["q"]),), inputs
+        if isinstance(bloq, TwoBitSwap):
+            return (Instruction("swap", (*inputs["x"], *inputs["y"])),), inputs
         if isinstance(bloq, CNOT):
             return (Instruction("cx", (*inputs["ctrl"], *inputs["target"])),), inputs
         if isinstance(bloq, XGate):
