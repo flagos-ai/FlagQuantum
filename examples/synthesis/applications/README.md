@@ -91,6 +91,7 @@ Native FlagQuantum programs currently available:
 - [overview](optimization/robust_posture_optimization/overview/README.md)
 - [overview](optimization/set_cover/overview/README.md)
 - [overview](optimization/set_partition/overview/README.md)
+- [overview](optimization/variational_quantum_imaginary_time_evolution/overview/README.md)
 - [overview](physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/overview/README.md)
 - [overview](physical_systems/ising_model/overview/README.md)
 - [overview](physical_systems/quantum_chaos/quantum_sawtooth_map/overview/README.md)

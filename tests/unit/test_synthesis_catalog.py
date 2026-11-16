@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 134
+    assert len(validated) == 135
+    assert (
+        "applications/optimization/variational_quantum_imaginary_time_evolution/variational_quantum_imaginary_time_evolution",
+        "examples/synthesis/applications/optimization/variational_quantum_imaginary_time_evolution/overview/main.py",
+    ) in validated
     assert (
         "community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states",
         "examples/synthesis/community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/main.py",
@@ -665,7 +669,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**134/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**135/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
