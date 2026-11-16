@@ -20,10 +20,15 @@ implementation. The register adapter adds exact S-dagger and T-dagger
 conversion for decomposed register operations. The public static converter
 retains its v1 gate partition. No external qubit object enters native IR.
 
-The static exporter explicitly rejects instructions with classical conditions.
-This also covers conditions referring to inputs with no preceding measurement.
-An explicit lossy export reports and drops such an operation instead of
-turning it into an unconditional gate.
+The public static exporter rejects instructions with classical conditions.
+Its explicit lossy mode reports and drops the conditional operation. The
+private register adapter can opt into strict feedback export with a caller
+supplied key prefix. It supports unconditional measurements and resets on
+individual wires and conditions that read measurement-defined slots. Each
+measurement receives a key derived from its instruction index. Overwriting
+a slot preserves the earlier measurement record and points subsequent
+conditions at the latest key. Callers supply distinct prefixes for circuits
+whose measurement records will be composed.
 
 | Source responsibility | Native support |
 | --- | --- |
@@ -59,10 +64,18 @@ The exported circuit matches the full seven-wire complex matrix. Native
 execution also matches the original coherent clean-input result with both
 junk values and the target. The emitted sequence contains 18 CX, six H, six T,
 six T-dagger, and three S. The source composite model declares three And
-calls. The native measured compute/uncompute
-restores a coherent input and zero scratch. Its feedback remains explicitly
-outside static export. These tests preserve the distinction between source
-operation support and adapter admission.
+calls. The native measured compute/uncompute restores a coherent input and
+zero scratch. With register feedback enabled, the positive and mixed control
+variants of two consecutive And compute/uncompute pairs match the locked
+source primitive sequence, including conditional CZ and reset. The two
+measurements share a native slot and receive separate Cirq keys. All four
+unnormalized complex branch vectors match, including a spectator and
+zeroed scratch. A disjunction witness covers both classical polarities.
+The public static contract continues to diagnose the same feedback body.
+Each positive pair emits six CX, one conditional CZ, three H, one S,
+two T, two T-dagger, one measurement and one reset. The mixed pair adds
+four X. The separate locked model gives one And for compute and one
+Clifford plus one measurement for erase in both variants.
 
 The [native tutorial](../../examples/notebooks/cirq_register_interop.ipynb)
 uses the original seeded Cirq circuit, rewrites its iSWAP into exact S, CZ and
@@ -96,8 +109,9 @@ private wire. Its clean and borrowed versions each preserve the source's
 allocation/free order and four CX operations. The complete complex state
 matches with a spectator. Clean work returns to zero, and borrowed work
 returns its joint state with the spectator. Through wires retain their input
-mapping. Dynamic measurement lifetimes require a separate mapping for
-instruction expansion and classical slots.
+mapping. The private feedback path emits one Cirq operation for each
+admitted instruction, so native lease offsets also apply to measured
+workspace bodies under that contract.
 
 For the original two-bit `IntState(1, 2)`, both wrappers emit one X on the
 same caller-supplied least-significant bit and give the full `|01⟩` result.
@@ -121,9 +135,8 @@ effect. The source witness uses explicit X and Free operations.
 
 - Q-0714 awaits the rest of the source package export map, including
   import, decomposition, and named-wire management.
-- Q-0715 and Q-0716 retain dynamic feedback and arithmetic export, and
-  direct dense inspection of bodies that use private workspace. The static
-  wrapper replays physical leases for unchanged through mappings, explicitly
-  owned left-input release, and right-only output transfer.
+- Q-0715 and Q-0716 retain guarded measurements and resets, classical XOR
+  dataflow, unsupported arithmetic primitives, and direct dense inspection
+  of bodies that use private workspace.
 - Q-0721 retains the source composite QFT, MultiAnd export and ModExp
   roundtrip as open tutorial sections. The adaptation shows their diagnostics.
