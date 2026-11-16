@@ -1,5 +1,7 @@
 """Verify register-aware Cirq optree import and native workspace lifetimes."""
 
+from collections import Counter
+from collections.abc import Hashable
 from hashlib import sha1
 from pathlib import Path
 
@@ -10,8 +12,10 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler import estimate_resources
+from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
+from flagquantum.core.ir.program import FunctionRecord
 from flagquantum.core.ir.program.register_types import (
     opaque_register_type,
     quantum_bit_type,
@@ -305,3 +309,126 @@ def test_wrapper_decomposition_owns_internal_workspace() -> None:
     native = Circuit(2, inputs=initial, dtype=torch.complex128)
     native.append(FieldOperation(2, bound.circuit.instructions))
     torch.testing.assert_close(native.state().flatten(), expected, rtol=0, atol=2e-12)
+
+
+def test_registered_gate_words_match_the_locked_optree_fixture() -> None:
+    cirq = pytest.importorskip("cirq")
+
+    class Packet(cirq.Gate):  # type: ignore[name-defined, misc]
+        def __init__(self, count: int) -> None:
+            self.count = count
+
+        def _num_qubits_(self) -> int:
+            return self.count
+
+    def passthrough(name: str, register: Register) -> FunctionRecord:
+        builder = ComponentProgramBuilder(Signature((register,)), name=name)
+        return builder.finalize(builder.inputs).functions[0]
+
+    first, middle, last = Packet(24), Packet(8), Packet(24)
+    word = opaque_register_type(2)
+    definitions: dict[Hashable, FunctionRecord] = {
+        first: passthrough("first", Register("x", word, (3, 4))),
+        middle: passthrough("middle", Register("anc", word, (4,))),
+        last: passthrough("last", Register("y", word, (12,))),
+    }
+    qubits = cirq.LineQubit.range(24)
+    ancillas = cirq.NamedQubit.range(4, prefix="anc")
+    optree = cirq.Circuit(
+        first.on(*qubits),
+        middle.on(*ancillas, *qubits[:4]),
+        last.on(*qubits),
+    )
+    default = import_cirq_register_optree(optree, gate_definitions=definitions)
+    assert default.functions[0].registers == (
+        Register("qubits", quantum_bit_type(), (28,)),
+    )
+    default_ops = default.functions[0].blocks[0].operations
+    assert [
+        op.callee for op in default_ops if op.callee in {"first", "middle", "last"}
+    ] == [
+        "first",
+        "middle",
+        "last",
+    ]
+
+    signature = Signature(
+        (
+            Register("xx", opaque_register_type(3), (3, 2)),
+            Register("yy", quantum_bit_type(), (2, 3)),
+        )
+    )
+    quregs = {
+        "xx": np.asarray(qubits[:18], dtype=object).reshape((3, 2, 3)),
+        "yy": np.asarray(qubits[18:], dtype=object).reshape((2, 3, 1)),
+    }
+    module = import_cirq_register_optree(
+        optree,
+        signature=signature,
+        in_quregs=quregs,
+        out_quregs=quregs,
+        gate_definitions=definitions,
+    )
+    assert module.functions[0].registers == tuple(signature)
+    assert {
+        f.name: f for f in module.functions if f.name in {"first", "middle", "last"}
+    } == {f.name: f for f in definitions.values()}
+    functions = {f.name: f for f in module.functions}
+    assert all(op.callee is not None for op in module.functions[0].blocks[0].operations)
+    called = [
+        functions[op.callee]
+        for op in module.functions[0].blocks[0].operations
+        if op.callee is not None
+    ]
+    # These are the locked source's two QAny(2) allocations and frees,
+    # and its six QAny(3) splits and joins.
+    book = Counter(
+        (f.blocks[0].operations[0].opcode, f.registers[0].bitsize)
+        for f in called
+        if f.name.startswith("__fq_rebinding_") and f.registers is not None
+    )
+    assert book["allocate_register", 2] == book["free_register", 2] == 2
+    assert book["split_register", 3] == 6
+    joined_three = [
+        f
+        for f in called
+        if f.name.startswith("__fq_rebinding_")
+        and f.registers is not None
+        and f.blocks[0].operations[-1].opcode == "join_register"
+        and f.registers[-1].bitsize == 3
+    ]
+    assert len(joined_three) == 6
+    physical_ports = (
+        *(tuple(range(i, i + 3)) for i in range(0, 18, 3)),
+        *((i,) for i in range(18, 24)),
+    )
+    bound = bind_register_program(module, physical_ports, clean=(24, 25, 26, 27))
+    assert bound.outputs == physical_ports
+    assert len(bound.events) == 4 and not bound.circuit.instructions
+
+
+def test_locked_six_wire_optree_preserves_full_phase_sensitive_unitary() -> None:
+    cirq = pytest.importorskip("cirq")
+    source = pytest.importorskip("qualtran.cirq_interop._cirq_to_bloq")
+    wires = cirq.LineQubit.range(6)
+    optree = cirq.testing.random_circuit(
+        wires, n_moments=7, op_density=1.0, random_state=52
+    )
+    optree.append(cirq.global_phase_operation(-1j))
+    expected = source.cirq_optree_to_cbloq(optree).tensor_contract()
+    module = import_cirq_register_optree(optree)
+    bound = bind_register_program(module, tuple((i,) for i in range(6)))
+    assert not bound.events and any(
+        i.name == "iswap" for i in bound.circuit.instructions
+    )
+    circuit = Circuit(
+        6, inputs=torch.eye(64, dtype=torch.complex128), dtype=torch.complex128
+    )
+    circuit.append(FieldOperation(6, bound.circuit.instructions))
+    actual = circuit.state().reshape(64, 64).T
+    torch.testing.assert_close(
+        actual,
+        torch.as_tensor(expected, dtype=torch.complex128),
+        rtol=0,
+        atol=2e-12,
+    )
