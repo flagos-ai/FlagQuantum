@@ -12,7 +12,10 @@ from random import Random
 from ..compiler.formats._binary_streams import write_binary_result
 from ..compiler.formats.kmx_circuit import KmxCircuit, read_circuit_file
 from ..compiler.formats.kmx_sampled_report import format_sampled_counts
-from ..simulation.physical_basis_shots import sample_basis_batch
+from ..simulation.physical_basis_shots import (
+    PHYSICAL_SAMPLE_BATCH_SIZE,
+    sample_basis_batch,
+)
 from .kmx_sampling_init import (
     parse_register_initialization as parse_register_initialization,
 )
@@ -27,9 +30,12 @@ def sampled_operation_counts(
     assignments = parse_register_initialization(circuit, init)
     rng = Random() if rng is None else rng
     counts: Counter[str] = Counter()
-    for start in range(0, shots, 64):
+    for start in range(0, shots, PHYSICAL_SAMPLE_BATCH_SIZE):
         result = sample_basis_batch(
-            circuit, shots=min(shots - start, 64), rng=rng, initialization=assignments
+            circuit,
+            shots=min(shots - start, PHYSICAL_SAMPLE_BATCH_SIZE),
+            rng=rng,
+            initialization=assignments,
         )
         counts.update(result.counts)
     return counts

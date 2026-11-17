@@ -6,10 +6,10 @@
 import re
 
 from ..compiler.formats.kmx_circuit import KmxCircuit
+from ..compiler.formats.unsigned_word import parse_unsigned_word
 from ..simulation.physical_basis_shots import RegisterInitialization
 
 _INIT = re.compile(r"r([0-9]*)([=<])(.*)")
-_VALUE = re.compile(r"0b[01_]*|0x[0-9a-fA-F_]*|[0-9_]+")
 
 
 def parse_register_initialization(
@@ -29,13 +29,8 @@ def parse_register_initialization(
         if operator == "=" and payload == "*":
             value = 0
         else:
-            payload = payload.strip(" ")
-            if not _VALUE.fullmatch(payload):
-                raise ValueError(f"Invalid register initialization value {payload!r}")
-            base = {"0b": 2, "0x": 16}.get(payload[:2], 10)
-            digits = (payload[2:] if base != 10 else payload).replace("_", "")
-            value = int(digits or "0", base)
-            if randomize and value == 0 and digits and base != 10:
+            value, width = parse_unsigned_word(payload)
+            if randomize and not value and width:
                 raise ValueError("Random initialization modulus is zero")
         assignments.append(
             RegisterInitialization(
