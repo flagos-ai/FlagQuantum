@@ -34,8 +34,8 @@ depth-one call graphs and appends each concrete operation through
 - SwapWithZero checks the original basis, diagram, resource and factory
   dimensions, including the seeded multi-axis resource fixture. Both directions
   match the source stage traversal and leaf streams. Smaller cases compare the
-  entire complex map and roundtrip. The classical schedule is compared with
-  the original in-place callback for all addresses in both original data grids.
+  entire complex map and roundtrip. The native in-place callback reuses that
+  stage order and is compared against every address in both original data grids.
   The symbolic model retains one fewer exchange than the product of axis
   lengths.
 - The unchanged upstream suite, including its notebook, passed 64 cases with
@@ -91,12 +91,28 @@ symbolic fixture verifies the declared target axes and shaped controls.
 Physical binding requires concrete dimensions. Reserved wires and the
 source live width remain distinct when selectors include padding.
 
+## SwapWithZero typed and classical bindings
+
+The compiler declares every live selector as bounded unsigned with its
+original axis extent. The target port retains the full array shape,
+including omitted zero-bit selection axes. Both execution routes use
+the same stage traversal. The append route uses physical MSB-first
+selection wires and relative-phase exchanges. The classical callback
+uses integer selection bits and mutates the caller's array directly,
+without changing selection objects. The adjoint reverses the stage order.
+
+The array checks include strided views and preserve the locked callback's
+keyword insertion order. A trailing zero-bit axis works. When a leading
+zero-bit axis precedes an exchange, the raw source and native callback
+raise `IndexError`. The compiler reports that boundary before emitting
+instructions.
+
 ## Remaining boundaries
 
 - Q-0707 retains symbolic execution and the upstream abstract Clifford cost
   query for generic controls.
 - Q-0709 retains source singleton and zero-width selection failures and the
   generic control cases requiring unresolved controlled And leaves.
-- Q-0712 retains executable symbolic binding, source earlier zero-bit axis
-  rejection, and a native in-place array callback. The current compiler
-  owns the shared stage permutation and the quantum emitter.
+- Q-0712 retains executable symbolic binding and the earlier zero-bit
+  axis failure. The compiler owns the stage permutation and the quantum
+  emitter. Simulation owns the in-place data callback.

@@ -270,7 +270,7 @@ def test_original_swap_with_zero(
 
     example = SwapWithZeroExample(widths, word, shape)
     original = source_network.SwapWithZero(widths, word, shape)
-    assert_signature(example.signature, original)
+    assert_swap_with_zero_signature(example.signature, original)
     assert original.t_complexity().t == 4 * word * (prod(shape) - 1)
     assert original.t_complexity().clifford == (22 * word - 1) * (prod(shape) - 1)
     assert get_cost_value(original, QubitCount()) == example.qubit_count
@@ -318,7 +318,9 @@ def test_original_swap_with_zero(
 def test_symbolic_swap_with_zero(source_network: Any) -> None:
     p, q, r, b, rows, cols, depth = symbols("p q r b P Q R")
     op = source_network.SwapWithZero((p, q, r), b, (rows, cols, depth))
-    assert_signature(swap_with_zero_signature((p, q, r), b, (rows, cols, depth)), op)
+    assert_swap_with_zero_signature(
+        swap_with_zero_signature((p, q, r), b, (rows, cols, depth)), op
+    )
     assert swap_with_zero_call_graph(b, (rows, cols, depth)).leaf_counts == {
         "CSwapApprox(b)": rows * cols * depth - 1
     }
@@ -341,6 +343,8 @@ def test_original_classical_swap_with_zero_stage_contract(
     data = rng.integers(upper, size=shape)
     widths = tuple(extent.bit_length() for extent in shape)
     op = source_network.SwapWithZero(widths, upper.bit_length(), shape)
+    native = SwapWithZeroExample(widths, upper.bit_length(), shape)
+    inverse = replace(native, adjoint=True)
     schedule = tuple(swap_with_zero_stages(widths, shape))
     names = tuple(reg.name for reg in op.selection_registers)
     for indices in np.ndindex(shape):
@@ -350,6 +354,16 @@ def test_original_classical_swap_with_zero_stage_contract(
         callback_input = data.copy()
         callback = op.on_classical_vals(targets=callback_input, **ports)
         assert callback["targets"] is callback_input
+        native_input = data.copy()
+        native_result = native.on_classical_vals(targets=native_input, **ports)
+        assert id(native_result["targets"]) == id(native_input)
+        assert all(native_result[name] is ports[name] for name in names)
+        np.testing.assert_array_equal(native_input, callback_input)
+        assert (
+            inverse.on_classical_vals(targets=native_input, **ports)["targets"]
+            is native_input
+        )
+        np.testing.assert_array_equal(native_input, data)
 
         words = list(data.flat)
         for axis, bit, left, right in schedule:
@@ -362,3 +376,59 @@ def test_original_classical_swap_with_zero_stage_contract(
             if (indices[axis] >> bit) & 1:
                 words[left], words[right] = words[right], words[left]
         assert words == list(data.flat)
+
+
+def assert_swap_with_zero_signature(native: Signature, source: Any) -> None:
+    assert_signature(native, source)
+    for local, original in zip(native, source.signature, strict=True):
+        if original.name == "targets":
+            assert local.dtype.encoding == "opaque"
+        else:
+            assert local.dtype.encoding == "uint"
+            assert (
+                dict(local.dtype.parameters)["bound"] == original.dtype.iteration_length
+            )
+
+
+@pytest.mark.parametrize("reverse_inputs", (False, True))
+def test_swap_with_zero_callback_mutates_the_original_view(
+    source_network: Any, reverse_inputs: bool
+) -> None:
+    import numpy as np
+
+    native = SwapWithZeroExample((1, 2), 4, (2, 3))
+    source = source_network.SwapWithZero((1, 2), 4, (2, 3))
+    original = np.arange(24).reshape(4, 6)
+    actual, expected = original.copy(), original.copy()
+    actual_view, expected_view = actual[::2, ::2], expected[::2, ::2]
+    inputs = [("selection0_", np.int64(0)), ("selection1_", np.int64(1))]
+    values = dict(reversed(inputs) if reverse_inputs else inputs)
+    source.on_classical_vals(targets=expected_view, **values)
+    result = native.on_classical_vals(targets=actual_view, **values)
+    assert id(result["targets"]) == id(actual_view)
+    assert all(result[name] is value for name, value in values.items())
+    np.testing.assert_array_equal(actual, expected)
+    replace(native, adjoint=True).on_classical_vals(targets=actual_view, **values)
+    np.testing.assert_array_equal(actual, original)
+
+
+@pytest.mark.parametrize("widths,shape", [((1, 0), (2, 1)), ((0, 1), (1, 2))])
+def test_swap_with_zero_zero_bit_selector_boundary(
+    source_network: Any, widths: tuple[int, ...], shape: tuple[int, ...]
+) -> None:
+    import numpy as np
+
+    native = SwapWithZeroExample(widths, 2, shape)
+    source = source_network.SwapWithZero(widths, 2, shape)
+    assert_swap_with_zero_signature(native.signature, source)
+    data = np.arange(2).reshape(shape)
+    if widths[0] == 0:
+        with pytest.raises(IndexError):
+            source.on_classical_vals(targets=data.copy(), selection=1)
+        with pytest.raises(IndexError):
+            native.on_classical_vals(targets=data.copy(), selection=1)
+    else:
+        actual, expected = data.copy(), data.copy()
+        source.on_classical_vals(targets=expected, selection=1)
+        native.on_classical_vals(targets=actual, selection=1)
+        np.testing.assert_array_equal(actual, expected)
