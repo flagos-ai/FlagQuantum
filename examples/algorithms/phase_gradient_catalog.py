@@ -11,6 +11,7 @@ from flagquantum.compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
+from flagquantum.compiler._component_trace.resource_generalization import RotationCall
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
 from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import (
@@ -19,12 +20,16 @@ from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import 
 from flagquantum.compiler.registers.phase.phase_addition import (
     phase_add_ir,
     phase_add_workspace_size,
+    source_phase_add_signature,
 )
 from flagquantum.compiler.registers.phase.phase_gradient import (
     phase_gradient_state_ir,
     phase_gradient_unitary_ir,
     source_phase_gradient_state_cost,
+    source_phase_gradient_state_signature,
+    source_phase_gradient_unitary_calls,
     source_phase_gradient_unitary_cost,
+    source_phase_gradient_unitary_signature,
     source_symbolic_phase_gradient_cost,
 )
 from flagquantum.compiler.registers.phase.scaled_phase_addition import (
@@ -36,8 +41,6 @@ from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from flagquantum.core.ir import CircuitIR
-from flagquantum.core.ir.program.register_types import fixed_point_register_type
-from flagquantum.core.ir.program.registers import Register, RegisterSide
 from flagquantum.core.ir.program.signatures import Signature
 
 
@@ -48,24 +51,22 @@ class GradientUnitaryExample:
 
     @property
     def signature(self) -> Signature:
-        return Signature(
-            (Register("phase_grad", fixed_point_register_type(self.width, self.width)),)
-        )
+        return source_phase_gradient_unitary_signature(self.width)
 
     def call_graph(self) -> SymbolicCallGraph[str]:
         root = "PhaseGradientUnitary"
-        width = self.width
-        if isinstance(width, int):
-            calls = {
-                f"ZPowGate({1 / 2**i}, {self.epsilon / width})": 1 for i in range(width)
-            }
-            return symbolic_call_graph(root, {root: calls}, max_depth=1)
-        calls_symbolic = {f"ZPowGate({2 ** (-width)}, {self.epsilon / width})": width}
-        return symbolic_call_graph(root, {root: calls_symbolic}, max_depth=1)
+        calls = {
+            f"ZPowGate({call.parameter}, {call.precision})": count
+            for call, count in source_phase_gradient_unitary_calls(
+                self.width, epsilon=self.epsilon
+            ).items()
+            if isinstance(call, RotationCall)
+        }
+        return symbolic_call_graph(root, {root: calls}, max_depth=1)
 
     def resource_model(self) -> ComponentCost | SymbolicResourceFormula:
         if isinstance(self.width, int):
-            return source_phase_gradient_unitary_cost(self.width)
+            return source_phase_gradient_unitary_cost(self.width, epsilon=self.epsilon)
         return source_symbolic_phase_gradient_cost(self.width)
 
     @property
@@ -85,15 +86,7 @@ class GradientStateExample:
 
     @property
     def signature(self) -> Signature:
-        return Signature(
-            (
-                Register(
-                    "phase_grad",
-                    fixed_point_register_type(self.width, self.width),
-                    side=RegisterSide.RIGHT,
-                ),
-            )
-        )
+        return source_phase_gradient_state_signature(self.width)
 
     def call_graph(self) -> SymbolicCallGraph[str]:
         root = "PhaseGradientState"
@@ -126,8 +119,7 @@ class GradientAdditionExample:
 
     @property
     def signature(self) -> Signature:
-        dtype = fixed_point_register_type(self.width, self.width)
-        return Signature((Register("x", dtype), Register("phase_grad", dtype)))
+        return source_phase_add_signature(self.width, self.width)
 
     def call_graph(self) -> SymbolicCallGraph[str]:
         model = self.resource_model()
