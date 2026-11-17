@@ -6,7 +6,7 @@ Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0318 | `auto_partition.py` | `93cddd9cbb1ab309f713316f066f16d93e5fd8b0` | Open for generic external descriptors and symbolic typed child composition. |
+| Q-0318 | `auto_partition.py` | `93cddd9cbb1ab309f713316f066f16d93e5fd8b0` | Open for direct external objects and symbolic typed child decomposition. |
 | Q-0319 | `auto_partition_test.py` | `adb86ad3fbfabf4f2aab180d3eecc6ffb9daebf5` | Closed for the original runnable scenarios. |
 | Q-0328 / Q-0329 | `partition.py` / `partition_test.py` | `8cebbb58095d172f3db564cdfc231537e6214957` / `c6c3236332577115ff6f09e17f340fe79825e1f4` | Reused for packed binding. Whole-file Partition acceptance continues separately. |
 
@@ -48,5 +48,21 @@ The original AutoPartition and Partition non-notebook suite has 20
 passes, ten mode skips and one expected failure. The Partition notebooks
 listed in its test file belong to the next dependency audit. AutoPartition
 has no source notebook. Physical execution admits concrete typed Program
-ports. The source's generic external object construction and broader
-symbolic typed decomposition remain outside the verified native interface.
+ports. The native declaration retains outer dtype, shape and direction in
+ordinary mode. Left-only mode declares the packed inputs on the left and
+the typed child outputs on the right in child signature order. Concrete
+and symbolic widths, including a symbolic word plus an unused bit, agree
+with the locked signature. Ordinary left-only outer metadata can be
+declared. The locked decomposition attempts to return such a packed port
+and raises a finalization error. Concrete native repacking requires
+through, scalar packed ports.
+
+Concrete typed unsigned ports also bind through the existing compiler
+path. The three-bit BitwiseNot fixture emits the same three X gates and
+operands as the locked decomposition in both ordinary and left-only
+mode. The ordinary fixture retains a fourth unused bit. Both full
+complex states agree through append. Partition adds no gates or work.
+The independent source logical peaks are four and three respectively.
+The source can also construct the symbolic Partition–child–Partition
+graph. Direct external objects and symbolic typed decomposition remain
+open.

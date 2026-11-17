@@ -1,6 +1,6 @@
 # Copyright 2023 Google LLC
 # SPDX-License-Identifier: Apache-2.0
-# Adapted from Qualtran v0.7.0 AutoPartition.build_composite_bloq.
+# Adapted from Qualtran v0.7.0 AutoPartition.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/bookkeeping/auto_partition.py
 
 """Compose source-ordered typed partitions around an existing Program entry."""
@@ -10,10 +10,50 @@ from dataclasses import replace
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 from ....core.ir.program.signatures import Signature
+from ....core.value_math import ssum
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_graph import _call_entry
 from .auto_partition import AutoPartition
 from .component_partition import partition_component_program
+
+
+def auto_partition_signature(
+    child: Signature,
+    layout: AutoPartition,
+    *,
+    packed_ports: tuple[Register, ...] | None = None,
+) -> Signature:
+    """Declare typed outer ports and retain symbolic widths without building IR."""
+    lefts = tuple(child.lefts())
+    if len(lefts) != len(child):
+        raise ValueError("AutoPartition requires every child declaration on the left")
+    if layout._inputs() != {reg.name: reg.total_qubits() for reg in lefts}:
+        raise ValueError("child input names and widths must match the layout")
+    groups = tuple(
+        (outer, ssum(width for _, width in segments))
+        for outer, segments in layout.groups
+    )
+    if packed_ports is None:
+        packed_ports = tuple(
+            Register(name, RegisterType("opaque", width)) for name, width in groups
+        )
+    elif tuple((reg.name, reg.bitsize) for reg in packed_ports) != groups:
+        raise ValueError("packed port names, order and widths must match the layout")
+
+    if not layout.left_only:
+        return Signature(packed_ports)
+    return Signature(
+        (
+            *(
+                Register(reg.name, reg.dtype, reg.shape_symbolic, RegisterSide.LEFT)
+                for reg in packed_ports
+            ),
+            *(
+                Register(reg.name, reg.dtype, reg.shape_symbolic, RegisterSide.RIGHT)
+                for reg in child.rights()
+            ),
+        )
+    )
 
 
 def auto_partition_component_program(
@@ -21,10 +61,12 @@ def auto_partition_component_program(
     layout: AutoPartition,
     entry: str = "main",
     name: str = "packed",
+    *,
+    packed_ports: tuple[Register, ...] | None = None,
 ) -> ProgramRecord:
     """Append a packed entry while preserving the underlying child entry.
 
-    Scalar opaque packed words follow layout.groups in MSB-first order. Child
+    Scalar packed words follow layout.groups in MSB-first order. Child
     array elements are row-major. Named unused slices remain live through one
     child call and are repacked unchanged. left_only exposes the child's right
     ports and consumes the packed inputs. The existing layout owns validation
@@ -35,15 +77,15 @@ def auto_partition_component_program(
     child = _call_entry(record, entry)
     assert child.registers is not None
     signature = Signature(child.registers)
-    lefts = tuple(signature.lefts())
-    rights = tuple(signature.rights())
-    if len(lefts) != len(child.registers):
-        raise ValueError("AutoPartition requires every child declaration on the left")
-    widths = layout._inputs()
-    if widths != {r.name: int(r.total_qubits()) for r in lefts}:
-        raise ValueError("child input names and widths must match the layout")
-    if set(layout.output_names) != {r.name for r in rights}:
+    public = auto_partition_signature(signature, layout, packed_ports=packed_ports)
+    if set(layout.output_names) != {r.name for r in signature.rights()}:
         raise ValueError("child output names must match the layout")
+    external = tuple(public.lefts()) if layout.left_only else tuple(public)
+    if any(reg.shape_symbolic for reg in external):
+        raise ValueError("executable AutoPartition requires scalar packed ports")
+    if not layout.left_only and any(reg.side != RegisterSide.THRU for reg in external):
+        raise ValueError("repacking requires through packed ports")
+    groups = layout._concrete_layouts()
     names = {f.name for f in record.functions}
     if name in names:
         raise ValueError("packed entry conflicts with an existing definition")
@@ -51,22 +93,10 @@ def auto_partition_component_program(
     while any(n.startswith(f"__fq_partition_{index}_") for n in names):
         index += 1
     prefix = f"__fq_partition_{index}_"
-    external = tuple(
-        Register(outer, RegisterType("opaque", sum(width for _, width in ports)))
-        for outer, ports in layout._concrete_layouts()
-    )
-    if layout.left_only:
-        public = tuple(
-            Register(r.name, r.dtype, r.shape, RegisterSide.LEFT) for r in external
-        ) + tuple(
-            Register(r.name, r.dtype, r.shape, RegisterSide.RIGHT) for r in rights
-        )
-    else:
-        public = external
-    registers = {r.name: r for r in lefts}
+    registers = {reg.name: reg for reg in signature.lefts()}
     definitions = list(record.functions)
     partitions = []
-    for i, (_, group) in enumerate(layout._concrete_layouts()):
+    for i, (_, group) in enumerate(groups):
         parts = tuple(
             (
                 registers[port]
@@ -83,7 +113,7 @@ def auto_partition_component_program(
             definitions.extend(
                 partition_component_program(parts, prefix + f"join{i}", True).functions
             )
-    builder = ComponentProgramBuilder(Signature(public), definitions, name=name)
+    builder = ComponentProgramBuilder(public, definitions, name=name)
     inputs: dict[str, BindingCollection] = {}
     unused: dict[str, BindingCollection] = {}
     for i, outer in enumerate(external):
