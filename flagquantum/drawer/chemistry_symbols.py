@@ -1,0 +1,26 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from Qualtran v0.7.0 ApplyControlledZs.wire_symbol.
+# https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/black_boxes.py
+
+"""Typed register-score glyphs for chemistry number phase."""
+
+from ..core.ir.program.registers import Register
+from .register_score import RegisterStep
+from .register_score_data import SymbolClass
+
+
+def number_phase_wire_symbol(
+    step: RegisterStep,
+    register: Register | None,
+    idx: tuple[int, ...] | None,
+    *,
+    values: tuple[int, ...],
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Draw each declared control's polarity and the system's phase box."""
+    if register is None:
+        return "Text", {"text": "C" * len(values) + "Z", "fontsize": 10}
+    if register.name == "system":
+        return "TextBox", {"text": "Z"}
+    (control,) = idx or ()
+    return "Circle", {"filled": bool(values[control])}

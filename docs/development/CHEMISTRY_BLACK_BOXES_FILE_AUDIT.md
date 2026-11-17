@@ -6,7 +6,7 @@ are Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0335 | `black_boxes.py` | `f9670a2ebaf2fe0973323cf7b532c88142970902` | Concrete resource formulas and controlled-number phase verified. General foreign-object protocol and source wire-symbol callbacks remain open. |
+| Q-0335 | `black_boxes.py` | `f9670a2ebaf2fe0973323cf7b532c88142970902` | Concrete resource formulas and controlled-number phase verified. The native controlled-phase glyphs match the source. General foreign-object interoperability remains open. |
 | Q-0336 | `black_boxes_test.py` | `23cfe1e1bae3f437837e031348a0d09bfe201bf0` | Closed for all four original OpenFermion comparisons and the corresponding native resource queries. |
 
 ## QROAM estimates
@@ -49,6 +49,13 @@ The estimates above retain the source wrapper's explicit Toffoli-only
 call graph. All matched primitive streams, including measurement
 feedback, are checked independently. Complete complex states spanning
 all control and system values agree with the expected sign pattern in
-every applicable history. Work returns to zero. Native binding requires
-a nonempty system and at least one control. The source wire-symbol
-presentation and arbitrary external Bloq interoperability remain open.
+every applicable history. Work returns to zero.
+
+Drawer reads the declared control array index for each filled or empty
+circle. The system port uses a Z box. The connector retains every C
+followed by Z, even for ten controls. Six score fixtures match the
+unchanged source geometry and glyphs. The empty control array draws Z
+on the system. Its frozen decomposition passes an invalid controls
+keyword to ZGate and its declared Toffoli count is minus one. Native
+execution continues to admit nonempty systems with at least one binary
+control. Arbitrary external Bloq interoperability remains open.
