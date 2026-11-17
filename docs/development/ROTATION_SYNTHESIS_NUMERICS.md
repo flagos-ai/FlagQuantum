@@ -212,3 +212,44 @@ native owners.
 The package audit checks the complete inventory. Synthesis callers use
 the native math and gate-word modules directly. The ecosystem boundary
 owns external representations and optional dependencies.
+
+## Rotation synthesis channel models and execution
+
+| Item | Frozen file under `rotation_synthesis/channels/` | Git blob |
+| --- | --- | --- |
+| Q-0822 | `__init__.py` | `ab2de75e6d347d04863ca14fae2055675b929ae3` |
+| Q-0823 | `_channel.py` | `0e835f66ff2dbced69f31bbf368badf74d9444de` |
+| Q-0824 | `channel_test.py` | `cca8d8d4825f0961bc86bea4c508d3a6d3030971` |
+
+Synthesis owns all four original exports in `synth/_rotation_channels.py`.
+The unitary model preserves the exact ring pair, determinant scaling,
+phase selection and twirled and untwirled distance formulas. The
+projective model preserves success probability, conditional correction
+cost and distance. The probabilistic model preserves weight clipping,
+matched channel kinds, interpolation and the mixed-kind distance error.
+Twirled and probabilistic channels have source resource and distance
+semantics. They lack an executable export in the locked implementation.
+
+The Cirq and Quirk adapters stay in Ecosystem. Cirq preserves the
+controlled frozen correction and the original measurement key. Quirk
+URLs preserve the serialized cells, operand rows and phase modes.
+The native append binding accepts an existing zero ancilla and a caller
+chosen classical bit. It reuses the exact Clifford+T word binding.
+
+The locked projective diagram shows a Y before correction, while both
+locked exporters apply the correction directly. The native operation
+follows the executable path and restores the ancilla with a conditional
+X. With normalized rotation `U` and correction `C`, the unnormalized
+target maps are `diag(U)` and `C @ (U - diag(U))` for outcomes zero
+and one. The tests compare their complete complex columns and outcome
+probabilities, with the ancilla at zero in both branches. This is
+branch parity for the executable path. The analytical distance model
+is compared directly to the locked numerical model.
+
+For rotation Tx and correction Tz, the emitted path contains two CX
+and one measurement besides the rotation and conditional correction.
+Each word emits one T or T adjoint, with its own Clifford gates and
+scalar correction as needed. The final conditional X adds one
+primitive and zero T. The expected T model weights the second T by
+the outcome-one probability. The measured bit retains its result
+after cleanup. All 103 original test cases pass in the native suite.
