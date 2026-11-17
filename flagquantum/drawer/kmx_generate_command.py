@@ -5,13 +5,13 @@
 """Generate physical arithmetic and table circuits as KMX, KMB or text diagrams."""
 
 import argparse
-import re
 import sys
 from math import inf
 from pathlib import Path
 
 from ..compiler.formats._binary_streams import write_binary_result
 from ..compiler.formats.kmb import encode_kmb
+from ..compiler.formats.unsigned_word import parse_unsigned_word
 from ..compiler.registers.circuit_generation import (
     generate_addition,
     generate_classical_addition,
@@ -28,24 +28,6 @@ def _size(value: str) -> int:
     if not 0 <= parsed <= 1_000_000:
         raise argparse.ArgumentTypeError("Expected a size between 0 and 1000000")
     return parsed
-
-
-def _modulus(value: str) -> tuple[int, int]:
-    text = value.strip(" ")
-    if text.startswith("0b"):
-        digits, radix, pattern = text[2:], 2, r"[01_]+"
-    elif text.startswith("0x"):
-        digits, radix, pattern = text[2:], 16, r"[0-9a-fA-F_]+"
-    else:
-        digits, radix, pattern = text, 10, r"[0-9_]+"
-    if not re.fullmatch(pattern, digits):
-        raise ValueError("Invalid fixed modulus")
-    digits = digits.replace("_", "")
-    number = int(digits, radix)
-    width = len(digits) if radix == 2 else number.bit_length()
-    if radix == 16:
-        width = 4 * (len(digits) - 1) + int(digits[0], 16).bit_length()
-    return number, width
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -117,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
             if args.mod is not None:
                 if n != -1:
                     raise ValueError("Specify '--mod #' xor '--n #'.")
-                modulus, n = _modulus(args.mod)
+                modulus, n = parse_unsigned_word(args.mod)
             circuit = generate_modular_doubling(
                 n,
                 modulus=modulus,

@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from .kmb import KmxRegister
+from .unsigned_word import format_unsigned_word
 
 
 @dataclass(frozen=True)
@@ -17,16 +18,6 @@ class RegisterSample:
     before: tuple[int, ...]
     after: tuple[int, ...]
     negative: bool
-
-
-def _digits(value: int, width: int, radix: Literal[2, 10, 16]) -> str:
-    if radix == 10:
-        return str(value)
-    if not width:
-        return ""
-    if radix == 16:
-        return format(value, f"0{(width + 3) // 4}X")
-    return format(value, f"0{width}b")
 
 
 def format_sample_report(
@@ -43,7 +34,7 @@ def format_sample_report(
     for row in rows:
         halves = zip(registers, padding, row.before, row.after, strict=True)
         values = [
-            _digits(value, len(register.members), radix).rjust(pad)
+            format_unsigned_word(value, len(register.members), radix).rjust(pad)
             for register, pad, before, after in halves
             for value in (before, after)
         ]
