@@ -7,9 +7,9 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0310 | `allocate.ipynb` | `8d91513e62d1015fcbd97c0601442916e3ba6796` | Closed by the complete native Allocate and Free tutorial. |
-| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Open for external object hooks, full source dtype admission, and source wire-symbol protocol. |
+| Q-0311 | `allocate.py` | `e459095285de98c1468b661afdbcbe58238ff1ad` | Open for external object hooks, full executable dtype and symbolic component drawing. |
 | Q-0312 | `allocate_test.py` | `96f411955b10a466d37e8ba3b0698a0823d42ba9` | Closed for the runnable source scenarios and notebook. |
-| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for the corresponding external hooks, dtype and wire-symbol gaps. |
+| Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for external object hooks, full executable dtype and symbolic component drawing. |
 | Q-0324 | `free_test.py` | `63ffa89314718cfaa94bfb0104953e52fd1c518e` | Closed for the runnable symbolic fixture and ten-wire utility round trip. |
 | Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | Reused typed lifetime and control passthrough; general descriptor audit remains open. |
 
@@ -33,8 +33,18 @@ the caller contract. The tensor zero projection is a separate diagnostic;
 its amplitude is intentionally unnormalized. Existing Cirq probes compare
 ordered qalloc, qborrow and qfree events with native leases. The source
 PennyLane hooks return no operation. Native emitted circuits likewise have
-no lifetime gate. Direct PennyLane and Cirq object-level bookkeeping
-adapters and external wire-symbol callbacks are outside this acceptance.
+no lifetime gate. Direct PennyLane and Cirq object-level bookkeeping adapters remain open.
+
+Concrete typed component scores identify lifetime calls by their primitive
+bodies. Allocate and Free reuse the existing default arrows and empty
+connectors. The glyphs and full layout match the frozen scores for one
+and three bits under both dirty flags. The tested source `qalloc` or
+`qborrow` and `qfree` calls match the native lease events on the same
+reversed pool. Both bindings produce zero gates. The physical circuit
+reserves the pool and one spectator. The source qubit model visits its
+disconnected spectator separately and reports the pool width. The
+locked symbolic glyph has the same labels, while native typed component
+scores require concrete widths.
 
 ## Original cases and resource accounting
 

@@ -116,10 +116,18 @@ def _port_symbol(
         return "Circle", {"filled": True}
     label = register if text is None else text
     if side == "LEFT":
-        text = "free" if step.name == "qreg.release" else label
+        text = (
+            "free"
+            if step.gate == "free_register" or step.name == "qreg.release"
+            else label
+        )
         return "RarrowTextBox", {"text": text}
     if side == "RIGHT":
-        text = "alloc" if step.name == "qreg.local" else label
+        text = (
+            "alloc"
+            if step.gate == "allocate_register" or step.name == "qreg.local"
+            else label
+        )
         return "LarrowTextBox", {"text": text}
     return "TextBox", {"text": label}
 
@@ -328,7 +336,8 @@ def register_score_data(
         if column.lanes:
             title = (
                 ""
-                if step.gate in {"cx", "ccx", "and"}
+                if step.gate
+                in {"cx", "ccx", "and", "allocate_register", "free_register"}
                 or step.name in {"qreg.local", "qreg.release"}
                 else (
                     "X"

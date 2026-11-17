@@ -96,10 +96,19 @@ def component_register_score(
                 widths[name] = int(register.bitsize)
             known[value] = name
             output_names.append(name)
+        gate = None
+        if len(signature) == 1 and len(function.blocks) == 1:
+            operations = function.blocks[0].operations
+            if len(operations) == 1 and operations[0].opcode in (
+                "allocate_register",
+                "free_register",
+            ):
+                gate = operations[0].opcode
         step = RegisterStep(
             function.name,
             input_names,
             tuple(output_names),
+            gate=gate,
             input_registers=tuple(signature.lefts()),
             output_registers=tuple(signature.rights()),
         )
