@@ -756,10 +756,10 @@ def rule_contract() -> dict[str, Any]:
         }
     )
     return {
-        "pass_module": "flagquantum/compiler/pipeline.py",
+        "pass_module": "flagquantum/compiler/optimization/canonicalization.py",
         "predicate_module": "flagquantum/compiler/optimization/one_qubit_synthesis.py",
         "pass_module_line_count": len(
-            Path("flagquantum/compiler/pipeline.py")
+            Path("flagquantum/compiler/optimization/canonicalization.py")
             .read_text(encoding="utf-8")
             .splitlines()
         ),
@@ -785,7 +785,7 @@ def rule_contract() -> dict[str, Any]:
         ),
         "tolerance": 0.0,
         "tolerance_source": (
-            "exact scalar zero in pipeline._is_zero; nonzero folded residues are "
+            "exact scalar zero in canonicalization._is_zero; nonzero folded residues are "
             "retained independently of the matrix/execution residual tolerance"
         ),
         "modular_fold_limit": _MODULAR_FOLD_LIMIT,
