@@ -80,4 +80,5 @@ may declare a negative Toffoli count. The scaled source Soquet graph rejects
 the existing mixed QFxp cases with inputs `QFxp(5,3)` and `QFxp(3,2)`,
 while its Cirq generator and numeric action can be verified. The native
 arithmetic comparison follows the corresponding Add/CAdd leaves with these
-boundaries recorded explicitly. Q-0666 remains open for the remaining exports.
+boundaries recorded explicitly. The initializer and its consumer bindings are
+covered by [the rotations package audit](ROTATIONS_PACKAGE_FILE_AUDIT.md).
