@@ -5,16 +5,127 @@
 
 """Multiplex an exact controlled exchange over bounded register indices."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+from functools import cached_property
 from math import prod
 
 from ....core.ir import Instruction
+from ....core.ir.program.register_types import opaque_register_type
+from ....core.ir.program.registers import Register, RegisterSide
+from ....core.ir.program.signatures import Signature
 from ..._component_trace.resource_model import ComponentCost, GateCost
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..bits.bitwise import _validate_wires
 from ..control.control_predicate import ControlRegister
 from ..control.controlled_component import controlled_component_ir
 from ..control.multi_control import multi_and_ir
+from ..layout.partition import partition_register
 from ..primitives.controlled_swap import control_register_cswap_ir, controlled_swap_ir
 from .unary_iteration import append_bounded_unary_tree
+
+
+@dataclass(frozen=True)
+class MultiplexedSwapLayout:
+    """Declare ordered bounded selectors and their row-major target array."""
+
+    selections: tuple[Register, ...]
+    word_width: SymbolicInt
+    controls: tuple[Register, ...] = ()
+
+    @cached_property
+    def shape(self) -> tuple[SymbolicInt, ...]:
+        axes: list[SymbolicInt] = []
+        for register in self.selections:
+            bound = dict(register.dtype.parameters).get("bound")
+            if (
+                register.dtype.encoding != "uint"
+                or bound is None
+                or isinstance(bound, (str, float))
+            ):
+                raise ValueError(
+                    "Multiplexed swap selections require an iteration bound"
+                )
+            axes.append(bound)
+        return tuple(axes)
+
+    @cached_property
+    def signature(self) -> Signature:
+        word = opaque_register_type(self.word_width)
+        return Signature(
+            (
+                *self.controls,
+                *self.selections,
+                Register("targets", word, shape=self.shape),
+                Register("output", word),
+            )
+        )
+
+    def _concrete_dimensions(self) -> tuple[tuple[int, ...], tuple[int, ...], int, int]:
+        if any(
+            reg.side != RegisterSide.THRU or reg.dtype.classical_bits
+            for reg in self.signature
+        ):
+            raise ValueError("Multiplexed swap binding requires quantum through ports")
+        if any(reg.shape_symbolic for reg in self.selections):
+            raise ValueError("Multiplexed swap binding requires scalar selection words")
+        shape = tuple(_physical_size(value) for value in self.shape)
+        widths = tuple(_physical_size(reg.bitsize) for reg in self.selections)
+        controls = sum(_physical_size(reg.total_bits()) for reg in self.controls)
+        word = _physical_size(self.word_width)
+        _validate_selection(shape, widths, controls)
+        if word < 1:
+            raise ValueError("Multiplexed swap requires a positive integer word width")
+        return shape, widths, controls, word
+
+    def resource_model(self) -> ComponentCost:
+        return source_multiplexed_cswap_cost(*self._concrete_dimensions())
+
+    def requirements(self) -> tuple[int, int]:
+        """Return the reserved clean wire and feedback slot counts."""
+        _, widths, controls, _ = self._concrete_dimensions()
+        work = sum(widths) + controls - 1
+        return work, work
+
+    def bind(
+        self,
+        data: tuple[int, ...],
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+        *,
+        adjoint: bool = False,
+    ) -> tuple[Instruction, ...]:
+        """Bind ordered control, selection, target-array and output wires."""
+        shape, _, _, word = self._concrete_dimensions()
+        ports = partition_register(
+            data,
+            tuple(
+                (reg.name, _physical_size(reg.total_bits())) for reg in self.signature
+            ),
+        )
+        targets = ports["targets"]
+        return multiplexed_cswap_ir(
+            tuple(wire for reg in self.controls for wire in ports[reg.name]),
+            tuple(ports[reg.name] for reg in self.selections),
+            shape,
+            tuple(
+                targets[offset : offset + word]
+                for offset in range(0, len(targets), word)
+            ),
+            ports["output"],
+            workspace,
+            classical_bits,
+            adjoint=adjoint,
+        )
+
+
+def _physical_size(value: SymbolicInt) -> int:
+    if type(value) is not int:
+        raise ValueError(
+            "Multiplexed swap binding requires concrete integer dimensions"
+        )
+    return value
 
 
 def multiplexed_cswap_ir(
