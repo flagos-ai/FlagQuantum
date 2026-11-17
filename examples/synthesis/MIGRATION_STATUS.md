@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **159/213**.
+Validated local Notebook workflows: **160/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -382,7 +382,7 @@ Validated local Notebook workflows: **159/213**.
 | `tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh` | quantum_program | [Native program](tutorials/advanced_tutorials/linear_approximation_of_tanh/tanh/main.py) | pending |
 | `tutorials/basic_tutorials/add_bell_states/add_bell_states` | quantum_program | [Native program](tutorials/basics/add_bell_states/main.py) | pending |
 | `tutorials/basic_tutorials/entanglement/entanglement` | notebook_workflow | [Native program](tutorials/basics/entanglement/main.py) | validated |
-| `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | [Native program](tutorials/basics/exponentiation/example_exponentiation/main.py) | pending |
+| `tutorials/basic_tutorials/exponentiation/example_exponentiation` | notebook_workflow | [Native program](tutorials/basics/exponentiation/example_exponentiation/overview/main.py) | validated |
 | `tutorials/basic_tutorials/grover_graph_coloring/grover_graph_coloring` | notebook_workflow | [Native program](tutorials/basics/grover_graph_coloring/overview/main.py) | validated |
 | `tutorials/basic_tutorials/mcx/mcx` | notebook_workflow | [Native program](tutorials/basics/mcx/main.py) | pending |
 | `tutorials/basic_tutorials/optimization/learning_optimization` | notebook_workflow | [Native program](tutorials/basics/optimization/learning_optimization/overview/main.py) | validated |

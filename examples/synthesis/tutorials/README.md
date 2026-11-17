@@ -55,6 +55,7 @@ Native FlagQuantum programs currently available:
 - [overview](advanced_tutorials/discrete_quantum_walk_2d/discrete_time_quantum_walk/overview/README.md)
 - [overview](advanced_tutorials/high_level_modeling_flexible_qpe/overview/README.md)
 - [entanglement](basics/entanglement/README.md)
+- [overview](basics/exponentiation/example_exponentiation/overview/README.md)
 - [overview](basics/grover_graph_coloring/overview/README.md)
 - [overview](basics/optimization/learning_optimization/overview/README.md)
 - [prepare_state](basics/prepare_state/README.md)
