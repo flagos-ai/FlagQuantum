@@ -6,6 +6,9 @@
 """Apply exact masked prefix phases with caller-owned clean and dirty wires."""
 
 from ....core.ir import Instruction
+from ..._component_trace.trace import ComponentCall
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
+from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip, _three_control_ir
@@ -145,3 +148,35 @@ def masked_prefix_phase_ir(
                 else _flip(None, last_mask, targets[n - 1], targets[n - 2], anc[n - 4])
             )
     return tuple(gates)
+
+
+def physical_masked_prefix_phase(
+    targets: tuple[int, ...],
+    masks: tuple[int | bool | ClassicalFieldCoefficient, ...],
+    *,
+    clean: tuple[int, ...] = (),
+    dirty: tuple[int, ...] = (),
+    minimize_qubits: bool = False,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Bind the source prefix phase and preserve its physical workspace marks."""
+    inputs = {
+        mask.slot for mask in masks if isinstance(mask, ClassicalFieldCoefficient)
+    }
+    ports = (*targets, *masks, *clean, *dirty)
+    last_wire = max((q for q in ports if type(q) is int), default=0)
+    gates = masked_prefix_phase_ir(
+        targets,
+        masks,
+        clean=clean,
+        dirty=dirty,
+        minimize_qubits=minimize_qubits,
+        measurement_bit=max(inputs, default=-1) + 1,
+        emit_resets=True,
+    )
+    trace = PhysicalTrace(
+        calls=[
+            ComponentCall("masked_phase_by_prefix_using_dirty_workspace", 0, len(gates))
+        ],
+        implicit_zero_bits=inputs,
+    )
+    return lower_physical_trace(gates, 0, last_wire, trace, reorder_feedback=False)
