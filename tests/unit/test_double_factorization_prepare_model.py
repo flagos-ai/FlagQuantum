@@ -134,3 +134,45 @@ def test_locked_indexed_data_small_forward_model_boundary():
         source_double_factorization_indexed_data_cost(1, 4, 3, 8, adjoint=True),
         source.adjoint(),
     )
+
+
+def test_original_prepare_examples_and_display_names():
+    from qualtran.bloqs.chemistry.df.prepare import (
+        _indexed_data,
+        _prep_inner,
+        _prep_outer,
+    )
+
+    from examples.algorithms.double_factorization_resources import prepare_examples
+
+    examples = (_prep_inner(), _prep_outer(), _indexed_data())
+    assert tuple(example.num_bits_rot_aa for example in examples) == (7, 18, 18)
+    for (label, signature, model), source in zip(
+        prepare_examples(), examples, strict=True
+    ):
+        assert label == str(source)
+        assert_df_signature(signature, source)
+        assert_df_leaf(model, source)
+
+
+def test_prepare_resource_declarations_preserve_valid_zero_precisions():
+    from qualtran.bloqs.chemistry.df.prepare import (
+        InnerPrepareDoubleFactorization,
+        OuterPrepareDoubleFactorization,
+        OutputIndexedData,
+    )
+
+    inner = InnerPrepareDoubleFactorization(50, 10, 250, 0, 0)
+    assert_df_signature(
+        source_double_factorization_inner_prepare_signature(10, 250, 0), inner
+    )
+    assert_df_leaf(source_double_factorization_inner_prepare_cost(10, 250, 0, 0), inner)
+    outer = OuterPrepareDoubleFactorization(50, 0, 18)
+    assert_df_leaf(source_double_factorization_outer_prepare_cost(50, 0), outer)
+    indexed = OutputIndexedData(50, 10, 250, 0)
+    assert_df_signature(
+        source_double_factorization_indexed_data_signature(50, 10, 250, 0), indexed
+    )
+    assert_df_leaf(
+        source_double_factorization_indexed_data_cost(50, 10, 250, 0), indexed
+    )

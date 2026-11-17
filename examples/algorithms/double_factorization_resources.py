@@ -14,6 +14,14 @@ from flagquantum.algorithms.primitives.double_factorization_encoding_model impor
     source_double_factorization_block_encoding_cost,
     source_double_factorization_one_body_cost,
 )
+from flagquantum.algorithms.primitives.double_factorization_prepare_model import (
+    source_double_factorization_indexed_data_cost,
+    source_double_factorization_indexed_data_signature,
+    source_double_factorization_inner_prepare_cost,
+    source_double_factorization_inner_prepare_signature,
+    source_double_factorization_outer_prepare_cost,
+    source_double_factorization_outer_prepare_signature,
+)
 from flagquantum.compiler._component_trace.call_graph import modeled_call_graph
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.core.ir.program.register_types import (
@@ -48,6 +56,35 @@ def notebook_models() -> tuple[ComponentCost, ComponentCost]:
         inner_rotation_bits=7,
     )
     return one_body, block
+
+
+def prepare_examples() -> tuple[tuple[str, Signature, ComponentCost], ...]:
+    """Return the source PREPARE examples with their display names."""
+    return (
+        (
+            "In-Prep",
+            source_double_factorization_inner_prepare_signature(
+                _SPIN_ORBITALS, _EIGENVALUES, 7
+            ),
+            source_double_factorization_inner_prepare_cost(
+                _SPIN_ORBITALS, _EIGENVALUES, 7, 12
+            ),
+        ),
+        (
+            "OuterPrep",
+            source_double_factorization_outer_prepare_signature(_AUXILIARIES),
+            source_double_factorization_outer_prepare_cost(_AUXILIARIES, 12),
+        ),
+        (
+            "In_l-data_l",
+            source_double_factorization_indexed_data_signature(
+                _AUXILIARIES, _SPIN_ORBITALS, _EIGENVALUES, 18
+            ),
+            source_double_factorization_indexed_data_cost(
+                _AUXILIARIES, _SPIN_ORBITALS, _EIGENVALUES, 18
+            ),
+        ),
+    )
 
 
 def notebook_signatures() -> tuple[Signature, Signature]:
