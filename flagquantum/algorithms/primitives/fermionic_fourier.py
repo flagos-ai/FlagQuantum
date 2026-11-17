@@ -8,10 +8,18 @@
 from math import pi
 
 from ...compiler._component_trace.resource_classification import classify_resource_gate
-from ...compiler._component_trace.resource_generalization import RotationCall
+from ...compiler._component_trace.resource_generalization import (
+    CliffordCall,
+    PhaseCall,
+    RotationCall,
+)
 from ...compiler._component_trace.resource_model import ComponentCost, GateCost
+from ...compiler._component_trace.symbolic_math import SymbolicReal
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...core.ir import Instruction
+from ...core.ir.program.register_types import quantum_bit_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 
 _ADJOINT = {"s": "sdg", "t": "tdg", "tdg": "t"}
 
@@ -20,6 +28,26 @@ def _fourier_angle(k: int, n: int) -> float:
     if type(k) is not int or type(n) is not int or n == 0:
         raise ValueError("Fermionic Fourier transform requires integer k and nonzero n")
     return 2 * pi * k / n
+
+
+def source_two_bit_fermionic_fourier_signature() -> Signature:
+    """Describe the two through bit ports in the source order."""
+    return Signature(
+        (Register("x", quantum_bit_type()), Register("y", quantum_bit_type()))
+    )
+
+
+def source_two_bit_fermionic_fourier_calls(
+    k: int, n: int, *, epsilon: SymbolicReal = 1e-10
+) -> dict[RotationCall | PhaseCall | CliffordCall, int]:
+    """Keep the source's precision and its combined T/adjoint-T declaration."""
+    return {
+        RotationCall("rz", _fourier_angle(k, n), precision=epsilon): 1,
+        PhaseCall("s"): 3,
+        CliffordCall("h", 1): 6,
+        PhaseCall("t"): 2,
+        CliffordCall("cx", 2): 3,
+    }
 
 
 def source_two_bit_fermionic_fourier_cost(k: int, n: int) -> ComponentCost:
