@@ -46,11 +46,28 @@ conversion.
 | Dense, four rows | 42 | 117 | 7 | 19 | 2 | 7 | 80 | 7 | 19 |
 | Sparse, four support rows over nine indices | 56 | 144 | 7 | 25 | 4 | 7 | 91 | 7 | 25 |
 
+## Typed preparation ports
+
+The dense and sparse declarations share the native PREPARE contract.
+The selection register is bounded unsigned with the original domain
+size as its iteration limit. The sparse support word appears between
+`sigma_mu` and `alt` only when its width is nonzero. Other empty junk
+words are omitted. The comparison result uses a single qubit, and all
+declared ports preserve the source through direction and order.
+
+The same declaration accepts a table or symbolic dimensions and
+supplies the L1 normalization. The concrete adapter derives its named
+layout from the declaration before binding the existing emitter.
+The five original factories and the dense and sparse singleton
+signatures were checked against the pinned source. The notebook now
+renders those same declarations. The gate and resource evidence above
+covers the concrete adapter routes.
+
 ## Remaining boundaries
 
 - Q-0700 remains open for executable symbolic binding and generic source
-  register subclasses. Native table-free models and fixed concrete bindings
-  provide the covered paths.
+  register subclasses. The typed declarations cover the original factory
+  register types in concrete and symbolic mode.
 - The locked source has sparse singleton target/call failures and a symbolic
   two-row width-query failure. Native constant singleton handling and explicit
   model rejection retain separate behavior and tests for these cases.

@@ -10,7 +10,6 @@ from sympy import ceiling, simplify, symbols
 
 from examples.algorithms.alias_preparation_catalog import (
     AliasPreparationExample,
-    alias_signature,
     dense_alias_example,
     sparse_alias_example,
     symbolic_alias_example,
@@ -63,6 +62,20 @@ def assert_signature(native: Signature, source: Any) -> None:
     ]
     for actual, expected in zip(native, source.signature, strict=True):
         assert simplify(actual.bitsize - expected.bitsize) == 0
+        assert actual.shape == expected.shape
+        kind = type(expected.dtype).__name__
+        assert (
+            actual.dtype.encoding
+            == {"BQUInt": "uint", "QBit": "bit", "QAny": "opaque"}[kind]
+        )
+        if kind == "BQUInt":
+            assert (
+                simplify(
+                    dict(actual.dtype.parameters)["bound"]
+                    - expected.dtype.iteration_length
+                )
+                == 0
+            )
 
 
 @pytest.mark.parametrize("factory", ("dense", "sparse", "from_dense"))
@@ -100,14 +113,8 @@ def test_symbolic_alias_factory(source_module: Any, sparse: bool) -> None:
         if sparse
         else source_module._state_prep_alias_symb()
     )
-    assert_signature(
-        alias_signature(
-            plan.selection_width,
-            plan.probability_bits,
-            plan.sparse_index_width if sparse else None,
-        ),
-        source,
-    )
+    assert_signature(plan.signature, source)
+    assert plan.l1_norm_of_coeffs == source.l1_norm_of_coeffs
     for legacy in (False, True):
         model = plan.resource_model(legacy_shims=legacy)
         for operation in (source, source.adjoint()):
@@ -221,3 +228,35 @@ def test_original_symbolic_t_complexity(source_module: Any) -> None:
     )
     assert simplify(expanded_clifford - sparse_clifford) == 0
     assert sparse_cost.rotation == 2
+
+
+@pytest.mark.parametrize("sparse", (False, True))
+def test_alias_singleton_declaration_keeps_selection_and_filters_empty_junk(
+    sparse: bool, source_module: Any
+) -> None:
+    from flagquantum.algorithms.primitives.alias_preparation import (
+        alias_black_box_prepare,
+    )
+    from flagquantum.algorithms.primitives.alias_sampling import (
+        sparse_alias_sampling_table,
+    )
+
+    if sparse:
+        source = source_module.SparseStatePreparationAliasSampling.from_sparse_dict(
+            {2: 1.0}, 3, precision=0.25
+        )
+        table = sparse_alias_sampling_table({2: 1.0}, 3, precision=0.25)
+    else:
+        source = source_module.StatePreparationAliasSampling.from_probabilities(
+            [1.0], precision=0.25
+        )
+        table = alias_sampling_table((1.0,), precision=0.25)
+    declaration = AliasPreparationShape.from_table(table)
+    assert_signature(declaration.signature, source)
+    assert declaration.signature[0].name == "selection"
+    assert declaration.signature[0].bitsize == (2 if sparse else 0)
+    box = alias_black_box_prepare(table)
+    assert box.junk_layout == tuple(
+        (reg.name, reg.bitsize) for reg in declaration.junk_registers
+    )
+    assert box.normalization == declaration.l1_norm_of_coeffs
