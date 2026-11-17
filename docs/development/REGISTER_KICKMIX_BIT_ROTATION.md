@@ -111,3 +111,43 @@ circuit.append(operation)
 
 The port remains internal to the compiler. The example uses the existing
 append interface.
+
+## Caller binding and append
+
+K-0219, K-0220 and K-0221 cover the two rotation binding files and their
+original test file. Their unchanged blobs are
+`9bc79aed775699aabb383e6f1475f36dee975cf2`,
+`51355497e3701821d1774563ff7d780884f0855f` and
+`a44fd7c3e0319856083d4130e13c47f392fd0e8a`.
+
+The shared compiler component takes explicit physical ports. It binds both
+directions, signed integer and bit-word shifts, the default shift of one,
+and the four enable types. A false literal selects the empty body after
+target admission. A true literal delegates directly. A quantum enable
+delegates as a quantum wire and uses one provided clean wire and one fresh
+result slot only when a quantum shift requires their combined control.
+The caller retains work ownership. The source's Python wrapper acquires
+and returns the corresponding lease through its builder.
+
+A classical enable guards the whole body, including temporary shift parity.
+A slot overwritten by that parity uses a caller-provided scratch bit for
+the entry value, matching the source scope snapshot. Copy and clear use
+two classical XOR instructions, and the scratch slot returns to zero.
+Other classical enables use the existing conditions directly. All input
+bits must be defined before append. Source conversion accepts Python
+containers and Kickmix array views. The native binding takes typed
+big-endian tuples and distinguishes a wire index from a classical slot
+and a Boolean literal.
+
+All 824 original Python cases ran against locked Kickmix. The native
+append path matches the ordered physical operands and effective guards
+in 32 original binding captures spanning both directions, four shift
+types and four enable types. The source's known-zero resets and debug
+marks are recorded separately from the effective operation stream.
+A second source fixture uses the high shift bit as the enable across
+all 64 classical/input basis combinations. The native test verifies
+the same map with complete complex amplitudes and the two shift inputs
+and scratch bit checked after execution. There is no new analytical
+resource model.
+
+Run `python -m examples.algorithms.register_bit_rotation`.
