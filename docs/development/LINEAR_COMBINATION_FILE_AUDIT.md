@@ -9,7 +9,7 @@ copyright Google LLC.
 | --- | --- | --- | --- |
 | Q-0285 | `linear_combination.ipynb` | `e44e694d55cc4d9524756741665b68b38cfce860` | Closed by the full native tutorial. |
 | Q-0286 | `linear_combination.py` | `a3d8aa7fafa7a6f3fcaf095826751209427cd255` | Open for generic source symbolic/foreign objects and returned-adder boundaries. |
-| Q-0287 | `linear_combination_test.py` | `bed60bc7ade281fca1e5b13e341e8b4dd07aabd9` | Open for native runs of the original nine-bit approximation families, random dense children, and remaining exact fixture combinations. |
+| Q-0287 | `linear_combination_test.py` | `bed60bc7ade281fca1e5b13e341e8b4dd07aabd9` | Closed for the original runnable fixture families. Original fixture-mode outcomes and native branch coverage are recorded below. |
 
 ## Binding and decomposition
 
@@ -44,13 +44,37 @@ input. All temporary work qubits return to zero in every tested history.
 | --- | --- |
 | Default fixture, signature, normalization, signal state and tensors | Original four-term catalogue and exact source stream/full-state comparisons. Existing normalized coefficient PREPARE, invalid admission, zero signal and model tests cover the owners. |
 | Metadata, error and resource tests | Existing mixed auxiliary-size and nonuniform-normalization tests preserve the implemented maximum normalized error rule. Existing directional, controlled, and legacy-profile resource tests cover the specialized calls. |
-| Exact signed coefficient families and Hermitian checks | Existing native 2/3-term signed cases, non-Hermitian T/S phase cases, and the exact original four-term example. The complete original 2/3/5-term operand and coefficient combinations remain open. |
-| Approximate and random tests | Original source tests execute unchanged. Accepted native alias tests cover concrete one- and eight-bit examples. The original nine-bit and random dense fixture families remain open natively. |
+| Exact signed coefficients and Hermitian checks | All 35 original coefficient rows across two-, three-, and five-term families, including two-wire targets. The twelve Hermiticity rows also compare coherent full outputs on system, signal and coefficient junk in both directions. The distinct normalization fixture uses child scales two and four. |
+| Approximate and random tests | All 13 explicit nine-bit rows and ten original seeded dense-gate cases. One reproducible Python coefficient stream is shared across the native and locked paths since the original seeds only the NumPy gate generator. |
 | Notebook | The frozen 10-cell original and the native 12-cell notebook execute independently. The native notebook retains the original signature and call graph and adds a complete complex system projection and work check. |
 
 The unchanged non-notebook source run passes 59 cases with one mode skip
 and one expected serialization failure. Source external-object and
 returned-adder failures remain documented in the control-owner audits.
+
+## Coefficient-family execution
+
+The native fixtures append the bound operation and compare every column of
+its complex zero-signal projection with the locked tensor contraction.
+The source approximation tolerance is checked separately against the
+ideal weighted sum. Native-to-source agreement uses a tighter absolute
+tolerance of `2e-11`. The branch tests verify private work cleanup, and
+keep coefficient junk as a logical through port. They enumerate histories
+up to four measurements for exact fixtures, then use all-zero and alternating
+histories for longer exact streams. The nine-bit cases execute emitted IR
+in the shared sparse branch evaluator at seeds 19 and 73, with each balanced
+measurement verified. The dense fixtures provide controlled matrix leaves;
+generic synthesis into lower-level gates and exhaustive long histories
+remain outside this evidence.
+
+Three representative named-gate fixtures at one and nine bits compare the
+locked PREPARE/SELECT/unprepare stream in both directions, including wire
+operands and feedback. They also compare each QEC category under both
+profiles and the independent logical peak. For the original nine-bit
+coefficient row `(-1/3, 1/2)` on T and H, the native IR reserves 48 wires,
+emits 150 T/T-dagger, 540 CX and 34 measurements. The modern locked
+model charges two Fredkins, 34 And, 423 Cliffords, three rotations and 34
+measurements, with a logical peak of 48.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_linear_combination.ipynb
