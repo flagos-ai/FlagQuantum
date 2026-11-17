@@ -29,29 +29,7 @@ from flagquantum.compiler._component_trace.call_graph import (
     symbolic_call_graph,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
-from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
-from flagquantum.core.ir.program.register_types import opaque_register_type
-from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
-
-
-def alias_signature(
-    selection: SymbolicInt, mu: SymbolicInt, sparse_index: SymbolicInt | None = None
-) -> Signature:
-    sparse = () if sparse_index is None else (("sparse_index", sparse_index),)
-    return Signature(
-        tuple(
-            Register(name, opaque_register_type(width))
-            for name, width in (
-                ("selection", selection),
-                ("sigma_mu", mu),
-                *sparse,
-                ("alt", selection),
-                ("keep", mu),
-                ("less_than_equal", 1),
-            )
-        )
-    )
 
 
 @dataclass(frozen=True)
@@ -61,15 +39,7 @@ class AliasPreparationExample:
 
     @property
     def signature(self) -> Signature:
-        return alias_signature(
-            (self.table.selection_size - 1).bit_length(),
-            self.table.mu,
-            (
-                None
-                if self.table.indices is None
-                else (len(self.table.keep) - 1).bit_length()
-            ),
-        )
+        return AliasPreparationShape.from_table(self.table).signature
 
     @property
     def qubit_count(self) -> int:
