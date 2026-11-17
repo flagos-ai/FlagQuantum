@@ -3,15 +3,17 @@
 # Adapted from Cast in Qualtran v0.7.0.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/bookkeeping/cast.py
 
-"""Finite quantum casts using existing owned-word Program rebindings."""
+"""Finite storage casts using existing owned-word Program rebindings."""
 
 from ....core.ir.program import BlockRecord, FunctionRecord, Operation, ValueRef
+from ....core.ir.program.register_types import classical_bit_type
 from ....core.ir.program.register_verifier import (
     executable_register_width,
     register_port_types,
 )
-from ....core.ir.program.registers import Register, RegisterSide, RegisterType
-from .register_cast import RegisterCast
+from ....core.ir.program.registers import RegisterSide, RegisterType
+from ..component_builder import ComponentProgramBuilder
+from .register_cast import cast_signature
 
 
 def cast_word_function(
@@ -23,15 +25,16 @@ def cast_word_function(
     """Consume words and return new typed views over the same ordered wires.
 
     Elements follow row-major order; bits retain the existing MSB-first order.
-    This admits only Core-executable quantum encodings. No measurement, reset,
-    allocation, classical conversion, or runtime state validation is performed.
+    Executable quantum words reuse split/join. An owned CBit retains its slot.
+    The view adds no measurement, reset or allocation.
     """
+    signature = cast_signature(source, target, shape)
+    if source == target == classical_bit_type():
+        builder = ComponentProgramBuilder(signature, name=name)
+        return builder.finalize(builder.inputs).functions[0]
     width = executable_register_width(source)
-    RegisterCast(width, executable_register_width(target), shape)
-    registers = (
-        Register("reg", source, shape, RegisterSide.LEFT),
-        Register("reg", target, shape, RegisterSide.RIGHT),
-    )
+    executable_register_width(target)
+    registers = tuple(signature)
     count = len(
         register_port_types(
             FunctionRecord(name, (), registers=registers), RegisterSide.LEFT

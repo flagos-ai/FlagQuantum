@@ -13,6 +13,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+from flagquantum.compiler.registers.layout.component_cast import cast_word_function
 from flagquantum.compiler.registers.register_binding import (
     BoundRegisterProgram,
     bind_register_program,
@@ -34,7 +35,7 @@ pytestmark = pytest.mark.unit
 
 
 def measured_array() -> ProgramRecord:
-    cast = identity("cast", (Register("reg", classical_bit_type()),))
+    cast = cast_word_function("cast", classical_bit_type(), classical_bit_type())
     builder = ComponentProgramBuilder(
         Signature(
             [

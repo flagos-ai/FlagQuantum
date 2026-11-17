@@ -10,6 +10,8 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from typing import cast
 
+from ....core.ir.program.registers import Register, RegisterSide, RegisterType
+from ....core.ir.program.signatures import Signature
 from ..._component_trace.symbolic_math import SymbolicInt, smax
 from ..bits.bitwise import _validate_wires
 from .register_bits import join_integer, split_integer
@@ -92,3 +94,35 @@ class RegisterCast:
         """Reinterpret one stored integer, including a fixed-point word."""
         bits = split_integer(value, self._concrete_width(), signed=source_signed)
         return join_integer(bits, signed=target_signed)
+
+
+def cast_signature(
+    source: RegisterType,
+    target: RegisterType,
+    shape: tuple[SymbolicInt, ...] | int = (),
+    *,
+    allow_quantum_to_classical: bool = False,
+) -> Signature:
+    """Declare the two typed storage views of a source-ordered Cast."""
+    if isinstance(shape, int):
+        shape = (shape,)
+    source_classical = (
+        source.num_cbits != 0 or ("storage", "classical") in source.parameters
+    )
+    target_classical = (
+        target.num_cbits != 0 or ("storage", "classical") in target.parameters
+    )
+    RegisterCast(
+        source.num_bits,
+        target.num_bits,
+        shape,
+        source_quantum=not source_classical,
+        target_quantum=not target_classical,
+        allow_quantum_to_classical=allow_quantum_to_classical,
+    )
+    return Signature(
+        (
+            Register("reg", source, shape, RegisterSide.LEFT),
+            Register("reg", target, shape, RegisterSide.RIGHT),
+        )
+    )

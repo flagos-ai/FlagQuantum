@@ -40,3 +40,22 @@ The original non-notebook run has six passes and three fixture-mode skips.
 The original eight-cell and native ten-cell notebooks pass independent
 kernels. The native tutorial retains the original example and signature,
 then checks a small coherent circuit through the normal append entry.
+
+The shared typed signature retains both descriptors, the paired `reg`
+ports, and the declared shape. The source-derived cases cover signed
+fixed point, symbolic input width, classical storage, and both explicitly
+enabled mixed directions. The locked width check permits a symbolic
+input with a concrete output. A concrete input with unequal symbolic
+output fails. Zero-width classical metadata retains its storage domain.
+Independent source qubit counts agree, including the all-classical peak
+of zero.
+
+An owned CBit cast returns its existing slot with no cast instruction.
+A two-element fixture preserves all four classical inputs and both slot
+identities. The measured fixture uses four actual Cast calls around the
+reordered outputs of two MeasureZ calls. Through append it emits exactly
+the two measurements. All four histories match the frozen instrument
+on complete complex amplitudes and return the clean work bit to zero.
+The source model separately counts the two measurements and zero T.
+Mixed-domain declarations remain metadata. Full executable dtype
+admission and direct foreign-object interoperability remain open.
