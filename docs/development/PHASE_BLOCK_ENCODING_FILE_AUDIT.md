@@ -51,3 +51,9 @@ unchanged child tensor and scalar independently.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_phase_block_encoding.ipynb
 ```
+
+Q-0289 now covers the generic controlled binding and both source resource
+profiles, as well as packed symbolic widths. The valid source scalar and
+the source's zero-width Unitary wrapper failure are tested separately.
+An existing native control carries the scalar exactly. An uncontrolled
+zero-wire carrier is still outside the current circuit contract.

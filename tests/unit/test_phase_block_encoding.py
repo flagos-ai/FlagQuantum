@@ -372,3 +372,193 @@ def test_direction_and_undersized_cost_rejected():
         phase.make_on(bound, anchor=0, adjoint=1)
     with pytest.raises(ValueError, match="quantum ports"):
         phase.resource_model(ComponentCost("narrow", 2))
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("pattern", [(1,), (0,), (1, 0), (1, 0, 1)])
+@pytest.mark.parametrize("phi", [0.0, 0.25, -0.5, 1 / 3])
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_generic_control_phase_tensor_branches_and_model(
+    pattern: tuple[int, ...], phi: float, adjoint: bool
+) -> None:
+    from math import pi
+
+    import numpy as np
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran.bloqs.block_encoding import Phase, Unitary
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.algorithms.primitives.unitary_block_encoding import (
+        UnitaryBlockEncoding,
+    )
+    from flagquantum.compiler._component_trace.compound_control_resource import (
+        CONTROLLED_HADAMARD_COST,
+    )
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+    from flagquantum.core.ir import Instruction
+
+    native = PhaseBlockEncoding(
+        UnitaryBlockEncoding((("q", 1),), lambda ports, work, bits, inverse: ()),
+        phi,
+        0,
+    )
+    source = Phase(Unitary(Hadamard()), phi=phi, eps=0)
+    spec = CtrlSpec(cvs=pattern[0] if len(pattern) == 1 else np.array(pattern))
+    controlled = source.controlled(ctrl_spec=spec)
+    if adjoint:
+        controlled = controlled.adjoint()
+
+    width = len(pattern) + 1
+    target = len(pattern)
+    controls = tuple(range(target))
+    work = tuple(range(width, width + target - 1))
+    slots = tuple(range(5, 5 + len(work)))
+    registers = (ControlRegister(1, pattern),)
+    predicate = work[-1] if work else 0
+    total = width + len(work)
+
+    def bind(child_control: int, inverse: bool) -> FieldOperation:
+        assert child_control == predicate and inverse == adjoint
+        return FieldOperation(total, (Instruction("ch", (child_control, target)),))
+
+    operation = native.make_controlled_on(
+        bind,
+        controls=(controls,),
+        control_registers=registers,
+        system=(target,),
+        control_workspace=work,
+        control_classical_bits=slots,
+        adjoint=adjoint,
+    )
+    instructions = DynamicCircuit(total).append(operation).to_ir().instructions
+    core = tuple(g for g in instructions if g.name in ("ch", "phase"))
+    assert [g.name for g in core] == (["ch", "phase"] if adjoint else ["phase", "ch"])
+    gate = core[-1 if adjoint else 0]
+    assert gate.wires == (predicate,)
+    assert gate.params["theta"] == (-phi if adjoint else phi) * pi
+    assert sum(g.name == "measure" for g in instructions) == len(work)
+    assert tuple(
+        g.metadata["classical_bit"] for g in instructions if g.name == "measure"
+    ) == tuple(reversed(slots))
+
+    matrix = torch.as_tensor(controlled.tensor_contract(), dtype=torch.complex128)
+    amplitudes = torch.tensor(
+        [complex(i + 1, (-1) ** i) for i in range(1 << width)], dtype=torch.complex128
+    )
+    amplitudes /= amplitudes.norm()
+    initial = torch.zeros(1 << total, dtype=torch.complex128)
+    output = torch.zeros_like(initial)
+    initial[:: 1 << len(work)] = amplitudes
+    output[:: 1 << len(work)] = matrix @ amplitudes
+    for history in product((0, 1), repeat=len(work)):
+        torch.testing.assert_close(
+            forced_branch(initial, instructions, history),
+            output / 2 ** (len(work) / 2),
+            atol=4e-12,
+            rtol=0,
+        )
+    for legacy in (False, True):
+        model = native.controlled_resource_model(
+            CONTROLLED_HADAMARD_COST, registers, adjoint=adjoint, legacy_shims=legacy
+        )
+        _assert_model(model, controlled, legacy)
+
+
+@pytest.mark.ftqc_reference
+def test_symbolic_phase_signature_and_declared_peak() -> None:
+    from qualtran.bloqs.basic_gates import Hadamard
+    from qualtran.bloqs.block_encoding import Phase, Unitary
+    from qualtran.resource_counting import QubitCount, get_cost_value
+    from sympy import Symbol
+
+    from flagquantum.algorithms.primitives.phase_block_encoding import (
+        source_phase_block_resource_formula,
+        source_phase_block_signature,
+    )
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
+        SymbolicResourceFormula,
+    )
+
+    symbol = Symbol("n", positive=True, integer=True)
+    source = Phase(Unitary(Hadamard(), ancilla_bitsize=symbol), phi=0.25, eps=0)
+    signature = source_phase_block_signature(1, symbol, 0)
+    assert [(port.name, port.bitsize) for port in signature] == [
+        (port.name, port.bitsize) for port in source.signature
+    ]
+    formula = source_phase_block_resource_formula(
+        signature, SymbolicResourceFormula(0, 1, 0, symbol + 1)
+    )
+    assert formula.logical_qubits == get_cost_value(source, QubitCount())
+    assert formula.clifford == 1
+    assert list(source_phase_block_signature(0)) == []
+
+
+@pytest.mark.ftqc_reference
+def test_zero_wire_source_child_failure_and_control_carrier() -> None:
+    from dataclasses import dataclass
+
+    from qualtran import Signature
+    from qualtran.bloqs.basic_gates import GlobalPhase
+    from qualtran.bloqs.block_encoding import BlockEncoding, Phase, Unitary
+    from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
+    from qualtran.bloqs.state_preparation.black_box_prepare import BlackBoxPrepare
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum import Circuit
+    from flagquantum.algorithms.primitives.unitary_block_encoding import (
+        UnitaryBlockEncoding,
+    )
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+    from flagquantum.errors import ValidationError
+    from flagquantum.simulation.unitary import get_unitary
+
+    source = Phase(Unitary(GlobalPhase(exponent=0.125)), phi=0.25, eps=0)
+    assert tuple(source.signature) == ()
+    with pytest.raises(TypeError, match="missing.*system"):
+        source.tensor_contract()
+
+    native = PhaseBlockEncoding(
+        UnitaryBlockEncoding((), lambda ports, work, bits, inverse: ()), 0.25, 0
+    )
+    assert tuple(native.signature) == ()
+
+    @dataclass(frozen=True)
+    class ScalarBlock(BlockEncoding):
+        alpha = 1
+        epsilon = 0
+        system_bitsize = 0
+        resource_bitsize = 0
+        ancilla_bitsize = 0
+        signature = Signature([])
+
+        @property
+        def signal_state(self):
+            return BlackBoxPrepare(PrepareIdentity.from_bitsizes([]))
+
+        def build_composite_bloq(self, bb, **soqs):
+            return {}
+
+    scalar_source = Phase(ScalarBlock(), phi=0.25, eps=0)
+    assert abs(scalar_source.tensor_contract() - (1 + 1j) / 2**0.5) < 1e-12
+    with pytest.raises(ValidationError, match="must be >= 1"):
+        Circuit(0)
+
+    operation = native.make_controlled_on(
+        lambda predicate, adjoint: FieldOperation(1, ()),
+        controls=((0,),),
+        control_registers=(ControlRegister(1, (1,)),),
+        system=(),
+    )
+    circuit = Circuit(1, dtype=torch.complex128).append(operation)
+    assert [(g.name, g.wires) for g in circuit.to_ir().instructions] == [
+        ("phase", (0,))
+    ]
+    torch.testing.assert_close(
+        get_unitary(circuit),
+        torch.as_tensor(
+            scalar_source.controlled().tensor_contract(), dtype=torch.complex128
+        ),
+        rtol=0,
+        atol=1e-12,
+    )

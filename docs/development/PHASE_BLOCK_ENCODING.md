@@ -71,5 +71,36 @@ full phase-sensitive round trip, existing unitary/prepare/SELECT/LCU consumers
 and shared global-phase regressions pass. Strict mypy, Black, Ruff, scope and
 architecture checks pass. Source blob d7e6b03237f63238e511a4e7aa5056808a646593
 matches the pinned tree and installed reference. No protected API or source is
-modified. Zero-wire numerical execution, generic controlled-phase wrappers and
-whole-source-file acceptance remain open G2 items.
+modified. The next section records the new control and width evidence.
+
+## Structured control and symbolic ports
+
+`PhaseBlockEncoding.make_controlled_on` binds a directional
+positive-controlled child and places the scalar Z power on the same
+predicate. The shared control wrapper handles zero polarity with X
+before and after, and larger patterns with a measured conjunction.
+Child work and the live predicate occupy distinct wire reservations.
+The adjoint reverses the scalar and child order and negates the phase.
+Both the ordinary and controlled forms use `Circuit.append(op)`.
+
+The locked comparison covers 32 direction, angle and control-pattern
+configurations. It checks coherent active and inactive amplitudes
+together and exhausts every measurement history for the two- and
+three-control cases. All predicate work returns to zero. The independent
+source model charges the controlled scalar as a Z power, including the
+source's Clifford classification of exponent zero. At exponent one
+quarter with three controls, the emitted predicate contributes eight
+explicit T/T-adjoint instructions and two measurements. The positive
+body emits one phase and one CH instruction. The source model counts
+two And calls, two measurements and one scalar T; it expands CH into
+four Cliffords and two rotations in the modern profile.
+
+The packed signature and independent symbolic resource formula preserve
+the child width expression without emitting a circuit, including the
+Hadamard example with symbolic ancilla width `n` and peak `n + 1`.
+An empty declared width omits the system port. The locked
+`Unitary(GlobalPhase(...))` wrapper fails to decompose in that case,
+while a valid wire-free block returning no ports contracts to a scalar.
+The native controlled scalar uses its supplied control wire and matches
+the valid locked example. Pure zero-wire numerical execution remains
+open because the current circuit runtime requires at least one wire.
