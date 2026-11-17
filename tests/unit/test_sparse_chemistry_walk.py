@@ -12,6 +12,9 @@ from flagquantum.algorithms.primitives.sparse_chemistry_prepare import (
     PrepareSparseChemistry,
 )
 from flagquantum.algorithms.primitives.sparse_chemistry_walk import SparseChemistryWalk
+from flagquantum.compiler._component_trace.resource_comparison import (
+    count_emitted_instructions,
+)
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
@@ -198,9 +201,9 @@ def test_complete_sparse_walk_complex_branches_and_inverse(
         for index, amplitude in _branch(prep, n, (0,) * prep_events).items()
     }
     state = {
-        index
-        | (system << (work + 1))
-        | spectator: amplitude * (1 + 1j * (2 * spectator - 1)) / (2 * np.sqrt(2))
+        index | (system << (work + 1)) | spectator: amplitude
+        * (1 + 1j * (2 * spectator - 1))
+        / (2 * np.sqrt(2))
         for index, amplitude in signal.items()
         for system in (3, 12)
         for spectator in (0, 1)
@@ -244,16 +247,18 @@ def test_factory_matches_locked_normalization_and_default_blocking():
     assert_source_model(native.source_resource_model(), source)
 
 
-def test_complete_single_spatial_orbital_walk_and_adjoint():
+@pytest.mark.parametrize("log", [0, 1])
+def test_complete_single_spatial_orbital_walk_and_adjoint(log):
     walk = SparseChemistryWalk.from_integrals(
-        [[1.0]], np.full((1,) * 4, -0.5), probability_bits=1, log_block_size=0
+        [[1.0]], np.full((1,) * 4, -0.5), probability_bits=1, log_block_size=log
     )
     assert walk.alpha == 1.25
     logical = sum(bits for _, bits in walk.layout)
     ports = partition_register(tuple(range(logical)), walk.layout)
     work, slots = walk.requirements()
-    wires = logical + work
-    scratch, bits = tuple(range(logical, wires)), tuple(range(slots))
+    wires = logical + work + 1
+    scratch = tuple(range(logical, logical + work))
+    bits = tuple(range(slots))
     adjoints = [
         DynamicCircuit(wires)
         .append(
@@ -262,9 +267,19 @@ def test_complete_single_spatial_orbital_walk_and_adjoint():
             )
         )
         .to_ir()
-        .instructions
         for direction in (False, True)
     ]
+    for ir in adjoints:
+        counts = count_emitted_instructions(ir)
+        assert (
+            work,
+            slots,
+            counts.instruction_qubits,
+            counts.t_count,
+            counts.unconditional.get("measure", 0),
+        ) == ((14, 13, 30, 74, 15) if log == 0 else (19, 18, 40, 134, 20))
+        assert not any(wires - 1 in gate.wires for gate in ir.instructions)
+    adjoints = [ir.instructions for ir in adjoints]
     prep_ports = {name: ports[name] for name, _ in walk.layout[:-1]}
     prep_work, prep_slots = walk.prepare.requirements()
     prep = walk.prepare.make_on(
@@ -274,12 +289,16 @@ def test_complete_single_spatial_orbital_walk_and_adjoint():
     ).instructions
     prep_events = sum(g.name == "measure" for g in prep)
     signal = _branch(prep, wires, (0,) * prep_events, normalize_measurements=True)
+    coefficients = np.arange(1, 9) + 1j * np.arange(8, 0, -1)
+    coefficients /= np.linalg.norm(coefficients)
     state = {
-        index | (system << work): amp * (1 + 1j) / np.sqrt(8)
+        index | (system << (work + 1)) | spectator: amp
+        * coefficients[2 * system + spectator]
         for index, amp in signal.items()
-        for system in range(4)
+        for system, spectator in product(range(4), (0, 1))
     }
-    expected = _reflect(_select(state, ports, wires), signal, (1 << (work + 2)) - 1)
+    expected = _reflect(_select(state, ports, wires), signal, (1 << (work + 3)) - 1)
+    scratch_mask = sum(1 << (wires - 1 - wire) for wire in scratch)
     for gates, before, after in zip(
         adjoints, (state, expected), (expected, state), strict=True
     ):
@@ -290,3 +309,4 @@ def test_complete_single_spatial_orbital_walk_and_adjoint():
                 gates, wires, history, before, normalize_measurements=True
             )
             assert observed == pytest.approx(after, abs=2e-12)
+            assert all(not index & scratch_mask for index in observed)

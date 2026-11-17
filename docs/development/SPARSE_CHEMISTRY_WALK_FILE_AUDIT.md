@@ -51,6 +51,18 @@ complex walk and adjoint to the independent Majorana and projected
 reflection reference under four representative histories. Matching
 support sets prove that every scratch wire returns to zero.
 
+The same one-orbital walk now supports the two-row table in a complete
+two-cell block. It retains ten lookup bank wires as part of the signal.
+Both directions emit 134 T/T† and 20 measurements using 19 reusable work
+wires and 18 classical slots. Forty wires carry instructions. The test
+also binds a coherent spectator. Its state is entangled with the system
+through distinct complex coefficients across all eight system/spectator
+inputs. Both directions match the independent full-signal reflection
+under four representative histories. The test compares every nonzero
+amplitude and checks scratch zero and the spectator's absence from
+all instructions. The same strengthened state test covers the unblocked
+case.
+
 The source reflection retains its narrower mark and allocates
 fresh QROAM junk. A test that replaces the opaque original erase
 leaf with the coherent inverse still observes 3/64 or 1/32
