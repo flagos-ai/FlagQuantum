@@ -1,5 +1,6 @@
 """Verify Hubbard SELECT's source resources and exact complex Pauli action."""
 
+from collections import Counter
 from dataclasses import asdict
 from itertools import product
 from math import sqrt
@@ -68,57 +69,91 @@ def test_hubbard_select_locked_signature_and_cost(side, control_value):
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize("side", [2, 3, 5])
-def test_hubbard_select_controlled_gate_dependencies_match_source(side):
-    pytest.importorskip("qualtran")
+@pytest.mark.parametrize("side", [2, 3, 5, 11])
+@pytest.mark.parametrize("control_value", [None, 0, 1])
+def test_hubbard_select_gate_dependencies_match_source(side, control_value):
     import cirq
-    from qualtran import BQUInt, QAny, Register
+    import numpy as np
+    from qualtran import QAny, Register
+    from qualtran._infra.gate_with_registers import split_qubits
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+        HubbardMajorannaOperator,
+        HubbardSpinUpZ,
+    )
     from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
         SelectHubbard as Source,
     )
     from qualtran.bloqs.multiplexers.apply_gate_to_lth_target import ApplyGateToLthQubit
+    from qualtran.bloqs.multiplexers.selected_majorana_fermion import (
+        SelectedMajoranaFermion,
+    )
 
-    select = SelectHubbard(side, controlled=True)
+    controlled = control_value is not None
+    select = SelectHubbard(
+        side, controlled, control_value=1 if control_value is None else control_value
+    )
     logical = sum(size for _, size in select.layout)
     work, slots = select.requirements()
     workspace = tuple(range(logical, logical + work))
     ports = partition_register(tuple(range(logical)), select.layout)
-    source = Source(side, side, control_val=1)
-    source_ports = ports
-    if side > 2:
-        # The complete DAG export reuses temporaries in a different order.
-        # Read the source's final unary consumer directly to retain its traversal.
-        bitsize = (side - 1).bit_length()
-        source = ApplyGateToLthQubit(
-            (
-                Register("y", BQUInt(bitsize, side)),
-                Register("x", BQUInt(bitsize, side)),
-            ),
-            nth_gate=lambda *_: cirq.Z,
-            control_regs=Register("control", QAny(2)),
-        )
-        source_ports = {
-            "control": (*ports["V"], *ports["control"]),
-            "y": ports["q_y"],
-            "x": ports["q_x"],
-            "target": ports["target"][side**2 :],
-        }
+    source = Source(side, side, control_val=1 if controlled else None)
+
+    class SourceGenerator:
+        signature = source.signature
+
+        def decompose_from_registers(self, *, context, **quregs):
+            # Use each frozen generator in the original SELECT call order.
+            # Flattening the composite DAG first reorders independent gates.
+            if control_value == 0:
+                yield cirq.X(*quregs["control"])
+            for op in cirq.flatten_op_tree(
+                source.decompose_from_registers(context=context, **quregs)
+            ):
+                child = getattr(op.gate, "bloq", op.gate)
+                if isinstance(child, HubbardMajorannaOperator):
+                    majorana = SelectedMajoranaFermion(
+                        child.selection_registers,
+                        child.control_registers,
+                        child._target_cirq_gate,
+                    )
+                    yield from majorana.decompose_from_registers(
+                        context, **split_qubits(child.signature, op.qubits)
+                    )
+                elif isinstance(child, HubbardSpinUpZ):
+                    bound = split_qubits(child.signature, op.qubits)
+                    controls = np.asarray([*bound["V"], *bound.get("control", ())])
+                    unary = ApplyGateToLthQubit(
+                        (child.signature.get_left("y"), child.signature.get_left("x")),
+                        nth_gate=lambda *_: cirq.Z,
+                        control_regs=Register("control", QAny(len(controls))),
+                    )
+                    yield from unary.decompose_from_registers(
+                        context=context,
+                        control=controls,
+                        y=bound["y"],
+                        x=bound["x"],
+                        target=bound["target"][side * side :],
+                    )
+                else:
+                    yield op
+            if control_value == 0:
+                yield cirq.X(*quregs["control"])
+
     original = reference_arithmetic_gates(
-        source,
-        source_ports,
+        SourceGenerator(),
+        ports,
         workspace,
         dict(zip(workspace, workspace, strict=True)),
         cirq_style=True,
         keep_pauli_leaves=True,
         keep_exchange_leaves=True,
         preserve_components=True,
+        scalar_phase_anchor=ports["U"][0],
     )
     circuit = DynamicCircuit(logical + work).append(
         select.make_on(ports, workspace=workspace)
     )
     actual = circuit.to_ir().instructions
-    if side > 2:
-        actual = actual[-len(original) :]
 
     def feedback_by_measured_wire(stream):
         # The native emitter reuses logical slots across the three children.
@@ -138,12 +173,36 @@ def test_hubbard_select_controlled_gate_dependencies_match_source(side):
         return tuple(result)
 
     assert slots == work - 1
+    assert sum(gate.name == "cy" for gate in actual) == 2 * side**2
     assert_source(
         feedback_by_measured_wire(actual), feedback_by_measured_wire(original)
     )
+    if control_value == 1:
+        exported = reference_arithmetic_gates(
+            source,
+            ports,
+            workspace,
+            dict(zip(workspace, workspace, strict=True)),
+            cirq_style=True,
+            keep_pauli_leaves=True,
+            keep_exchange_leaves=True,
+            preserve_components=True,
+        )
+        assert Counter(gate.name for gate in exported) == Counter(
+            gate.name for gate in actual
+        )
+        if side == 2:
+            # The smallest graph also matches when exported as a whole DAG.
+            assert_source(
+                feedback_by_measured_wire(actual), feedback_by_measured_wire(exported)
+            )
+        else:
+            assert [gate.name for gate in exported] != [gate.name for gate in actual]
 
 
-@pytest.mark.parametrize("side,control_value", tuple(product((1, 2, 3), (None, 0, 1))))
+@pytest.mark.parametrize(
+    "side,control_value", tuple(product((1, 2, 3, 5, 11), (None, 0, 1)))
+)
 def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value):
     controlled = control_value is not None
     select = SelectHubbard(
@@ -181,6 +240,10 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
         (2, True): (114, 18, 4),
         (3, False): (230, 40, 5),
         (3, True): (242, 43, 6),
+        (5, False): (578, 120, 7),
+        (5, True): (590, 123, 8),
+        (11, False): (2526, 600, 9),
+        (11, True): (2538, 603, 10),
     }[side, controlled]
 
     def pack(fields):
@@ -191,8 +254,9 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
 
     initial, expected = {}, {}
     n = 2 * side**2
+    coordinates = range(side) if side <= 3 else (0, side // 2, side - 1)
     rows = tuple(
-        product(range(1 + int(controlled)), (0, 1), (0, 1), range(side), range(side))
+        product(range(1 + int(controlled)), (0, 1), (0, 1), coordinates, coordinates)
     )
     fields_per_row = (
         (

@@ -117,3 +117,29 @@ The frozen and native score records match for the two Majorana Paulis
 and spin-up Z at sides one and three, with absent, zero and positive
 control. The native scores also render in Matplotlib. Execution and
 resource evidence is accounted for separately in the preceding sections.
+
+### Larger SELECT generator streams
+
+At sides two, three, five and eleven, the full forward operation
+matches the original stage schedule with no control and both control
+polarities. The reference traverses the frozen top-level generator,
+then calls the frozen Majorana and spin-up unary generators using
+the actual child operands. Each stage uses the same physical work
+pool and the feedback comparison tracks the last measured wire
+assigned to each logical result slot. The exact small graph also
+matches the ordinary whole-graph exporter. For the larger positive
+control cases, that exporter has the same opcode counts and a
+different order. The stage-generator comparison retains source order.
+
+| Side | Uncontrolled T/T-dagger, measurements, work | Controlled T/T-dagger, measurements, work |
+| --- | --- | --- |
+| 5 | 578, 120, 7 | 590, 123, 8 |
+| 11 | 2526, 600, 9 | 2538, 603, 10 |
+
+The large tests compare all complex amplitudes on coherent inputs
+supported at first, middle and last coordinate values. Four
+representative records per configuration verify inverse recovery and
+zero work. The emitted CY count is exactly twice the site count.
+The eight frozen declaration-versus-decomposition comparisons still
+exhibit the documented missing CY category. The gate estimates are
+recorded independently of the emitted stream.
