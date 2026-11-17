@@ -1,0 +1,53 @@
+{
+  "empty": {
+    "kmx": "",
+    "svg": "<svg viewBox=\"-100 -140 1200.0 340.0\" style=\"display: block; margin: auto;\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0\" y=\"nan\" width=\"0\" height=\"nan\" stroke=\"black\" fill=\"blue\" />\n<text x=\"500\" y=\"-100\" font-size=\"10\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >0 qubits, 0 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n<path d=\"\" fill=\"none\" stroke=\"green\" />\n</svg>",
+    "labels": [
+      "0 qubits, 0 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])"
+    ]
+  },
+  "nested": {
+    "kmx": "\n            INFO_TAG \"@enter:outer_sub\"\n            CCX q0 q1 q2\n            INFO_TAG \"@enter:inner_sub\"\n            CCX q0 q1 q2\n            INFO_TAG \"@exit:inner_sub\"\n            CCX q0 q1 q2\n            INFO_TAG \"@exit:outer_sub\"\n        ",
+    "svg": "<svg viewBox=\"-100 -140 1200.0 340.0\" style=\"display: block; margin: auto;\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0\" y=\"-100\" width=\"333.333\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"0\" y=\"10\" width=\"333.333\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"166.667\" y=\"17\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >inner_sub</text>\n<rect x=\"0\" y=\"-100\" width=\"1000\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"0\" y=\"0\" width=\"1000\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"500\" y=\"7\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >outer_sub</text>\n<rect x=\"0\" y=\"-0\" width=\"1000\" height=\"0\" stroke=\"black\" fill=\"blue\" />\n<text x=\"500\" y=\"-100\" font-size=\"10\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >3 qubits, 3 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n<path d=\" M500,-66.6667 l50,0\" fill=\"none\" stroke=\"green\" />\n</svg>",
+    "labels": [
+      "inner_sub",
+      "outer_sub",
+      "3 qubits, 3 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])"
+    ]
+  },
+  "malformed": {
+    "kmx": "\n            INFO_TAG \"unrelated_tag\"\n            INFO_TAG \"@exit:unmatched_at_start\"\n            INFO_TAG \"@enter:outer_closed_early\"\n            CCX q0 q1 q2\n            INFO_TAG \"@enter:inner_unclosed\"\n            CCX q0 q1 q2\n            INFO_TAG \"@exit:non_existent\"\n            INFO_TAG \"@exit:outer_closed_early\"\n            INFO_TAG \"@enter:dangling_at_end\"\n            CCX q0 q1 q2\n        ",
+    "svg": "<svg viewBox=\"-100 -140 1200.0 340.0\" style=\"display: block; margin: auto;\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0\" y=\"-100\" width=\"333.333\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"0\" y=\"10\" width=\"333.333\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"166.667\" y=\"17\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >inner_unclosed</text>\n<rect x=\"0\" y=\"-100\" width=\"666.667\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"0\" y=\"0\" width=\"666.667\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"333.333\" y=\"7\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >outer_closed_early</text>\n<rect x=\"666.667\" y=\"-100\" width=\"333.333\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"666.667\" y=\"0\" width=\"333.333\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"833.333\" y=\"7\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >dangling_at_end</text>\n<rect x=\"0\" y=\"-0\" width=\"1000\" height=\"0\" stroke=\"black\" fill=\"blue\" />\n<text x=\"500\" y=\"-100\" font-size=\"10\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >3 qubits, 3 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n<path d=\" M500,-66.6667 l50,0\" fill=\"none\" stroke=\"green\" />\n</svg>",
+    "labels": [
+      "inner_unclosed",
+      "outer_closed_early",
+      "dangling_at_end",
+      "3 qubits, 3 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])"
+    ]
+  },
+  "all_ops": {
+    "kmx": "INFO_TAG \"@enter:every <gate & op>\"\nNEG\nBIT_INVERT b0\nBIT_STORE0 b1\nBIT_STORE1 b2\nX q0\nZ q0\nR q1\nHMR q1 b2\nCX q0 q1\nCZ q0 q1\nSWAP q0 q1\nCSWAP q0 q1 q2\nCCX q0 q1 q2\nCCZ q0 q1 q2\nZ_POW q0 1.875\nDEBUG_PRINT\nDEBUG_PRINT q0\nDEBUG_PRINT b0\nNEG if b0\nBIT_INVERT b0 if b0\nBIT_STORE0 b1 if b0\nBIT_STORE1 b2 if b0\nX q0 if b0\nZ q0 if b0\nR q1 if b0\nHMR q1 b2 if b0\nCX q0 q1 if b0\nCZ q0 q1 if b0\nSWAP q0 q1 if b0\nCSWAP q0 q1 q2 if b0\nCCX q0 q1 q2 if b0\nCCZ q0 q1 q2 if b0\nZ_POW q0 1.875 if b0\nDEBUG_PRINT if b0\nDEBUG_PRINT q0 if b0\nDEBUG_PRINT b0 if b0\nINFO_TAG \"escaped\\P\\Q\\B\"\nPUSH_CONDITION if b0\nX q0\nPOP_CONDITION\nINFO_TAG \"@exit:every <gate & op>\"",
+    "svg": "<svg viewBox=\"-100 -140 1200.0 340.0\" style=\"display: block; margin: auto;\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0\" y=\"-100\" width=\"1000\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"0\" y=\"0\" width=\"1000\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"500\" y=\"7\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >every &lt;gate &amp; op&gt;</text>\n<rect x=\"0\" y=\"-0\" width=\"1000\" height=\"0\" stroke=\"black\" fill=\"blue\" />\n<text x=\"500\" y=\"-100\" font-size=\"10\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >3 qubits, 14 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n<path d=\" M500,-66.6667 l50,0\" fill=\"none\" stroke=\"green\" />\n</svg>",
+    "labels": [
+      "every <gate & op>",
+      "3 qubits, 14 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])"
+    ]
+  },
+  "angles_and_hmr": {
+    "kmx": "X q8\nINFO_TAG \"@enter:repeated\"\nCCX q5 q6 q7\nZ_POW q1 0.125\nZ_POW q1 0.25\nZ_POW q1 0.5\nHMR q8 b0\nINFO_TAG \"@exit:repeated\"\nINFO_TAG \"@enter:repeated\"\nZ_POW q1 0.25 if b0\nINFO_TAG \"@exit:repeated\" ",
+    "svg": "<svg viewBox=\"-100 -140 1200.0 340.0\" style=\"display: block; margin: auto;\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0\" y=\"-55.5556\" width=\"1000\" height=\"55.5556\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"0\" y=\"0\" width=\"1000\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"500\" y=\"7\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >repeated (x2)</text>\n<rect x=\"0\" y=\"-11.1111\" width=\"1000\" height=\"11.1111\" stroke=\"black\" fill=\"blue\" />\n<text x=\"500\" y=\"-100\" font-size=\"10\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >9 qubits, 6 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n<path d=\" M500,-22.2222 l50,0 M500,-44.4444 l50,0 M500,-66.6667 l50,0 M500,-88.8889 l50,0\" fill=\"none\" stroke=\"green\" />\n</svg>",
+    "labels": [
+      "repeated (x2)",
+      "9 qubits, 6 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])"
+    ]
+  },
+  "colon_labels": {
+    "kmx": "INFO_TAG \"@enter:a:b\"\nCCX q0 q1 q2\nINFO_TAG \"@exit:a:b\"\nINFO_TAG \"@enter:a\"\nINFO_TAG \"@enter:b\"\nCCX q0 q1 q2\nINFO_TAG \"@exit:a\" ",
+    "svg": "<svg viewBox=\"-100 -140 1200.0 340.0\" style=\"display: block; margin: auto;\" xmlns=\"http://www.w3.org/2000/svg\">\n<rect x=\"0\" y=\"-100\" width=\"1000\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"0\" y=\"0\" width=\"1000\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"500\" y=\"7\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >b (x2)</text>\n<rect x=\"1000\" y=\"-100\" width=\"500\" height=\"100\" stroke=\"black\" fill=\"blue\" />\n<rect x=\"1000\" y=\"0\" width=\"500\" height=\"10\" stroke=\"black\" fill=\"red\" opacity=\"0.8\" />\n<text x=\"1250\" y=\"7\" font-size=\"5\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >a</text>\n<rect x=\"0\" y=\"-0\" width=\"1000\" height=\"0\" stroke=\"black\" fill=\"blue\" />\n<text x=\"500\" y=\"-100\" font-size=\"10\" dominant-baseline=\"bottom\" text-anchor=\"middle\" fill=\"black\" >3 qubits, 2 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])</text>\n<path d=\" M500,-66.6667 l50,0\" fill=\"none\" stroke=\"green\" />\n</svg>",
+    "labels": [
+      "b (x2)",
+      "a",
+      "3 qubits, 2 CCZ states (=CCX + CCZ + CSWAP + Z_POW[level=3]/2 + 4 Z_POW[level>=4])"
+    ]
+  }
+}

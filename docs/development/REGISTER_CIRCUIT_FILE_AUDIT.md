@@ -5,7 +5,7 @@ The locked Kickmix source files under review are `circuit.cc` (K-0014, blob
 `1456cb523d4a1cb29896a5c2ab09ab4e781dbb53`) and `circuit.test.cc` (K-0017,
 blob `f63b40b44c8822344f0a1c3d026f362af4f2341f`). All 48 unchanged C++
 tests ran successfully against the locked implementation. The three source
-files remain open pending the drawing and complete native test mapping.
+files remain open pending text drawing and complete native test mapping.
 
 ## Structure and composition
 
@@ -39,6 +39,28 @@ Z_POW records and has model weight one. Its complete complex state agrees
 with the analytic result after append and execution. No work wires are
 needed by that example.
 
+## Physical resource analysis SVG
+
+The drawer reads the same validated records used to render raw KMX. It
+preserves operation order, guards, exact angles, and decoded tag text. The
+chart takes an active-wire snapshot when entering a block, adds touched
+wires to the innermost frame, and removes HMR targets from the active set.
+An exit closes the nearest matching block and any inner frames. Unmatched
+exits leave the stack intact. End of input closes any remaining frames.
+Groups accumulate hits and weights by the complete source colon path.
+
+The chart assumes one CCZ state per CCX, CCZ, or CSWAP, half a state per
+odd 45-degree multiple, four for finer rotations, and zero for 90-degree
+multiples. These are modeled weights. Serialized guards and measurements
+retain their positions and the renderer does not execute operations.
+
+Six locked SVG captures verify ordered rectangles, markers, labels and
+numeric attributes, including nested marks, malformed marks, repeated
+groups, the mixed gate stream, and exact-angle costs. The source emits
+nonfinite vertical coordinates for an empty circuit. Native empty output
+uses finite zero coordinates. Both the raw text and KMB round-trip routes
+produce the same native chart.
+
 ## Reference evidence and remaining ownership
 
 The native structure fixture records 20 cases captured by an unchanged
@@ -56,5 +78,5 @@ applicable.
 | Named registers, tag rendering in KMX, ordinary stream output and exact rotation spelling | Existing codecs and exact angle owner. The full native assertion map remains open. |
 | Reaction depth and touched qubits | Reuse the reaction-depth implementation and accepted source fixtures. |
 | Text diagrams and control merging | Drawer owns the source diagram behavior. Exact line and packing fixtures remain open. |
-| Analysis SVG and flame-chart assertions | A raw circuit block walk and the source's per-angle CCZ model remain open. The existing logical flame graph has a distinct model. |
+| Analysis SVG and flame-chart assertions | Physical block walk, per-angle CCZ model, and SVG structure verified against the locked reference. The logical flame graph retains its own model. |
 | C++ aligned mutable buffers, copy and move | Native raw circuit operations use owned Python structures. Mutation and low-level allocation parity require a separate mapping. |
