@@ -11,7 +11,7 @@ from ..._component_trace.trace import ComponentCall
 from ._physical_calls import append_field_call
 from .binary_linear_map import (
     append_field_constant_scale,
-    field_monomial_scale_ir,
+    append_field_monomial_scale,
 )
 from .coefficients import gf2_add_coefficients_ir, gf2_add_ir
 from .field_multiplication import _validate_field
@@ -105,21 +105,11 @@ def field_product_xor_ir(
     factor = 1 | (1 << half)
     x, y, result = left[::-1], right[::-1], target[::-1]
     gates: list[Instruction] = []
-    append_field_call(
-        gates,
-        calls,
-        "gf_idiv_x",
-        field_monomial_scale_ir(target, -half, modulus=modulus),
-    )
+    append_field_monomial_scale(gates, calls, target, -half, modulus)
     gates.extend(_middle_product(result[: 2 * half - 1], x, y, half))
     append_field_constant_scale(gates, calls, target, factor, modulus, divide=True)
     gates.extend(_polynomial_product(result[: 2 * high_width - 1], x[half:], y[half:]))
-    append_field_call(
-        gates,
-        calls,
-        "gf_imul_x",
-        field_monomial_scale_ir(target, half, modulus=modulus),
-    )
+    append_field_monomial_scale(gates, calls, target, half, modulus)
     gates.extend(_polynomial_product(result[: 2 * half - 1], x[:half], y[:half]))
     append_field_constant_scale(gates, calls, target, factor, modulus)
     return tuple(gates)

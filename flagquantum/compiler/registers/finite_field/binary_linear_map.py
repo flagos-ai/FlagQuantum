@@ -230,19 +230,26 @@ def field_monomial_scale_ir(
     target: tuple[int, ...], power: int, *, modulus: int
 ) -> tuple[Instruction, ...]:
     """Multiply by x**power using Kickmix's deferred cyclic rotation."""
+    body, _ = _field_monomial_scale(target, power, modulus)
+    return body
+
+
+def _field_monomial_scale(
+    target: tuple[int, ...], power: int, modulus: int
+) -> tuple[tuple[Instruction, ...], str | None]:
     width = len(target)
     _validate_field(width, modulus)
     _validate_registers(target)
     if type(power) is not int or not modulus & 1:
         raise ValueError("Monomial scaling requires an integer power and nonzero root")
     if width == 1 or power == 0:
-        return ()
+        return (), None
     terms = tuple(i for i in range(1, width) if (modulus >> i) & 1)
     steps = abs(power)
     if steps > width * width // (len(terms) + 1):
         exponent = power % ((1 << width) - 1)
         factor = _field_power(2, exponent, modulus)
-        return field_constant_scale_ir(target, factor, modulus=modulus)
+        return field_constant_scale_ir(target, factor, modulus=modulus), "linear_map"
 
     wires = target[::-1]
     positions = range(-1, -steps - 1, -1) if power > 0 else range(steps)
@@ -257,4 +264,33 @@ def field_monomial_scale_ir(
         while next_position != start:
             gates.append(Instruction("swap", (wires[start], wires[next_position])))
             next_position = (next_position + rotation) % width
-    return tuple(gates)
+    return tuple(gates), "gf_imul_x" if power > 0 else "gf_idiv_x"
+
+
+def append_field_monomial_scale(
+    gates: list[Instruction],
+    calls: list[ComponentCall] | None,
+    target: tuple[int, ...],
+    power: int,
+    modulus: int,
+) -> None:
+    """Append the selected shift schedule and its source call boundary."""
+    body, name = _field_monomial_scale(target, power, modulus)
+    if name is not None:
+        append_field_call(gates, calls, name, body)
+
+
+def physical_field_monomial_scale(
+    target: tuple[int, ...], power: int, *, modulus: int
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export monomial multiplication or division as an in-place physical call."""
+    calls: list[ComponentCall] = []
+    gates: list[Instruction] = []
+    append_field_monomial_scale(gates, calls, target, power, modulus)
+    return lower_physical_trace(
+        tuple(gates),
+        0,
+        max(target),
+        PhysicalTrace(calls=calls),
+        reorder_feedback=False,
+    )
