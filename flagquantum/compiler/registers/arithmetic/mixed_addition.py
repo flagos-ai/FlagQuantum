@@ -4,16 +4,17 @@
 
 """Mixed-offset arithmetic with the locked measured carry cleanup."""
 
-from dataclasses import replace
+from dataclasses import dataclass, field, replace
 from math import ceil, inf, isnan
 
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
+from ..._component_trace.trace import ComponentCall
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..layout.workspace import GenerationWorkspace
 from ..primitives._mixed_gates import _delete_and_ir, _flip, _invert_operand
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 from .carry_parity import (
     _broadcast_offset,
     _carry_parity_gate,
@@ -21,6 +22,15 @@ from .carry_parity import (
     carry_parity_ir,
 )
 from .vented_addition import vented_addition_ir
+
+
+@dataclass
+class AdditionExport:
+    """Own source component ranges and feedback scopes in instruction offsets."""
+
+    calls: list[ComponentCall] = field(default_factory=list)
+    feedback: list[tuple[int, int, int]] = field(default_factory=list)
+    implicit_zero_bits: set[int] = field(default_factory=set)
 
 
 def _xor_parity(
@@ -67,6 +77,7 @@ def _short_addition(
     control: int | bool,
     clean: tuple[int, ...],
     bits: tuple[int, ...],
+    emit_resets: bool,
 ) -> tuple[Instruction, ...]:
     if len(target) == 1:
         return _xor_parity(target[0], carry, offset[0], control)
@@ -81,6 +92,7 @@ def _short_addition(
     if len(target) == 2:
         return (
             *toggle,
+            *(reset_x_register_ir((a,)) if emit_resets else ()),
             *_flip(a, t0, control),
             *_xor_parity(t1, carry, o0, a),
             *_delete_and_ir(a, slot, t0, control),
@@ -90,6 +102,7 @@ def _short_addition(
         )
     t2, o2 = target[2], offset[2]
     return (
+        *(reset_x_register_ir((a, b)) if emit_resets else ()),
         *toggle,
         *_xor_parity(a, carry, o0, t0),
         *_flip(a, o0),
@@ -117,6 +130,8 @@ def _clean_prefix(
     workspace: GenerationWorkspace,
     bits: tuple[int, ...],
     btol: float,
+    export: AdditionExport | None,
+    start: int,
 ) -> tuple[Instruction, ...]:
     if not bits:
         raise ValueError("Mixed addition requires a reusable measurement slot")
@@ -127,10 +142,16 @@ def _clean_prefix(
     low = offset[:m]
     quantum = all(type(value) is int for value in offset)
     gates = [
+        *(reset_x_register_ir(clean[:m]) if export is not None else ()),
         *_broadcast_offset(target[:m], low, control, quantum),
         *_broadcast_offset(clean[:m], low, control, quantum),
         *_carry_parity_gate(
-            clean[0], (carry, offset[0]), (control, target[0]), clean[1:], slot
+            clean[0],
+            (carry, offset[0]),
+            (control, target[0]),
+            clean[1:],
+            slot,
+            emit_resets=export is not None,
         ),
     ]
     for k in range(1, m):
@@ -146,17 +167,25 @@ def _clean_prefix(
             control,
             bits,
             btol,
+            export=export,
+            start=start + len(gates),
         )
     )
     for k in reversed(range(1, m)):
         gates.extend(measure_x_clear_ir(clean[k], slot))
+        scope = start + len(gates)
         gates.extend(_flip(None, target[k], clean[k - 1], outcome))
         gates.extend(_flip(None, offset[k], control, outcome))
+        if export is not None:
+            export.feedback.append((scope, start + len(gates), slot))
         gates.extend(_flip(clean[k - 1], offset[k], control))
         gates.extend(_flip(target[k], clean[k - 1]))
     gates.extend(measure_x_clear_ir(clean[0], slot))
+    scope = start + len(gates)
     gates.extend(_guard(_xor_parity(None, carry, offset[0], control, target[0]), slot))
     gates.extend(_flip(None, control, offset[0], outcome))
+    if export is not None:
+        export.feedback.append((scope, start + len(gates), slot))
     gates.extend(_flip(target[0], control, carry))
     return tuple(gates)
 
@@ -169,6 +198,40 @@ def _add(
     control: int | bool,
     bits: tuple[int, ...],
     btol: float,
+    *,
+    export: AdditionExport | None = None,
+    start: int = 0,
+) -> tuple[Instruction, ...]:
+    children = (
+        AdditionExport(
+            feedback=export.feedback, implicit_zero_bits=export.implicit_zero_bits
+        )
+        if export is not None
+        else None
+    )
+    gates = _add_body(
+        target, offset, workspace, carry, control, bits, btol, children, start
+    )
+    if export is not None and children is not None:
+        name = "c_iadd_classical" if type(control) is int else "iadd_classical"
+        export.calls.append(
+            ComponentCall(
+                name, start, start + len(gates), children=tuple(children.calls)
+            )
+        )
+    return gates
+
+
+def _add_body(
+    target: tuple[int, ...],
+    offset: tuple[_Coefficient, ...],
+    workspace: GenerationWorkspace,
+    carry: _Coefficient,
+    control: int | bool,
+    bits: tuple[int, ...],
+    btol: float,
+    export: AdditionExport | None,
+    start: int,
 ) -> tuple[Instruction, ...]:
     n = len(target)
     if n == 0:
@@ -178,7 +241,9 @@ def _add(
     if n > 1 and len(clean) < 2:
         raise ValueError("Mixed addition requires two clean wires")
     if n <= 3:
-        return _short_addition(target, offset, carry, control, clean, bits)
+        return _short_addition(
+            target, offset, carry, control, clean, bits, export is not None
+        )
     if len(clean) + workspace.borrowed_count < n:
         raise ValueError("Mixed addition requires at least n work wires")
     if btol < n and isinstance(offset[n - 1], bool):
@@ -198,6 +263,8 @@ def _add(
                     control,
                     bits,
                     inf,
+                    export=export,
+                    start=start,
                 )
             complemented = tuple(_invert_operand(value) for value in low)
             inverted_carry, carry_gates = _invert_operand(carry)
@@ -211,6 +278,8 @@ def _add(
                 control,
                 bits,
                 inf,
+                export=export,
+                start=start + len(input_gates) + len(invert) + len(carry_gates),
             )
             return (
                 *input_gates,
@@ -222,7 +291,9 @@ def _add(
                 *input_gates,
             )
     if len(workspace.preferred_clean) > 2:
-        return _clean_prefix(target, offset, carry, control, workspace, bits, btol)
+        return _clean_prefix(
+            target, offset, carry, control, workspace, bits, btol, export, start
+        )
     if workspace.borrowed_count < n - 2:
         raise ValueError("Mixed addition requires n - 2 dirty wires for vented carries")
     if control is True:
@@ -232,7 +303,12 @@ def _add(
     dirty = workspace.borrowed_prefix(n - 2)
     vents, slot = bits[1 : n - 1], bits[n - 1]
     # Native clean slots start at zero. Only the used vent slots need a store.
-    initialize = tuple(ClassicalXor((), bit).instruction() for bit in vents[1:])
+    initialize = (
+        tuple(ClassicalXor((), bit).instruction() for bit in vents[1:])
+        if export is None
+        else ()
+    )
+    feedback: list[tuple[int, int, int]] | None = [] if export is not None else None
     body = vented_addition_ir(
         target[::-1],
         offset[::-1],
@@ -242,6 +318,8 @@ def _add(
         carry_in=carry,
         control=control,
         measurement_bit=slot,
+        emit_resets=export is not None,
+        feedback=feedback,
     )
     invert = tuple(Instruction("x", (wire,)) for wire in target)
     correction = tuple(
@@ -257,7 +335,19 @@ def _add(
         control=control,
         clean=clean,
         measurement_bit=slot,
+        emit_resets=export is not None,
     )
+    if export is not None and feedback is not None:
+        export.implicit_zero_bits.update(vents[1:])
+        export.feedback.extend((start + a, start + b, bit) for a, b, bit in feedback)
+        stop_body = start + len(body)
+        begin_erase = stop_body + len(invert) + len(correction)
+        export.calls.extend(
+            (
+                ComponentCall("c_iadd_classical_vented", start, stop_body),
+                ComponentCall("c_ixor_carries", begin_erase, begin_erase + len(erase)),
+            )
+        )
     return (*initialize, *body, *invert, *correction, *erase, *correction, *invert)
 
 
@@ -273,6 +363,7 @@ def mixed_addition_ir(
     minimize_qubits: bool = False,
     btol: float = inf,
     subtract: bool = False,
+    export: AdditionExport | None = None,
 ) -> tuple[Instruction, ...]:
     """Update a big-endian quantum word with a mixed offset and carry or borrow.
 
@@ -313,6 +404,8 @@ def mixed_addition_ir(
         control,
         classical_bits,
         btol,
+        export=export,
+        start=len(word) if subtract else 0,
     )
     invert = tuple(Instruction("x", (wire,)) for wire in word) if subtract else ()
     return (*invert, *gates, *invert)

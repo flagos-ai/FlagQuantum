@@ -9,7 +9,7 @@ from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 from .carry_parity import _broadcast_offset, _carry_parity_gate, _Coefficient
 
 
@@ -21,6 +21,9 @@ def _vented_carries(
     clean: tuple[int, ...],
     vents: tuple[int, ...],
     measurement_bit: int | None,
+    emit_resets: bool,
+    feedback: list[tuple[int, int, int]] | None,
+    start: int,
 ) -> tuple[Instruction, ...]:
     n = len(target)
     a, b = clean[:2]
@@ -56,6 +59,7 @@ def _vented_carries(
         )
 
     gates = [
+        *(reset_x_register_ir((a,)) if emit_resets else ()),
         *_carry_parity_gate(a, parity, (control, target[0]), (), None),
         *_flip(target[0], control, carry_in),
         *_flip(a, control, offset[0]),
@@ -64,6 +68,7 @@ def _vented_carries(
         vent = vents[k]
         gates.extend(
             (
+                *(reset_x_register_ir((b,)) if emit_resets else ()),
                 Instruction("swap", (a, b)),
                 *_flip(b, control, offset[k]),
                 *_flip(a, target[k], b),
@@ -80,6 +85,7 @@ def _vented_carries(
     final_vent = vents[n - 3]
     gates.extend(
         (
+            *(reset_x_register_ir((b,)) if emit_resets else ()),
             *_flip(a, control, third_offset),
             *_flip(b, third_last, a),
             *_flip(a, control, third_offset),
@@ -90,11 +96,22 @@ def _vented_carries(
             *_flip(b, control, penultimate_offset),
             *_flip(penultimate, b),
             *measure_x_clear_ir(b, measurement_bit),
+        )
+    )
+    begin = start + len(gates)
+    gates.extend(
+        (
             *_flip(None, third_offset, third_last, control, outcome),
             *_flip(None, third_offset, a, control, outcome),
             *_flip(None, third_offset, control, outcome),
             *_flip(None, third_last, a, outcome),
             *_flip(None, a, outcome),
+        )
+    )
+    if feedback is not None:
+        feedback.append((begin, start + len(gates), measurement_bit))
+    gates.extend(
+        (
             *_flip(last, control, penultimate_offset),
             *measure_x_clear_ir(a, measurement_bit),
             ClassicalXor((final_vent, measurement_bit), final_vent).instruction(),
@@ -113,6 +130,8 @@ def vented_addition_ir(
     carry_in: _Coefficient = False,
     control: int | bool = True,
     measurement_bit: int | None = None,
+    emit_resets: bool = False,
+    feedback: list[tuple[int, int, int]] | None = None,
 ) -> tuple[Instruction, ...]:
     """Add a mixed offset and expose the locked carry XOR and measurement effects.
 
@@ -176,11 +195,23 @@ def vented_addition_ir(
         )
     if control is True and len(rhs) != n:
         raise ValueError("Locked unconditional vented addition requires equal widths")
-    return (
+    prefix = (
         *_broadcast_offset(work, rhs, control, all(type(bit) is int for bit in rhs)),
         *copy_gates,
+    )
+    return (
+        *prefix,
         *_vented_carries(
-            work, rhs, carry_in, control, clean, vent_bits, measurement_bit
+            work,
+            rhs,
+            carry_in,
+            control,
+            clean,
+            vent_bits,
+            measurement_bit,
+            emit_resets,
+            feedback,
+            len(prefix),
         ),
         *copy_gates,
     )

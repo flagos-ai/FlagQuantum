@@ -8,6 +8,7 @@ from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
+from ..primitives.measurement import reset_x_register_ir
 
 _Coefficient = int | bool | ClassicalFieldCoefficient
 
@@ -18,6 +19,8 @@ def _carry_parity_gate(
     controls: tuple[_Coefficient, ...],
     clean: tuple[int, ...],
     measurement_bit: int | None,
+    *,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     for first, second in (parity, parity[::-1]):
         if type(first) is int:
@@ -33,6 +36,11 @@ def _carry_parity_gate(
                 raise ValueError("Carry XOR requires a reusable measurement slot")
             return (
                 *update,
+                *(
+                    reset_x_register_ir((scratch,))
+                    if emit_resets and scratch is not None
+                    else ()
+                ),
                 *_flip(
                     target,
                     first,
@@ -74,6 +82,7 @@ def carry_parity_ir(
     control: int | bool = True,
     clean: tuple[int, ...] = (),
     measurement_bit: int | None = None,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """XOR each outgoing addition carry into its corresponding target bit.
 
@@ -120,7 +129,12 @@ def carry_parity_ir(
         return (
             *update,
             *_carry_parity_gate(
-                dst[0], (low_bit, carry_in), (control, lhs[0]), clean, measurement_bit
+                dst[0],
+                (low_bit, carry_in),
+                (control, lhs[0]),
+                clean,
+                measurement_bit,
+                emit_resets=emit_resets,
             ),
             *update,
             *_flip(dst[0], control, carry_in),
@@ -139,7 +153,12 @@ def carry_parity_ir(
         *toggle_target,
         *toggle_shifted,
         *_carry_parity_gate(
-            dst[0], (carry_in, low_bit), (control, lhs[0]), clean, measurement_bit
+            dst[0],
+            (carry_in, low_bit),
+            (control, lhs[0]),
+            clean,
+            measurement_bit,
+            emit_resets=emit_resets,
         ),
         *cascade,
         *toggle_shifted,

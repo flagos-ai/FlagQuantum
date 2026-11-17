@@ -8,7 +8,7 @@ from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 from .carry_parity import _carry_parity_gate, _Coefficient
 
 
@@ -20,6 +20,7 @@ def measured_carry_addition_ir(
     carry_in: _Coefficient = False,
     control: int | bool = True,
     measurement_bit: int | None = None,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Add a big-endian mixed offset and carry in place.
 
@@ -67,7 +68,12 @@ def measured_carry_addition_ir(
             *_flip(word[1], control, rhs[1]),
             invert,
             *_carry_parity_gate(
-                word[1], (rhs[0], carry_in), (control, word[0]), clean, measurement_bit
+                word[1],
+                (rhs[0], carry_in),
+                (control, word[0]),
+                clean,
+                measurement_bit,
+                emit_resets=emit_resets,
             ),
             invert,
             *_flip(word[0], control, carry_in),
@@ -77,8 +83,11 @@ def measured_carry_addition_ir(
     if measurement_bit is None:
         raise ValueError("Simple addition requires a reusable measurement slot")
     outcome = ClassicalFieldCoefficient(measurement_bit)
-    gates = list(_flip(clean[0], control, carry_in))
+    gates = list(reset_x_register_ir((clean[0],)) if emit_resets else ())
+    gates.extend(_flip(clean[0], control, carry_in))
     for k in range(n - 1):
+        if emit_resets:
+            gates.extend(reset_x_register_ir((clean[k + 1],)))
         gates.extend(_flip(clean[k], control, rhs[k]))
         gates.extend(_flip(word[k], control, rhs[k]))
         gates.extend(_flip(clean[k + 1], control, rhs[k]))
