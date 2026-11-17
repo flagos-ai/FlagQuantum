@@ -5,8 +5,12 @@
 
 """Measured controlled increment with explicit clean carry ownership."""
 
-from ....core.ir import Instruction
+from ....core.ir import CircuitIR, Instruction
+from ..._component_trace.trace import ComponentCall
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
+from ...lowering.reversible_phase import lower_reversible_phase
 from ..finite_field.polynomial import _validate_registers
+from ..primitives.measurement import reset_x_register_ir
 from .inplace_addition import _erase_carry
 
 
@@ -15,6 +19,7 @@ def _controlled_increment(
     clean: tuple[int, ...],
     control: int,
     measurement_bit: int | None,
+    emit_resets: bool,
 ) -> tuple[Instruction, ...]:
     n = len(target)
     if not n:
@@ -27,9 +32,12 @@ def _controlled_increment(
             Instruction("cx", (control, target[0])),
         )
     assert measurement_bit is not None
-    gates = [Instruction("ccx", (control, target[0], clean[0]))]
+    gates = list(reset_x_register_ir((clean[0],)) if emit_resets else ())
+    gates.append(Instruction("ccx", (control, target[0], clean[0])))
     # LoopBuilder places the target-word control before the carry control.
     for k in range(n - 3):
+        if emit_resets:
+            gates.extend(reset_x_register_ir((clean[k + 1],)))
         gates.append(Instruction("ccx", (target[k + 1], clean[k], clean[k + 1])))
     gates.append(Instruction("ccx", (clean[n - 3], target[n - 2], target[n - 1])))
     for k in reversed(range(n - 3)):
@@ -49,6 +57,7 @@ def increment_ir(
     clean: tuple[int, ...] = (),
     control: int | bool = True,
     measurement_bit: int | None = None,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Increment a big-endian target, preserving control and zero clean carries.
 
@@ -74,7 +83,31 @@ def increment_ir(
         if not little:
             return ()
         return (
-            *_controlled_increment(little[1:], clean, little[0], measurement_bit),
+            *_controlled_increment(
+                little[1:], clean, little[0], measurement_bit, emit_resets
+            ),
             Instruction("x", (little[0],)),
         )
-    return _controlled_increment(little, clean, control, measurement_bit)
+    return _controlled_increment(little, clean, control, measurement_bit, emit_resets)
+
+
+def physical_increment(
+    target: tuple[int, ...],
+    *,
+    clean: tuple[int, ...] = (),
+    control: int | bool = True,
+    measurement_bit: int = 0,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export the register increment including allocated resets and the outer mark."""
+    gates = increment_ir(
+        target,
+        clean=clean,
+        control=control,
+        measurement_bit=measurement_bit,
+        emit_resets=True,
+    )
+    ports = (*target, *clean, *((control,) if type(control) is int else ()))
+    program = lower_reversible_phase(CircuitIR(max(ports, default=0) + 1, gates))
+    name = "iadd1" if control is True else "ciadd1"
+    calls = (ComponentCall(name, 0, len(program.operations)),) if target else ()
+    return program, calls
