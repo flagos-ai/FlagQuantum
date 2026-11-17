@@ -58,8 +58,46 @@ The pinned plaquette and tile graphs do not provide an ordered full
 primitive execution. Their `eps` is a source synthesis parameter; the
 native exact rotations have no synthesis tolerance in their binding.
 The native routed sequence and its measured costs are kept separate from
-the source estimate. Source drawer labels and symbolic executable tile
-costs remain open in Q-0437.
+the source estimate. Symbolic HWP resource queries remain open in Q-0437;
+symbolic lattice sizes do not denote an executable finite circuit.
+
+The complete source register layouts for all three classes now use the
+shared Hubbard drawer. The plaquette inherits the truncated `HoppingP..`
+default root. Both ordinary and HWP tiles use `H_h^p` or `H_h^g` according
+to color. Although HWP defines a short name with an `(HWP)` suffix, its
+inherited wire_symbol does not use that suffix. Tests compare the source
+geometry, ordered indexed TextBoxes and root attributes for lengths 2, 4
+and 8, both colors, JSON round trips and rendered labels. Existing
+plaquette and tile matrix, primitive, feedback and work-cleanup evidence
+is reused. This presentation binding changes no emitted gates.
+
+The ordinary tile now has an independent symbolic resource formula. It
+composes the shared two-bit Fourier costs with the classified plaquette
+rotation and multiplies by `floor(L**2/2)`. For a generic symbolic angle
+the locked QEC estimate is `8*floor(L**2/2)` T gates,
+`52*floor(L**2/2)` Cliffords, and `2*floor(L**2/2)` rotations, with logical
+peak `Max(4, 2*L)`. Concrete zero, T, Clifford and generic angles are checked
+against both the unmodified source and the existing concrete model.
+The formula estimates gates only; it emits no symbolic circuit.
+
+The unchanged HWP symbolic source fails its gate query with an
+AttributeError on the phasing width's missing `bit_length`, and its width
+query with a RuntimeError from splitting a symbolic dtype. Tests retain
+both diagnostics. No ordinary formula is substituted for HWP. Its existing
+concrete costs, numerical execution and branch evidence remain valid.
+
+```python
+from sympy import Symbol
+from flagquantum.algorithms.primitives.hubbard_resource_model import (
+    source_hubbard_hopping_tile_formula,
+)
+
+length = Symbol("L", positive=True, integer=True)
+angle = Symbol("theta", real=True)
+model = source_hubbard_hopping_tile_formula(length, angle)
+assert model.t.subs(length, 8) == 256
+assert model.rotation.subs(length, 8) == 64
+```
 
 
 ## Run one color
