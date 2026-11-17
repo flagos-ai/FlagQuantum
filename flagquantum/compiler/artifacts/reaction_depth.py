@@ -7,17 +7,24 @@
 from collections import defaultdict
 from collections.abc import Iterable
 
-from .reversible_phase import ReversiblePhaseProgram
+from .reversible_phase import ReversiblePhaseOperation, ReversiblePhaseProgram
 
 
 def reaction_depth(program: ReversiblePhaseProgram) -> int:
     """Propagate source X-frame, Z-frame and classical reaction depths."""
+    return reaction_depth_for_operations(program.operations)
+
+
+def reaction_depth_for_operations(
+    operations: Iterable[ReversiblePhaseOperation],
+) -> int:
+    """Analyze physical records without requiring a bound executable program."""
     x: defaultdict[int, int] = defaultdict(int)
     z: defaultdict[int, int] = defaultdict(int)
     c: defaultdict[int, int] = defaultdict(int)
     scopes = [0]
 
-    for op in program.operations:
+    for op in operations:
         depth = scopes[-1]
         if op.condition_bit is not None:
             depth = max(depth, c[op.condition_bit])
@@ -29,7 +36,8 @@ def reaction_depth(program: ReversiblePhaseProgram) -> int:
             scopes.append(depth)
             continue
         if opcode == "pop_condition":
-            scopes.pop()
+            if len(scopes) > 1:
+                scopes.pop()
             continue
         if opcode in {"bit_store0", "bit_store1", "bit_invert"}:
             assert op.result_bit is not None
