@@ -70,6 +70,7 @@ Native FlagQuantum programs currently available:
 - [overview](quantum_differential_equations_solvers/lchs/overview/README.md)
 - [overview](quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/README.md)
 - [overview](quantum_linear_solvers/hhl/overview/README.md)
+- [overview](quantum_linear_solvers/qsvt_matrix_inversion/overview/README.md)
 - [overview](quantum_linear_solvers/vqls/vqls_with_lcu/overview/README.md)
 - [overview](quantum_phase_estimation/qpe_for_matrix/overview/README.md)
 - [overview](quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/overview/README.md)

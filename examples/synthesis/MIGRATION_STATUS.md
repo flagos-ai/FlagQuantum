@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **167/213**.
+Validated local Notebook workflows: **168/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -184,7 +184,7 @@ Validated local Notebook workflows: **167/213**.
 | `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/time_marching/main.py) | pending |
 | `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/main.py) | validated |
 | `algorithms/quantum_linear_solvers/hhl/hhl` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/hhl/overview/main.py) | validated |
-| `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/main.py) | pending |
+| `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview/main.py) | validated |
 | `algorithms/quantum_linear_solvers/vqls/vqls_with_lcu` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/overview/main.py) | validated |
 | `algorithms/quantum_phase_estimation/qpe_for_matrix/qpe_for_matrix` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_for_matrix/overview/main.py) | validated |
 | `algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization` | notebook_workflow | [Native program](algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/overview/main.py) | validated |
