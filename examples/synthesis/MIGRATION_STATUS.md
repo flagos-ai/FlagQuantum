@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **179/213**.
+Validated local Notebook workflows: **180/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -236,7 +236,7 @@ Validated local Notebook workflows: **179/213**.
 | `applications/cybersecurity/patching_management/patch_min_vertex_cover` | notebook_workflow | [Native program](applications/cybersecurity/patching_management/patch_min_vertex_cover/overview/main.py) | validated |
 | `applications/cybersecurity/whitebox_fuzzing/whitebox_fuzzing` | notebook_workflow | [Native program](applications/cybersecurity/whitebox_fuzzing/overview/main.py) | validated |
 | `applications/finance/autocallable_options/partial_exponential_state_preparation` | notebook_workflow | [Native program](applications/finance/autocallable_options/partial_exponential_state_preparation/overview/main.py) | validated |
-| `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | [Native program](applications/finance/autocallable_options/quantum_autocallable_option_pricing/main.py) | pending |
+| `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | [Native program](applications/finance/autocallable_options/quantum_autocallable_option_pricing/overview/main.py) | validated |
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | [Native program](applications/finance/brownian_chebyshev_polynomials/overview/main.py) | validated |
 | `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/main.py) | pending |
 | `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview/main.py) | validated |

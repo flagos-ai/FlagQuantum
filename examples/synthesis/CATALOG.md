@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **179/213**.
+Validated local Notebook workflows: **180/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -189,6 +189,7 @@ Validated local Notebook workflows:
 - [overview](applications/cybersecurity/patching_management/patch_min_vertex_cover/overview/README.md)
 - [overview](applications/cybersecurity/whitebox_fuzzing/overview/README.md)
 - [overview](applications/finance/autocallable_options/partial_exponential_state_preparation/overview/README.md)
+- [overview](applications/finance/autocallable_options/quantum_autocallable_option_pricing/overview/README.md)
 - [overview](applications/finance/brownian_chebyshev_polynomials/overview/README.md)
 - [overview](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview/README.md)
 - [overview](applications/finance/option_pricing/overview/README.md)
