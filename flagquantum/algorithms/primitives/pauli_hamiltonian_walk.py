@@ -10,15 +10,16 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from math import isfinite, sqrt
-from typing import overload
+from typing import cast, overload
 
 from ...compiler._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
 from ...compiler._component_trace.resource_model import ComponentCost
-from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.lookup.bounded_pauli_select import (
     source_bounded_pauli_select_cost,
 )
 from ...compiler.registers.preparation.prepare_reflection import (
+    prepare_reflection_requirements,
     source_uncontrolled_prepare_reflection_cost,
 )
 from ...core.ir import Instruction
@@ -102,6 +103,21 @@ class SymbolicPauliHamiltonianWalk:
     selector: SelectPauliLCU
     target_qubits: tuple[int, ...]
     coefficient_precision: SymbolicReal
+
+    def peak_logical_qubits(self) -> SymbolicInt:
+        """Predict the concrete walk's peak at a symbolic coefficient precision."""
+        selection = self.selector.selection_bitsize
+        mark_work, _ = prepare_reflection_requirements(selection, controlled=False)
+        mark_junk = selection + 2 * self.prepare.decomposed_probability_bits + 1
+        target = self.selector.target_bitsize
+        return cast(
+            SymbolicInt,
+            smax(
+                _selector_cost(self.selector).qubits,
+                target + self.prepare.dense_decomposition_peak(),
+                target + selection + mark_junk + mark_work,
+            ),
+        )
 
     def gate_cost(self) -> QECGateCost:
         """Query symbolic gate categories while the source peak is undefined."""

@@ -12,6 +12,9 @@ from flagquantum.algorithms.primitives.pauli_hamiltonian_walk import (
     PauliHamiltonianWalk,
     SymbolicPauliHamiltonianWalk,
 )
+from flagquantum.compiler._component_trace.resource_model import (
+    estimate_component_resources,
+)
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = pytest.mark.unit
@@ -129,3 +132,40 @@ def test_ising_walk_matches_source(
         assert plan.table.alternates == tuple(source.prepare.alt)
         assert plan.table.keep == tuple(source.prepare.keep)
         assert_source_model(plan.resource_model(), source)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    ("sites", "j_zz", "gamma_x"),
+    [(1, 1, -1), (2, 1, -1), (3, -0.75, 1), (4, 1, -1), (8, 1, -1), (16, 1, -1)],
+)
+def test_symbolic_ising_peak_specializes_to_concrete_decomposition(
+    sites: int, j_zz: float, gamma_x: float
+) -> None:
+    sympy = pytest.importorskip("sympy")
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.ising.walk_operator import (
+        get_walk_operator_for_1d_ising_model,
+    )
+    from qualtran.resource_counting import QubitCount, get_cost_value
+
+    precision = sympy.Symbol("e", positive=True)
+    symbolic, _ = ising_walk(sites, precision, j_zz=j_zz, gamma_x=gamma_x)
+    assert isinstance(symbolic, SymbolicPauliHamiltonianWalk)
+    prepare_peak = symbolic.prepare.dense_decomposition_peak()
+    walk_peak = symbolic.peak_logical_qubits()
+    assert prepare_peak.free_symbols == walk_peak.free_symbols == {precision}
+    for epsilon in (1.0, 0.3, 0.1, 0.01):
+        source, _ = get_walk_operator_for_1d_ising_model(
+            sites, epsilon, j_zz_strength=j_zz, gamma_x_strength=gamma_x
+        )
+        concrete, _ = ising_walk(sites, epsilon, j_zz=j_zz, gamma_x=gamma_x)
+        cost = estimate_component_resources(concrete.resource_model())
+        assert prepare_peak.subs(precision, epsilon) == get_cost_value(
+            source.prepare, QubitCount()
+        )
+        assert (
+            walk_peak.subs(precision, epsilon)
+            == cost.peak_logical_qubits
+            == (get_cost_value(source, QubitCount()))
+        )

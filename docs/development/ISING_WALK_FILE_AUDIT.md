@@ -53,12 +53,26 @@ explicit valid bound.
 
 The locked alias reflection can leave its allocated preparation junk
 nonzero. The exact amplitude comparison includes every sector of that junk.
-The junk stays allocated after a
+The junk stays allocated after a source-compatible step. The original
+symbolic qubit-peak query raises when reflection tries to decide whether
+the symbolic junk width is positive.
 
-source-compatible step. The original symbolic qubit-peak query also
-raises when it reaches the symbolic preparation junk. Gate estimation
-is checked independently.
+The native symbolic peak specializes to the concrete resource schedule at
+a fixed number of Hamiltonian terms. Dense PREPARE takes the maximum of
+its signature, uniform preparation with live alias junk, QROM with live
+probability and comparator output, and the equal-width comparator with
+live selection and alternate registers. The walk carries the Hamiltonian
+target through PREPARE and through the zero mark, whose live width also
+includes the alias junk. The SELECT peak comes from its concrete
+declaration. The existing symbolic gate model retains the locked
+shape-only call graph.
+
+The native expressions are checked at 1, 2, 3, 4, 8, and 16 sites and four
+precisions per site. Dense PREPARE matches the locked concrete
+`QubitCount`, and the whole-walk peak matches both the locked concrete
+`QubitCount` and the native concrete estimate. These are model widths.
+The source symbolic reflection and walk failure remains reproducible.
 
 Q-0357, Q-0358 and Q-0360 close the native Hamiltonian and test coverage.
-Q-0359 remains open for a recoverable reflection workspace path, symbolic
-peak handling and the source's broader external Hamiltonian interface.
+Q-0359 remains open for a recoverable reflection workspace path and the
+source's broader external Hamiltonian interface.

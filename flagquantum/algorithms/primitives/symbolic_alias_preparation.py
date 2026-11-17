@@ -20,6 +20,9 @@ from ...compiler._component_trace.symbolic_math import (
 from ...compiler.registers.comparison.comparison_resource_model import (
     source_less_equal_resource_formula,
 )
+from ...compiler.registers.comparison.less_equal import (
+    source_equal_width_less_equal_decomposition_peak,
+)
 from ...compiler.registers.preparation.uniform_preparation_resource_model import (
     source_uniform_preparation_resource_formula,
 )
@@ -148,6 +151,36 @@ class AliasPreparationShape(PrepareOracle):
             + self.sparse_index_width
             + 2 * self.probability_bits
             + 1
+        )
+
+    @property
+    def decomposed_probability_bits(self) -> SymbolicInt:
+        """Return the bit width that the concrete alias table would allocate."""
+        return cast(SymbolicInt, smax(1, self.probability_bits))
+
+    def dense_decomposition_peak(self) -> SymbolicInt:
+        """Price the concrete dense schedule at a possibly symbolic precision."""
+        rows = self.rows
+        if self.support_size is not None or type(rows) is not int or rows < 2:
+            raise ValueError(
+                "Dense decomposition requires a concrete row count of at least two"
+            )
+        selection = (rows - 1).bit_length()
+        mu = self.decomposed_probability_bits
+        junk = selection + 2 * mu + 1
+        uniform = source_uniform_preparation_resource_formula(rows)
+        lookup = source_qrom_resource_formula(
+            (rows,), (selection, mu), selection_widths=(selection,)
+        )
+        comparison = source_equal_width_less_equal_decomposition_peak(mu)
+        return cast(
+            SymbolicInt,
+            smax(
+                selection + junk,
+                uniform.logical_qubits + junk,
+                lookup.logical_qubits + mu + 1,
+                comparison + 2 * selection,
+            ),
         )
 
     def resource_model(self, *, legacy_shims: bool = False) -> SymbolicResourceFormula:
