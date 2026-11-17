@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 155
+    assert len(validated) == 156
+    assert (
+        "applications/finance/portfolio_optimization_hhl/HHL_portfolio",
+        "examples/synthesis/applications/finance/portfolio_optimization_hhl/hhl_portfolio/overview/main.py",
+    ) in validated
     assert (
         "applications/finance/rainbow_options/rainbow_options_integration_method",
         "examples/synthesis/applications/finance/rainbow_options/rainbow_options_integration_method/overview/main.py",
@@ -749,7 +753,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**155/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**156/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
