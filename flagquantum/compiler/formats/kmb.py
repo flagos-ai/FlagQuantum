@@ -380,6 +380,10 @@ def encode_kmb(text: str, *, file_text: bool = False) -> bytes:
     """Encode KMX operations and register directives as source-compatible KMB v2."""
     columns = _parse_kmx(text, file_text=file_text)
     _, n_qubits, n_bits = _validated_lines(columns)
+    return _pack_kmb(columns, n_qubits, n_bits)
+
+
+def _pack_kmb(columns: _Columns, n_qubits: int, n_bits: int) -> bytes:
     names = [tag.encode() for tag in columns.tags]
     tag_text = b"".join(names)
     offsets = []

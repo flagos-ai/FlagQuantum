@@ -16,6 +16,7 @@ from .kmb import (
     _append_kmx_text,
     _append_operation,
     _Columns,
+    _pack_kmb,
     _RegisterData,
 )
 from .kmb_operations import INFO_TAG, OPERATION_CODES
@@ -126,6 +127,11 @@ class KmxCircuitBuilder:
     def freeze(self) -> KmxCircuit:
         """Validate operand columns and collisions and return an independent value."""
         return _freeze_columns(self._columns)
+
+    def to_kmb(self) -> bytes:
+        """Serialize validated columns directly without a KMX formatting pass."""
+        circuit = self.freeze()
+        return _pack_kmb(self._columns, circuit.qubits, circuit.bits)
 
     def clear(self) -> None:
         """Remove all operation and register state."""
