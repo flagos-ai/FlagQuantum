@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **172/213**.
+Validated local Notebook workflows: **173/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -247,7 +247,7 @@ Validated local Notebook workflows: **172/213**.
 | `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_direct_method/overview/main.py) | validated |
 | `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_integration_method/overview/main.py) | validated |
 | `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | [Native program](applications/finance/value_at_risk/overview/main.py) | validated |
-| `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | Pending | pending |
+| `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | [Native program](applications/image_processing/quantum_hadamard_edge_detection/overview/main.py) | validated |
 | `applications/logistics/facility_location/facility_location` | notebook_workflow | [Native program](applications/logistics/facility_location/overview/main.py) | validated |
 | `applications/logistics/task_scheduling_problem/task_scheduling_problem` | notebook_workflow | [Native program](applications/logistics/task_scheduling_problem/main.py) | pending |
 | `applications/logistics/traveling_salesman_problem/traveling_salesman_problem` | notebook_workflow | [Native program](applications/logistics/traveling_salesman_problem/overview/main.py) | validated |

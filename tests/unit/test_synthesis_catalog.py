@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 172
+    assert len(validated) == 173
+    assert (
+        "applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection",
+        "examples/synthesis/applications/image_processing/quantum_hadamard_edge_detection/overview/main.py",
+    ) in validated
     assert (
         "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2",
         "examples/synthesis/tutorials/basics/quantum_programming/qmod_tutorial_part2/overview/main.py",
@@ -817,7 +821,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**172/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**173/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
