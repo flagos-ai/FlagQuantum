@@ -75,12 +75,42 @@ with zero resets or outcomes. Idle or borrowed storage is restored and
 all active clean wires end in zero. These are emitted record counts, with
 the CCZ-state estimate still provided separately through the resource chart.
 
+## Classical-offset addition generation
+
+Both classical modes reuse the arithmetic schedules from
+`gen_iadd_classical.cc` (blob `0729f224be462768b49023bab9214637b40f8e96`).
+The general mode declares named target and offset registers and a literal
+zero carry-in. The simple mode declares a separate quantum carry-in.
+Clean and dirty reservations precede the optional control. The exporter
+records helper resets, nested carry calls and outcome scopes at their
+generator boundaries. It retains the physical classical slot numbers,
+including unreferenced allocator slots and zero-initialized vent slots that
+need no emitted stores in the source file format.
+
+The initial grid checks 132 admitted KMX streams and 35 KMB captures.
+It also compares rejection for all 36 source aborts. The additional
+126-case sweep covers widths 4–10 and from two to ten clean wires.
+Every one of its 98 admitted cases matches both formats, including mixed
+recursive-prefix and vented routes. The remaining 28 cases reject in
+both implementations. Fourteen representative locked cases are fixtures.
+
+For the simple and short/vented general paths, exhaustive reset and HMR
+histories retain the full complex amplitudes on superposed targets and
+enabled/disabled inputs, with clean work returning to zero and borrowed
+dirty work restored. The known extra-clean prefix arithmetic and phase
+defect remains present in the unchanged source schedule. The physical
+route matches the source records for that branch. Its arithmetic defect
+is tracked in `test_kickmix_mixed_addition.py`.
+
+The controlled four-bit vented example uses 27 CX, 6 CCX, 3 CZ, 2 R,
+2 HMR and one BIT_INVERT. Condition scopes and component marks are
+reported separately from these physical operations. The analysis SVG
+continues to report the source's CCZ-state estimate separately.
+
 ## Open source paths
 
 | Source mode | Remaining physical alignment |
 | --- | --- |
-| `iadd_classical` | Match clean-wire resets at their allocation sites and preserve the HMR result as the outer condition in erasure feedback. |
-| `iadd_classical_simple` | Match reset interleaving and HMR condition nesting in the one-clean-wire-per-lane schedule. |
 | `imul2_mod` | Match helper resets, nested component marks, outer HMR conditions, and result slot allocation after the full physical modulus register, including fixed-endpoint slots. Cover both constant and register modulus forms. |
 
-The K-0036 source inventory remains open for these three modes.
+The K-0036 source inventory remains open for the two parameter forms of `imul2_mod`.

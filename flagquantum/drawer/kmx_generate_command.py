@@ -13,6 +13,7 @@ from ..compiler.formats._binary_streams import write_binary_result
 from ..compiler.formats.kmb import encode_kmb
 from ..compiler.registers.circuit_generation import (
     generate_addition,
+    generate_classical_addition,
     generate_comparison,
     generate_table,
 )
@@ -32,7 +33,17 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, allow_abbrev=False, exit_on_error=False
     )
-    parser.add_argument("--kind", choices=("iadd", "flip_if_lt", "lookup", "unlookup"))
+    parser.add_argument(
+        "--kind",
+        choices=(
+            "iadd",
+            "iadd_classical",
+            "iadd_classical_simple",
+            "flip_if_lt",
+            "lookup",
+            "unlookup",
+        ),
+    )
     for flag in ("n", "w", "clean", "dirty"):
         parser.add_argument(f"--{flag}", type=_size, default=-1)
     for flag in (
@@ -54,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
         if not args.btol >= 0:
             raise ValueError("Bit tolerance must be nonnegative")
         n = args.n
-        if args.kind in ("iadd", "flip_if_lt") and n == -1:
+        if args.kind not in (None, "lookup", "unlookup") and n == -1:
             raise ValueError("Need '--n #'.")
         if args.kind == "iadd":
             circuit = generate_addition(
@@ -63,6 +74,17 @@ def main(argv: list[str] | None = None) -> int:
                 dirty_count=max(0, args.dirty),
                 controlled=args.controlled,
                 minimize_qubits=args.minimize_qubits,
+            )
+        elif args.kind in ("iadd_classical", "iadd_classical_simple"):
+            simple = args.kind == "iadd_classical_simple"
+            circuit = generate_classical_addition(
+                n,
+                clean_count=n if args.clean == -1 else args.clean,
+                dirty_count=(0 if simple else n) if args.dirty == -1 else args.dirty,
+                controlled=args.controlled,
+                minimize_qubits=args.minimize_qubits,
+                btol=args.btol,
+                simple=simple,
             )
         elif args.kind == "flip_if_lt":
             circuit = generate_comparison(

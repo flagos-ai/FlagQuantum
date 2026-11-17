@@ -4,6 +4,8 @@
 
 """Bind physical register layouts to native arithmetic and table emitters."""
 
+from collections.abc import Sequence
+
 from ...core.ir import CircuitIR
 from .._component_trace.trace import ComponentCall, ComponentTrace
 from ..artifacts.reversible_phase import ReversiblePhaseProgram
@@ -12,6 +14,7 @@ from ..formats.kmx_block_marks import encode_kmx_block_marks
 from ..formats.kmx_circuit import KmxCircuit, read_kmx_circuit
 from ..lowering.reversible_phase import lower_reversible_phase
 from .arithmetic.inplace_addition import inplace_addition_ir
+from .arithmetic.physical_addition import physical_classical_addition
 from .comparison.physical_comparison import physical_less_than
 from .finite_field.coefficients import ClassicalFieldCoefficient
 from .lookup.measured_unlookup import measured_unlookup_operations
@@ -25,7 +28,7 @@ def _quantum_register(wires: tuple[int, ...]) -> KmxRegister:
 def _physical_circuit(
     registers: tuple[KmxRegister, ...],
     program: ReversiblePhaseProgram,
-    calls: list[ComponentCall],
+    calls: Sequence[ComponentCall],
 ) -> KmxCircuit:
     # The raw file carries explicit register declarations instead of a program
     # header. Unused reserved workspace is inferred only if a gate uses it.
@@ -77,6 +80,45 @@ def generate_addition(
     if controlled:
         registers += (_quantum_register(enable),)
     calls = [ComponentCall("iadd", 0, len(program.operations))]
+    return _physical_circuit(registers, program, calls)
+
+
+def generate_classical_addition(
+    width: int,
+    *,
+    clean_count: int,
+    dirty_count: int,
+    controlled: bool,
+    minimize_qubits: bool,
+    btol: float,
+    simple: bool,
+) -> KmxCircuit:
+    """Generate an in-place addition with a declared classical offset word."""
+    target = tuple(range(width))
+    carry_in = width if simple else None
+    work_start = width + int(simple)
+    dirty_start = work_start + clean_count
+    enable = dirty_start + dirty_count
+    program, calls = physical_classical_addition(
+        target[::-1],
+        tuple(ClassicalFieldCoefficient(bit) for bit in reversed(range(width))),
+        clean=tuple(range(work_start, dirty_start)),
+        dirty=tuple(range(dirty_start, enable)),
+        control=enable if controlled else True,
+        carry_in=carry_in,
+        minimize_qubits=minimize_qubits,
+        btol=btol,
+    )
+    registers: tuple[KmxRegister, ...] = (
+        KmxRegister("" if simple else "target", tuple(("q", wire) for wire in target)),
+        KmxRegister(
+            "" if simple else "offset", tuple(("b", bit) for bit in range(width))
+        ),
+    )
+    if carry_in is not None:
+        registers += (_quantum_register((carry_in,)),)
+    if controlled:
+        registers += (_quantum_register((enable,)),)
     return _physical_circuit(registers, program, calls)
 
 

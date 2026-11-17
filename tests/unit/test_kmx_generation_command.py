@@ -14,9 +14,16 @@ import torch
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
+from flagquantum.compiler.registers.arithmetic.physical_addition import (
+    physical_classical_addition,
+)
 from flagquantum.compiler.registers.comparison.physical_comparison import (
     physical_less_than,
 )
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient,
+)
+from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.drawer.kmx_generate_command import main
 from tests.unit.measurement_checks import expand_reset_branches, forced_branch
 
@@ -64,6 +71,8 @@ def test_diagram_precedes_kmb_and_analysis_survives_skip(tmp_path: Path) -> None
     "argv",
     [
         ["--kind", "iadd"],
+        ["--kind", "iadd_classical", "--n", "4", "--minimize_qubits"],
+        ["--kind", "iadd_classical_simple", "--n", "2", "--clean", "1"],
         ["--kind", "flip_if_lt"],
         ["--kind", "flip_if_lt", "--n", "3", "--clean", "0"],
         ["--kind", "flip_if_lt", "--n", "2", "--clean", "0", "--btol", "2.1"],
@@ -142,6 +151,81 @@ def test_exported_comparison_preserves_every_complex_branch(
     )
     events = sum(gate.name == "measure" for gate in gates)
     assert events == resets + measurements
+    for outcomes in product((0, 1), repeat=events):
+        branch = forced_branch(state, gates, outcomes)
+        torch.testing.assert_close(
+            branch, expected / 2 ** (events / 2), atol=5e-14, rtol=5e-14
+        )
+
+
+@pytest.mark.parametrize("offset", [0, 3, 5])
+@pytest.mark.parametrize(
+    "width,clean_count,dirty_count,simple,controlled,measurements,resets",
+    [
+        (2, 2, 0, True, True, 1, 1),
+        (3, 3, 0, True, True, 3, 3),
+        (3, 2, 0, False, False, 2, 2),
+        (4, 2, 2, False, True, 2, 2),
+    ],
+)
+def test_classical_addition_export_restores_every_complex_branch(
+    offset: int,
+    width: int,
+    clean_count: int,
+    dirty_count: int,
+    simple: bool,
+    controlled: bool,
+    measurements: int,
+    resets: int,
+) -> None:
+    clean_start = width + int(simple)
+    dirty_start = clean_start + clean_count
+    enable = dirty_start + dirty_count
+    clean = tuple(range(clean_start, dirty_start))
+    dirty = tuple(range(dirty_start, enable))
+    program, _ = physical_classical_addition(
+        tuple(reversed(range(width))),
+        tuple(ClassicalFieldCoefficient(bit) for bit in reversed(range(width))),
+        clean=clean,
+        dirty=dirty,
+        control=enable if controlled else True,
+        carry_in=width if simple else None,
+        minimize_qubits=True,
+        btol=inf,
+    )
+    logical = tuple(q for q in range(program.n_qubits) if q not in clean)
+    data = torch.arange(1 << len(logical))
+    basis = torch.zeros_like(data)
+    for i, q in enumerate(logical):
+        basis |= ((data >> i) & 1) << (program.n_qubits - 1 - q)
+    psi = torch.complex((data + 1).double(), (2 * data - 3).double())
+    psi /= psi.norm()
+    state = torch.zeros(1 << program.n_qubits, dtype=torch.complex128)
+    state[basis] = psi
+    size = 1 << width
+    carry = ((data >> width) & 1) if simple else 0
+    control = ((data >> logical.index(enable)) & 1) if controlled else 1
+    word = data % size
+    result = (word + (offset + carry) * control) % size
+    output = basis.clone()
+    for q in range(width):
+        output ^= (((word ^ result) >> q) & 1) << (program.n_qubits - 1 - q)
+    expected = torch.zeros_like(state)
+    expected[output] = psi
+    initial_classical = tuple(
+        ClassicalXor((), bit, bit < width and bool(offset & (1 << bit))).instruction()
+        for bit in program.input_bits
+    )
+    gates = (
+        *initial_classical,
+        *expand_reset_branches(
+            bind_reversible_phase_execution(program), first_slot=program.n_bits + 2
+        ),
+    )
+    assert sum(op.opcode == "hmr" for op in program.operations) == measurements
+    assert sum(op.opcode == "r" for op in program.operations) == resets
+    events = sum(gate.name == "measure" for gate in gates)
+    assert events == measurements + resets
     for outcomes in product((0, 1), repeat=events):
         branch = forced_branch(state, gates, outcomes)
         torch.testing.assert_close(
