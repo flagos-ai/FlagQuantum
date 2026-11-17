@@ -8,6 +8,7 @@
 
 from ....core.ir import Instruction
 from ..._component_trace.resource_model import ComponentCost, GateCost
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..control.control_predicate_resource_model import control_predicate_cost
 from ..control.multi_control import multi_and_ir
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
@@ -26,15 +27,21 @@ def less_equal_requirements(left_width: int, right_width: int) -> tuple[int, int
     )
 
 
+def source_equal_width_less_equal_decomposition_peak(width: SymbolicInt) -> SymbolicInt:
+    """Lift the concrete comparison tree's port and work widths to a formula."""
+    # Two words, one output, and 3 * width - 1 clean work bits.
+    return 5 * width
+
+
 def source_equal_width_less_equal_cost(
     width: int, *, legacy_shims: bool = False
 ) -> ComponentCost:
     """Count the source comparison tree for two equal-width concrete words."""
-    work, slots = less_equal_requirements(width, width)
+    _, slots = less_equal_requirements(width, width)
     erase = control_predicate_cost((1, 1), uncompute=True, legacy_shims=legacy_shims)
     return ComponentCost(
         "LessThanEqual",
-        2 * width + 1 + work,
+        int(source_equal_width_less_equal_decomposition_peak(width)),
         GateCost(
             and_bloq=slots,
             # Original mixers/comparator declare positive And pairs; their
