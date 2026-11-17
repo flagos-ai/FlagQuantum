@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **177/213**.
+Validated local Notebook workflows: **178/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -218,7 +218,7 @@ Validated local Notebook workflows: **177/213**.
 | `applications/CFD/double_slit_experiment/quantum_double_slit_experiment` | notebook_workflow | [Native program](applications/cfd/double_slit_experiment/quantum_double_slit_experiment/overview/main.py) | validated |
 | `applications/CFD/heat_eq_qsvt/heat_eq_qsvt` | notebook_workflow | [Native program](applications/cfd/heat_eq_qsvt/overview/main.py) | validated |
 | `applications/CFD/qlbm/qlbm` | notebook_workflow | [Native program](applications/cfd/qlbm/overview/main.py) | validated |
-| `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | Pending | pending |
+| `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | [Native program](applications/automotive/cooling_systems_optimization/overview/main.py) | validated |
 | `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/overview/main.py) | validated |
 | `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | [Native program](applications/benchmarking/randomized_benchmarking/overview/main.py) | validated |
 | `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | Pending | pending |

@@ -71,6 +71,7 @@ Native FlagQuantum programs currently available:
 - [overview](cfd/double_slit_experiment/quantum_double_slit_experiment/overview/README.md)
 - [overview](cfd/heat_eq_qsvt/overview/README.md)
 - [overview](cfd/qlbm/overview/README.md)
+- [overview](automotive/cooling_systems_optimization/overview/README.md)
 - [overview](benchmarking/quantum_volume/overview/README.md)
 - [overview](benchmarking/randomized_benchmarking/overview/README.md)
 - [overview](chemistry/molecular_energy_curve/overview/README.md)
