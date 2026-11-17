@@ -5,10 +5,12 @@
 
 """Sparse matrix index and entry oracles with caller-owned work."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, fields
 from functools import cached_property
 from math import acos, pi
-from typing import Protocol
+from typing import Protocol, cast
 
 import numpy as np
 
@@ -17,6 +19,7 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
+from ...compiler._component_trace.symbolic_math import SymbolicInt, smax
 from ...compiler.registers.arithmetic.addition import (
     add_adjoint_ir,
     add_constant_adjoint_ir,
@@ -26,8 +29,13 @@ from ...compiler.registers.arithmetic.addition import (
 from ...compiler.registers.arithmetic.arithmetic_resource_model import source_add_cost
 from ...compiler.registers.arithmetic.constant_add_resource_model import (
     source_constant_add_cost,
+    source_constant_add_resource_formula,
 )
 from ...compiler.registers.lookup.qrom_table import QromTable
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+    source_add_resource_formula,
+)
 from ...core.ir import Instruction
 from ._block_binding import _validate_block_work
 
@@ -71,6 +79,50 @@ class EntryOracle(Protocol):
         *,
         adjoint: bool = False,
     ) -> tuple[Instruction, ...]: ...
+
+
+def source_top_left_oracle_resource_formula(
+    width: SymbolicInt,
+) -> SymbolicResourceFormula:
+    """Count the identity index map, retaining its two live words."""
+    return SymbolicResourceFormula(0, 0, 0, 2 * width)
+
+
+def source_uniform_entry_oracle_resource_formula(
+    width: SymbolicInt,
+) -> SymbolicResourceFormula:
+    """Count the single source Ry on the flag with both indices live."""
+    return SymbolicResourceFormula(0, 0, 0, 2 * width + 1, rotation=1)
+
+
+def source_symbolic_banded_oracle_resource_formula(
+    width: SymbolicInt,
+    bandsize: SymbolicInt,
+    *,
+    adjoint: bool = False,
+    legacy_shims: bool = False,
+) -> SymbolicResourceFormula:
+    """Price source Add and signed AddK with the symbolic peak fallback."""
+    if type(width) is int and type(bandsize) is int:
+        raise ValueError("Use the concrete banded oracle model for resolved dimensions")
+    add = source_add_resource_formula(width, width, legacy_shims=legacy_shims)
+    shift = source_constant_add_resource_formula(
+        width,
+        -bandsize,
+        encoding="twos_complement",
+        adjoint=adjoint,
+        legacy_shims=legacy_shims,
+    )
+    return SymbolicResourceFormula(
+        logical_qubits=cast(
+            SymbolicInt, smax(2 * width, add.logical_qubits, shift.logical_qubits)
+        ),
+        **{
+            field.name: getattr(add, field.name) + getattr(shift, field.name)
+            for field in fields(SymbolicResourceFormula)
+            if field.name != "logical_qubits"
+        },
+    )
 
 
 def _check_binding(
