@@ -110,6 +110,15 @@ and reset operations. That conversion gap belongs to Ecosystem, not to a
 new oracle protocol or an Algorithms dependency on the reference package.
 Q-0299 stays open for that concrete foreign conversion requirement.
 
+The explicit optional feedback importer now resolves the conversion dependency
+described above; the static importer retains its original contract. See
+[Cirq feedback import](CIRQ_FEEDBACK_IMPORT.md). The original And erasure
+imports without changing its four primitive instructions. The decomposed
+foreign square-root oracle also imports with the same per-wire stream as
+the native callback, and every raw measurement branch matches the external
+instrument. Q-0299 still needs automatic forward/adjoint snapshot binding,
+including caller work ownership, classical relocation and returned wire maps.
+
 ```bash
 python -m examples.algorithms.custom_sparse_oracles
 pytest -q tests/unit/test_hermitian_custom_oracles.py
