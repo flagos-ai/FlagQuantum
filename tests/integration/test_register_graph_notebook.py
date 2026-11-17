@@ -42,6 +42,7 @@ ROOT = Path(__file__).resolve().parents[2]
         ("textbook_qft", 7, 3, 0),
         ("phase_gradient_qft", 6, 2, 0),
         ("approximate_qft", 8, 2, 0),
+        ("two_bit_fermionic_fourier", 6, 2, 0),
         ("phasing_via_cost_function", 8, 3, 0),
         ("programmable_rotation_gate_array", 6, 2, 0),
         ("quantum_variable_rotation", 16, 4, 4),
