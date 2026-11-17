@@ -38,6 +38,11 @@ class KmxCircuitBuilder:
         return duplicate
 
     @property
+    def operation_count(self) -> int:
+        """Count parsed physical records without freezing."""
+        return len(self._columns.operations)
+
+    @property
     def qubits(self) -> int:
         """Inspect the inferred width even before alias validation."""
         members = (

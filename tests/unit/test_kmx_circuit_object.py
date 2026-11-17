@@ -12,10 +12,19 @@ import pytest
 from flagquantum.compiler.artifacts.phase_angle import PhaseAngle128
 from flagquantum.compiler.artifacts.reaction_depth import reaction_depth_for_operations
 from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseOperation
-from flagquantum.compiler.formats.kmb import KmxRegister, decode_kmb, encode_kmb
+from flagquantum.compiler.formats.kmb import (
+    KmxRecord,
+    KmxRegister,
+    decode_kmb,
+    encode_kmb,
+)
 from flagquantum.compiler.formats.kmb_convert import main as convert
 from flagquantum.compiler.formats.kmb_operations import OPERATION_NAMES
-from flagquantum.compiler.formats.kmx_circuit import inspect_kmx, read_kmx_circuit
+from flagquantum.compiler.formats.kmx_circuit import (
+    inspect_kmx,
+    read_kmb_circuit,
+    read_kmx_circuit,
+)
 
 _FIXTURES = Path(__file__).parent / "fixtures"
 _POSITIVE = json.loads(
@@ -30,7 +39,30 @@ def test_original_literal_kmb_bytes(name: str) -> None:
     packed = b64decode(case["kmb"])
     assert encode_kmb(case["kmx"]) == packed
     assert decode_kmb(packed) == case["canonical"]
-    assert read_kmx_circuit(decode_kmb(packed)) == read_kmx_circuit(case["kmx"])
+    assert (
+        read_kmb_circuit(packed)
+        == read_kmx_circuit(decode_kmb(packed))
+        == read_kmx_circuit(case["kmx"])
+    )
+
+
+def test_binary_object_reader_needs_no_text_rendering(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    kmx = "PUSH_CONDITION if b0\nZ_POW q3 0.25\nPUSH_CONDITION if b1"
+    data = encode_kmb(kmx)
+    expected = read_kmx_circuit(kmx)
+
+    def prohibit_rendering(self: KmxRecord) -> str:
+        raise AssertionError("Binary object restoration should not render KMX")
+
+    monkeypatch.setattr(KmxRecord, "to_kmx", prohibit_rendering)
+    assert read_kmb_circuit(data) == expected
+    assert read_kmb_circuit(data).max_condition_depth() == 2
+    wrong_width = bytearray(data)
+    pack_into("<I", wrong_width, 20, 5)
+    with pytest.raises(ValueError, match="width does not match"):
+        read_kmb_circuit(bytes(wrong_width))
 
 
 def test_all_physical_records_are_owned_values() -> None:

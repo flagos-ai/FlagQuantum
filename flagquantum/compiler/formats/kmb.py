@@ -423,6 +423,14 @@ def encode_kmb(text: str, *, file_text: bool = False) -> bytes:
 
 def decode_kmb(data: bytes) -> str:
     """Decode KMB v2 to canonical KMX after validating all packet lengths."""
+    columns, widths = _read_kmb_columns(data)
+    lines, actual_q, actual_b = _validated_lines(columns)
+    if widths != (actual_q, actual_b):
+        raise ValueError("KMB width does not match the referenced operands")
+    return "\n".join(lines)
+
+
+def _read_kmb_columns(data: bytes) -> tuple[_Columns, tuple[int, int]]:
     reader = _Reader(data)
     if reader.take(len(_MAGIC)) != _MAGIC:
         raise ValueError("Invalid KMB magic")
@@ -473,7 +481,4 @@ def decode_kmb(data: bytes) -> str:
     if last != chars:
         raise ValueError("Final KMB tag offset does not match the header")
     reader.finish()
-    lines, actual_q, actual_b = _validated_lines(columns)
-    if (q, b) != (actual_q, actual_b):
-        raise ValueError("KMB width does not match the referenced operands")
-    return "\n".join(lines)
+    return columns, (q, b)

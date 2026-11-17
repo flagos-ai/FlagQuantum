@@ -5,7 +5,7 @@
 """Structural operations on KMX circuits and binary file detection."""
 
 from collections import Counter
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from itertools import chain
 
@@ -20,10 +20,11 @@ from .kmb import (
     _iter_records,
     _iter_registers,
     _parse_kmx,
+    _read_kmb_columns,
     _validated_lines,
     decode_kmb,
 )
-from .kmb_operations import OPERATION_NAMES, POP, PUSH
+from .kmb_operations import OPERATION_NAMES
 
 
 @dataclass(frozen=True)
@@ -88,6 +89,10 @@ class KmxCircuit:
     def __iter__(self) -> Iterator[KmxRecord]:
         return iter(self.records)
 
+    def max_condition_depth(self) -> int:
+        """Measure condition nesting on the frozen physical stream."""
+        return _condition_depth(record.opcode for record in self)
+
     def to_kmx(self) -> str:
         """Render register declarations and ordered records without a final newline."""
         register_lines = (
@@ -103,23 +108,36 @@ def read_kmx_circuit(text: str) -> KmxCircuit:
     return _freeze_columns(_parse_kmx(text))
 
 
+def read_kmb_circuit(data: bytes) -> KmxCircuit:
+    """Read KMB directly to immutable physical records without rendering text."""
+    columns, widths = _read_kmb_columns(data)
+    circuit = _freeze_columns(columns)
+    if widths != (circuit.qubits, circuit.bits):
+        raise ValueError("KMB width does not match the referenced operands")
+    return circuit
+
+
 def _freeze_columns(columns: _Columns) -> KmxCircuit:
     if len(columns.operations) > _MAX_RECORDS:
         raise ValueError("KMX circuit exceeds the record limit")
     return KmxCircuit(tuple(_iter_registers(columns)), tuple(_iter_records(columns)))
 
 
+def _condition_depth(opcodes: Iterable[str]) -> int:
+    current_depth = max_depth = 0
+    for opcode in opcodes:
+        if opcode == "PUSH_CONDITION":
+            current_depth += 1
+            max_depth = max(max_depth, current_depth)
+        elif opcode == "POP_CONDITION" and current_depth > 0:
+            current_depth -= 1
+    return max_depth
+
+
 def inspect_kmx(text: str) -> KmxCircuitStats:
     """Analyze a structural KMX stream, including its non-executable records."""
     columns = _parse_kmx(text)
     _, qubits, bits = _validated_lines(columns)
-    current_depth = max_depth = 0
-    for opcode in columns.operations:
-        if opcode == PUSH:
-            current_depth += 1
-            max_depth = max(max_depth, current_depth)
-        elif opcode == POP and current_depth > 0:
-            current_depth -= 1
     counts = Counter(OPERATION_NAMES[opcode] for opcode in columns.operations)
     return KmxCircuitStats(
         qubits=qubits,
@@ -136,7 +154,9 @@ def inspect_kmx(text: str) -> KmxCircuitStats:
         rotations=len(columns.angles),
         tags=len(columns.tags),
         tag_bytes=sum(len(tag.encode()) for tag in columns.tags),
-        max_condition_depth=max_depth,
+        max_condition_depth=_condition_depth(
+            OPERATION_NAMES[opcode] for opcode in columns.operations
+        ),
         opcode_counts=tuple(sorted(counts.items())),
     )
 
