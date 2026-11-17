@@ -26,4 +26,35 @@ The native `grid_cubic_inverse_sqrt` compiler path retains the distance, produce
 
 The measured four-distance-bit/five-fractional-bit compute/copy/uncompute circuit has 208 scratch wires, 13 reusable measurement slots and 21,620 instructions. These include 10,284 CX, 6 CCX, 2,052 T, 2,052 T†, 1,026 measurements and 1,026 resets. These are emitted instructions for the native implementation.
 
-Both pinned source classes raise `DecomposeNotImplementedError`. Their model budgets cannot supply a primitive stream to compare against native execution. Their custom drawer labels and acceptance of arbitrary caller-supplied coefficient arrays have no equivalent in the fixed-table native owner. The bank builder admits at least two address bits and 1–63 coefficient bits. Complete enumeration of the physical circuit's measurement histories remains open.
+Both pinned source classes raise `DecomposeNotImplementedError`. Their model
+budgets cannot supply a primitive stream to compare against native execution.
+The native drawer now preserves both custom root labels, the ordinary port
+boxes, and each indexed coefficient box. Differential checks use the
+unmodified source symbols.
+
+The independent `GridInverseSqrtPolynomial` binding accepts four coherent
+coefficient words, an argument and an arbitrary XOR target. Compiler-owned
+register Horner arithmetic evaluates
+`c0-x*(c1-x*(c2-x*c3))`. Argument fractional precision is explicit.
+Each product is truncated at the chosen fractional position and every
+intermediate wraps at coefficient width. A narrower output receives the
+low bits, while a wider output receives a zero-extended word. The operation
+restores its argument and coefficient registers and all borrowed work.
+Reapplying it recovers an arbitrary original target.
+
+The one-bit test covers every argument, all sixteen coefficient tuples,
+both target values and a coherent spectator. Two-bit tests cover 61
+coefficient/argument tuples, every target value, and a spectator, with
+narrower and wider outputs. Independent integer evaluation defines every
+expected amplitude. Two deterministic measurement seeds and a repeated
+application check all resulting complex amplitudes and zero scratch.
+The one-bit binding emits 48 T/T† and 12 measurements using six work
+wires and one slot. The two-bit binding emits 336 T/T† and 84 measurements
+using sixteen work wires and one slot. These are native executed counts.
+
+The bank builder admits at least two address bits and 1–63 coefficient
+bits. The source gives no arithmetic representation for every arbitrary
+coefficient input or primitive polynomial/Newton decomposition. The
+explicit native fixed-point convention and original resource declaration
+therefore retain separate evidence. Complete enumeration of the physical
+circuit's measurement histories remains open.
