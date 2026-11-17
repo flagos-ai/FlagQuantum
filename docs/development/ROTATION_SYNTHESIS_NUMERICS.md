@@ -138,3 +138,36 @@ The progress indicator uses tqdm when requested and available. If tqdm
 is absent, generation proceeds with the identical frontier. Verbose level
 counts are still available. The native generator has no required tqdm
 dependency.
+
+## Exact Clifford+T words and export
+
+| Item | Frozen file under `rotation_synthesis/matrix/` | Git blob |
+| --- | --- | --- |
+| Q-0838 | `_clifford_t_repr.py` | `62f821e1a048b374ec1c750c86523fba9a3fc93a` |
+| Q-0842 | `clifford_t_repr_test.py` | `733c3e5921eacbd0ec94b68a42fcd3cd2b9e078d` |
+
+Synthesis owns the exact Clifford lookup, XYZ parity stripping and XZ
+search. Ecosystem owns Cirq operation export and Quirk cell tokens.
+Cirq uses the existing optional loader. Quirk exports the original cell
+tokens in both phase modes, including the SXSX prefix in the default
+mode. The tests compare serialized cells directly. Browser execution
+is outside that token encoder. Tests compare Cirq operation order, gate
+parameters and target qubits to the locked export.
+
+All 150 original cases pass in the native suite. The full zero- to
+two-T frontier contributes 264 matrices for each word format. The
+locked XZ search returns no word for 24 unrescaled entries at level two.
+Calling the source's `rescale()` makes each of those entries
+representable. The direct word/export functions retain the original
+admission behavior. The native `Circuit.append(op)` binding applies
+that same reduction before requesting XZ, as the original XZ test does.
+
+The append binding emits the synthesized Clifford+T word on one existing
+wire. It uses the accepted scalar phase primitive when the signed word
+has a nonzero cumulative normalization. That correction emits X,
+phase, X, phase with no T or scratch. The complete complex two-wire
+operator checks cover the rotated wire and its spectator. For a single
+Tz, the binding emits one T plus the four scalar operations. Its
+determinant model reports one T separately. The unrescaled double Tx
+emits two T in XYZ and zero T in XZ, where the matrix is first reduced.
+Neither path allocates work or performs measurements.
