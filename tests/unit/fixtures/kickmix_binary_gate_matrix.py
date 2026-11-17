@@ -1,8 +1,9 @@
-"""Read typed operand and effective stream fixtures for locked binary gates."""
+"""Read typed operand and effective stream fixtures for locked register gates."""
 
 import json
 from collections.abc import Callable, Iterator
 from hashlib import sha256
+from itertools import product
 from pathlib import Path
 from typing import TypedDict, cast
 
@@ -52,7 +53,30 @@ def verify_stream(
     right: Port,
     expected: tuple[int, str],
 ) -> None:
-    ports = _port(left), _port(right)
+    verify_gate_stream(lambda ports, _: emit(*ports), (left, right), expected)
+
+
+class TernaryGroup(TypedDict):
+    ports: list[list[Port]]
+    streams: list[tuple[int, str]]
+
+
+def ternary_matrix(
+    opcode: str,
+) -> Iterator[tuple[tuple[Port, ...], tuple[int, str]]]:
+    path = Path(__file__).with_name(f"kickmix_{opcode}.json")
+    for group in cast(list[TernaryGroup], json.loads(path.read_text())):
+        yield from zip(product(*group["ports"]), group["streams"], strict=True)
+
+
+def verify_gate_stream(
+    emit: Callable[[tuple[object, ...], int], tuple[Instruction, ...]],
+    columns: tuple[Port, ...],
+    expected: tuple[int, str],
+    *,
+    include_resets: bool = False,
+) -> None:
+    ports = tuple(map(_port, columns))
     operands = tuple(
         operand
         for port in ports
@@ -70,9 +94,12 @@ def verify_stream(
         }
     )
     prefix = tuple(ClassicalXor((), slot).instruction() for slot in slots)
-    stream = emit(*ports)
+    stream = emit(ports, max(slots, default=-1) + 1)
     program = lower_reversible_phase(CircuitIR(width, (*prefix, *stream)))
-    found = normalized_stream(
-        "\n".join(encode_kmx(program).splitlines()[1 + len(prefix) :])
-    )
+    lines = encode_kmx(program).splitlines()[1 + len(prefix) :]
+    if include_resets:
+        lines = [
+            f"RESET_X {line[2:]}" if line.startswith("R ") else line for line in lines
+        ]
+    found = normalized_stream("\n".join(lines))
     assert (len(found), sha256(repr(found).encode()).hexdigest()) == tuple(expected)
