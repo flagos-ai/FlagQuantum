@@ -51,3 +51,27 @@ suite. Differential checks compare exact coefficient pairs, large-integer
 ordering, Euclidean division, exceptional inputs and all three radius
 backends. The original prime fixture remains test data. Complex ring,
 lattice and matrix consumers keep their own acceptance items.
+
+## Eighth-root cyclotomic integer ring
+
+| Item | Frozen file under `rotation_synthesis/rings/` | Git blob |
+| --- | --- | --- |
+| Q-0855 | `__init__.py` | `4eb7949e5ab78f63a5d09ae391f8fd641d6b2552` |
+| Q-0858 | `_zw.py` | `c8bf840eaa53797af105eb0c037193c294381868` |
+| Q-0860 | `zw_test.py` | `cc136951d5e38da3bdfd56a42e71424049d13416` |
+
+The internal ring namespace exposes `ZSqrt2` and `ZW`. The latter stores
+the coefficients of the first four powers of the eighth root of unity.
+Both conjugations, norm, Euclidean quotient and GCD, and the ordered prime
+factor lists match the locked source. Subring conversion preserves the
+parity bit that determines whether the eighth root is added. The numerical
+evaluation and polar coordinates use the configured arithmetic backend.
+Prime factorization uses SymPy on demand for the modular square roots.
+
+The original 4,199 cases pass in both suites. Native randomized cases use
+a fixed seed, and iterator parameter grids are materialized before pytest
+collects them. The additional checks compare exact coordinates and large
+integer GCDs against the source, both subring directions, type and value
+of the three numerical backends, and the original errors on unsupported
+exponents and scalar equality. No circuit or resource model is emitted
+by this layer.
