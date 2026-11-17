@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
+import torch
 
+import flagquantum as fq
+from examples.synthesis_offline_deployment import bell
 from flagquantum.compiler.artifacts.artifact_compilation import (
     ArtifactCompilationError,
     ArtifactCompilationResult,
@@ -17,6 +21,7 @@ from flagquantum.compiler.artifacts.compilation_evidence import (
 )
 from flagquantum.compiler.routing import CouplingMap
 from flagquantum.core._artifacts import (
+    ArtifactKind,
     ProgramArtifactV2,
     bind_circuit_artifact,
     read_program_artifact_json,
@@ -38,10 +43,12 @@ from flagquantum.core.target_capabilities import (
     TargetIdentity,
 )
 from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
+from flagquantum.errors import ExecutionError
 from flagquantum.runtime.artifact_preflight import preflight_executable_artifact
 from flagquantum.runtime.compilation_evidence import (
     verify_compilation_evidence_handoff,
 )
+from flagquantum.synth import synthesize
 
 pytestmark = pytest.mark.integration
 
@@ -272,4 +279,88 @@ def test_compilation_evidence_survives_canonical_cross_process_handoff() -> None
             restored,
             result,
             snapshot=mismatched_snapshot,
+        )
+
+
+def test_synthesized_bell_reaches_verified_offline_preflight() -> None:
+    circuit = replace(
+        synthesize(bell).circuit, measurements=(MeasurementNode("samples", (0, 1)),)
+    )
+    source = ProgramArtifactV2.from_circuit_ir(circuit, producer="bell-source")
+    assert source.kind is ArtifactKind.CIRCUIT
+
+    snapshot = _snapshot()
+    result = compile_circuit_artifact_for_target(
+        source,
+        backend="qasm",
+        profile="openqasm-3.0",
+        snapshot=snapshot,
+        producer="flagquantum.compiler",
+        evaluated_at=_NOW,
+        coupling_map=CouplingMap.line(2),
+    )
+    executable = result.executable_artifact
+    assert isinstance(executable, ProgramArtifactV2)
+    assert executable.kind is ArtifactKind.EXECUTABLE
+
+    evidence = build_compilation_evidence_bundle(
+        result, snapshot=snapshot, producer="flagquantum.compiler"
+    )
+    restored = read_compilation_evidence_bundle_json(evidence.to_json())
+    assert restored.source["source_artifact_identity"] == source.artifact_identity
+    assert restored.source["source_circuit_hash"] == circuit.content_hash
+    assert restored.target["snapshot_id"] == snapshot.snapshot_id
+    assert (
+        restored.output["executable_artifact_identity"] == executable.artifact_identity
+    )
+    assert (
+        restored.output["artifact_compilation_identity"] == result.compilation_identity
+    )
+
+    identity = snapshot.target_identity
+    prepared = prepare_artifact_deployment(
+        executable,
+        snapshot=snapshot,
+        source=source,
+        compilation_evidence=restored,
+        provider=identity.provider,
+        target_id=identity.target_id,
+        shots=256,
+        evaluated_at=_NOW,
+    )
+    assert prepared.capability_match.executable
+    assert prepared.compilation_evidence_identity == restored.bundle_identity
+    assert prepared.artifact_identity == executable.artifact_identity
+    assert prepared.snapshot_id == snapshot.snapshot_id
+    assert prepared.profile == "openqasm-3.0"
+    assert prepared.program == executable.payload == result.emission.text
+
+    imported = fq.from_openqasm(prepared.program)
+    assert imported.version == 3.0
+    assert imported.measurement_qubits == (0, 1)
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    state = fq.run(imported.to_circuit(), options=options).statevector()
+    amplitude = 1 / math.sqrt(2)
+    expected = torch.tensor([amplitude, 0, 0, amplitude], dtype=torch.complex128)
+    torch.testing.assert_close(state.reshape(-1), expected, atol=1e-12, rtol=0)
+
+    # A refresh for the same backend has a different snapshot identity.
+    refreshed = replace(
+        snapshot, captured_at=(_NOW - timedelta(minutes=1)).isoformat(), snapshot_id=""
+    )
+    assert refreshed.snapshot_id != snapshot.snapshot_id
+    with pytest.raises(
+        ExecutionError, match="does not match the supplied capability snapshot"
+    ):
+        prepare_artifact_deployment(
+            executable,
+            snapshot=refreshed,
+            source=source,
+            compilation_evidence=restored,
+            provider=identity.provider,
+            target_id=identity.target_id,
+            shots=256,
+            evaluated_at=_NOW,
         )
