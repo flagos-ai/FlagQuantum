@@ -49,6 +49,41 @@ the source model's angle parameter and width differ from the native
 primitive angle and bound width. The exact native rotations use no
 synthesis tolerance.
 
+The complete register layouts for both classes now preserve the source's
+default root `Interact..` and its indexed spin TextBoxes. The two distinct
+class names truncate to the same label under the original drawing rule.
+Tests cover one, two, three and eight sites per lattice side, ordered full
+layout geometry, JSON round trips and rendered labels. These diagrams
+describe source word ports rather than the native physical spin arrays.
+
+The ordinary interaction now has an independent symbolic resource formula:
+`L**2` copies of the classified `Rz(angle*hubb_u)`, with source peak
+`Max(1, 2*L)`. For a positive integer symbolic L this peak simplifies to
+`2*L`. Generic symbolic rotations, concrete zero, T, Clifford and general
+angles match the unchanged source; concrete cases also match the existing
+resource owner. This model emits no gates and retains the native physical
+angle distinction above.
+
+The source HWP symbolic gate query still fails on a missing `bit_length`,
+and its peak query fails while splitting a symbolic dtype. The one-site
+HWP source also fails its gate query by division by zero and its peak query
+inside HammingWeightPhasing. These unchanged-source diagnostics are tested;
+the ordinary formula is not substituted for HWP. Source decomposition,
+precision, odd-site model and native phase differences keep Q-0440 open.
+
+```python
+from sympy import Symbol
+from flagquantum.algorithms.primitives.hubbard_resource_model import (
+    source_hubbard_interaction_formula,
+)
+
+length = Symbol("L", positive=True, integer=True)
+angle = Symbol("theta", real=True)
+model = source_hubbard_interaction_formula(length, angle, 2)
+assert model.rotation.subs(length, 8) == 64
+assert model.logical_qubits.subs(length, 8) == 16
+```
+
 ```python
 from flagquantum.algorithms.primitives.hubbard_lattice import HubbardInteraction
 from flagquantum.dynamic import DynamicCircuit

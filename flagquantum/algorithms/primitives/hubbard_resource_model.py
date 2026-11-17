@@ -167,3 +167,27 @@ def source_hubbard_hopping_tile_formula(
         clifford=repetitions * plaquette.clifford,
         rotation=repetitions * plaquette.rotation,
     )
+
+
+def source_hubbard_interaction_formula(
+    length: SymbolicInt, angle: SymbolicReal, hubb_u: SymbolicReal
+) -> SymbolicResourceFormula:
+    """Estimate the ordinary interaction's L**2 declared equal-angle Rz calls.
+
+    Source angles and word widths belong to this model. They differ from
+    the native shifted-ZZ physical binding described in the file audit.
+    """
+    if isinstance(length, int) and length < 1:
+        raise ValueError("Hubbard lattice length must be a positive integer")
+    exponent = angle * hubb_u
+    if isinstance(exponent, (int, float)) and not isfinite(exponent):
+        raise ValueError("Hubbard rotation angle must be finite")
+    family = classify_resource_gate(RotationCall("rz", exponent))
+    return SymbolicResourceFormula(
+        and_bloq=0,
+        measurement=0,
+        logical_qubits=cast(SymbolicInt, smax(1, 2 * length)),
+        t=length**2 * int(family == "t"),
+        clifford=length**2 * int(family == "clifford"),
+        rotation=length**2 * int(family == "rotation"),
+    )
