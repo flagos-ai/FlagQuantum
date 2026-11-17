@@ -50,3 +50,6 @@ class OperandIdentity:
         if self.kind in (OperandKind.BOOLEAN, OperandKind.X_BOOLEAN):
             return bool(self.value)
         return True
+
+    def __repr__(self) -> str:
+        return f"OperandIdentity(OperandKind.{self.kind.name}, {self.value})"

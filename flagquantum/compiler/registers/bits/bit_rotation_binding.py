@@ -8,6 +8,7 @@ from collections.abc import Sequence
 
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
+from ...artifacts.operand_identity import OperandIdentity
 from ..arithmetic.carry_parity import _Coefficient
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
@@ -17,8 +18,8 @@ from .bit_rotation import bit_rotation_ir
 
 
 def bound_bit_rotation_ir(
-    target: Sequence[int],
-    shift: int | Sequence[_Coefficient] = 1,
+    target: Sequence[int | OperandIdentity],
+    shift: int | Sequence[_Coefficient | OperandIdentity] = 1,
     *,
     control: _Coefficient = True,
     right: bool = False,

@@ -6,6 +6,7 @@ Run: python -m examples.algorithms.register_bit_rotation
 from dataclasses import dataclass
 
 import flagquantum as fq
+from flagquantum.compiler.artifacts.operand_array import OperandArray
 from flagquantum.compiler.registers.arithmetic.carry_parity import _Coefficient
 from flagquantum.compiler.registers.bits.bit_rotation_binding import (
     bound_bit_rotation_ir,
@@ -17,8 +18,8 @@ from flagquantum.core.ir import CircuitIR
 class RegisterBitRotation:
     """Append a rotation of big-endian ports with caller-owned work."""
 
-    target: tuple[int, ...]
-    shift: int | tuple[_Coefficient, ...] = 1
+    target: tuple[int, ...] | OperandArray
+    shift: int | tuple[_Coefficient, ...] | OperandArray = 1
     control: _Coefficient = True
     right: bool = False
     clean: tuple[int, ...] = ()

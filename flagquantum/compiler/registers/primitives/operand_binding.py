@@ -30,3 +30,16 @@ def bind_operand(value: object) -> _Operand:
     if isinstance(value, str) and value in ("|+>", "|->"):
         return _XBasisTarget(value == "|->")
     raise ValueError("Expected a quantum wire, classical bit or basis literal")
+
+
+def identify_operand(operand: _Operand) -> OperandIdentity:
+    """Retain the family tag when storing a resolved physical operand."""
+    if isinstance(operand, _XBasisTarget):
+        if isinstance(operand.outcome, ClassicalFieldCoefficient):
+            return OperandIdentity(OperandKind.X_CLASSICAL, operand.outcome.slot)
+        return OperandIdentity(OperandKind.X_BOOLEAN, int(operand.outcome))
+    if isinstance(operand, ClassicalFieldCoefficient):
+        return OperandIdentity(OperandKind.CLASSICAL, operand.slot)
+    if isinstance(operand, bool):
+        return OperandIdentity(OperandKind.BOOLEAN, int(operand))
+    return OperandIdentity(OperandKind.QUANTUM, operand)

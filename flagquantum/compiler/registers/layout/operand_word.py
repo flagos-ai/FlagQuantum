@@ -8,8 +8,9 @@ from collections.abc import Iterable, Sized
 from itertools import islice
 from typing import cast
 
+from ...artifacts.operand_array import OperandArray
 from ..primitives._mixed_gates import _Control, _XBasisTarget
-from ..primitives.operand_binding import _Operand, bind_operand
+from ..primitives.operand_binding import _Operand, bind_operand, identify_operand
 from .register_bits import split_integer
 
 
@@ -30,6 +31,14 @@ def bind_operand_word(
     if sequence_only:
         raise ValueError("Expected an operand sequence")
     return (bind_operand(value),)
+
+
+def bind_operand_array(value: object = ()) -> OperandArray:
+    """Freeze a supplied operand sequence in tagged, sliceable storage."""
+    return OperandArray(
+        identify_operand(operand)
+        for operand in bind_operand_word(value, sequence_only=True)
+    )
 
 
 def bind_operand_word_or_integer(
