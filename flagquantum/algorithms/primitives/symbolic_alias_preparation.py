@@ -27,7 +27,12 @@ from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
     source_qrom_resource_formula,
 )
+from ...core.ir.program.register_types import bounded_unsigned_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from .alias_discretization import alias_precision_bits
+from .alias_sampling import AliasSamplingTable
+from .prepare_oracle import PrepareOracle
 
 
 def alias_probability_bits(rows: SymbolicInt, precision: SymbolicReal) -> SymbolicInt:
@@ -40,13 +45,46 @@ def alias_probability_bits(rows: SymbolicInt, precision: SymbolicReal) -> Symbol
 
 
 @dataclass(frozen=True)
-class AliasPreparationShape:
+class AliasPreparationShape(PrepareOracle):
     """A table-free alias signature and model with symbolic dimensions."""
 
     rows: SymbolicInt
     normalization: SymbolicReal
     probability_bits: SymbolicInt
     support_size: SymbolicInt | None = None
+
+    @classmethod
+    def from_table(cls, table: AliasSamplingTable) -> AliasPreparationShape:
+        """Declare the ports of an existing dense or sparse table."""
+        support_size = None if table.indices is None else len(table.indices)
+        return cls(
+            table.selection_size, float(table.normalization), table.mu, support_size
+        )
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return (
+            Register(
+                "selection",
+                bounded_unsigned_register_type(self.selection_width, self.rows),
+            ),
+        )
+
+    @property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return tuple(
+            Signature.build(
+                sigma_mu=self.probability_bits,
+                sparse_index=self.sparse_index_width,
+                alt=self.selection_width,
+                keep=self.probability_bits,
+                less_than_equal=1,
+            )
+        )
+
+    @property
+    def l1_norm_of_coeffs(self) -> SymbolicReal:
+        return self.normalization
 
     @classmethod
     def from_precision(
@@ -91,11 +129,17 @@ class AliasPreparationShape:
 
     @property
     def selection_width(self) -> SymbolicInt:
+        if isinstance(self.rows, int):
+            return (self.rows - 1).bit_length()
         return bit_length(self.rows - 1)
 
     @property
     def sparse_index_width(self) -> SymbolicInt:
-        return 0 if self.support_size is None else bit_length(self.support_size - 1)
+        if self.support_size is None:
+            return 0
+        if isinstance(self.support_size, int):
+            return (self.support_size - 1).bit_length()
+        return bit_length(self.support_size - 1)
 
     @property
     def junk_width(self) -> SymbolicInt:

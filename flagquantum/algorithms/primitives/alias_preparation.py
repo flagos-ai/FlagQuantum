@@ -27,7 +27,8 @@ from ...compiler.registers.preparation.uniform_preparation import (
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.ir import Instruction
 from .alias_sampling import AliasSamplingTable
-from .black_box_prepare import BlackBoxPrepare
+from .black_box_prepare import BlackBoxPrepare, PackedPrepareDeclaration
+from .symbolic_alias_preparation import AliasPreparationShape
 
 
 def _lookup_table(table: AliasSamplingTable) -> QromTable:
@@ -138,16 +139,6 @@ def alias_preparation_ir(
 
 def alias_black_box_prepare(table: AliasSamplingTable) -> BlackBoxPrepare:
     """Expose source-ordered selection and packed logical junk for alias PREPARE."""
-    width = (table.selection_size - 1).bit_length()
-    address_width = (len(table.keep) - 1).bit_length()
-    sparse = (("sparse_index", address_width),) if table.indices is not None else ()
-    junk = (
-        ("sigma_mu", table.mu),
-        *sparse,
-        ("alt", width),
-        ("keep", table.mu),
-        ("less_than_equal", 1),
-    )
 
     def emit(
         ports: Mapping[str, tuple[int, ...]],
@@ -159,7 +150,7 @@ def alias_black_box_prepare(table: AliasSamplingTable) -> BlackBoxPrepare:
             table,
             ports["selection"],
             ports["sigma_mu"],
-            ports["alt"],
+            ports.get("alt", ()),
             ports["keep"],
             ports["less_than_equal"][0],
             work,
@@ -168,7 +159,7 @@ def alias_black_box_prepare(table: AliasSamplingTable) -> BlackBoxPrepare:
             adjoint=adjoint,
         )
 
-    return BlackBoxPrepare((("selection", width),), junk, emit, table.normalization)
+    return PackedPrepareDeclaration(AliasPreparationShape.from_table(table)).bind(emit)
 
 
 def source_dense_alias_preparation_cost(
