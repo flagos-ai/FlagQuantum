@@ -83,6 +83,33 @@ precisions per site. Dense PREPARE matches the locked concrete
 `QubitCount` and the native concrete estimate. These are model widths.
 The source symbolic reflection and walk failure remains reproducible.
 
+## External Hamiltonian boundary
+
+The source consumes a Cirq `PauliSum`. The differential test maps its
+qubit order to native integer labels before native term merging. Three
+fixtures check mixed grid and named labels, merged duplicate terms,
+an entirely cancelled wire, signed words and identity contributions.
+The concrete alias tables and QEC models match, and the three symbolic
+peaks specialize to 26, 25 and 26 logical qubits, respectively.
+
+A four-row mixed-label case also compares the full complex output of
+the native circuit against the locked PREPARE and SELECT tensors and
+the locked two-bit zero reflection. Four representative measurement
+histories per direction pass, including all-zero, all-one and both
+alternating histories. All sixteen checked history pairs recover the
+input and clear work in each direction. The model gives a peak of
+16 logical qubits and 68 T equivalents. The bound circuit uses 17 wires
+and emits 80 T/T† and 13 measurements.
+
+The source admits a one-product declaration whose zero-width SELECT
+rejects the resource query. The native walk refuses that shape at
+construction. For complex coefficients, the source takes the
+absolute value of the real part for alias weights while retaining the
+complex coefficient in the dense SELECT word. The native real walk
+rejects this non-Hermitian input. The differential conversion lives
+in tests and the native factory receives a FlagQuantum Hamiltonian.
+
 Q-0357, Q-0358 and Q-0360 close the native Hamiltonian and test coverage.
-Q-0359 remains open for one-step clean preparation junk and the source's
-broader external Hamiltonian interface.
+Q-0359 remains open for one-step clean preparation junk, the source's
+symbolic width and singleton failures, its mixed-sign norm estimate,
+and direct external object binding.

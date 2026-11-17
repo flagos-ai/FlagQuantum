@@ -1,8 +1,12 @@
 """Verify Pauli Hamiltonian preprocessing and the composed source walk."""
 
+from __future__ import annotations
+
+from collections.abc import Sequence
 from functools import partial
 from itertools import product
 from math import sqrt
+from typing import TYPE_CHECKING
 
 import pytest
 import torch
@@ -28,6 +32,9 @@ from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_first_quantization_resource_model import assert_source_model
+
+if TYPE_CHECKING:
+    import cirq
 
 pytestmark = pytest.mark.unit
 
@@ -90,11 +97,115 @@ def test_symbolic_precision_matches_locked_source() -> None:
     )
 
 
+def _native_terms(
+    words: Sequence[cirq.PauliString], labels: dict[cirq.Qid, int]
+) -> Hamiltonian:
+    """Bind external wires to test labels, retaining raw terms before merging."""
+    return Hamiltonian(
+        HamiltonianTerm(word.coefficient, {labels[q]: str(p) for q, p in word.items()})
+        for word in words
+    )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("case", ["duplicates", "cancelled_wire", "four_rows"])
+def test_external_pauli_sum_has_the_same_native_walk(case: str) -> None:
+    cirq = pytest.importorskip("cirq")
+    np = pytest.importorskip("numpy")
+    sympy = pytest.importorskip("sympy")
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.ising.walk_operator import (
+        walk_operator_for_pauli_hamiltonian,
+    )
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    named = cirq.NamedQubit("z")
+    grid = cirq.GridQubit(2, 3)
+    x, y, z = cirq.X(named), cirq.Y(grid), cirq.Z(named)
+    if case == "duplicates":
+        words = [3 * x * y, -2 * z, cirq.PauliString(coefficient=0.25), -x * y]
+        select_words = ("YX", "-IZ", "II")
+        targets = (3, 8)
+    elif case == "cancelled_wire":
+        words = [cirq.PauliString(coefficient=-0.5), 2 * y, 3 * x, z, -2 * y, -x]
+        select_words = ("-I", "X", "Z")
+        targets = (8,)
+    else:
+        words = [-2 * z * y, 2 * x, 0.25 * y, cirq.PauliString(coefficient=0.5)]
+        select_words = ("-YZ", "IX", "YI", "II")
+        targets = (3, 8)
+    source_ham = cirq.PauliSum.from_pauli_strings(words)
+    hamiltonian = _native_terms(words, {grid: 3, named: 8})
+    norm = float(max(abs(np.linalg.eigvalsh(source_ham.matrix()))))
+    source = walk_operator_for_pauli_hamiltonian(
+        source_ham, 0.2, ham_norm_upper_bound=norm
+    )
+    native = pauli_hamiltonian_walk(hamiltonian, 0.2, norm_bound=norm)
+    assert tuple({grid: 3, named: 8}[q] for q in sorted(source_ham.qubits)) == targets
+    assert native.target_qubits == targets
+    assert (
+        native.selector.select_unitaries
+        == select_words
+        == tuple(
+            ("-" if word.coefficient.real < 0 else "")
+            + "".join("IXYZ"[p] for p in word.pauli_mask)
+            for word in source.block_encoding.select.select_unitaries
+        )
+    )
+    assert native.table.mu == source.prepare.mu == 4
+    assert native.table.keep == tuple(source.prepare.keep)
+    assert native.table.alternates == tuple(source.prepare.alt)
+    model = native.resource_model()
+    assert_source_model(model, source)
+
+    e = sympy.Symbol("e", positive=True)
+    symbolic = symbolic_pauli_hamiltonian_walk(hamiltonian, e, norm_bound=norm)
+    source_symbolic = walk_operator_for_pauli_hamiltonian(
+        source_ham, e, ham_norm_upper_bound=norm
+    )
+    gates = symbolic.gate_cost()
+    for name, count in get_cost_value(source_symbolic, QECGatesCost()).asdict().items():
+        assert sympy.simplify(getattr(gates, name) - count) == 0
+    assert symbolic.peak_logical_qubits().subs(e, 0.2) == (
+        25 if case == "cancelled_wire" else 26
+    )
+
+
+@pytest.mark.ftqc_reference
+def test_external_input_boundaries_remain_explicit() -> None:
+    cirq = pytest.importorskip("cirq")
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.ising.walk_operator import (
+        walk_operator_for_pauli_hamiltonian,
+    )
+    from qualtran.resource_counting import QubitCount, get_cost_value
+
+    q = cirq.NamedQubit("z")
+    singleton = [cirq.X(q)]
+    source = walk_operator_for_pauli_hamiltonian(
+        cirq.PauliSum.from_pauli_strings(singleton), 1, ham_norm_upper_bound=0
+    )
+    assert source.block_encoding.select.selection_bitsize == 0
+    with pytest.raises(RuntimeError, match="Selection register must not be empty"):
+        get_cost_value(source, QubitCount())
+    with pytest.raises(ValueError, match="at least two nonzero products"):
+        pauli_hamiltonian_walk(_native_terms(singleton, {q: 3}), 1, norm_bound=0)
+
+    nonhermitian = [(3 + 1j) * cirq.X(q), 3 * cirq.Z(q)]
+    source = walk_operator_for_pauli_hamiltonian(
+        cirq.PauliSum.from_pauli_strings(nonhermitian), 1, ham_norm_upper_bound=1
+    )
+    assert source.sum_of_lcu_coefficients == 6
+    assert source.block_encoding.select.select_unitaries[0].coefficient == 3 + 1j
+    with pytest.raises(ValueError, match="concrete finite real scalars"):
+        pauli_hamiltonian_walk(_native_terms(nonhermitian, {q: 3}), 1, norm_bound=1)
+
+
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("adjoint", [False, True])
-@pytest.mark.parametrize("ising", [False, True])
+@pytest.mark.parametrize("fixture", ["ising", "signed", "mixed_labels"])
 def test_signed_walk_from_terms_matches_locked_source(
-    adjoint: bool, ising: bool
+    adjoint: bool, fixture: str
 ) -> None:
     cirq = pytest.importorskip("cirq")
     np = pytest.importorskip("numpy")
@@ -104,15 +215,16 @@ def test_signed_walk_from_terms_matches_locked_source(
         walk_operator_for_pauli_hamiltonian,
     )
     from qualtran.cirq_interop.testing import GateHelper
+    from quimb.tensor import contract_strategy
 
-    if ising:
+    if fixture == "ising":
         original, _ = get_walk_operator_for_1d_ising_model(
             1, 1.0, j_zz_strength=3, gamma_x_strength=-3
         )
         plan, _ = ising_walk(1, 1.0, j_zz=3, gamma_x=-3)
         assert plan.target_qubits == (0,)
         assert plan.selector.select_unitaries == ("Z", "-X")
-    else:
+    elif fixture == "signed":
         q0, q1 = cirq.LineQubit(2), cirq.LineQubit(9)
         source_ham = cirq.PauliSum.from_pauli_strings(
             [3 * cirq.X(q1) * cirq.Z(q0), -3 * cirq.Y(q1) * cirq.Z(q0)]
@@ -131,6 +243,27 @@ def test_signed_walk_from_terms_matches_locked_source(
         plan = pauli_hamiltonian_walk(ham, 1, norm_bound=norm)
         assert plan.target_qubits == (2, 9)
         assert plan.selector.select_unitaries == ("ZX", "-ZY")
+    else:
+        named, grid = cirq.NamedQubit("z"), cirq.GridQubit(2, 3)
+        x, y, z = cirq.X(named), cirq.Y(named), cirq.Z(named)
+        other = cirq.Y(grid)
+        words = [
+            2 * x * other,
+            -z * other,
+            cirq.PauliString(coefficient=0.25),
+            y * other,
+            -x * other,
+        ]
+        source_ham = cirq.PauliSum.from_pauli_strings(words)
+        norm = sqrt(3) + 0.25
+        original = walk_operator_for_pauli_hamiltonian(
+            source_ham, 1, ham_norm_upper_bound=norm
+        )
+        plan = pauli_hamiltonian_walk(
+            _native_terms(words, {grid: 3, named: 8}), 1, norm_bound=norm
+        )
+        assert plan.target_qubits == (3, 8)
+        assert plan.selector.select_unitaries == ("YX", "-YZ", "II", "YY")
     source = original.adjoint() if adjoint else original
     assert plan.walk.alpha == original.sum_of_lcu_coefficients
     assert plan.table.alternates == tuple(original.prepare.alt)
@@ -179,9 +312,15 @@ def test_signed_walk_from_terms_matches_locked_source(
     measurements = sum(gate.name == "measure" for gate in actual)
     report = estimate_ftqc_resources(model, emitted_ir=circuit.to_ir())
     assert report.emitted is not None
-    assert report.logical.peak_logical_qubits == (13 if ising else 14)
-    assert report.logical.gates.total_t_count() == 32
-    assert report.emitted.t_count == 38 and measurements == 6
+    if fixture != "mixed_labels":
+        assert report.logical.peak_logical_qubits == (13 if fixture == "ising" else 14)
+        assert report.logical.gates.total_t_count() == 32
+        assert report.emitted.t_count == 38 and measurements == 6
+    else:
+        assert report.logical.peak_logical_qubits == 16
+        assert report.logical.gates.total_t_count() == 68
+        assert report.emitted.instruction_qubits == 17
+        assert report.emitted.t_count == 80 and measurements == 13
     initial = torch.zeros(1 << (width + work_count), dtype=torch.complex128)
     logical = torch.arange(1, 1 + (1 << width), dtype=torch.float64).to(
         torch.complex128
@@ -195,15 +334,15 @@ def test_signed_walk_from_terms_matches_locked_source(
     logical_and_junk = width + junk
     q = cirq.LineQubit.range(logical_and_junk)
     prep_wires = tuple(q[i] for i in (*address, *range(width, logical_and_junk)))
-    prep = cirq.MatrixGate(original.prepare.tensor_contract()).on(*prep_wires)
-    select = cirq.MatrixGate(original.block_encoding.select.tensor_contract()).on(
-        *(q[i] for i in (*address, *target))
-    )
-    reflect = cirq.Circuit(
-        cirq.inverse(prep),
-        cirq.Z(q[address[0]]),
-        prep,
-    )
+    with contract_strategy("greedy"):
+        prep_matrix = original.prepare.tensor_contract()
+        select_matrix = original.block_encoding.select.tensor_contract()
+    prep = cirq.MatrixGate(prep_matrix).on(*prep_wires)
+    unprep = cirq.MatrixGate(prep_matrix.conj().T).on(*prep_wires)
+    select = cirq.MatrixGate(select_matrix).on(*(q[i] for i in (*address, *target)))
+    zero_mark = np.diag([1] + [-1] * ((1 << len(address)) - 1))
+    mark = cirq.MatrixGate(zero_mark).on(*(q[i] for i in address))
+    reflect = cirq.Circuit(unprep, mark, prep)
     source_circuit = (
         reflect + cirq.Circuit(select) if adjoint else cirq.Circuit(select) + reflect
     )
@@ -222,9 +361,19 @@ def test_signed_walk_from_terms_matches_locked_source(
     )
     # The locked reflection can leave its signal junk dirty, even from zero.
     assert np.linalg.norm(reference.reshape(-1, 1 << junk)[:, 1:]) > (
-        0.1 if ising else 0.9
+        0.9 if fixture == "signed" else 0.1
     )
-    for history in product((0, 1), repeat=measurements):
+    histories = (
+        tuple(product((0, 1), repeat=measurements))
+        if fixture != "mixed_labels"
+        else (
+            (0,) * measurements,
+            (1,) * measurements,
+            tuple(i % 2 for i in range(measurements)),
+            tuple(1 - i % 2 for i in range(measurements)),
+        )
+    )
+    for history in histories:
         torch.testing.assert_close(
             forced_branch(initial, actual, history),
             expected,
@@ -237,10 +386,10 @@ def test_signed_walk_from_terms_matches_locked_source(
     inverse = paired[len(actual) :]
     inverse_measurements = sum(gate.name == "measure" for gate in inverse)
     assert inverse_measurements == measurements
-    # Every first-step history produces the same unnormalized intermediate
-    # vector. Check every inverse history on that vector to cover every pair.
+    # The checked histories share one unnormalized intermediate vector.
+    # Check the inverse histories on that vector to cover their Cartesian product.
     recovered = initial / sqrt(2 ** (measurements + inverse_measurements))
-    for history in product((0, 1), repeat=inverse_measurements):
+    for history in histories:
         torch.testing.assert_close(
             forced_branch(expected, inverse, history), recovered, atol=3e-12, rtol=0
         )
