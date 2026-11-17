@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import math
+import sys
 
 import pytest
 import torch
 
-from flagquantum.qec import get_decoder
+from flagquantum.qec import DecodingGraph, DetectorErrorModel, get_decoder
 from flagquantum.qec.decoders._ai.assessment import (
     PairedCounts,
     assess,
@@ -19,6 +20,7 @@ from flagquantum.qec.decoders._ai.assessment import (
     summarize,
 )
 from flagquantum.qec.decoders._ai.predecoder import Predecoder
+from flagquantum.qec.decoders.sparse_blossom import SparseBlossomDecoder
 from tests.qec.test_neural_training_data import _experiment
 
 pytestmark = pytest.mark.integration
@@ -74,3 +76,43 @@ def test_baseline_never_calls_the_model_and_evaluation_replays() -> None:
     timing = block_timings(model, backend, seed=23, threshold=1.0, repetitions=4)
     assert timing["scope"] == "cpu_batch_one_offline_block"
     assert timing["repetitions"] == 4
+
+
+def test_sparse_blossom_batches_original_and_residual_syndromes(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("flagquantum.qec.decoders._sparse_blossom")
+    monkeypatch.setitem(sys.modules, "pymatching", None)
+    dem = DetectorErrorModel.from_stim_text(
+        "error(0.1) D0 L1\nerror(0.125) D1 L0\ndetector D0\ndetector D1"
+    )
+    backend = SparseBlossomDecoder(DecodingGraph.from_detector_error_model(dem))
+    model = Predecoder(dem)
+    detectors = torch.tensor([[1, 0], [0, 0], [1, 1]], dtype=torch.int8)
+    residual = torch.tensor([[0, 1], [1, 0], [0, 0]], dtype=torch.int8)
+    local = torch.tensor([[1, 1], [0, 1], [1, 0]], dtype=torch.int8)
+
+    def correct(
+        events: torch.Tensor, **kwargs: object
+    ) -> tuple[torch.Tensor, torch.Tensor]:
+        assert events is detectors
+        return residual, local
+
+    calls: list[torch.Tensor] = []
+    decode_batch = backend.decode_batch
+
+    def record_batch(events: torch.Tensor) -> torch.Tensor:
+        calls.append(events)
+        return decode_batch(events)
+
+    monkeypatch.setattr(model, "correct", correct)
+    monkeypatch.setattr(backend, "decode_batch", record_batch)
+    torch.testing.assert_close(
+        baseline_decode(detectors, backend, 2), detectors.flip(1)
+    )
+    torch.testing.assert_close(
+        model.decode(detectors, backend), local ^ residual.flip(1)
+    )
+    assert len(calls) == 2
+    torch.testing.assert_close(calls[0], detectors)
+    torch.testing.assert_close(calls[1], residual)

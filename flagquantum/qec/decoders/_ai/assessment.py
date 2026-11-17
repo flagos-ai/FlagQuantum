@@ -8,8 +8,13 @@ from dataclasses import dataclass
 
 import torch
 
-from flagquantum.qec.decoders._ai.predecoder import Predecoder, _positive
-from flagquantum.qec.decoders.registry import DetectorErrorModelDecoder
+from flagquantum.qec.decoders._ai.predecoder import (
+    Predecoder,
+    _bundled_predictions,
+    _LogicalBackend,
+    _positive,
+)
+from flagquantum.qec.decoders.sparse_blossom import SparseBlossomDecoder
 
 
 @dataclass(frozen=True)
@@ -111,9 +116,11 @@ def summarize(counts: PairedCounts, *, alpha: float = 0.05) -> dict[str, object]
 
 
 def baseline_decode(
-    detectors: torch.Tensor, backend: DetectorErrorModelDecoder, observables: int
+    detectors: torch.Tensor, backend: _LogicalBackend, observables: int
 ) -> torch.Tensor:
     """Execute only the global decoder; no neural forward or residual-update cost."""
+    if isinstance(backend, SparseBlossomDecoder):
+        return _bundled_predictions(backend, detectors, observables).to(torch.int8)
     result = torch.zeros((detectors.shape[0], observables), dtype=torch.int8)
     for shot, row in enumerate(detectors):
         for observable in backend.decode(row.nonzero().flatten().tolist()).observables:
@@ -123,7 +130,7 @@ def baseline_decode(
 
 def assess(
     model: Predecoder,
-    backend: DetectorErrorModelDecoder,
+    backend: _LogicalBackend,
     *,
     shots: int,
     seed: int,
@@ -157,7 +164,7 @@ def assess(
 
 def block_timings(
     model: Predecoder,
-    backend: DetectorErrorModelDecoder,
+    backend: _LogicalBackend,
     *,
     seed: int,
     threshold: float,
@@ -211,7 +218,7 @@ def block_timings(
 
 def evaluate(
     model: Predecoder,
-    backend: DetectorErrorModelDecoder,
+    backend: _LogicalBackend,
     *,
     shots: int,
     seed: int,
@@ -227,19 +234,10 @@ def evaluate(
     for start in range(0, shots, batch_size):
         batch = model.sample(min(batch_size, shots - start), generator)
         truth = batch.sample.observables
-        baseline += int(
-            (model.decode(batch.sample.detectors, backend, enabled=False) != truth)
-            .any(1)
-            .sum()
-        )
-        hybrid += int(
-            (
-                model.decode(batch.sample.detectors, backend, threshold=threshold)
-                != truth
-            )
-            .any(1)
-            .sum()
-        )
+        first = baseline_decode(batch.sample.detectors, backend, truth.shape[1])
+        second = model.decode(batch.sample.detectors, backend, threshold=threshold)
+        baseline += int((first.to(truth.device) != truth).any(1).sum())
+        hybrid += int((second != truth).any(1).sum())
     return {
         "shots": shots,
         "baseline_failures": baseline,

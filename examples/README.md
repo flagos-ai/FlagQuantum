@@ -111,7 +111,9 @@ These examples do not use that alias:
   refusal. Core Torch is sufficient; circuit execution separately needs Stim.
 
 - [`qec/ai_predecoder.py`](qec/ai_predecoder.py) trains and evaluates the private
-  QEC predecoder through domain imports; it does not use the root-level alias.
+  QEC predecoder through domain imports. CPU evaluation uses bundled Sparse
+  Blossom by default. Choose `--backend minimum_weight_matching` to use the
+  built-in reference decoder.
 
 - [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
