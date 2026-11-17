@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 164
+    assert len(validated) == 165
+    assert (
+        "applications/CFD/QLS_for_hybrid_solvers/chebyshev_approximation",
+        "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/main.py",
+    ) in validated
     assert (
         "algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization",
         "examples/synthesis/algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/overview/main.py",
@@ -785,7 +789,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**164/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**165/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

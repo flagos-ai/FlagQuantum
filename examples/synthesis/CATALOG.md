@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **164/213**.
+Validated local Notebook workflows: **165/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -164,6 +164,7 @@ Validated local Notebook workflows:
 
 Validated local Notebook workflows:
 
+- [overview](applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/README.md)
 - [overview](applications/cfd/qls_for_hybrid_solvers/verify_block_encoding/overview/README.md)
 - [overview](applications/cfd/heat_eq_qsvt/overview/README.md)
 - [overview](applications/cfd/qlbm/overview/README.md)
