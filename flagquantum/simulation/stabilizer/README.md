@@ -137,6 +137,9 @@ invalid records and independently authored measurement distributions. A future
 Clifford kernel can replace this private boundary without changing the QEC
 consumer, as the controlled-record replacement test demonstrates.
 
+The embedded build uses the same prepared measurement boundary for positioned
+Pauli noise; the standard profile continues to use the Stim Python SDK.
+
 A seed reproduces a run on one engine version and one machine instruction set
 and does not pin a bit pattern. That is the engine's documented behaviour, so a
 seeded comparison across hosts is a comparison of distributions, not of bits.

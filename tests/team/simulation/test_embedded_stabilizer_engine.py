@@ -1,4 +1,4 @@
-"""Replacement contracts for noiseless embedded sampling without an SDK."""
+"""Replacement contracts for embedded stabilizer sampling without an SDK."""
 
 from __future__ import annotations
 
@@ -9,7 +9,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import CapabilityError, ValidationError
+from flagquantum.noise import bit_flip_channel
 from flagquantum.simulation.stabilizer import _embedded_sampler, engine
 from flagquantum.simulation.stabilizer.engine import _EngineOperation
 
@@ -29,9 +31,9 @@ class _Sampler:
         self.buffer = torch.tensor([[True, False]], dtype=torch.bool)
         self.draws: list[tuple[int, bool]] = []
 
-    def sample(self, shots: int, *, bit_packed: bool) -> torch.Tensor:
+    def sample(self, shots: int, *, bit_packed: bool = False) -> torch.Tensor:
         self.draws.append((shots, bit_packed))
-        self.buffer = self.buffer.expand(shots, self.columns).clone()
+        self.buffer = self.buffer[:1].expand(shots, self.columns).clone()
         return self.buffer
 
 
@@ -147,3 +149,75 @@ def test_marker_free_installation_preserves_sdk_route(
     result = engine.sample_stabilizer(fq.Circuit(2).x(0), shots=3, seed=11)
     assert result.dtype == torch.int64
     assert result.tolist() == [[1, 0]] * 3
+
+
+def test_positioned_noise_keeps_one_stream_across_batches(
+    embedded: list[_Sampler],
+) -> None:
+    program = CircuitIR(
+        n_wires=1,
+        instructions=(
+            Instruction(name="measure", wires=(0,), metadata={"is_dynamic": True}),
+            Instruction(
+                name="bit_flip",
+                wires=(0,),
+                matrix=bit_flip_channel(1.0).kraus,
+                metadata={"is_channel": True},
+            ),
+        ),
+    )
+    prepared = engine._prepare_noisy_measurements(program, terminal_qubits=(0,), seed=7)
+    try:
+        first = prepared.sample(shots=3)
+        second = prepared.sample(shots=2)
+        (sampler,) = embedded
+        assert sampler.operations == (
+            ("M", (0,), None),
+            ("PAULI_CHANNEL_1", (0,), (1.0, 0.0, 0.0)),
+            ("M", (0,), None),
+        )
+        assert sampler.seed == 7
+        assert sampler.draws == [(3, False), (2, False)]
+        assert first.dtype == second.dtype == torch.int64
+        assert first.tolist() == [[1, 0]] * 3
+        assert second.tolist() == [[1, 0]] * 2
+        sampler.buffer.zero_()
+        assert second.tolist() == [[1, 0]] * 2
+    finally:
+        prepared.close()
+    with pytest.raises(RuntimeError, match="closed"):
+        prepared.sample(shots=1)
+
+
+def test_embedded_bridge_encodes_a_positioned_pauli_chain(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from types import SimpleNamespace
+
+    def prepare(text: str, seed: int | None) -> object:
+        assert text.splitlines() == [
+            "M 2",
+            "PAULI_CHANNEL_1(0.125,0.0,0.0) 1",
+            "E(0.0) X0",
+            "ELSE_CORRELATED_ERROR(1.0) X0 Y1 Z2",
+            "M 2 1 0",
+        ]
+        assert seed == 53
+        return object()
+
+    def import_native(name: str) -> SimpleNamespace:
+        assert name.endswith("._embedded_stim")
+        return SimpleNamespace(prepare=prepare)
+
+    monkeypatch.setattr(_embedded_sampler, "import_module", import_native)
+    _embedded_sampler._EmbeddedSampler(
+        (
+            ("M", (2,), None),
+            ("PAULI_CHANNEL_1", (1,), (0.125, 0.0, 0.0)),
+            ("E", ((0, "X"),), 0.0),
+            ("ELSE_CORRELATED_ERROR", ((0, "X"), (1, "Y"), (2, "Z")), 1.0),
+            ("M", (2, 1, 0), None),
+        ),
+        53,
+        4,
+    )

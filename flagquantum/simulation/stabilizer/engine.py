@@ -21,7 +21,12 @@ from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
 from ...noise import KrausChannel
 from ._gate_expansions import GATE_EXPANSIONS, expand_gate
-from ._validation import _pauli_letters, _validate_seed, _validate_shots
+from ._validation import (
+    _bounded_stim_expansion,
+    _pauli_letters,
+    _validate_seed,
+    _validate_shots,
+)
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
 # the mapping is total over the Clifford subset of the operator schema: an
@@ -1033,7 +1038,7 @@ def _prepare_noisy_measurements(
     terminal_qubits: Sequence[int] | None = None,
     seed: int | None = None,
 ) -> _PreparedMeasurements:
-    """Compile the existing positioned-noise grammar once; keep SDK state here."""
+    """Compile the positioned-noise grammar once behind the measurement boundary."""
 
     ir = _measurement_record_ir(program)
     validated_seed = _validate_seed(seed)
@@ -1051,29 +1056,23 @@ def _prepare_noisy_measurements(
             "sampling requires at least one recorded measurement; the program "
             "records none and no terminal qubit was requested"
         )
+    columns = recorded + len(selected)
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        try:
+            from ._embedded_sampler import _EmbeddedSampler
+
+            if selected:
+                operations += ((_MEASURE_ENGINE_NAME, selected, None),)
+            return _PreparedMeasurements(
+                _EmbeddedSampler(operations, validated_seed, columns), columns
+            )
+        except (ImportError, OSError) as error:
+            raise StabilizerDependencyError(
+                "the embedded stabilizer engine could not be loaded; "
+                "use a compatible FlagQuantum embedded build"
+            ) from error
     circuit = _noisy_engine_circuit(operations, selected)
-    sampler = circuit.compile_sampler(seed=validated_seed)
-    return _PreparedMeasurements(sampler, recorded + len(selected))
-
-
-def _bounded_stim_expansion(program: Any) -> int:
-    """Count repeated instructions before asking the SDK to expand them."""
-    count = 0
-    pending = [(program, 1)]
-    while pending:
-        body, multiplier = pending.pop()
-        for instruction in body:
-            if hasattr(instruction, "repeat_count"):
-                pending.append(
-                    (instruction.body_copy(), multiplier * instruction.repeat_count)
-                )
-            else:
-                count += multiplier
-            if count > 1_000_000:
-                raise CapabilityError(
-                    "Stim experiment exceeds 1,000,000 expanded instructions"
-                )
-    return count
+    return _PreparedMeasurements(circuit.compile_sampler(seed=validated_seed), columns)
 
 
 def _parse_stim_experiment(circuit_text: str) -> Any:
