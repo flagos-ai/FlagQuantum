@@ -6,10 +6,10 @@ Apache-2.0, copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0325 | `join.py` | `b194add90de87b8aeeb05dd662747701394f400a` | Open for the full external dtype, wire-symbol and direct object protocols. |
+| Q-0325 | `join.py` | `b194add90de87b8aeeb05dd662747701394f400a` | Open for full executable dtype and direct external object protocols. |
 | Q-0326 | `join_test.py` | `8cd06b0d322692c18bd66b659bf85b9b76ddb3cf` | Closed for the runnable original scenarios. |
 | Q-0330 | `split.ipynb` | `f7150b192af058a668f5efb0d599fdbe03f658bd` | Closed by the complete native Split and Join tutorial. |
-| Q-0331 | `split.py` | `ab02e2e6f41402c732a9f30635e83227a09d2c4a` | Open for the corresponding dtype and external hooks. |
+| Q-0331 | `split.py` | `ab02e2e6f41402c732a9f30635e83227a09d2c4a` | Open for full executable dtype and direct external object protocols. |
 | Q-0333 | `split_test.py` | `8efb0a620f8939ee3c4d494f519afdd2a707e284` | Closed for the runnable original scenarios and notebook. |
 
 The Compiler's existing typed rebinding consumes each owned input exactly
@@ -44,5 +44,21 @@ The unchanged original non-notebook run has twelve passes and six
 fixture-mode skips. The original 14-cell and native 16-cell notebooks
 passed independent kernels. The native tutorial preserves both
 four-bit signatures and demonstrates zero-gate bindings around the
-original one-X example through append. General external dtype support,
-wire-symbol callbacks, and direct foreign object adapters remain open.
+original one-X example through append.
+
+The Drawer callback uses a single space on the packed word and index-only
+labels on the bit array. Full typed score geometry matches the locked
+source for a single bit, a two-bit finite-field word and a five-bit
+unsigned word in both directions. A zero-width Join also matches. The
+locked zero-width Split score raises `KeyError: RightDangle` with no output
+elements. Its scalar callback still agrees with the native score glyph.
+
+All four concrete types preserve wire order through both native
+rebindings and emit zero gates or work events. The zero-width rebindings
+are valid inside a physical circuit, verified with an untouched spectator.
+The physical binder rejects an entirely wireless circuit. The source
+Cirq callback can return an empty word. The locked resource model reports
+zero gates and logical peaks of zero, one, two and five respectively.
+Both source constructors and native executable builders reject symbolic
+widths. Full executable dtype and direct foreign object adapters remain
+open.
