@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0285 | `linear_combination.ipynb` | `e44e694d55cc4d9524756741665b68b38cfce860` | Closed by the full native tutorial. |
-| Q-0286 | `linear_combination.py` | `a3d8aa7fafa7a6f3fcaf095826751209427cd255` | Open for generic source symbolic/foreign objects and returned-adder boundaries. |
+| Q-0286 | `linear_combination.py` | `a3d8aa7fafa7a6f3fcaf095826751209427cd255` | Symbolic packed widths and logical peak fallback verified. General symbolic and foreign object binding and returned-adder boundaries remain open. |
 | Q-0287 | `linear_combination_test.py` | `bed60bc7ade281fca1e5b13e341e8b4dd07aabd9` | Closed for the original runnable fixture families. Original fixture-mode outcomes and native branch coverage are recorded below. |
 
 ## Binding and decomposition
@@ -51,6 +51,22 @@ input. All temporary work qubits return to zero in every tested history.
 The unchanged non-notebook source run passes 59 cases with one mode skip
 and one expected serialization failure. Source external-object and
 returned-adder failures remain documented in the control-owner audits.
+
+## Packed signatures and symbolic widths
+
+The ordered opaque ports are the optional positive control, system,
+ancilla, and resource. Ancilla adds the PREPARE selection width to the
+largest child ancilla. Resource adds PREPARE junk to the largest child
+resource. A zero-width port is omitted. The concrete LCU exposes its
+uncontrolled signature, since the outer control is bound at append time.
+
+The declaration accepts symbolic constituent widths with known PREPARE
+ports. The locked qubit count falls back to the total signature width.
+Tests verify each symbolic port and all three together with and without
+control. Locked decomposition and both QEC gate profiles refuse these
+symbolic cases. The locked default PREPARE also refuses symbolic precision
+and symbolic normalizations in the numerical alias factory. The accepted
+supplied-PREPARE path can still keep an unused symbolic precision.
 
 ## Coefficient-family execution
 

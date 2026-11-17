@@ -10,6 +10,7 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.algorithms.primitives.linear_combination_block_encoding import (
     LinearCombinationBlockEncoding,
+    source_linear_combination_signature,
 )
 from flagquantum.algorithms.primitives.unitary_block_encoding import (
     UnitaryBlockEncoding,
@@ -138,6 +139,9 @@ def test_complete_original_gate_flow_metadata_and_model(
     assert native.epsilon == base.epsilon
     assert native.ancilla_bitsize == base.ancilla_bitsize
     assert native.resource_bitsize == base.resource_bitsize
+    assert [(reg.name, reg.bitsize) for reg in native.signature] == [
+        (reg.name, reg.bitsize) for reg in base.signature
+    ]
     from tests.unit.register_source_graph import (
         source_partition_leaf,
         walk_source_graph,
@@ -315,3 +319,52 @@ def test_symbolic_normalization_metadata_remains_separate_from_preparation():
     assert sympy.simplify(native.alpha - original.alpha) == 0
     with pytest.raises(ValueError, match="concrete block normalizations"):
         _ = native.coefficient_preparation
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("symbolic_port", ("system", "ancilla", "resource", "all"))
+@pytest.mark.parametrize("controlled", (False, True))
+def test_original_symbolic_signature_and_fallback_width(
+    symbolic_port: str, controlled: bool
+) -> None:
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.basic_gates import Identity
+    from qualtran.bloqs.block_encoding import LinearCombination, Unitary
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from sympy import Symbol
+
+    a, r, s = (Symbol(name) for name in ("a", "r", "s"))
+    width = s if symbolic_port in ("system", "all") else 1
+    ancilla = a if symbolic_port in ("ancilla", "all") else 0
+    resource = r if symbolic_port in ("resource", "all") else 0
+    known_prepare = LinearCombinationBlockEncoding(
+        (UnitaryBlockEncoding((("q", 1),), lambda p, w, b, a: ()),) * 2,
+        (1.0, -2.0),
+        1,
+    ).prepare
+    signature = source_linear_combination_signature(
+        width,
+        (ancilla, 0),
+        (0, resource),
+        prepare_selection=known_prepare.selection_width,
+        prepare_junk=known_prepare.junk_width,
+        controlled=controlled,
+    )
+    source = LinearCombination(
+        (
+            Unitary(Identity(width), ancilla_bitsize=ancilla),
+            Unitary(Identity(width), resource_bitsize=resource),
+        ),
+        (1.0, -2.0),
+        1,
+        is_controlled=controlled,
+    )
+    assert [(reg.name, reg.bitsize) for reg in signature] == [
+        (reg.name, reg.bitsize) for reg in source.signature
+    ]
+    assert signature.n_qubits() == get_cost_value(source, QubitCount())
+    with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+        source.decompose_bloq()
+    for legacy in (False, True):
+        with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+            get_cost_value(source, QECGatesCost(legacy_shims=legacy))

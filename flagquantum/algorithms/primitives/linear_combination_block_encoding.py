@@ -5,6 +5,8 @@
 
 """Compose coefficient PREPARE, signed SELECT and PREPARE-adjoint."""
 
+from __future__ import annotations
+
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from functools import cached_property
@@ -30,6 +32,8 @@ from ...compiler.registers.control.controlled_component_resource_model import (
 )
 from ...compiler.registers.layout.partition import partition_register
 from ...core.ir import Instruction
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
@@ -39,6 +43,37 @@ from .linear_combination_preparation import (
 )
 from .linear_combination_select import LinearCombinationSelect
 from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
+
+
+def source_linear_combination_signature(
+    system: SymbolicInt,
+    constituent_ancillas: tuple[SymbolicInt, ...],
+    constituent_resources: tuple[SymbolicInt, ...],
+    *,
+    prepare_selection: SymbolicInt,
+    prepare_junk: SymbolicInt,
+    controlled: bool = False,
+) -> Signature:
+    """Declare packed ports after resolving the coefficient preparation.
+
+    For symbolic constituent widths the locked qubit estimate falls back
+    to `Signature.n_qubits()`. The declaration does not build symbolic
+    coefficient tables or admit a symbolic SELECT circuit.
+    """
+    if len(constituent_ancillas) < 2 or len(constituent_ancillas) != len(
+        constituent_resources
+    ):
+        raise ValueError("LCU signature needs matching widths for at least two terms")
+    if type(controlled) is not bool:
+        raise ValueError("LCU signature control flag must be boolean")
+    ancilla = cast(SymbolicInt, smax(constituent_ancillas))
+    resource = cast(SymbolicInt, smax(constituent_resources))
+    return Signature.build_from_dtypes(
+        ctrl=opaque_register_type(int(controlled)),
+        system=opaque_register_type(system),
+        ancilla=opaque_register_type(prepare_selection + ancilla),
+        resource=opaque_register_type(resource + prepare_junk),
+    )
 
 
 def _existing_lcu_control_values(
@@ -157,6 +192,18 @@ class LinearCombinationBlockEncoding:
     @property
     def resource_bitsize(self) -> int:
         return self.select.resource_bitsize + self.prepare.junk_width
+
+    @property
+    def signature(self) -> Signature:
+        """Describe the through ports of the unbound native LCU."""
+        prepare = self.prepare
+        return source_linear_combination_signature(
+            self.system_bitsize,
+            tuple(block.ancilla_bitsize for block in self.block_encodings),
+            tuple(block.resource_bitsize for block in self.block_encodings),
+            prepare_selection=prepare.selection_width,
+            prepare_junk=prepare.junk_width,
+        )
 
     @property
     def alpha(self) -> SymbolicReal:
