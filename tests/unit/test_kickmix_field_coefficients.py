@@ -6,10 +6,14 @@ import torch
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.compiler.artifacts.reversible_phase import ReversiblePhaseProgram
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
+from flagquantum.compiler.formats.kmx_block_marks import encode_kmx_block_marks
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
     gf2_add_coefficients_ir,
+)
+from flagquantum.compiler.registers.finite_field.physical_field_addition import (
+    physical_field_addition,
 )
 from flagquantum.compiler.registers.primitives.measurement import measure_x_clear_ir
 from flagquantum.core.classical_dataflow import ClassicalXor
@@ -33,6 +37,7 @@ def test_field_coefficients_match_pinned_broadcast(kind: str, controlled: bool) 
     target = builder.create_quantum_register(width, name="target")
     ctrl = builder.create_quantum_register(1, name="control")[0]
     bits = builder.create_classical_register(width, name="offset")
+    coefficients: tuple[int | bool | ClassicalFieldCoefficient, ...]
     match kind:
         case "quantum":
             native = source
@@ -168,6 +173,13 @@ def test_outer_classical_control_matches_locked_effective_gate_stream(
     reference = decode_kmx("\n".join((*header, *source_stream)))
     assert _guarded_gate_stream(actual) == _guarded_gate_stream(reference)
     assert len(_guarded_gate_stream(actual)) == 5
+    physical, calls = physical_field_addition(
+        coefficients[::-1], (5, 4, 3, 2, 1), control=ClassicalFieldCoefficient(guard)
+    )
+    assert (
+        encode_kmx_block_marks(physical, calls).splitlines()[1:]
+        == upstream[start:].splitlines()
+    )
 
 
 @pytest.mark.parametrize("guard", [0, 1])
