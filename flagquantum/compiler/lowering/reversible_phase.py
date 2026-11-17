@@ -113,11 +113,14 @@ def _ccz_conjugation(span: tuple[Instruction, ...]) -> Instruction | None:
     return None
 
 
-def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
+def lower_reversible_phase(
+    ir: CircuitIR, *, operation_offsets: dict[int, int] | None = None
+) -> ReversiblePhaseProgram:
     """Lower exact reversible operations and adjacent X-basis clear sequences.
 
     Validates classical dependencies before forming the target stream. Other
     measurement patterns and parameterized phases require their own rules.
+    The optional offsets map instruction boundaries to emitted record indices.
     """
     if ir.observables or ir.measurements:
         raise CapabilityError("reversible-phase lowering needs explicit instructions")
@@ -126,6 +129,8 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
     operations: list[ReversiblePhaseOperation] = []
     index = 0
     while index < len(ir.instructions):
+        if operation_offsets is not None:
+            operation_offsets[index] = len(operations)
         instruction = ir.instructions[index]
         opcode = instruction.name
         consumed = 1
@@ -190,6 +195,8 @@ def lower_reversible_phase(ir: CircuitIR) -> ReversiblePhaseProgram:
         )
         operations.extend(ReversiblePhaseOperation("pop_condition", ()) for _ in scopes)
         index += consumed
+    if operation_offsets is not None:
+        operation_offsets[len(ir.instructions)] = len(operations)
     written = {
         int(instruction.metadata["classical_bit"])
         for instruction in ir.instructions
