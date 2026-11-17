@@ -10,6 +10,13 @@ from flagquantum.compiler.artifacts.reversible_phase import (
     ReversiblePhaseProgram,
 )
 from flagquantum.compiler.formats.kmx import encode_kmx
+from flagquantum.compiler.registers.finite_field.coefficients import (
+    ClassicalFieldCoefficient,
+)
+from flagquantum.compiler.registers.primitives._pattern_mux import (
+    bind_quantum_enable_pattern,
+    bind_z_control_pattern,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -106,3 +113,89 @@ def test_empty_ranges_and_unbound_indices() -> None:
         bind_reversible_pattern(pattern, range(2), qubits=((0,),))
     with pytest.raises(ValueError, match="lanes require nonnegative"):
         bind_reversible_pattern(pattern, range(-1, 0), qubits=((0,),))
+
+
+@pytest.mark.parametrize("classical", [False, True])
+def test_source_homogeneous_mux_preserves_control_and_guard_columns(
+    classical: bool,
+) -> None:
+    controls: tuple[int | ClassicalFieldCoefficient, ...]
+    if classical:
+        controls = (ClassicalFieldCoefficient(0), ClassicalFieldCoefficient(1))
+        expected = [
+            "X q4 if b0",
+            "Z q4 if b0",
+            "NEG if b0",
+            "X q4 if b1",
+            "Z q4 if b1",
+            "NEG if b1",
+        ]
+    else:
+        controls = (2, 3)
+        expected = ["CX q2 q4", "CZ q2 q4", "Z q2", "CX q3 q4", "CZ q3 q4", "Z q3"]
+    body = tuple(
+        operation
+        for lane in range(2)
+        for operation in (
+            *bind_z_control_pattern("cx", controls, range(lane, lane + 1), target=4),
+            *bind_z_control_pattern("cz", controls, range(lane, lane + 1), target=4),
+            *bind_z_control_pattern("z", controls, range(lane, lane + 1)),
+        )
+    )
+    assert (
+        encode_kmx(ReversiblePhaseProgram(5, 2, body, (0, 1))).splitlines()[1:]
+        == expected
+    )
+
+
+def test_source_mixed_controls_refuse_without_emitting_a_prefix() -> None:
+    mixed = (2, ClassicalFieldCoefficient(1))
+    with pytest.raises(ValueError, match="homogeneous"):
+        bind_z_control_pattern("cx", mixed, range(2), target=4)
+    with pytest.raises(ValueError, match="homogeneous"):
+        bind_z_control_pattern("cz", mixed, range(2), target=4)
+    with pytest.raises(ValueError, match="homogeneous"):
+        bind_z_control_pattern("z", mixed, range(2))
+
+
+@pytest.mark.parametrize("enable", [True, 5])
+def test_source_optional_quantum_gate_order(enable: int) -> None:
+    native = (
+        Op("r", (2,), condition_bit=0),
+        Op("cz", (2, 3), condition_bit=0),
+        *bind_quantum_enable_pattern("cswap", enable, (2, 3), range(1), condition=1),
+        *bind_quantum_enable_pattern("ccx", enable, (2, 3), range(1), condition=1),
+        *bind_quantum_enable_pattern("z", enable, (), range(1), condition=1),
+        *bind_quantum_enable_pattern("cswap", enable, (2, 3), range(1)),
+        *bind_quantum_enable_pattern("cx", enable, (3,), range(1), condition=1),
+        *bind_quantum_enable_pattern("ccx", enable, (2, 3), range(1)),
+        *bind_quantum_enable_pattern("ccz", enable, (2, 3), range(1)),
+    )
+    if enable is True:
+        expected = [
+            "R q2 if b0",
+            "CZ q2 q3 if b0",
+            "SWAP q2 q3 if b1",
+            "CX q2 q3 if b1",
+            "NEG if b1",
+            "SWAP q2 q3",
+            "X q3 if b1",
+            "CX q2 q3",
+            "CZ q2 q3",
+        ]
+    else:
+        expected = [
+            "R q2 if b0",
+            "CZ q2 q3 if b0",
+            "CSWAP q5 q2 q3 if b1",
+            "CCX q2 q5 q3 if b1",
+            "Z q5 if b1",
+            "CSWAP q5 q2 q3",
+            "CX q5 q3 if b1",
+            "CCX q2 q5 q3",
+            "CCZ q2 q5 q3",
+        ]
+    assert (
+        encode_kmx(ReversiblePhaseProgram(6, 2, native, (0, 1))).splitlines()[1:]
+        == expected
+    )

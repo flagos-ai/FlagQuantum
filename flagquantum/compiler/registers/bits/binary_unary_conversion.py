@@ -7,6 +7,10 @@
 from ...artifacts.reversible_pattern import bind_reversible_pattern
 from ...artifacts.reversible_phase import ReversiblePhaseOperation as Operation
 from ..finite_field.polynomial import _validate_registers
+from ..primitives._pattern_mux import (
+    bind_quantum_enable_pattern,
+    bind_z_control_pattern,
+)
 
 _ERASE_LANE = (
     Operation("cx", (0, 1)),
@@ -35,10 +39,16 @@ def binary_to_unary_operations(target: tuple[int, ...]) -> tuple[Operation, ...]
     for k in range(bits):
         m = 1 << k
         control = 2 * m - 1
-        for j in range(m - 1):
-            operations.append(Operation("cswap", (word[control], word[j], word[j + m])))
-        for j in range(m - 1):
-            operations.append(Operation("cx", (word[j + m], word[control])))
+        lanes = range(m - 1)
+        upper = word[m:control]
+        operations.extend(
+            bind_quantum_enable_pattern(
+                "cswap", word[control], (word[: m - 1], upper), lanes
+            )
+        )
+        operations.extend(
+            bind_z_control_pattern("cx", upper, lanes, target=word[control])
+        )
         operations.append(Operation("cx", (word[control], word[m - 1])))
     return tuple(operations)
 
@@ -59,13 +69,16 @@ def unary_to_binary_operations(
         m = 1 << k
         control = 2 * m - 1
         operations.append(Operation("cx", (swapped[control], swapped[m - 1])))
-        for j in reversed(range(m - 1)):
-            operations.append(Operation("cx", (swapped[j + m], swapped[control])))
+        lanes = range(m - 2, -1, -1)
+        upper = tuple(swapped[m:control])
+        operations.extend(
+            bind_z_control_pattern("cx", upper, lanes, target=swapped[control])
+        )
         operations.extend(
             bind_reversible_pattern(
                 _ERASE_LANE,
-                range(m - 2, -1, -1),
-                qubits=(swapped[m : 2 * m - 1], swapped[: m - 1], swapped[control]),
+                lanes,
+                qubits=(upper, swapped[: m - 1], swapped[control]),
                 bits=(measurement_bit,),
             )
         )

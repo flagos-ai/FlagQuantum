@@ -471,5 +471,29 @@ paths exercised by signed and unsigned widths, subtraction and unary
 negation, yielding the same 27 wire positions. Native admission checks the
 bound columns and refuses out-of-range access. The difference for
 overflowing C++ integer offsets or invalid pointer arithmetic is outside
-the supported physical indexing contract. K-0010 and K-0011 remain open
-for full source mux admission and operation-family evidence.
+the supported physical indexing contract.
+
+
+### Typed pattern dispatch
+
+K-0010 and K-0011 cover the locked implementation and declarations at
+blobs `46a69f4144b1cb5c41d8800a31175b8d83ea10fa` and
+`aaae344e260bef14a204fc34ec2183b4e4e2a5e7`. The native pattern layer
+reuses the existing operation representation and selects the source
+typed opcodes before binding rows.
+
+| Locked source family | Native replacement |
+| --- | --- |
+| `spanish`, `ptr`, operand arenas and `gather_and_clear` | Integer constants or physical sequence columns. Binding rows consumes neither input columns nor interpreter state. Forward, reversed and subsequent shorter patterns reproduce source row and operand order. |
+| Reset, HMR, bit inversion, push/pop | The existing reversible-phase operation carries result and condition columns separately. The mixed fixture contains all five and retains both reset and result order. |
+| X, Z, NEG, CX, CZ, and their guarded forms | Direct operation rows use the same bit and wire positions. A homogeneous quantum control column provides CX/CZ/Z. A homogeneous classical column supplies X/Z/NEG guards. Mixed controls are refused before emitting. |
+| SWAP and controlled SWAP | The optional enable retains its wire or selects SWAP. Guarded variants preserve the classical condition. |
+| CCX and CCZ | The quantum-enable path packs the varying operand before the fixed control, matching the source pattern. The true enable produces CX or CZ. The guarded CCX retains its condition. |
+| `LoopBuilder` and `dump_into` | Emit one typed row recipe over a bounded range. Reverse traversal changes lane order, while each row remains ordered. Physical columns replace source-arena storage and lifetime management. |
+
+The locked C++ typed fixture and native implementation agree on all 30
+physical records and the three heterogeneous refusal cases. The first 37
+mixed-lane records and the 27 affine wire selections also remain covered.
+Binary/unary conversion uses native typed CSWAP and CX row binding in both
+traversal directions. No additional quantum resources or result slots
+are allocated by dispatch. K-0012 covers the separate benchmark file.
