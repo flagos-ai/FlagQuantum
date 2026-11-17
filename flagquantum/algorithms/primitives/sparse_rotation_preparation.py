@@ -5,8 +5,16 @@
 
 """Sparse rotation preparation by a low-word preparation and basis permutation."""
 
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from math import hypot, isfinite
+from operator import index
+from typing import Any
+
+import numpy as np
+from numpy.typing import NDArray
 
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import split_register_pair
@@ -27,6 +35,38 @@ class SparseRotationPreparation:
     size: int
     phase_width: int
 
+    @classmethod
+    def from_coefficient_map(
+        cls, size: int, coefficients: Mapping[int, complex], phase_width: int
+    ) -> SparseRotationPreparation:
+        """Read support and coefficients in the mapping's iteration order."""
+        entries = tuple(coefficients.items())
+        return cls(
+            tuple(index(address) for address, _ in entries),
+            tuple(value for _, value in entries),
+            size,
+            phase_width,
+        )
+
+    @classmethod
+    def from_sparse_array(
+        cls, coefficients: Sequence[complex] | NDArray[Any], phase_width: int
+    ) -> SparseRotationPreparation:
+        """Read a one-dimensional coefficient vector in ascending address order."""
+        size = len(coefficients)
+        vector = np.asarray(coefficients)
+        if vector.ndim != 1 or vector.dtype.kind not in "buifc":
+            raise ValueError(
+                "Sparse rotation requires a one-dimensional numeric vector"
+            )
+        indices = np.flatnonzero(vector)
+        return cls(tuple(map(int, indices)), tuple(vector[indices]), size, phase_width)
+
+    @property
+    def target_width(self) -> int:
+        """Return the inferred width of the target state register."""
+        return (self.size - 1).bit_length()
+
     def _components(
         self, target_width: int
     ) -> tuple[RotationPreparation, tuple[tuple[int, ...], ...], int]:
@@ -42,15 +82,24 @@ class SparseRotationPreparation:
         ):
             raise ValueError("Sparse rotation target must fit the state size")
         cycles = complete_partial_permutation(self.size, dict(enumerate(self.indices)))
-        norm = hypot(*(abs(value) for value in self.coefficients))
-        if not isfinite(norm) or not norm:
-            raise ValueError(
-                "Sparse rotation coefficients must have a finite nonzero norm"
-            )
         low_width = (count - 1).bit_length()
-        padded = tuple(value / norm for value in self.coefficients) + (0j,) * (
-            (1 << low_width) - count
-        )
+        padding = (1 << low_width) - count
+        array = np.pad(self.coefficients, (0, padding))
+        norm = np.linalg.norm(array)
+        if isfinite(norm) and norm:
+            padded = tuple((array / norm).tolist())
+        else:
+            # Keep stable normalization for finite coefficients beyond the
+            # floating-point range of the reference's squared norm.
+            stable_norm = hypot(*(abs(value) for value in self.coefficients))
+            if not isfinite(stable_norm) or not stable_norm:
+                raise ValueError(
+                    "Sparse rotation coefficients must have a finite nonzero norm"
+                )
+            padded = (
+                tuple(complex(value) / stable_norm for value in self.coefficients)
+                + (0j,) * padding
+            )
         return RotationPreparation(padded, self.phase_width), cycles, low_width
 
     def requirements(self, target_width: int) -> tuple[int, int]:
