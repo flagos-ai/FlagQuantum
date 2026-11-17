@@ -276,11 +276,25 @@ def test_invalid_phases_refuse(even: tuple[float, ...], odd: tuple[float, ...]) 
         native.build_program(even=even, odd=odd)
 
 
+def test_original_fits_twelve_declared_qubits_without_workspace() -> None:
+    program = synth.synthesize(
+        native.main,
+        classical_inputs=native.classical_inputs(),
+        max_qubits=12,
+        max_workspace=0,
+    )
+    assert program.circuit.n_wires == 12
+    assert program.report["workspace_qubits"] == 0
+    expected = (
+        fq.run(reference_circuit(2.0, EVEN_PHASES, ODD_PHASES)).statevector().flatten()
+    )
+    torch.testing.assert_close(state(program), expected, atol=1e-10, rtol=0)
+
+
 @pytest.mark.parametrize(
     "limits",
     [
-        {"max_qubits": 12},
-        {"max_workspace": 0},
+        {"max_qubits": 11},
         {"max_operations": 100},
         {"max_depth": 100},
         {"memory_limit_bytes": 1024},

@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **174/213**.
+Validated local Notebook workflows: **175/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -81,6 +81,7 @@ Validated local Notebook workflows:
 - [overview](algorithms/number_theory_and_cryptography/shor/overview/README.md)
 - [overview](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview/README.md)
 - [overview](algorithms/quantum_differential_equations_solvers/lchs/overview/README.md)
+- [overview](algorithms/quantum_differential_equations_solvers/time_marching/overview/README.md)
 - [overview](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/README.md)
 - [overview](algorithms/quantum_linear_solvers/hhl/overview/README.md)
 - [overview](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview/README.md)

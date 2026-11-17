@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **174/213**.
+Validated local Notebook workflows: **175/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -181,7 +181,7 @@ Validated local Notebook workflows: **174/213**.
 | `algorithms/number_theory_and_cryptography/shor/shor` | notebook_workflow | [Native program](algorithms/number_theory_and_cryptography/shor/overview/main.py) | validated |
 | `algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/discrete_poisson_solver` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/discrete_poisson_solver/overview/main.py) | validated |
 | `algorithms/quantum_differential_equations_solvers/lchs/lchs` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/lchs/overview/main.py) | validated |
-| `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/time_marching/main.py) | pending |
+| `algorithms/quantum_differential_equations_solvers/time_marching/time_marching` | notebook_workflow | [Native program](algorithms/quantum_differential_equations_solvers/time_marching/overview/main.py) | validated |
 | `algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/main.py) | validated |
 | `algorithms/quantum_linear_solvers/hhl/hhl` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/hhl/overview/main.py) | validated |
 | `algorithms/quantum_linear_solvers/qsvt_matrix_inversion/qsvt_matrix_inversion` | notebook_workflow | [Native program](algorithms/quantum_linear_solvers/qsvt_matrix_inversion/overview/main.py) | validated |
