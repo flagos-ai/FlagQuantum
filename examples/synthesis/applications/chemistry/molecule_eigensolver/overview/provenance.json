@@ -1,0 +1,58 @@
+{
+  "upstream_path": "applications/chemistry/molecule_eigensolver/molecule_eigensolver.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "73d05a8aa535aafb97666e64862b22c216f1a48b1e80239a0ba6c38372b4e798",
+  "git_blob_sha1": "9e289e0a3d9b1711a151a1b6878c79294c887e5d",
+  "scope": "All nine source stages. Original H2 geometry, four-mode and paired one-qubit Hamiltonians, three hardware-efficient layers, tapered UCCSD and one million samples per Pauli basis.",
+  "native_semantic_adaptations": "Keep all listed geometries and execute the selected H2 case. Compute native RHF and FCI quantities plus the full and paired Hamiltonians. Bind a documented nonzero angle sequence to profile the three hardware-efficient layers. The UCCSD optimization starts at zero and draws aggregate binomial counts for each Pauli basis with a fixed seed. Compare its sampled result and exact local expectation with full CI.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.molecule_eigensolver.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/molecule_eigensolver/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_molecular_eigensolver_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "sha256": "b8ff3994f7461ab3ac81206dd90c61b8219957c37e89158ecc59dece03489b52"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "fed17ddea78b72b630667f3462f5a3e4988deb9ddf364cc97b838a9d849f7559"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "sha256": "e052c7f5599d3d849ec2ec366603f0a0c5ab7e8e204ba496c396e03f716d20b3"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "f6bcc258d5148a26053a21ce6ebb6aa4cbe9b75abf8a8b30b69b430015ac93b8"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 6,
+      "sha256": "5d89f10aa37cef59e2754c4eb3fd0a0ab10fc8edc0c9af428b4a784a6067f693"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 7,
+      "sha256": "b103321768b67719618b9059764ffac8ef381071a0b7d00cbf775d966422f47e"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 8,
+      "sha256": "128df947c59c8e25da92c4f4899476cf66ce321c451a1b85068c8736eaa75a0d"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 9,
+      "sha256": "d784dd0e7ede34976fbfd30fda25182d915473fc5a472be5cb8e20ad5a46b9a3"
+    }
+  ]
+}
