@@ -20,6 +20,7 @@ from flagquantum.compiler.artifacts.compilation_evidence import (
     verify_compilation_evidence_bundle,
 )
 from flagquantum.compiler.routing import CouplingMap
+from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.core._artifacts import (
     ArtifactKind,
     ProgramArtifactV2,
@@ -29,6 +30,7 @@ from flagquantum.core._artifacts import (
 from flagquantum.core._compilation_evidence import (
     read_compilation_evidence_bundle_json,
 )
+from flagquantum.core._compilation_evidence_v2 import CompilationEvidenceBundleV2
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.parameters import Parameter
 from flagquantum.core.target_capabilities import (
@@ -462,3 +464,73 @@ def test_synthesized_bell_routes_on_line_with_native_gates() -> None:
         ArtifactCompilationError, match="topology routing exceeds max_added_operations"
     ):
         compile_with_budget(0)
+
+
+def test_synthesized_bell_legalizes_reverse_cx_for_offline_preflight() -> None:
+    circuit = replace(
+        synthesize(bell).circuit, measurements=(MeasurementNode("samples", (0, 1)),)
+    )
+    source = ProgramArtifactV2.from_circuit_ir(circuit, producer="bell-source")
+    snapshot = _snapshot(native_gates=(("h", ()), ("cx", ())))
+    coupling = DirectedCouplingMap(2, ((1, 0),))
+
+    def compile_with_direction_budget(budget: int) -> ArtifactCompilationResult:
+        return compile_circuit_artifact_for_target(
+            source,
+            backend="qasm",
+            profile="openqasm-3.0",
+            snapshot=snapshot,
+            producer="flagquantum.compiler",
+            evaluated_at=_NOW,
+            coupling_map=coupling,
+            initial_layout=(0, 1),
+            max_routing_added_operations=0,
+            max_direction_added_operations=budget,
+        )
+
+    result = compile_with_direction_budget(4)
+    bundle = build_compilation_evidence_bundle(
+        result, snapshot=snapshot, producer="flagquantum.compiler"
+    )
+    restored = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert isinstance(restored, CompilationEvidenceBundleV2)
+    assert restored.physical_plan.initial_logical_to_physical == (0, 1)
+    assert restored.physical_plan.reversed_cx_count == 1
+
+    identity = snapshot.target_identity
+    prepared = prepare_artifact_deployment(
+        result.executable_artifact,
+        snapshot=snapshot,
+        source=source,
+        compilation_evidence=restored,
+        provider=identity.provider,
+        target_id=identity.target_id,
+        shots=256,
+        evaluated_at=_NOW,
+    )
+    assert prepared.capability_match.executable
+    assert prepared.compilation_evidence_identity == restored.bundle_identity
+
+    imported = fq.from_openqasm(prepared.program)
+    assert imported.version == 3.0
+    assert imported.measurement_qubits == (0, 1)
+    assert {instruction.name for instruction in imported.instructions} == {"h", "cx"}
+    emitted_cx_wires = tuple(
+        instruction.wires
+        for instruction in imported.instructions
+        if instruction.name == "cx"
+    )
+    assert emitted_cx_wires == ((1, 0),)
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    state = fq.run(imported.to_circuit(), options=options).statevector()
+    amplitude = 1 / math.sqrt(2)
+    expected = torch.tensor([amplitude, 0, 0, amplitude], dtype=torch.complex128)
+    torch.testing.assert_close(state.reshape(-1), expected, atol=1e-12, rtol=0)
+
+    with pytest.raises(
+        ArtifactCompilationError,
+        match="directed-CX legalization exceeds max_added_operations",
+    ):
+        compile_with_direction_budget(0)
