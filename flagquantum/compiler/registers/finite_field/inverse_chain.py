@@ -6,9 +6,10 @@
 
 from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
 from ..primitives.measurement import delete_zero_register_ir, reset_x_register_ir
-from ._physical_calls import append_field_call
-from .binary_linear_map import append_field_frobenius, field_frobenius_ir
+from ._physical_calls import append_field_call, lower_field_erasure_trace
+from .binary_linear_map import append_field_frobenius
 from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
 from .polynomial_product import append_field_product
@@ -269,6 +270,8 @@ def field_inverse_ir(
     *,
     modulus: int,
     parity_bit: int | None = None,
+    emit_resets: bool = False,
+    calls: list[ComponentCall] | None = None,
 ) -> tuple[Instruction, ...]:
     """Write a big-endian inverse into a clean target and clear the workspace.
 
@@ -286,19 +289,28 @@ def field_inverse_ir(
     doubles, folds = _chain_steps(width)
     expected = width if folds or len(doubles) > 1 else len(doubles)
     _validate_inverse_slots(measurement_bits, expected, parity_bit)
-    gates: list[Instruction] = []
+    gates = list(_reset_inverse_workspace(workspace, width)) if emit_resets else []
     for i in doubles:
-        _append_double_word(gates, words, i, target, modulus)
-    _build_folds(gates, words, len(doubles), folds, modulus)
+        _append_double_word(gates, words, i, target, modulus, calls=calls)
+    _build_folds(gates, words, len(doubles), folds, modulus, calls)
 
     if folds:
-        gates.extend(_word_xor(words[-2], target))
+        append_field_call(gates, calls, "gf_iadd", _word_xor(words[-2], target))
         _erase_folds(
-            gates, words, len(doubles), folds, measurement_bits, modulus, parity_bit
+            gates,
+            words,
+            len(doubles),
+            folds,
+            measurement_bits,
+            modulus,
+            parity_bit,
+            calls,
         )
         # The first folded result is physically zero after HMR and can be
         # reused directly as scratch for the doubling cleanup.
         scratch = words[len(doubles) + 1]
+        if emit_resets:
+            gates.extend(reset_x_register_ir(scratch[::-1]))
         cleanup = doubles
     elif doubles:
         scratch = words[len(doubles)]
@@ -307,7 +319,7 @@ def field_inverse_ir(
     else:
         scratch = ()
         cleanup = ()
-        gates.extend(_word_xor(source, target))
+        append_field_call(gates, calls, "gf_iadd", _word_xor(source, target))
     for i in reversed(cleanup):
         _append_double_word(
             gates,
@@ -317,10 +329,11 @@ def field_inverse_ir(
             modulus,
             bits=measurement_bits,
             parity_bit=parity_bit,
+            calls=calls,
         )
     if scratch:
         gates.extend(_delete_zero_word(scratch, measurement_bits[-1]))
-    gates.extend(field_frobenius_ir(target, modulus=modulus))
+    append_field_frobenius(gates, calls, target, 1, modulus)
     return tuple(gates)
 
 
@@ -332,6 +345,8 @@ def field_inverse_erase_ir(
     *,
     modulus: int,
     parity_bit: int | None = None,
+    emit_resets: bool = False,
+    calls: list[ComponentCall] | None = None,
 ) -> tuple[Instruction, ...]:
     """Rebuild the inverse chain and erase a known inverse in the target.
 
@@ -348,19 +363,27 @@ def field_inverse_erase_ir(
     )
     doubles, folds = _chain_steps(width)
     _validate_inverse_slots(measurement_bits, width if doubles else 1, parity_bit)
-    gates = list(field_frobenius_ir(target, modulus=modulus, adjoint=True))
+    gates = list(_reset_inverse_workspace(workspace, width)) if emit_resets else []
+    append_field_frobenius(gates, calls, target, 1, modulus, adjoint=True)
     for i in doubles if folds else doubles[:-1]:
-        _append_double_word(gates, words, i, words[i + 1], modulus)
+        _append_double_word(gates, words, i, words[i + 1], modulus, calls=calls)
     if folds:
-        _build_folds(gates, words, len(doubles), folds, modulus)
-        gates.extend(_word_xor(words[-2], target))
+        _build_folds(gates, words, len(doubles), folds, modulus, calls)
+        append_field_call(gates, calls, "gf_iadd", _word_xor(words[-2], target))
         _erase_folds(
-            gates, words, len(doubles), folds, measurement_bits, modulus, parity_bit
+            gates,
+            words,
+            len(doubles),
+            folds,
+            measurement_bits,
+            modulus,
+            parity_bit,
+            calls,
         )
     elif doubles:
         gates.extend(_word_swap(words[len(doubles)], target))
     else:
-        gates.extend(_word_xor(source, target))
+        append_field_call(gates, calls, "gf_iadd", _word_xor(source, target))
     for i in reversed(doubles):
         _append_double_word(
             gates,
@@ -370,6 +393,90 @@ def field_inverse_erase_ir(
             modulus,
             bits=measurement_bits,
             parity_bit=parity_bit,
+            calls=calls,
         )
     gates.extend(_delete_zero_word(target, measurement_bits[-1]))
     return tuple(gates)
+
+
+def _reset_inverse_workspace(
+    workspace: tuple[int, ...], width: int
+) -> tuple[Instruction, ...]:
+    return tuple(
+        gate
+        for start in range(0, len(workspace), width)
+        for gate in reset_x_register_ir(workspace[start : start + width][::-1])
+    )
+
+
+def physical_field_inverse(
+    source: tuple[int, ...],
+    target: tuple[int, ...],
+    workspace: tuple[int, ...],
+    *,
+    modulus: int,
+    retain_chain: bool = False,
+    erase: bool = False,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export source inverse or erase in a leased or caller-retained chain.
+
+    Words are big-endian. Forward requires a clean target. The retained route
+    uses the exact caller-owned chain and leaves it live until erasure. The
+    leased route uses only its required workspace prefix and returns it clean.
+    """
+    width = len(source)
+    calls: list[ComponentCall] = []
+    bits = tuple(reversed(range(width)))
+    if retain_chain:
+        if erase:
+            body = field_inverse_chain_erase_ir(
+                source,
+                target,
+                workspace,
+                bits if workspace else bits[-1:],
+                modulus=modulus,
+                parity_bit=width,
+                emit_resets=True,
+                calls=calls,
+            )
+        else:
+            body = field_inverse_chain_ir(
+                source,
+                target,
+                workspace,
+                modulus=modulus,
+                calls=calls,
+            )
+    else:
+        active = workspace[: field_inverse_workspace_size(width)]
+        doubles, folds = _chain_steps(width)
+        if erase:
+            body = field_inverse_erase_ir(
+                source,
+                target,
+                active,
+                bits if doubles else bits[-1:],
+                modulus=modulus,
+                parity_bit=width,
+                emit_resets=True,
+                calls=calls,
+            )
+        else:
+            count = width if folds or len(doubles) > 1 else len(doubles)
+            body = field_inverse_ir(
+                source,
+                target,
+                active,
+                bits[-count:] if count else (),
+                modulus=modulus,
+                parity_bit=width,
+                emit_resets=True,
+                calls=calls,
+            )
+    name = "gf_uninverse" if erase else "gf_inverse"
+    if retain_chain:
+        name += "_chain"
+    call = ComponentCall(name, 0, len(body), children=tuple(calls))
+    return lower_field_erasure_trace(
+        list(body), call, width, max((*source, *target, *workspace))
+    )

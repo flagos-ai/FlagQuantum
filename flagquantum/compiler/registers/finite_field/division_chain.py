@@ -4,13 +4,11 @@
 
 """Binary-field division and measured erasure on fixed register wires."""
 
-from ....core.classical_dataflow import ClassicalXor, parse_classical_xor
 from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
 from ...artifacts.reversible_phase import ReversiblePhaseProgram
-from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
 from ..primitives.measurement import reset_x_register_ir
-from ._physical_calls import append_field_call
+from ._physical_calls import append_field_call, lower_field_erasure_trace
 from .inverse_chain import (
     field_inverse_chain_erase_ir,
     field_inverse_chain_ir,
@@ -221,21 +219,8 @@ def physical_field_division(
         )
         append_field_call(gates, children, "gf_uninverse_chain", cleanup, tuple(calls))
 
-    # The first clean-bit lease uses initially zero storage in the target
-    # format. Later allocations emit the source allocator's explicit store.
-    trace = PhysicalTrace()
-    for index, gate in enumerate(gates):
-        if gate.name == "classical_xor":
-            assignment = parse_classical_xor(gate)
-            assert assignment.target == parity
-            gates[index] = ClassicalXor(
-                (*assignment.sources, parity), parity
-            ).instruction()
-            trace.implicit_zero_bits.add(parity)
-            break
     name = "gf_undiv" if erase else "gf_div"
-    trace.calls.append(ComponentCall(name, 0, len(gates), children=tuple(children)))
-    last_wire = max((*dividend, *divisor, *target, *workspace))
-    return lower_physical_trace(
-        tuple(gates), 0, last_wire, trace, reorder_feedback=False
+    call = ComponentCall(name, 0, len(gates), children=tuple(children))
+    return lower_field_erasure_trace(
+        gates, call, parity, max((*dividend, *divisor, *target, *workspace))
     )
