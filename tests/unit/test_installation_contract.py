@@ -231,7 +231,9 @@ def test_native_extension_avoids_compiler_specific_bit_builtins() -> None:
     assert "trailing_zero_count" in source
 
 
-def _build_ext_command(inplace: bool, torch_file: Path | None = None):
+def _build_ext_command(
+    inplace: bool, torch_file: Path | None = None, *, args: tuple[str, ...] = ()
+):
     """Return a configured `build_ext` command without running a build.
 
     `setup.py` cannot be imported, so it is executed with `setuptools.setup`
@@ -256,10 +258,17 @@ def _build_ext_command(inplace: bool, torch_file: Path | None = None):
         patched,
     ):
         exec(compile(source, "setup.py", "exec"), namespace)
-        command = captured["cmdclass"]["build_ext"](
-            Distribution({"ext_modules": captured["ext_modules"]})
+        distribution = Distribution(
+            {
+                "ext_modules": captured["ext_modules"],
+                "cmdclass": captured["cmdclass"],
+                "script_name": "setup.py",
+                "script_args": list(args),
+            }
         )
-        command.initialize_options()
+        if args:
+            distribution.parse_command_line()
+        command = distribution.get_command_obj("build_ext")
         command.inplace = inplace
         command.finalize_options()
     return command
@@ -379,8 +388,9 @@ def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:
     ]
 
 
-def test_msvc_sparse_blossom_uses_cxx20_only_for_its_compilation(monkeypatch) -> None:
-    command = _build_ext_command(inplace=False)
+def test_msvc_parallel_request_builds_extensions_serially(monkeypatch) -> None:
+    command = _build_ext_command(inplace=False, args=("build_ext", "--parallel", "2"))
+    assert command.parallel == 2
     original_flags = "/O2 /std:c++17 /Brepro"
     observed: list[list[str]] = []
     monkeypatch.setenv("CL", original_flags)
@@ -389,11 +399,23 @@ def test_msvc_sparse_blossom_uses_cxx20_only_for_its_compilation(monkeypatch) ->
         "build_extension",
         lambda self, ext: observed.append(os.environ["CL"].split()),
     )
+    # Run the real setuptools scheduler without configuring a compiler.
+    monkeypatch.setattr(
+        BuildExtension,
+        "build_extensions",
+        lambda self: super(BuildExtension, self).build_extensions(),
+    )
+
+    def unexpected_parallel_build() -> None:
+        pytest.fail("MSVC extensions must build serially when sharing CL")
+
+    monkeypatch.setattr(
+        command, "_build_extensions_parallel", unexpected_parallel_build
+    )
     with monkeypatch.context() as windows:
         windows.setattr(os, "name", "nt")
         windows.setattr(sys, "platform", "win32")
-        command.build_extension(command.extensions[0])
-        command.build_extension(command.extensions[1])
+        command.build_extensions()
     assert observed == [original_flags.split(), ["/O2", "/Brepro", "/std:c++20"]]
     assert os.environ["CL"] == original_flags
 

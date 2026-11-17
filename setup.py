@@ -271,6 +271,12 @@ class ReproducibleBuildExtension(BuildExtension):
         for extension in self.extensions:
             self._require_loadable_artifact(extension)
 
+    def build_extensions(self) -> None:
+        if os.name == "nt":
+            # Each extension must finish before another changes the process-wide CL.
+            self.parallel = None
+        super().build_extensions()
+
     def build_extension(self, ext: Any) -> None:
         if self.inplace_build:
             # A staged artifact is reused whenever it is newer than its sources,
