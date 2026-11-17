@@ -4,8 +4,15 @@
 
 """Source-ordered in-place binary/unary conversion and measured erasure."""
 
+from ...artifacts.reversible_pattern import bind_reversible_pattern
 from ...artifacts.reversible_phase import ReversiblePhaseOperation as Operation
 from ..finite_field.polynomial import _validate_registers
+
+_ERASE_LANE = (
+    Operation("cx", (0, 1)),
+    Operation("hmr", (0,), result_bit=0),
+    Operation("cz", (2, 1), condition_bit=0),
+)
 
 
 def _source_word(target: tuple[int, ...]) -> tuple[tuple[int, ...], int]:
@@ -54,18 +61,14 @@ def unary_to_binary_operations(
         operations.append(Operation("cx", (swapped[control], swapped[m - 1])))
         for j in reversed(range(m - 1)):
             operations.append(Operation("cx", (swapped[j + m], swapped[control])))
-        for j in reversed(range(m - 1)):
-            operations.extend(
-                (
-                    Operation("cx", (swapped[j + m], swapped[j])),
-                    Operation("hmr", (swapped[j + m],), result_bit=measurement_bit),
-                    Operation(
-                        "cz",
-                        (swapped[control], swapped[j]),
-                        condition_bit=measurement_bit,
-                    ),
-                )
+        operations.extend(
+            bind_reversible_pattern(
+                _ERASE_LANE,
+                range(m - 2, -1, -1),
+                qubits=(swapped[m : 2 * m - 1], swapped[: m - 1], swapped[control]),
+                bits=(measurement_bit,),
             )
+        )
     operations.extend(
         (
             Operation("hmr", (swapped[0],), result_bit=measurement_bit),

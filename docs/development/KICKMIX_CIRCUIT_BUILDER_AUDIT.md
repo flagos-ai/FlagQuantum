@@ -446,3 +446,30 @@ lanes and widths. The unchanged addition fixtures also verify ordered
 physical gates, clean return and borrowed state restoration. The source
 context declares no analytical costs, and the view changes no resource
 counts.
+
+## Reversible pattern binding and affine indices
+
+The locked `CircuitPattern` collects operand columns and emits repeated
+rows. The native binder reuses `ReversiblePhaseOperation` for the local
+pattern and binds quantum and classical columns separately. A constant
+column repeats one operand. Strided columns and lane ranges express forward
+and reversed traversal, including affine offsets. Each lane retains the
+original operation order and in-row operand order. The native unary-to-binary
+erasure binds its three-operation cleanup row through this shared path.
+
+The immutable C++ fixture and the native binder emit the same 37 ordered
+records across a forward range, a reversed range and a final shorter loop.
+The pattern carries X, reset, HMR, conditions, physical swap, CCZ, classical
+inversion and scalar sign. The source pattern-specific CCZ packing puts its
+second input first, which is represented directly in the native row. Resets
+are preserved here. The 37 records include four HMR, four resets and four
+scope pairs. Binding creates no allocation or analytical cost model.
+
+K-0013 uses Python's bounded integer indexing for the source's affine
+index. The locked `iota.h` fixture verifies all seven addition overload
+paths exercised by signed and unsigned widths, subtraction and unary
+negation, yielding the same 27 wire positions. Native admission checks the
+bound columns and refuses out-of-range access. The difference for
+overflowing C++ integer offsets or invalid pointer arithmetic is outside
+the supported physical indexing contract. K-0010 and K-0011 remain open
+for full source mux admission and operation-family evidence.
