@@ -200,7 +200,8 @@ def run_stim_experiment(
     Uses strict DEM analysis and the selected registered decoder's defaults.
     The sampler reads the original circuit, not its DEM. Unsupported source or
     decoder combinations propagate their existing errors without approximation.
-    Requires the Stim extra; the pymatching decoder also requires its extra.
+    Standard builds require the Stim extra. Embedded Stim builds provide the
+    engine directly. The pymatching decoder requires its own extra.
 
     Args:
         circuit_text: Text accepted by the existing annotated Stim bridge.

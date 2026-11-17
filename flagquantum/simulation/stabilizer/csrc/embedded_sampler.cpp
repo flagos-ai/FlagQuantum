@@ -8,6 +8,7 @@
 #include <system_error>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 
@@ -79,8 +80,8 @@ struct Sampler {
     stim::simd_bits<width> reference;
     std::mt19937_64 rng;
 
-    Sampler(const char *text, std::mt19937_64 generator)
-        : circuit(text),
+    Sampler(stim::Circuit source, std::mt19937_64 generator)
+        : circuit(std::move(source)),
           reference(stim::TableauSimulator<width>::reference_sample_circuit(circuit)),
           rng(std::move(generator)) {}
 };
@@ -89,12 +90,7 @@ void destroy_sampler(PyObject *capsule) {
     delete static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
 }
 
-PyObject *prepare(PyObject *, PyObject *args) {
-    const char *text;
-    PyObject *seed;
-    if (!PyArg_ParseTuple(args, "sO", &text, &seed)) {
-        return nullptr;
-    }
+PyObject *make_sampler(stim::Circuit circuit, PyObject *seed) {
     try {
         auto rng = seed == Py_None ? stim::externally_seeded_rng() : std::mt19937_64{};
         if (seed != Py_None) {
@@ -104,12 +100,26 @@ PyObject *prepare(PyObject *, PyObject *args) {
             }
             rng.seed(value ^ stim::INTENTIONAL_VERSION_SEED_INCOMPATIBILITY);
         }
-        auto sampler = std::make_unique<Sampler>(text, std::move(rng));
+        auto sampler = std::make_unique<Sampler>(std::move(circuit), std::move(rng));
         PyObject *capsule = PyCapsule_New(sampler.get(), capsule_name, destroy_sampler);
         if (capsule != nullptr) {
             sampler.release();
         }
         return capsule;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+PyObject *prepare(PyObject *, PyObject *args) {
+    const char *text;
+    PyObject *seed;
+    if (!PyArg_ParseTuple(args, "sO", &text, &seed)) {
+        return nullptr;
+    }
+    try {
+        return make_sampler(stim::Circuit(text), seed);
     } catch (const std::exception &error) {
         PyErr_SetString(PyExc_RuntimeError, error.what());
         return nullptr;
@@ -606,6 +616,144 @@ PyObject *detector_error_model(PyObject *, PyObject *args) {
     }
 }
 
+constexpr uint64_t experiment_limit = 1'000'000;
+
+struct TextExperiment {
+    stim::Circuit circuit;
+    stim::CircuitStats stats;
+};
+
+std::optional<TextExperiment> parse_text_experiment(std::string_view text) {
+    if (text.size() > 1'048'576) {
+        PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1 MiB of UTF-8 source");
+        return std::nullopt;
+    }
+    try {
+        stim::Circuit circuit(text);
+        if (circuit.flat_count_operations([](const stim::CircuitInstruction &) { return 1; }) >
+            experiment_limit) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1,000,000 expanded instructions");
+            return std::nullopt;
+        }
+        const auto stats = circuit.compute_stats();
+        if (stats.num_qubits > 4096) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 4,096 qubits");
+            return std::nullopt;
+        }
+        if (stim::add_saturate(stats.num_measurements,
+                              stim::add_saturate(stats.num_detectors, stats.num_observables)) >
+            experiment_limit) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1,000,000 recorded columns");
+            return std::nullopt;
+        }
+        if (stats.num_detectors == 0) {
+            PyErr_SetString(PyExc_ValueError, "Stim experiment requires at least one detector");
+            return std::nullopt;
+        }
+        return TextExperiment{std::move(circuit), stats};
+    } catch (const std::invalid_argument &error) {
+        PyErr_Format(PyExc_ValueError, "invalid Stim circuit text: %s", error.what());
+        return std::nullopt;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return std::nullopt;
+    }
+}
+
+PyObject *prepare_text_experiment(PyObject *, PyObject *args) {
+    const char *text;
+    Py_ssize_t size;
+    PyObject *seed;
+    if (!PyArg_ParseTuple(args, "s#O", &text, &size, &seed)) return nullptr;
+    auto experiment = parse_text_experiment({text, size_t(size)});
+    if (!experiment) return nullptr;
+    try {
+        stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            experiment->circuit.without_noise(), false, false, false, 0, false, false);
+        PyObject *capsule = make_sampler(std::move(experiment->circuit), seed);
+        if (!capsule) return nullptr;
+        return Py_BuildValue("NKK", capsule,
+                             static_cast<unsigned long long>(experiment->stats.num_detectors),
+                             static_cast<unsigned long long>(experiment->stats.num_observables));
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+uint64_t expanded_dem_instructions(const stim::DetectorErrorModel &model) {
+    uint64_t count = 0;
+    for (const auto &op : model.instructions) {
+        const auto increment = op.type == stim::DemInstructionType::DEM_REPEAT_BLOCK
+            ? stim::mul_saturate(expanded_dem_instructions(op.repeat_block_body(model)),
+                                 op.repeat_block_rep_count())
+            : 1;
+        count = stim::add_saturate(count, increment);
+        if (count > experiment_limit) break;
+    }
+    return count;
+}
+
+stim::Circuit normalize_uniform_channels(const stim::Circuit &circuit) {
+    stim::Circuit normalized;
+    const auto flattened = circuit.flattened();
+    for (const auto &op : flattened.operations) {
+        const bool one_wire = op.gate_type == stim::GateType::PAULI_CHANNEL_1;
+        if ((one_wire || op.gate_type == stim::GateType::PAULI_CHANNEL_2) &&
+            std::all_of(op.args.begin(), op.args.end(), [&](double p) { return p == op.args[0]; })) {
+            const double probability = op.args[0] * op.args.size();
+            const auto gate = one_wire ? stim::GateType::DEPOLARIZE1 : stim::GateType::DEPOLARIZE2;
+            normalized.safe_append({gate, {&probability, &probability + 1}, op.targets, op.tag});
+        } else {
+            normalized.safe_append(op);
+        }
+    }
+    return normalized;
+}
+
+void append_missing_declarations(stim::DetectorErrorModel &model, const stim::CircuitStats &stats) {
+    std::vector<bool> detectors(stats.num_detectors);
+    std::vector<bool> observables(stats.num_observables);
+    for (const auto &op : model.instructions) {
+        if (op.type == stim::DemInstructionType::DEM_DETECTOR) {
+            for (const auto &target : op.target_data) detectors.at(target.val()) = true;
+        } else if (op.type == stim::DemInstructionType::DEM_LOGICAL_OBSERVABLE) {
+            for (const auto &target : op.target_data) observables.at(target.val()) = true;
+        }
+    }
+    for (size_t k = 0; k < detectors.size(); ++k) {
+        if (!detectors[k]) model.append_detector_instruction({}, stim::DemTarget::relative_detector_id(k), "");
+    }
+    for (size_t k = 0; k < observables.size(); ++k) {
+        if (!observables[k]) model.append_logical_observable_instruction(stim::DemTarget::observable_id(k), "");
+    }
+}
+
+PyObject *text_experiment_dem(PyObject *, PyObject *args) {
+    const char *text;
+    Py_ssize_t size;
+    int decompose, normalize;
+    if (!PyArg_ParseTuple(args, "s#pp", &text, &size, &decompose, &normalize)) return nullptr;
+    auto experiment = parse_text_experiment({text, size_t(size)});
+    if (!experiment) return nullptr;
+    try {
+        if (normalize) experiment->circuit = normalize_uniform_channels(experiment->circuit);
+        const auto model = stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            experiment->circuit, decompose, false, false, 0, false, false);
+        if (expanded_dem_instructions(model) > experiment_limit) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1,000,000 expanded instructions");
+            return nullptr;
+        }
+        auto flat = model.flattened();
+        append_missing_declarations(flat, experiment->stats);
+        const auto output = flat.str();
+        return PyUnicode_FromStringAndSize(output.data(), Py_ssize_t(output.size()));
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
 constexpr char reader_capsule_name[] = "flagquantum.embedded_shot_reader";
 
 struct ShotReader {
@@ -942,6 +1090,8 @@ PyMethodDef methods[] = {
     {"scan_shot_reader", scan_shot_reader, METH_VARARGS, nullptr},
     {"read_shot_reader", read_shot_reader, METH_VARARGS, nullptr},
     {"close_shot_reader", close_shot_reader, METH_VARARGS, nullptr},
+    {"prepare_text_experiment", prepare_text_experiment, METH_VARARGS, nullptr},
+    {"text_experiment_dem", text_experiment_dem, METH_VARARGS, nullptr},
     {"prepare_detector", prepare_detector, METH_VARARGS, nullptr},
     {"sample_detectors", sample_detectors, METH_VARARGS, nullptr},
     {"write_detectors", write_detectors, METH_VARARGS, nullptr},

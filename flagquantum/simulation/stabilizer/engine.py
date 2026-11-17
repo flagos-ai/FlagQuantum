@@ -26,6 +26,10 @@ from ._validation import (
     _pauli_letters,
     _validate_seed,
     _validate_shots,
+    _validate_stim_experiment_source,
+)
+from ._validation import (
+    _validate_stim_reference as _validate_stim_reference,
 )
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
@@ -1076,12 +1080,7 @@ def _prepare_noisy_measurements(
 
 
 def _parse_stim_experiment(circuit_text: str) -> Any:
-    if not isinstance(circuit_text, str):
-        raise TypeError("circuit_text must be a string")
-    if not circuit_text.strip():
-        raise ValueError("circuit_text must not be empty")
-    if len(circuit_text.encode("utf-8")) > 1_048_576:
-        raise CapabilityError("Stim experiment exceeds 1 MiB of UTF-8 source")
+    _validate_stim_experiment_source(circuit_text)
     try:
         circuit = _stim().Circuit(circuit_text)
     except ValueError as error:
@@ -1152,19 +1151,19 @@ def _annotated_stim_source(
     return "\n".join(lines)
 
 
-def _validate_stim_reference(circuit: Any) -> None:
-    try:
-        circuit.without_noise().detector_error_model(allow_gauge_detectors=False)
-    except ValueError as error:
-        raise CapabilityError(
-            "Stim experiment has nondeterministic declared parities"
-        ) from error
-
-
 def _prepare_stim_experiment(
     circuit_text: str, *, seed: int | None
 ) -> tuple[_PreparedMeasurements, int, int]:
     """Prepare normalized flips from the original noisy circuit, not its DEM."""
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        from ._embedded_sampler import _prepare_text_experiment
+
+        sampler, detectors, observables = _prepare_text_experiment(circuit_text, seed)
+        return (
+            _PreparedMeasurements(sampler, detectors + observables),
+            detectors,
+            observables,
+        )
     circuit = _parse_stim_experiment(circuit_text)
     _validate_stim_reference(circuit)
     sampler = circuit.compile_detector_sampler(seed=_validate_seed(seed))
@@ -1183,6 +1182,12 @@ def _stim_experiment_dem_text(
     normalize_uniform_pauli: bool = False,
 ) -> str:
     """Keep exact SDK conversion refusals and normalize only missing shape."""
+    if Path(__file__).with_name("_embedded_stim_profile.txt").is_file():
+        from ._embedded_sampler import _text_experiment_dem
+
+        return _text_experiment_dem(
+            circuit_text, decompose_errors, normalize_uniform_pauli
+        )
     circuit = _parse_stim_experiment(circuit_text)
     if normalize_uniform_pauli:
         # Stim's exact DEM conversion understands uniform depolarization. The

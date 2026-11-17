@@ -1688,3 +1688,14 @@ explicit vendor boxing plus cataloged experimental Triton kernels; it does not
 establish default FlagGems complex128 support, other circuit families,
 torch.func, compiled/exported execution, multi-stream or distributed support.
 Recorded performance predates PR integration and is not release certification.
+
+
+## Embedded external Stim text experiments
+
+The opt-in macOS arm64 embedded build can run existing external Stim text
+reports without the Stim Python package. Source and expanded-instruction
+limits, strict DEM conversion, deterministic reference parities, and the
+existing detector and observable requirements apply. The report samples the
+original noisy circuit and decodes its detector records using the selected
+decoder. The SDK remains required for the memory-circuit text exporter and
+for external-text reports in marker-free builds.
