@@ -38,6 +38,11 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`synthesis_offline_deployment.py`](synthesis_offline_deployment.py) uses the
+  synthesis, compiler, and deployment namespaces to export OpenQASM and build
+  a deployment package for a fixed local target. Run
+  `python -m examples.synthesis_offline_deployment`.
+
 - Synthesis support modules (`operations.py`, `physics.py`, `data.py`, `curve.py`,
   `portfolio_reference.py`, and `quadratic_reference.py`) define source helpers or
   mathematical data. Some `comparisons/circuit.py` entrypoints delegate to shared
