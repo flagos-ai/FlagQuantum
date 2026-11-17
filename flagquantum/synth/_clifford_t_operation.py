@@ -7,6 +7,7 @@ from math import pi
 from typing import TYPE_CHECKING
 
 from ..compiler.registers.primitives.global_phase import scalar_phase_ir
+from ..core.ir import Instruction
 from ._clifford_t_repr import to_sequence
 
 if TYPE_CHECKING:
@@ -38,22 +39,25 @@ class CliffordTOperation:
     wire: int
     fmt: str = "xyz"
 
+    def instructions(self) -> tuple[Instruction, ...]:
+        matrix = self.matrix.rescale() if self.fmt == "xz" else self.matrix
+        word = to_sequence(matrix, self.fmt)
+        if word is None:
+            raise ValueError("No exact word found in the requested Clifford+T format")
+        instructions: list[Instruction] = []
+        phase = 0
+        for label in word:
+            gates, factor = _RECIPES[label]
+            instructions.extend(Instruction(name, (self.wire,)) for name in gates)
+            phase += factor
+        angle = ((phase + 8) % 16 - 8) * pi / 8
+        return (*instructions, *scalar_phase_ir(self.wire, angle))
+
     def append_to(self, circuit: Circuit) -> Circuit:
         if not 0 <= self.wire < circuit.n_qubits:
             raise ValueError(
                 f"Synthesized rotation wire {self.wire} is outside the circuit"
             )
-        matrix = self.matrix.rescale() if self.fmt == "xz" else self.matrix
-        word = to_sequence(matrix, self.fmt)
-        if word is None:
-            raise ValueError("No exact word found in the requested Clifford+T format")
-        phase = 0
-        for label in word:
-            gates, factor = _RECIPES[label]
-            for name in gates:
-                circuit.gate(name, self.wire)
-            phase += factor
-        angle = ((phase + 8) % 16 - 8) * pi / 8
-        for instruction in scalar_phase_ir(self.wire, angle):
+        for instruction in self.instructions():
             circuit.gate(instruction.name, instruction.wires, params=instruction.params)
         return circuit
