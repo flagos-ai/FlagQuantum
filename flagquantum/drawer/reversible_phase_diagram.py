@@ -203,7 +203,11 @@ class _TextDiagram:
 
 def render_reversible_phase_text(kmx: str, *, use_unicode: bool = False) -> str:
     """Render the physical circuit with the source ASCII or Unicode glyphs."""
-    circuit = read_kmx_circuit(kmx)
+    return render_circuit_text(read_kmx_circuit(kmx), use_unicode=use_unicode)
+
+
+def render_circuit_text(circuit: KmxCircuit, *, use_unicode: bool = False) -> str:
+    """Render an already parsed physical circuit."""
     diagram = _TextDiagram(circuit.qubits)
     diagram.add_registers(circuit)
     for record in circuit.records:

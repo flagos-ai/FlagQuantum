@@ -366,7 +366,12 @@ class _Scene:
 
 def render_reversible_phase_svg(kmx: str) -> str:
     """Render a standalone physical circuit diagram."""
-    scene = _Scene(read_kmx_circuit(kmx))
+    return render_circuit_svg(read_kmx_circuit(kmx))
+
+
+def render_circuit_svg(circuit: KmxCircuit) -> str:
+    """Render an already parsed circuit as standalone SVG."""
+    scene = _Scene(circuit)
     root = Element("svg", viewBox=f"0 0 {scene.x} {scene.height}", xmlns=_SVG_NS)
     for _, groups in scene.wire_rows():
         for group in groups:
@@ -421,7 +426,11 @@ def _markup(nodes: Sequence[Element]) -> str:
 
 def render_reversible_phase_html(kmx: str) -> str:
     """Render an interactive physical diagram with zoom, pan and detail levels."""
-    circuit = read_kmx_circuit(kmx)
+    return render_circuit_html(read_kmx_circuit(kmx))
+
+
+def render_circuit_html(circuit: KmxCircuit) -> str:
+    """Render an already parsed circuit as an interactive HTML document."""
     scene = _Scene(circuit)
     labels = [_text(0, _y(q), f"q{q}:", anchor="end") for q in range(scene.qubits)]
     wires = tuple(scene.wire_rows())
