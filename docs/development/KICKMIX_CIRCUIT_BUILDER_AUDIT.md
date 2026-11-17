@@ -392,15 +392,32 @@ Qualtran four-T AND compute and its resource model own a separate
 decomposition. The source reset is supplied by the zero-entry contract
 where an existing caller already owns clean work.
 
-K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
-C++ allocation scopes, general loop patterns and debug runtime output have
-separate source assertions. The full public mixed
-vector admission and degenerate quantum wire aliases remain outside the
-checked dispatch fixtures.
-The original `CircuitBuilder.*` suite passed all 27 tests with GoogleTest
-1.14.0 from the locked Bazel manifest. The build compiled the unchanged
-builder, original tests and test helpers, and linked the remaining native
-objects from the existing reference extension build. The native predicate
-intake passed 631 cases and the focused gate and arithmetic regression passed
-185 cases. The C++ baseline still needs per-family native replacement before
-the original-test parent closes.
+## Original test file acceptance
+
+All 27 named tests from `circuit_builder.test.cc` pass under GoogleTest
+1.14.0. The fixture build uses the unchanged source file and builder.
+A capture hook calls the original diagram assertion and records the
+circuit that reached it. All 21 assertions across the 15 diagram tests
+are retained and checked against native ordered operations, wire IDs and
+effective guards. The original renderer continues to check its own text
+spacing and scope labels. The FlagQuantum artifact represents the same
+connections as ordered instructions with conditions.
+
+| Original tests | Native evidence |
+| --- | --- |
+| `basic` | Exact `CCX q0 q1 q3` opcode and operands in the scalar replacement. |
+| `store_and` | Locked scoped store sequence and all four input assignments in `test_kmx_result_lifetimes.py`. |
+| `cccz_qqqqa`, `cccz_qbqqa`, `cccz_bqcqa`, `cccz_bqfqa`, `cccz_qqqq` | Five captured diagram streams in `test_kickmix_builder_file_audit.py`, plus branch and work restoration tests for the measured and borrowed helper paths. |
+| `broadcast_ccx_aqq_1` through `broadcast_ccx_aqq_4` | Four ordered diagram streams captured from the unchanged source, including empty and guarded cases. |
+| `broadcast_ccx_acq_1` through `broadcast_ccx_acq_4` | Four ordered diagram streams captured from the unchanged source, with classical and quantum shared controls. |
+| `broadcast_ccx_abq`, `broadcast_ccx_amq` | Eight captured diagrams, including constant pruning and repeated bit guards. |
+| `cx`, `cz`, `ccx`, `ccz` | All 160 source tag streams in the independent scalar fingerprint. Gate order, condition semantics and phase feedback are also covered by the mixed broadcast and controlled resolution tests. |
+| `parity_ccx`, `parity_ccz` | 320 original source/native streams, plus complex-state checks for equal tags and quantum aliases. |
+| `parity_cccx`, `parity_cccz` | 2,560 original source/native streams under both helper policies, including exact measurand, cleanup, and rejected quantum aliases. |
+| `cswap` | All four source control tag streams and complete complex amplitudes in `test_kickmix_mixed_swap.py`. |
+| `raii_mark_block_entry` | Original inclusive sequence of outer, inner and empty named blocks in `test_kmx_block_marks.py`. |
+
+The source test consumer K-0008 has a native equivalent for every
+assertion family. K-0005 and K-0006 remain open. Production compatibility
+still has gaps for allocation scopes, general loops, debug output, mutable
+builder failure behavior and degenerate quantum-wire aliases.

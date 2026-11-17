@@ -1,0 +1,57 @@
+{
+  "source_blob": "d01e4c1aa3ad397312e52229cc1883c4a15debd5",
+  "diagram_test_streams": {
+    "cccz_qqqqa": [
+      "R q5\nCCX q1 q2 q5\nCCZ q5 q3 q4\nHMR q5 b0\nCZ q1 q2 if b0"
+    ],
+    "cccz_qbqqa": [
+      "CCZ q1 q3 q4 if b2"
+    ],
+    "cccz_bqcqa": [
+      "CZ q2 q4 if b1"
+    ],
+    "cccz_bqfqa": [
+      ""
+    ],
+    "cccz_qqqq": [
+      "CCX q1 q2 q0\nCCZ q0 q3 q4\nCCX q1 q2 q0\nCCZ q0 q3 q4"
+    ],
+    "broadcast_ccx_aqq_1": [
+      "CX q2 q5\nCX q3 q6\nCX q4 q7"
+    ],
+    "broadcast_ccx_aqq_2": [
+      ""
+    ],
+    "broadcast_ccx_aqq_3": [
+      "PUSH_CONDITION if b1\nCX q2 q5\nCX q3 q6\nCX q4 q7\nPOP_CONDITION"
+    ],
+    "broadcast_ccx_aqq_4": [
+      "CCX q2 q1 q5\nCCX q3 q1 q6\nCCX q4 q1 q7"
+    ],
+    "broadcast_ccx_acq_1": [
+      "X q5 if b2\nX q6 if b3\nX q7 if b4"
+    ],
+    "broadcast_ccx_acq_2": [
+      ""
+    ],
+    "broadcast_ccx_acq_3": [
+      "PUSH_CONDITION if b1\nX q5 if b2\nX q6 if b3\nX q7 if b4\nPOP_CONDITION"
+    ],
+    "broadcast_ccx_acq_4": [
+      "CX q1 q5 if b2\nCX q1 q6 if b3\nCX q1 q7 if b4"
+    ],
+    "broadcast_ccx_abq": [
+      "X q6\nX q7",
+      "",
+      "PUSH_CONDITION if b1\nX q6\nX q7\nPOP_CONDITION",
+      "CX q1 q6\nCX q1 q7"
+    ],
+    "broadcast_ccx_amq": [
+      "X q5\nX q6 if b1\nCX q2 q7",
+      "",
+      "PUSH_CONDITION if b1\nX q5\nX q6 if b1\nCX q2 q7\nPOP_CONDITION",
+      "CX q1 q5\nCX q1 q6 if b1\nCCX q1 q2 q7"
+    ]
+  },
+  "scalar_stream_digest": "3152466e33c8a89c10fdb234732bf1a72ade9629be28f2d0bff276b56f65d1ee"
+}
