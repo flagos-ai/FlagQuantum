@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0298 | `sparse_matrix_hermitian.ipynb` | `117edcce9169b81c911d40885946e193e829d438` | Closed by the complete native tutorial. |
-| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Symbolic oracle composition verified. Foreign objects, non-default controls and complete padded primitive parity remain open. |
+| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Symbolic oracle composition, structured controls and padded primitive flow verified. Binding foreign oracle objects remains open. |
 | Q-0300 | `sparse_matrix_hermitian_test.py` | `367de6a3ae0ac011a16a5cc13b63dbb77cd7ba53` | Closed for the original runnable scenarios and their notebook. Source fixture mode limits are recorded below. |
 
 ## Interface and direct dependencies
@@ -38,6 +38,7 @@ between sequential calls.
 | Full 4-by-4 uniform, positive control | Four H, two Ry and three exact Fredkin streams (21 T/T-dagger), no temporary wires or measurements | Three CSWAP, four Clifford, two rotations, peak seven |
 | Padded 3-by-3 in 8-by-8, ordinary | 40 T/T-dagger, ten measurements, four temporary wires | Ten And, 74 Clifford, six rotations, ten measurements, peak 12 |
 | Padded 3-by-3 in 8-by-8, positive control | 68 T/T-dagger, ten measurements, four temporary wires | Four CSWAP, ten And, 70 Clifford, six rotations, ten measurements, peak 13 |
+| Padded 3-by-3 in 8-by-8, equality to two on a two-bit unsigned word | 72 T/T-dagger, eleven measurements, five temporary wires | Four CSWAP, eleven And, 71 Clifford, six rotations, eleven measurements, peak 15 |
 
 The full-support fixtures check the ordered stages, direct call counts,
 bound primitive operands, all complex matrix entries, the inverse, and the
@@ -46,8 +47,28 @@ at the all-zero history and every ten-bit measurement history on a coherent
 complex input for each control mode. Its expected full vector comes from the
 locked source tensor contraction with the work wires appended in zero. The
 test covers the primitive measurements and feedback through branch replay.
-Full padded primitive sequence comparison to an independently flattened
-reference is still open.
+The padded ordinary and positive-control fixtures also independently
+replay the locked Soquet graph through the diffusion, rotation and exchange
+stages. Each wire sees the same primitive operands, parameters and
+classical feedback. Stage-local temporary slots retain their original
+binding throughout the comparison.
+
+## Structured controls
+
+`make_controlled_on` wraps the existing positive binding through the
+shared predicate executor. One negative control emits X around the
+positive block. Multi-bit controls compute the equality predicate once,
+run the positive block and erase the predicate. Control work and
+measurement slots stay disjoint from the child workspace.
+
+The full-support fixtures compare one negative bit, a mixed bit array,
+a typed unsigned word, and two typed control groups. Each verifies
+the locked primitive stream, source model, complete complex output and
+every measurement history. The controlled reflection is self-adjoint.
+The padded typed control additionally enumerates all 2,048 histories
+on a correlated complex input with active and inactive control values.
+It matches every output amplitude and returns all five temporary wires
+to zero. Foreign oracle objects still need native binding callbacks.
 
 ## Symbolic declarations and original validation
 
@@ -66,7 +87,8 @@ modeled Fredkins. The peak takes the maximum of the full signature
 and the eight child peaks, including the high-order diffusion prefix
 inside AutoPartition. Tests compare both resource profiles for full
 support, independent symbolic sparsity, a concrete index width with
-symbolic sparsity, and fixed and symbolic band sizes. Symbolic
+symbolic sparsity, and fixed and symbolic band sizes. Structured control
+fixtures also match the two QEC profiles and symbolic peak. Symbolic
 decomposition remains unavailable in the locked source and native binding.
 
 The original concrete and symbolic fixtures, parameter assertions, Hadamard

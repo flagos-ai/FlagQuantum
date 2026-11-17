@@ -18,6 +18,15 @@ from ...compiler._component_trace.resource_model import (
     GateCost,
 )
 from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
+from ...compiler.registers.control.control_predicate import (
+    ControlRegister,
+    bind_control_registers,
+)
+from ...compiler.registers.control.controlled_component import controlled_component_ir
+from ...compiler.registers.control.controlled_component_resource_model import (
+    controlled_component_cost,
+    controlled_component_resource_formula,
+)
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
@@ -191,6 +200,52 @@ class HermitianSparseMatrixBlockEncoding:
             ),
         )
 
+    def controlled_resource_model(
+        self, control_registers: tuple[ControlRegister, ...]
+    ) -> ComponentCost:
+        """Count the concrete predicate around the existing positive block."""
+        return controlled_component_cost(
+            self.resource_model(controlled=True),
+            control_registers,
+            target_width=self.system_bitsize + self.ancilla_bitsize,
+        )
+
+    def make_controlled_on(
+        self,
+        *,
+        controls: tuple[tuple[int, ...], ...],
+        control_registers: tuple[ControlRegister, ...],
+        system: tuple[int, ...],
+        ancilla: tuple[int, ...],
+        workspace: tuple[int, ...] = (),
+        classical_bits: tuple[int, ...] = (),
+        control_workspace: tuple[int, ...] = (),
+        control_classical_bits: tuple[int, ...] = (),
+        adjoint: bool = False,
+    ) -> _BoundBlockOperation:
+        """Bind a negative or structured control with its own live scratch."""
+        wires, _ = bind_control_registers(controls, control_registers)
+        through = (*wires, *system, *ancilla)
+        work = (*workspace, *control_workspace)
+        _validate_block_work(through, work, (*classical_bits, *control_classical_bits))
+        gates = controlled_component_ir(
+            controls,
+            control_registers,
+            lambda predicate: (
+                self.make_on(
+                    system=system,
+                    ancilla=ancilla,
+                    control=predicate,
+                    workspace=workspace,
+                    classical_bits=classical_bits,
+                    adjoint=adjoint,
+                ).instructions
+            ),
+            control_workspace,
+            control_classical_bits,
+        )
+        return _BoundBlockOperation(gates, max((*through, *work)) + 1)
+
     def make_on(
         self,
         *,
@@ -274,23 +329,26 @@ def source_hermitian_sparse_fallback_formula(
     column: tuple[SymbolicResourceFormula, SymbolicResourceFormula],
     entry: tuple[SymbolicResourceFormula, SymbolicResourceFormula],
     controlled: bool = False,
+    control_registers: tuple[ControlRegister, ...] = (),
     legacy_shims: bool = False,
 ) -> SymbolicResourceFormula:
     """Estimate the eight source callees when the composite is symbolic.
 
     Oracle pairs are forward and adjoint. Always keeps their formulas and
     those for diffusion unchanged under an added positive control. Only
-    the exchanges become controlled. Use the concrete component model to
-    account for live bystanders in a resolved circuit.
+    the exchanges become controlled. Structured controls wrap that
+    positive child with the shared predicate model. Use the concrete
+    component model for live bystanders in a resolved circuit.
     """
-    if type(controlled) is not bool:
-        raise ValueError("Hermitian sparse control flag must be boolean")
+    if type(controlled) is not bool or (controlled and control_registers):
+        raise ValueError("Hermitian sparse control requires one control specification")
+    positive = controlled or bool(control_registers)
     diffusion = _source_sparse_diffusion_resource_formula(
         width, sparsity, legacy_shims=legacy_shims
     )
 
     def swap(bits: SymbolicInt) -> SymbolicResourceFormula:
-        if controlled:
+        if positive:
             return SymbolicResourceFormula(0, 0, 0, 2 * bits + 1, cswap=bits)
         return source_swap_resource_formula(bits)
 
@@ -304,11 +362,12 @@ def source_hermitian_sparse_fallback_formula(
         column[1],
         diffusion,
     )
-    return SymbolicResourceFormula(
+    target_width = 2 * width + 2
+    model = SymbolicResourceFormula(
         logical_qubits=cast(
             SymbolicInt,
             smax(
-                2 * width + 2 + int(controlled),
+                target_width + int(positive),
                 *(child.logical_qubits for child in children),
             ),
         ),
@@ -317,6 +376,15 @@ def source_hermitian_sparse_fallback_formula(
             for field in fields(SymbolicResourceFormula)
             if field.name != "logical_qubits"
         },
+    )
+    if not control_registers:
+        return model
+    return controlled_component_resource_formula(
+        ComponentCost("Positive Hermitian sparse block", 0),
+        model,
+        control_registers,
+        target_width=target_width,
+        legacy_shims=legacy_shims,
     )
 
 
