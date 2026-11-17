@@ -11,7 +11,7 @@ Reference: Qualtran v0.7.0 at
 | Q-0312 | `allocate_test.py` | `96f411955b10a466d37e8ba3b0698a0823d42ba9` | Closed for the runnable source scenarios and notebook. |
 | Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for external object hooks, full executable dtype and symbolic component drawing. |
 | Q-0324 | `free_test.py` | `63ffa89314718cfaa94bfb0104953e52fd1c518e` | Closed for the runnable symbolic fixture and ten-wire utility round trip. |
-| Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | Reused typed lifetime and control passthrough; general descriptor audit remains open. |
+| Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | All eight bookkeeping-package descendants verified. Polynomial descendants and generic descriptors remain open. |
 
 ## Lifetime, bit order and ownership
 
@@ -45,6 +45,27 @@ reserves the pool and one spectator. The source qubit model visits its
 disconnected spectator separately and reports the pool width. The
 locked symbolic glyph has the same labels, while native typed component
 scores require concrete widths.
+
+## Shared bookkeeping control
+
+The unchanged base callback returns the original control tuple and invokes
+one child with only its data bindings. The native test family covers
+Allocate, Free, ordinary Split and Join, Partition in both directions,
+Split2, Join2, and Cast. Positive, negative, shaped and grouped controls
+exercise one actual native call and one actual source call per case.
+New wire-map checks compare the source Cirq output maps for pair rebinding
+and shaped Cast. Complete complex states agree on the bound circuits,
+including their idle controls. These callbacks emit zero gates and require
+no predicate workspace. Allocate and Free retain their existing pool events.
+
+The shaped CBit Cast keeps its two original classical slots. The only
+emitted instructions initialize the caller's two input bits. The locked
+graph accepts the shaped Cast call, and its numerical callback raises
+on the array. Scalar source callbacks provide the value oracle for each
+element. The two finite-field polynomial descendants live under
+`gf_poly_arithmetic`. Their wire views have existing numerical and
+physical coverage. Typed control composition and generic descriptors
+remain open in Q-0533.
 
 ## Original cases and resource accounting
 

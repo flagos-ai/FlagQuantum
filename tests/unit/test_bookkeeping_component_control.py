@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from hashlib import sha1
+from itertools import product
+from pathlib import Path
 from typing import Any, Literal
 
 import numpy as np
@@ -18,6 +21,7 @@ from flagquantum.compiler.registers.component_rebindings import (
 from flagquantum.compiler.registers.control.component_bookkeeping import (
     bookkeeping_component_control_system,
 )
+from flagquantum.compiler.registers.layout.component_cast import cast_word_function
 from flagquantum.compiler.registers.layout.component_partition import (
     partition_component_program,
 )
@@ -26,15 +30,30 @@ from flagquantum.compiler.registers.layout.component_workspace import (
     free_word_function,
 )
 from flagquantum.compiler.registers.register_binding import bind_register_program
+from flagquantum.core.classical_dataflow import parse_classical_xor
 from flagquantum.core.ir.program import BlockRecord, FunctionRecord, ProgramRecord
-from flagquantum.core.ir.program.register_types import quantum_bit_type
+from flagquantum.core.ir.program.register_types import (
+    classical_bit_type,
+    quantum_bit_type,
+)
 from flagquantum.core.ir.program.registers import Register, RegisterSide, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
 from tests.unit.test_component_graph import _native_trace, _source, _source_trace
 from tests.unit.test_component_structured_control import normalize_trace
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
-Kind = Literal["allocate", "free", "split", "join", "partition", "unpartition"]
+Kind = Literal[
+    "allocate",
+    "free",
+    "split",
+    "join",
+    "partition",
+    "unpartition",
+    "split2",
+    "join2",
+    "cast",
+]
+
 KINDS: tuple[Kind, ...] = (
     "allocate",
     "free",
@@ -42,6 +61,9 @@ KINDS: tuple[Kind, ...] = (
     "join",
     "partition",
     "unpartition",
+    "split2",
+    "join2",
+    "cast",
 )
 CASES: tuple[tuple[Kind, int, bool], ...] = tuple(
     (kind, width, dirty)
@@ -51,9 +73,20 @@ CASES: tuple[tuple[Kind, int, bool], ...] = tuple(
 )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def frozen_source() -> None:
+    from qualtran.bloqs.bookkeeping import _bookkeeping_bloq
+
+    raw = Path(_bookkeeping_bloq.__file__).read_bytes()
+    assert sha1(b"blob %d\0" % len(raw) + raw).hexdigest() == (
+        "32b9b7498417c20ee8ca86c8e53f16b2d63bada4"
+    )
+
+
 def fixture(kind: Kind, width: int, dirty: bool) -> tuple[ProgramRecord, Any]:
-    from qualtran import QAny
-    from qualtran.bloqs.bookkeeping import Allocate, Free, Join, Partition, Split
+    from qualtran import QAny, QUInt
+    from qualtran.bloqs.bookkeeping import Allocate, Cast, Free, Join, Partition, Split
+    from qualtran.bloqs.bookkeeping.partition import Split2
 
     dtype = RegisterType("opaque", width)
     if kind == "allocate":
@@ -68,6 +101,21 @@ def fixture(kind: Kind, width: int, dirty: bool) -> tuple[ProgramRecord, Any]:
         return ProgramRecord((split_word_function("leaf", dtype),)), Split(QAny(width))
     if kind == "join":
         return ProgramRecord((join_word_function("leaf", dtype),)), Join(QAny(width))
+    if kind == "cast":
+        return ProgramRecord(
+            (cast_word_function("leaf", RegisterType("uint", width), dtype, (2,)),)
+        ), Cast(QUInt(width), QAny(width), shape=(2,))
+    if kind in ("split2", "join2"):
+        source_pair = Split2(width // 2, width - width // 2)
+        reverse = kind == "join2"
+        parts = tuple(
+            Register(port.name, RegisterType("opaque", port.bitsize))
+            for port in source_pair.signature.rights()
+        )
+        return (
+            partition_component_program(parts, "leaf", reverse),
+            source_pair.adjoint() if reverse else source_pair,
+        )
     parts = (
         Register("first", RegisterType("opaque", width // 2)),
         Register("second", RegisterType("opaque", width - width // 2)),
@@ -167,9 +215,27 @@ def test_actual_bookkeeping_callback_is_unconditional_and_preserves_control_iden
         ]
     else:
         assert bound.events == ()
+        if kind in {"split2", "join2", "cast"}:
+            from cirq import LineQubit
+
+            source_inputs = {}
+            offset = logical_controls
+            for port in source.signature.lefts():
+                n = int(port.total_bits())
+                source_inputs[port.name] = np.asarray(
+                    LineQubit.range(offset, offset + n), dtype=object
+                ).reshape((*port.shape, port.bitsize))
+                offset += n
+            gate, output_ports = source.as_cirq_op(None, **source_inputs)
+            assert gate is None
+            assert bound.outputs[logical_controls:] == tuple(
+                tuple(qubit.x for qubit in output_ports[port.name][idx].flat)
+                for port in source.signature.rights()
+                for idx in port.all_idxs()
+            )
     model = get_cost_value(composite, QECGatesCost())
     assert model.total_t_count() == model.measurement == model.clifford == 0
-    assert get_cost_value(composite, QubitCount()) == logical_controls + width
+    assert get_cost_value(composite, QubitCount()) == signature.n_qubits()
     if width and kind == "allocate":
         with pytest.raises(ValueError, match="ownership transfer"):
             bind_register_program(
@@ -297,3 +363,49 @@ def test_repeated_allocation_leaf_keeps_distinct_output_ownership() -> None:
     assert bound.outputs == ((0,), (2,), (1,))
     assert tuple(e.wires for e in bound.events) == ((2,), (1,))
     assert bound.circuit.instructions == ()
+
+
+def test_controlled_classical_cast_preserves_slots():
+    from qualtran import CBit, CtrlSpec
+    from qualtran.bloqs.bookkeeping import Cast
+
+    dtype = classical_bit_type()
+    leaf = cast_word_function("leaf", dtype, dtype, (2,))
+    assert leaf.registers is not None
+    record = ProgramRecord((leaf,))
+    _, adder = bookkeeping_component_control_system(record, "leaf")
+    signature = Signature((Register("ctrl", quantum_bit_type()), *leaf.registers))
+    builder = ComponentProgramBuilder(signature, record.functions, name="caller")
+    observer = _source(signature)
+    controls = (builder.inputs["ctrl"],)
+    src_controls = (observer.inputs["ctrl"],)
+    returned, (data,) = adder(builder, controls, {"reg": builder.inputs["reg"]})
+    cast = Cast(CBit(), CBit(), shape=(2,))
+    _, callback = cast.get_ctrl_system(CtrlSpec(cvs=0))
+    src_returned, (src_data,) = callback(
+        observer.builder, src_controls, {"reg": observer.inputs["reg"]}
+    )
+    assert returned is controls and src_returned is src_controls
+    module = builder.finalize({"ctrl": returned[0], "reg": data})
+    reference = observer.builder.finalize(ctrl=src_returned[0], reg=src_data)
+    assert normalize_trace(_native_trace(module, "caller")) == normalize_trace(
+        _source_trace(observer, reference)
+    )
+    with pytest.raises(ValueError, match="truth value of an array"):
+        reference.call_classically(ctrl=1, reg=np.asarray([0, 1]))
+    scalar = Cast(CBit(), CBit())
+    for values in product((0, 1), repeat=2):
+        expected = tuple(scalar.on_classical_vals(reg=value)["reg"] for value in values)
+        actual = bind_register_program(
+            module, ((0,), (), ()), classical_inputs=(None, *values), entry="caller"
+        )
+        assert actual.outputs == ((0,), (), ())
+        assert actual.classical_outputs == ((), (0,), (1,))
+        assert actual.events == ()
+        initializers = tuple(
+            parse_classical_xor(g) for g in actual.circuit.instructions
+        )
+        assert tuple((g.target, g.sources, g.constant) for g in initializers) == (
+            (0, (), bool(expected[0])),
+            (1, (), bool(expected[1])),
+        )
