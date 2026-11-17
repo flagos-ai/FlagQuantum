@@ -5,7 +5,8 @@ The locked Kickmix source files under review are `circuit.cc` (K-0014, blob
 `1456cb523d4a1cb29896a5c2ab09ab4e781dbb53`) and `circuit.test.cc` (K-0017,
 blob `f63b40b44c8822344f0a1c3d026f362af4f2341f`). All 48 unchanged C++
 tests ran successfully against the locked implementation. The three source
-files remain open pending text drawing and complete native test mapping.
+files remain open pending HTML and SVG circuit drawing and complete native
+test mapping.
 
 ## Structure and composition
 
@@ -61,6 +62,23 @@ nonfinite vertical coordinates for an empty circuit. Native empty output
 uses finite zero coordinates. Both the raw text and KMB round-trip routes
 produce the same native chart.
 
+## Physical text diagrams
+
+The complete locked `circuit_diagram.cc` (K-0018, blob
+`9bc1d00dec8536bf941ab4d2ba4d63605a25b227`) maps to the text diagram drawer
+and shared raw KMX records. The drawer lays out byte-width register labels,
+fusion of consecutive controlled X and Z records, conditions, measurement
+destinations, reset wire transitions, and classical metadata. It applies
+Unicode glyphs after layout. The source string, FILE, and ostream routes
+agree in the reference probe for the applicable mode. Python's single
+string result can be written to a file or stream with the caller's encoding.
+
+The 11 frozen pairs replay ASCII and Unicode output exactly, including the
+five original golden diagrams, the complete opcode stream, UTF-8 names,
+empty circuits, and classical-only input. Raw KMX and the KMB bridge produce
+the same output. The diagram changes presentation only. In particular,
+merging the visual controls preserves all original CX and CZ records.
+
 ## Reference evidence and remaining ownership
 
 The native structure fixture records 20 cases captured by an unchanged
@@ -77,6 +95,7 @@ applicable.
 | KMB layout, refusals and full-file round trip | Existing complete opcode and large-file fixtures plus the original malformed payloads. Map remaining original positive cases and limit assertions individually before closing K-0017. |
 | Named registers, tag rendering in KMX, ordinary stream output and exact rotation spelling | Existing codecs and exact angle owner. The full native assertion map remains open. |
 | Reaction depth and touched qubits | Reuse the reaction-depth implementation and accepted source fixtures. |
-| Text diagrams and control merging | Drawer owns the source diagram behavior. Exact line and packing fixtures remain open. |
+| Text diagrams and control merging | K-0018 closed by the exact ASCII and Unicode layout fixtures. |
+| HTML and circuit SVG diagrams | K-0019 and K-0020 own the remaining graphical path. |
 | Analysis SVG and flame-chart assertions | Physical block walk, per-angle CCZ model, and SVG structure verified against the locked reference. The logical flame graph retains its own model. |
 | C++ aligned mutable buffers, copy and move | Native raw circuit operations use owned Python structures. Mutation and low-level allocation parity require a separate mapping. |

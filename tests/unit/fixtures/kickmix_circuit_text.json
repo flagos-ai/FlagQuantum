@@ -1,0 +1,57 @@
+{
+  "text_diagram_0": {
+    "kmx": "\n            CCX q0 q1 q2\n            CX q0 q1\n            X q0\n            NEG\n            NEG if b1\n            HMR q2 b1 if b3\n        ",
+    "ascii": "           neg\nq0: -@-@-X------------------\n     | |   neg if b1\nq1: -@-X--------------------\n     |               if(b3)\nq2: -X---------------HMR=b1",
+    "unicode": "           neg\nq0: ─●─●─X──────────────────\n     │ │   neg if b1\nq1: ─●─X────────────────────\n     │               if(b3)\nq2: ─X───────────────HMR═b1"
+  },
+  "text_diagram_merge_cx_0": {
+    "kmx": "\n            CX q0 q1\n            CX q0 q2\n            CX q0 q3\n            CX q0 q4\n            CX q0 q2\n            CX q0 q4\n        ",
+    "ascii": "q0: -@-@-\n     | |\nq1: -X-|-\n     | |\nq2: -X-X-\n     | |\nq3: -X-|-\n     | |\nq4: -X-X-",
+    "unicode": "q0: ─●─●─\n     │ │\nq1: ─X─┼─\n     │ │\nq2: ─X─X─\n     │ │\nq3: ─X─┼─\n     │ │\nq4: ─X─X─"
+  },
+  "text_diagram_merge_cx_1": {
+    "kmx": "\n            APPEND_TO_REGISTER q1 r0\n            APPEND_TO_REGISTER q2 r0\n            APPEND_TO_REGISTER q3 r0\n            APPEND_TO_REGISTER q4 r0\n            APPEND_TO_REGISTER q5 r0\n            CX q0 q3\n            CX q0 q4\n            CX q0 q5\n            CZ q0 q1\n            CZ q0 q2\n            CZ q0 q3\n        ",
+    "ascii": "q0: ---------@-@-\n             | |\nq1: -reg0[0]-Z-|-\n             | |\nq2: -reg0[1]-Z-|-\n             | |\nq3: -reg0[2]-X-Z-\n             |\nq4: -reg0[3]-X---\n             |\nq5: -reg0[4]-X---",
+    "unicode": "q0: ─────────●─●─\n             │ │\nq1: ─reg0[0]─Z─┼─\n             │ │\nq2: ─reg0[1]─Z─┼─\n             │ │\nq3: ─reg0[2]─X─Z─\n             │\nq4: ─reg0[3]─X───\n             │\nq5: ─reg0[4]─X───"
+  },
+  "text_diagram_z_pow_0": {
+    "kmx": "\n            Z_POW q0 0.25\n            Z_POW q1 -0.5 if b0\n        ",
+    "ascii": "q0: -Z^0.25--------\n            if(b0)\nq1: --------Z^1.5--",
+    "unicode": "q0: ─Z^0.25────────\n            if(b0)\nq1: ────────Z^1.5──"
+  },
+  "text_diagram_z_pow_1": {
+    "kmx": "\n            CSWAP q0 q1 q2\n            CSWAP q2 q1 q0 if b1\n        ",
+    "ascii": "          if(b1)\nq0: -@----SWAP---\n     |    |\nq1: -SWAP-SWAP---\n     |    |\nq2: -SWAP-@------",
+    "unicode": "          if(b1)\nq0: ─●────SWAP───\n     │    │\nq1: ─SWAP─SWAP───\n     │    │\nq2: ─SWAP─●──────"
+  },
+  "all_ops": {
+    "kmx": "NEG\nBIT_INVERT b0\nBIT_STORE0 b1\nBIT_STORE1 b2\nX q0\nZ q0\nR q1\nHMR q1 b2\nCX q0 q1\nCZ q0 q1\nSWAP q0 q1\nCSWAP q0 q1 q2\nCCX q0 q1 q2\nCCZ q0 q1 q2\nZ_POW q0 1.875\nDEBUG_PRINT\nDEBUG_PRINT q0\nDEBUG_PRINT b0\nNEG if b0\nBIT_INVERT b0 if b0\nBIT_STORE0 b1 if b0\nBIT_STORE1 b2 if b0\nX q0 if b0\nZ q0 if b0\nR q1 if b0\nHMR q1 b2 if b0\nCX q0 q1 if b0\nCZ q0 q1 if b0\nSWAP q0 q1 if b0\nCSWAP q0 q1 q2 if b0\nCCX q0 q1 q2 if b0\nCCZ q0 q1 q2 if b0\nZ_POW q0 1.875 if b0\nDEBUG_PRINT if b0\nDEBUG_PRINT q0 if b0\nDEBUG_PRINT b0 if b0\nINFO_TAG \"escaped\\P\\Q\\B\"\nPUSH_CONDITION if b0\nX q0\nPOP_CONDITION",
+    "ascii": "      neg                                          UNEXPECTED_NON_QUBIT_OPERATION   UNEXPECTED_NON_QUBIT_OPERATION b2=1 if b0                                       if(b0) if(b0)             if(b0)  UNEXPECTED_NON_QUBIT_OPERATION if b0 if(b0)  UNEXPECTED_NON_QUBIT_OPERATION if b0   pop_cond\nq0: --------X-Z----------@-@-SWAP-@----@-@-Z^1.875--------------------------------|-------------------------------------------X**b0-Z**b0---------------@-----@-----SWAP---@------@-----@-----Z^1.875--------------------------------------|--------------------------------------------X----------\n      b0^=1              | | |    |    | |                                          neg if b0                                             if(b0) if(b0) |     |     |      |      |     |                                                          push_cond if b0\nq1:           |0>-HMR=b2 X-Z-SWAP-SWAP-@-@------------------------------------------------------------------------------------------------|0>----HMR=b2 X**b0-Z**b0-SWAP---SWAP---@-----@----------------------------------------------------------------------------------------------------------\n      b1=0                        |    | |                                          b0^=1 if b0                                                                            |      |     |\nq2: ------------------------------SWAP-X-Z---------------------------------------------------------------------------------------------------------------------------------SWAP---X**b0-Z**b0------------------------------------------------------------------------------------------------------\n      b2=1                                                                          b1=0 if b0",
+    "unicode": "      neg                                          UNEXPECTED_NON_QUBIT_OPERATION   UNEXPECTED_NON_QUBIT_OPERATION b2═1 if b0                                       if(b0) if(b0)             if(b0)  UNEXPECTED_NON_QUBIT_OPERATION if b0 if(b0)  UNEXPECTED_NON_QUBIT_OPERATION if b0   pop_cond\nq0: ────────X─Z──────────●─●─SWAP─●────●─●─Z^1.875────────────────────────────────┼───────────────────────────────────────────X**b0─Z**b0───────────────●─────●─────SWAP───●──────●─────●─────Z^1.875──────────────────────────────────────┼────────────────────────────────────────────X──────────\n      b0^═1              │ │ │    │    │ │                                          neg if b0                                             if(b0) if(b0) │     │     │      │      │     │                                                          push_cond if b0\nq1:           │0⟩─HMR═b2 X─Z─SWAP─SWAP─●─●────────────────────────────────────────────────────────────────────────────────────────────────┼0⟩────HMR═b2 X**b0─Z**b0─SWAP───SWAP───●─────●──────────────────────────────────────────────────────────────────────────────────────────────────────────\n      b1═0                        │    │ │                                          b0^═1 if b0                                                                            │      │     │\nq2: ──────────────────────────────SWAP─X─Z─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────SWAP───X**b0─Z**b0──────────────────────────────────────────────────────────────────────────────────────────────────────\n      b2═1                                                                          b1═0 if b0"
+  },
+  "empty": {
+    "kmx": "",
+    "ascii": "",
+    "unicode": ""
+  },
+  "wire_lifecycle": {
+    "kmx": "HMR q0 b0\nR q2 if b0\nCX q2 q1 if b0\nHMR q1 b0\nX q2",
+    "ascii": "q0: -HMR=b0\n\nq1: ---------------X**b0-HMR=b0\n            if(b0) |\nq2:         |0>----@-----X------",
+    "unicode": "q0: ─HMR═b0\n\nq1: ───────────────X**b0─HMR═b0\n            if(b0) │\nq2:         │0⟩────●─────X──────"
+  },
+  "register_labels": {
+    "kmx": "REGISTER r0 \"café\"\nAPPEND_TO_REGISTER b9 r0\nAPPEND_TO_REGISTER q13 r0\nREGISTER r1 \"β\"\nAPPEND_TO_REGISTER q1 r1\nHMR q1 b0",
+    "ascii": "       café[0]=b9\n q0: ------------------------------\n\n q1: --------------β[0]----HMR=b0\n\n q2: ------------------------------\n\n q3: ------------------------------\n\n q4: ------------------------------\n\n q5: ------------------------------\n\n q6: ------------------------------\n\n q7: ------------------------------\n\n q8: ------------------------------\n\n q9: ------------------------------\n\nq10: ------------------------------\n\nq11: ------------------------------\n\nq12: ------------------------------\n\nq13: --------------café[1]--------",
+    "unicode": "       café[0]═b9\n q0: ──────────────────────────────\n\n q1: ──────────────β[0]────HMR═b0\n\n q2: ──────────────────────────────\n\n q3: ──────────────────────────────\n\n q4: ──────────────────────────────\n\n q5: ──────────────────────────────\n\n q6: ──────────────────────────────\n\n q7: ──────────────────────────────\n\n q8: ──────────────────────────────\n\n q9: ──────────────────────────────\n\nq10: ──────────────────────────────\n\nq11: ──────────────────────────────\n\nq12: ──────────────────────────────\n\nq13: ──────────────café[1]────────"
+  },
+  "group_edges": {
+    "kmx": "CX q0 q2 if b0\nCZ q0 q1 if b1\nINFO_TAG \"skip\"\nCX q0 q2\nCZ q1 q2\nNEG if b0",
+    "ascii": "               neg if b0\nq0: -@-----@-------------\n     |     |\nq1: -Z**b1-|-@-----------\n     |     | |\nq2: -X**b0-X-Z-----------",
+    "unicode": "               neg if b0\nq0: ─●─────●─────────────\n     │     │\nq1: ─Z**b1─┼─●───────────\n     │     │ │\nq2: ─X**b0─X─Z───────────"
+  },
+  "only_classical": {
+    "kmx": "BIT_STORE0 b0\nBIT_INVERT b0 if b1\nPUSH_CONDITION if b0\nPOP_CONDITION",
+    "ascii": " b0=0 b0^=1 if b1 push_cond if b0 pop_cond",
+    "unicode": " b0═0 b0^═1 if b1 push_cond if b0 pop_cond"
+  }
+}
