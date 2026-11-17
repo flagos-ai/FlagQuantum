@@ -5,13 +5,71 @@
 
 """Controlled exchange with the source's relative signs."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+
 from ....core.ir import Instruction
+from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
+from ..._component_trace.resource_decomposition import decomposed_resource_callees
+from ..._component_trace.resource_generalization import (
+    CliffordCall,
+    ControlledSwapCall,
+    ControlPredicateCall,
+    ResourceCall,
+)
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..bits.bitwise import _validate_wires, fanout_ir
 from ..control.control_predicate import ControlRegister
 from ..control.controlled_component import controlled_component_ir
 from ..phase.phase_family import phase_family_ir
 
 _INVERSE_PHASE = {"s": "sdg", "sdg": "s", "t": "tdg", "tdg": "t"}
+
+
+def relative_swap_signature(
+    width: SymbolicInt, *, extra_controls: tuple[Register, ...] = ()
+) -> Signature:
+    """Declare the original swap ports after any generic controls."""
+    return Signature((*extra_controls, *Signature.build(ctrl=1, x=width, y=width)))
+
+
+@dataclass(frozen=True)
+class PositiveControlledSwapChild:
+    """One child of the source call graph under a positive scalar control."""
+
+    child: ResourceCall
+
+
+def source_outer_relative_swap_calls(
+    width: SymbolicInt,
+    registers: tuple[ControlRegister, ...],
+    *,
+    scalar_control: bool = False,
+    adjoint: bool = False,
+) -> dict[
+    PositiveControlledSwapChild | ControlPredicateCall | CliffordCall, SymbolicInt
+]:
+    """Declare the wrapper's direct edges before expanding opaque Cliffords."""
+    values = tuple(value for register in registers for value in register.bits())
+    if not values:
+        raise ValueError("Outer relative swap control requires a nonempty activation")
+    swap = ControlledSwapCall(width, approximate=True, adjoint=adjoint)
+    if scalar_control and values == (1,):
+        return {
+            PositiveControlledSwapChild(child): count
+            for child, count in decomposed_resource_callees(swap, None)
+        }
+    calls: dict[
+        PositiveControlledSwapChild | ControlPredicateCall | CliffordCall, SymbolicInt
+    ] = {PositiveControlledSwapChild(swap): 1}
+    if values == (0,):
+        calls[CliffordCall("x", 1)] = 2
+    elif len(values) > 1:
+        calls[ControlPredicateCall(values)] = 1
+        calls[ControlPredicateCall(values, adjoint=True)] = 1
+    return calls
 
 
 def relative_controlled_swap_ir(
