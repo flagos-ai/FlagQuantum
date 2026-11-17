@@ -1,0 +1,46 @@
+{
+  "source_blob": "f2c07c7825e05cd44bd2f793c0c8a826cf426cb5",
+  "cases": {
+    "const": {
+      "counts": {
+        "INFO_TAG": 16,
+        "R": 63,
+        "CCX": 186,
+        "CX": 236,
+        "SWAP": 58,
+        "HMR": 63,
+        "BIT_INVERT": 59,
+        "PUSH_CONDITION": 2,
+        "CZ": 3,
+        "Z": 119,
+        "POP_CONDITION": 2,
+        "X": 124,
+        "CSWAP": 255
+      },
+      "records": 1186,
+      "sha256": "dd2a4d9e96d1906182f09d24b427cf70696f1d54984c80507de0f688bd1646d1"
+    },
+    "bits": {
+      "counts": {
+        "INFO_TAG": 24,
+        "X": 703,
+        "R": 265,
+        "CCX": 825,
+        "CX": 3089,
+        "HMR": 266,
+        "PUSH_CONDITION": 7,
+        "NEG": 7,
+        "Z": 560,
+        "POP_CONDITION": 7,
+        "CZ": 9,
+        "CCZ": 1,
+        "BIT_INVERT": 760,
+        "BIT_STORE0": 6,
+        "SWAP": 251,
+        "CSWAP": 255
+      },
+      "records": 7035,
+      "sha256": "29b87639497aa11bbc006cccded681d4c8261f1a52ddc761e210c7b39a5c1dea"
+    }
+  }
+}
