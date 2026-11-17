@@ -182,3 +182,73 @@ def test_original_t_complexity_bounds(count: int, source_module: Any) -> None:
         assert budget["t"] <= 12 * width
         assert budget["rotations"] <= (2 + 2 * (width + 1) if values else 2)
         assert source_module.PrepareUniformSuperposition(count, cvs=values).n == count
+
+
+@pytest.mark.parametrize("count", [10, 18, Symbol("n", positive=True, integer=True)])
+def test_abstract_control_width_preserves_source_dispatch(
+    count: Any, source_module: Any
+) -> None:
+    from qualtran.resource_counting import (
+        QECGatesCost,
+        SympySymbolAllocator,
+        get_cost_value,
+    )
+    from qualtran.symbolics import HasLength
+
+    from flagquantum.compiler.registers.preparation.uniform_preparation_resource_model import (
+        source_uniform_preparation_resource_formula,
+    )
+
+    c = Symbol("c", positive=True, integer=True)
+    source = source_module.PrepareUniformSuperposition(count, HasLength(c))
+    native = UniformPreparationExample(count, abstract_control_width=c)
+    assert [(r.name, r.bitsize, r.side.name) for r in native.signature] == [
+        (r.name, r.bitsize, r.side.name) for r in source.signature
+    ]
+    assert native.call_graph().leaf_counts == {
+        child_key(key): multiplicity
+        for key, multiplicity in source.build_call_graph(SympySymbolAllocator()).items()
+    }
+    assert_resource_model(native, source)
+    legacy = source_uniform_preparation_resource_formula(
+        count, abstract_control_width=c, legacy_shims=True
+    )
+    expected = get_cost_value(source, QECGatesCost(legacy_shims=True))
+    for field in fields(GateCost):
+        assert getattr(legacy, field.name) == getattr(expected, field.name)
+    circuit = DynamicCircuit(8)
+    with pytest.raises(ValueError, match="Bind a concrete"):
+        circuit.append(native)
+    assert circuit.to_ir().instructions == ()
+
+
+@pytest.mark.parametrize("count", [1, 6, 12, 16])
+def test_short_factored_predicate_retains_source_failure(
+    count: int, source_module: Any
+) -> None:
+    from qualtran.resource_counting import SympySymbolAllocator
+    from qualtran.symbolics import HasLength
+
+    c = Symbol("c", positive=True, integer=True)
+    source = source_module.PrepareUniformSuperposition(count, HasLength(c))
+    native = UniformPreparationExample(count, abstract_control_width=c)
+    with pytest.raises(ValueError, match="at least 3 control values"):
+        source.build_call_graph(SympySymbolAllocator())
+    with pytest.raises(ValueError, match="at least 3 MultiAnd controls|at least two"):
+        native.call_graph()
+    with pytest.raises(ValueError, match="at least 3 MultiAnd controls|at least two"):
+        native.resource_model()
+
+
+def test_literal_control_length_resolves_before_append(source_module: Any) -> None:
+    from qualtran.symbolics import HasLength
+
+    source = source_module.PrepareUniformSuperposition(5, HasLength(1))
+    native = UniformPreparationExample(5, abstract_control_width=1)
+    assert native.controls == source.concrete_cvs == (1,)
+    assert_resource_model(native, source)
+    circuit = DynamicCircuit(native.qubit_count)
+    circuit.append(native)
+    expected = DynamicCircuit(native.qubit_count)
+    expected.append(UniformPreparationExample(5, controls=(1,)))
+    assert circuit.to_ir().instructions == expected.to_ir().instructions

@@ -45,11 +45,33 @@ The symbolic count uses the source comparison and conjunction calls,
 their adjoints and its declared Hadamard and Rz multiplicities. It
 requires a concrete count before append.
 
+## Abstract control dispatch
+
+The port declaration retains the full target width and the abstract
+control length `c`. For a concrete state count `n = 2**k * L` and
+abstract controls, the source graph applies its comparison and phase
+model to the odd factor `L` and its high-word width. The predicate is
+the source's all-positive declared MultiAnd. The declared calls omit
+the abstract controls, while the peak width still includes those ports.
+
+| States | Odd factor and high width | Source And | Source Clifford | Source measurement | Source rotations | Source peak |
+| ---: | --- | ---: | ---: | ---: | ---: | --- |
+| 10 | 5 and 3 | 8 | 45 | 8 | 2 | `Max(8, c + 4)` |
+| 18 | 9 and 4 | 11 | 55 | 11 | 2 | `Max(10, c + 5)` |
+
+The original direct call keys and both cost profiles were compared.
+The source rejects literal factored predicates shorter than three
+controls on the abstract path. The native declaration preserves that
+failure. A literal control length resolves to positive controls, and
+its append stream matches the explicit concrete control tuple. The
+existing primitive counts above describe concrete execution.
+
 ## Remaining boundaries
 
 Q-0694 and Q-0696 are covered. Q-0695 remains open for executable
 symbolic controls and unresolved source dispatch boundaries. The
 source symbolic graph omits control predicates. Its singleton and
 one-bit symbolic peak queries exhibit the failures retained by
-the existing resource tests. Q-0690 still depends on the other
-state preparation exports.
+the existing resource tests. A concrete count with a tuple of symbolic
+control values also fails in the locked source. Q-0690 is covered by
+the state-preparation package audit.
