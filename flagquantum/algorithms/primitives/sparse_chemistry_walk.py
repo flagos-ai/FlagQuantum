@@ -66,7 +66,7 @@ class SparseChemistryWalk:
 
     @property
     def alpha(self) -> float:
-        return self.prepare.data.normalization
+        return self.prepare.l1_norm_of_coeffs
 
     @property
     def source_signature(self) -> Signature:

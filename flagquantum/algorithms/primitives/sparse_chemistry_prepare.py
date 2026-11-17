@@ -39,12 +39,12 @@ from ...core.ir.program.register_types import (
     unsigned_register_type,
 )
 from ...core.ir.program.registers import Register, RegisterSide
-from ...core.ir.program.signatures import Signature
+from .prepare_oracle import PrepareOracle
 from .sparse_chemistry_data import SparseChemistryData
 
 
 @dataclass(frozen=True)
-class PrepareSparseChemistry:
+class PrepareSparseChemistry(PrepareOracle):
     """Prepare the locked sparse chemistry state from zero-initialized ports."""
 
     data: SparseChemistryData
@@ -111,10 +111,9 @@ class PrepareSparseChemistry:
             *self.qroam_extra_target_registers,
         )
 
-    @cached_property
-    def signature(self) -> Signature:
-        """Declare source input/output direction independently of physical binding."""
-        return Signature((*self.selection_registers, *self.junk_registers))
+    @property
+    def l1_norm_of_coeffs(self) -> float:
+        return self.data.normalization
 
     @property
     def selection_layout(self) -> RegisterLayout:

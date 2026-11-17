@@ -166,6 +166,7 @@ def test_prepare_forward_source_graph_and_resources(spatial, log):
     reference = PrepareSparse.from_hamiltonian_coeffs(
         2 * spatial, one, two, num_bits_state_prep=1, log_block_size=log
     )
+    assert operation.l1_norm_of_coeffs == pytest.approx(reference.l1_norm_of_coeffs)
     _assert_sparse_signature(
         operation.selection_registers, reference.selection_registers
     )
