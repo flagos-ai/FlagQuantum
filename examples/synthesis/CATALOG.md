@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **154/213**.
+Validated local Notebook workflows: **155/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -179,6 +179,7 @@ Validated local Notebook workflows:
 - [overview](applications/finance/portfolio_optimization/overview/README.md)
 - [overview](applications/finance/rainbow_options/rainbow_options_bruteforce_method/overview/README.md)
 - [overview](applications/finance/rainbow_options/rainbow_options_direct_method/overview/README.md)
+- [overview](applications/finance/rainbow_options/rainbow_options_integration_method/overview/README.md)
 - [overview](applications/finance/value_at_risk/overview/README.md)
 - [overview](applications/logistics/facility_location/overview/README.md)
 - [overview](applications/logistics/traveling_salesman_problem/overview/README.md)
