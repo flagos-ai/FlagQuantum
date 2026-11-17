@@ -6,6 +6,7 @@
 
 from typing import Literal
 
+from ..._component_trace.trace import ComponentCall, ComponentTrace
 from ...artifacts.reversible_phase import ReversiblePhaseOperation as Operation
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
@@ -46,6 +47,8 @@ def recursive_lookup_operations(
     pauli: Literal["x", "z"] = "x",
     control: int | None = None,
     measurement_bit: int = 0,
+    trace: ComponentTrace | None = None,
+    trace_offset: int = 0,
 ) -> tuple[Operation, ...]:
     """Emit the unchanged source schedule, including incomplete-table behavior.
 
@@ -96,9 +99,16 @@ def recursive_lookup_operations(
         rows: tuple[tuple[TableBit, ...], ...],
         word: tuple[int, ...],
         parent: int | None,
+        calls: list[ComponentCall] | None,
     ) -> None:
+        start = trace_offset + len(operations)
+        children: list[ComponentCall] | None = None if calls is None else []
         if not word:
             operations.extend(_lookup_leaf(rows[0], source_output, parent, pauli))
+            if calls is not None:
+                calls.append(
+                    ComponentCall("lookup", start, trace_offset + len(operations))
+                )
             return
         lease = pool.allocate(1)
         anc = lease.wires[0]
@@ -114,13 +124,13 @@ def recursive_lookup_operations(
         )
         half = 1 << (len(word) - 1)
         if len(rows) > half:
-            emit(rows[:half], word[:-1], anc)
+            emit(rows[:half], word[:-1], anc, children)
             operations.append(
                 Operation("x" if parent is None else "cx", (*controls, anc))
             )
-            emit(rows[half:], word[:-1], anc)
+            emit(rows[half:], word[:-1], anc, children)
         else:
-            emit(rows, word[:-1], anc)
+            emit(rows, word[:-1], anc, children)
         operations.extend(
             (
                 Operation("hmr", (anc,), result_bit=measurement_bit),
@@ -132,6 +142,16 @@ def recursive_lookup_operations(
             )
         )
         pool.free(lease)
+        if calls is not None:
+            assert children is not None
+            calls.append(
+                ComponentCall(
+                    "lookup",
+                    start,
+                    trace_offset + len(operations),
+                    children=tuple(children),
+                )
+            )
 
-    emit(source_rows, address[::-1], control)
+    emit(source_rows, address[::-1], control, None if trace is None else trace.calls)
     return tuple(operations)

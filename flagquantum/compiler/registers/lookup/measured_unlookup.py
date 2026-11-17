@@ -4,6 +4,9 @@
 
 """Measured table erasure through shared classical parity and unary lookup."""
 
+from functools import partial
+
+from ..._component_trace.trace import ComponentCall, ComponentTrace
 from ...artifacts.reversible_phase import ReversiblePhaseOperation as Operation
 from ..bits.binary_unary_conversion import (
     binary_to_unary_operations,
@@ -24,6 +27,7 @@ def measured_unlookup_operations(
     *,
     measurement_bit: int,
     reused_phase_bits: tuple[int, ...] = (),
+    trace: ComponentTrace | None = None,
 ) -> tuple[Operation, ...]:
     """Erase computed table output, preserving source allocation and gate order.
 
@@ -107,7 +111,11 @@ def measured_unlookup_operations(
     lease = pool.allocate(extra)
     unfolded.extend(lease.wires)
     buffer = tuple(reversed(unfolded))
+    children = None if trace is None else ComponentTrace()
+    start = len(operations)
     operations.extend(binary_to_unary_operations(buffer))
+    if children is not None:
+        children.calls.append(ComponentCall("binary_to_unary", start, len(operations)))
     phase_rows = tuple(
         tuple(
             ClassicalFieldCoefficient(slot)
@@ -115,8 +123,11 @@ def measured_unlookup_operations(
         )
         for start in range(0, len(phase_bits), size)
     )
+    lookup = recursive_lookup_operations
+    if children is not None:
+        lookup = partial(lookup, trace=children, trace_offset=len(operations))
     operations.extend(
-        recursive_lookup_operations(
+        lookup(
             phase_rows,
             tuple(reversed(source_address[h:])),
             buffer,
@@ -125,8 +136,16 @@ def measured_unlookup_operations(
             measurement_bit=measurement_bit,
         )
     )
+    start = len(operations)
     operations.extend(
         unary_to_binary_operations(buffer, measurement_bit=measurement_bit)
     )
     pool.free(lease)
+    if trace is not None and children is not None:
+        children.calls.append(ComponentCall("unary_to_binary", start, len(operations)))
+        trace.calls.append(
+            ComponentCall(
+                "unlookup", 0, len(operations), children=tuple(children.calls)
+            )
+        )
     return tuple(operations)
