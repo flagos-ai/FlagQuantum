@@ -11,6 +11,9 @@ from functools import cached_property
 import numpy as np
 
 from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare
 from .chebyshev_block_encoding import ChebyshevBlockEncoding
@@ -66,6 +69,27 @@ class ScaledChebyshevBlockEncoding:
     @property
     def resource_bitsize(self) -> int:
         return self.linear_combination.resource_bitsize
+
+    @cached_property
+    def signature(self) -> Signature:
+        """Declare packed system, ancilla and resource ports in source order."""
+        return Signature.build_from_dtypes(
+            system=opaque_register_type(self.system_bitsize),
+            ancilla=opaque_register_type(self.ancilla_bitsize),
+            resource=opaque_register_type(self.resource_bitsize),
+        )
+
+    @property
+    def target_registers(self) -> tuple[Register, ...]:
+        return tuple(self.signature.rights())
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return (self.signature.get_right("ancilla"),) if self.ancilla_bitsize else ()
+
+    @property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return (self.signature.get_right("resource"),) if self.resource_bitsize else ()
 
     @property
     def alpha(self) -> SymbolicReal:
