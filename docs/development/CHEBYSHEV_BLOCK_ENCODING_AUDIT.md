@@ -75,12 +75,40 @@ the four original fixtures, two signature figures, two call graphs, and the
 unscaled/scaled derivations. It adds an executable append and inverse example
 covering the full odd-block matrix.
 
-Q-0279 closes with the native tutorial. Q-0280 remains open for symbolic-width
-binding and generic source object and serialization protocols. Q-0281
-remains open for native full-state execution of the original large scaled
-fourth- and fifth-order fixtures and the entire random-matrix family.
-The small executable scaled fixture provides independent evidence at its
-own bindings and precision.
+Q-0279 closes with the native tutorial. Both native constructors now expose
+the packed through signature, including zero-width omission. The scaled
+constructor also declares the target, selection and junk registers in source
+order. Q-0280 remains open for symbolic-width binding and the generic source
+object and serialization protocols.
+
+Q-0281 closes with the original concrete tests and native counterparts.
+All 20 matrices from the original seeded random-Hermitian family compare
+both the projected block and the full eight-dimensional logical operator.
+The full comparison starts with clean scratch for every logical column
+and checks that scratch is zero at the output.
+
+The original unscaled order-four and order-five fixtures compare complete
+complex columns for both system basis inputs with zero ancilla and resource.
+The order-four circuit covers every measurement history; the order-five
+circuit has no measurement. For the original large scaled cases, the source
+contracts a vector for each system basis input and keeps every logical
+output. Sparse execution compares every populated amplitude and its index,
+including any nonzero ancilla and resource outputs. The all-zero and
+alternating measurement histories each agree, and every temporary work bit
+ends at zero. This covers two histories per scaled case, where exhaustive
+history counts would be exponential.
+
+| Scaled order | Reserved native width | Emitted T/T adjoint | Emitted measurements | Source peak | Source And | Source Fredkin |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4 | 39 | 426 | 61 | 37 | 61 | 26 |
+| 5 | 32 | 178 | 34 | 32 | 34 | 6 |
+
+Reserved width is the explicitly bound native register pool. The source
+peak is the independent QubitCount graph result. Native T emission charges
+four per measured And and seven per exact Fredkin. The source QEC model
+reports those operations as distinct categories. The original non-notebook
+suite includes four slow tests, two upstream skips and three expected
+serialization failures.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_chebyshev.ipynb

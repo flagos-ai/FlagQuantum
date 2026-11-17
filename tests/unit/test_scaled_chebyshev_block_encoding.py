@@ -6,6 +6,7 @@ from dataclasses import asdict
 from itertools import product
 from math import sqrt
 
+import numpy as np
 import pytest
 import torch
 
@@ -91,6 +92,17 @@ def test_locked_scaled_coefficients_packed_widths_and_signal(
         source.resource_bitsize,
     )
     assert native.signal_state.selection_width == native.ancilla_bitsize
+    assert [(r.name, r.bitsize) for r in native.signature] == [
+        (r.name, r.bitsize) for r in source.signature
+    ]
+    for actual, expected in (
+        (native.target_registers, source.target_registers),
+        (native.selection_registers, source.selection_registers),
+        (native.junk_registers, source.junk_registers),
+    ):
+        assert [(r.name, r.bitsize) for r in actual] == [
+            (r.name, r.bitsize) for r in expected
+        ]
     term = native.linear_combination
     if order <= 1:
         assert isinstance(term, ChebyshevBlockEncoding)
@@ -131,7 +143,9 @@ def test_scaled_signed_select_complete_complex_branches(adjoint: bool) -> None:
     slots = tuple(range(10, 10 + len(work)))
     reserved = logical + len(work)
 
-    def term_factory(term: ChebyshevBlockEncoding) -> Callable[
+    def term_factory(
+        term: ChebyshevBlockEncoding,
+    ) -> Callable[
         [int, Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
         _CircuitOperation,
     ]:
@@ -246,3 +260,302 @@ def test_scaled_signed_select_complete_complex_branches(adjoint: bool) -> None:
         torch.testing.assert_close(
             actual, expected / sqrt(2 ** len(history)), atol=4e-12, rtol=0
         )
+
+
+def _lcu_scratch(block: LinearCombinationBlockEncoding, controlled: bool) -> int:
+    prepare, _ = block.coefficient_preparation.workspace_requirements
+    select = indexed_component_workspace(
+        (block.select.selection_bitsize,), int(controlled)
+    )
+    return max(prepare, select)
+
+
+def _bind_lcu(
+    block: LinearCombinationBlockEncoding,
+    factories: tuple[
+        Callable[
+            [
+                int,
+                Mapping[str, tuple[int, ...]],
+                tuple[int, ...],
+                tuple[int, ...],
+                bool,
+            ],
+            _CircuitOperation,
+        ],
+        ...,
+    ],
+    ports: Mapping[str, tuple[int, ...]],
+    work: tuple[int, ...],
+    slots: tuple[int, ...],
+    *,
+    control: tuple[int, ...] = (),
+    child_scratch: int = 0,
+    adjoint: bool = False,
+) -> _CircuitOperation:
+    prepare, nc = block.coefficient_preparation.workspace_requirements
+    traverse = indexed_component_workspace(
+        (block.select.selection_bitsize,), len(control)
+    )
+    stage = max(prepare, traverse)
+    slot_stage = max(nc, traverse)
+    return block.make_on(
+        factories,
+        system=ports["system"],
+        ancilla=ports.get("ancilla", ()),
+        resource=ports.get("resource", ()),
+        control=control,
+        prepare_workspace=work[:prepare],
+        prepare_classical_bits=slots[:nc],
+        traversal_workspace=work[:traverse],
+        traversal_classical_bits=slots[:traverse],
+        workspaces=(work[stage : stage + child_scratch],) * len(factories),
+        classical_bits=(slots[slot_stage : slot_stage + child_scratch],)
+        * len(factories),
+        adjoint=adjoint,
+    )
+
+
+def _controlled_leaf(
+    name: str,
+) -> Callable[
+    [int, Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
+    _CircuitOperation,
+]:
+    def bind(
+        predicate: int,
+        ports: Mapping[str, tuple[int, ...]],
+        work: tuple[int, ...],
+        slots: tuple[int, ...],
+        adjoint: bool,
+    ) -> _CircuitOperation:
+        wires = (predicate, *ports["system"])
+        return FieldOperation(max(wires) + 1, (Instruction(name, wires),))
+
+    return bind
+
+
+@pytest.mark.parametrize("order", [4, 5])
+def test_original_large_scaled_execution(
+    order: int, request: pytest.FixtureRequest
+) -> None:
+    from qualtran import BloqBuilder
+    from qualtran.bloqs.basic_gates import IntState
+    from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
+        _scaled_chebyshev_poly_even,
+        _scaled_chebyshev_poly_odd,
+    )
+
+    from tests.unit.test_sparse_chemistry_prepare import _branch
+
+    request.config.addinivalue_line("markers", "notebook: upstream notebook execution")
+    from qualtran.bloqs.block_encoding.chebyshev_polynomial_test import gate_test
+
+    hadamard = UnitaryBlockEncoding(
+        (("q", 1),), _unused_child, alpha=3.14 if order == 5 else 1
+    )
+    inner = LinearCombinationBlockEncoding(
+        (UnitaryBlockEncoding((("q", 1),), _unused_child), hadamard), (1.0, 1.0), 1
+    )
+    leaf_factories = (_controlled_leaf("cx"), _controlled_leaf("ch"))
+    scaled = ScaledChebyshevBlockEncoding(inner if order == 4 else hadamard, order)
+    outer = scaled.linear_combination
+    assert isinstance(outer, LinearCombinationBlockEncoding)
+    source = (
+        _scaled_chebyshev_poly_even() if order == 4 else _scaled_chebyshev_poly_odd()
+    )
+    logical = scaled.system_bitsize + scaled.ancilla_bitsize + scaled.resource_bitsize
+    outer_scratch = _lcu_scratch(outer, False)
+    child_scratch = _lcu_scratch(inner, True) if order == 4 else 0
+    size = logical + outer_scratch + child_scratch
+
+    def bind_term(
+        term: ChebyshevBlockEncoding,
+    ) -> Callable[
+        [int, Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
+        _CircuitOperation,
+    ]:
+        def bind(
+            predicate: int,
+            ports: Mapping[str, tuple[int, ...]],
+            work: tuple[int, ...],
+            slots: tuple[int, ...],
+            adjoint: bool,
+        ) -> _CircuitOperation:
+            def bind_child(
+                child_ports: Mapping[str, tuple[int, ...]],
+                child_work: tuple[int, ...],
+                child_slots: tuple[int, ...],
+                inverse: bool,
+            ) -> _CircuitOperation:
+                if order == 4:
+                    return _bind_lcu(
+                        inner,
+                        leaf_factories,
+                        child_ports,
+                        child_work,
+                        child_slots,
+                        control=(predicate,),
+                        adjoint=inverse,
+                    )
+                return leaf_factories[1](
+                    predicate, child_ports, child_work, child_slots, inverse
+                )
+
+            return term.make_on(
+                bind_child,
+                system=ports["system"],
+                ancilla=ports.get("ancilla", ()),
+                resource=ports.get("resource", ()),
+                control=predicate,
+                workspace=work,
+                classical_bits=slots,
+                adjoint=adjoint,
+            )
+
+        return bind
+
+    terms = tuple(
+        term
+        for term in outer.block_encodings
+        if isinstance(term, ChebyshevBlockEncoding)
+    )
+    assert len(terms) == order + 1
+    ancilla_end = 1 + scaled.ancilla_bitsize
+    operation = _bind_lcu(
+        outer,
+        tuple(bind_term(term) for term in terms),
+        {
+            "system": (0,),
+            "ancilla": tuple(range(1, ancilla_end)),
+            "resource": tuple(range(ancilla_end, logical)),
+        },
+        tuple(range(logical, size)),
+        tuple(range(size - logical)),
+        child_scratch=child_scratch,
+    )
+    gates = DynamicCircuit(size).append(operation).to_ir().instructions
+    count = Counter(gate.name for gate in gates)
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    # Report the source graph independently of the emitted primitive stream.
+    source_cost = get_cost_value(source, QECGatesCost())
+    source_peak = get_cost_value(source, QubitCount())
+    assert source_peak == (37 if order == 4 else 32)
+    assert source_cost.measurement == (61 if order == 4 else 34)
+    assert count["measure"] == source_cost.measurement
+    assert count["t"] + count["tdg"] == 4 * source_cost.and_bloq + 7 * source_cost.cswap
+    assert size == (39 if order == 4 else 32)
+    history = tuple(i % 2 for i in range(count["measure"]))
+    source_matrix = gate_test(source)
+    observed = torch.zeros((2, 2), dtype=torch.complex128)
+    target_mask = 1 << (size - 1)
+    scratch_mask = (1 << (size - logical)) - 1
+    for bit in (0, 1):
+        initial = {bit * target_mask: 1 + 0j}
+        all_zero = _branch(
+            gates, size, (0,) * len(history), initial, normalize_measurements=True
+        )
+        alternating = _branch(
+            gates, size, history, initial, normalize_measurements=True
+        )
+        assert all_zero == pytest.approx(alternating, abs=3e-10)
+        assert sum(abs(value) ** 2 for value in all_zero.values()) == pytest.approx(1)
+        assert all(index & scratch_mask == 0 for index in all_zero)
+        builder = BloqBuilder()
+        source_inputs = {
+            reg.name: builder.add(
+                IntState(bit if reg.name == "system" else 0, reg.bitsize)
+            )
+            for reg in source.signature
+        }
+        source_outputs = builder.add_d(source, **source_inputs)
+        reference = builder.finalize(**source_outputs).tensor_contract().reshape(-1)
+        indices = np.flatnonzero(np.abs(reference) > 1e-12)
+        native_by_logical_index = {
+            index >> (size - logical): amp for index, amp in all_zero.items()
+        }
+        assert native_by_logical_index == pytest.approx(
+            dict(zip(indices.tolist(), reference[indices].tolist(), strict=True)),
+            abs=3e-10,
+        )
+        observed[:, bit] = torch.tensor(
+            [all_zero.get(0, 0j), all_zero.get(target_mask, 0j)], dtype=torch.complex128
+        )
+    torch.testing.assert_close(
+        observed * float(scaled.alpha),
+        torch.as_tensor(source_matrix, dtype=torch.complex128),
+        rtol=0,
+        atol=5e-10,
+    )
+
+
+@pytest.mark.parametrize("order", [4, 5])
+def test_original_unscaled_child_layout_and_full_outputs(order: int) -> None:
+    from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
+        _chebyshev_poly_even,
+        _chebyshev_poly_odd,
+    )
+
+    from tests.unit.test_sparse_chemistry_prepare import _branch
+
+    hadamard = UnitaryBlockEncoding((("q", 1),), _unused_child)
+    inner = LinearCombinationBlockEncoding(
+        (UnitaryBlockEncoding((("q", 1),), _unused_child), hadamard), (0.5, 0.5), 1
+    )
+    source = _chebyshev_poly_even() if order == 4 else _chebyshev_poly_odd()
+    root = ChebyshevBlockEncoding(inner if order == 4 else hadamard, order)
+    ancilla_end = 1 + root.ancilla_bitsize
+    logical = ancilla_end + root.resource_bitsize
+    scratch = _lcu_scratch(inner, False) if order == 4 else 0
+    reflect, reflect_slots = root.reflection_requirements()
+    size = logical + max(scratch, reflect)
+    work = tuple(range(logical, size))
+    slots = tuple(range(len(work)))
+
+    def bind_child(
+        ports: Mapping[str, tuple[int, ...]],
+        child_work: tuple[int, ...],
+        child_slots: tuple[int, ...],
+        inverse: bool,
+    ) -> _CircuitOperation:
+        if order == 4:
+            return _bind_lcu(
+                inner,
+                (_controlled_leaf("cx"), _controlled_leaf("ch")),
+                ports,
+                child_work,
+                child_slots,
+                adjoint=inverse,
+            )
+        return FieldOperation(1, (Instruction("h", ports["system"]),))
+
+    operation = root.make_on(
+        bind_child,
+        system=(0,),
+        ancilla=tuple(range(1, ancilla_end)),
+        resource=tuple(range(ancilla_end, logical)),
+        workspace=work[:scratch],
+        classical_bits=slots[:scratch],
+        reflection_workspace=work[:reflect],
+        reflection_classical_bits=slots[:reflect_slots],
+    )
+    gates = DynamicCircuit(size).append(operation).to_ir().instructions
+    count = Counter(gate.name for gate in gates)
+    expected = source.tensor_contract()
+    for bit in (0, 1):
+        col = bit << (logical - 1)
+        expected_sparse = {
+            row << len(work): complex(value)
+            for row, value in enumerate(expected[:, col])
+            if abs(value) > 1e-12
+        }
+        for history in product((0, 1), repeat=count["measure"]):
+            actual = _branch(
+                gates,
+                size,
+                history,
+                {col << len(work): 1 + 0j},
+                normalize_measurements=True,
+            )
+            assert actual == pytest.approx(expected_sparse, abs=3e-12)

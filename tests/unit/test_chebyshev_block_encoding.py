@@ -4,6 +4,7 @@ from collections import Counter
 from collections.abc import Mapping
 from itertools import product
 
+import numpy as np
 import pytest
 import torch
 
@@ -61,6 +62,10 @@ def test_source_chebyshev_stages_and_complex_histories(
     )
     root = ChebyshevBlockEncoding(child, order)
     assert (root.alpha, root.epsilon) == (source.alpha, source.epsilon)
+    assert [(r.name, r.bitsize) for r in root.signature] == [
+        (r.name, r.bitsize) for r in source.signature
+    ]
+    assert root.signature.thru_registers_only
     assert root.signal_state.selection_width == ancilla_width
     assert root.signal_state.emit(tuple(range(ancilla_width)), (), (), ()) == ()
     through = ancilla_width + 2
@@ -186,7 +191,13 @@ def test_positive_outer_control_preserves_source_action(adjoint: bool) -> None:
     torch.testing.assert_close(get_unitary(circuit), expected, atol=2e-12, rtol=0)
 
 
-def test_original_order_four_matrix_projection(request: pytest.FixtureRequest) -> None:
+_RANDOM_CASES = tuple(range(20))
+
+
+@pytest.mark.parametrize("seed_index", [None, *_RANDOM_CASES])
+def test_original_order_four_matrix_projection(
+    request: pytest.FixtureRequest, seed_index: int | None
+) -> None:
     request.config.addinivalue_line("markers", "notebook: upstream notebook execution")
 
     from qualtran.bloqs.basic_gates import Hadamard, XGate
@@ -196,11 +207,18 @@ def test_original_order_four_matrix_projection(request: pytest.FixtureRequest) -
         gate_test,
     )
 
-    operator = (XGate().tensor_contract() + 3 * Hadamard().tensor_contract()) / 4
+    if seed_index is None:
+        operator = (XGate().tensor_contract() + 3 * Hadamard().tensor_contract()) / 4
+    else:
+        from qualtran.linalg.matrix import random_hermitian_matrix
+
+        rng = np.random.RandomState(1234)
+        for _ in range(seed_index + 1):
+            operator = random_hermitian_matrix(2, rng)
     source_child = TestBlockEncoding.from_matrix(operator)
-    expected = torch.as_tensor(
-        gate_test(ChebyshevPolynomial(source_child, 4)), dtype=torch.complex128
-    )
+    source = ChebyshevPolynomial(source_child, 4)
+    expected = torch.as_tensor(gate_test(source), dtype=torch.complex128)
+    expected_full = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
     child_matrix = torch.as_tensor(
         source_child.tensor_contract(), dtype=torch.complex128
     )
@@ -232,5 +250,5 @@ def test_original_order_four_matrix_projection(request: pytest.FixtureRequest) -
     torch.testing.assert_close(
         matrix[selected][:, selected], expected, atol=3e-8, rtol=0
     )
-    unselected_work = torch.tensor([1, 3, 5, 7, 9, 11, 13, 15])
-    assert torch.count_nonzero(matrix[unselected_work][:, selected]) == 0
+    torch.testing.assert_close(matrix[::2, ::2], expected_full, atol=3e-8, rtol=0)
+    assert torch.count_nonzero(matrix[1::2, ::2]) == 0
