@@ -10,7 +10,12 @@ from pathlib import Path
 
 @contextmanager
 def source_oracle(
-    source_root: Path, generator: str, blob: str, harness: Path
+    source_root: Path,
+    generator: str,
+    blob: str,
+    harness: Path,
+    *,
+    dependencies: tuple[str, ...] = (),
 ) -> Iterator[Path]:
     """Validate the generator blob, compile its dependencies and clean temporary output."""
     source = source_root.resolve() / "src"
@@ -38,6 +43,7 @@ def source_oracle(
                 "-I" + str(source),
                 str(harness),
                 str(implementation),
+                *(str(source / "kickmix/gen" / name) for name in dependencies),
                 *sources,
                 "-o",
                 str(oracle),
