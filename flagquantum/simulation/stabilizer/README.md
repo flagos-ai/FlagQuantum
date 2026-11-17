@@ -441,3 +441,15 @@ and approved recovery evidence are retained; this was not one uninterrupted run.
 Start with `tests/team/simulation/test_embedded_stabilizer_engine.py` and the
 public workflow in `examples/stabilizer_sampling.py`. Final-head publication and
 actual-main acceptance remain separate gates; no maturity or parity is promoted.
+
+## Embedded external Stim text experiments
+
+On the opt-in macOS arm64 embedded build, the existing
+`run_stim_experiment()` consumes annotated Stim text using the bundled
+Stim 1.16.0 engine. Original-circuit sampling and strict DEM conversion
+remain separate. The engine retains the source byte limit, symbolic repeat
+limit, qubit and record limits, gauge rejection, coordinate handling, and
+complete detector and observable shape. Marker-free builds use the Stim SDK.
+The FlagQuantum memory-circuit text exporter still uses the SDK.
+Start with `tests/team/simulation/test_stim_annotated_engine.py` for exact-model
+and original-circuit checks.

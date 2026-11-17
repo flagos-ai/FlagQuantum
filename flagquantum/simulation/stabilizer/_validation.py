@@ -107,3 +107,21 @@ def _bounded_stim_expansion(program: Any) -> int:
                     "Stim experiment exceeds 1,000,000 expanded instructions"
                 )
     return count
+
+
+def _validate_stim_experiment_source(circuit_text: str) -> None:
+    if not isinstance(circuit_text, str):
+        raise TypeError("circuit_text must be a string")
+    if not circuit_text.strip():
+        raise ValueError("circuit_text must not be empty")
+    if len(circuit_text.encode("utf-8")) > 1_048_576:
+        raise CapabilityError("Stim experiment exceeds 1 MiB of UTF-8 source")
+
+
+def _validate_stim_reference(circuit: Any) -> None:
+    try:
+        circuit.without_noise().detector_error_model(allow_gauge_detectors=False)
+    except ValueError as error:
+        raise CapabilityError(
+            "Stim experiment has nondeterministic declared parities"
+        ) from error

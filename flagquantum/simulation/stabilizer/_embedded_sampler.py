@@ -4,9 +4,13 @@ from __future__ import annotations
 
 import ctypes
 from importlib import import_module
+from types import ModuleType
 from typing import TYPE_CHECKING
 
 import torch
+
+from ...errors import CapabilityError
+from ._validation import _validate_seed, _validate_stim_experiment_source
 
 if TYPE_CHECKING:
     from .engine import _EngineOperation
@@ -112,19 +116,7 @@ class _EmbeddedDetectorSampler:
         self._widths = (detectors, observables)
 
     def sample(self, shots: int) -> tuple[torch.Tensor, torch.Tensor]:
-        pair = self._native.sample_detectors(self._handle, shots)
-        if not isinstance(pair, tuple) or len(pair) != 2:
-            raise ValueError("embedded detector sampling returned an invalid pair")
-        results = []
-        for buffer, width in zip(pair, self._widths, strict=True):
-            if not isinstance(buffer, bytearray) or len(buffer) != shots * width:
-                raise ValueError("embedded detector sampling returned invalid bytes")
-            results.append(
-                torch.frombuffer(buffer, dtype=torch.bool).reshape(shots, width)
-                if width
-                else torch.empty((shots, 0), dtype=torch.bool)
-            )
-        return results[0], results[1]
+        return _sample_detector_pair(self._native, self._handle, shots, self._widths)
 
     def sample_write(
         self,
@@ -147,3 +139,90 @@ class _EmbeddedDetectorSampler:
             obs_out_filepath,
             obs_out_format,
         )
+
+
+def _sample_detector_pair(
+    native: ModuleType, handle: object, shots: int, widths: tuple[int, int]
+) -> tuple[torch.Tensor, torch.Tensor]:
+    pair = native.sample_detectors(handle, shots)
+    if not isinstance(pair, tuple) or len(pair) != 2:
+        raise ValueError("embedded detector sampling returned an invalid pair")
+    results = []
+    for buffer, width in zip(pair, widths, strict=True):
+        if not isinstance(buffer, bytearray) or len(buffer) != shots * width:
+            raise ValueError("embedded detector sampling returned invalid bytes")
+        results.append(
+            torch.frombuffer(buffer, dtype=torch.bool).reshape(shots, width)
+            if width
+            else torch.empty((shots, 0), dtype=torch.bool)
+        )
+    return results[0], results[1]
+
+
+def _text_experiment_engine() -> ModuleType:
+    try:
+        return import_module(f"{__package__}._embedded_stim")
+    except (ImportError, OSError) as error:
+        from .engine import StabilizerDependencyError
+
+        raise StabilizerDependencyError(
+            "the embedded stabilizer engine could not be loaded; "
+            "use a compatible FlagQuantum embedded build"
+        ) from error
+
+
+class _EmbeddedTextExperiment:
+    def __init__(
+        self, native: ModuleType, handle: object, widths: tuple[int, int]
+    ) -> None:
+        self._native = native
+        self._handle = handle
+        self._widths = widths
+
+    def sample(self, shots: int) -> torch.Tensor:
+        return torch.cat(
+            _sample_detector_pair(self._native, self._handle, shots, self._widths),
+            dim=1,
+        )
+
+
+def _prepare_text_experiment(
+    text: str, seed: int | None
+) -> tuple[_EmbeddedTextExperiment, int, int]:
+    _validate_stim_experiment_source(text)
+    native = _text_experiment_engine()
+    try:
+        handle, detectors, observables = native.prepare_text_experiment(
+            text, _validate_seed(seed)
+        )
+    except OverflowError as error:
+        raise CapabilityError(str(error)) from error
+    except RuntimeError as error:
+        raise CapabilityError(
+            "Stim experiment has nondeterministic declared parities"
+        ) from error
+    return (
+        _EmbeddedTextExperiment(native, handle, (detectors, observables)),
+        detectors,
+        observables,
+    )
+
+
+def _text_experiment_dem(
+    text: str, decompose_errors: bool, normalize_uniform_pauli: bool
+) -> str:
+    _validate_stim_experiment_source(text)
+    native = _text_experiment_engine()
+    try:
+        result: object = native.text_experiment_dem(
+            text, decompose_errors, normalize_uniform_pauli
+        )
+    except OverflowError as error:
+        raise CapabilityError(str(error)) from error
+    except RuntimeError as error:
+        raise CapabilityError(
+            "Stim experiment has no supported exact DEM conversion"
+        ) from error
+    if not isinstance(result, str):
+        raise CapabilityError("embedded DEM returned an invalid text result")
+    return result
