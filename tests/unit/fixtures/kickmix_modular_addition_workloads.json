@@ -1,0 +1,73 @@
+{
+  "source_blob": "ba7e69f03ad225a13ca996bb44f23c36a6f4f28c",
+  "cases": {
+    "add": {
+      "counts": {
+        "INFO_TAG": 24,
+        "R": 784,
+        "CCX": 1295,
+        "CX": 4858,
+        "HMR": 785,
+        "CZ": 1026,
+        "X": 2589,
+        "PUSH_CONDITION": 516,
+        "NEG": 14,
+        "Z": 1018,
+        "POP_CONDITION": 516,
+        "CCZ": 2,
+        "BIT_STORE0": 4,
+        "SWAP": 1,
+        "BIT_INVERT": 2
+      },
+      "records": 13434,
+      "raw_sha256": "4528b65dc1ba638ea357dbd3847ba97a1a564eb3b5cd2a11a8c9535f6e1b2400",
+      "feedback_effects": 11588,
+      "feedback_sha256": "e684f8695c9b6d453c2e790fe9f1da1557a2dd382e835d67e38d54ed84dba901"
+    },
+    "sub": {
+      "counts": {
+        "INFO_TAG": 26,
+        "R": 1036,
+        "X": 2588,
+        "CCX": 1545,
+        "CX": 7133,
+        "HMR": 1037,
+        "CZ": 1030,
+        "BIT_STORE0": 1,
+        "PUSH_CONDITION": 261,
+        "Z": 761,
+        "POP_CONDITION": 261,
+        "BIT_INVERT": 1,
+        "NEG": 15,
+        "CCZ": 2
+      },
+      "records": 15697,
+      "raw_sha256": "d6439e35753127ef7e1f557b22b0b80c2beeaed42dcfc9d982e7efce96a2071a",
+      "feedback_effects": 14111,
+      "feedback_sha256": "e3e668ee06ce10a17ca04fe5a23e926108b0eee44f090de4ac3d97b36c7fbcc5"
+    },
+    "approx": {
+      "counts": {
+        "INFO_TAG": 24,
+        "R": 784,
+        "CCX": 1295,
+        "CX": 4822,
+        "HMR": 785,
+        "CZ": 1026,
+        "X": 2577,
+        "PUSH_CONDITION": 516,
+        "NEG": 14,
+        "Z": 1000,
+        "POP_CONDITION": 516,
+        "CCZ": 2,
+        "BIT_STORE0": 4,
+        "SWAP": 1,
+        "BIT_INVERT": 2
+      },
+      "records": 13368,
+      "raw_sha256": "4a701b390e898c86fd3fdeafc72fd5156a74d8bdb595eaa655e3ad7cbaa86cfd",
+      "feedback_effects": 11522,
+      "feedback_sha256": "89e20846a9999e46969dc5f72daadfb8ab0ba4c8a1a50d7b1ee78a19af8d173c"
+    }
+  }
+}
