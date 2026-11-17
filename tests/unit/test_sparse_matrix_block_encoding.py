@@ -322,3 +322,146 @@ def test_original_banded_index_oracle_full_table_and_branches(adjoint: bool) -> 
             mapped, untouched = source.call_classically(l=ordinal, i=index)
             assert untouched == index and mapped == (ordinal + index - 1) % 8
             assert expected[(mapped << 3) | index, (ordinal << 3) | index] == 1
+
+
+@pytest.mark.parametrize(
+    "configuration",
+    (
+        "original",
+        "independent-count",
+        "concrete-width",
+        "two-entries",
+        "band-one",
+        "symbolic-band",
+    ),
+)
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_symbolic_sparse_oracle_calls_gate_categories_and_peak(
+    configuration: str, adjoint: bool
+) -> None:
+    from dataclasses import asdict
+
+    from attrs import evolve
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        SparseMatrix,
+        _sparse_matrix_symb_block_encoding,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        SymmetricBandedRowColumnOracle as SourceBanded,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle as SourceTop,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        UniformEntryOracle as SourceEntry,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting.generalizers import ignore_split_join
+    from sympy import Symbol, simplify
+
+    from flagquantum.algorithms.primitives.sparse_matrix_block_encoding import (
+        source_symbolic_sparse_matrix_resource_formula,
+    )
+    from flagquantum.algorithms.primitives.sparse_matrix_oracles import (
+        source_symbolic_banded_oracle_resource_formula,
+        source_top_left_oracle_resource_formula,
+        source_uniform_entry_oracle_resource_formula,
+    )
+
+    source = _sparse_matrix_symb_block_encoding()
+    width = source.system_bitsize
+    band = None
+    count = Symbol("m", positive=True, integer=True)
+    if configuration == "original":
+        count = source.alpha
+    elif configuration in ("band-one", "symbolic-band"):
+        band = (
+            1
+            if configuration == "band-one"
+            else Symbol("b", positive=True, integer=True)
+        )
+        count = 2 * band + 1
+        index = SourceBanded(width, band)
+        source = evolve(source, row_oracle=index, col_oracle=index)
+    else:
+        if configuration == "concrete-width":
+            width = 4
+        if configuration == "two-entries":
+            width, count = Symbol("w", positive=True, integer=True), 2
+        index = SourceTop(width, num_nonzero=count)
+        source = SparseMatrix(index, index, SourceEntry(width, 0.3), eps=0)
+    assert source.alpha == count
+    directional = source.adjoint() if adjoint else source
+    with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+        directional.decompose_bloq()
+    assert (
+        sum(
+            directional.call_graph(max_depth=1, generalizer=ignore_split_join)[
+                1
+            ].values()
+        )
+        == 6
+    )
+
+    def index_formula(reverse: bool, legacy: bool):
+        if band is None:
+            return source_top_left_oracle_resource_formula(width)
+        return source_symbolic_banded_oracle_resource_formula(
+            width, band, adjoint=reverse, legacy_shims=legacy
+        )
+
+    entry = source_uniform_entry_oracle_resource_formula(width)
+    for legacy in (False, True):
+        profile = QECGatesCost(legacy_shims=legacy)
+        row = index_formula(not adjoint, legacy)
+        column = index_formula(adjoint, legacy)
+        children = (
+            (source.row_oracle if adjoint else source.row_oracle.adjoint(), row),
+            (source.col_oracle.adjoint() if adjoint else source.col_oracle, column),
+            (source.entry_oracle.adjoint() if adjoint else source.entry_oracle, entry),
+        )
+        model = source_symbolic_sparse_matrix_resource_formula(
+            width, count, row=row, column=column, entry=entry, legacy_shims=legacy
+        )
+        for original, native in (*children, (directional, model)):
+            expected = get_cost_value(original, profile)
+            for name, value in asdict(native).items():
+                if name != "logical_qubits":
+                    assert simplify(value - getattr(expected, name)) == 0
+            assert (
+                simplify(native.logical_qubits - get_cost_value(original, QubitCount()))
+                == 0
+            )
+
+
+def test_symbolic_singleton_diffusion_retains_source_admission_boundary() -> None:
+    from qualtran.bloqs.block_encoding.sparse_matrix import SparseMatrix
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle as SourceTop,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        UniformEntryOracle as SourceEntry,
+    )
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from sympy import Symbol
+
+    from flagquantum.algorithms.primitives.sparse_matrix_block_encoding import (
+        source_symbolic_sparse_matrix_resource_formula,
+    )
+    from flagquantum.algorithms.primitives.sparse_matrix_oracles import (
+        source_top_left_oracle_resource_formula,
+        source_uniform_entry_oracle_resource_formula,
+    )
+
+    width = Symbol("n", positive=True, integer=True)
+    index = SourceTop(width, num_nonzero=1)
+    source = SparseMatrix(index, index, SourceEntry(width, 0.3), eps=0)
+    row = source_top_left_oracle_resource_formula(width)
+    entry = source_uniform_entry_oracle_resource_formula(width)
+    with pytest.raises(ValueError, match="Bloq registers do not match"):
+        get_cost_value(source, QECGatesCost())
+    with pytest.raises(ValueError, match="singleton diffusion lacks its target port"):
+        source_symbolic_sparse_matrix_resource_formula(
+            width, 1, row=row, column=row, entry=entry
+        )

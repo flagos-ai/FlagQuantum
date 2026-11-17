@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0296 | `sparse_matrix.ipynb` | `2a85ed895beeee25d508e68a093af307ca9f1826` | Closed by the full native tutorial. |
-| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Open for generic symbolic oracle models/binding and external objects. |
+| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle model composition verified. Foreign oracle binding and unrestricted large composite primitive parity remain open. |
 | Q-0301 | `sparse_matrix_test.py` | `afcb0771b405ed26bfce7827d70d81c3d7f7a0d8` | Closed with the original stress, random entry, banded index and Vlasov fixtures. |
 
 ## Oracle and block ownership
@@ -61,9 +61,7 @@ matrix and exact inverse. The concentrated native run passes 193 cases.
 
 The native signature declares the same packed system and ancilla order,
 including the original symbolic fixture. The symbolic declaration can
-be queried without binding wires or constructing data. Generic symbolic
-oracle costs and execution and external object adapters remain open
-under Q-0297.
+be queried without binding wires or constructing data.
 
 The eleven explicit tables, both banded pressure fixtures and the
 Vlasov example now execute through append in both directions. For each
@@ -93,6 +91,28 @@ is inferred from the emitted rotation instructions. The 94-measurement
 composite histories and direct flattened source comparison for all
 large measured streams remain open outside the original test-file
 coverage. The unchanged source slow run passes all four tests.
+
+## Symbolic oracle costs
+
+The symbolic estimate composes the existing uniform preparation, index
+and entry oracles, and SWAP through the six source calls. Top-left index
+oracles contribute zero gates at width `2*n`. Uniform entry contributes
+one rotation at width `2*n+1`. Banded index oracles compose the existing
+Add and signed AddK formulas and follow the locked symbolic peak fallback.
+Callers can supply independent directional formulas for other oracles.
+
+For the original symbolic width `n` and full support, both directions
+give `6*n-2` And operations and measurements, five rotations and peak
+`2*n+1`. The modern Clifford count is `33*n+6`. The legacy Clifford count
+is `45*n+2`. Independent symbolic sparsity also retains the unused
+high-order diffusion prefix in its AutoPartition peak. A symbolic index
+width with band size one has peak `Max(n+4, 2*n+1)`.
+
+The source singleton diffusion omits its target register, and its
+AutoPartition refuses the mismatched ports. Numerical symbolic binding
+and foreign oracle object binding remain open. The source can also reject
+some concrete-index counts with unresolved width at oracle construction
+when its sparsity bound comparison has no truth value.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_sparse_matrix_block_encoding.ipynb

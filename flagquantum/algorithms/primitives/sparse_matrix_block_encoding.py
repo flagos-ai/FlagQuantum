@@ -5,20 +5,38 @@
 
 """Compose the source sparse-access matrix block from its supplied oracles."""
 
-from dataclasses import dataclass, replace
+from __future__ import annotations
+
+from dataclasses import dataclass, fields, replace
+from typing import cast
 
 from ...compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
     GateCost,
 )
-from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal
+from ...compiler._component_trace.symbolic_math import (
+    SymbolicInt,
+    SymbolicReal,
+    bit_length,
+    smax,
+)
+from ...compiler.registers.layout.auto_partition import AutoPartition
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
-from ...compiler.registers.primitives.swap import swap_register_ir
+from ...compiler.registers.preparation.uniform_preparation_resource_model import (
+    source_uniform_preparation_resource_formula,
+)
+from ...compiler.registers.primitives.swap import (
+    source_swap_resource_formula,
+    swap_register_ir,
+)
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+)
 from ...core.ir import Instruction
 from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
@@ -32,6 +50,63 @@ def source_sparse_matrix_signature(width: SymbolicInt) -> Signature:
     return Signature.build_from_dtypes(
         system=opaque_register_type(width),
         ancilla=opaque_register_type(width + 1),
+    )
+
+
+def _source_sparse_diffusion_resource_formula(
+    width: SymbolicInt, sparsity: SymbolicInt, *, legacy_shims: bool
+) -> SymbolicResourceFormula:
+    if sparsity == 1:
+        raise ValueError("Source singleton diffusion lacks its target port")
+    uniform = source_uniform_preparation_resource_formula(
+        sparsity, legacy_shims=legacy_shims
+    )
+    active = bit_length(sparsity - 1)
+    partition = AutoPartition(
+        (("target", ((None, width - active), ("target", active))),)
+    )
+    return replace(
+        uniform, logical_qubits=partition.logical_width(uniform.logical_qubits)
+    )
+
+
+def source_symbolic_sparse_matrix_resource_formula(
+    width: SymbolicInt,
+    sparsity: SymbolicInt,
+    *,
+    row: SymbolicResourceFormula,
+    column: SymbolicResourceFormula,
+    entry: SymbolicResourceFormula,
+    legacy_shims: bool = False,
+) -> SymbolicResourceFormula:
+    """Compose the six locked calls with independently declared oracle costs.
+
+    Supply the oracle formulas in their execution direction. Forward uses
+    row adjoint, column forward and entry forward. The adjoint uses the
+    opposite directions. The sparse block's symbolic peak is the maximum
+    of its signature and the callee peaks. Diffusion alone includes the
+    internal unused index prefix through AutoPartition.
+    """
+    if type(width) is int and type(sparsity) is int:
+        raise ValueError("Use the concrete sparse block model for resolved dimensions")
+    diffusion = _source_sparse_diffusion_resource_formula(
+        width, sparsity, legacy_shims=legacy_shims
+    )
+    swap = source_swap_resource_formula(width)
+    children = (diffusion, column, entry, swap, row, diffusion)
+    return SymbolicResourceFormula(
+        logical_qubits=cast(
+            SymbolicInt,
+            smax(
+                source_sparse_matrix_signature(width).n_qubits(),
+                *(child.logical_qubits for child in children),
+            ),
+        ),
+        **{
+            field.name: sum(getattr(child, field.name) for child in children)
+            for field in fields(SymbolicResourceFormula)
+            if field.name != "logical_qubits"
+        },
     )
 
 
