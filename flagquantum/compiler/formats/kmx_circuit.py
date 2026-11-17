@@ -22,7 +22,6 @@ from .kmb import (
     _parse_kmx,
     _read_kmb_columns,
     _validated_lines,
-    decode_kmb,
 )
 from .kmb_operations import OPERATION_NAMES
 
@@ -186,9 +185,13 @@ def repeat_kmx(text: str, repetitions: int) -> str:
 
 def decode_kmx_or_kmb(data: bytes) -> str:
     """Detect a raw circuit file and return its canonical KMX text."""
+    return read_circuit_file(data).to_kmx()
+
+
+def read_circuit_file(data: bytes) -> KmxCircuit:
+    """Detect the raw file format and read immutable physical records."""
     if data.startswith(_MAGIC[:1]):
         if not data.startswith(_MAGIC):
             raise ValueError("Invalid KMB magic")
-        return decode_kmb(data)
-    lines, _, _ = _validated_lines(_parse_kmx(data.decode(), file_text=True))
-    return "\n".join(lines)
+        return read_kmb_circuit(data)
+    return _freeze_columns(_parse_kmx(data.decode(), file_text=True))

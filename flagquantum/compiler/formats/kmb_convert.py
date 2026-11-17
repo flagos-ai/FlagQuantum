@@ -4,6 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from ._binary_streams import write_binary_result
 from .kmb import decode_kmb, encode_kmb
 
 
@@ -21,15 +22,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             text = decode_kmb(raw)
             result = (text + "\n").encode() if text else b""
-        written = (
-            sys.stdout.buffer.write(result)
-            if args.output is None
-            else args.output.write_bytes(result)
-        )
-        if written != len(result):
-            raise OSError(f"Incomplete write: wrote {written} of {len(result)} bytes")
-        if args.output is None:
-            sys.stdout.buffer.flush()
+        write_binary_result(result, args.output, sys.stdout.buffer)
     except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
