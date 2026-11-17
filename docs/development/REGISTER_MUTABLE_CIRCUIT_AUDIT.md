@@ -50,5 +50,5 @@ The locked `testdata/big_circuit.kmx` asset (K-0329, blob
 SHA-256 `c4686af0cf445c413c69c8b27fa8b8788824e6ccdf6ed093d398a62a51e32b5f`.
 The builder reads and freezes its 263,405 records to the locked canonical
 KMX and the KMB encoder reproduces the locked binary asset byte for byte.
-The unchanged asset stays in the reference checkout. Performance source
-file K-0025 is tracked separately from this byte and record acceptance.
+The unchanged asset stays in the reference checkout. The six native and locked source performance measurements are recorded in
+[the format benchmark audit](REGISTER_CIRCUIT_FORMAT_BENCHMARKS.md).
