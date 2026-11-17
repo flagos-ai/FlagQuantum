@@ -6,26 +6,74 @@
 """Bind a THRU unitary as a block encoding with untouched auxiliary ports."""
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler._component_trace.symbolic_math import SymbolicReal
-from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal
+from ...compiler.registers.control.control_predicate import (
+    ControlRegister,
+    bind_control_registers,
+)
+from ...compiler.registers.control.controlled_component import controlled_component_ir
+from ...compiler.registers.control.controlled_component_resource_model import (
+    controlled_component_cost,
+)
 from ...compiler.registers.layout.partition import (
     RegisterLayout,
     partition_register,
     partition_width,
 )
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+)
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
+from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 
 _UnitaryEmitter = Callable[
     [Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
     tuple[Instruction, ...],
 ]
+
+
+_ControlledUnitaryEmitter = Callable[
+    [int, Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
+    tuple[Instruction, ...],
+]
+
+
+def _packed_unitary_signature(
+    system: SymbolicInt, ancilla: SymbolicInt, resource: SymbolicInt
+) -> Signature:
+    return Signature.build_from_dtypes(
+        system=opaque_register_type(system),
+        ancilla=opaque_register_type(ancilla),
+        resource=opaque_register_type(resource),
+    )
+
+
+def source_unitary_block_signature(
+    child: Signature, *, ancilla: SymbolicInt = 0, resource: SymbolicInt = 0
+) -> Signature:
+    """Declare source widths, which sum the child element widths independently of shape."""
+    if not child.thru_registers_only:
+        raise ValueError("Block encoded unitary must have all THRU registers")
+    return _packed_unitary_signature(
+        sum(reg.bitsize for reg in child), ancilla, resource
+    )
+
+
+def source_unitary_block_resource_formula(
+    child: SymbolicResourceFormula,
+    *,
+    ancilla: SymbolicInt = 0,
+    resource: SymbolicInt = 0,
+) -> SymbolicResourceFormula:
+    """Keep both auxiliary ports live for the single source child call."""
+    return replace(child, logical_qubits=child.logical_qubits + ancilla + resource)
 
 
 @dataclass(frozen=True)
@@ -66,19 +114,21 @@ class UnitaryBlockEncoding:
         resource_bitsize: int = 0,
         epsilon: SymbolicReal = 0,
     ) -> "UnitaryBlockEncoding":
-        """Preserve typed child port order for concrete scalar quantum registers."""
+        """Preserve typed child port order for concrete quantum registers."""
         if not signature.thru_registers_only:
             raise ValueError("Block encoded unitary must have all THRU registers")
         layout: list[tuple[str, int]] = []
         for register in signature:
             width = register.dtype.num_qubits
             if (
-                register.shape_symbolic
+                any(type(dim) is not int for dim in register.shape_symbolic)
                 or register.dtype.num_cbits != 0
                 or type(width) is not int
             ):
+                raise ValueError("Unitary binding requires concrete quantum registers")
+            if register.total_bits() != width:
                 raise ValueError(
-                    "Unitary binding requires concrete scalar quantum registers"
+                    "Unitary source packed width does not match child shape"
                 )
             layout.append((register.name, width))
         return cls(
@@ -97,10 +147,8 @@ class UnitaryBlockEncoding:
     @property
     def signature(self) -> Signature:
         """Return the packed source system, ancilla and resource declaration."""
-        return Signature.build_from_dtypes(
-            system=opaque_register_type(self.system_bitsize),
-            ancilla=opaque_register_type(self.ancilla_bitsize),
-            resource=opaque_register_type(self.resource_bitsize),
+        return _packed_unitary_signature(
+            self.system_bitsize, self.ancilla_bitsize, self.resource_bitsize
         )
 
     @property
@@ -112,14 +160,70 @@ class UnitaryBlockEncoding:
 
     def resource_model(self, unitary_cost: ComponentCost) -> ComponentCost:
         """Charge one directional child plus all idle auxiliary bystanders."""
-        if unitary_cost.qubits < self.system_bitsize:
-            raise ValueError("Child model must include every system port")
+        return self._child_resource_model(unitary_cost, control_width=0)
+
+    def _child_resource_model(
+        self, unitary_cost: ComponentCost, *, control_width: int
+    ) -> ComponentCost:
+        width = self.system_bitsize + control_width
+        if unitary_cost.qubits < width:
+            raise ValueError("Child model must include every system and control port")
         auxiliary = self.ancilla_bitsize + self.resource_bitsize
         return ComponentCost(
             "UnitaryBlockEncoding",
-            self.system_bitsize + auxiliary,
+            width + auxiliary,
             calls=(CostCall(unitary_cost, bystander_qubits=auxiliary),),
         )
+
+    def controlled_resource_model(
+        self,
+        positive_child: ComponentCost,
+        registers: tuple[ControlRegister, ...],
+        *,
+        legacy_shims: bool = False,
+    ) -> ComponentCost:
+        """Wrap the source positive child cost with optional predicate work."""
+        positive = self._child_resource_model(positive_child, control_width=1)
+        return controlled_component_cost(
+            positive,
+            registers,
+            target_width=positive.qubits - 1,
+            legacy_shims=legacy_shims,
+        )
+
+    def make_controlled_on(
+        self,
+        emit_child: _ControlledUnitaryEmitter,
+        *,
+        controls: tuple[tuple[int, ...], ...],
+        control_registers: tuple[ControlRegister, ...],
+        system: tuple[int, ...],
+        ancilla: tuple[int, ...] = (),
+        resource: tuple[int, ...] = (),
+        workspace: tuple[int, ...] = (),
+        classical_bits: tuple[int, ...] = (),
+        control_workspace: tuple[int, ...] = (),
+        control_classical_bits: tuple[int, ...] = (),
+        adjoint: bool = False,
+    ) -> _BoundBlockOperation:
+        """Bind the directional positive child under the shared control predicate."""
+        self._validate_ports(system, ancilla, resource, adjoint)
+        control_wires, _ = bind_control_registers(controls, control_registers)
+        existing = (*control_wires, *system, *ancilla, *resource, *workspace)
+        _validate_block_work(
+            existing, control_workspace, (*classical_bits, *control_classical_bits)
+        )
+        ports = partition_register(system, self.system_layout)
+
+        def emit(predicate: int) -> tuple[Instruction, ...]:
+            gates = emit_child(predicate, ports, workspace, classical_bits, adjoint)
+            _check_child_wires(gates, {predicate, *system, *workspace})
+            return gates
+
+        gates = controlled_component_ir(
+            controls, control_registers, emit, control_workspace, control_classical_bits
+        )
+        return _BoundBlockOperation(gates, max((*existing, *control_workspace)) + 1)
 
     def make_on(
         self,
@@ -132,6 +236,19 @@ class UnitaryBlockEncoding:
         adjoint: bool = False,
     ) -> "_BoundUnitaryBlockEncoding":
         """Bind the source packed signature for circuit.append(op)."""
+        self._validate_ports(system, ancilla, resource, adjoint)
+        _validate_block_work((*system, *ancilla, *resource), workspace, classical_bits)
+        return _BoundUnitaryBlockEncoding(
+            self, system, ancilla, resource, workspace, classical_bits, adjoint
+        )
+
+    def _validate_ports(
+        self,
+        system: tuple[int, ...],
+        ancilla: tuple[int, ...],
+        resource: tuple[int, ...],
+        adjoint: bool,
+    ) -> None:
         if type(adjoint) is not bool:
             raise ValueError("Block direction must be boolean")
         partition_register(system, self.system_layout)
@@ -140,16 +257,11 @@ class UnitaryBlockEncoding:
             or len(resource) != self.resource_bitsize
         ):
             raise ValueError("Block auxiliary ports must match their declared widths")
-        wires = (*system, *ancilla, *resource, *workspace)
-        if wires:
-            _validate_wires(wires)
-        if len(set(classical_bits)) != len(classical_bits) or any(
-            type(bit) is not int or bit < 0 for bit in classical_bits
-        ):
-            raise ValueError("Child result slots must be distinct nonnegative integers")
-        return _BoundUnitaryBlockEncoding(
-            self, system, ancilla, resource, workspace, classical_bits, adjoint
-        )
+
+
+def _check_child_wires(gates: tuple[Instruction, ...], allowed: set[int]) -> None:
+    if any(wire not in allowed for gate in gates for wire in gate.wires):
+        raise ValueError("Block child used a wire outside its system and workspace")
 
 
 @dataclass(frozen=True)
@@ -168,9 +280,7 @@ class _BoundUnitaryBlockEncoding:
         gates = self.encoding.unitary(
             ports, self.workspace, self.classical_bits, self.adjoint
         )
-        allowed = set((*self.system, *self.workspace))
-        if any(wire not in allowed for gate in gates for wire in gate.wires):
-            raise ValueError("Block child used a wire outside its system and workspace")
+        _check_child_wires(gates, {*self.system, *self.workspace})
         return gates
 
     def append_to(self, circuit: Circuit) -> Circuit:
