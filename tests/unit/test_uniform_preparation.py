@@ -167,10 +167,12 @@ def test_full_source_complex_map_and_erasure_histories(count, values, adjoint):
         src,
         context=cirq.DecompositionContext(manager),
         on_stuck_raise=None,
-        keep=lambda op: op.gate == cirq.H
-        or isinstance(op.gate, (cirq.ControlledGate, cirq.Rz, cirq.ResetChannel))
-        or cirq.is_measurement(op)
-        or isinstance(op, cirq.ClassicallyControlledOperation),
+        keep=lambda op: (
+            op.gate == cirq.H
+            or isinstance(op.gate, (cirq.ControlledGate, cirq.Rz, cirq.ResetChannel))
+            or cirq.is_measurement(op)
+            or isinstance(op, cirq.ClassicallyControlledOperation)
+        ),
     )
     reference = cirq.Circuit(ops)
     ancilla = tuple(sorted(reference.all_qubits() - set(wires)))
@@ -240,22 +242,17 @@ def test_full_source_complex_map_and_erasure_histories(count, values, adjoint):
         )
 
 
-@pytest.mark.ftqc_reference
-@pytest.mark.parametrize(
-    "count,values",
-    [
-        (2, ()),
-        (4, (1, 0)),
-        (3, ()),
-        (6, (0,)),
-        (6, (1, 0)),
-        (10, (1, 0)),
-        (5, (1, 0, 1)),
-        (5, ()),
-        (5, (1,)),
-    ],
-)
-def test_pinned_outer_generator_and_inner_source_streams(count, values):
+def reference_uniform_preparation_gates(
+    count: int,
+    values: tuple[int, ...],
+    target: tuple[int, ...],
+    workspace: tuple[int, ...],
+    slots: tuple[int, ...],
+    controls: tuple[int, ...],
+    *,
+    adjoint: bool,
+) -> tuple[Instruction, ...]:
+    """Read the locked uniform stages with caller-selected wires and feedback slots."""
     pytest.importorskip("qualtran")
     import cirq
     from qualtran._infra.gate_with_registers import split_qubits
@@ -265,13 +262,12 @@ def test_pinned_outer_generator_and_inner_source_streams(count, values):
         PrepareUniformSuperposition,
     )
 
-    target, workspace, slots, controls = layout(count, values)
     source = PrepareUniformSuperposition(count, values)
     manager = cirq.DecompositionContext(
         cirq.GreedyQubitManager("stage", maximize_reuse=True)
     )
     quregs = split_qubits(
-        source.signature, cirq.LineQubit.range(len(controls) + len(target))
+        source.signature, tuple(cirq.LineQubit(wire) for wire in (*controls, *target))
     )
     ops = list(
         cirq.flatten_op_tree(source.decompose_from_registers(context=manager, **quregs))
@@ -328,63 +324,79 @@ def test_pinned_outer_generator_and_inner_source_streams(count, values):
 
     _, odd, high = source.k_l_logL()
     assert tuple(q.x for q in quregs["target"]) == target
-    for adjoint in (False, True):
-        h_stage = tuple(
-            gate
-            for part in (reversed(initial) if adjoint else initial)
-            for gate in part
+    h_stage = tuple(
+        gate for part in (reversed(initial) if adjoint else initial) for gate in part
+    )
+    if high == 0:
+        expected = h_stage
+    else:
+        rest = ops[len(target) :]
+        lt, rz, undo = rest[:3]
+        assert lt.gate == undo.gate == LessThanConstant(high, odd)
+        middle = tuple(Instruction("h", (op.qubits[0].x,)) for op in rest[3 : 3 + high])
+        reflect, rotate, _ = rest[3 + high : 6 + high]
+        final = tuple(Instruction("h", (op.qubits[0].x,)) for op in rest[6 + high :])
+        assert middle == final
+        assert all(op.gate == cirq.H for op in (*rest[3 : 3 + high], *rest[6 + high :]))
+        less_work = workspace[1 : high + 2]
+        compare = reference_arithmetic_gates(
+            lt.gate,
+            {"x": target[:high], "target": workspace[:1]},
+            less_work,
+            dict(zip(less_work[1:], slots[:high], strict=True)),
+            cirq_style=True,
         )
-        if high == 0:
-            expected = h_stage
-        else:
-            rest = ops[len(target) :]
-            lt, rz, undo = rest[:3]
-            assert lt.gate == undo.gate == LessThanConstant(high, odd)
-            middle = tuple(
-                Instruction("h", (op.qubits[0].x,)) for op in rest[3 : 3 + high]
-            )
-            reflect, rotate, _ = rest[3 + high : 6 + high]
-            final = tuple(
-                Instruction("h", (op.qubits[0].x,)) for op in rest[6 + high :]
-            )
-            assert middle == final
-            assert all(
-                op.gate == cirq.H for op in (*rest[3 : 3 + high], *rest[6 + high :])
-            )
-            less_work = workspace[1 : high + 2]
-            compare = reference_arithmetic_gates(
-                lt.gate,
-                {"x": target[:high], "target": workspace[:1]},
-                less_work,
-                dict(zip(less_work[1:], slots[:high], strict=True)),
-                cirq_style=True,
-            )
-            prefix = workspace[: high + len(values) - 1]
-            assert tuple(q.x for q in reflect.qubits[: high + len(values)]) == (
-                *target[:high],
-                *controls,
-            )
-            compute, erase = source_predicate(
-                getattr(reflect.gate, "bloq", reflect.gate),
-                (*target[:high], *controls),
-                prefix,
-            )
-            sign = -1 if adjoint else 1
-            threshold = (
-                *compare,
-                Instruction("rz", workspace[:1], {"theta": sign * rz.gate._rads}),
-                *compare,
-            )
-            zero = (
-                *compute,
-                Instruction("rz", prefix[-1:], {"theta": sign * rotate.gate._rads}),
-                *erase,
-            )
-            expected = (
-                (*final[::-1], *zero, *middle[::-1], *threshold, *h_stage)
-                if adjoint
-                else (*h_stage, *threshold, *middle, *zero, *final)
-            )
+        prefix = workspace[: high + len(values) - 1]
+        assert tuple(q.x for q in reflect.qubits[: high + len(values)]) == (
+            *target[:high],
+            *controls,
+        )
+        compute, erase = source_predicate(
+            getattr(reflect.gate, "bloq", reflect.gate),
+            (*target[:high], *controls),
+            prefix,
+        )
+        sign = -1 if adjoint else 1
+        threshold = (
+            *compare,
+            Instruction("rz", workspace[:1], {"theta": sign * rz.gate._rads}),
+            *compare,
+        )
+        zero = (
+            *compute,
+            Instruction("rz", prefix[-1:], {"theta": sign * rotate.gate._rads}),
+            *erase,
+        )
+        expected = (
+            (*final[::-1], *zero, *middle[::-1], *threshold, *h_stage)
+            if adjoint
+            else (*h_stage, *threshold, *middle, *zero, *final)
+        )
+
+    return expected
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "count,values",
+    [
+        (2, ()),
+        (4, (1, 0)),
+        (3, ()),
+        (6, (0,)),
+        (6, (1, 0)),
+        (10, (1, 0)),
+        (5, (1, 0, 1)),
+        (5, ()),
+        (5, (1,)),
+    ],
+)
+def test_pinned_outer_generator_and_inner_source_streams(count, values):
+    target, workspace, slots, controls = layout(count, values)
+    for adjoint in (False, True):
+        expected = reference_uniform_preparation_gates(
+            count, values, target, workspace, slots, controls, adjoint=adjoint
+        )
 
         def fixed_basis(stream):
             for gate in stream:
