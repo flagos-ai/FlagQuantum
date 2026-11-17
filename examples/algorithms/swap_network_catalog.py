@@ -29,10 +29,7 @@ from flagquantum.compiler._component_trace.resource_width import (
 )
 from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
 from flagquantum.compiler.registers.control.control_predicate import ControlRegister
-from flagquantum.compiler.registers.lookup.multiplexed_swap import (
-    multiplexed_cswap_ir,
-    source_multiplexed_cswap_cost,
-)
+from flagquantum.compiler.registers.lookup.multiplexed_swap import MultiplexedSwapLayout
 from flagquantum.compiler.registers.lookup.swap_with_zero import swap_with_zero_ir
 from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
     PositiveControlledSwapChild,
@@ -45,6 +42,7 @@ from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.core.ir.program.register_types import (
+    bounded_unsigned_register_type,
     opaque_register_type,
     quantum_bit_type,
 )
@@ -219,16 +217,15 @@ class MultiplexedSwapExample:
     adjoint: bool = False
 
     @property
-    def signature(self) -> Signature:
-        return Signature(
-            (
-                Register("selection", opaque_register_type(self.width)),
-                Register(
-                    "targets", opaque_register_type(self.word), shape=(self.rows,)
-                ),
-                Register("output", opaque_register_type(self.word)),
-            )
+    def layout(self) -> MultiplexedSwapLayout:
+        selection = Register(
+            "selection", bounded_unsigned_register_type(self.width, self.rows)
         )
+        return MultiplexedSwapLayout((selection,), self.word)
+
+    @property
+    def signature(self) -> Signature:
+        return self.layout.signature
 
     @property
     def data_width(self) -> int:
@@ -236,10 +233,10 @@ class MultiplexedSwapExample:
 
     @property
     def qubit_count(self) -> int:
-        return self.data_width + self.width - 1
+        return self.data_width + self.layout.requirements()[0]
 
     def resource_model(self) -> ComponentCost:
-        return source_multiplexed_cswap_cost((self.rows,), (self.width,), 0, self.word)
+        return self.layout.resource_model()
 
     def call_graph(self) -> SymbolicCallGraph[str]:
         root = "MultiplexedCSwap"
@@ -259,18 +256,11 @@ class MultiplexedSwapExample:
         )
 
     def append_to(self, circuit: Circuit) -> Circuit:
-        targets = tuple(
-            tuple(range(offset, offset + self.word))
-            for offset in range(self.width, self.data_width - self.word, self.word)
-        )
-        gates = multiplexed_cswap_ir(
-            (),
-            (tuple(range(self.width)),),
-            (self.rows,),
-            targets,
-            tuple(range(self.data_width - self.word, self.data_width)),
-            tuple(range(self.data_width, self.qubit_count)),
-            tuple(range(self.width - 1)),
+        work, slots = self.layout.requirements()
+        gates = self.layout.bind(
+            tuple(range(self.data_width)),
+            tuple(range(self.data_width, self.data_width + work)),
+            tuple(range(slots)),
             adjoint=self.adjoint,
         )
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
