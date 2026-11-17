@@ -15,10 +15,12 @@ from sympy import simplify
 from examples.algorithms.rotation_preparation_catalog import (
     ORIGINAL_COEFFICIENTS,
     RotationPreparationExample,
-    rotation_signature,
 )
 from flagquantum.algorithms.primitives.symbolic_rotation_resource_model import (
     source_rotation_preparation_resource_formula,
+)
+from flagquantum.algorithms.primitives.symbolic_rotation_resource_model import (
+    source_rotation_preparation_signature as rotation_signature,
 )
 from flagquantum.circuit import Circuit
 from flagquantum.compiler.registers.phase.phase_gradient_lookup import (
@@ -211,7 +213,7 @@ def check_rotation_direction(
 
     data_width = op.gradient[-1] + 1
     expected = initial
-    for direction in ((False, True) if reverse else (False,)):
+    for direction in (False, True) if reverse else (False,):
         example = replace(op, uncompute=direction)
         source = src.StatePreparationViaRotations(
             example.coefficients, example.phase_width, example.controls, direction
@@ -305,3 +307,106 @@ def test_original_prga_kickback(locked_rotation: tuple[Any, ast.Module]) -> None
             )
             < 3e-12
         )
+
+
+@pytest.mark.parametrize(
+    "case", ["one_bit", "uncompute", "shape", "phase", "singleton"]
+)
+def test_rotation_and_prga_typed_direct_declarations(
+    locked_rotation: tuple[Any, ast.Module], case: str
+) -> None:
+    from qualtran.symbolics import HasLength
+    from sympy import Symbol
+
+    from flagquantum.algorithms.primitives.symbolic_rotation_resource_model import (
+        source_rotation_preparation_calls,
+    )
+    from flagquantum.compiler._component_trace.resource_generalization import (
+        CliffordCall,
+        RotationCall,
+    )
+    from flagquantum.compiler.registers.lookup.qrom_table import QromTable
+    from flagquantum.compiler.registers.phase.phase_gradient_lookup import (
+        PhaseGradientLookupCall,
+    )
+    from flagquantum.core.ir.program.signatures import Signature
+
+    source_module, _ = locked_rotation
+    n, p = (Symbol(name, positive=True, integer=True) for name in ("n", "p"))
+    coefficients = {
+        "one_bit": (1, 0),
+        "uncompute": ORIGINAL_COEFFICIENTS,
+        "shape": None,
+        "phase": (1, 0),
+        "singleton": (1,),
+    }[case]
+    count = n if coefficients is None else len(coefficients)
+    phase = p if case in ("shape", "phase") else 2
+    controls = 1
+    source = source_module.StatePreparationViaRotations(
+        HasLength(count) if coefficients is None else coefficients,
+        phase,
+        controls,
+        uncompute=case == "uncompute",
+    )
+
+    def assert_ports(native: Signature, source_signature: Any) -> None:
+        assert [
+            (reg.name, reg.bitsize, reg.side.name, reg.dtype.encoding) for reg in native
+        ] == [
+            (
+                reg.name,
+                reg.bitsize,
+                reg.side.name,
+                {"QBit": "bit", "QAny": "opaque", "QFxp": "fixed_point"}[
+                    type(reg.dtype).__name__
+                ],
+            )
+            for reg in source_signature
+        ]
+
+    assert_ports(rotation_signature(count, phase, controls), source.signature)
+    native = source_rotation_preparation_calls(
+        count, phase, controls, coefficients=coefficients, uncompute=case == "uncompute"
+    )
+    assert len(native) == len(source.build_call_graph(None))
+    for child, multiplicity in source.build_call_graph(None).items():
+        kind = type(child).__name__
+        if kind == "Rx":
+            assert native[RotationCall("rx", child.angle, child.eps)] == multiplicity
+        elif kind == "XGate":
+            assert native[CliffordCall("x", 1)] == multiplicity
+        else:
+            assert kind == "PRGAViaPhaseGradient"
+            qrom = child.qrom_bloq
+            table = QromTable(
+                qrom.data_shape,
+                qrom.selection_bitsizes,
+                qrom.target_bitsizes,
+                qrom.target_shapes,
+                qrom.num_controls,
+                tuple(tuple(map(int, data.flat)) for data in qrom.data)
+                if qrom.has_data()
+                else None,
+            )
+            lookup = PhaseGradientLookupCall(table)
+            assert native[lookup] == multiplicity
+            assert_ports(lookup.signature, child.signature)
+            assert_ports(lookup.addition_signature, child.add_into_phase_grad.signature)
+            for reg, upstream_reg in zip(
+                lookup.addition_signature,
+                child.add_into_phase_grad.signature,
+                strict=True,
+            ):
+                assert (
+                    dict(reg.dtype.parameters)["fractional_width"]
+                    == upstream_reg.dtype.num_frac
+                )
+            assert child.build_call_graph(None) == {
+                qrom: 2,
+                child.add_into_phase_grad: 1,
+            }
+            assert lookup.direct_calls() == {
+                table: 2,
+                ("AddIntoPhaseGrad", phase, phase): 1,
+            }

@@ -49,6 +49,22 @@ stream exposes those rotations as Rx. Each of the four gradient additions
 contributes a measured carry to the emitted stream. The source model has no
 Toffoli for this two-bit addition.
 
+## Typed declarations and call identities
+
+The state-preparation and PRGA signatures share the source's scalar
+through-port rules. One-bit ports use the qubit type, zero-width ports
+are omitted, and larger or unresolved widths retain opaque words.
+
+The direct state-preparation graph retains both signed Rx angles and
+their precision, two X calls, and each PRGA's exact width, controls
+and ROM contents. With unknown coefficients or gradient width, the
+amplitude and phase calls share one shape-only PRGA identity with
+multiplicity two. Each PRGA declares one QROM identity with multiplicity
+two and one fixed-point phase addition. The QROM load and erase also
+share the existing table definition in executable binding and the
+concrete resource model. Concrete, inverse, shape-only, symbolic-phase
+and singleton declarations were compared to the locked source.
+
 ## Remaining boundaries
 
 Q-0703 retains executable symbolic binding, the original missing singleton
