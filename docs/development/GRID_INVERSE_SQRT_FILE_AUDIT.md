@@ -52,9 +52,34 @@ The one-bit binding emits 48 T/T† and 12 measurements using six work
 wires and one slot. The two-bit binding emits 336 T/T† and 84 measurements
 using sixteen work wires and one slot. These are native executed counts.
 
+The independent `GridInverseSqrtNewton` binding accepts coherent `x_sq`,
+`poly`, and an arbitrary XOR target at explicit fractional widths. It
+uses the existing widened Newton update and preserves the input words.
+The admitted domain requires a*x*x <= 3 and a result that fits the
+unsigned target. The optional coherent correction word
+adds delta to 3 at the shared update's fractional scale.
+
+The new binding tests enumerate each valid source/estimate/correction
+combination at three small register formats, every occupied target value,
+and a coherent spectator. Independent integer arithmetic specifies
+the exact truncated output. The two-bit integer-source fixture includes
+224 such inputs and emits 224 T/T† and 56 measurements using 33 work
+wires and five slots. Both sampled trajectories and two-application
+recovery match every complex amplitude and restore all borrowed work.
+
+For those complete valid Newton domains and the tested coherent
+polynomial domains, the shared And-channel certificate checks each
+emitted compute and erase block on every basis input. It verifies that
+each erased value is the exact conjunction, and that both measurement
+outcomes have the same positive normalized action. This proves the
+result for every measurement history on those input spans. The independent
+trajectory comparisons also check their complex amplitudes. This
+certificate complements the existing sampled tests of the larger
+table/interpolation circuit.
+
 The bank builder admits at least two address bits and 1–63 coefficient
 bits. The source gives no arithmetic representation for every arbitrary
 coefficient input or primitive polynomial/Newton decomposition. The
 explicit native fixed-point convention and original resource declaration
-therefore retain separate evidence. Complete enumeration of the physical
-circuit's measurement histories remains open.
+therefore retain separate evidence. Complete measurement-branch coverage
+of the larger table/interpolation circuit remains open.

@@ -11,6 +11,7 @@ from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
 from flagquantum.dynamic import DynamicCircuit
+from tests.unit.measurement_checks import certified_and_channel_map
 from tests.unit.sparse_register_execution import execute_sparse_register
 
 pytestmark = pytest.mark.unit
@@ -55,6 +56,14 @@ def test_coherent_polynomial_preserves_inputs_and_cleans_scratch(
     for seed in (3, 29):
         observed = execute_sparse_register(ir, incoming, seed=seed)
         assert observed == pytest.approx(expected, abs=4e-12)
+
+    def bits(index):
+        return tuple(index >> bit & 1 for bit in reversed(range(logical + work + 1)))
+
+    assert certified_and_channel_map(ir.instructions, tuple(map(bits, incoming))) == (
+        tuple(map(bits, expected)),
+        counts.unconditional["measure"],
+    )
     paired = DynamicCircuit(logical + work + 1).append(op).append(op).to_ir()
     assert execute_sparse_register(paired, incoming, seed=13) == pytest.approx(
         incoming, abs=4e-12
