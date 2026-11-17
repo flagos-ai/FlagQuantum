@@ -42,12 +42,13 @@ from ...core.ir.program.register_types import (
 )
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
+from .prepare_oracle import PrepareOracle
 from .thc_chemistry_data import THCChemistryData
 from .thc_uniform_preparation import THCUniformPreparation
 
 
 @dataclass(frozen=True)
-class PrepareTHCChemistry:
+class PrepareTHCChemistry(PrepareOracle):
     """Prepare the signed THC alias signal on zero-initialized logical ports.
 
     The contiguous address records the original row. The selected word
@@ -111,9 +112,13 @@ class PrepareTHCChemistry:
             *self.qroam_extra_target_registers,
         )
 
-    @cached_property
+    @property
     def source_signature(self) -> Signature:
-        return Signature((*self.selection_registers, *self.junk_registers))
+        return self.signature
+
+    @property
+    def l1_norm_of_coeffs(self) -> float:
+        return self.data.normalization
 
     @property
     def selection_layout(self) -> RegisterLayout:

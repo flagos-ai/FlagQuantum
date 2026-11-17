@@ -47,6 +47,7 @@ def test_source_prepare_cost_and_unchanged_original_body_flag(m, bits, log):
     assert {k: v for k, v in asdict(native.source_gate_cost()).items() if v} == (
         get_cost_value(source, QECGatesCost()).asdict()
     )
+    assert native.l1_norm_of_coeffs == pytest.approx(source.l1_norm_of_coeffs)
     source_adjoint = source.adjoint()
     _assert_sparse_signature(native.source_signature, source.signature)
     _assert_sparse_signature(

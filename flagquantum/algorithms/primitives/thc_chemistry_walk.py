@@ -113,7 +113,7 @@ class THCChemistryWalk:
 
     @property
     def alpha(self) -> float:
-        return self.prepare.data.normalization
+        return self.prepare.l1_norm_of_coeffs
 
     @property
     def layout(self) -> RegisterLayout:
