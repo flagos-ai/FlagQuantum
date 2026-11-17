@@ -42,10 +42,30 @@ native measured carry lowering. Both original independent source models also
 declare zero Toffoli, zero CSwap and zero rotations. The emitted Rx are
 retained in the native stream.
 
+## Coefficient input factories
+
+The map factory preserves insertion order for both support and coefficients.
+The vector factory accepts one-dimensional numeric sequences and NumPy
+arrays, uses the vector length as the domain, and keeps nonzero entries
+in ascending address order. Inferred target width uses the declared domain.
+The original map factories and the inferred and explicit-width vector
+fixtures now reach the native append entry through these factories.
+
+The dense child uses the locked NumPy padding and L2 normalization order.
+Float32, complex64 and complex128 vector fixtures match the reference
+coefficient precision, normalized child coefficients and gate operands.
+When the reference norm underflows or overflows, the existing stable
+native normalization can still handle finite coefficients.
+
+The locked rank-two row factory combines the outer length of one with
+column addresses beyond that domain. The native factory rejects the
+malformed shape at entry. SciPy CSR input raises an ambiguous-length
+error before sparse conversion in the reference and native factory.
+
 ## Remaining boundaries
 
-- Q-0697 remains open for general source array/map adapters and executable
-  symbolic binding. Direct concrete tuples and independent symbolic cost
+- Q-0697 retains SciPy sparse containers, executable symbolic binding and
+  the original decomposition failure cases. Independent symbolic cost
   declarations already have native owners.
 - The original partial map loses an indexed transition for `(3, 0)`, and
   the original singleton decomposition cannot bind its target. The native

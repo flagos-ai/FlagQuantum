@@ -156,7 +156,10 @@ def test_source_sparse_preparation(
     source = SparseStatePreparationViaRotations(
         indices, coefficients, size, phase_width, width
     )
-    native = SparseRotationPreparation(indices, coefficients, size, phase_width)
+    native = SparseRotationPreparation.from_coefficient_map(
+        size, dict(zip(indices, coefficients, strict=True)), phase_width
+    )
+    assert native.indices == source.sparse_indices
     actual, work_size = assert_sparse_source_stream(source, native, width)
     data_size = width + phase_width
     counts = Counter(gate.name for gate in actual)
@@ -355,13 +358,9 @@ def test_original_sparse_state_grid(
     if target_width is not None:
         source = attrs.evolve(source, target_bitsize=target_width)
     width = int(source.target_bitsize)
-    nonzero = tuple((index, value) for index, value in enumerate(amplitudes) if value)
-    native = SparseRotationPreparation(
-        tuple(index for index, _ in nonzero),
-        tuple(value for _, value in nonzero),
-        len(amplitudes),
-        3,
-    )
+    native = SparseRotationPreparation.from_sparse_array(amplitudes, 3)
+    assert native.indices == source.sparse_indices
+    assert native.coefficients == source.nonzero_coeffs
     example = SparseRotationExample(native, width)
     gates, work = assert_sparse_source_stream(source, native, width)
     assert_source_cost(example.resource_model(), source)
@@ -386,3 +385,57 @@ def test_original_sparse_state_grid(
             )
             < 2e-12
         )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("dtype", ["float32", "complex64", "complex128"])
+def test_coefficient_vector_keeps_source_order_dtype_and_gates(
+    locked_sparse_source: Any, dtype: str
+) -> None:
+    import numpy as np
+
+    values = [0.6, 0.8, 0.0] if dtype == "float32" else [0.6, 0.8j, 0.0]
+    vector = np.asarray(values, dtype=dtype)
+    source = locked_sparse_source.SparseStatePreparationViaRotations.from_sparse_array(
+        vector, 2
+    )
+    native = SparseRotationPreparation.from_sparse_array(vector, 2)
+    assert (native.size, native.indices, native.target_width) == (
+        source.N,
+        source.sparse_indices,
+        source.target_bitsize,
+    )
+    assert (
+        np.asarray(native.coefficients).dtype == np.asarray(source.nonzero_coeffs).dtype
+    )
+    assert native.coefficients == source.nonzero_coeffs
+    dense, _, _ = native._components(native.target_width)
+    assert dense.coefficients == source._dense_stateprep_bloq.state_coefficients
+    assert_sparse_source_stream(source, native, native.target_width)
+    assert_source_cost(
+        SparseRotationExample(native, native.target_width).resource_model(), source
+    )
+
+
+@pytest.mark.ftqc_reference
+def test_sparse_vector_shape_failures_differ_from_valid_flat_vectors(
+    locked_sparse_source: Any,
+) -> None:
+    import numpy as np
+    from scipy.sparse import csr_array
+
+    source_factory = locked_sparse_source.SparseStatePreparationViaRotations
+    row = np.array([[0.0, 0.6, 0.0, 0.8]])
+    malformed = source_factory.from_sparse_array(row, 2)
+    assert (malformed.N, malformed.target_bitsize, malformed.sparse_indices) == (
+        1,
+        0,
+        (1, 3),
+    )
+    with pytest.raises(ValueError, match="one-dimensional"):
+        SparseRotationPreparation.from_sparse_array(row, 2)
+    sparse_row = csr_array(row)
+    with pytest.raises(TypeError, match="length is ambiguous"):
+        source_factory.from_sparse_array(sparse_row, 2)
+    with pytest.raises(TypeError, match="length is ambiguous"):
+        SparseRotationPreparation.from_sparse_array(sparse_row, 2)
