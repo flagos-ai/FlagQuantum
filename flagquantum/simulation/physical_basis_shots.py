@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from random import Random
 from typing import Protocol
 
+PHYSICAL_SAMPLE_BATCH_SIZE = 64
+
 _TURN = 1 << 128
 _SIGN = _TURN >> 1
 
@@ -205,7 +207,7 @@ def sample_basis_batch(
     a flag identifying angle values. Debug angle reads see the rotation
     accumulator; the source commits the separate sign mask after the scan.
     """
-    if not 1 <= shots <= 64:
+    if not 1 <= shots <= PHYSICAL_SAMPLE_BATCH_SIZE:
         raise ValueError("A physical basis batch requires 1 to 64 shots")
     q: defaultdict[int, int] = defaultdict(int)
     b: defaultdict[int, int] = defaultdict(int)
