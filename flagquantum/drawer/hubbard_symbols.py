@@ -52,3 +52,15 @@ def hubbard_hopping_wire_symbol(
         return "Text", {"text": text, "fontsize": 10}
     suffix = "[" + ", ".join(map(str, idx)) + "]" if idx else ""
     return "TextBox", {"text": register.name + suffix}
+
+
+def hubbard_interaction_wire_symbol(
+    step: RegisterStep,
+    register: Register | None,
+    idx: tuple[int, ...] | None,
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Retain interaction.py's shared truncated root and indexed spin words."""
+    if register is None:
+        return "Text", {"text": "Interact..", "fontsize": 10}
+    suffix = "[" + ", ".join(map(str, idx)) + "]" if idx else ""
+    return "TextBox", {"text": register.name + suffix}
