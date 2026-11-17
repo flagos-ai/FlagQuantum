@@ -1,7 +1,11 @@
 """Certify source traversal, coherent erasure branches and explicit ownership."""
 
+import hashlib
+import json
 from collections import Counter
+from functools import partial
 from itertools import product
+from pathlib import Path
 
 import pytest
 import torch
@@ -13,16 +17,26 @@ from flagquantum.compiler.artifacts.reversible_phase import (
     ReversiblePhaseProgram,
 )
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
+from flagquantum.compiler.formats.kmx_block_marks import (
+    decode_kmx_block_marks,
+    encode_kmx_block_marks,
+)
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
 from flagquantum.compiler.registers.lookup.recursive_unary_iteration import (
     UnaryAddressCursor,
+    physical_unary_iteration,
     unary_iteration_operations,
 )
+from flagquantum.core.classical_dataflow import ClassicalXor
 from tests.unit.measurement_checks import expand_reset_branches, forced_branch
 
 pytestmark = pytest.mark.unit
+
+
+def _flip_on_match(target: int, value: int, match: int) -> tuple[Op, ...]:
+    return (Op("cx", (match, target)),)
 
 
 def _program(
@@ -170,10 +184,6 @@ def test_append_example() -> None:
 
 
 def test_locked_native_stream_fingerprints() -> None:
-    import hashlib
-    import json
-    from pathlib import Path
-
     fixture = json.loads(
         (
             Path(__file__).parents[1] / "fixtures/kickmix_unary_iteration.json"
@@ -182,7 +192,7 @@ def test_locked_native_stream_fingerprints() -> None:
     assert fixture["source_blob"] == "ec97900dbce6ac31ca66a33eb63e95ea7073fb1d"
     assert len(fixture["cases"]) == 90
     for case in fixture["cases"]:
-        n = case["width"]
+        n: int = case["width"]
         program = ReversiblePhaseProgram(
             n + 2 + max(1, n),
             1,
@@ -190,7 +200,7 @@ def test_locked_native_stream_fingerprints() -> None:
                 tuple(reversed(range(n))),
                 tuple(range(n + 2, n + 2 + max(1, n))),
                 tuple(case["values"]),
-                lambda value, match, n=n: (Op("cx", (match, n + 1)),),
+                partial(_flip_on_match, n + 1),
                 control=n if case["controlled"] else None,
             ),
         )
@@ -199,4 +209,77 @@ def test_locked_native_stream_fingerprints() -> None:
         assert (
             hashlib.sha256(("\n".join(lines) + "\n").encode()).hexdigest()
             == case["sha256"]
+        )
+
+
+def test_locked_marked_unary_traversal_and_sweep() -> None:
+    fixture = json.loads(
+        Path(__file__)
+        .with_name("fixtures")
+        .joinpath("kickmix_unary_iteration_file.json")
+        .read_text()
+    )
+    assert fixture["source_blob"] == "ec97900dbce6ac31ca66a33eb63e95ea7073fb1d"
+    assert len(fixture["cases"]) == 73
+    for case in fixture["cases"]:
+        width = case["width"]
+        mode = case["mode"]
+        sweep = case["sweep"]
+        start = width + (1 if sweep else 2)
+        program, calls = physical_unary_iteration(
+            tuple(reversed(range(width))),
+            tuple(range(start, start + max(1, width))),
+            range(1024) if sweep else case["values"],
+            (lambda value, match: ()) if sweep else partial(_flip_on_match, width + 1),
+            control=width if mode & 1 else None,
+            classical_guard=0 if mode & 2 else None,
+            measurement_bit=1 if mode & 2 else 0,
+        )
+        text = encode_kmx_block_marks(program, calls)
+        records = text.splitlines()[1:]
+        assert Counter(line.split()[0] for line in records) == case["counts"], case
+        assert (
+            hashlib.sha256("\n".join(records).encode()).hexdigest() == case["sha256"]
+        ), case
+        assert decode_kmx_block_marks(text) == (program, calls)
+
+
+@pytest.mark.parametrize("enabled", [False, True])
+def test_classically_guarded_cursor_all_measurement_histories(enabled: bool) -> None:
+    program, _ = physical_unary_iteration(
+        (0,),
+        (3,),
+        (0, 2, 1),
+        lambda value, match: (Op("cx", (match, 2)),),
+        control=1,
+        measurement_bit=1,
+        classical_guard=0,
+    )
+    gates = expand_reset_branches(
+        (
+            ClassicalXor((), 0, constant=enabled).instruction(),
+            *bind_reversible_phase_execution(program),
+        ),
+        first_slot=10,
+    )
+    real = torch.arange(1, 9, dtype=torch.float64)
+    psi = torch.complex(real, real.flip(0))
+    psi /= psi.norm()
+    state = torch.zeros(16, dtype=torch.complex128)
+    state[::2] = psi
+    expected = torch.zeros_like(state)
+    for index, amplitude in enumerate(psi):
+        target = index ^ int(enabled and bool(index & 2))
+        expected[target << 1] = amplitude
+    events = sum(gate.name == "measure" for gate in gates)
+    for outcomes in product((0, 1), repeat=events):
+        actual = forced_branch(state, gates, outcomes)
+        amplitude = 2 ** (-events / 2) if enabled else float(not any(outcomes))
+        torch.testing.assert_close(actual, expected * amplitude, atol=2e-14, rtol=2e-14)
+
+
+def test_guard_cannot_alias_reused_erasure_slot() -> None:
+    with pytest.raises(ValueError, match="distinct"):
+        physical_unary_iteration(
+            (0,), (1,), (0,), lambda value, match: (), classical_guard=0
         )
