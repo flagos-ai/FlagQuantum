@@ -65,8 +65,8 @@ class PrepareHubbard(PrepareOracle):
     u: float
 
     def __post_init__(self) -> None:
-        if type(self.dimension) is not int or self.dimension < 2:
-            raise ValueError("Hubbard PREPARE requires square side length at least two")
+        if type(self.dimension) is not int or self.dimension < 1:
+            raise ValueError("Hubbard PREPARE requires positive square side length")
         if (
             not isfinite(self.t)
             or not isfinite(self.u)
@@ -120,6 +120,10 @@ class PrepareHubbard(PrepareOracle):
 
     def source_resource_model(self) -> ComponentCost:
         """Estimate the locked preparation, including the opaque ModAddK cost."""
+        if self.dimension == 1:
+            raise ValueError(
+                "Locked Hubbard PREPARE resources are undefined for side one"
+            )
         width = (self.dimension - 1).bit_length()
         ports = 4 * width + 6
         uniform = source_uniform_preparation_cost(self.dimension)
@@ -208,7 +212,7 @@ class PrepareHubbard(PrepareOracle):
             Instruction("x", (v,)),
         )
         p, q = (*px, *py, alpha), (*qx, *qy, beta)
-        axis_swap = controlled_swap_ir(axis, qx, qy)
+        axis_swap = controlled_swap_ir(axis, qx, qy) if width else ()
         shift = bounded_increment_ir(
             qx,
             self.dimension,

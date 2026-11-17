@@ -55,6 +55,25 @@ and delegate finite-range operations to Compiler.
 
 Q-0349 and Q-0352 close the tutorials. Q-0351 closes the original
 PREPARE test file with the source checker modes recorded. Q-0350 stays
-open for side-one and source-specific interface boundaries. Q-0353 and
+open for the locked side-one resource failure and source-specific interface boundaries. Q-0353 and
 Q-0354 stay open for literal decomposition/count agreement across the
 larger sizes, including the eight unchanged-reference discrepancies.
+
+
+### Side-one PREPARE
+
+The native authoring path retains all four zero-width bounded coordinate
+words and the six physical data bits. Both directions treat empty
+uniform preparation, swaps and modulo-one increment as identities.
+The reference comparison trims the corresponding five calls from the
+frozen generator and compares every retained primitive and feedback
+operand. The unchanged Cirq exporter fails to decompose the empty
+uniform targets and empty swaps. The source QEC and peak width queries
+fail at the zero-width ModAddK connection.
+
+The native forward circuit emits 15 T/T-dagger instructions and two
+measurements. It reserves eight physical wires, including two clean
+work wires. All four histories match the normalized reference on zero
+and coherent inputs, with work cleared. All sixteen forward and
+adjoint history pairs return the zero input. The source resource method
+reports the unavailable reference model for this size.

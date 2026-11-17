@@ -52,7 +52,7 @@ def test_locked_hubbard_prepare_signature_and_resources(dim):
     assert result.peak_logical_qubits == get_cost_value(source, QubitCount())
 
 
-@pytest.mark.parametrize("dim", [2, 3])
+@pytest.mark.parametrize("dim", [1, 2, 3])
 def test_hubbard_prepare_complex_amplitudes_and_roundtrip(dim):
     cirq = pytest.importorskip("cirq")
     pytest.importorskip("qualtran")
@@ -73,6 +73,24 @@ def test_hubbard_prepare_complex_amplitudes_and_roundtrip(dim):
     wires = cirq.LineQubit.range(logical)
     context = cirq.DecompositionContext(cirq.GreedyQubitManager(prefix="reference"))
     source_ops = cirq.decompose_once(source.on(*wires), context=context)
+    if dim == 1:
+        # The locked generator visits empty coordinate operations. They have
+        # identity semantics, but its Cirq/Bloq exporters cannot lower them.
+        empty_coordinates = tuple(
+            op
+            for op in source_ops
+            if (type(op.gate), len(op.qubits))
+            in {(PrepareUniformSuperposition, 0), (CSwap, 1), (ModAddK, 2)}
+        )
+        assert [type(op.gate) for op in empty_coordinates] == [
+            PrepareUniformSuperposition,
+            PrepareUniformSuperposition,
+            CSwap,
+            ModAddK,
+            CSwap,
+        ]
+        assert [len(op.qubits) for op in empty_coordinates] == [0, 0, 1, 2, 1]
+        source_ops = [op for op in source_ops if op not in empty_coordinates]
 
     def semantic_op(op):
         gate = op.gate
@@ -109,6 +127,7 @@ def test_hubbard_prepare_complex_amplitudes_and_roundtrip(dim):
     counts = count_emitted_instructions(ir)
     events = counts.unconditional["measure"]
     assert (counts.t_count, events, work, counts.declared_qubits) == {
+        1: (15, 2, 2, 8),
         2: (47, 3, 2, 12),
         3: (155, 23, 6, 20),
     }[dim]
@@ -193,17 +212,71 @@ def test_hubbard_prepare_complex_amplitudes_and_roundtrip(dim):
     }
     histories = (
         product((0, 1), repeat=events)
-        if dim == 2
+        if dim <= 2
         else ((pattern * events)[:events] for pattern in ((0,), (1,), (0, 1), (1, 0)))
     )
     for history in histories:
         result = _branch(ir.instructions, width, history, normalize_measurements=True)
         assert result == pytest.approx(expected, abs=6e-12)
-        opposite = tuple(1 - bit for bit in history)
-        assert _branch(
-            inverse.instructions,
-            width,
-            opposite,
-            result,
-            normalize_measurements=True,
-        ) == pytest.approx({0: 1 + 0j}, abs=6e-12)
+        inverse_histories = (
+            product((0, 1), repeat=events)
+            if dim == 1
+            else (tuple(1 - bit for bit in history),)
+        )
+        for inverse_history in inverse_histories:
+            assert _branch(
+                inverse.instructions,
+                width,
+                inverse_history,
+                result,
+                normalize_measurements=True,
+            ) == pytest.approx({0: 1 + 0j}, abs=6e-12)
+
+    if dim == 1:
+        indices = np.arange(1 << logical, dtype=float)
+        phases = indices + 1 + 1j * (indices % 7 - 3)
+        phases /= np.linalg.norm(phases)
+        padded = np.zeros(1 << width, dtype=np.complex128)
+        padded[:: 1 << work] = phases
+        source_state = (
+            cirq.Simulator(dtype=np.complex128, seed=23)
+            .simulate(
+                source_circuit, qubit_order=(*wires, *source_work), initial_state=padded
+            )
+            .final_state_vector
+        )
+        np.testing.assert_allclose(
+            source_state.reshape(-1, 1 << work)[:, 1:], 0, atol=3e-12, rtol=0
+        )
+        initial = {i << work: value for i, value in enumerate(phases)}
+        expected = {
+            i: value for i, value in enumerate(source_state) if abs(value) > 1e-12
+        }
+        for history in product((0, 1), repeat=events):
+            assert _branch(
+                ir.instructions, width, history, initial, normalize_measurements=True
+            ) == pytest.approx(expected, abs=6e-12)
+
+
+@pytest.mark.parametrize("t,u", [(1.0, 4.0), (0.0, 4.0), (1.0, 0.0)])
+def test_side_one_keeps_zero_width_ports_and_source_resource_diagnostic(t, u):
+    from qualtran import BloqError
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.prepare_hubbard import (
+        PrepareHubbard as Source,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    prepare = PrepareHubbard(1, t, u)
+    source = Source(1, 1, t=t, u=u)
+    assert prepare.layout == tuple(
+        (port.name, port.bitsize) for port in source.signature
+    )
+    assert prepare.alpha == source.l1_norm_of_coeffs
+    assert int(prepare.signature.n_qubits()) == source.signature.n_qubits() == 6
+    assert prepare.requirements() == (2, 2)
+    with pytest.raises(BloqError, match="not an available Soquet"):
+        get_cost_value(source, QECGatesCost())
+    with pytest.raises(RuntimeError, match="not an available Soquet"):
+        get_cost_value(source, QubitCount())
+    with pytest.raises(ValueError, match="undefined for side one"):
+        prepare.source_resource_model()
