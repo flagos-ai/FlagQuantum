@@ -53,6 +53,27 @@ The source model retains the CSwap count and can convert it using its separate
 default equivalence. Reserved work and live-width estimates are checked
 independently in padded cases.
 
+## Additional control on the relative swap
+
+A scalar positive outer control directly declares controlled T and
+controlled one- and two-wire ArbitraryClifford children. The counts are
+`4*n`, `16*n` and `6*n - 1`. The adjoint retains the source directions
+on all three children. A negative scalar control adds two X calls around
+the positive-controlled swap. A shaped single-bit control declares the
+positive child even when its value is one. With multiple outer controls,
+the wrapper declares predicate compute, the positive child and predicate
+erase. The outer signature preserves the scalar versus shaped distinction.
+
+The append example uses the existing controlled emitter. Width-one and
+width-two fixtures compare operands, gate dependencies, feedback slots
+and peak width in both directions. The broader controlled exchange suite
+compares full complex amplitudes and all small measurement histories,
+including coherent inactive sectors and clean predicate work. The source
+aggregate QEC query still fails on controlled ArbitraryClifford. Concrete
+emitted counts remain available independently. For a two-bit swap with
+two outer controls they include 11 CCX, 16 CH, 24 controlled phases,
+four T/T† in the predicate and one measurement.
+
 ## Remaining boundaries
 
 - Q-0707 retains symbolic execution and the upstream abstract Clifford cost

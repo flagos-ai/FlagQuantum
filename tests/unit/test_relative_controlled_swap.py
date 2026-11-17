@@ -252,3 +252,110 @@ def assert_controlled_exchange_branches(
             atol=2e-12,
             rtol=0,
         )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("width", [1, 2])
+@pytest.mark.parametrize("activation", [1, 0, (1,), (1, 0)])
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_outer_relative_swap_declaration_and_append(
+    width: int, activation: int | tuple[int, ...], adjoint: bool
+) -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.swap_network.cswap_approx import CSwapApprox
+    from qualtran.resource_counting import (
+        QubitCount,
+        SympySymbolAllocator,
+        get_cost_value,
+    )
+
+    from examples.algorithms.swap_network_catalog import RelativeSwapExample
+    from flagquantum.compiler._component_trace.resource_generalization import (
+        CliffordCall,
+        ControlledSwapCall,
+        ControlPredicateCall,
+        PhaseCall,
+    )
+    from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
+    from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
+        PositiveControlledSwapChild,
+    )
+    from flagquantum.dynamic import DynamicCircuit
+
+    base = CSwapApprox(width)
+    child = base.adjoint() if adjoint else base
+    ctrl_spec = CtrlSpec(cvs=activation)
+    source = child.controlled(ctrl_spec=ctrl_spec)
+    values = activation if isinstance(activation, tuple) else (activation,)
+    size = len(values)
+    native = RelativeSwapExample(width, activation, adjoint)
+    assert [
+        (reg.name, reg.bitsize, reg.shape, reg.side.name, reg.dtype.encoding)
+        for reg in native.signature
+    ] == [
+        (
+            reg.name,
+            reg.bitsize,
+            reg.shape,
+            reg.side.name,
+            "bit" if type(reg.dtype).__name__ == "QBit" else "opaque",
+        )
+        for reg in source.signature
+    ]
+    branch = PositiveControlledSwapChild(
+        ControlledSwapCall(width, approximate=True, adjoint=adjoint)
+    )
+    expected: dict[
+        PositiveControlledSwapChild | ControlPredicateCall | CliffordCall, SymbolicInt
+    ] = {}
+    outer_calls: dict[str, ControlPredicateCall | CliffordCall] = {
+        "XGate": CliffordCall("x", 1),
+        "CtrlSpecAnd": ControlPredicateCall(values),
+        "Adjoint": ControlPredicateCall(values, adjoint=True),
+    }
+    for operation, count in source.build_call_graph(SympySymbolAllocator()).items():
+        kind = type(operation).__name__
+        key: PositiveControlledSwapChild | ControlPredicateCall | CliffordCall
+        if kind == "Controlled":
+            controlled = operation.subbloq
+            if activation == 1:
+                if type(controlled).__name__ == "TGate":
+                    key = PositiveControlledSwapChild(
+                        PhaseCall("t", controlled.is_adjoint)
+                    )
+                else:
+                    leaf = controlled.subbloq if adjoint else controlled
+                    assert type(leaf).__name__ == "ArbitraryClifford"
+                    key = PositiveControlledSwapChild(
+                        CliffordCall("arbitrary", leaf.n, adjoint=adjoint)
+                    )
+            else:
+                assert controlled == child
+                key = branch
+        else:
+            key = outer_calls[kind]
+        expected[key] = count
+    assert native.outer_calls() == expected
+    assert native.qubit_count == get_cost_value(source, QubitCount())
+
+    circuit = DynamicCircuit(native.qubit_count)
+    circuit.append(native)
+    work = tuple(range(size + 1 + 2 * width, native.qubit_count))
+    source_gates = reference_arithmetic_gates(
+        source,
+        {
+            source.ctrl_reg_names[0]: tuple(range(size)),
+            "ctrl": (size,),
+            "x": tuple(range(size + 1, size + width + 1)),
+            "y": tuple(range(size + width + 1, size + 2 * width + 1)),
+        },
+        work,
+        dict(zip(work, range(len(work)), strict=True)),
+        keep_exchange_leaves=True,
+    )
+    actual = circuit.to_ir().instructions
+    assert_source_dependencies(actual, source_gates)
+    assert Counter(gate.name for gate in actual) == Counter(
+        gate.name for gate in source_gates
+    )
