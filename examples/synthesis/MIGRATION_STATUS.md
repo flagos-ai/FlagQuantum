@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **156/213**.
+Validated local Notebook workflows: **157/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -239,7 +239,7 @@ Validated local Notebook workflows: **156/213**.
 | `applications/finance/autocallable_options/quantum_autocallable_option_pricing` | notebook_workflow | [Native program](applications/finance/autocallable_options/quantum_autocallable_option_pricing/main.py) | pending |
 | `applications/finance/brownian_chebyshev_polynomials/brownian_chebyshev_polynomials` | notebook_workflow | [Native program](applications/finance/brownian_chebyshev_polynomials/main.py) | pending |
 | `applications/finance/credit_card_fraud/credit_card_fraud` | notebook_workflow | [Native program](applications/finance/credit_card_fraud/main.py) | pending |
-| `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/main.py) | pending |
+| `applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl` | notebook_workflow | [Native program](applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview/main.py) | validated |
 | `applications/finance/option_pricing/option_pricing` | notebook_workflow | [Native program](applications/finance/option_pricing/overview/main.py) | validated |
 | `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/overview/main.py) | validated |
 | `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/overview/main.py) | validated |
