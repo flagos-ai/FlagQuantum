@@ -2,7 +2,9 @@
 
 `bit_rotation_ir` ports `gen_bit_rotate.cc` at Kickmix commit
 `9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453` in the Qualtran repository.
-Its unchanged source blob is `a01c261ed496876753769feaa93ec36e13fc12b4`.
+K-0061 and K-0062 cover the implementation and header at unchanged Git
+blobs `a01c261ed496876753769feaa93ec36e13fc12b4` and
+`5851fc746a8dbb68ca39dce0306b953e8c2ab68a`.
 This shared register primitive supplies the source rotation sequence needed
 by modular doubling; it is independent of modular arithmetic and execution.
 
@@ -19,6 +21,20 @@ quantum shift with a quantum enable borrows one initially zero clean wire
 and one measurement slot distinct from the input classical slots. It returns
 that work wire to zero. Constant and classical shifts need no workspace.
 The emitted result slot contains the final erase result, not a logical output.
+
+All four C++ overloads share the same native compiler entry:
+
+| Source declaration | Native binding |
+| --- | --- |
+| Left rotate, signed shift | Integer shift with `right=False` |
+| Right rotate, signed shift | Integer shift with `right=True` |
+| Left rotate, shift word | Tuple shift with `right=inverted` |
+| Right rotate, shift word | Tuple shift with `right=not inverted` |
+
+Source spans carry physical iteration order. Native reverses its big-endian
+tuples before following that order. The source's optional display labels and
+block marks are diagnostic metadata. The Python binding and its tests are
+tracked independently from these compiler files.
 
 The constant path retains the two shifted reversals and the native operand
 order inside each broadcast SWAP/CSWAP. The variable path visits adjacent
@@ -62,6 +78,25 @@ measurement-branch selection. The source routine has no separate analytical
 cost function. A T-equivalent conversion model must be named explicitly; it
 cannot be inferred from an IR that still contains CCX and CSWAP.
 
+## Boundary witnesses and consumers
+
+UndefinedBehaviorSanitizer confirms that the unchanged signed right-rotate
+overload negates `INT64_MIN` at source line 167. Native rejects this input
+before emitting instructions. For a duplicated adjacent classical shift
+slot, the locked source emits `BIT_INVERT b0 if b0` twice. The first
+clears the bit, so the second cannot restore it. Native preserves the
+effective KMX stream and its destructive input behavior. The four-wire
+fixture verifies both initial bit values with distinct complex amplitudes
+and checks the final classical bit. Callers requiring reversible shift
+inputs use separate classical slots.
+
+Exact modular doubling and its space fallback reuse the same constant
+rotation in both forward and inverse directions. Their existing tests
+exercise signed branch histories, complex amplitudes and clean return
+through the shared primitive. The independent 256-wire builder workload
+verifies a fixed-enable left rotation with 255 ordered CSWAP gates. This
+compiler source file and header declare no analytical resource model.
+
 The existing example wrapper retains `circuit.append(op)`:
 
 ```python
@@ -74,5 +109,5 @@ circuit = DynamicCircuit(4)
 circuit.append(operation)
 ```
 
-The port is internal and changes no stable public interface. The modular
-doubling consumer remains the next integration step.
+The port remains internal to the compiler. The example uses the existing
+append interface.

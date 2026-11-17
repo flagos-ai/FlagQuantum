@@ -17,6 +17,7 @@ from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.fixtures.kickmix_source_oracle import normalized_stream
 
 pytestmark = pytest.mark.unit
 
@@ -49,14 +50,17 @@ def _certify(
         elif op.opcode == "pop_condition":
             scopes.pop()
         elif op.opcode == "hmr":
+            assert op.result_bit is not None
             outcome = ((histories >> event) & 1).astype(bool)
             phase ^= active & wires[q[0]] & outcome
             wires[q[0]] &= ~active
             bits[op.result_bit] = np.where(active, outcome, bits[op.result_bit])
             event += 1
         elif op.opcode == "bit_store0":
+            assert op.result_bit is not None
             bits[op.result_bit].fill(False)
         elif op.opcode == "bit_invert":
+            assert op.result_bit is not None
             bits[op.result_bit] ^= active
         elif op.opcode == "neg":
             phase ^= active
@@ -113,7 +117,7 @@ def _run_and_certify(
     for label in basis.tolist():
         amount = (
             shift
-            if type(shift) is int
+            if isinstance(shift, int)
             else sum(
                 (
                     int(coefficient)
@@ -121,7 +125,7 @@ def _run_and_certify(
                     else (
                         (classical_value >> coefficient.slot & 1)
                         if isinstance(coefficient, Bit)
-                        else (label >> (data - 1 - coefficient) & 1)
+                        else (int(label) >> (data - 1 - coefficient) & 1)
                     )
                 )
                 << bit
@@ -142,9 +146,8 @@ def _run_and_certify(
     initial[::2] = amplitudes
     final = torch.zeros_like(initial)
     final[expected * 2] = amplitudes
-    circuit = DynamicCircuit(data + 1, inputs=initial, dtype=torch.complex128).append(
-        FieldOperation(data + 1, (*prefix, *gates))
-    )
+    circuit = DynamicCircuit(data + 1, inputs=initial, dtype=torch.complex128)
+    circuit.append(FieldOperation(data + 1, (*prefix, *gates)))
     result = run_dynamic(circuit, shots=32, seed=41, strategy="batched")
     torch.testing.assert_close(
         result.final_states.reshape(32, -1), final.expand(32, -1), atol=1e-12, rtol=0
@@ -168,6 +171,7 @@ def test_constant_rotation(
 @pytest.mark.parametrize("controlled", [False, True])
 @pytest.mark.parametrize("right", [False, True])
 def test_variable_rotation(mode: str, controlled: bool, right: bool) -> None:
+    shift: tuple[int | bool | Bit, ...]
     width = 3
     if mode == "quantum":
         shift, quantum, classical = (3, 4), 2, 0
@@ -222,3 +226,42 @@ def test_rotation_rejects_invalid_ports_and_workspace() -> None:
         bit_rotation_ir((0, 1, 2), -(1 << 63), right=True)
     assert bit_rotation_ir((), 2) == ()
     assert bit_rotation_ir((0, 1), ()) == ()
+
+
+@pytest.mark.parametrize("initial_bit", [False, True])
+def test_locked_aliased_classical_rotation_is_destructive(initial_bit: bool) -> None:
+    gates = bit_rotation_ir((3, 2, 1, 0), (Bit(0), Bit(0)))
+    initialize = ClassicalXor((), 0, constant=initial_bit).instruction()
+    program = lower_reversible_phase(CircuitIR(4, (initialize, *gates)))
+    # The scalar source uses scopes and drops its two debug marks in this comparison.
+    locked = """PUSH_CONDITION if b0
+SWAP q1 q0
+SWAP q3 q2
+POP_CONDITION
+BIT_INVERT b0 if b0
+PUSH_CONDITION if b0
+SWAP q2 q0
+POP_CONDITION
+BIT_INVERT b0 if b0
+PUSH_CONDITION if b0
+SWAP q3 q1
+POP_CONDITION"""
+    prefix = lower_reversible_phase(CircuitIR(4, (initialize,)))
+    actual = encode_kmx(program).splitlines()[1 + len(prefix.operations) :]
+    assert normalized_stream("\n".join(actual)) == normalized_stream(locked)
+
+    basis = torch.arange(16, dtype=torch.float64)
+    amplitudes = torch.complex(basis + 1, 3 * basis - 2)
+    amplitudes /= amplitudes.norm()
+    expected = (
+        amplitudes.reshape(2, 2, 2, 2).permute(1, 0, 3, 2).reshape(-1)
+        if initial_bit
+        else amplitudes
+    )
+    circuit = DynamicCircuit(4, inputs=amplitudes, dtype=torch.complex128)
+    circuit.append(FieldOperation(4, (initialize, *gates)))
+    result = run_dynamic(circuit, shots=2, seed=41, strategy="batched")
+    torch.testing.assert_close(
+        result.final_states.reshape(2, -1), expected.expand(2, -1), atol=1e-12, rtol=0
+    )
+    assert not torch.any(result.classical_bits[:, 0])

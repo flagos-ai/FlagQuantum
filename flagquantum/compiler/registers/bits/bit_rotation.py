@@ -76,9 +76,10 @@ def bit_rotation_ir(
 
     All quantum ports are distinct. A variable quantum shift combined with a
     quantum enable uses one initially zero clean wire and one result slot.
-    Classical shift inputs are defined by the caller and restored after each
-    adjacent-bit parity. Shift inputs have at most 60 bits, as in the source.
-    Known-zero resets on the supplied work wire are omitted.
+    Classical shift inputs are defined by the caller. Distinct classical slots
+    are restored after each adjacent-bit parity. An adjacent duplicate slot
+    is cleared by the source XOR and cannot act as a reversible shift input.
+    Shift words have at most 60 bits. Known-zero resets on clean work are omitted.
     """
     if type(right) is not bool or (control is not None and type(control) is not int):
         raise ValueError("Rotation requires a boolean direction and a quantum control")
