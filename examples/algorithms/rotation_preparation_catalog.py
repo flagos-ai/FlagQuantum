@@ -8,22 +8,30 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass
+from math import pi
+from typing import cast
 
 from flagquantum.algorithms.primitives.rotation_preparation import RotationPreparation
 from flagquantum.algorithms.primitives.rotation_resource_model import (
     rotation_preparation_cost,
 )
-from flagquantum.algorithms.primitives.rotation_tables import rotation_tables
+from flagquantum.algorithms.primitives.symbolic_rotation_resource_model import (
+    source_rotation_preparation_calls,
+)
+from flagquantum.algorithms.primitives.symbolic_rotation_resource_model import (
+    source_rotation_preparation_signature as rotation_signature,
+)
 from flagquantum.circuit import Circuit
 from flagquantum.compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
+from flagquantum.compiler._component_trace.resource_generalization import RotationCall
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
-from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt, bit_length
+from flagquantum.compiler.registers.phase.phase_gradient_lookup import (
+    PhaseGradientLookupCall,
+)
 from flagquantum.core.ir import CircuitIR
-from flagquantum.core.ir.program.register_types import opaque_register_type
-from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
 
 ORIGINAL_COEFFICIENTS = (
@@ -36,22 +44,6 @@ ORIGINAL_COEFFICIENTS = (
     (0.0732233047033631 + 0.17677669529663678j),
     (-0.07322330470336308 - 0.17677669529663678j),
 )
-
-
-def rotation_signature(
-    count: SymbolicInt, phase_width: SymbolicInt, controls: int = 0
-) -> Signature:
-    return Signature(
-        tuple(
-            Register(name, opaque_register_type(width))
-            for name, width in (
-                ("prepare_control", controls),
-                ("target_state", bit_length(count - 1)),
-                ("phase_gradient", phase_width),
-            )
-            if width != 0
-        )
-    )
 
 
 @dataclass(frozen=True)
@@ -91,21 +83,29 @@ class RotationPreparationExample:
         )
 
     def call_graph(self) -> SymbolicCallGraph[str]:
-        rows, phases = rotation_tables(
-            self.coefficients, self.phase_width, uncompute=self.uncompute
-        )
         root = "StatePreparationViaRotations"
-        calls = Counter(
-            {
-                "Rx(+π/2)": len(rows),
-                "Rx(-π/2)": len(rows),
-                "X": 2,
-            }
+        calls: Counter[str] = Counter()
+        direct = source_rotation_preparation_calls(
+            len(self.coefficients),
+            self.phase_width,
+            self.controls,
+            coefficients=self.coefficients,
+            uncompute=self.uncompute,
         )
-        for selection, words in enumerate((*rows, phases)):
-            calls[
-                f"PRGA({selection} selection, {self.phase_width} phase, {self.controls + 1} controls; {words})"
-            ] += 1
+        for child, count in direct.items():
+            if isinstance(child, PhaseGradientLookupCall):
+                table = child.table
+                assert table.datasets is not None
+                name = (
+                    f"PRGA({table.selection_bitsizes[0]} selection, "
+                    f"{table.target_bitsizes[0]} phase, {table.num_controls} controls; "
+                    f"{table.datasets[0]})"
+                )
+            elif isinstance(child, RotationCall):
+                name = "Rx(+π/2)" if child.parameter == pi / 2 else "Rx(-π/2)"
+            else:
+                name = "X"
+            calls[name] = cast(int, count)
         return symbolic_call_graph(root, {root: calls}, max_depth=1)
 
     def append_to(self, circuit: Circuit) -> Circuit:
