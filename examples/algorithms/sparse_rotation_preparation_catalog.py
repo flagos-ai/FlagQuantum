@@ -49,13 +49,12 @@ class SparseRotationExample:
 
 def sparse_rotation_example(*, wide: bool = False) -> SparseRotationExample:
     """Return the original five-coefficient fixture with four or six target wires."""
-    preparation = SparseRotationPreparation(
-        (0, 4, 6, 9, 12),
-        (0.70914953, 0.46943701, 0.2297245, 0.32960471, 0.33959273),
+    preparation = SparseRotationPreparation.from_coefficient_map(
         15,
+        {0: 0.70914953, 4: 0.46943701, 6: 0.2297245, 9: 0.32960471, 12: 0.33959273},
         2,
     )
-    return SparseRotationExample(preparation, 6 if wide else 4)
+    return SparseRotationExample(preparation, 6 if wide else preparation.target_width)
 
 
 if __name__ == "__main__":
