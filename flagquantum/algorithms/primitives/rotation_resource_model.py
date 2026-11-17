@@ -14,7 +14,9 @@ from ...compiler._component_trace.resource_model import (
 from ...compiler.registers.arithmetic.arithmetic_resource_model import (
     source_phase_add_cost,
 )
-from ...compiler.registers.lookup.qrom_resource_model import source_qrom_cost
+from ...compiler.registers.phase.phase_gradient_lookup import (
+    phase_gradient_lookup_table,
+)
 from ...compiler.registers.sorting.permutation_resource_model import (
     source_permutation_cost,
 )
@@ -26,9 +28,9 @@ from .sparse_rotation_preparation import SparseRotationPreparation
 def _lookup_cost(words: tuple[int, ...], width: int, controls: int) -> ComponentCost:
     selection_width = (len(words) - 1).bit_length()
     selector_and_controls = selection_width + controls
-    qrom = source_qrom_cost(
-        controls, (selection_width,), (len(words),), ((1, width),), (words,)
-    )
+    qrom = phase_gradient_lookup_table(
+        controls, selection_width, width, words
+    ).resource_model()
     add = source_phase_add_cost(width, width)
     return ComponentCost(
         "PhaseGradientLookup",
