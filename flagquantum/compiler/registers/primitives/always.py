@@ -40,6 +40,9 @@ class Always(Generic[Parameters]):
         return self.forward(*args, **kwargs)
 
 
-def always_component_cost(component: ComponentCost) -> ComponentCost:
-    """Preserve the child's cost and direct callees without adding another edge."""
-    return replace(component, name=f"Always({component.name})")
+def always_component_cost(
+    component: ComponentCost | Callable[[], ComponentCost],
+) -> ComponentCost:
+    """Delegate an independent cost declaration, including any child error."""
+    cost = component() if callable(component) else component
+    return replace(cost, name=f"Always({cost.name})")
