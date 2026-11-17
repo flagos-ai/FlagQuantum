@@ -88,6 +88,20 @@ admits a transformation this repository does not ship; see
 `synthesize_state_preparation` for basis rewriting; they are not stable
 `fq.compiler` exports, so reach them by module path.
 
+### Export a synthesized circuit and prepare an offline deployment
+
+Run [the Bell-state `@qfunc` example](../../examples/synthesis_offline_deployment.py)
+from the repository root.
+
+```bash
+python -m examples.synthesis_offline_deployment
+```
+
+The example prints standalone OpenQASM 3, then a `DeploymentPackage` for the
+fixed two-qubit target `local/offline-line` with 256 shots and its OpenQASM 2
+payload. Both branches start from `synth.synthesize(bell).circuit`. The example
+builds the package locally without credentials or a provider submission.
+
 ## Change the owning stage
 
 | Change | Entry point |
