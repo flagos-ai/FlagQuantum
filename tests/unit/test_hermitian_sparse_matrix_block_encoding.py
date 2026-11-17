@@ -25,7 +25,11 @@ from flagquantum.compiler.registers.primitives.controlled_swap import controlled
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.unitary import get_unitary
 from tests.unit.measurement_checks import forced_branch
-from tests.unit.register_source_graph import SourcePorts, SourceResult
+from tests.unit.register_source_graph import (
+    SourcePorts,
+    SourceResult,
+    assert_source_wire_streams,
+)
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_control_predicate import ControlCase
 
@@ -389,16 +393,7 @@ def _assert_locked_hermitian_stream(
 
     expected, outputs = walk_source_graph(source, ports, ports, leaf)
     assert ports == outputs
-    assert len(actual) == len(expected)
-    # Preserve relative order on every live wire, including scratch lifetimes.
-    for wire in {wire for gate in (*actual, *expected) for wire in gate.wires}:
-        actual_wire = [gate for gate in actual if wire in gate.wires]
-        expected_wire = [gate for gate in expected if wire in gate.wires]
-        assert [(g.name, g.wires, g.metadata) for g in actual_wire] == [
-            (g.name, g.wires, g.metadata) for g in expected_wire
-        ]
-        for seen, target in zip(actual_wire, expected_wire, strict=True):
-            assert seen.params == pytest.approx(target.params, abs=2e-15, rel=0)
+    assert_source_wire_streams(actual, expected)
 
 
 @pytest.mark.parametrize("controlled", (False, True))

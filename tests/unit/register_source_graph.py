@@ -12,6 +12,21 @@ SourceResult = tuple[tuple[Instruction, ...], SourcePorts]
 SourceLeaf = Callable[[Any, SourcePorts, SourcePorts], SourceResult | None]
 
 
+def assert_source_wire_streams(
+    actual: tuple[Instruction, ...], expected: tuple[Instruction, ...]
+) -> None:
+    """Allow disjoint gates to commute while keeping each wire's source ordering."""
+    assert len(actual) == len(expected)
+    for wire in {wire for gate in (*actual, *expected) for wire in gate.wires}:
+        actual_wire = [gate for gate in actual if wire in gate.wires]
+        expected_wire = [gate for gate in expected if wire in gate.wires]
+        assert [(g.name, g.wires, g.metadata) for g in actual_wire] == [
+            (g.name, g.wires, g.metadata) for g in expected_wire
+        ]
+        for seen, target in zip(actual_wire, expected_wire, strict=True):
+            assert seen.params == pytest.approx(target.params, abs=2e-15, rel=0)
+
+
 def walk_source_graph(
     bloq: Any,
     inputs: SourcePorts,
