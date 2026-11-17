@@ -262,8 +262,8 @@ Stim owns sampling, packing and its bounded write batches. FlagQuantum owns
 preflight budgets, tensor and column semantics, and no-replace publication.
 Run `python -m examples.qec.compiled_measurement_sampler` with the Stim extra.
 
-The opt-in macOS arm64 embedded wheel uses a private Stim source extension
-for prepared measurement sampling. The source lock and license are under
+The opt-in embedded wheel uses a private Stim source extension for prepared
+measurement sampling on macOS arm64 and Linux x86_64. The source lock and license are under
 `csrc/`. Both implementations use the same Clifford and single-slot X
 feedback admission rules before engine preparation.
 
@@ -444,7 +444,7 @@ actual-main acceptance remain separate gates; no maturity or parity is promoted.
 
 ## Embedded external Stim text experiments
 
-On the opt-in macOS arm64 embedded build, the existing
+On opt-in macOS arm64 and Linux x86_64 embedded builds, the existing
 `run_stim_experiment()` consumes annotated Stim text using the bundled
 Stim 1.16.0 engine. Original-circuit sampling and strict DEM conversion
 remain separate. The engine retains the source byte limit, symbolic repeat
