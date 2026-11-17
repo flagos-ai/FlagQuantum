@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 171
+    assert len(validated) == 172
+    assert (
+        "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part2",
+        "examples/synthesis/tutorials/basics/quantum_programming/qmod_tutorial_part2/overview/main.py",
+    ) in validated
     assert (
         "community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt",
         "examples/synthesis/community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/main.py",
@@ -813,7 +817,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**171/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**172/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
