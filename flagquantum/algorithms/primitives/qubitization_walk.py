@@ -164,9 +164,10 @@ class QubitizationWalk:
         """Bind one walk step for circuit.append using caller-owned clean work.
 
         Block junk is logical and stays live through reflection. Signal junk
-        is temporary and belongs to the reflection. Clean work can be reused
-        between the block and reflection. External controls use one shared
-        predicate around both stages and a specialized positive SELECT emitter.
+        belongs to the reflection and can remain live after the step.
+        Keep its binding for an inverse step that restores it. Clean work
+        can be reused between the block and reflection. External controls use
+        one predicate around both stages and a specialized positive SELECT emitter.
         """
         if type(adjoint) is not bool:
             raise ValueError("Walk direction must be boolean")

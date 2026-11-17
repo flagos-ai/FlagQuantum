@@ -57,6 +57,16 @@ The junk stays allocated after a source-compatible step. The original
 symbolic qubit-peak query raises when reflection tries to decide whether
 the symbolic junk width is positive.
 
+For the one-site Ising fixture and a signed two-target Pauli fixture,
+append a step and its inverse with the same signal junk and scratch
+bindings. Both orders recover the initial complex state with all work
+zero. Each of the 64 first-step histories produces the same unnormalized
+intermediate state, including its occupied junk sectors. Composing it
+with each of the 64 inverse histories proves recovery for all 4,096
+history pairs in each order for each fixture. This evidence permits
+uncomputation by reversal on the retained registers. The locked single
+step can still leave the preparation junk occupied.
+
 The native symbolic peak specializes to the concrete resource schedule at
 a fixed number of Hamiltonian terms. Dense PREPARE takes the maximum of
 its signature, uniform preparation with live alias junk, QROM with live
@@ -74,5 +84,5 @@ precisions per site. Dense PREPARE matches the locked concrete
 The source symbolic reflection and walk failure remains reproducible.
 
 Q-0357, Q-0358 and Q-0360 close the native Hamiltonian and test coverage.
-Q-0359 remains open for a recoverable reflection workspace path and the
-source's broader external Hamiltonian interface.
+Q-0359 remains open for one-step clean preparation junk and the source's
+broader external Hamiltonian interface.

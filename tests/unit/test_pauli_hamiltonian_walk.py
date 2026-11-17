@@ -1,5 +1,6 @@
 """Verify Pauli Hamiltonian preprocessing and the composed source walk."""
 
+from functools import partial
 from itertools import product
 from math import sqrt
 
@@ -160,20 +161,19 @@ def test_signed_walk_from_terms_matches_locked_source(
     junk = plan.walk.block_encoding.signal_state.junk_width
     work_count = junk + max(select_work, work + 1, reflect_work)
     work_wires = tuple(range(width + junk, width + work_count))
-    circuit = DynamicCircuit(width + work_count).append(
-        plan.walk.make_on(
-            selection={"selection": ports["selection"]},
-            target=ports["target"],
-            signal_junk=tuple(range(width, width + junk)),
-            select_workspace=work_wires[:select_work],
-            select_classical_bits=tuple(range(select_work)),
-            prepare_workspace=work_wires[1 : 1 + work],
-            prepare_classical_bits=tuple(range(slots)),
-            reflection_workspace=work_wires[:reflect_work],
-            reflection_classical_bits=tuple(range(reflect_slots)),
-            adjoint=adjoint,
-        )
+    step = partial(
+        plan.walk.make_on,
+        selection={"selection": ports["selection"]},
+        target=ports["target"],
+        signal_junk=tuple(range(width, width + junk)),
+        select_workspace=work_wires[:select_work],
+        select_classical_bits=tuple(range(select_work)),
+        prepare_workspace=work_wires[1 : 1 + work],
+        prepare_classical_bits=tuple(range(slots)),
+        reflection_workspace=work_wires[:reflect_work],
+        reflection_classical_bits=tuple(range(reflect_slots)),
     )
+    circuit = DynamicCircuit(width + work_count).append(step(adjoint=adjoint))
 
     actual = circuit.to_ir().instructions
     measurements = sum(gate.name == "measure" for gate in actual)
@@ -230,4 +230,17 @@ def test_signed_walk_from_terms_matches_locked_source(
             expected,
             atol=3e-12,
             rtol=0,
+        )
+
+    paired = circuit.append(step(adjoint=not adjoint)).to_ir().instructions
+    assert paired[: len(actual)] == actual
+    inverse = paired[len(actual) :]
+    inverse_measurements = sum(gate.name == "measure" for gate in inverse)
+    assert inverse_measurements == measurements
+    # Every first-step history produces the same unnormalized intermediate
+    # vector. Check every inverse history on that vector to cover every pair.
+    recovered = initial / sqrt(2 ** (measurements + inverse_measurements))
+    for history in product((0, 1), repeat=inverse_measurements):
+        torch.testing.assert_close(
+            forced_branch(expected, inverse, history), recovered, atol=3e-12, rtol=0
         )
