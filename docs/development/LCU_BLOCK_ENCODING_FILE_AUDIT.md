@@ -43,9 +43,38 @@ metadata and modeled costs at 3 × 3. Existing unit tests compare original
 PREPARE and SELECT decomposition details and all small SELECT/LCU composite
 histories. The separate packed Hubbard 2 × 2 trial compares a complex
 projected state with the independent Hamiltonian action and checks every
-temporary bit in four representative measurement histories. Full 3 × 3
-state execution and exhaustive Hubbard histories remain unverified. The
-codec verification applies to emitted native IR.
+temporary bit in four representative measurement histories. Full output
+parity for a coherent input to the original 3 × 3 block is recorded below. The codec
+verification applies to emitted native IR.
+
+## Original 3 × 3 full complex output
+
+The native packed LCU is appended in both directions, without an outer
+control and with each control polarity. The controlled case puts the
+outer control in a coherent superposition. Each case compares every
+occupied output amplitude on system, selection and logical junk with
+the unchanged named source export. Both executions verify balanced
+measurements and zero private work. The six native work bits are reused
+across the three stages. Four histories are used in each case, all-zero,
+all-one and both alternating patterns, with independent lengths for the
+source and native streams.
+
+The locked Cirq export retains a two-bit `ModAddK` leaf for the
+increment modulo three. The source interpreter applies the source
+classical permutation linearly and uses the source negative power for
+the wrapped adjoint. At modulus three the adjoint must decrement. The
+same shortcut as the one-bit increment would remove the hopping terms
+from the projected reference result. The remaining source operations
+use their exported Cirq matrices and measurement feedback.
+
+The independent source export and native primitive stream differ in
+their lowering of modular increment, swaps and multi-control arithmetic.
+The accepted named and packed native streams remain identical. The
+full complex comparison covers the complete resulting support for the
+specified coherent input and four histories in each direction and
+control configuration. Arbitrary input states, exhaustive long histories,
+external object binding, general typed ports and wire-symbol dispatch
+remain open.
 
 ## Emission and source model
 

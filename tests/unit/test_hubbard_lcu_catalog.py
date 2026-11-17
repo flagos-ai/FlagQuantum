@@ -161,3 +161,81 @@ def test_hubbard_lcu_projected_complex_outputs_and_workspace() -> None:
             if index < 1 << (block.system_bitsize + reserved)
         }
         assert observed == pytest.approx(expected, abs=8e-12)
+
+
+@pytest.mark.parametrize("control", [None, 0, 1])
+@pytest.mark.parametrize("adjoint", [False, True])
+def test_hubbard_lcu_three_by_three_locked_full_output(
+    control: int | None, adjoint: bool
+) -> None:
+    import cirq
+    from qualtran import CtrlSpec
+    from qualtran._infra.gate_with_registers import get_named_qubits
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import _lcu_block
+    from qualtran.cirq_interop import BloqAsCirqGate
+
+    from tests.unit.test_hubbard_hamiltonian_gqsp import (
+        _modadd_leaf,
+        _source_sparse_branch,
+    )
+
+    source = _lcu_block()
+    if control is not None:
+        source = source.controlled(CtrlSpec(cvs=control))
+    if adjoint:
+        source = source.adjoint()
+    named = get_named_qubits(source.signature)
+    visible = tuple(
+        q for register in source.signature for q in named[register.name].flat
+    )
+    context = cirq.DecompositionContext(cirq.SimpleQubitManager(prefix="hubbard_lcu"))
+    source_gate = source if isinstance(source, cirq.Gate) else BloqAsCirqGate(source)
+    source_ops = cirq.decompose(
+        source_gate.on(*visible),
+        context=context,
+        keep=lambda op: (
+            _modadd_leaf(op) is not None
+            or (
+                len(op.qubits) <= 3
+                and (
+                    cirq.is_measurement(op)
+                    or cirq.has_unitary(op)
+                    or isinstance(op, cirq.ClassicallyControlledOperation)
+                    or isinstance(op.gate, cirq.ResetChannel)
+                )
+            )
+        ),
+    )
+    source_events = sum(map(cirq.is_measurement, source_ops))
+    assert source_events > 0
+
+    native = HubbardLCUExample(side=3, packed=True)
+    ir = hubbard_lcu_circuit(native, control=control, adjoint=adjoint).to_ir()
+    work = ir.n_wires - len(visible)
+    assert work == 6
+    events = sum(instruction.name == "measure" for instruction in ir.instructions)
+    assert events == (86 if control is None else 89)
+    data = {0: 1 / sqrt(3), 1 << 17: 1j / sqrt(3), (1 << 13) + (1 << 4): -1 / sqrt(3)}
+    if control is not None:
+        control_mask = 1 << (len(visible) - 1)
+        data = {
+            index | bit: phase * amplitude
+            for index, amplitude in data.items()
+            for bit, phase in ((0, 1 / sqrt(2)), (control_mask, 1j / sqrt(2)))
+        }
+    initial = {basis << work: amp for basis, amp in data.items()}
+    for pattern in ((0,), (1,), (0, 1), (1, 0)):
+        expected = _source_sparse_branch(
+            source_ops, visible, data, (pattern * source_events)[:source_events]
+        )
+        result = _branch(
+            ir.instructions,
+            ir.n_wires,
+            (pattern * events)[:events],
+            initial,
+            normalize_measurements=True,
+        )
+        assert all(index % (1 << work) == 0 for index in result)
+        assert {index >> work: amp for index, amp in result.items()} == pytest.approx(
+            expected, abs=8e-12
+        )
