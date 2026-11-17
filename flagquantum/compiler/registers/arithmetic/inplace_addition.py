@@ -9,7 +9,7 @@ from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..layout.workspace import GenerationWorkspace
 from ..primitives._mixed_gates import _flip
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 
 
 def _erase_carry(
@@ -29,10 +29,13 @@ def _carry_schedule(
     control: int | bool,
     measurement_bit: int | None,
     minimize_qubits: bool,
+    emit_resets: bool,
 ) -> tuple[Instruction, ...]:
     top = len(target) - 1
     clean_stop = max(1, min(1 if minimize_qubits else len(clean), top - 1))
     gates: list[Instruction] = []
+    if clean and emit_resets:
+        gates.extend(reset_x_register_ir((carry,)))
     if not clean:
         for wire in (*target[1:], *offset[1:]):
             gates.extend(_flip(wire, carry))
@@ -47,6 +50,8 @@ def _carry_schedule(
     # The source LoopBuilder emits offset before target in its CCX operands.
     for k in range(1, top - 1):
         if k < clean_stop:
+            if emit_resets:
+                gates.extend(reset_x_register_ir((clean[k],)))
             gates.extend(_flip(clean[k], offset[k], target[k]))
             gates.extend(_flip(carry, clean[k]))
         else:
@@ -89,6 +94,7 @@ def _addition(
     workspace: GenerationWorkspace,
     control: int | bool,
     measurement_bit: int | None,
+    emit_resets: bool,
 ) -> tuple[Instruction, ...]:
     n, m = len(target), len(offset)
     if not n or not m:
@@ -101,6 +107,11 @@ def _addition(
         if scratch is not None and measurement_bit is None:
             raise ValueError("Kickmix addition requires a reusable measurement slot")
         return (
+            *(
+                reset_x_register_ir((scratch,))
+                if emit_resets and scratch is not None
+                else ()
+            ),
             *_flip(
                 target[1],
                 control,
@@ -142,6 +153,7 @@ def _addition(
             control,
             measurement_bit,
             workspace.minimize_qubits,
+            emit_resets,
         ),
     )
 
@@ -156,6 +168,7 @@ def inplace_addition_ir(
     measurement_bit: int | None = None,
     minimize_qubits: bool = False,
     subtract: bool = False,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Add or subtract the big-endian offset modulo the target register size.
 
@@ -164,7 +177,8 @@ def inplace_addition_ir(
     schedule. The offset and workspace are restored. The locked no-clean
     three-control gate can also borrow the lowest non-operand wire ID, which
     must be present in the containing circuit. Subtraction conjugates the
-    same schedule by bitwise NOT on the target.
+    same schedule by bitwise NOT on the target. Physical export can
+    retain the source resets on leased clean wires.
     """
     _validate_registers(
         target, offset, clean, dirty, (control,) if type(control) is int else ()
@@ -182,6 +196,7 @@ def inplace_addition_ir(
         GenerationWorkspace(clean, minimize_qubits).with_borrowed(dirty),
         control,
         measurement_bit,
+        emit_resets,
     )
     invert = tuple(Instruction("x", (wire,)) for wire in left) if subtract else ()
     return (*invert, *gates, *invert)
