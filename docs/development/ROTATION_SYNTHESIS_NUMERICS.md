@@ -112,3 +112,29 @@ while the scale-reduced determinant model reports zero T.
 The Clifford catalogue used by the original T-count test remains a
 frozen test fixture until its generation module is ported. The exact
 matrix module has no production dependency on that catalogue.
+
+## Exact Clifford and rotation generation
+
+| Item | Frozen file under `rotation_synthesis/matrix/` | Git blob |
+| --- | --- | --- |
+| Q-0839 | `_generation.py` | `10822bf2efe2e2445bc6a593015bee3d98b227b0` |
+| Q-0843 | `generation_test.py` | `2961ff16966b0ecd45e721ac39f5f22ea9c159f9` |
+
+`flagquantum/synth/_rotation_generation.py` enumerates the 24 Clifford
+representatives in source traversal order. It expands successive T levels
+from the preceding frontier and excludes both an exact signed matrix
+and its negation once either representative has been seen. The catalogue
+is cached and supplies the exact matrix T-count test.
+
+At levels zero through five the native and reference frontiers contain
+24, 72, 168, 360, 744 and 1,512 matrices. All 2,880 comparisons cover
+ordered words, exact coefficients, the determinant T exponent and both
+complex columns. The words reconstruct their matrices with the same gate
+order. This enumerator returns candidate matrices and words. Primitive
+execution and phase correction remain covered by the one-wire circuit
+checks above.
+
+The progress indicator uses tqdm when requested and available. If tqdm
+is absent, generation proceeds with the identical frontier. Verbose level
+counts are still available. The native generator has no required tqdm
+dependency.

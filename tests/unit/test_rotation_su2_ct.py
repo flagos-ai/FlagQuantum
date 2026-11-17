@@ -114,11 +114,9 @@ def test_rescale(g: _su2_ct.SU2CliffordT, config: mc.MathConfig | None) -> None:
 
 
 def test_num_t_gates() -> None:
-    from qualtran.rotation_synthesis.matrix import generate_cliffords
+    from flagquantum.synth._rotation_generation import generate_cliffords
 
-    for reference in generate_cliffords():
-        entries = [[_zw.ZW(entry.coords) for entry in row] for row in reference.matrix]
-        clifford = _su2_ct.SU2CliffordT(entries)
+    for clifford in generate_cliffords():
         assert clifford.num_t_gates() == 0
 
         for t in _su2_ct.Ts:
