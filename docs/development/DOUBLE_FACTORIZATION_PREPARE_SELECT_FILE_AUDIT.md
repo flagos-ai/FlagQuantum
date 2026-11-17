@@ -58,9 +58,27 @@ above are independent of physical synthesis.
 
 The original four declarations omit composite implementations. There is no
 source top-level primitive stream for those declarations. Q-0344 and Q-0346
-are closed for the original runnable test modes. Q-0343 and Q-0345 keep the
-remaining source metadata and admission differences open, including the
-Python example/label surface and precision values outside the documented
-native model domain. The original analytical QROAM itself can reject
-undersized forward tables. The executable small-table tests use the shared
-compiler lookup rather than the analytical placeholder.
+are closed for the original runnable test modes.
+
+The three native PREPARE examples retain the frozen display names
+`In-Prep`, `OuterPrep` and `In_l-data_l`, the complete signatures and
+the original cost models. The outer example's source rotation
+precision is 18. Its declaration and cost depend on the alias precision.
+Valid zero-bit metadata follows the source port omission rules.
+The verified zero-precision PREPARE models still use the analytical
+lookup domain. That lookup can reject undersized forward tables.
+
+The programmed rotation declaration keeps zero-width words and
+preserves the signed local Toffoli term. At the original 10-spin scale,
+zero precision has local term -13 and source aggregate estimation
+divides by zero. One bit has local term -3 and the source aggregate is
+64 after adding the lookup contribution. The raw declaration preserves
+the signed term and the lookup dimensions. The ordinary native
+estimator admits nonnegative local counts and nonempty lookups,
+including one bit for suitable dimensions. The prior executable cases
+retain their own precision domain.
+
+Q-0343 and Q-0345 remain open for general external objects and source
+declarations outside native model admission. The executable small-table
+tests use the shared compiler lookup rather than the analytical
+placeholder.

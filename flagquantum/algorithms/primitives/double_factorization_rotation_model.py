@@ -5,12 +5,18 @@
 
 """Declared basis-rotation cost for double-factorized chemistry."""
 
+from dataclasses import dataclass
+
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
 from .chemistry_qroam_model import source_chemistry_qroam_cost
-from .double_factorization_prepare_model import _TOFFOLI, _df_address_widths
+from .double_factorization_prepare_model import (
+    _TOFFOLI,
+    _df_address_widths,
+    _require_nonnegative_precision,
+)
 
 
 def source_double_factorization_programmed_rotation_signature(
@@ -18,8 +24,7 @@ def source_double_factorization_programmed_rotation_signature(
 ) -> Signature:
     """Preserve the explicit opaque words and pair of spin-system words."""
     spatial, rank, offset = _df_address_widths(spin_orbitals, eigenvalues)
-    if type(rotation_bits) is not int or rotation_bits < 2:
-        raise ValueError("DF programmed rotation requires at least two bits")
+    _require_nonnegative_precision(rotation_bits)
     return Signature(
         (
             Register("offset", opaque_register_type(offset)),
@@ -31,6 +36,32 @@ def source_double_factorization_programmed_rotation_signature(
     )
 
 
+@dataclass(frozen=True)
+class ProgrammedRotationDeclaration:
+    """The raw source terms before the estimator admits gate counts."""
+
+    signature: Signature
+    local_toffolis: int
+    lookup_rows: int
+    lookup_width: int
+
+
+def source_double_factorization_programmed_rotation_declaration(
+    spin_orbitals: int, eigenvalues: int, rotation_bits: int
+) -> ProgrammedRotationDeclaration:
+    """Retain the source signed local count, including low precision."""
+    signature = source_double_factorization_programmed_rotation_signature(
+        spin_orbitals, eigenvalues, rotation_bits
+    )
+    spatial, _, offset = _df_address_widths(spin_orbitals, eigenvalues)
+    return ProgrammedRotationDeclaration(
+        signature,
+        offset - 1 + spin_orbitals * (rotation_bits - 2),
+        eigenvalues + spatial,
+        spatial * rotation_bits,
+    )
+
+
 def source_double_factorization_programmed_rotation_cost(
     spin_orbitals: int,
     eigenvalues: int,
@@ -39,22 +70,19 @@ def source_double_factorization_programmed_rotation_cost(
     adjoint: bool = False,
 ) -> ComponentCost:
     """Count the source offset and rotations with the directional QROAM."""
-    signature = source_double_factorization_programmed_rotation_signature(
+    declaration = source_double_factorization_programmed_rotation_declaration(
         spin_orbitals, eigenvalues, rotation_bits
     )
-    spatial, _, offset = _df_address_widths(spin_orbitals, eigenvalues)
-    count = offset - 1 + spin_orbitals * (rotation_bits - 2)
-    if count < 0:
+    if declaration.local_toffolis < 0:
         raise ValueError("The locked rotation formula gives a negative gate count")
-    target = spatial * rotation_bits
     return ComponentCost(
         "Adjoint" if adjoint else "ProgRotGateArray",
-        int(signature.n_qubits()),
+        int(declaration.signature.n_qubits()),
         calls=(
-            CostCall(_TOFFOLI, count),
+            CostCall(_TOFFOLI, declaration.local_toffolis),
             CostCall(
                 source_chemistry_qroam_cost(
-                    eigenvalues + spatial, target, adjoint=adjoint
+                    declaration.lookup_rows, declaration.lookup_width, adjoint=adjoint
                 )
             ),
         ),
