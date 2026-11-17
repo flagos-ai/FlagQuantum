@@ -5,34 +5,43 @@
 
 """Conjugate the index and flag swaps by the source sparse preparation."""
 
-from dataclasses import dataclass, replace
+from __future__ import annotations
+
+from dataclasses import dataclass, fields, replace
 from functools import cached_property
 from math import sqrt
-from typing import Protocol
+from typing import Protocol, cast
 
 from ...compiler._component_trace.resource_model import (
     ComponentCost,
     CostCall,
     GateCost,
 )
-from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
-from ...compiler.registers.preparation.uniform_preparation_resource_model import (
-    source_uniform_preparation_resource_formula,
-)
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
-from ...compiler.registers.primitives.swap import swap_register_ir
+from ...compiler.registers.primitives.swap import (
+    source_swap_resource_formula,
+    swap_register_ir,
+)
 from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import Instruction
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
-from .sparse_matrix_oracles import EntryOracle, RowColumnOracle, UniformEntryOracle
+from .sparse_matrix_block_encoding import _source_sparse_diffusion_resource_formula
+from .sparse_matrix_oracles import (
+    EntryOracle,
+    RowColumnOracle,
+    UniformEntryOracle,
+    source_top_left_oracle_resource_formula,
+    source_uniform_entry_oracle_resource_formula,
+)
 
 
 class SqrtEntryOracle(EntryOracle, Protocol):
@@ -258,21 +267,72 @@ class HermitianSparseMatrixBlockEncoding:
         )
 
 
-def source_uniform_hermitian_sparse_resource_formula(
-    width: SymbolicInt, *, controlled: bool = False
+def source_hermitian_sparse_fallback_formula(
+    width: SymbolicInt,
+    sparsity: SymbolicInt,
+    *,
+    column: tuple[SymbolicResourceFormula, SymbolicResourceFormula],
+    entry: tuple[SymbolicResourceFormula, SymbolicResourceFormula],
+    controlled: bool = False,
+    legacy_shims: bool = False,
 ) -> SymbolicResourceFormula:
-    """Model the original full-support uniform example without physical binding."""
+    """Estimate the eight source callees when the composite is symbolic.
+
+    Oracle pairs are forward and adjoint. Always keeps their formulas and
+    those for diffusion unchanged under an added positive control. Only
+    the exchanges become controlled. Use the concrete component model to
+    account for live bystanders in a resolved circuit.
+    """
     if type(controlled) is not bool:
         raise ValueError("Hermitian sparse control flag must be boolean")
-    diffusion = source_uniform_preparation_resource_formula(2**width)
-    swaps = width + 1
+    diffusion = _source_sparse_diffusion_resource_formula(
+        width, sparsity, legacy_shims=legacy_shims
+    )
+
+    def swap(bits: SymbolicInt) -> SymbolicResourceFormula:
+        if controlled:
+            return SymbolicResourceFormula(0, 0, 0, 2 * bits + 1, cswap=bits)
+        return source_swap_resource_formula(bits)
+
+    children = (
+        diffusion,
+        column[0],
+        entry[0],
+        swap(width),
+        swap(1),
+        entry[1],
+        column[1],
+        diffusion,
+    )
     return SymbolicResourceFormula(
-        and_bloq=2 * diffusion.and_bloq,
-        clifford=2 * diffusion.clifford + (0 if controlled else swaps),
-        measurement=2 * diffusion.measurement,
-        logical_qubits=2 * width + 2 + int(controlled),
-        cswap=swaps if controlled else 0,
-        rotation=2 * diffusion.rotation + 2,
+        logical_qubits=cast(
+            SymbolicInt,
+            smax(
+                2 * width + 2 + int(controlled),
+                *(child.logical_qubits for child in children),
+            ),
+        ),
+        **{
+            field.name: sum(getattr(child, field.name) for child in children)
+            for field in fields(SymbolicResourceFormula)
+            if field.name != "logical_qubits"
+        },
+    )
+
+
+def source_uniform_hermitian_sparse_resource_formula(
+    width: SymbolicInt, *, controlled: bool = False, legacy_shims: bool = False
+) -> SymbolicResourceFormula:
+    """Model the full-support uniform instance through the source callees."""
+    column = source_top_left_oracle_resource_formula(width)
+    entry = source_uniform_entry_oracle_resource_formula(width)
+    return source_hermitian_sparse_fallback_formula(
+        width,
+        2**width,
+        column=(column, column),
+        entry=(entry, entry),
+        controlled=controlled,
+        legacy_shims=legacy_shims,
     )
 
 

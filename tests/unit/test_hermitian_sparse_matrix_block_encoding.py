@@ -223,3 +223,97 @@ def test_original_symbolic_hermitian_resource_formula(controlled: bool) -> None:
     )
     with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
         source.decompose_bloq()
+
+
+@pytest.mark.parametrize("controlled", [False, True])
+@pytest.mark.parametrize(
+    "configuration",
+    ("full", "independent-count", "band-one", "symbolic-band", "concrete-width"),
+)
+def test_hermitian_symbolic_oracle_costs_and_fallback_peak(
+    controlled: bool, configuration: str
+) -> None:
+    from attrs import evolve
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        SymmetricBandedRowColumnOracle as SourceBanded,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle as SourceTop,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix_hermitian import (
+        _sparse_matrix_symb_hermitian_block_encoding,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.resource_counting.generalizers import ignore_split_join
+    from sympy import Symbol, simplify
+
+    from flagquantum.algorithms.primitives.hermitian_sparse_matrix_block_encoding import (
+        source_hermitian_sparse_fallback_formula,
+    )
+    from flagquantum.algorithms.primitives.sparse_matrix_oracles import (
+        source_symbolic_banded_oracle_resource_formula,
+        source_top_left_oracle_resource_formula,
+        source_uniform_entry_oracle_resource_formula,
+    )
+
+    source = _sparse_matrix_symb_hermitian_block_encoding()
+    width = 4 if configuration == "concrete-width" else source.system_bitsize
+    band = None
+    if configuration == "full":
+        count = source.alpha
+    elif configuration in ("band-one", "symbolic-band"):
+        band = (
+            1
+            if configuration == "band-one"
+            else Symbol("b", positive=True, integer=True)
+        )
+        count = 2 * band + 1
+        source = evolve(source, col_oracle=SourceBanded(width, band))
+    else:
+        count = Symbol("m", positive=True, integer=True)
+        source = evolve(
+            source,
+            col_oracle=SourceTop(width, num_nonzero=count),
+            entry_oracle=evolve(source.entry_oracle, system_bitsize=width),
+        )
+
+    original = source.controlled() if controlled else source
+    assert (
+        sum(original.call_graph(max_depth=1, generalizer=ignore_split_join)[1].values())
+        == 8
+    )
+    with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+        source.decompose_bloq()
+
+    entry = source_uniform_entry_oracle_resource_formula(width)
+    for legacy in (False, True):
+        if band is None:
+            top = source_top_left_oracle_resource_formula(width)
+            column = top, top
+        else:
+            column = (
+                source_symbolic_banded_oracle_resource_formula(
+                    width, band, legacy_shims=legacy
+                ),
+                source_symbolic_banded_oracle_resource_formula(
+                    width, band, adjoint=True, legacy_shims=legacy
+                ),
+            )
+        model = source_hermitian_sparse_fallback_formula(
+            width,
+            count,
+            column=column,
+            entry=(entry, entry),
+            controlled=controlled,
+            legacy_shims=legacy,
+        )
+        gates = get_cost_value(original, QECGatesCost(legacy_shims=legacy))
+        assert all(
+            simplify(count - getattr(gates, name)) == 0
+            for name, count in asdict(model).items()
+            if name != "logical_qubits"
+        )
+        assert (
+            simplify(model.logical_qubits - get_cost_value(original, QubitCount())) == 0
+        )

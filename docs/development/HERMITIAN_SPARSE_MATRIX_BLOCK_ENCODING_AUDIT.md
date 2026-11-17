@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0298 | `sparse_matrix_hermitian.ipynb` | `117edcce9169b81c911d40885946e193e829d438` | Closed by the complete native tutorial. |
-| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Open for generic symbolic oracle models and external object interoperability. |
+| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Symbolic oracle composition verified. Foreign objects, non-default controls and complete padded primitive parity remain open. |
 | Q-0300 | `sparse_matrix_hermitian_test.py` | `367de6a3ae0ac011a16a5cc13b63dbb77cd7ba53` | Closed for the original runnable scenarios and their notebook. Source fixture mode limits are recorded below. |
 
 ## Interface and direct dependencies
@@ -55,10 +55,19 @@ For the original positive integer symbol `n`, the direct Hadamard leaf
 count is `6*n`. Concrete power-of-two preparation dispatch gives four
 H at two bits. The symbolic model also reproduces every QEC category and
 the peak widths `2*n + 2` and `2*n + 3` for the ordinary and controlled
-variants. It covers the original full-support uniform family. Physical
-binding requires concrete widths, as does the locked decomposition.
-Generic external oracle objects and non-default source control wrapping
-remain outside the verified native interface.
+variants.
+
+The symbolic fallback accepts independent forward and adjoint formulas
+for the column and square-root entry oracles. It composes them with
+the shared sparse diffusion and both exchanges. The source's Always
+wrappers leave the two preparation directions unchanged under the
+positive control. Only the exchanges change from Clifford SWAPs to
+modeled Fredkins. The peak takes the maximum of the full signature
+and the eight child peaks, including the high-order diffusion prefix
+inside AutoPartition. Tests compare both resource profiles for full
+support, independent symbolic sparsity, a concrete index width with
+symbolic sparsity, and fixed and symbolic band sizes. Symbolic
+decomposition remains unavailable in the locked source and native binding.
 
 The original concrete and symbolic fixtures, parameter assertions, Hadamard
 leaf counts, both tensor fixtures, and direct declarations map to the
