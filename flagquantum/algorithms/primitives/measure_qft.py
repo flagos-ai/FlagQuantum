@@ -5,7 +5,7 @@
 
 """Textbook forward Fourier measurement with explicitly bound result slots."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import (
@@ -13,7 +13,7 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler._component_trace.symbolic_math import SymbolicInt, smax
+from ...compiler._component_trace.symbolic_math import SymbolicInt
 from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
@@ -23,6 +23,10 @@ from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
 from ...dynamic import DynamicCircuit
 from .qft import qft
+from .qft_resource_model import (
+    source_textbook_qft_cost,
+    source_textbook_qft_symbolic_formula,
+)
 
 
 def source_measure_qft_signature(width: SymbolicInt) -> Signature:
@@ -34,43 +38,15 @@ def source_measure_qft_signature(width: SymbolicInt) -> Signature:
 
 def source_measure_qft_symbolic_formula(width: SymbolicInt) -> SymbolicResourceFormula:
     """Use the source's grouped phase-gradient rule for symbolic widths."""
-    if isinstance(width, int):
-        raise TypeError("Use the concrete MeasureQFT model for an integer width")
-    swaps = width // 2
-    phases = (width - 1) * swaps
-    return SymbolicResourceFormula(
-        and_bloq=phases,
-        clifford=width + phases + swaps,
-        measurement=width + phases,
-        rotation=phases,
-        logical_qubits=smax(3, width),
-    )
+    formula = source_textbook_qft_symbolic_formula(width)
+    return replace(formula, measurement=width + formula.measurement)
 
 
 def source_measure_qft_cost(width: int) -> ComponentCost:
     """Preserve the concrete source call graph and model its textbook QFT child."""
     if type(width) is not int or width < 0:
         raise ValueError("Fourier measurement width must be a nonnegative integer")
-    hadamard = CostCall(ComponentCost("Hadamard", 1, GateCost(clifford=1)), width)
-    swap = CostCall(ComponentCost("TwoBitSwap", 2, GateCost(clifford=1)), width // 2)
-    gradients = tuple(
-        CostCall(
-            ComponentCost(
-                f"PhaseGradientUnitary({bits})",
-                bits + 2,
-                GateCost(
-                    t=int(bits > 1),
-                    and_bloq=bits,
-                    clifford=bits + 1,
-                    rotation=max(bits - 2, 0),
-                    measurement=bits,
-                ),
-            ),
-            bystander_qubits=width - bits - 1,
-        )
-        for bits in range(1, width)
-    )
-    transform = ComponentCost("QFTTextBook", width, calls=(hadamard, *gradients, swap))
+    transform = source_textbook_qft_cost(width)
     measure = ComponentCost("MeasureZ", 1, GateCost(measurement=1))
     return ComponentCost(
         "MeasureQFT", width, calls=(CostCall(transform), CostCall(measure, width))
