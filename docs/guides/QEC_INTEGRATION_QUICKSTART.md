@@ -1,4 +1,4 @@
-# QEC workflows with Stim and PyMatching
+# QEC workflows with Stim and Sparse Blossom
 
 Use FlagQuantum code/memory and DEM objects with optional Stim circuit sampling
 and a choice of decoders. This guide covers the supported CPU integration; the
@@ -10,7 +10,7 @@ which paths are native, SDK-backed or refused.
 For development from this checkout, use a private environment:
 
 ```sh
-python -m pip install -e '.[stim,pymatching]'
+python -m pip install -e '.[stim]'
 ```
 
 For release acceptance, install the exact candidate wheel with the same extras
@@ -19,14 +19,11 @@ in a fresh environment outside the checkout, unset source Python paths, run
 environment. Replace the candidate path in this template with the reviewed file:
 
 ```sh
-python -m pip install '/absolute/path/to/candidate.whl[stim,pymatching]'
+python -m pip install '/absolute/path/to/candidate.whl[stim]'
 ```
 
-The new report entry is available in this PR's candidate. An older published
-package does not gain it merely by adding extras. The core package works without
-Stim/PyMatching; Stim-only supports native decoder choices, PyMatching-only
-supports the declared-model decoder path, and both extras enable the full route.
-No service credentials, GPU or hardware submission is required.
+The fixed-shot reports use bundled Sparse Blossom and Stim sampling. Install
+the `pymatching` extra for examples that select PyMatching. The reports run on CPU.
 
 ## Start with an existing Stim circuit
 
@@ -39,7 +36,7 @@ source = (
     "OBSERVABLE_INCLUDE(0) rec[-1]\nOBSERVABLE_INCLUDE(1) rec[-2]\n"
 )
 result = run_stim_experiment(
-    source, decoder="pymatching", shots=35, batch_size=16, seed=53
+    source, decoder="sparse_blossom", shots=35, batch_size=16, seed=53
 )
 print(result.shots, result.logical_failures, result.observable_failures)
 print(result.sampling_source)
@@ -72,32 +69,35 @@ memory = build_memory_circuit(RepetitionCode(distance=3), rounds=1)
 result = run_memory_experiment(
     memory,
     noise=PhenomenologicalNoise(data_flip=0.01, measurement_flip=0.01),
-    decoder="pymatching", shots=35, batch_size=16, seed=53,
+    decoder="sparse_blossom", shots=35, batch_size=16, seed=53,
 )
 assert result.shots == 35
 assert result.observable_failures == (result.logical_failures,)
 print(result.sampling_source)
 ```
 
-Expected source: `memory_circuit`. This entry remains unchanged and distinct
-from the external-text report. Both require Stim for original-circuit execution;
-choosing a native decoder does not remove that sampling dependency.
+The source field is `memory_circuit`. Both reports require Stim to sample the
+original circuit.
 
-The existing bounded example exercises all five default decoder names. Run one
-of these development commands from the checkout after installation:
+The memory example uses Sparse Blossom by default. Run these commands from the
+checkout after installation:
 
 ```sh
 python examples/qec/memory_experiment.py --code repetition
 python examples/qec/memory_experiment.py --code surface --basis x
 python examples/qec/memory_experiment.py --code surface --basis z
+python examples/qec/memory_experiment.py --decoder minimum_weight_matching
 ```
 
-Each reports 35 shots and checks the interval. Noisy Surface failure counts come
+Use `--decoder all` with both extras to compare all example backends.
+Each decoder reports 35 shots and checks the interval. Noisy Surface failure counts come
 from actual draws and need not match between decoder algorithms. The X-memory
 example uses its declared X product; changing a print label cannot change the
 prepared logical basis.
 
 ## Inspect the model and decode the same batch
+
+Install the `pymatching` extra for this complete-record example.
 
 ```python
 from flagquantum.qec import DetectorErrorModel, get_decoder
@@ -140,7 +140,7 @@ model contract. SDK failures do not produce partial successful statistics.
 | Circuit export and owned sampler | [Stim bridge](../../examples/qec/stim_experiment_bridge.py) | Stim, plus PyMatching for matching sections |
 | Detector/logical joint probabilities | [joint parity](../../examples/qec/dem_joint_parity.py) | Core model mathematics |
 | Layer ownership, roundtrip and sparse projections | [DEM chunks](../../examples/qec/dem_model_and_chunks.py) | Existing declared profile |
-| Finite distance/noise example | [Surface sweep](../../examples/qec/surface_memory_sweep.py) | Stim and PyMatching; no threshold inference |
+| Finite distance/noise example | [Surface sweep](../../examples/qec/surface_memory_sweep.py) | Stim and bundled Sparse Blossom |
 
 The historical `stim_user_migration.py` demonstration contains a 200,000-shot
 reference marginal. It is not required by this short tutorial and is not run by

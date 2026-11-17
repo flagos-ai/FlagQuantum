@@ -385,7 +385,7 @@ text = (
     "OBSERVABLE_INCLUDE(0) rec[-1]\nOBSERVABLE_INCLUDE(1) rec[-2]\n"
 )
 result = run_stim_experiment(
-    text, decoder="minimum_weight_matching", shots=35, batch_size=16, seed=53
+    text, decoder="sparse_blossom", shots=35, batch_size=16, seed=53
 )
 print(result.shots, result.logical_failures, result.observable_failures)
 # 35 0 (0, 0) -- exact decoding of all four independent-fault outcomes

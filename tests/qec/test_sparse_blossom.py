@@ -151,3 +151,27 @@ def test_public_memory_experiment_supports_uniform_gate_noise(
     assert result.logical_failures == exported.logical_failures
     assert result.confidence_interval == exported.confidence_interval
     assert result.sampling_source == "memory_circuit"
+
+
+@pytest.mark.parametrize(
+    ("decoder_args", "expected"),
+    [
+        ([], "sparse_blossom"),
+        (["--decoder", "minimum_weight_matching"], "minimum_weight_matching"),
+    ],
+)
+def test_memory_example_selects_one_decoder_without_pymatching(
+    decoder_args: list[str],
+    expected: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    pytest.importorskip("stim")
+    from examples.qec import memory_experiment
+
+    monkeypatch.setitem(sys.modules, "pymatching", None)
+    monkeypatch.setattr(sys, "argv", ["memory_experiment.py", *decoder_args])
+    memory_experiment.main()
+    reports = capsys.readouterr().out.splitlines()
+    assert len(reports) == 1
+    assert reports[0].split()[:2] == [expected, "35"]
