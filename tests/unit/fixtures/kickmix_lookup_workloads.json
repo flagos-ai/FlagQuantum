@@ -1,0 +1,40 @@
+{
+  "source_blob": "d527eeeddf06c10ffe69ab6408594c60fd248182",
+  "cases": {
+    "lookup": {
+      "counts": {
+        "INFO_TAG": 1022,
+        "X": 511,
+        "R": 255,
+        "CX": 7935,
+        "CCX": 254,
+        "HMR": 255,
+        "CZ": 254,
+        "Z": 1
+      },
+      "records": 10487,
+      "sha256": "4c93c44eeb54283c5c7c2544db07bf6eb4fed790e51f49c5452fe227f6b79e33"
+    },
+    "erase": {
+      "counts": {
+        "INFO_TAG": 68,
+        "BIT_STORE0": 256,
+        "HMR": 57,
+        "PUSH_CONDITION": 30,
+        "BIT_INVERT": 7680,
+        "POP_CONDITION": 30,
+        "R": 27,
+        "SWAP": 8,
+        "X": 32,
+        "CX": 56,
+        "CSWAP": 11,
+        "CCX": 14,
+        "CZ": 281,
+        "Z": 1,
+        "NEG": 1
+      },
+      "records": 8552,
+      "sha256": "a1a6786c760607137cfb6c35df0d52c3f622ea15a8323382b74a752ec6bccf2a"
+    }
+  }
+}
