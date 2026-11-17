@@ -53,6 +53,24 @@ includes a clean reusable predicate qubit and reports `n + 2`.
 | Four-bit plain addition | 0 | 9 | 12 | 33 | 3 | 2 Toffoli | 11 / 8 |
 | Two-bit scaled addition | 0 | 3 | 4 | 8 | 1 | 0 Toffoli | 5 / 4 |
 
+## Exact precision, port and symbolic declarations
+
+The unitary declaration retains each typed Z or CZ child exponent and the
+source tolerance `epsilon / width`. The symbolic controlled leaf has exponent
+`exponent / 2**width` and multiplicity `width`. At width four and exponent
+zero the controlled declared graph has one child, while the execution visits
+all four target wires. The unitary signature drops a zero-width through word.
+The state signature retains the explicit zero-width output word.
+
+The arithmetic model includes `p - 2` Toffoli for a plain addition into a
+gradient of width `p` and `2*p - 4` for either control polarity. Peak width is
+`Max(3, n + p)` or `Max(3, n + p + 1)` respectively for input width `n`.
+The scaled symbolic example with a `QFxp(4,2)` coefficient declares three
+plain additions and preserves the `QFxp(5,3)` input through port. Its source
+model gives `3*p - 6` Toffoli and peak width `Max(3, 5 + p)`. These estimates
+describe the abstract source declarations. The measured primitive counts
+above come from the previous execution comparison. No emitter changed.
+
 ## Remaining source boundaries
 
 Q-0670 and Q-0672 are covered. Q-0671 remains open for symbolic execution
