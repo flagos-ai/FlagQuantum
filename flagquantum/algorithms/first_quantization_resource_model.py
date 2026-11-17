@@ -5,7 +5,10 @@
 
 """Declared costs for first-quantized plane-wave SELECT and PREPARE."""
 
-from dataclasses import replace
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
+from functools import cached_property
 from math import ceil
 
 from ..compiler._component_trace.resource_model import (
@@ -18,7 +21,9 @@ from ..compiler.registers.arithmetic.arithmetic_resource_model import source_add
 from ..compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
 )
+from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
+from ..core.value_math import SymbolicReal
 from .first_quantization import (
     first_quantization_signature,
     source_multiplexed_cswap_3d_cost,
@@ -36,6 +41,7 @@ from .first_quantization_potential import (
     prepare_zeta_signature,
     select_uv_signature,
 )
+from .primitives.prepare_oracle import PrepareOracle
 
 
 def source_select_t_cost(num_bits_p: int) -> ComponentCost:
@@ -320,3 +326,91 @@ def source_prepare_first_quantization_cost(
         ports,
         calls=calls[::-1] if adjoint else calls,
     )
+
+
+@dataclass(frozen=True)
+class FirstQuantizationPrepareDeclaration(PrepareOracle):
+    """Retain the top-level PREPARE parameters, ports, and resource schedule."""
+
+    num_bits_p: int
+    eta: int
+    num_atoms: int
+    lambda_zeta: int
+    m_param: int = 2**8
+    num_bits_nuc_pos: int = 16
+    num_bits_t: int = 16
+    num_bits_rot_aa: int = 8
+    sum_of_l1_coeffs: SymbolicReal | None = None
+
+    @cached_property
+    def signature(self) -> Signature:
+        return first_quantization_signature(
+            self.num_bits_p, self.eta, self.num_atoms, self.m_param, prepare=True
+        )
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return self.signature[:-2]
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return self.signature[-2:]
+
+    @property
+    def l1_norm_of_coeffs(self) -> SymbolicReal:
+        if self.sum_of_l1_coeffs is None:
+            raise ValueError("sum_of_l1_coeffs must be supplied to query the L1 norm")
+        return self.sum_of_l1_coeffs
+
+    def resource_model(self, *, adjoint: bool = False) -> ComponentCost:
+        return source_prepare_first_quantization_cost(
+            self.num_bits_p,
+            self.eta,
+            self.num_atoms,
+            self.lambda_zeta,
+            m_param=self.m_param,
+            num_bits_t=self.num_bits_t,
+            num_bits_rot_aa=self.num_bits_rot_aa,
+            adjoint=adjoint,
+        )
+
+
+@dataclass(frozen=True)
+class FirstQuantizationSelectDeclaration:
+    """Retain the top-level SELECT parameters, ports, and resource schedule."""
+
+    num_bits_p: int
+    eta: int
+    num_atoms: int
+    lambda_zeta: int
+    m_param: int = 2**8
+    num_bits_nuc_pos: int = 16
+    num_bits_t: int = 16
+    num_bits_rot_aa: int = 8
+
+    @cached_property
+    def signature(self) -> Signature:
+        return first_quantization_signature(
+            self.num_bits_p, self.eta, self.num_atoms, self.m_param, prepare=False
+        )
+
+    @property
+    def control_registers(self) -> tuple[Register, ...]:
+        return self.signature[:4]
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return self.signature[4:-1]
+
+    @property
+    def target_registers(self) -> tuple[Register, ...]:
+        return self.signature[-1:]
+
+    def resource_model(self) -> ComponentCost:
+        return source_select_first_quantization_cost(
+            self.num_bits_p,
+            self.eta,
+            self.num_atoms,
+            m_param=self.m_param,
+            num_bits_nuc_pos=self.num_bits_nuc_pos,
+        )

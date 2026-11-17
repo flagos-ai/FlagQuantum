@@ -7,7 +7,6 @@
 
 from dataclasses import replace
 
-from flagquantum.algorithms.first_quantization import first_quantization_signature
 from flagquantum.algorithms.first_quantization_kinetic import (
     prepare_t_signature,
     select_t_signature,
@@ -18,11 +17,11 @@ from flagquantum.algorithms.first_quantization_potential import (
     select_uv_signature,
 )
 from flagquantum.algorithms.first_quantization_resource_model import (
-    source_prepare_first_quantization_cost,
+    FirstQuantizationPrepareDeclaration,
+    FirstQuantizationSelectDeclaration,
     source_prepare_t_cost,
     source_prepare_uv_cost,
     source_prepare_zeta_cost,
-    source_select_first_quantization_cost,
     source_select_t_cost,
     source_select_uv_cost,
 )
@@ -44,32 +43,30 @@ def _toffoli_graph(model: ComponentCost) -> ComponentCost:
     )
 
 
-def _select_graph() -> ComponentCost:
-    model = source_select_first_quantization_cost(6, 10, 10)
+def _select_graph(select: FirstQuantizationSelectDeclaration) -> ComponentCost:
+    model = select.resource_model()
     # The source's bookkeeping allocates six momentum words and one nuclear word.
+    momentum = ComponentCost("Allocate", select.num_bits_p)
+    nuclear = ComponentCost("Allocate", select.num_bits_nuc_pos)
     return replace(
         model,
         calls=(
-            CostCall(ComponentCost("Allocate", 6), 6),
-            CostCall(ComponentCost("Allocate", 16)),
+            CostCall(momentum, 6),
+            CostCall(nuclear),
             *model.calls,
-            CostCall(ComponentCost("Free", 6), 6),
-            CostCall(ComponentCost("Free", 16)),
+            CostCall(replace(momentum, name="Free"), 6),
+            CostCall(replace(nuclear, name="Free")),
         ),
     )
 
 
 def notebook_cases() -> dict[str, tuple[Signature, ComponentCost]]:
     """Return the complete seven concrete examples in their original order."""
+    prepare = FirstQuantizationPrepareDeclaration(6, 10, 10, 10)
+    select = FirstQuantizationSelectDeclaration(6, 10, 10, 10)
     return {
-        "prepare": (
-            first_quantization_signature(6, 10, 10, 256, prepare=True),
-            source_prepare_first_quantization_cost(6, 10, 10, 10),
-        ),
-        "select": (
-            first_quantization_signature(6, 10, 10, 256, prepare=False),
-            _select_graph(),
-        ),
+        "prepare": (prepare.signature, prepare.resource_model()),
+        "select": (select.signature, _select_graph(select)),
         "prepare_t": (
             prepare_t_signature(5),
             source_prepare_t_cost(5),
