@@ -12,8 +12,11 @@ from .kmb import (
     _CONDITION,
     _MAGIC,
     _MAX_RECORDS,
+    KmxRecord,
     _Columns,
+    _iter_records,
     _parse_kmx,
+    _register_lines,
     _validated_lines,
     decode_kmb,
 )
@@ -41,6 +44,17 @@ class KmxCircuitStats:
     def ccz_state_weight(self) -> int:
         """Return the source estimate of CCZ states needed for these records."""
         return self.quantum_columns[2] + (self.rotations + 1) // 2
+
+
+def read_kmx_records(text: str) -> tuple[int, tuple[KmxRecord, ...]]:
+    """Read structural records and the inferred quantum width for analysis."""
+    columns = _parse_kmx(text)
+    _, register_max, _ = _register_lines(columns)
+    records = tuple(_iter_records(columns))
+    operation_max = max(
+        (qubit for record in records for qubit in record.qubits), default=-1
+    )
+    return max(register_max, operation_max) + 1, records
 
 
 def inspect_kmx(text: str) -> KmxCircuitStats:

@@ -5,7 +5,7 @@
 """Encode and decode Kickmix v2 binary packets at the KMX text boundary."""
 
 import re
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from struct import Struct, iter_unpack
 
@@ -38,6 +38,32 @@ _MAX_REGISTERS = 1_000_000
 _MAX_RECORDS = 2_000_000_000
 _CLASSICAL_TARGET, _CONDITION, _PHASE, _TAGS = 8, 9, 10, 11
 _REGISTER_QUANTUM = 1 << 31
+
+
+@dataclass(frozen=True)
+class KmxRecord:
+    """One validated raw record in physical operand order."""
+
+    opcode: str
+    qubits: tuple[int, ...] = ()
+    result_bit: int | None = None
+    condition_bit: int | None = None
+    angle: PhaseAngle128 | None = None
+    tag: str | None = None
+
+    def to_kmx(self) -> str:
+        """Render the canonical text for this record."""
+        if self.tag is not None:
+            return f'INFO_TAG "{escape_kmx_text(self.tag)}"'
+        name = "DEBUG_PRINT" if self.opcode.startswith("DEBUG_PRINT_") else self.opcode
+        fields = [name, *(f"q{qubit}" for qubit in self.qubits)]
+        if self.result_bit is not None:
+            fields.append(f"b{self.result_bit}")
+        if self.angle is not None:
+            fields.append(self.angle.to_decimal_half_turns())
+        if self.condition_bit is not None:
+            fields.extend(("if", f"b{self.condition_bit}"))
+        return " ".join(fields)
 
 
 @dataclass
@@ -153,7 +179,7 @@ def _parse_statement(columns: _Columns, line: str) -> None:
     columns.operations.append(code)
 
 
-def _validated_lines(columns: _Columns) -> tuple[list[str], int, int]:
+def _register_lines(columns: _Columns) -> tuple[list[str], int, int]:
     lines: list[str] = []
     names = [reg.name for reg in columns.registers if reg.name]
     if len(names) != len(set(names)):
@@ -175,6 +201,10 @@ def _validated_lines(columns: _Columns) -> tuple[list[str], int, int]:
         elif not register.members:
             lines.append(f"REGISTER r{index}")
 
+    return lines, q_max, b_max
+
+
+def _iter_records(columns: _Columns) -> Iterator[KmxRecord]:
     cursors = [0] * len(columns.words)
 
     def read(packet: int) -> int:
@@ -191,38 +221,40 @@ def _validated_lines(columns: _Columns) -> tuple[list[str], int, int]:
         if code == INFO_TAG:
             if tag_index >= len(columns.tags):
                 raise ValueError("KMB tag packet underflow")
-            lines.append(f'INFO_TAG "{escape_kmx_text(columns.tags[tag_index])}"')
+            yield KmxRecord("INFO_TAG", tag=columns.tags[tag_index])
             tag_index += 1
             continue
         base = code if code == PUSH else code & ~CONDITION
-        name = OPERATION_NAMES[base]
-        operands = [
+        operands = tuple(
             read(packet) for packet in QUANTUM_COLUMNS[(code & QUBIT_MASK) >> 4]
-        ]
+        )
         if len(set(operands)) != len(operands):
             raise ValueError("KMB operation repeats a quantum wire")
-        q_max = max(q_max, max(operands, default=-1))
-        fields = ["DEBUG_PRINT" if name.startswith("DEBUG_PRINT_") else name]
-        fields.extend(f"q{operand}" for operand in operands)
-        if code & BIT_TARGET:
-            target = read(_CLASSICAL_TARGET)
-            b_max = max(b_max, target)
-            fields.append(f"b{target}")
+        target = read(_CLASSICAL_TARGET) if code & BIT_TARGET else None
+        angle = None
         if base == ANGLE:
             if angle_index >= len(columns.angles):
                 raise ValueError("KMB angle packet underflow")
-            fields.append(columns.angles[angle_index].to_decimal_half_turns())
+            angle = columns.angles[angle_index]
             angle_index += 1
-        if code & CONDITION:
-            condition = read(_CONDITION)
-            b_max = max(b_max, condition)
-            fields.extend(("if", f"b{condition}"))
-        lines.append(" ".join(fields))
+        condition = read(_CONDITION) if code & CONDITION else None
+        yield KmxRecord(OPERATION_NAMES[base], operands, target, condition, angle)
     if cursors != list(map(len, columns.words)) or (tag_index, angle_index) != (
         len(columns.tags),
         len(columns.angles),
     ):
         raise ValueError("KMB operation column counts do not match the opcode stream")
+
+
+def _validated_lines(columns: _Columns) -> tuple[list[str], int, int]:
+    lines, q_max, b_max = _register_lines(columns)
+    for record in _iter_records(columns):
+        q_max = max(q_max, max(record.qubits, default=-1))
+        if record.result_bit is not None:
+            b_max = max(b_max, record.result_bit)
+        if record.condition_bit is not None:
+            b_max = max(b_max, record.condition_bit)
+        lines.append(record.to_kmx())
     if max(q_max, b_max) >= _MAX_WIRES:
         raise ValueError("KMB circuit exceeds the operand limit")
     return lines, q_max + 1, b_max + 1
