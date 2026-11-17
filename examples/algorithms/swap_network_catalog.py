@@ -9,6 +9,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import prod
+from typing import Any
+
+from numpy.typing import NDArray
 
 from flagquantum.circuit import Circuit
 from flagquantum.compiler._component_trace.call_graph import (
@@ -30,7 +33,13 @@ from flagquantum.compiler._component_trace.resource_width import (
 from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
 from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.compiler.registers.lookup.multiplexed_swap import MultiplexedSwapLayout
-from flagquantum.compiler.registers.lookup.swap_with_zero import swap_with_zero_ir
+from flagquantum.compiler.registers.lookup.swap_with_zero import (
+    swap_with_zero_ir,
+    swap_with_zero_stages,
+)
+from flagquantum.compiler.registers.lookup.swap_with_zero import (
+    swap_with_zero_signature as swap_with_zero_signature,
+)
 from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
     PositiveControlledSwapChild,
     control_relative_swap_ir,
@@ -43,11 +52,12 @@ from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
 from flagquantum.core.ir import CircuitIR
 from flagquantum.core.ir.program.register_types import (
     bounded_unsigned_register_type,
-    opaque_register_type,
     quantum_bit_type,
 )
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.simulation.classical_bitwise import IntegerValue
+from flagquantum.simulation.classical_swap import swap_with_zero_classical_values
 
 
 def relative_swap_call_graph(width: SymbolicInt) -> SymbolicCallGraph[str]:
@@ -143,26 +153,6 @@ class RelativeSwapExample:
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
-def swap_with_zero_signature(
-    widths: tuple[SymbolicInt, ...],
-    word: SymbolicInt,
-    shape: tuple[SymbolicInt, ...],
-) -> Signature:
-    live_widths = tuple(width for width in widths if width != 0)
-    return Signature(
-        (
-            *(
-                Register(
-                    "selection" if len(live_widths) == 1 else f"selection{i}_",
-                    opaque_register_type(width),
-                )
-                for i, width in enumerate(live_widths)
-            ),
-            Register("targets", opaque_register_type(word), shape=shape),
-        )
-    )
-
-
 def swap_with_zero_call_graph(
     word: SymbolicInt, shape: tuple[SymbolicInt, ...]
 ) -> SymbolicCallGraph[str]:
@@ -201,6 +191,16 @@ class SwapWithZeroExample:
     @property
     def qubit_count(self) -> int:
         return sum(self.widths) + prod(self.shape) * self.word
+
+    def on_classical_vals(
+        self, *, targets: NDArray[Any], **selection: IntegerValue
+    ) -> dict[str, IntegerValue | NDArray[Any]]:
+        return swap_with_zero_classical_values(
+            swap_with_zero_stages(self.widths, self.shape, adjoint=self.adjoint),
+            self.shape,
+            targets=targets,
+            **selection,
+        )
 
     def append_to(self, circuit: Circuit) -> Circuit:
         gates = swap_with_zero_ir(
