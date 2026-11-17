@@ -28,6 +28,7 @@ def _certify(
     expected: torch.Tensor,
     *,
     inputs: torch.Tensor | None = None,
+    expected_phase: torch.Tensor | None = None,
 ) -> None:
     np = pytest.importorskip("numpy")
     events = sum(op.opcode == "hmr" for op in program.operations)
@@ -79,7 +80,12 @@ def _certify(
             wires[q[-1]] ^= difference
         else:
             pytest.fail(f"Unexpected rotation leaf {op.opcode}")
-    assert not np.any(phase)
+    if expected_phase is None:
+        assert not np.any(phase)
+    else:
+        np.testing.assert_array_equal(
+            phase, np.tile(expected_phase.numpy(), 1 << events)
+        )
     assert not any(np.any(wire) for wire in wires[data:])
     actual = sum(wires[i] * (1 << (data - 1 - i)) for i in range(data))
     np.testing.assert_array_equal(actual, np.tile(expected.numpy(), 1 << events))

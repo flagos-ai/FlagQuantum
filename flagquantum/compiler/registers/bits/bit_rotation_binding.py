@@ -4,13 +4,12 @@
 
 """Bind caller-owned ports and flags to the shared register rotation."""
 
-from dataclasses import replace
-
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..arithmetic.carry_parity import _Coefficient
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
+from ..primitives.control_binding import apply_control_guards, bind_z_enable
 from .bit_rotation import bit_rotation_ir
 
 
@@ -31,21 +30,21 @@ def bound_bit_rotation_ir(
     temporary classical slot for its entry value. The slot is cleared on exit.
     """
     _validate_registers(target)
-    if control is False:
+    enable, slots = bind_z_enable(control)
+    if enable is False:
         return ()
-    if not isinstance(control, (int, ClassicalFieldCoefficient)):
-        raise ValueError("Rotation control must be a literal, classical bit or wire")
     body = bit_rotation_ir(
         target,
         int(shift) if isinstance(shift, bool) else shift,
-        control=control if type(control) is int else None,
+        control=enable if type(enable) is int else None,
         right=right,
         clean=clean,
         measurement_bit=measurement_bit,
     )
-    if not isinstance(control, ClassicalFieldCoefficient) or not body:
+    if not slots or not body:
         return body
-    slot = control.slot
+    (slot,) = slots
+    entry_slot = slot
     writes_enable = any(
         gate.name == "classical_xor" and gate.metadata["classical_bit"] == slot
         for gate in body
@@ -64,21 +63,10 @@ def bound_bit_rotation_ir(
             raise ValueError("Aliased rotation control requires a fresh predicate slot")
         slot = predicate_bit
 
-    guarded = tuple(
-        replace(
-            gate,
-            metadata={
-                **gate.metadata,
-                "conditions": tuple(
-                    sorted({*gate.metadata.get("conditions", ()), (slot, 1)})
-                ),
-            },
-        )
-        for gate in body
-    )
+    guarded = apply_control_guards(body, (slot,))
     if writes_enable:
         return (
-            ClassicalXor((control.slot,), slot).instruction(),
+            ClassicalXor((entry_slot,), slot).instruction(),
             *guarded,
             ClassicalXor((), slot).instruction(),
         )
