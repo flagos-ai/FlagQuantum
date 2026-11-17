@@ -525,3 +525,36 @@ quantum resource counts.
 Run the native verification and timing with
 `python -m benchmarks.reversible_pattern_binding --iterations 3`.
 The separate circuit-builder benchmark is K-0007.
+
+### Builder workloads and admission
+
+K-0007 covers all three workloads of locked `circuit_builder.perf.cc`
+(blob `a5de60e3ab96a1afbdfb55e4a9d2274bfd85db9b`). The original benchmarks
+run unchanged. A separate observer captures each original workload before
+its arena is cleared. The native benchmark verifies the ordered stream
+before timing the existing generators and binder.
+
+| Workload | Locked source records | Native verification |
+| --- | --- | --- |
+| Controlled left rotation by one on 256 wires | 255 CSWAP and two debug marks | All 255 CSWAP agree in order, including the fixed enable and both swap operands. |
+| Repeated CCX with overlapping lanes | 255 CCX | All 255 CCX agree in order, including the shifted target and the source's lane-first control packing. |
+| Mixed tagged scalar CCX | 293 raw builder records across 256 calls, including scopes | Both admissions agree on 56 wire collisions. All 200 admitted calls agree on their 111 ordered KMX operations and effective guards. |
+
+The source mixed workload reuses the numeric lane in each operand family.
+When a generated operation duplicates a quantum wire, source
+`finish_circuit` rejects the circuit. The source benchmark measures raw
+builder writes, including those operations. Native admission refuses each
+collision during construction. Its 231 admitted IR instructions include
+four X/Z leaves for each of 40 scalar signs. The existing KMX lowerer
+emits one NEG for each sign. Scopes are compared by effective guards,
+and debug marks are excluded from primitive counts.
+
+With a 0.01-second source target, the three C++ arena timings were 120 ns,
+210 ns and 1.0 µs. The independent native medians were 399 µs, 225 µs and
+495 µs, respectively. The native measurement includes Python object
+construction or binding and its applicable admission checks. It excludes
+the verification-only KMX lowering and fixture setup. These are distinct
+construction measurements. No circuit is executed and no analytical
+resource model is inferred.
+
+Run `python -m benchmarks.reversible_builder_dispatch --iterations 3`.
