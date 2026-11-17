@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 150
+    assert len(validated) == 151
+    assert (
+        "applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding",
+        "examples/synthesis/applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/main.py",
+    ) in validated
     assert (
         "algorithms/quantum_differential_equations_solvers/lchs/lchs",
         "examples/synthesis/algorithms/quantum_differential_equations_solvers/lchs/overview/main.py",
@@ -729,7 +733,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**150/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**151/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
