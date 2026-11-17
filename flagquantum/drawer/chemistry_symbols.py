@@ -24,3 +24,20 @@ def number_phase_wire_symbol(
         return "TextBox", {"text": "Z"}
     (control,) = idx or ()
     return "Circle", {"filled": bool(values[control])}
+
+
+def inverse_sqrt_wire_symbol(
+    step: RegisterStep,
+    register: Register | None,
+    idx: tuple[int, ...] | None,
+    *,
+    newton: bool,
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Preserve the locked grid polynomial and Newton labels."""
+    if register is None:
+        return "Text", {
+            "text": "y=x^{-1/2}" if newton else "y~x^{-1/2}",
+            "fontsize": 10,
+        }
+    suffix = "[" + ", ".join(map(str, idx)) + "]" if idx else ""
+    return "TextBox", {"text": register.name + suffix}

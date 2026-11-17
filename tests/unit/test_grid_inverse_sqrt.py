@@ -17,6 +17,44 @@ pytestmark = pytest.mark.unit
 
 
 @pytest.mark.ftqc_reference
+@pytest.mark.parametrize("newton", [False, True])
+def test_inverse_sqrt_labels_match_locked_source(newton):
+    pytest.importorskip("qualtran")
+    from attrs import asdict
+    from qualtran.bloqs.chemistry.trotter.grid_ham.inverse_sqrt import (
+        NewtonRaphsonApproxInverseSquareRoot,
+        PolynmomialEvaluationInverseSquareRoot,
+    )
+
+    from flagquantum.drawer.chemistry_symbols import inverse_sqrt_wire_symbol
+    from flagquantum.drawer.register_score import RegisterStep
+
+    original = (
+        NewtonRaphsonApproxInverseSquareRoot(4, 5, 7)
+        if newton
+        else PolynmomialEvaluationInverseSquareRoot(4, 5, 7)
+    )
+    signature = (
+        source_grid_inverse_sqrt_newton_signature(4, 5, 7)
+        if newton
+        else source_grid_inverse_sqrt_polynomial_signature(4, 5, 7)
+    )
+    step = RegisterStep("inverse", (), ())
+    expected = original.wire_symbol(None)
+    assert inverse_sqrt_wire_symbol(step, None, None, newton=newton) == (
+        type(expected).__name__,
+        asdict(expected),
+    )
+    for reg, source_reg in zip(signature, original.signature, strict=True):
+        for idx in reg.all_idxs():
+            expected = original.wire_symbol(source_reg, idx)
+            assert inverse_sqrt_wire_symbol(step, reg, idx, newton=newton) == (
+                type(expected).__name__,
+                asdict(expected),
+            )
+
+
+@pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
     "address,precision", [(2, 4), (3, 32), (6, 15), (7, 12), (8, 30), (5, 55)]
 )
