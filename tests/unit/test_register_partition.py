@@ -327,3 +327,106 @@ def test_partition_inverse_preserves_spectator_complex_amplitudes():
     original = initial.reshape((2,) * 4).permute(2, *wires).reshape(2, 8)
     torch.testing.assert_close(native, original @ expected.T, atol=2e-12, rtol=0)
     assert tuple(gate.name for gate in circuit.to_ir().instructions) == ("cx",)
+
+
+@pytest.mark.ftqc_reference
+def test_admitted_mixed_partition_preserves_word_types_and_physical_bindings():
+    import cirq
+    import numpy as np
+    from qualtran import QGF, QBit, QUInt
+    from qualtran import Register as SourceRegister
+    from qualtran.bloqs.bookkeeping.partition import Partition
+
+    from flagquantum.compiler.registers.layout.component_partition import (
+        partition_component_program,
+        partition_signature,
+    )
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.core.ir.program.register_types import (
+        quantum_bit_type,
+        unsigned_register_type,
+    )
+    from flagquantum.core.ir.program.registers import Register
+    from flagquantum.simulation.finite_field_encoding import FiniteFieldEncoding
+
+    field = FiniteFieldEncoding(2, 2)
+    native = (
+        Register("index", unsigned_register_type(3)),
+        Register("field", field.register_type(), (2,)),
+        Register("flag", quantum_bit_type()),
+    )
+    foreign = (
+        SourceRegister("index", QUInt(3)),
+        SourceRegister("field", QGF(2, 2), (2,)),
+        SourceRegister("flag", QBit()),
+    )
+    source = Partition(8, foreign)
+    wires = (7, 2, 5, 0, 3, 4, 1, 6)
+    manager = cirq.SimpleQubitManager()
+    operation, parts = source.as_cirq_op(
+        manager, x=np.asarray([cirq.LineQubit(wire) for wire in wires])
+    )
+    expected = tuple(
+        tuple(qubit.x for qubit in parts[register.name][idx].flat)
+        for register in foreign
+        for idx in register.all_idxs()
+    )
+    assert operation is None
+    operation, packed = source.adjoint().as_cirq_op(manager, **parts)
+    assert operation is None
+    assert tuple(qubit.x for qubit in packed["x"]) == wires
+
+    for reverse, inputs, outputs in (
+        (False, (wires,), expected),
+        (True, expected, (wires,)),
+    ):
+        declaration = partition_signature(native, reverse=reverse)
+        assert tuple(part.dtype for part in declaration[1:]) == tuple(
+            part.dtype for part in native
+        )
+        program = partition_component_program(native, "mixed", reverse)
+        result = bind_register_program(program, inputs, entry="mixed")
+        assert result.outputs == outputs
+        assert result.events == result.circuit.instructions == ()
+
+
+@pytest.mark.ftqc_reference
+def test_partition_retains_signed_and_fixed_point_metadata_at_execution_boundary():
+    from qualtran import BQUInt, QFxp, QInt
+    from qualtran import Register as SourceRegister
+    from qualtran.bloqs.bookkeeping.partition import Partition
+
+    from flagquantum.compiler.registers.layout.component_partition import (
+        partition_component_program,
+        partition_signature,
+    )
+    from flagquantum.core.ir.program.register_types import (
+        bounded_unsigned_register_type,
+        fixed_point_register_type,
+        signed_register_type,
+    )
+    from flagquantum.core.ir.program.registers import Register
+
+    native = (
+        Register("selection", bounded_unsigned_register_type(2, 3)),
+        Register("signed", signed_register_type(3), (2,)),
+        Register("point", fixed_point_register_type(4, 2, signed=True)),
+    )
+    source = Partition(
+        12,
+        (
+            SourceRegister("selection", BQUInt(2, 3)),
+            SourceRegister("signed", QInt(3), (2,)),
+            SourceRegister("point", QFxp(4, 2, signed=True)),
+        ),
+    )
+    for reverse, locked in ((False, source), (True, source.adjoint())):
+        declared = partition_signature(native, reverse=reverse)
+        assert tuple(
+            (p.name, p.shape, p.bitsize, p.side.value) for p in declared
+        ) == tuple((p.name, p.shape, p.bitsize, p.side.value) for p in locked.signature)
+        assert tuple(p.dtype for p in declared[1:]) == tuple(p.dtype for p in native)
+        with pytest.raises(
+            ValueError, match="unsupported executable register descriptor"
+        ):
+            partition_component_program(native, "restricted", reverse)

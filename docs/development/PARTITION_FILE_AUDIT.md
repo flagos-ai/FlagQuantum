@@ -7,7 +7,7 @@ files are Apache-2.0, copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0327 | `partition.ipynb` | `65ff47688d0c7715f2df9f95a97ae3d34b21dd8b` | Closed by the complete Partition and AutoPartition tutorial. |
-| Q-0328 | `partition.py` | `8cebbb58095d172f3db564cdfc231537e6214957` | Open for the full external dtype and wire-symbol protocols and direct object interop. |
+| Q-0328 | `partition.py` | `8cebbb58095d172f3db564cdfc231537e6214957` | Open for the full executable dtype and direct external object protocols. |
 | Q-0329 | `partition_test.py` | `c6c3236332577115ff6f09e17f340fe79825e1f4` | Closed for the original runnable scenarios and both source tutorials. |
 | Q-0332 | `split2.ipynb` | `eaf039d7f204f9a1e4fa1cb6d26fb2d93c73aae8` | Closed by the complete Split2 and Join2 tutorial. |
 
@@ -41,6 +41,23 @@ distinct from the physical X/CNOT stream.
 The earlier tests cover scalar and shaped codecs, signed/fixed-point and
 finite-field partition values, small integer round trips, zero-width
 wire slices, and the source's invalid empty or mismatched layouts.
+The Drawer callback reads typed sides and array indices from the existing
+register score. It uses an empty connector, left and right arrows,
+and a through box, preserving labels such as `sites[0, 0]`. Both shapes
+and full score geometry match the frozen source for 2-D, 1-D and
+empty-axis layouts in both directions. Split2 and Join2 use the same
+callback, matching their inherited source method.
+
+A permuted eight-wire fixture combines a three-bit unsigned index,
+two binary-field elements and a single qubit. Native and source bind
+identical words in both directions. Native binding emits zero
+instructions and allocates no workspace, and the logical peak is eight.
+Bounded unsigned, signed and signed fixed-point descriptors retain their
+exact metadata in both directions. The existing executable register
+contract rejects these descriptors. The frozen Cirq callback admits them
+as wire bindings, and the native classical codecs are covered separately.
+Direct external object binding remains open.
+
 The source's raw Cirq Join concatenates direct keyword arguments in
 caller insertion order. Its typed composite and tensor path uses the
 declared order. The native named path follows the declaration, and a
