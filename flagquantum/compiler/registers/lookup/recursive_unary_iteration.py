@@ -6,7 +6,11 @@
 
 from collections.abc import Callable, Sequence
 
-from ...artifacts.reversible_phase import ReversiblePhaseOperation
+from ..._component_trace.trace import ComponentCall
+from ...artifacts.reversible_phase import (
+    ReversiblePhaseOperation,
+    ReversiblePhaseProgram,
+)
 from ..finite_field.polynomial import _validate_registers
 from ..layout.workspace import RegisterWorkspace
 
@@ -141,14 +145,97 @@ def unary_iteration_operations(
     measurement_bit: int = 0,
 ) -> tuple[ReversiblePhaseOperation, ...]:
     """Visit values in order, invoke the body even when parked, then close."""
+    operations: list[ReversiblePhaseOperation] = []
+    _append_unary_iteration(
+        operations, address, workspace, values, body, control, measurement_bit
+    )
+    return tuple(operations)
+
+
+def _append_unary_iteration(
+    operations: list[ReversiblePhaseOperation],
+    address: tuple[int, ...],
+    workspace: tuple[int, ...],
+    values: Sequence[int],
+    body: Callable[[int, int], tuple[ReversiblePhaseOperation, ...]],
+    control: int | None,
+    measurement_bit: int,
+    calls: list[ComponentCall] | None = None,
+) -> None:
     if not values:
-        return ()
+        return
     cursor = UnaryAddressCursor(
         address, workspace, control=control, measurement_bit=measurement_bit
     )
-    operations: list[ReversiblePhaseOperation] = []
+
+    def append_move(move: tuple[ReversiblePhaseOperation, ...]) -> None:
+        if move and calls is not None:
+            calls.append(
+                ComponentCall(
+                    "unary_iteration", len(operations), len(operations) + len(move)
+                )
+            )
+        operations.extend(move)
+
     for value in values:
-        operations.extend(cursor.move_to(value))
+        append_move(cursor.move_to(value))
         operations.extend(body(value, cursor.match_qubit))
-    operations.extend(cursor.close())
-    return tuple(operations)
+    append_move(cursor.close())
+
+
+def physical_unary_iteration(
+    address: tuple[int, ...],
+    workspace: tuple[int, ...],
+    values: Sequence[int],
+    body: Callable[[int, int], tuple[ReversiblePhaseOperation, ...]],
+    *,
+    control: int | None = None,
+    measurement_bit: int = 0,
+    classical_guard: int | None = None,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export marked cursor transitions and callback operations in source order.
+
+    The address is big-endian and the caller owns the clean workspace. A
+    classical guard scopes the whole traversal, including callbacks, and
+    must have a different slot from the reusable HMR result. While the
+    cursor is live the callback must preserve its address, control and work.
+    """
+    inputs: tuple[int, ...] = ()
+    operations: list[ReversiblePhaseOperation] = []
+    calls: list[ComponentCall] = []
+    if classical_guard is not None:
+        if (
+            type(classical_guard) is not int
+            or classical_guard < 0
+            or classical_guard == measurement_bit
+        ):
+            raise ValueError(
+                "Unary guard requires a distinct nonnegative classical slot"
+            )
+        inputs = (classical_guard,)
+        operations.append(
+            ReversiblePhaseOperation(
+                "push_condition", (), condition_bit=classical_guard
+            )
+        )
+    _append_unary_iteration(
+        operations, address, workspace, values, body, control, measurement_bit, calls
+    )
+    if classical_guard is not None:
+        operations.append(ReversiblePhaseOperation("pop_condition", ()))
+    n_qubits = 1 + max(
+        max(address, default=0),
+        max(workspace, default=0),
+        0 if control is None else control,
+        max((q for op in operations for q in op.qubits), default=0),
+    )
+    slots = (
+        bit
+        for op in operations
+        for bit in (op.result_bit, op.condition_bit)
+        if bit is not None
+    )
+    n_bits = max(slots, default=-1) + 1
+    return ReversiblePhaseProgram(n_qubits, n_bits, tuple(operations), inputs), tuple(
+        calls
+    )
