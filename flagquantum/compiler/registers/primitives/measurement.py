@@ -17,26 +17,33 @@ from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 
 
-def measure_z_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...]:
-    """Record the Z outcome and return the consumed qubit's physical slot in zero."""
+def measure_z_clear_ir(
+    qubit: int, classical_bit: int, *, conditions: tuple[tuple[int, int], ...] = ()
+) -> tuple[Instruction, ...]:
+    """Record a Z outcome and clear the wire when all guards are active."""
     if any(type(value) is not int or value < 0 for value in (qubit, classical_bit)):
         raise ValueError(
             "Measurement qubit and classical bit must be nonnegative integers"
         )
+    if any(bit == classical_bit for bit, _ in conditions):
+        raise ValueError("Measurement result cannot overwrite a guard")
+    effect: dict[str, object] = {"is_dynamic": True, "classical_bit": classical_bit}
+    if conditions:
+        effect.update(conditions=conditions, guarded_effect=True)
+    clear = tuple(sorted((*conditions, (classical_bit, 1))))
     return (
-        Instruction(
-            "measure",
-            (qubit,),
-            metadata={"is_dynamic": True, "classical_bit": classical_bit},
-        ),
-        Instruction("x", (qubit,), metadata={"conditions": ((classical_bit, 1),)}),
+        Instruction("measure", (qubit,), metadata=effect),
+        Instruction("x", (qubit,), metadata={"conditions": clear}),
     )
 
 
-def measure_x_clear_ir(qubit: int, classical_bit: int) -> tuple[Instruction, ...]:
-    """Record the X outcome and return the consumed qubit's physical slot in zero."""
-    clear = measure_z_clear_ir(qubit, classical_bit)
-    return (Instruction("h", (qubit,)), *clear)
+def measure_x_clear_ir(
+    qubit: int, classical_bit: int, *, conditions: tuple[tuple[int, int], ...] = ()
+) -> tuple[Instruction, ...]:
+    """Record an X outcome and clear the wire when all guards are active."""
+    clear = measure_z_clear_ir(qubit, classical_bit, conditions=conditions)
+    metadata = {"conditions": conditions} if conditions else {}
+    return (Instruction("h", (qubit,), metadata=metadata), *clear)
 
 
 def measure_x_clear_register_ir(

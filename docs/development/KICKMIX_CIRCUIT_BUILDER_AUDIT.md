@@ -338,6 +338,34 @@ pop. The source accepts this stream and its leaked guard conditions the
 following X. All four guard assignments demonstrate the leak. The native
 KMX target refuses the unbalanced stream at validation. The scope leak remains a source issue.
 
+## Mixed control resolution at full arity
+
+The locked resolver preserves quantum and classical operand order while
+combining classical predicates. The native emitter now keeps those guards
+when it selects the maximum-arity CCCX and CCCZ schedules. It reuses the
+guarded X-measurement clear primitive for feedback. A guarded result slot
+must be defined by the caller and cannot alias a predicate that controls
+its own clearing. The disabled path retains the old result. The H pair
+around a guarded CCX in a CCZ cancels on the inactive path.
+
+Four locked C++ streams cover quantum X and phase output with a borrowed
+or clean helper under two classical guards. Effective guard sets and
+ordered operands agree after accounting for the two explicit source resets
+through the supplied-zero contract. Every classical assignment and both
+clean measurement branches preserve all 256 complex amplitudes. The
+borrowed helper remains coherent, the clean helper clears and inactive
+measurement leaves its result intact. The primitive counts remain those
+of the three-control schedules above, with one caller-owned slot on the
+clean path and the source condition records counted separately.
+
+The native resolver applies X-basis target phase kickback through the same
+dispatch and has no mutable pending-control queue. The locked positive-X
+target path leaves a false flag which suppresses the next use of the
+builder. The source also leaves a pushed condition when rejecting a
+mixed request beyond its supported quantum arity. Native emission returns
+empty for the positive-X target and refuses unsupported arity before
+returning a gate stream. The immutable source fixtures retain both defects.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug runtime output have
 separate source assertions. The full public mixed

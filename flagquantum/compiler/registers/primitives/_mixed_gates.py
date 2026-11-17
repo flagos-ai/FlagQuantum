@@ -15,6 +15,13 @@ from .measurement import measure_x_clear_ir
 _Control = int | bool | ClassicalFieldCoefficient
 
 
+@dataclass(frozen=True)
+class _XBasisTarget:
+    """Known or measured X eigenvalue, true denoting the minus eigenstate."""
+
+    outcome: bool | ClassicalFieldCoefficient
+
+
 def _three_control_ir(
     first: int,
     second: int,
@@ -24,6 +31,7 @@ def _three_control_ir(
     phase: bool,
     scratch: int | None,
     measurement_bit: int | None,
+    conditions: tuple[tuple[int, int], ...] = (),
 ) -> tuple[Instruction, ...]:
     """Share the source CCCX/CCCZ schedule over already admitted operands.
 
@@ -35,12 +43,13 @@ def _three_control_ir(
         if scratch is not None
         else next(q for q in range(5) if q not in (first, second, third, target))
     )
+    metadata = {"conditions": conditions} if conditions else {}
     pair = (
-        Instruction("ccx", (first, second, helper)),
+        Instruction("ccx", (first, second, helper), metadata=metadata),
         *(
-            ccz_ir((helper, third, target))
+            ccz_ir((helper, third, target), conditions=conditions)
             if phase
-            else (Instruction("ccx", (helper, third, target)),)
+            else (Instruction("ccx", (helper, third, target), metadata=metadata),)
         ),
     )
     if scratch is None:
@@ -48,19 +57,24 @@ def _three_control_ir(
     assert measurement_bit is not None
     return (
         *pair,
-        *measure_x_clear_ir(scratch, measurement_bit),
+        *measure_x_clear_ir(scratch, measurement_bit, conditions=conditions),
         Instruction(
-            "cz", (first, second), metadata={"conditions": ((measurement_bit, 1),)}
+            "cz",
+            (first, second),
+            metadata={"conditions": tuple(sorted((*conditions, (measurement_bit, 1))))},
         ),
     )
 
 
 def _flip(
-    target: int | None,
+    target: int | _XBasisTarget | None,
     *controls: _Control,
     scratch: int | None = None,
     measurement_bit: int | None = None,
 ) -> tuple[Instruction, ...]:
+    if isinstance(target, _XBasisTarget):
+        controls = (*controls, target.outcome)
+        target = None
     if any(control is False for control in controls):
         return ()
     wires = tuple(control for control in controls if type(control) is int)
@@ -73,6 +87,8 @@ def _flip(
             }
         )
     )
+    if len(wires) > (4 if target is None else 3):
+        raise ValueError("Mixed control count exceeds the source schedule")
     if target is None:
         if not wires:
             return scalar_sign_ir(0, conditions=bits)
@@ -87,6 +103,7 @@ def _flip(
                 phase=True,
                 scratch=scratch,
                 measurement_bit=measurement_bit,
+                conditions=bits,
             )
         if len(wires) == 3:
             return ccz_ir((wires[0], wires[1], wires[2]), conditions=bits)
@@ -116,6 +133,7 @@ def _flip(
         phase=False,
         scratch=scratch,
         measurement_bit=measurement_bit,
+        conditions=bits,
     )
 
 
@@ -177,13 +195,6 @@ def _parity_controlled_flip(
     return (*apply(first, *controls), *apply(second, *controls))
 
 
-@dataclass(frozen=True)
-class _XBasisTarget:
-    """Known or measured X eigenvalue, true denoting the minus eigenstate."""
-
-    outcome: bool | ClassicalFieldCoefficient
-
-
 def _is_z_operand(value: object) -> bool:
     return type(value) in (int, bool) or isinstance(value, ClassicalFieldCoefficient)
 
@@ -206,7 +217,7 @@ def _broadcast_cx(
     gates: list[Instruction] = []
     for control, target in zip(controls, targets, strict=True):
         if isinstance(target, _XBasisTarget):
-            gates.extend(_flip(None, control, target.outcome))
+            gates.extend(_flip(target, control))
         elif isinstance(target, ClassicalFieldCoefficient):
             if control is True:
                 gates.append(

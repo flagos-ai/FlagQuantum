@@ -9,7 +9,7 @@ from ..artifacts.reversible_phase import (
     ReversiblePhaseProgram,
 )
 from ..registers.primitives.global_phase import ccz_ir, scalar_sign_ir
-from ..registers.primitives.measurement import reset_x_register_ir
+from ..registers.primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 
 
 def _phase_instruction(
@@ -95,19 +95,9 @@ def bind_reversible_phase_execution(
             gates.extend(reset_x_register_ir(op.qubits, conditions=conditions))
         elif op.opcode == "hmr":
             assert result is not None
-            gates.append(Instruction("h", op.qubits, metadata=metadata))
-            effect = {**metadata, "is_dynamic": True}
-            if conditions:
-                effect["guarded_effect"] = True
-            gates.append(
-                Instruction(
-                    "measure",
-                    op.qubits,
-                    metadata={**effect, "classical_bit": result},
-                )
+            gates.extend(
+                measure_x_clear_ir(op.qubits[0], result, conditions=conditions)
             )
-            clear = tuple(sorted((*conditions, (result, 1))))
-            gates.append(Instruction("x", op.qubits, metadata={"conditions": clear}))
         elif op.opcode == "z_pow":
             gates.append(_phase_instruction(op, metadata))
         elif op.opcode == "ccz":
