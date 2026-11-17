@@ -89,7 +89,8 @@ def bounded_majorana_ir(
     _validate_wires(
         (*selection, *target, *workspace, *((control,) if control is not None else ()))
     )
-    _validate_wires(classical_bits)
+    if classical_bits:
+        _validate_wires(classical_bits)
     accumulator, *predicates = workspace
     gates = [
         (

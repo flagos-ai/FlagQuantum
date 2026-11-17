@@ -20,7 +20,7 @@ pytestmark = pytest.mark.unit
 
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize(
-    "size,controlled,pauli", tuple(product((4, 6, 10), (False, True), "XY"))
+    "size,controlled,pauli", tuple(product((2, 4, 6, 10), (False, True), "XY"))
 )
 def test_bounded_majorana_gate_stream(size, controlled, pauli):
     pytest.importorskip("qualtran")
@@ -31,6 +31,7 @@ def test_bounded_majorana_gate_stream(size, controlled, pauli):
     )
 
     width = (size - 1).bit_length()
+    selection_width = 1 if size == 2 else None
     control = 0 if controlled else None
     start = int(controlled)
     selection = tuple(range(start, start + width))
@@ -38,15 +39,26 @@ def test_bounded_majorana_gate_stream(size, controlled, pauli):
     work = tuple(
         range(
             target[-1] + 1,
-            target[-1] + 1 + bounded_majorana_workspace(size, controlled=controlled),
+            target[-1]
+            + 1
+            + bounded_majorana_workspace(
+                size, controlled=controlled, selection_width=selection_width
+            ),
         )
     )
     bits = tuple(range(20, 20 + len(work) - 1))
-    ports = {"orb": selection[:-1], "spin": selection[-1:], "target": target}
+    ports = {"spin": selection[-1:], "target": target}
+    selection_regs = (Register("spin", BQUInt(1, 2)),)
+    if size > 2:
+        ports["orb"] = selection[:-1]
+        selection_regs = (
+            Register("orb", BQUInt(width - 1, size // 2)),
+            *selection_regs,
+        )
     if control is not None:
         ports["control"] = (control,)
     source = SelectedMajoranaFermion(
-        (Register("orb", BQUInt(width - 1, size // 2)), Register("spin", BQUInt(1, 2))),
+        selection_regs,
         (Register("control", QBit()),) if controlled else (),
         getattr(cirq, pauli),
     )
@@ -58,10 +70,15 @@ def test_bounded_majorana_gate_stream(size, controlled, pauli):
         cirq_style=True,
         keep_pauli_leaves=True,
     )
-    actual = bounded_majorana_ir(selection, target, control, pauli, work, bits)
+    actual = bounded_majorana_ir(
+        selection, target, control, pauli, work, bits, selection_width=selection_width
+    )
     assert_source(actual, expected)
     assert_source_model(
-        source_bounded_majorana_cost(size, pauli, controlled=controlled), source
+        source_bounded_majorana_cost(
+            size, pauli, controlled=controlled, selection_width=selection_width
+        ),
+        source,
     )
 
 
