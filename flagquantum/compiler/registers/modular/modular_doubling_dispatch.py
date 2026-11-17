@@ -4,25 +4,38 @@
 
 """Source space/tolerance dispatch for modular doubling and halving."""
 
-from math import inf, isnan
+from dataclasses import replace
+from math import ceil, inf, isnan
 
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import CircuitIR, Instruction
+from ..._component_trace.trace import ComponentCall, ComponentTrace
 from ...artifacts.reversible_phase import (
     ReversiblePhaseOperation,
     ReversiblePhaseProgram,
 )
+from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
 from ...lowering.reversible_phase import lower_reversible_phase
 from ..arithmetic.carry_parity import _Coefficient
 from ..arithmetic.mixed_addition import mixed_addition_ir
 from ..bits.bit_rotation import bit_rotation_ir
-from ..comparison.mixed_comparison import mixed_greater_than_ir
+from ..comparison.mixed_comparison import mixed_greater_than_ir, mixed_less_than_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..primitives._mixed_gates import _delete_and_ir, _flip, _invert_operand
+from ..primitives.measurement import reset_x_register_ir
 from .exact_modular_doubling import (
     _modular_doubling_ports,
     exact_modular_doubling_ir,
 )
+
+
+def _shift_call(call: ComponentCall, offset: int) -> ComponentCall:
+    return replace(
+        call,
+        start=call.start + offset,
+        stop=call.stop + offset,
+        children=tuple(_shift_call(child, offset) for child in call.children),
+    )
 
 
 def modular_doubling_program(
@@ -35,6 +48,8 @@ def modular_doubling_program(
     inverse: bool = False,
     btol: float = inf,
     minimize_qubits: bool = False,
+    physical_trace: ComponentTrace | None = None,
+    declared_input_width: int = 0,
 ) -> ReversiblePhaseProgram:
     """Follow the source dispatch, retaining finite-tolerance phase behavior.
 
@@ -56,11 +71,18 @@ def modular_doubling_program(
             {bit.slot for bit in modulus if isinstance(bit, ClassicalFieldCoefficient)}
         )
     )
-    result = max(inputs, default=-1) + 1
+    result = max(max(inputs, default=-1) + 1, declared_input_width)
+    physical = physical_trace is not None
+    if physical and inverse:
+        raise ValueError("The physical generation command exports forward doubling")
+    if physical:
+        inputs = tuple(range(result))
     slots = tuple(range(result, result + n + 3))
     prefix = tuple(ClassicalXor((), bit).instruction() for bit in inputs)
     operations: list[ReversiblePhaseOperation] = []
     used_bits = result
+    execution_inputs = set(inputs)
+    calls: list[ComponentCall] = []
 
     def emit(gates: tuple[Instruction, ...]) -> None:
         nonlocal used_bits
@@ -68,22 +90,55 @@ def modular_doubling_program(
         operations.extend(fragment.operations[len(prefix) :])
         used_bits = max(used_bits, fragment.n_bits)
 
-    def finish() -> ReversiblePhaseProgram:
-        return ReversiblePhaseProgram(wires, used_bits, tuple(operations), inputs)
+    def emit_physical(
+        gates: tuple[Instruction, ...],
+        trace: PhysicalTrace,
+        *,
+        reorder_feedback: bool = True,
+    ) -> None:
+        nonlocal used_bits, wires
+        fragment, emitted = lower_physical_trace(
+            gates, result, wires - 1, trace, reorder_feedback=reorder_feedback
+        )
+        calls.extend(_shift_call(call, len(operations)) for call in emitted)
+        operations.extend(fragment.operations)
+        used_bits = max(used_bits, fragment.n_bits)
+        wires = max(wires, fragment.n_qubits)
+        execution_inputs.update(fragment.input_bits)
+
+    def finish(exact: bool = False) -> ReversiblePhaseProgram:
+        if physical_trace is not None:
+            name = ("c_" if control is not None else "") + (
+                "imul2_mod_exact" if exact else "imul2_mod_approx"
+            )
+            physical_trace.calls.append(
+                ComponentCall(name, 0, len(operations), children=tuple(calls))
+            )
+        return ReversiblePhaseProgram(
+            wires, used_bits, tuple(operations), tuple(sorted(execution_inputs))
+        )
 
     tolerance = max(btol, 0.0) if inverse else btol + 1
-    if n <= 2 or tolerance >= n and len(clean) + 2 >= n and not minimize_qubits:
-        emit(
-            exact_modular_doubling_ir(
-                target,
-                modulus,
-                clean=clean,
-                control=control,
-                inverse=inverse,
-                measurement_bit=result,
-            )
+    exact = tolerance >= n and len(clean) + 2 >= n and not minimize_qubits
+    if n <= 2 or exact:
+        gates = exact_modular_doubling_ir(
+            target,
+            modulus,
+            clean=clean,
+            control=control,
+            inverse=inverse,
+            measurement_bit=result,
+            emit_resets=physical,
         )
-        return finish()
+        if physical:
+            trace = PhysicalTrace()
+            if n > 2:
+                rotation = bit_rotation_ir(target, 1, control=control)
+                trace.calls.append(ComponentCall("left_rotate", 0, len(rotation)))
+            emit_physical(gates, trace)
+        else:
+            emit(gates)
+        return finish(exact)
     enabled = True if control is None else control
     ease = 0
     for coefficient in modulus:
@@ -111,19 +166,27 @@ def modular_doubling_program(
         return word
 
     def add(word: tuple[_Coefficient, ...], flag: int, work: tuple[int, ...]) -> None:
-        emit(
-            mixed_addition_ir(
-                target,
-                word,
-                control=flag,
-                clean=work,
-                dirty=dirty,
-                classical_bits=slots,
-                minimize_qubits=minimize_qubits,
-                btol=tolerance,
-                subtract=inverse,
-            )
+        trace = (
+            PhysicalTrace(recycled_bits=frozenset(range(result, used_bits)))
+            if physical
+            else None
         )
+        gates = mixed_addition_ir(
+            target,
+            word,
+            control=flag,
+            clean=work,
+            dirty=dirty,
+            classical_bits=slots,
+            minimize_qubits=minimize_qubits,
+            btol=tolerance,
+            subtract=inverse,
+            export=trace,
+        )
+        if trace is None:
+            emit(gates)
+        else:
+            emit_physical(gates, trace)
 
     def compare(
         word: tuple[_Coefficient, ...],
@@ -131,6 +194,48 @@ def modular_doubling_program(
         work: tuple[int, ...],
         bit: int = result,
     ) -> None:
+        if physical:
+            trace = PhysicalTrace()
+            less = mixed_less_than_ir(
+                target,
+                word,
+                flag,
+                work,
+                or_equal=True,
+                control=enabled,
+                measurement_bit=bit,
+                minimize_qubits=minimize_qubits,
+                btol=tolerance,
+                low_space_bits=tuple(range(bit, bit + n + 3)),
+                emit_resets=True,
+                export=trace,
+            )
+            compare_width = n if tolerance >= n else max(0, ceil(tolerance) - 1)
+            children: tuple[ComponentCall, ...] = ()
+            low_space = compare_width > 1 and (
+                minimize_qubits or len(work) < compare_width - 1
+            )
+            if low_space:
+                children = (
+                    ComponentCall(
+                        "xif_less_than_3anc_2ntof",
+                        0,
+                        len(less),
+                        children=tuple(trace.calls),
+                    ),
+                )
+            trace.calls.clear()
+            if 1 < tolerance < n:
+                children = (
+                    ComponentCall("flip_if_lt", 0, len(less), children=children),
+                )
+            less_call = ComponentCall("flip_if_lt", 0, len(less), children=children)
+            gates = (*less, *_flip(flag, enabled))
+            trace.calls.append(
+                ComponentCall("flip_if_gt", 0, len(gates), children=(less_call,))
+            )
+            emit_physical(gates, trace, reorder_feedback=not low_space)
+            return
         emit(
             mixed_greater_than_ir(
                 target,
@@ -154,14 +259,34 @@ def modular_doubling_program(
         flag, work = clean[0], clean[1:]
         half = (False, *modulus[:-1])
         if ease > tolerance:
-            emit(_flip(flag, enabled, target[0]))
+            emit(
+                (
+                    *(reset_x_register_ir((flag,)) if physical else ()),
+                    *_flip(flag, enabled, target[0]),
+                )
+            )
         else:
             compare(half, flag, work)
         inverted_half = invert(half)
-        add(trim(inverted_half[1:]), flag, work)
+        clipped = inverted_half[1:]
+        if physical and not any(clipped):
+            # The source's unchecked empty-span back() is layout-dependent.
+            # At four-lane allocation boundaries the observed route pads an empty word;
+            # the other lengths keep the original high bit.
+            clipped = () if n % 4 == 0 else inverted_half
+        else:
+            clipped = trim(clipped)
+        add(clipped, flag, work)
         invert(inverted_half)
         emit(_flip(target[0], flag))
-        emit(bit_rotation_ir(target, 1, control=control))
+        rotation = bit_rotation_ir(target, 1, control=control)
+        if physical:
+            emit_physical(
+                rotation,
+                PhysicalTrace(calls=[ComponentCall("left_rotate", 0, len(rotation))]),
+            )
+        else:
+            emit(rotation)
         emit(_flip(target[-1], flag))
         emit(_delete_and_ir(flag, result, enabled, target[-1]))
         return finish()

@@ -10,7 +10,7 @@ from ..bits.bit_rotation import bit_rotation_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 
 
 def _modular_doubling_ports(
@@ -47,6 +47,7 @@ def exact_modular_doubling_ir(
     control: int | None = None,
     measurement_bit: int = 0,
     inverse: bool = False,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Map x to 2*x or its modular inverse on 0 <= x < an odd modulus.
 
@@ -99,7 +100,13 @@ def exact_modular_doubling_ir(
         gates.extend(measure_x_clear_ir(wire, measurement_bit))
         flip(None, *controls, outcome)
 
+    def reset(wire: int) -> None:
+        if emit_resets:
+            gates.extend(reset_x_register_ir((wire,)))
+
     def triple() -> None:
+        if control is not None and extra:
+            reset(extra[0])
         gates.extend(
             _flip(
                 low[0],
@@ -151,17 +158,20 @@ def exact_modular_doubling_ir(
         return tuple(gates)
 
     gates.extend(bit_rotation_ir(target, 1, control=control))
+    reset(work[0])
     flip(work[0])
     flip(work[0], low[1])
     flip(work[0], low[1], coefficients[1])
     for k in range(n - 3):
         flip(low[k + 2], enabled, work[k])
         flip(work[k], coefficients[k + 2])
+        reset(work[k + 1])
         flip(work[k + 1], low[k + 2], work[k])
         flip(work[k + 1], coefficients[k + 2])
     flip(work[n - 3])
     triple()
     if control is not None:
+        reset(flag)
         flip(flag, control, low[0])
     flip(low[n - 1], flag, work[n - 3])
     flip(work[n - 3])
