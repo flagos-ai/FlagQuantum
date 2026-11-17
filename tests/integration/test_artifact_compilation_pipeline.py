@@ -48,7 +48,7 @@ from flagquantum.runtime.artifact_preflight import preflight_executable_artifact
 from flagquantum.runtime.compilation_evidence import (
     verify_compilation_evidence_handoff,
 )
-from flagquantum.synth import synthesize
+from flagquantum.synth import CX, H, Output, QBit, allocate, qfunc, synthesize
 
 pytestmark = pytest.mark.integration
 
@@ -56,7 +56,26 @@ _NOW = datetime(2026, 9, 10, 20, 0, tzinfo=timezone.utc)
 _SCOPE = CapabilityScope(device_ids=("target:0",))
 
 
-def _snapshot() -> TargetCapabilitySnapshot:
+@qfunc
+def _bell_at_line_ends(
+    left: Output[QBit], middle: Output[QBit], right: Output[QBit]
+) -> None:
+    allocate(left)
+    allocate(middle)
+    allocate(right)
+    H(left)
+    CX(left, right)
+
+
+def _snapshot(
+    *,
+    native_gates: tuple[tuple[str, tuple[str, ...]], ...] = (
+        ("h", ()),
+        ("cx", ()),
+        ("swap", ()),
+        ("rx", ("theta",)),
+    ),
+) -> TargetCapabilitySnapshot:
     source = FactSource(kind="artifact_compilation_test", ref="target-evidence")
     values = {
         "qubits.logical_capacity": 3,
@@ -65,11 +84,9 @@ def _snapshot() -> TargetCapabilitySnapshot:
         "measurements.results": ("samples",),
         "limits.maximum_shots": 4096,
         "artifacts.profiles": ("openqasm-3.0",),
-        "gates.native": (
-            {"name": "h", "parameters": ()},
-            {"name": "cx", "parameters": ()},
-            {"name": "swap", "parameters": ()},
-            {"name": "rx", "parameters": ("theta",)},
+        "gates.native": tuple(
+            {"name": name, "parameters": parameters}
+            for name, parameters in native_gates
         ),
     }
     return TargetCapabilitySnapshot(
@@ -364,3 +381,84 @@ def test_synthesized_bell_reaches_verified_offline_preflight() -> None:
             shots=256,
             evaluated_at=_NOW,
         )
+
+
+def test_synthesized_bell_routes_on_line_with_native_gates() -> None:
+    circuit = replace(
+        synthesize(_bell_at_line_ends).circuit,
+        measurements=(MeasurementNode("samples", (0, 1, 2)),),
+    )
+    assert any(
+        instruction.name == "cx" and instruction.wires == (0, 2)
+        for instruction in circuit.instructions
+    )
+    source = ProgramArtifactV2.from_circuit_ir(circuit, producer="routed-bell-source")
+    snapshot = _snapshot(native_gates=(("h", ()), ("cz", ()), ("swap", ())))
+    coupling = CouplingMap.line(3)
+
+    def compile_with_budget(budget: int) -> ArtifactCompilationResult:
+        return compile_circuit_artifact_for_target(
+            source,
+            backend="qasm",
+            profile="openqasm-3.0",
+            snapshot=snapshot,
+            producer="flagquantum.compiler",
+            evaluated_at=_NOW,
+            coupling_map=coupling,
+            routing_strategy="restore_after_each_gate",
+            max_routing_added_operations=budget,
+        )
+
+    result = compile_with_budget(2)
+    bundle = build_compilation_evidence_bundle(
+        result, snapshot=snapshot, producer="flagquantum.compiler"
+    )
+    restored = read_compilation_evidence_bundle_json(bundle.to_json())
+    verify_compilation_evidence_bundle(restored, result, snapshot=snapshot)
+    plan = restored.physical_plan
+    swaps = tuple(
+        instruction.physical_wires
+        for instruction in plan.instructions
+        if instruction.opcode == "swap"
+    )
+    assert len(swaps) == 2
+    assert swaps == tuple(
+        transition.physical_wires for transition in plan.mapping_transitions
+    )
+
+    payload = result.executable_artifact.payload
+    assert isinstance(payload, str)
+    imported = fq.from_openqasm(payload)
+    assert imported.version == 3.0
+    assert imported.measurement_qubits == (0, 1, 2)
+    assert {instruction.name for instruction in imported.instructions} == {
+        "h",
+        "cz",
+        "swap",
+    }
+    assert all(
+        coupling.has_edge(*instruction.wires)
+        for instruction in imported.instructions
+        if len(instruction.wires) == 2
+    )
+    assert (
+        tuple(
+            instruction.wires
+            for instruction in imported.instructions
+            if instruction.name == "swap"
+        )
+        == swaps
+    )
+
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    state = fq.run(imported.to_circuit(), options=options).statevector()
+    expected = torch.zeros(8, dtype=torch.complex128)
+    expected[[0, 5]] = 1 / math.sqrt(2)  # |000> and |101>
+    torch.testing.assert_close(state.reshape(-1), expected, atol=1e-12, rtol=0)
+
+    with pytest.raises(
+        ArtifactCompilationError, match="topology routing exceeds max_added_operations"
+    ):
+        compile_with_budget(0)
