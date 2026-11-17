@@ -18,13 +18,24 @@ from ....compiler._component_trace.resource_model import (
     GateCost,
 )
 from ....compiler.registers.bits.bitwise import _validate_wires
+from ....compiler.registers.control.control_predicate import ControlRegister
+from ....compiler.registers.control.control_predicate_resource_model import (
+    control_predicate_cost,
+)
+from ....compiler.registers.control.controlled_component import controlled_component_ir
+from ....compiler.registers.control.controlled_component_resource_model import (
+    controlled_component_cost,
+)
 from ....compiler.registers.layout.partition import RegisterLayout, unpartition_register
 from ....compiler.registers.lookup.bounded_majorana_select import (
     bounded_majorana_ir,
     bounded_majorana_workspace,
     source_bounded_majorana_cost,
 )
-from ....compiler.registers.primitives.global_phase import scalar_phase_ir
+from ....compiler.registers.primitives.global_phase import (
+    global_phase_ir,
+    scalar_phase_ir,
+)
 from ....core.ir import CircuitIR, Instruction
 from ....core.ir.program.register_types import (
     bounded_unsigned_register_type,
@@ -191,6 +202,58 @@ class SelectSparse:
             )
         )
 
+    @staticmethod
+    def controlled_requirements(num_spin_orb: int) -> tuple[int, int]:
+        """Count conjunction work and controlled Majorana scratch and slots."""
+        SelectSparse.source_signature(num_spin_orb)
+        majorana = bounded_majorana_workspace(
+            num_spin_orb,
+            controlled=True,
+            selection_width=1 if num_spin_orb == 2 else None,
+        )
+        return majorana + 1, majorana
+
+    @classmethod
+    def make_controlled_on(
+        cls,
+        num_spin_orb: int,
+        ports: Mapping[str, tuple[int, ...]],
+        *,
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+        control_value: int = 1,
+        adjoint: bool = False,
+    ) -> _BoundControlledSelectSparse:
+        """Bind a native external control over the full sparse SELECT."""
+        if control_value is None or type(adjoint) is not bool:
+            raise ValueError(
+                "Controlled sparse SELECT requires a polarity and direction"
+            )
+        work, slots = cls.controlled_requirements(num_spin_orb)
+        if len(workspace) != work or len(classical_bits) != slots:
+            raise ValueError(
+                "Controlled sparse SELECT requires matching work and slots"
+            )
+        source_work, source_slots = cls.source_requirements(num_spin_orb)
+        bound = cls.make_source_on(
+            num_spin_orb,
+            ports,
+            workspace=workspace[:source_work],
+            classical_bits=classical_bits[:source_slots],
+            control_value=control_value,
+        )
+        _validate_wires((*bound.logical, *workspace))
+        _validate_wires(classical_bits)
+        return _BoundControlledSelectSparse(
+            bound.select,
+            bound.logical,
+            workspace,
+            classical_bits,
+            ports["control"][0],
+            control_value,
+            adjoint,
+        )
+
     def append_to(self, circuit: Circuit) -> Circuit:
         """Append the phase and four Majorana instructions."""
         if not self.sys or len(self.sys) % 2:
@@ -288,6 +351,115 @@ class _BoundSourceSelectSparse:
     def append_to(self, circuit: Circuit) -> Circuit:
         if max((*self.logical, *self.workspace)) >= circuit.n_qubits:
             raise ValidationError("Sparse SELECT binding exceeds circuit width")
+        return circuit.compose(
+            CircuitIR(
+                circuit.n_qubits, self.emit(), metadata={"batch_size": circuit.bsz}
+            ).validate()
+        )
+
+
+@dataclass(frozen=True)
+class _BoundControlledSelectSparse:
+    select: SelectSparse
+    logical: tuple[int, ...]
+    workspace: tuple[int, ...]
+    classical_bits: tuple[int, ...]
+    control: int
+    control_value: int
+    adjoint: bool
+
+    def resource_model(self) -> ComponentCost:
+        """Compose native control predicates with the Majorana source models."""
+        width = len(self.logical)
+        phase = ComponentCost(
+            "ControlledS",
+            2,
+            GateCost(clifford=1),
+            (
+                CostCall(control_predicate_cost((1, 1))),
+                CostCall(control_predicate_cost((1, 1), uncompute=True)),
+            ),
+        )
+        phase_call = CostCall(phase, bystander_qubits=width - 2)
+        calls = [] if self.adjoint else [phase_call]
+        majoranas = self.select._majoranas()
+        size = len(self.select.sys)
+        address = (size - 1).bit_length()
+        for majorana in reversed(majoranas) if self.adjoint else majoranas:
+            child = source_bounded_majorana_cost(
+                size,
+                majorana.target_gate,
+                controlled=True,
+                selection_width=1 if size == 2 else None,
+            )
+            control_count = 1 + bool(majorana.control)
+            if majorana.control:
+                child = controlled_component_cost(
+                    child,
+                    (ControlRegister(1, (1, 1)),),
+                    target_width=size + address,
+                )
+            calls.append(
+                CostCall(child, bystander_qubits=width - size - address - control_count)
+            )
+        if self.adjoint:
+            calls.append(phase_call)
+        return ComponentCost(
+            "NativeControlledSelectSparse",
+            width,
+            GateCost(clifford=2 * (self.control_value == 0)),
+            tuple(calls),
+        )
+
+    def emit(self) -> tuple[Instruction, ...]:
+        predicate = self.workspace[:1]
+        bits = self.classical_bits[:1]
+        phase = global_phase_ir(
+            -0.5 if self.adjoint else 0.5,
+            controls=(self.control, self.select.flag_1b),
+            values=(1, 1),
+            workspace=predicate,
+            classical_bits=bits,
+        )
+        gates = [] if self.adjoint else list(phase)
+        majoranas = self.select._majoranas()
+        for majorana in reversed(majoranas) if self.adjoint else majoranas:
+
+            def emit(
+                control: int, child: SelectedMajoranaFermion = majorana
+            ) -> tuple[Instruction, ...]:
+                return bounded_majorana_ir(
+                    child.selection,
+                    child.target,
+                    control,
+                    child.target_gate,
+                    self.workspace[1:],
+                    self.classical_bits[1:],
+                    selection_width=1 if len(child.target) == 2 else None,
+                )
+
+            if majorana.control:
+                gates.extend(
+                    controlled_component_ir(
+                        ((self.control, majorana.control[0]),),
+                        (ControlRegister(1, (1, 1)),),
+                        emit,
+                        predicate,
+                        bits,
+                    )
+                )
+            else:
+                gates.extend(emit(self.control))
+        if self.adjoint:
+            gates.extend(phase)
+        flips = (Instruction("x", (self.control,)),) if self.control_value == 0 else ()
+        return (*flips, *gates, *flips)
+
+    def append_to(self, circuit: Circuit) -> Circuit:
+        if max((*self.logical, *self.workspace)) >= circuit.n_qubits:
+            raise ValidationError(
+                "Controlled sparse SELECT binding exceeds circuit width"
+            )
         return circuit.compose(
             CircuitIR(
                 circuit.n_qubits, self.emit(), metadata={"batch_size": circuit.bsz}

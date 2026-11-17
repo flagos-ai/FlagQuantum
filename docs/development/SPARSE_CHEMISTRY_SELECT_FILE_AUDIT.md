@@ -56,6 +56,32 @@ in the adjoint, with both optional control polarities tested.
 There is no locked primitive stream or resource estimate for this
 specialization.
 
+The native `make_controlled_on` binding applies an external control to the
+S phase and all four Majorana calls. The p/q calls share the conjunction
+of the external control and one-body flag. The r/s calls use the external
+control directly. The common predicate and Majorana scratch are borrowed
+and cleared after each use. Negative polarity conjugates the complete
+schedule with X on the external control. Adjoint reverses the Majorana
+order and conjugates the controlled phase.
+
+The independent Jordan–Wigner permutation compares the complete complex
+state over both control sectors, every logical word and every system basis
+state, with a coherent spectator. At two spin orbitals it checks all 128
+measurement histories for each polarity. At four spin orbitals it checks
+four representative histories for each polarity. Both the forward output
+and inverse recovery include the zero scratch subspace. The native model
+composes the existing control predicate and Majorana declarations and
+matches the full bound width and number of measurements.
+
+| Native externally controlled path | Emitted T/T† | Measurements | Work wires | Slots |
+| --- | ---: | ---: | ---: | ---: |
+| Two spin orbitals | 28 | 7 | 3 | 2 |
+| Four spin orbitals | 60 | 15 | 4 | 3 |
+
+These counts describe either polarity. Negative polarity adds two X
+instructions. The locked source's optional control remains a pass-through
+in `make_source_on`, and its declaration is independently available.
+
 ## Verification and remaining boundary
 
 The unchanged original suite returned five passes and one expected
@@ -66,5 +92,5 @@ public API checks.
 
 Q-0407 and Q-0411 close the package mapping and runnable original
 tests. Q-0410 remains open for the original one-orbital resource
-boundary and independently controlled executable semantics. Native
+boundary and the locked pass-through control discrepancy. Native
 source-mode binding follows the original pass-through behavior.

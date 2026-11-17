@@ -152,6 +152,104 @@ def test_sparse_select_validates_source_ports_and_resources():
         SelectSparse.make_source_on(
             4, ports, workspace=scratch, classical_bits=bits[:1]
         )
+    layout = SelectSparse.source_layout(4, control_value=1)
+    width = sum(n for _, n in layout)
+    ports = partition_register(tuple(range(width)), layout)
+    work, slots = SelectSparse.controlled_requirements(4)
+    scratch = tuple(range(width, width + work))
+    bits = tuple(range(slots))
+    for value in (None, True, 2):
+        with pytest.raises(ValueError):
+            SelectSparse.make_controlled_on(
+                4,
+                ports,
+                workspace=scratch,
+                classical_bits=bits,
+                control_value=value,
+            )
+    with pytest.raises(ValueError, match="distinct"):
+        SelectSparse.make_controlled_on(
+            4, ports, workspace=scratch, classical_bits=(0,) * slots
+        )
+    with pytest.raises(ValueError, match="matching work"):
+        SelectSparse.make_controlled_on(
+            4, ports, workspace=scratch[:-1], classical_bits=bits
+        )
+
+
+@pytest.mark.parametrize("size", [2, 4])
+@pytest.mark.parametrize("value", [0, 1])
+def test_native_external_control_matches_full_complex_select(size, value):
+    layout = SelectSparse.source_layout(size, control_value=value)
+    logical = sum(width for _, width in layout)
+    ports = partition_register(tuple(range(logical)), layout)
+    work, slots = SelectSparse.controlled_requirements(size)
+    workspace = tuple(range(logical, logical + work))
+    bits = tuple(range(20, 20 + slots))
+    width = logical + work + 1
+    binding = dict(workspace=workspace, classical_bits=bits, control_value=value)
+    op = SelectSparse.make_controlled_on(size, ports, **binding)
+    ir = DynamicCircuit(width).append(op).to_ir()
+    gates = ir.instructions
+    inverse = SelectSparse.make_controlled_on(
+        size, ports, **binding, adjoint=True
+    ).emit()
+    events = sum(gate.name == "measure" for gate in gates)
+    assert sum(gate.name == "measure" for gate in inverse) == events
+    report = estimate_ftqc_resources(op.resource_model(), emitted_ir=ir)
+    assert report.emitted is not None
+    assert report.logical.gates.and_bloq == report.logical.gates.measurement == events
+    assert report.logical.peak_logical_qubits == logical + work
+    assert (report.emitted.t_count, events, work, slots) == (
+        (28, 7, 3, 2) if size == 2 else (60, 15, 4, 3)
+    )
+    state = torch.zeros(1 << width, dtype=torch.complex128)
+    expected = torch.zeros_like(state)
+    for word, system, spectator in product(
+        range(1 << (logical - size)), range(1 << size), (0, 1)
+    ):
+        index = (((word << size) | system) << (work + 1)) | spectator
+        coefficient = complex(1 + index % 17, index % 11 - 5)
+        state[index] = coefficient
+        control = word >> (logical - size - 1)
+        phase = 1 + 0j
+        if control == value:
+            alpha, beta, flag = ((word >> i) & 1 for i in (2, 1, 0))
+            if size == 2:
+                p = q = r = s = 0
+            else:
+                p, q, r, s = ((word >> i) & 1 for i in (6, 5, 4, 3))
+            phase = 1j if flag else 1 + 0j
+            pairs = ((r, beta, True), (s, beta, False))
+            if flag:
+                pairs = ((p, alpha, True), (q, alpha, False), *pairs)
+            for orbital, spin, is_y in pairs:
+                address = 2 * orbital + spin
+                mask = 1 << (size - 1 - address)
+                phase *= (-1) ** (system >> (size - address)).bit_count()
+                if is_y:
+                    phase *= -1j if system & mask else 1j
+                system ^= mask
+        destination = (((word << size) | system) << (work + 1)) | spectator
+        expected[destination] = phase * coefficient
+    norm = state.norm()
+    state /= norm
+    expected /= norm * 2 ** (events / 2)
+    histories = (
+        product((0, 1), repeat=events)
+        if size == 2
+        else ((pattern * events)[:events] for pattern in ((0,), (1,), (0, 1), (1, 0)))
+    )
+    for history in histories:
+        torch.testing.assert_close(
+            forced_branch(state, gates, history), expected, atol=3e-12, rtol=0
+        )
+        torch.testing.assert_close(
+            forced_branch(expected, inverse, history),
+            state * 2**-events,
+            atol=3e-12,
+            rtol=0,
+        )
 
 
 @pytest.mark.ftqc_reference
