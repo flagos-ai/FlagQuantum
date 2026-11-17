@@ -15,4 +15,21 @@ The native dynamic path accepts `circuit.append(op)`, binds big-endian coordinat
 
 The original pair feeds the second axis straight into the out-of-place adder. At equal unit inputs that leaf produces two, while the native difference is zero. The locked comments describe a sign adjustment but the decomposition does not implement it. The locked polynomial and Newton specify costs without primitive decompositions, QVR leaves the angle unspecified, and the original `Free` calls provide no matching native cleanup stream. Labels and arbitrary user-supplied pair coefficient data are outside the native physical binding.
 
-The grid package initializer Q-0424 exports kinetic, pair potential and total potential. Kinetic and total potential have native appendable operators. The pair currently has a separate resource owner and executes within total potential; a standalone pair binding is still open under Q-0424.
+The grid package initializer Q-0424 exports kinetic, pair potential and total
+potential. The source identities and all three imports are checked against
+the defining source modules. Their native owners are GridKineticEnergy,
+GridPairPotential and GridPotentialEnergy.
+
+GridPairPotential binds the two three-axis ports through the existing
+two-electron total-potential core. The coordinate words are unsigned and
+big-endian. The caller supplies the phase angle and clean workspace.
+Independent numerical tests compare every complex amplitude for all
+64 one-bit coordinate inputs, including coincident points, for the C1 seed
+and cubic option in both phase directions. The standalone C1 instruction
+stream equals the total-potential stream for the same two points. The
+one-update fixture emits 3,104 T/T† and 776 measurements, borrowing
+177 work wires and 13 feedback slots. The output support certifies work
+cleanup.
+
+Q-0424 closes the package's three export mappings. Q-0429 retains its
+source addition, angle, arbitrary coefficient and release boundaries.

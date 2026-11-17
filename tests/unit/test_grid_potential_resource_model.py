@@ -1,5 +1,7 @@
 """Check locked pair, QROM prefix and multi-electron model parity."""
 
+import ast
+import inspect
 from itertools import combinations
 
 import pytest
@@ -15,6 +17,36 @@ from flagquantum.compiler._component_trace.resource_model import (
 )
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.mark.ftqc_reference
+def test_grid_package_exports_have_native_operation_owners():
+    pytest.importorskip("qualtran")
+    from qualtran.bloqs.chemistry.trotter import grid_ham
+    from qualtran.bloqs.chemistry.trotter.grid_ham import kinetic, potential
+
+    from flagquantum.algorithms.primitives.grid_kinetic import GridKineticEnergy
+    from flagquantum.algorithms.primitives.grid_potential import (
+        GridPairPotential,
+        GridPotentialEnergy,
+    )
+
+    body = ast.parse(inspect.getsource(grid_ham)).body
+    assert len(body) == 3
+    imports = [node for node in body if isinstance(node, ast.ImportFrom)]
+    assert [
+        (node.module, tuple(item.name for item in node.names)) for node in imports
+    ] == [
+        ("kinetic", ("KineticEnergy",)),
+        ("potential", ("PairPotential", "PotentialEnergy")),
+    ]
+    assert grid_ham.KineticEnergy is kinetic.KineticEnergy
+    assert grid_ham.PairPotential is potential.PairPotential
+    assert grid_ham.PotentialEnergy is potential.PotentialEnergy
+    assert all(
+        callable(owner.make_on)
+        for owner in (GridKineticEnergy, GridPairPotential, GridPotentialEnergy)
+    )
 
 
 def assert_locked_cost(native, source, legacy=False):

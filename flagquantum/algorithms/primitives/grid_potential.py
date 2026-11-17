@@ -192,3 +192,36 @@ class GridPotentialEnergy:
             -radians_per_unit if adjoint else radians_per_unit,
             max(wires) + 1,
         )
+
+
+class GridPairPotential:
+    """Apply the fixed-point Coulomb phase to two three-axis coordinate words."""
+
+    @staticmethod
+    def make_on(
+        *,
+        grid_points: int,
+        system_i: PointWires,
+        system_j: PointWires,
+        workspace: tuple[int, ...],
+        radians_per_unit: float,
+        precision: int,
+        iterations: int = 1,
+        cubic: bool = False,
+        adjoint: bool = False,
+    ) -> _BoundGridPotential:
+        """Bind two unsigned big-endian points and clean reusable work.
+
+        The signed coordinate differences, zero-distance convention, Newton
+        precision, and optional cubic seed follow GridPotentialEnergy.
+        """
+        return GridPotentialEnergy.make_on(
+            grid_points=grid_points,
+            system=(system_i, system_j),
+            workspace=workspace,
+            radians_per_unit=radians_per_unit,
+            precision=precision,
+            iterations=iterations,
+            cubic=cubic,
+            adjoint=adjoint,
+        )

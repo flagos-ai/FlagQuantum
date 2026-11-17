@@ -8,10 +8,14 @@ from math import floor, sqrt
 import pytest
 
 from flagquantum.algorithms.primitives.grid_potential import (
+    GridPairPotential,
     GridPotentialEnergy,
     grid_potential_requirements,
 )
 from flagquantum.circuit import Circuit
+from flagquantum.compiler._component_trace.resource_comparison import (
+    count_emitted_instructions,
+)
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.sparse_register_execution import execute_sparse_register
 
@@ -31,26 +35,54 @@ def _estimate(distance, precision, iterations):
 
 
 @pytest.mark.parametrize(
-    "electrons,iterations,adjoint", [(2, 0, False), (2, 1, True), (3, 1, False)]
+    "electrons,iterations,adjoint,standalone",
+    [
+        (2, 0, False, False),
+        (2, 1, True, False),
+        (3, 1, False, False),
+        (2, 0, False, True),
+        (2, 1, True, True),
+    ],
 )
-def test_grid_potential_complex_state_cleanup(electrons, iterations, adjoint):
+def test_grid_potential_complex_state_cleanup(
+    electrons, iterations, adjoint, standalone
+):
     precision, theta = 4, 0.721
     width = 3 * electrons
     work, slots = grid_potential_requirements(
         1, precision=precision, iterations=iterations
     )
     system = tuple(tuple((i * 3 + j,) for j in range(3)) for i in range(electrons))
-    op = GridPotentialEnergy.make_on(
+    options = dict(
         grid_points=1,
-        system=system,
         workspace=tuple(range(width, width + work)),
         radians_per_unit=theta,
         precision=precision,
         iterations=iterations,
         adjoint=adjoint,
     )
+    op = (
+        GridPairPotential.make_on(system_i=system[0], system_j=system[1], **options)
+        if standalone
+        else GridPotentialEnergy.make_on(system=system, **options)
+    )
     circuit = DynamicCircuit(width + work).append(op)
     ir = circuit.to_ir()
+    if standalone:
+        total = (
+            DynamicCircuit(width + work)
+            .append(GridPotentialEnergy.make_on(system=system, **options))
+            .to_ir()
+        )
+        assert ir.instructions == total.instructions
+        if iterations == 1:
+            counts = count_emitted_instructions(ir)
+            assert (counts.t_count, counts.unconditional["measure"], work, slots) == (
+                3104,
+                776,
+                177,
+                13,
+            )
     initial, expected = {}, {}
     rows = (
         list(product((0, 1), repeat=width))
@@ -109,21 +141,27 @@ def test_one_electron_potential_is_identity():
 
 
 @pytest.mark.parametrize("adjoint", [False, True])
-def test_table_cubic_grid_potential_absolute_phase(adjoint):
+@pytest.mark.parametrize("standalone", [False, True])
+def test_table_cubic_grid_potential_absolute_phase(adjoint, standalone):
     from tests.unit.test_grid_cubic_inverse_sqrt import cubic_word
 
     precision, theta = 5, 0.721
     work, _ = grid_potential_requirements(
         1, precision=precision, iterations=1, cubic=True
     )
-    op = GridPotentialEnergy.make_on(
+    options = dict(
         grid_points=1,
-        system=(((0,), (1,), (2,)), ((3,), (4,), (5,))),
         workspace=tuple(range(6, 6 + work)),
         radians_per_unit=theta,
         precision=precision,
         cubic=True,
         adjoint=adjoint,
+    )
+    system = (((0,), (1,), (2,)), ((3,), (4,), (5,)))
+    op = (
+        GridPairPotential.make_on(system_i=system[0], system_j=system[1], **options)
+        if standalone
+        else GridPotentialEnergy.make_on(system=system, **options)
     )
     ir = DynamicCircuit(6 + work).append(op).to_ir()
     incoming, expected = {}, {}
