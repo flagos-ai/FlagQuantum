@@ -21,19 +21,27 @@ from flagquantum.compiler._component_trace.resource_decomposition import (
 from flagquantum.compiler._component_trace.resource_generalization import (
     CliffordCall,
     ControlledSwapCall,
+    ControlPredicateCall,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost
 from flagquantum.compiler._component_trace.resource_width import (
     query_resource_logical_width,
 )
 from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
+from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.compiler.registers.lookup.multiplexed_swap import (
     multiplexed_cswap_ir,
     source_multiplexed_cswap_cost,
 )
 from flagquantum.compiler.registers.lookup.swap_with_zero import swap_with_zero_ir
 from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
+    PositiveControlledSwapChild,
+    control_relative_swap_ir,
     relative_controlled_swap_ir,
+    source_outer_relative_swap_calls,
+)
+from flagquantum.compiler.registers.primitives.relative_controlled_swap import (
+    relative_swap_signature as relative_swap_signature,
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.core.ir.program.register_types import (
@@ -42,16 +50,6 @@ from flagquantum.core.ir.program.register_types import (
 )
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
-
-
-def relative_swap_signature(width: SymbolicInt) -> Signature:
-    return Signature(
-        (
-            Register("ctrl", quantum_bit_type()),
-            Register("x", opaque_register_type(width)),
-            Register("y", opaque_register_type(width)),
-        )
-    )
 
 
 def relative_swap_call_graph(width: SymbolicInt) -> SymbolicCallGraph[str]:
@@ -76,21 +74,74 @@ def relative_swap_logical_width(width: SymbolicInt) -> SymbolicInt:
 @dataclass(frozen=True)
 class RelativeSwapExample:
     width: int
+    extra_controls: int | tuple[int, ...] | None = None
+    adjoint: bool = False
+
+    @property
+    def _activation(self) -> tuple[int, ...]:
+        if self.extra_controls is None:
+            return ()
+        if isinstance(self.extra_controls, tuple):
+            return self.extra_controls
+        return (self.extra_controls,)
 
     @property
     def signature(self) -> Signature:
-        return relative_swap_signature(self.width)
+        controls = self._activation
+        ports = (
+            (
+                Register(
+                    "ctrl2",
+                    quantum_bit_type(),
+                    shape=(len(controls),)
+                    if isinstance(self.extra_controls, tuple)
+                    else (),
+                ),
+            )
+            if controls
+            else ()
+        )
+        return relative_swap_signature(self.width, extra_controls=ports)
 
     @property
     def qubit_count(self) -> int:
-        return 2 * self.width + 1
+        controls = len(self._activation)
+        return 2 * self.width + 1 + controls + max(0, controls - 1)
+
+    def outer_calls(
+        self,
+    ) -> dict[
+        PositiveControlledSwapChild | ControlPredicateCall | CliffordCall, SymbolicInt
+    ]:
+        """Describe the added control layer before abstract resource expansion."""
+        return source_outer_relative_swap_calls(
+            self.width,
+            (ControlRegister(1, self._activation),),
+            scalar_control=isinstance(self.extra_controls, int),
+            adjoint=self.adjoint,
+        )
 
     def append_to(self, circuit: Circuit) -> Circuit:
-        gates = relative_controlled_swap_ir(
-            0,
-            tuple(range(1, self.width + 1)),
-            tuple(range(self.width + 1, self.qubit_count)),
-        )
+        values = self._activation
+        outside = len(values)
+        left = tuple(range(outside + 1, outside + self.width + 1))
+        right = tuple(range(outside + self.width + 1, outside + 2 * self.width + 1))
+        if values:
+            work = tuple(range(outside + 2 * self.width + 1, self.qubit_count))
+            gates = control_relative_swap_ir(
+                (tuple(range(outside)),),
+                (ControlRegister(1, values),),
+                outside,
+                left,
+                right,
+                work,
+                tuple(range(len(work))),
+                adjoint=self.adjoint,
+            )
+        else:
+            gates = relative_controlled_swap_ir(
+                outside, left, right, adjoint=self.adjoint
+            )
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
