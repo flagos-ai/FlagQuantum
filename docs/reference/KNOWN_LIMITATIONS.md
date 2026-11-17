@@ -1705,6 +1705,12 @@ with GCC 12.2 and Torch 2.10.0 CPU, then installed under CPython 3.12 and
 Torch 2.13.0 CPU. With neither Stim nor PyMatching installed, both built-in
 matching decoders returned `stim_circuit 35 0` on the same original noisy
 text, with native strict DEM analysis and three sampling batches per report.
-The embedded extension in this wheel references `GLIBC_2.29`. Linux release
-qualification still requires a build and installation check in the
-`manylinux_2_28` environment.
+The first local wheel's embedded extension referenced `GLIBC_2.29`.
+A separate offline build using the PyPA `manylinux_2_28` image passed
+`auditwheel repair` with the repository's existing PyTorch library exclusions,
+and the repaired wheel carries the `cp310-abi3-manylinux_2_28_x86_64` tag.
+Its embedded Stim extension tops out at `GLIBC_2.14` and does not link a
+Stim Python extension, PyMatching, or PyTorch. A clean glibc 2.28 environment
+with CPython 3.12 and Torch 2.10.0 CPU ran both no-SDK reports and passed 29
+installed tests, with 18 skips. The release interpreter and runtime matrix
+still needs qualification.
