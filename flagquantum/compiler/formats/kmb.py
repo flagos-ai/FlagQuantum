@@ -165,13 +165,9 @@ def _parse_statement(columns: _Columns, line: str) -> None:
         condition = _index(ports[-1], "b")
         del ports[-2:]
     if opcode == "DEBUG_PRINT":
-        prefix = ports[0][:1] if ports else ""
-        opcode = {
-            "": "DEBUG_PRINT_EMPTY",
-            "q": "DEBUG_PRINT_Q",
-            "b": "DEBUG_PRINT_C",
-        }.get(prefix, opcode)
-    elif opcode.startswith("DEBUG_PRINT_") or opcode.endswith("_IF"):
+        _append_debug(columns, ports, condition)
+        return
+    if opcode.startswith("DEBUG_PRINT_") or opcode.endswith("_IF"):
         raise ValueError(f"Invalid KMX operation spelling {opcode}")
     suffix = "_IF" if condition is not None and opcode != "PUSH_CONDITION" else ""
     code = OPERATION_CODES.get(opcode + suffix)
@@ -186,14 +182,85 @@ def _parse_statement(columns: _Columns, line: str) -> None:
     has_angle = (code & ~CONDITION) == ANGLE
     if len(ports) != len(quantum) + has_result + has_angle:
         raise ValueError(f"Invalid KMX operand count for {opcode}")
-    for packet, token in zip(quantum, ports[: len(quantum)], strict=True):
-        columns.words[packet].append(_index(token, "q"))
-    if has_result:
-        columns.words[_CLASSICAL_TARGET].append(_index(ports[len(quantum)], "b"))
+    # Complete syntax checks before appending any column of the statement.
+    operands = tuple(_index(token, "q") for token in ports[: len(quantum)])
+    result = _index(ports[len(quantum)], "b") if has_result else None
+    angle = (
+        PhaseAngle128.from_rounded_decimal_half_turns(ports[-1]) if has_angle else None
+    )
+    _append_operation(columns, code, operands, result, condition, angle)
+
+
+def _append_debug(
+    columns: _Columns, ports: Sequence[str], condition: int | None
+) -> None:
+    suffix = "_IF" if condition is not None else ""
+
+    def append_member(kind: str, index: int) -> None:
+        if kind == "q":
+            _append_operation(
+                columns,
+                OPERATION_CODES["DEBUG_PRINT_Q" + suffix],
+                (index,),
+                None,
+                condition,
+                None,
+            )
+        else:
+            _append_operation(
+                columns,
+                OPERATION_CODES["DEBUG_PRINT_C" + suffix],
+                (),
+                index,
+                condition,
+                None,
+            )
+
+    if not ports:
+        _append_operation(
+            columns,
+            OPERATION_CODES["DEBUG_PRINT_EMPTY" + suffix],
+            (),
+            None,
+            condition,
+            None,
+        )
+    for token in ports:
+        kind = token[:1]
+        if kind in {"q", "b"}:
+            append_member(kind, _index(token, kind))
+        elif kind == "r":
+            index = _index(token, "r")
+            if index >= _MAX_REGISTERS:
+                raise ValueError("KMB register index exceeds the format limit")
+            if index < len(columns.registers):
+                for member in columns.registers[index].members:
+                    append_member(
+                        "q" if member & _REGISTER_QUANTUM else "b",
+                        member & ~_REGISTER_QUANTUM,
+                    )
+        else:
+            raise ValueError(f"Invalid KMX debug operand {token!r}")
+
+
+def _append_operation(
+    columns: _Columns,
+    code: int,
+    qubits: tuple[int, ...],
+    result: int | None,
+    condition: int | None,
+    angle: PhaseAngle128 | None,
+) -> None:
+    for packet, qubit in zip(
+        QUANTUM_COLUMNS[(code & QUBIT_MASK) >> 4], qubits, strict=True
+    ):
+        columns.words[packet].append(qubit)
+    if result is not None:
+        columns.words[_CLASSICAL_TARGET].append(result)
     if condition is not None:
         columns.words[_CONDITION].append(condition)
-    if has_angle:
-        columns.angles.append(PhaseAngle128.from_rounded_decimal_half_turns(ports[-1]))
+    if angle is not None:
+        columns.angles.append(angle)
     columns.operations.append(code)
 
 
@@ -295,6 +362,11 @@ def _pack_words(values: Sequence[int], word: Struct) -> bytes:
 
 def _parse_kmx(text: str, *, file_text: bool = False) -> _Columns:
     columns = _Columns()
+    _append_kmx_text(columns, text, file_text=file_text)
+    return columns
+
+
+def _append_kmx_text(columns: _Columns, text: str, *, file_text: bool) -> None:
     for raw in re.split(r"[\r\n]", text):
         if file_text:
             raw = _FILE_QUOTED_FIELD.sub(
@@ -302,7 +374,6 @@ def _parse_kmx(text: str, *, file_text: bool = False) -> _Columns:
             )
         if line := raw.partition("#")[0].strip():
             _parse_statement(columns, line)
-    return columns
 
 
 def encode_kmb(text: str, *, file_text: bool = False) -> bytes:

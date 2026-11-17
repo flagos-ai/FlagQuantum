@@ -16,6 +16,7 @@ from .kmb import (
     _MAX_RECORDS,
     KmxRecord,
     KmxRegister,
+    _Columns,
     _iter_records,
     _iter_registers,
     _parse_kmx,
@@ -99,7 +100,12 @@ class KmxCircuit:
 
 def read_kmx_circuit(text: str) -> KmxCircuit:
     """Read raw records, register membership and the inferred quantum width."""
-    columns = _parse_kmx(text)
+    return _freeze_columns(_parse_kmx(text))
+
+
+def _freeze_columns(columns: _Columns) -> KmxCircuit:
+    if len(columns.operations) > _MAX_RECORDS:
+        raise ValueError("KMX circuit exceeds the record limit")
     return KmxCircuit(tuple(_iter_registers(columns)), tuple(_iter_records(columns)))
 
 
