@@ -3,7 +3,10 @@
 from collections.abc import Mapping
 from dataclasses import dataclass, replace
 
-from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+from flagquantum.algorithms.primitives.black_box_prepare import (
+    BlackBoxPrepare,
+    PackedPrepareDeclaration,
+)
 from flagquantum.algorithms.primitives.hubbard_prepare import PrepareHubbard
 from flagquantum.algorithms.primitives.hubbard_select import SelectHubbard
 from flagquantum.algorithms.primitives.lcu_block_encoding import LCUBlockEncoding
@@ -36,13 +39,7 @@ class HubbardLCUExample:
     def prepare_oracle(self) -> BlackBoxPrepare:
         child = self.preparation
         selection = child.selection_layout
-        junk = child.layout[len(selection) :]
-        selection_layout = (
-            (("selection", sum(width for _, width in selection)),)
-            if self.packed
-            else selection
-        )
-        junk_layout = (("junk", 2),) if self.packed else junk
+        declaration = PackedPrepareDeclaration(child)
 
         def emit(
             ports: Mapping[str, tuple[int, ...]],
@@ -64,7 +61,14 @@ class HubbardLCUExample:
             )
             return child._emit(named, work, slots, inverse)
 
-        return BlackBoxPrepare(selection_layout, junk_layout, emit, child.alpha)
+        if not self.packed:
+            return declaration.bind(emit)
+        return BlackBoxPrepare(
+            (("selection", sum(width for _, width in selection)),),
+            (("junk", 2),),
+            emit,
+            child.l1_norm_of_coeffs,
+        )
 
     def emit_select(
         self,
