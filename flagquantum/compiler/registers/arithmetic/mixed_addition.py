@@ -11,7 +11,7 @@ from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
-from ..primitives._mixed_gates import _flip, _invert_operand
+from ..primitives._mixed_gates import _delete_and_ir, _flip, _invert_operand
 from ..primitives.measurement import measure_x_clear_ir
 from .carry_parity import (
     _broadcast_offset,
@@ -82,8 +82,7 @@ def _short_addition(
             *toggle,
             *_flip(a, t0, control),
             *_xor_parity(t1, carry, o0, a),
-            *measure_x_clear_ir(a, slot),
-            *_flip(None, t0, control, outcome),
+            *_delete_and_ir(a, slot, t0, control),
             *_xor_parity(t1, o0, o1, control),
             *_xor_parity(t0, o0, carry, control),
             *toggle,

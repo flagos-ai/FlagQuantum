@@ -137,6 +137,21 @@ def _flip(
     )
 
 
+def _delete_and_ir(
+    target: int, bit: int, first: _Control, second: _Control
+) -> tuple[Instruction, ...]:
+    """Erase a target storing the mixed AND with X-basis phase feedback."""
+    if any(
+        isinstance(control, ClassicalFieldCoefficient) and control.slot == bit
+        for control in (first, second)
+    ):
+        raise ValueError("AND erasure result cannot overwrite a control")
+    return (
+        *measure_x_clear_ir(target, bit),
+        *_flip(_XBasisTarget(ClassicalFieldCoefficient(bit)), first, second),
+    )
+
+
 def _invert_operand(value: _Control) -> tuple[_Control, tuple[Instruction, ...]]:
     """Complement a literal or toggle a physical operand without rebinding it."""
     if isinstance(value, bool):

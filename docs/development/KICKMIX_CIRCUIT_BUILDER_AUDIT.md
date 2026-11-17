@@ -366,6 +366,32 @@ mixed request beyond its supported quantum arity. Native emission returns
 empty for the positive-X target and refuses unsupported arity before
 returning a gate stream. The immutable source fixtures retain both defects.
 
+## Mixed AND reset and erasure
+
+The locked `reset_and` emits R and then the mixed controlled flip.
+The locked `del_and` always measures and clears the target, then uses the
+two original controls and the X outcome for phase kickback. Even when a
+literal control is false, the source emits HMR. The native erasure owner
+uses the shared mixed dispatcher. The measurement result must be distinct
+from the classical inputs used in its feedback. Rotation, two-bit mixed
+addition and modular doubling reuse the same erasure sequence.
+
+The unchanged builder produced 16 control-tag pairs for each of reset and
+erasure. Both KMX streams match in all pairs after expanding condition
+scopes. With the AND already computed into the target, the native erasure
+matches all 128 complex branches across tag combinations and classical
+inputs, restores controls and spectators, and clears the target. The
+broadcast zero erasure uses three HMR in supplied lane order and reuses
+one result slot, including a repeated target. Its eight branches clear
+the measured lanes. The field inverse chain now shares that emitter.
+
+The source reset path emits R1 plus at most one controlled flip per
+lane. Erasure emits HMR1 plus at most one effective phase gate or scalar
+sign. Native HMR lowers from H, measure and conditional X. The existing
+Qualtran four-T AND compute and its resource model own a separate
+decomposition. The source reset is supplied by the zero-entry contract
+where an existing caller already owns clean work.
+
 K-0005, K-0006 and K-0008 remain open for the remaining whole-file families.
 C++ allocation scopes, general loop patterns and debug runtime output have
 separate source assertions. The full public mixed

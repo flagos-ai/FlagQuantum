@@ -9,8 +9,7 @@ from ....core.ir import Instruction
 from ..arithmetic.carry_parity import _Coefficient
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
-from ..primitives._mixed_gates import _flip
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives._mixed_gates import _delete_and_ir, _flip
 from ..primitives.swap import _broadcast_controlled_swap_ir
 
 
@@ -158,13 +157,6 @@ def bit_rotation_ir(
             )
         if type(parity) is int and control is not None:
             assert measurement_bit is not None
-            gates.extend(measure_x_clear_ir(clean[0], measurement_bit))
-            gates.append(
-                Instruction(
-                    "cz",
-                    (parity, control),
-                    metadata={"conditions": ((measurement_bit, 1),)},
-                )
-            )
+            gates.extend(_delete_and_ir(clean[0], measurement_bit, parity, control))
         gates.extend(prefix)
     return tuple(gates)

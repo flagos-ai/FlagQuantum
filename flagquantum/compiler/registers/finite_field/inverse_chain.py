@@ -5,7 +5,7 @@
 """Itoh–Tsujii field inverse and measured cleanup on fixed wires."""
 
 from ....core.ir import Instruction
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import delete_zero_register_ir
 from .binary_linear_map import field_frobenius_ir
 from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
@@ -152,7 +152,7 @@ def _erase_folds(
 
 
 def _delete_zero_word(word: tuple[int, ...], bit: int) -> tuple[Instruction, ...]:
-    return tuple(gate for wire in word[::-1] for gate in measure_x_clear_ir(wire, bit))
+    return delete_zero_register_ir(word[::-1], bit)
 
 
 def _validate_inverse_slots(

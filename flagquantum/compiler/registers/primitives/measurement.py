@@ -59,6 +59,13 @@ def measure_x_clear_register_ir(
     )
 
 
+def delete_zero_register_ir(
+    qubits: tuple[int, ...], classical_bit: int
+) -> tuple[Instruction, ...]:
+    """Clear known-zero lanes with the same reusable X-measurement slot."""
+    return measure_x_clear_register_ir(qubits, (classical_bit,) * len(qubits))
+
+
 def discard_qubit_ir(qubit: int) -> tuple[Instruction, ...]:
     """Consume a logical qubit and return its physical slot in zero without a result bit."""
     if type(qubit) is not int or qubit < 0:

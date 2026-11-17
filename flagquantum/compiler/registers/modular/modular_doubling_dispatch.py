@@ -18,8 +18,7 @@ from ..arithmetic.mixed_addition import mixed_addition_ir
 from ..bits.bit_rotation import bit_rotation_ir
 from ..comparison.mixed_comparison import mixed_greater_than_ir
 from ..finite_field.coefficients import ClassicalFieldCoefficient
-from ..primitives._mixed_gates import _flip, _invert_operand
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives._mixed_gates import _delete_and_ir, _flip, _invert_operand
 from .exact_modular_doubling import (
     _modular_doubling_ports,
     exact_modular_doubling_ir,
@@ -86,7 +85,6 @@ def modular_doubling_program(
         )
         return finish()
     enabled = True if control is None else control
-    outcome = ClassicalFieldCoefficient(result)
     ease = 0
     for coefficient in modulus:
         if coefficient is not True:
@@ -165,12 +163,7 @@ def modular_doubling_program(
         emit(_flip(target[0], flag))
         emit(bit_rotation_ir(target, 1, control=control))
         emit(_flip(target[-1], flag))
-        emit(
-            (
-                *measure_x_clear_ir(flag, result),
-                *_flip(None, enabled, target[-1], outcome),
-            )
-        )
+        emit(_delete_and_ir(flag, result, enabled, target[-1]))
         return finish()
 
     if len(clean) < 2:
@@ -185,7 +178,7 @@ def modular_doubling_program(
         tolerance += 1
     add(half, flag, work)
     half = invert(half)
-    emit((*measure_x_clear_ir(flag, result), *_flip(None, first, enabled, outcome)))
+    emit(_delete_and_ir(flag, result, first, enabled))
     operations.append(ReversiblePhaseOperation("hmr", (first,), result_bit=result))
     used_bits = max(used_bits, result + 1)
     operations.append(
