@@ -3,7 +3,7 @@
 from collections import Counter
 from itertools import product
 from math import sqrt
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import pytest
@@ -23,9 +23,105 @@ from flagquantum.algorithms.primitives.sparse_matrix_oracles import (
 )
 from flagquantum.core.ir import Instruction
 from tests.unit.measurement_checks import forced_branch
+from tests.unit.register_source_graph import (
+    SourcePorts,
+    SourceResult,
+    assert_source_wire_streams,
+    source_partition_leaf,
+    walk_source_graph,
+)
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+def _assert_locked_sparse_primitive_flow(
+    source: Any,
+    native: SparseMatrixBlockEncoding,
+    ports: SourcePorts,
+    actual: tuple[Instruction, ...],
+    work: tuple[int, ...],
+    slots: tuple[int, ...],
+) -> None:
+    """Bind the source stages to the same ordered work and feedback storage."""
+    from qualtran import Adjoint, Controlled
+    from qualtran.bloqs.arithmetic import Add, AddK
+    from qualtran.bloqs.basic_gates import Ry, Swap
+    from qualtran.bloqs.bookkeeping import Allocate, Free
+    from qualtran.bloqs.data_loading.qrom import QROM
+    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+        PrepareUniformSuperposition,
+    )
+
+    from tests.unit.test_register_constant_addition import reference_arithmetic_gates
+    from tests.unit.test_source_qrom import source_qrom_gates
+    from tests.unit.test_uniform_preparation import reference_uniform_preparation_gates
+
+    entry = native.entry_oracle
+    word: tuple[int, ...] = ()
+    qrom_work: tuple[int, ...] = ()
+    qrom_slots: tuple[int, ...] = ()
+    if isinstance(entry, ExplicitEntryOracle):
+        precision = entry.entry_bitsize
+        entry_work, entry_slots = entry.requirements()
+        word, qrom_work = work[:precision], work[precision:entry_work]
+        qrom_slots = slots[:entry_slots]
+    width = native.system_bitsize
+    carries = work[: width - 1]
+    constant = work[width - 1 : 2 * width - 1]
+
+    def leaf(
+        bloq: Any, inputs: SourcePorts, desired: SourcePorts
+    ) -> SourceResult | None:
+        partition = source_partition_leaf(bloq, inputs, desired)
+        if partition is not None:
+            return partition
+        if isinstance(bloq, Allocate):
+            assert len(word) == bloq.signature.n_qubits()
+            return (), {next(iter(bloq.signature)).name: word}
+        if isinstance(bloq, Free):
+            assert tuple(inputs.values()) == (word,)
+            return (), {}
+        inverse = isinstance(bloq, Adjoint)
+        base = bloq.subbloq if inverse else bloq
+        if isinstance(base, PrepareUniformSuperposition):
+            assert base.cvs == ()
+            return (
+                reference_uniform_preparation_gates(
+                    base.n, (), inputs["target"], work, slots, (), adjoint=inverse
+                ),
+                inputs,
+            )
+        if isinstance(base, (Add, AddK)):
+            stage_work = carries if isinstance(base, Add) else (*constant, *carries)
+            feedback = dict(zip(carries, slots[: len(carries)], strict=True))
+            return reference_arithmetic_gates(
+                bloq, inputs, stage_work, feedback
+            ), inputs
+        if isinstance(bloq, Swap):
+            return tuple(
+                Instruction("swap", pair)
+                for pair in zip(inputs["x"], inputs["y"], strict=True)
+            ), inputs
+        if isinstance(bloq, QROM):
+            return source_qrom_gates(bloq, inputs, qrom_work, qrom_slots), inputs
+        sign = -1 if inverse else 1
+        if isinstance(base, Ry):
+            return (
+                Instruction("ry", inputs["q"], {"theta": sign * float(base.angle)}),
+            ), inputs
+        if isinstance(base, Controlled) and isinstance(base.subbloq, Ry):
+            assert base.ctrl_spec.get_single_ctrl_val() == 1
+            (control,) = (wires for name, wires in inputs.items() if name != "q")
+            theta = sign * float(base.subbloq.angle)
+            return (
+                Instruction("cry", (*control, *inputs["q"]), {"theta": theta}),
+            ), inputs
+        return None
+
+    expected, outputs = walk_source_graph(source, ports, ports, leaf)
+    assert outputs == ports
+    assert_source_wire_streams(actual, expected)
 
 
 @pytest.mark.parametrize("kind", ["uniform", "explicit", "banded", "top_left"])
@@ -92,16 +188,25 @@ def test_original_sparse_block_models_and_source_amplitudes(
     system = tuple(reversed(range(shape[0])))
     ancillary = tuple(range(shape[0], logical))
     workspace = tuple(range(logical, logical + work))
+    feedback = tuple(range(4, 4 + slots))
     operation = native.make_on(
         system=system,
         ancilla=ancillary,
         workspace=workspace,
-        classical_bits=tuple(range(4, 4 + slots)),
+        classical_bits=feedback,
         adjoint=adjoint,
     )
     circuit = Circuit(logical + work, dtype=torch.complex128).append(operation)
     gates = circuit.to_ir().instructions
     assert gates == operation.instructions
+    _assert_locked_sparse_primitive_flow(
+        source,
+        native,
+        {"system": system, "ancilla": ancillary},
+        gates,
+        workspace,
+        feedback,
+    )
     if kind == "uniform":
         assert [gate.name for gate in gates] == (
             ["h"] * shape[0]
@@ -220,16 +325,26 @@ def test_locked_explicit_stress_and_vlasov(
     logical = 2 * n + 1
     work, slots = native.requirements()
     width = logical + work
+    system, ancilla = tuple(range(n)), tuple(range(n, logical))
+    workspace, feedback = tuple(range(logical, width)), tuple(range(3, 3 + slots))
     circuit = Circuit(width).append(
         native.make_on(
-            system=tuple(range(n)),
-            ancilla=tuple(range(n, logical)),
-            workspace=tuple(range(logical, width)),
-            classical_bits=tuple(range(3, 3 + slots)),
+            system=system,
+            ancilla=ancilla,
+            workspace=workspace,
+            classical_bits=feedback,
             adjoint=adjoint,
         )
     )
     instructions = circuit.to_ir().instructions
+    _assert_locked_sparse_primitive_flow(
+        locked,
+        native,
+        {"system": system, "ancilla": ancilla},
+        instructions,
+        workspace,
+        feedback,
+    )
     count = Counter(g.name for g in instructions)
     gates: list[Instruction] = []
     for gate in instructions:

@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0296 | `sparse_matrix.ipynb` | `2a85ed895beeee25d508e68a093af307ca9f1826` | Closed by the full native tutorial. |
-| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle model composition verified. Foreign oracle binding and unrestricted large composite primitive parity remain open. |
+| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle composition and the original concrete primitive streams verified. Foreign oracle binding and arbitrary measured inputs remain open. |
 | Q-0301 | `sparse_matrix_test.py` | `afcb0771b405ed26bfce7827d70d81c3d7f7a0d8` | Closed with the original stress, random entry, banded index and Vlasov fixtures. |
 
 ## Oracle and block ownership
@@ -45,10 +45,8 @@ source six-call graph totals, QEC categories, peak and full complex
 reference output. The uniform stream checks the explicit SWAP operands,
 and the explicit entry fixture checks all measured histories. The
 banded fixture checks three representative histories in each direction.
-All tested work bits clear. Complete banded histories and full
-primitive flattening for the two measured composite variants are open.
-Their direct Compiler dependencies retain independent source call and
-gate verification.
+All tested work bits clear. The source primitive stream replay covers
+these variants in both directions. Complete banded histories remain open.
 
 The unchanged original non-notebook run has 23 passes, five mode skips
 and seven expected failures. The unchanged 13-cell original and the
@@ -87,10 +85,22 @@ the sampled long histories above.
 
 The seven controlled Ry are the explicit entry rotations. Other
 rotations include those from uniform preparation. No T synthesis cost
-is inferred from the emitted rotation instructions. The 94-measurement
-composite histories and direct flattened source comparison for all
-large measured streams remain open outside the original test-file
-coverage. The unchanged source slow run passes all four tests.
+is inferred from the emitted rotation instructions. Both Vlasov
+directions match all 2,096 instructions, including operands, rotation
+angles and feedback for each of the 94 measurements. Branch execution
+covers representative histories. The unchanged source slow run passes
+all four tests.
+
+## Primitive stream replay
+
+The frozen Soquet graph provides stage order and operand wiring for the
+original uniform, explicit entry, padded top-left, banded and stress
+cases. The source oracle's allocation and free bind the caller's angle
+word for both QROM passes. The replay uses the independent uniform
+preparation, QROM, Add and signed AddK streams. Swaps and controlled
+rotations preserve the original operands and angles. Measured stages
+share physical workspace across calls, with classical slots bound to
+the owning stage. Each wire is checked in dependency order.
 
 ## Symbolic oracle costs
 
