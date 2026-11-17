@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 157
+    assert len(validated) == 158
+    assert (
+        "tutorials/technology_demonstrations/qaoa/qaoa_demonstration",
+        "examples/synthesis/tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview/main.py",
+    ) in validated
     assert (
         "applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl",
         "examples/synthesis/applications/finance/hybrid_hhl_for_portfolio_optimization/portfolio_optimization_with_hhl/overview/main.py",
@@ -757,7 +761,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**157/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**158/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

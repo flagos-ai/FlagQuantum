@@ -81,6 +81,7 @@ Native FlagQuantum programs currently available:
 - [overview](technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/README.md)
 - [overview](technology_demonstrations/hardware_aware_mcx/overview/README.md)
 - [overview](technology_demonstrations/hhl/hhl_example/overview/README.md)
+- [overview](technology_demonstrations/qaoa/qaoa_demonstration/overview/README.md)
 - [overview](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview/README.md)
 - [overview](workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview/README.md)
 - [overview](workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/README.md)

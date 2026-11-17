@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **157/213**.
+Validated local Notebook workflows: **158/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -417,7 +417,7 @@ Validated local Notebook workflows: **157/213**.
 | `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hardware_aware_mcx/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hhl/hhl_example/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | [Native program](tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/main.py) | pending |
-| `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/main.py) | pending |
+| `tutorials/technology_demonstrations/qaoa/qaoa_demonstration` | notebook_workflow | [Native program](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview/main.py) | validated |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview/main.py) | validated |
 | `tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_II` | notebook_workflow | [Native program](tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_ii/overview/main.py) | validated |
 | `tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut` | notebook_workflow | [Native program](tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/main.py) | validated |
