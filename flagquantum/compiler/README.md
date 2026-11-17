@@ -92,7 +92,8 @@ admits a transformation this repository does not ship; see
 
 | Change | Entry point |
 | --- | --- |
-| Canonical optimization | [pipeline.py](pipeline.py) |
+| Canonical gate rewrites | [canonicalization.py](optimization/canonicalization.py) |
+| Pass composition and compile orchestration | [pipeline.py](pipeline.py) |
 | Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization/optimization_levels.py) |
 | The pass registry, the pass binding, and the fixed point | [pass_manager.py](optimization/pass_manager.py) |
 | Cancellation of a declared inverse pair | [inverse_cancellation.py](optimization/inverse_cancellation.py) |

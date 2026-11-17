@@ -196,7 +196,7 @@ identifier = [
     "flagquantum/algorithms/kmedians.py::_nearest_centroid::n_wires",
     "flagquantum/algorithms/qubo.py::_constant_wire::n_wires",
     "flagquantum/circuit.py::Circuit._require_width_covers_recorded_qubits::wire",
-    "flagquantum/compiler/pipeline.py::_WireLocalProgram.last_touching::wires",
+    "flagquantum/compiler/optimization/canonicalization.py::_WireLocalProgram.last_touching::wires",
     "flagquantum/ecosystem/simulators/advisor.py::_recommend_profile::n_wires",
     "flagquantum/runtime/executors/statevector/planning.py::_validate_distributed_statevector_plan::n_wires",
     "flagquantum/runtime/measurements.py::_ideal_probabilities::n_wires",
