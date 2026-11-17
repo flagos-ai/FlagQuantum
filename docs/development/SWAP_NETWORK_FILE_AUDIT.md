@@ -74,6 +74,23 @@ emitted counts remain available independently. For a two-bit swap with
 two outer controls they include 11 CCX, 16 CH, 24 controlled phases,
 four T/T† in the predicate and one measurement.
 
+## Multiplexed swap register layout
+
+The typed layout preserves each ordered bounded unsigned selector and
+derives the target array axes from its iteration limit. Control registers
+retain their shape. Target and output words stay opaque at width one,
+matching the source. Selectors are big endian, and the target wires are
+partitioned in row-major order. The layout supplies the concrete append
+binding and the resource model with the same dimensions.
+
+The forward and adjoint grid verifies selectors with padding, multiple
+axes, several controls and singleton axes with a live control. It compares
+the typed ports, primitive dependencies, all small measurement histories,
+full complex output and clean work against the locked source. The
+symbolic fixture verifies the declared target axes and shaped controls.
+Physical binding requires concrete dimensions. Reserved wires and the
+source live width remain distinct when selectors include padding.
+
 ## Remaining boundaries
 
 - Q-0707 retains symbolic execution and the upstream abstract Clifford cost

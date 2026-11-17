@@ -11,10 +11,16 @@ import torch
 
 from flagquantum.compiler.registers.control.control_predicate import ControlRegister
 from flagquantum.compiler.registers.lookup.multiplexed_swap import (
+    MultiplexedSwapLayout,
     control_multiplexed_cswap_ir,
     multiplexed_cswap_ir,
     source_multiplexed_cswap_cost,
 )
+from flagquantum.core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    quantum_bit_type,
+)
+from flagquantum.core.ir.program.registers import Register
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -82,10 +88,18 @@ def test_pinned_multiplexed_cswap(
     data_width = total
     work = allocate(sum(widths) + control_count - 1)
     bits = tuple(range(40, 40 + len(work)))
-    actual = multiplexed_cswap_ir(
-        controls, selections, shape, targets, output, work, bits, adjoint=adjoint
+    layout = MultiplexedSwapLayout(
+        tuple(
+            Register(f"s{i}", bounded_unsigned_register_type(width, extent))
+            for i, (width, extent) in enumerate(zip(widths, shape, strict=True))
+        ),
+        word_width,
+        tuple(Register(f"c{i}", quantum_bit_type()) for i in range(control_count)),
     )
+    assert layout.requirements() == (len(work), len(bits))
+    actual = layout.bind(tuple(range(data_width)), work, bits, adjoint=adjoint)
     source = source_swap(shape, widths, control_count, word_width)
+    assert_source_port_types(layout, source)
     if adjoint:
         source = source.adjoint()
     ports = {
@@ -106,7 +120,7 @@ def test_pinned_multiplexed_cswap(
 
     counts = Counter(gate.name for gate in actual)
     model = get_cost_value(source, QECGatesCost())
-    cost = source_multiplexed_cswap_cost(shape, widths, control_count, word_width)
+    cost = layout.resource_model()
     report = estimate_ftqc_resources(cost)
     assert {
         key: count for key, count in asdict(report.logical.gates).items() if count
@@ -397,3 +411,60 @@ def test_pinned_outer_multiplexed_cswap_requires_undecomposable_and(
             (21,),
             (30,),
         )
+
+
+def assert_source_port_types(layout: MultiplexedSwapLayout, source: Any) -> None:
+    type_keys = {"BQUInt": "uint", "QBit": "bit", "QAny": "opaque"}
+    assert [
+        (
+            reg.name,
+            reg.bitsize,
+            reg.shape_symbolic,
+            reg.side.name,
+            reg.dtype.encoding,
+            dict(reg.dtype.parameters).get("bound"),
+        )
+        for reg in layout.signature
+    ] == [
+        (
+            reg.name,
+            reg.bitsize,
+            reg.shape_symbolic,
+            reg.side.name,
+            type_keys[type(reg.dtype).__name__],
+            getattr(reg.dtype, "iteration_length", None),
+        )
+        for reg in source.signature
+    ]
+
+
+@pytest.mark.ftqc_reference
+def test_symbolic_extent_preserves_target_shape_and_shaped_controls() -> None:
+    pytest.importorskip("qualtran")
+    from qualtran import BQUInt, QBit
+    from qualtran import Register as SourceRegister
+    from qualtran.bloqs.swap_network.multiplexed_cswap import MultiplexedCSwap
+    from sympy import Symbol
+
+    rows = Symbol("r", positive=True, integer=True)
+    width = Symbol("w", positive=True, integer=True)
+    source = MultiplexedCSwap(
+        (
+            SourceRegister("row", BQUInt(width, rows)),
+            SourceRegister("column", BQUInt(1, 2)),
+        ),
+        1,
+        SourceRegister("enable", QBit(), shape=(2,)),
+    )
+    layout = MultiplexedSwapLayout(
+        (
+            Register("row", bounded_unsigned_register_type(width, rows)),
+            Register("column", bounded_unsigned_register_type(1, 2)),
+        ),
+        1,
+        (Register("enable", quantum_bit_type(), shape=(2,)),),
+    )
+    assert_source_port_types(layout, source)
+    assert layout.shape == (rows, 2)
+    with pytest.raises(ValueError, match="concrete integer dimensions"):
+        layout.bind((), (), ())
