@@ -4,6 +4,8 @@ import pytest
 import torch
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum.compiler.artifacts.reaction_depth import reaction_depth
+from flagquantum.compiler.formats.kmb import decode_kmb, encode_kmb
 from flagquantum.compiler.formats.kmx import decode_kmx, encode_kmx
 from flagquantum.compiler.lowering.reversible_phase import lower_reversible_phase
 from flagquantum.compiler.lowering.reversible_phase_execution import (
@@ -74,8 +76,12 @@ def test_source_guarded_fredkin_kmx_roundtrip_and_complete_amplitude(
         'INFO_TAG "@flagquantum:reversible-phase-v1 wires=6 bits=1 inputs=0"\n'
         "CSWAP q0 q1 q2\nCSWAP q3 q4 q5 if b0\n"
     )
-    program = decode_kmx(text)
+    header, body = text.split("\n", 1)
+    transported = decode_kmb(encode_kmb(body))
+    program = decode_kmx(f"{header}\n{transported}\n")
     assert encode_kmx(program) == text
+    assert reaction_depth(program) == 1
+    assert [op.opcode for op in program.operations] == ["cswap", "cswap"]
     labels = torch.arange(64)
     basis = labels.to(torch.float64)
     amplitudes = torch.complex(basis + 1, 3 * basis - 5)
