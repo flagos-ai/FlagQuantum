@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **153/213**.
+Validated local Notebook workflows: **154/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -424,7 +424,7 @@ Validated local Notebook workflows: **153/213**.
 | `tutorials/workshops/finance_workshops/Option_Pricing_Workshop` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/option_pricing_workshop/overview/main.py) | validated |
 | `tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview/main.py) | validated |
 | `tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_PO` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/combi_workshop_equality_constriants_po/overview/main.py) | validated |
-| `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/main.py) | pending |
+| `tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce` | notebook_workflow | [Native program](tutorials/workshops/finance_workshops/rainbow_options_workshop_bruteforce/overview/main.py) | validated |
 | `tutorials/workshops/grover_workshop/grover_workshop` | notebook_workflow | [Native program](tutorials/workshops/grover_workshop/grover_workshop/overview/main.py) | validated |
 | `tutorials/workshops/hhl_workshop/hhl_workshop` | notebook_workflow | [Native program](tutorials/workshops/hhl_workshop/overview/main.py) | validated |
 | `tutorials/workshops/oracle_workshop/oracles_workshop` | notebook_workflow | [Native program](tutorials/workshops/oracle_workshop/oracles_workshop/overview/main.py) | validated |

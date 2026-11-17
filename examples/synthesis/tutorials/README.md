@@ -87,6 +87,7 @@ Native FlagQuantum programs currently available:
 - [overview](workshops/finance_workshops/option_pricing_workshop/overview/README.md)
 - [overview](workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview/README.md)
 - [overview](workshops/finance_workshops/combi_workshop_equality_constriants_po/overview/README.md)
+- [overview](workshops/finance_workshops/rainbow_options_workshop_bruteforce/overview/README.md)
 - [overview](workshops/grover_workshop/grover_workshop/overview/README.md)
 - [overview](workshops/hhl_workshop/overview/README.md)
 - [overview](workshops/oracle_workshop/oracles_workshop/overview/README.md)
