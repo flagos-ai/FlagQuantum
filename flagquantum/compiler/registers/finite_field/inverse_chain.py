@@ -5,11 +5,13 @@
 """Itoh–Tsujii field inverse and measured cleanup on fixed wires."""
 
 from ....core.ir import Instruction
-from ..primitives.measurement import delete_zero_register_ir
+from ..._component_trace.trace import ComponentCall
+from ..primitives.measurement import delete_zero_register_ir, reset_x_register_ir
+from ._physical_calls import append_field_call
 from .binary_linear_map import field_frobenius_ir
 from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
-from .polynomial_product import field_product_xor_ir
+from .polynomial_product import append_field_product, field_product_xor_ir
 from .product_erasure import field_product_erase_ir
 
 
@@ -75,39 +77,50 @@ def _word_swap(
     )
 
 
-def _double_word(
-    words: tuple[tuple[int, ...], ...], i: int, scratch: tuple[int, ...], modulus: int
-) -> tuple[Instruction, ...]:
-    previous = words[i - 1]
-    count = 1 << (i - 1)
-    return (
-        *_word_xor(previous, scratch),
-        *field_frobenius_ir(scratch, count, modulus=modulus),
-        *field_product_xor_ir(previous, scratch, words[i], modulus=modulus),
-        *field_frobenius_ir(scratch, count, modulus=modulus, adjoint=True),
-        *_word_xor(previous, scratch),
-    )
+def _append_frobenius(
+    gates: list[Instruction],
+    calls: list[ComponentCall] | None,
+    word: tuple[int, ...],
+    count: int,
+    modulus: int,
+    *,
+    adjoint: bool = False,
+) -> None:
+    body = field_frobenius_ir(word, count, modulus=modulus, adjoint=adjoint)
+    if count % len(word):
+        name = "gf_ifrobenius_adjoint" if adjoint else "gf_ifrobenius"
+        append_field_call(
+            gates, calls, name, body, (ComponentCall("linear_map", 0, len(body)),)
+        )
 
 
-def _erase_double_word(
+def _append_double_word(
+    gates: list[Instruction],
     words: tuple[tuple[int, ...], ...],
     i: int,
     scratch: tuple[int, ...],
-    bits: tuple[int, ...],
     modulus: int,
-    parity_bit: int | None,
-) -> tuple[Instruction, ...]:
+    *,
+    bits: tuple[int, ...] | None = None,
+    parity_bit: int | None = None,
+    calls: list[ComponentCall] | None = None,
+) -> None:
     previous = words[i - 1]
     count = 1 << (i - 1)
-    return (
-        *_word_xor(previous, scratch),
-        *field_frobenius_ir(scratch, count, modulus=modulus),
-        *field_product_erase_ir(
-            previous, scratch, words[i], bits, modulus=modulus, parity_bit=parity_bit
-        ),
-        *field_frobenius_ir(scratch, count, modulus=modulus, adjoint=True),
-        *_word_xor(previous, scratch),
+    append_field_call(gates, calls, "gf_iadd", _word_xor(previous, scratch))
+    _append_frobenius(gates, calls, scratch, count, modulus)
+    append_field_product(
+        gates,
+        calls,
+        previous,
+        scratch,
+        words[i],
+        modulus,
+        bits=bits,
+        parity_bit=parity_bit,
     )
+    _append_frobenius(gates, calls, scratch, count, modulus, adjoint=True)
+    append_field_call(gates, calls, "gf_iadd", _word_xor(previous, scratch))
 
 
 def _build_folds(
@@ -116,13 +129,12 @@ def _build_folds(
     start: int,
     folds: tuple[int, ...],
     modulus: int,
+    calls: list[ComponentCall] | None = None,
 ) -> None:
     for i, power in enumerate(folds, start=start):
         left = words[i]
-        gates.extend(field_frobenius_ir(left, 1 << power, modulus=modulus))
-        gates.extend(
-            field_product_xor_ir(left, words[power], words[i + 1], modulus=modulus)
-        )
+        _append_frobenius(gates, calls, left, 1 << power, modulus)
+        append_field_product(gates, calls, left, words[power], words[i + 1], modulus)
 
 
 def _erase_folds(
@@ -133,22 +145,21 @@ def _erase_folds(
     bits: tuple[int, ...],
     modulus: int,
     parity_bit: int | None,
+    calls: list[ComponentCall] | None = None,
 ) -> None:
     for i, power in reversed(tuple(enumerate(folds, start=start))):
         left = words[i]
-        gates.extend(
-            field_product_erase_ir(
-                left,
-                words[power],
-                words[i + 1],
-                bits,
-                modulus=modulus,
-                parity_bit=parity_bit,
-            )
+        append_field_product(
+            gates,
+            calls,
+            left,
+            words[power],
+            words[i + 1],
+            modulus,
+            bits=bits,
+            parity_bit=parity_bit,
         )
-        gates.extend(
-            field_frobenius_ir(left, 1 << power, modulus=modulus, adjoint=True)
-        )
+        _append_frobenius(gates, calls, left, 1 << power, modulus, adjoint=True)
 
 
 def _delete_zero_word(word: tuple[int, ...], bit: int) -> tuple[Instruction, ...]:
@@ -175,6 +186,7 @@ def field_inverse_chain_ir(
     chain: tuple[int, ...],
     *,
     modulus: int,
+    calls: list[ComponentCall] | None = None,
 ) -> tuple[Instruction, ...]:
     """Compute the inverse of a big-endian source, mapping zero to zero.
 
@@ -189,19 +201,20 @@ def field_inverse_chain_ir(
         workspace_size=field_inverse_chain_size(len(source)),
     )
     if len(source) == 1:
-        return _word_xor(source, target)
+        gates: list[Instruction] = []
+        append_field_call(gates, calls, "gf_iadd", _word_xor(source, target))
+        return tuple(gates)
     doubles, folds = _chain_steps(len(source))
-    gates: list[Instruction] = []
+    gates = []
     for i in doubles:
-        gates.extend(_double_word(words, i, target, modulus))
-    _build_folds(gates, words, len(doubles), folds, modulus)
+        _append_double_word(gates, words, i, target, modulus, calls=calls)
+    _build_folds(gates, words, len(doubles), folds, modulus, calls)
     if not folds:
-        gates.extend(
-            _word_swap(words[len(doubles)], target)
-            if doubles
-            else _word_xor(source, target)
-        )
-    gates.extend(field_frobenius_ir(target, modulus=modulus))
+        if doubles:
+            gates.extend(_word_swap(words[len(doubles)], target))
+        else:
+            append_field_call(gates, calls, "gf_iadd", _word_xor(source, target))
+    _append_frobenius(gates, calls, target, 1, modulus)
     return tuple(gates)
 
 
@@ -212,7 +225,9 @@ def field_inverse_chain_erase_ir(
     measurement_bits: tuple[int, ...],
     *,
     modulus: int,
+    calls: list[ComponentCall] | None = None,
     parity_bit: int | None = None,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Erase the known inverse and its live chain, preserving the source.
 
@@ -229,22 +244,36 @@ def field_inverse_chain_erase_ir(
     doubles, folds = _chain_steps(len(source))
     expected = len(source) if doubles or folds else 1
     _validate_inverse_slots(measurement_bits, expected, parity_bit)
-    gates = list(field_frobenius_ir(target, modulus=modulus, adjoint=True))
+    gates: list[Instruction] = []
+    _append_frobenius(gates, calls, target, 1, modulus, adjoint=True)
     if folds:
         _erase_folds(
-            gates, words, len(doubles), folds, measurement_bits, modulus, parity_bit
+            gates,
+            words,
+            len(doubles),
+            folds,
+            measurement_bits,
+            modulus,
+            parity_bit,
+            calls,
         )
-        # The fold's HMR already returns the fixed physical target wires to
-        # zero. The source resets them to reactivate their logical lifetime.
+        if emit_resets:
+            gates.extend(reset_x_register_ir(target[::-1]))
     else:
-        gates.extend(
-            _word_swap(words[len(doubles)], target)
-            if doubles
-            else _word_xor(source, target)
-        )
+        if doubles:
+            gates.extend(_word_swap(words[len(doubles)], target))
+        else:
+            append_field_call(gates, calls, "gf_iadd", _word_xor(source, target))
     for i in reversed(doubles):
-        gates.extend(
-            _erase_double_word(words, i, target, measurement_bits, modulus, parity_bit)
+        _append_double_word(
+            gates,
+            words,
+            i,
+            target,
+            modulus,
+            bits=measurement_bits,
+            parity_bit=parity_bit,
+            calls=calls,
         )
     gates.extend(_delete_zero_word(target, measurement_bits[-1]))
     return tuple(gates)
@@ -277,7 +306,7 @@ def field_inverse_ir(
     _validate_inverse_slots(measurement_bits, expected, parity_bit)
     gates: list[Instruction] = []
     for i in doubles:
-        gates.extend(_double_word(words, i, target, modulus))
+        _append_double_word(gates, words, i, target, modulus)
     _build_folds(gates, words, len(doubles), folds, modulus)
 
     if folds:
@@ -298,8 +327,14 @@ def field_inverse_ir(
         cleanup = ()
         gates.extend(_word_xor(source, target))
     for i in reversed(cleanup):
-        gates.extend(
-            _erase_double_word(words, i, scratch, measurement_bits, modulus, parity_bit)
+        _append_double_word(
+            gates,
+            words,
+            i,
+            scratch,
+            modulus,
+            bits=measurement_bits,
+            parity_bit=parity_bit,
         )
     if scratch:
         gates.extend(_delete_zero_word(scratch, measurement_bits[-1]))
@@ -333,7 +368,7 @@ def field_inverse_erase_ir(
     _validate_inverse_slots(measurement_bits, width if doubles else 1, parity_bit)
     gates = list(field_frobenius_ir(target, modulus=modulus, adjoint=True))
     for i in doubles if folds else doubles[:-1]:
-        gates.extend(_double_word(words, i, words[i + 1], modulus))
+        _append_double_word(gates, words, i, words[i + 1], modulus)
     if folds:
         _build_folds(gates, words, len(doubles), folds, modulus)
         gates.extend(_word_xor(words[-2], target))
@@ -345,8 +380,14 @@ def field_inverse_erase_ir(
     else:
         gates.extend(_word_xor(source, target))
     for i in reversed(doubles):
-        gates.extend(
-            _erase_double_word(words, i, target, measurement_bits, modulus, parity_bit)
+        _append_double_word(
+            gates,
+            words,
+            i,
+            target,
+            modulus,
+            bits=measurement_bits,
+            parity_bit=parity_bit,
         )
     gates.extend(_delete_zero_word(target, measurement_bits[-1]))
     return tuple(gates)

@@ -7,6 +7,8 @@
 from collections.abc import Iterator
 
 from ....core.ir import Instruction
+from ..._component_trace.trace import ComponentCall
+from ._physical_calls import append_field_call
 from .binary_linear_map import (
     field_constant_scale_ir,
     field_monomial_scale_ir,
@@ -83,6 +85,7 @@ def field_product_xor_ir(
     target: tuple[int, ...],
     *,
     modulus: int,
+    calls: list[ComponentCall] | None = None,
 ) -> tuple[Instruction, ...]:
     """Add left*right into an arbitrary target over GF(2^m), on fixed wires.
 
@@ -102,15 +105,71 @@ def field_product_xor_ir(
     factor = 1 | (1 << half)
     inverse = _field_power(factor, (1 << width) - 2, modulus)
     x, y, result = left[::-1], right[::-1], target[::-1]
-    return (
-        *field_monomial_scale_ir(target, -half, modulus=modulus),
-        *_middle_product(result[: 2 * half - 1], x, y, half),
-        *field_constant_scale_ir(target, inverse, modulus=modulus),
-        *_polynomial_product(result[: 2 * high_width - 1], x[half:], y[half:]),
-        *field_monomial_scale_ir(target, half, modulus=modulus),
-        *_polynomial_product(result[: 2 * half - 1], x[:half], y[:half]),
-        *field_constant_scale_ir(target, factor, modulus=modulus),
+    gates: list[Instruction] = []
+    append_field_call(
+        gates,
+        calls,
+        "gf_idiv_x",
+        field_monomial_scale_ir(target, -half, modulus=modulus),
     )
+    gates.extend(_middle_product(result[: 2 * half - 1], x, y, half))
+    scale = field_constant_scale_ir(target, inverse, modulus=modulus)
+    append_field_call(
+        gates,
+        calls,
+        "gf_idiv_classical",
+        scale,
+        (ComponentCall("linear_map", 0, len(scale)),),
+    )
+    gates.extend(_polynomial_product(result[: 2 * high_width - 1], x[half:], y[half:]))
+    append_field_call(
+        gates,
+        calls,
+        "gf_imul_x",
+        field_monomial_scale_ir(target, half, modulus=modulus),
+    )
+    gates.extend(_polynomial_product(result[: 2 * half - 1], x[:half], y[:half]))
+    scale = field_constant_scale_ir(target, factor, modulus=modulus)
+    append_field_call(
+        gates,
+        calls,
+        "gf_imul_classical",
+        scale,
+        (ComponentCall("linear_map", 0, len(scale)),),
+    )
+    return tuple(gates)
+
+
+def append_field_product(
+    gates: list[Instruction],
+    calls: list[ComponentCall] | None,
+    first: tuple[int, ...],
+    second: tuple[int, ...],
+    target: tuple[int, ...],
+    modulus: int,
+    *,
+    bits: tuple[int, ...] | None = None,
+    parity_bit: int | None = None,
+) -> None:
+    """Append product accumulation or erasure with optional physical call ranges."""
+    children: list[ComponentCall] | None = [] if calls is not None else None
+    if bits is None:
+        name = "gf_mul"
+        body = field_product_xor_ir(
+            first, second, target, modulus=modulus, calls=children
+        )
+    else:
+        name = "gf_unmul"
+        body = field_product_erase_ir(
+            first,
+            second,
+            target,
+            bits,
+            modulus=modulus,
+            parity_bit=parity_bit,
+            calls=children,
+        )
+    append_field_call(gates, calls, name, body, tuple(children or ()))
 
 
 def controlled_field_product_xor_ir(

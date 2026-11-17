@@ -6,6 +6,7 @@
 
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
+from ..._component_trace.trace import ComponentCall
 from ..primitives.measurement import ParityPhase, measure_x_clear_ir
 from .field_erasure import _field_product_phase_masks
 from .field_multiplication import _validate_field
@@ -69,6 +70,7 @@ def field_product_erase_ir(
     *,
     modulus: int,
     parity_bit: int | None = None,
+    calls: list[ComponentCall] | None = None,
 ) -> tuple[Instruction, ...]:
     """Clear a known product on every X-measurement branch, preserving its inputs.
 
@@ -82,11 +84,15 @@ def field_product_erase_ir(
     feedback = field_product_phase_ir(
         left, right, measurement_bits, modulus=modulus, parity_bit=parity_bit
     )
-    return (
-        *(
-            gate
-            for wire, bit in zip(product[::-1], measurement_bits[::-1], strict=True)
-            for gate in measure_x_clear_ir(wire, bit)
-        ),
-        *feedback,
+    measures = tuple(
+        gate
+        for wire, bit in zip(product[::-1], measurement_bits[::-1], strict=True)
+        for gate in measure_x_clear_ir(wire, bit)
     )
+    if calls is not None:
+        calls.append(
+            ComponentCall(
+                "gf_phase_by_product", len(measures), len(measures) + len(feedback)
+            )
+        )
+    return (*measures, *feedback)
