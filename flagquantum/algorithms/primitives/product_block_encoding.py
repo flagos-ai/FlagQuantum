@@ -6,7 +6,7 @@
 """Source ordered block products with shared ancilla and explicit success flags."""
 
 from collections.abc import Callable, Mapping
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from math import prod
 from typing import Literal, cast
 
@@ -21,14 +21,108 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.bits.bitwise import _validate_wires
+from ...compiler.registers.control.control_predicate_resource_model import (
+    control_predicate_resource_formula,
+)
 from ...compiler.registers.control.multi_control import multi_control_x_ir
 from ...compiler.registers.layout.partition import partition_register
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+)
 from ...core.ir import Instruction
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
+
+
+def source_product_block_signature(
+    system: SymbolicInt,
+    ancillas: tuple[SymbolicInt, ...],
+    resources: tuple[SymbolicInt, ...],
+) -> Signature:
+    """Declare the common system, packed success flags and shared child pools."""
+    if not ancillas or len(ancillas) != len(resources):
+        raise ValueError("Product needs matched nonempty child width declarations")
+    return Signature.build_from_dtypes(
+        system=opaque_register_type(system),
+        ancilla=opaque_register_type(
+            cast(SymbolicInt, smax(ancillas)) + len(ancillas) - 1
+        ),
+        resource=opaque_register_type(cast(SymbolicInt, smax(resources))),
+    )
+
+
+def _check_product_resource_partition(
+    resources: tuple[SymbolicInt, ...], shared: SymbolicInt
+) -> None:
+    if any(width != 0 and width != shared for width in resources):
+        raise ValueError(
+            "Locked Product cannot partition unequal nonzero resource widths"
+        )
+
+
+def source_symbolic_product_resource_formula(
+    system: SymbolicInt,
+    ancillas: tuple[SymbolicInt, ...],
+    resources: tuple[SymbolicInt, ...],
+    children: tuple[SymbolicResourceFormula, ...],
+    *,
+    legacy_shims: bool = False,
+) -> SymbolicResourceFormula:
+    """Use the locked call-graph cost when symbolic widths prevent decomposition.
+
+    The source peak falls back to the maximum over the signature and
+    individual callees. It does not keep the entire product live across calls.
+    The supplied child peak already includes its own through ports.
+    """
+    signature = source_product_block_signature(system, ancillas, resources)
+    if len(children) != len(ancillas) or type(legacy_shims) is not bool:
+        raise ValueError(
+            "Product needs one child formula per declaration and a boolean profile"
+        )
+    if all(type(width) is int for width in (system, *ancillas, *resources)):
+        raise ValueError("Use the concrete Product model for resolved widths")
+    shared_ancilla = cast(SymbolicInt, smax(ancillas))
+    _check_product_resource_partition(resources, cast(SymbolicInt, smax(resources)))
+    peaks: list[SymbolicInt] = [signature.n_qubits()]
+    counts = {
+        field.name: sum(getattr(child, field.name) for child in children)
+        for field in fields(GateCost)
+    }
+    for index, (child, width) in enumerate(zip(children, ancillas, strict=True)):
+        if width == 0:
+            peaks.append(child.logical_qubits)
+            continue
+        padding = shared_ancilla - width
+        peaks.append(cast(SymbolicInt, smax(0, child.logical_qubits)) + padding)
+        if index == 0:
+            continue
+        controls = (1,) * width if type(width) is int else width
+        flag = query_qec_gate_cost(
+            PredicateControlledCall(CliffordCall("cx", 2), controls),
+            legacy_shims=legacy_shims,
+        )
+        for name in counts:
+            counts[name] += getattr(flag, name)
+        counts["clifford"] += 1
+        if type(width) is int:
+            peaks.append(2 * width)
+        else:
+            peaks.extend(
+                (
+                    width + 1,
+                    control_predicate_resource_formula(
+                        width, legacy_shims=legacy_shims
+                    ).logical_qubits,
+                )
+            )
+    return SymbolicResourceFormula(
+        **counts, logical_qubits=cast(SymbolicInt, smax(peaks))
+    )
 
 
 @dataclass(frozen=True)
@@ -69,6 +163,14 @@ class ProductBlockEncoding:
         return max(child.resource_bitsize for child in self.block_encodings)
 
     @property
+    def signature(self) -> Signature:
+        return source_product_block_signature(
+            self.system_bitsize,
+            tuple(child.ancilla_bitsize for child in self.block_encodings),
+            tuple(child.resource_bitsize for child in self.block_encodings),
+        )
+
+    @property
     def alpha(self) -> SymbolicReal:
         return cast(SymbolicReal, prod(child.alpha for child in self.block_encodings))
 
@@ -83,13 +185,10 @@ class ProductBlockEncoding:
         )
 
     def _check_resource_partition(self) -> None:
-        if any(
-            0 < child.resource_bitsize < self.resource_bitsize
-            for child in self.block_encodings
-        ):
-            raise ValueError(
-                "Locked Product cannot partition unequal nonzero resource widths"
-            )
+        _check_product_resource_partition(
+            tuple(child.resource_bitsize for child in self.block_encodings),
+            self.resource_bitsize,
+        )
 
     def resource_model(
         self,
