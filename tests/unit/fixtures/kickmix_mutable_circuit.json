@@ -1,0 +1,253 @@
+{
+  "positive": [
+    [
+      "",
+      ""
+    ],
+    [
+      "\n\n\n\n\n\r\n\r\n",
+      ""
+    ],
+    [
+      "# test\n",
+      ""
+    ],
+    [
+      "X q3",
+      "X q3"
+    ],
+    [
+      "    \t  X    \t   q3   \t  # comment",
+      "X q3"
+    ],
+    [
+      "X q3 if b5",
+      "X q3 if b5"
+    ],
+    [
+      "Z q3",
+      "Z q3"
+    ],
+    [
+      "Z q3 if b5",
+      "Z q3 if b5"
+    ],
+    [
+      "CX q3 q7",
+      "CX q3 q7"
+    ],
+    [
+      "CX q3 q7 if b5",
+      "CX q3 q7 if b5"
+    ],
+    [
+      "CZ q3 q7",
+      "CZ q3 q7"
+    ],
+    [
+      "CZ q3 q7 if b5",
+      "CZ q3 q7 if b5"
+    ],
+    [
+      "CCX q3 q7 q11",
+      "CCX q3 q7 q11"
+    ],
+    [
+      "CCX q3 q7 q11 if b5",
+      "CCX q3 q7 q11 if b5"
+    ],
+    [
+      "CCZ q3 q7 q11",
+      "CCZ q3 q7 q11"
+    ],
+    [
+      "CCZ q3 q7 q11 if b5",
+      "CCZ q3 q7 q11 if b5"
+    ],
+    [
+      "NEG",
+      "NEG"
+    ],
+    [
+      "NEG if b5",
+      "NEG if b5"
+    ],
+    [
+      "SWAP q11 q13",
+      "SWAP q11 q13"
+    ],
+    [
+      "SWAP q11 q13 if b5",
+      "SWAP q11 q13 if b5"
+    ],
+    [
+      "CSWAP q3 q11 q13",
+      "CSWAP q3 q11 q13"
+    ],
+    [
+      "CSWAP q3 q11 q13 if b5",
+      "CSWAP q3 q11 q13 if b5"
+    ],
+    [
+      "R q2",
+      "R q2"
+    ],
+    [
+      "R q2 if b5",
+      "R q2 if b5"
+    ],
+    [
+      "HMR q2 b3",
+      "HMR q2 b3"
+    ],
+    [
+      "HMR q2 b3 if b5",
+      "HMR q2 b3 if b5"
+    ],
+    [
+      "BIT_INVERT b3",
+      "BIT_INVERT b3"
+    ],
+    [
+      "BIT_INVERT b3 if b7",
+      "BIT_INVERT b3 if b7"
+    ],
+    [
+      "BIT_STORE0 b3",
+      "BIT_STORE0 b3"
+    ],
+    [
+      "BIT_STORE0 b3 if b7",
+      "BIT_STORE0 b3 if b7"
+    ],
+    [
+      "BIT_STORE1 b3",
+      "BIT_STORE1 b3"
+    ],
+    [
+      "BIT_STORE1 b3 if b7",
+      "BIT_STORE1 b3 if b7"
+    ],
+    [
+      "PUSH_CONDITION if b3",
+      "PUSH_CONDITION if b3"
+    ],
+    [
+      "POP_CONDITION",
+      "POP_CONDITION"
+    ],
+    [
+      "DEBUG_PRINT",
+      "DEBUG_PRINT"
+    ],
+    [
+      "DEBUG_PRINT if b5",
+      "DEBUG_PRINT if b5"
+    ],
+    [
+      "DEBUG_PRINT q2 q3 b5",
+      "DEBUG_PRINT q2\nDEBUG_PRINT q3\nDEBUG_PRINT b5"
+    ],
+    [
+      "DEBUG_PRINT q2 q3 b5 if b7",
+      "DEBUG_PRINT q2 if b7\nDEBUG_PRINT q3 if b7\nDEBUG_PRINT b5 if b7"
+    ],
+    [
+      "INFO_TAG \"hello\"\nINFO_TAG \"\"",
+      "INFO_TAG \"hello\"\nINFO_TAG \"\""
+    ],
+    [
+      "APPEND_TO_REGISTER q7 r0\nAPPEND_TO_REGISTER b3 r0\nDEBUG_PRINT r0 b5 q2 if b7",
+      "APPEND_TO_REGISTER q7 r0\nAPPEND_TO_REGISTER b3 r0\nDEBUG_PRINT q7 if b7\nDEBUG_PRINT b3 if b7\nDEBUG_PRINT b5 if b7\nDEBUG_PRINT q2 if b7"
+    ],
+    [
+      "DEBUG_PRINT r9",
+      ""
+    ],
+    [
+      "APPEND_TO_REGISTER q0 r5\nDEBUG_PRINT r1 if b0",
+      "REGISTER r0\nREGISTER r1\nREGISTER r2\nREGISTER r3\nREGISTER r4\nAPPEND_TO_REGISTER q0 r5"
+    ]
+  ],
+  "syntax_errors": [
+    "UNKNOWN",
+    "UNKNOWN q0",
+    "x q0",
+    "X",
+    "CZ q0",
+    "CCX q0 q1",
+    "CCX q0 b1 q2",
+    "CCX r0 b1 q2",
+    "CCZ b0 q1 q2",
+    "CCZ",
+    "CCZ q0 q1 q2 when test",
+    "PUSH_CONDITION",
+    "POP_CONDITION if b1",
+    "DEBUG_PRINT x0",
+    "DEBUG_PRINT xx",
+    "DEBUG_PRINT !",
+    "HMR q0",
+    "HMR b0",
+    "HMR q0 if b0",
+    "R b0",
+    "BIT_STORE0 q0",
+    "BIT_STORE1 q0",
+    "BIT_INVERT q0",
+    "Z",
+    "Z r0",
+    "Z b0",
+    "q0 X",
+    "NEG b0",
+    "CX b0",
+    "HMR b0",
+    "HMR b0 b0",
+    "HMR 0 b0",
+    "HMR q0 q1",
+    "HMR q0 MX",
+    "CX CX",
+    "test",
+    "CCX q0",
+    "NOP q0",
+    "CCX q0 q1",
+    "CCX q0 q1 b2",
+    "INFO_TAG",
+    "INFO_TAG q0",
+    "INFO_TAG \"a\" if b0",
+    "INFO_TAG \"a\" \"b\""
+  ],
+  "boundary_ok": [
+    "PUSH_CONDITION if b499999999",
+    "X q499999999"
+  ],
+  "boundary_error": [
+    "PUSH_CONDITION if b500000000",
+    "PUSH_CONDITION if b500000001",
+    "X q0 if b500000000",
+    "CZ q0 q1 if b500000000",
+    "X q500000000",
+    "X q500000001"
+  ],
+  "aliases": [
+    "CX q0 q0",
+    "CZ q0 q0",
+    "SWAP q0 q0",
+    "CCX q0 q0 q1",
+    "CCX q1 q0 q0",
+    "CCX q0 q1 q0",
+    "CCZ q0 q0 q1",
+    "CCZ q1 q0 q0",
+    "CCZ q0 q1 q0",
+    "CSWAP q0 q0 q1",
+    "CSWAP q1 q0 q0",
+    "CSWAP q0 q1 q0"
+  ],
+  "bulk": [
+    "\n        APPEND_TO_REGISTER q0 r0\n        APPEND_TO_REGISTER b0 r0\n        REGISTER r1\n        DEBUG_PRINT\n\n        X q0\n        X q1 if b0\n        CX q0 q1\n        CX q1 q2 if b1\n        CCX q0 q1 q2\n        CCX q1 q2 q3 if b2\n        NEG\n        NEG if b3\n\n        Z q5\n        Z q6 if b4\n        CZ q5 q6\n        CZ q6 q7 if b5\n        CCZ q6 q7 q8\n        CCZ q7 q8 q9 if b6\n        HMR q9 b7\n        HMR q10 b17 if b18\n        R q11\n        R q12 if b19\n        BIT_INVERT b8\n        BIT_INVERT b9 if b10\n        BIT_STORE0 b11\n        BIT_STORE0 b12 if b13\n        BIT_STORE1 b14\n        BIT_STORE1 b15 if b16\n\n        SWAP q13 q14\n        SWAP q15 q16 if b20\n        CSWAP q13 q14 q15\n        CSWAP q15 q16 q17 if b20\n\n        PUSH_CONDITION if b21\n        BIT_STORE1 b23\n        X q20\n        PUSH_CONDITION if b22\n        BIT_STORE1 b24\n        X q21\n        POP_CONDITION\n        POP_CONDITION\n    ",
+    "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER b0 r0\nREGISTER r1\nDEBUG_PRINT\nX q0\nX q1 if b0\nCX q0 q1\nCX q1 q2 if b1\nCCX q0 q1 q2\nCCX q1 q2 q3 if b2\nNEG\nNEG if b3\nZ q5\nZ q6 if b4\nCZ q5 q6\nCZ q6 q7 if b5\nCCZ q6 q7 q8\nCCZ q7 q8 q9 if b6\nHMR q9 b7\nHMR q10 b17 if b18\nR q11\nR q12 if b19\nBIT_INVERT b8\nBIT_INVERT b9 if b10\nBIT_STORE0 b11\nBIT_STORE0 b12 if b13\nBIT_STORE1 b14\nBIT_STORE1 b15 if b16\nSWAP q13 q14\nSWAP q15 q16 if b20\nCSWAP q13 q14 q15\nCSWAP q15 q16 q17 if b20\nPUSH_CONDITION if b21\nBIT_STORE1 b23\nX q20\nPUSH_CONDITION if b22\nBIT_STORE1 b24\nX q21\nPOP_CONDITION\nPOP_CONDITION"
+  ],
+  "file": [
+    "\n        X q0  # test\n        CX q0 q1\n\n        # wonder\n        CCZ q0 q1 q2 if b3\n    ",
+    "X q0\nCX q0 q1\nCCZ q0 q1 q2 if b3"
+  ],
+  "assembled": "APPEND_TO_REGISTER q4 r0\nINFO_TAG \"base\"\nX q0\nINFO_TAG \"\"\nZ_POW q1 0.25\nCSWAP q1 q2 q3 if b4\nINFO_TAG \"last \\P β\"\nINFO_TAG \"\"\nZ_POW q1 0.25\nCSWAP q1 q2 q3 if b4\nINFO_TAG \"last \\P β\"\nINFO_TAG \"last \\P β\"\nCSWAP q1 q2 q3 if b4\nZ_POW q1 0.25\nINFO_TAG \"\""
+}
