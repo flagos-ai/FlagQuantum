@@ -2,45 +2,134 @@
 # Adapted from locked Kickmix gen_cmp.cc and gen_cmp_qq.cc.
 # https://github.com/quantumlib/Qualtran/tree/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/gen/comparators
 
-"""Export quantum less-than with source call ranges and feedback scopes."""
+"""Export comparator operations with source resets, call marks and feedback."""
 
 from dataclasses import replace
-from itertools import groupby
 from math import ceil, inf
+from typing import Literal
 
-from ....core.ir import CircuitIR
 from ..._component_trace.trace import ComponentCall
-from ...artifacts.reversible_phase import (
-    ReversiblePhaseOperation as Operation,
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
+from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
+from ..finite_field.coefficients import ClassicalFieldCoefficient
+from .low_space_comparison import _comparison_passes
+from .mixed_comparison import (
+    mixed_greater_than_ir,
+    mixed_less_than_ir,
+    quantum_equal_ir,
 )
-from ...artifacts.reversible_phase import (
-    ReversiblePhaseProgram,
-)
-from ...lowering.reversible_phase import lower_reversible_phase
-from .mixed_comparison import mixed_less_than_ir
+
+_Coefficient = int | bool | ClassicalFieldCoefficient
+_Relation = Literal["lt", "le", "gt", "ge", "eq"]
 
 
-def _ladder_scopes(
-    operations: tuple[Operation, ...], carries: set[int]
-) -> tuple[Operation, ...]:
-    """Reconstitute the source's single condition scope per cleared carry."""
-    scheduled: list[Operation] = []
-    measurement = None
-    for condition, group in groupby(operations, key=lambda op: op.condition_bit):
-        if condition is not None and condition == measurement:
-            scheduled.append(Operation("push_condition", (), condition_bit=condition))
-            scheduled.extend(replace(gate, condition_bit=None) for gate in group)
-            scheduled.append(Operation("pop_condition", ()))
-            measurement = None
-        else:
-            for gate in group:
-                scheduled.append(gate)
-                measurement = (
-                    gate.result_bit
-                    if gate.opcode == "hmr" and gate.qubits[0] in carries
-                    else None
+def physical_comparison(
+    left: tuple[int, ...],
+    right: tuple[_Coefficient, ...],
+    target: int | None,
+    workspace: tuple[int, ...],
+    *,
+    relation: _Relation = "lt",
+    or_equal: _Coefficient = False,
+    control: int | bool = True,
+    btol: float = inf,
+    minimize_qubits: bool = False,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Bind big-endian operands and allocate measured bits after classical inputs."""
+    if relation not in ("lt", "le", "gt", "ge", "eq"):
+        raise ValueError("Unknown comparison relation")
+    if relation in ("le", "ge"):
+        or_equal = True
+    elif relation == "eq":
+        or_equal = False
+    operands = (*right, or_equal)
+    inputs = {q.slot for q in operands if isinstance(q, ClassicalFieldCoefficient)}
+    result = max(inputs, default=-1) + 1
+    trace = PhysicalTrace(implicit_zero_bits=inputs)
+    ports = (*left, *workspace, *operands, target, control)
+    last_wire = max((q for q in ports if type(q) is int), default=0)
+    if relation == "eq":
+        gates = quantum_equal_ir(
+            left,
+            right,
+            target,
+            workspace,
+            control=control,
+            measurement_bit=result,
+            emit_resets=True,
+        )
+    else:
+        compare = (
+            mixed_greater_than_ir if relation in ("gt", "ge") else mixed_less_than_ir
+        )
+        depth = len(_comparison_passes(len(left) + int(type(control) is int)))
+        low_space_bits = tuple(range(result, result + depth + 1 + int(depth >= 4)))
+        gates = compare(
+            left,
+            right,
+            target,
+            workspace,
+            or_equal=or_equal,
+            control=control,
+            measurement_bit=result,
+            minimize_qubits=minimize_qubits,
+            btol=btol,
+            low_space_bits=low_space_bits,
+            emit_resets=True,
+            export=trace,
+        )
+        if relation in ("lt", "le"):
+            call = ComponentCall(
+                "flip_if_lt", 0, len(gates), children=tuple(trace.calls)
+            )
+            trace.calls = [
+                _bind_less_than_dispatch(call, right, workspace, btol, minimize_qubits)
+            ]
+        elif trace.calls:
+            (outer,) = trace.calls
+            (inner,) = outer.children
+            trace.calls = [
+                replace(
+                    outer,
+                    children=(
+                        _bind_less_than_dispatch(
+                            inner, right, workspace, btol, minimize_qubits
+                        ),
+                    ),
                 )
-    return tuple(scheduled)
+            ]
+
+    return lower_physical_trace(gates, 0, last_wire, trace, reorder_feedback=False)
+
+
+def _bind_less_than_dispatch(
+    call: ComponentCall,
+    right: tuple[_Coefficient, ...],
+    workspace: tuple[int, ...],
+    btol: float,
+    minimize_qubits: bool,
+) -> ComponentCall:
+    width = len(right)
+    if btol < width and btol <= 1:
+        return call
+    truncated = btol < width
+    width = ceil(btol) - 1 if truncated else width
+    children = call.children
+    if (
+        (btol == inf or truncated)
+        and len(workspace) < width
+        and all(type(q) is int for q in right)
+    ):
+        children = (replace(call, name="flip_if_lt_qq"),)
+    elif (
+        width > 1
+        and (minimize_qubits or len(workspace) < width - 1)
+        and all(type(q) is not int for q in right[:width])
+    ):
+        children = (replace(call, name="xif_less_than_3anc_2ntof"),)
+    if truncated:
+        children = (replace(call, children=children),)
+    return replace(call, children=children)
 
 
 def physical_less_than(
@@ -53,33 +142,14 @@ def physical_less_than(
     btol: float,
     minimize_qubits: bool,
 ) -> tuple[ReversiblePhaseProgram, ComponentCall]:
-    """Keep the source's narrow comparison and measured-ladder dispatch."""
-    width = len(left)
-    truncated = btol < width and btol > 1
-    if truncated:
-        width = ceil(btol) - 1
-    skipped = btol < width and btol <= 1
-    dedicated = (btol == inf or truncated) and len(workspace) < width
-    gates = mixed_less_than_ir(
+    """Export the quantum less-than command through the shared comparator."""
+    program, (call,) = physical_comparison(
         left,
         right,
         target,
         workspace,
         control=control,
-        measurement_bit=0,
-        minimize_qubits=minimize_qubits,
         btol=btol,
-        emit_resets=True,
+        minimize_qubits=minimize_qubits,
     )
-    n_qubits = 1 + max((q for gate in gates for q in gate.wires), default=target)
-    program = lower_reversible_phase(CircuitIR(n_qubits, gates))
-    if not dedicated and not skipped and width > 1:
-        program = replace(
-            program,
-            operations=_ladder_scopes(program.operations, set(workspace[: width - 1])),
-        )
-    stop = len(program.operations)
-    children = (ComponentCall("flip_if_lt_qq", 0, stop),) if dedicated else ()
-    if truncated:
-        children = (ComponentCall("flip_if_lt", 0, stop, children=children),)
-    return program, ComponentCall("flip_if_lt", 0, stop, children=children)
+    return program, call

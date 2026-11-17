@@ -6,10 +6,12 @@
 
 """Fixed-wire quantum comparison in the locked Kickmix carry schedule."""
 
+from dataclasses import replace
 from math import ceil, inf, isnan
 from typing import cast
 
 from ....core.ir import Instruction
+from ..._component_trace.trace import ComponentCall
 from ...lowering.physical_trace import PhysicalTrace
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
@@ -74,7 +76,10 @@ def quantum_compare_ir(
         scratch = workspace[0] if workspace else None
         reset = (
             reset_x_register_ir((scratch,))
-            if emit_resets and scratch is not None and type(control) is int
+            if emit_resets
+            and scratch is not None
+            and target is not None
+            and type(control) is int
             else ()
         )
         return (
@@ -204,6 +209,7 @@ def quantum_equal_ir(
     *,
     control: int | bool = True,
     measurement_bit: int | None = None,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Apply the locked equality predicate to a target bit or its phase.
 
@@ -250,8 +256,13 @@ def quantum_equal_ir(
         )
 
     clean = workspace[:width]
-    gates = [*difference, *invert, *_flip(clean[0], control, lhs[0])]
+    gates = [*difference, *invert]
+    if emit_resets:
+        gates.extend(reset_x_register_ir((clean[0],)))
+    gates.extend(_flip(clean[0], control, lhs[0]))
     for i in range(1, width):
+        if emit_resets:
+            gates.extend(reset_x_register_ir((clean[i],)))
         gates.append(Instruction("ccx", (clean[i - 1], lhs[i], clean[i])))
     gates.extend(_flip(target, clean[-1], lhs[-1]))
 
@@ -353,7 +364,11 @@ def mixed_less_than_ir(
         scratch = workspace[0] if workspace and not minimize_qubits else None
         return (
             *difference,
-            *(reset(scratch) if type(control) is int else ()),
+            *(
+                reset(scratch)
+                if target is not None and type(control) is int and type(rhs[0]) is int
+                else ()
+            ),
             *_flip(
                 target,
                 control,
@@ -363,7 +378,11 @@ def mixed_less_than_ir(
                 measurement_bit=measurement_bit,
             ),
             *invert,
-            *(reset(scratch) if type(or_equal) is int and type(control) is int else ()),
+            *(
+                reset(scratch)
+                if target is not None and type(or_equal) is int and type(control) is int
+                else ()
+            ),
             *_flip(
                 target,
                 or_equal,
@@ -425,7 +444,7 @@ def mixed_less_than_ir(
         (
             *_flip(target, control, rhs[-1]),
             *restore,
-            *(reset(scratch) if type(control) is int else ()),
+            *(reset(scratch) if target is not None and type(control) is int else ()),
             *_flip(
                 target,
                 control,
@@ -466,6 +485,8 @@ def mixed_greater_than_ir(
     minimize_qubits: bool = False,
     btol: float = inf,
     low_space_bits: tuple[int, ...] = (),
+    emit_resets: bool = False,
+    export: PhysicalTrace | None = None,
 ) -> tuple[Instruction, ...]:
     """Complement the locked less-than comparison and restore the equality input.
 
@@ -506,5 +527,39 @@ def mixed_greater_than_ir(
         minimize_qubits=minimize_qubits,
         btol=btol,
         low_space_bits=low_space_bits,
+        emit_resets=emit_resets,
+        export=export,
     )
-    return (*invert, *compare, *_flip(target, control), *invert)
+    body = (*invert, *compare, *_flip(target, control), *invert)
+    if export is not None:
+        offset = len(invert)
+
+        def shift(call: ComponentCall) -> ComponentCall:
+            return replace(
+                call,
+                start=call.start + offset,
+                stop=call.stop + offset,
+                children=tuple(shift(child) for child in call.children),
+            )
+
+        export.feedback = [
+            (start + offset, stop + offset, bit) for start, stop, bit in export.feedback
+        ]
+        end = offset + len(compare)
+        export.calls = [shift(call) for call in export.calls]
+        export.inline_guards = [
+            (start + offset, stop + offset) for start, stop in export.inline_guards
+        ]
+        export.calls = [
+            ComponentCall(
+                "flip_if_gt",
+                0,
+                len(body),
+                children=(
+                    ComponentCall(
+                        "flip_if_lt", offset, end, children=tuple(export.calls)
+                    ),
+                ),
+            )
+        ]
+    return body
