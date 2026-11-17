@@ -79,6 +79,7 @@ Native FlagQuantum programs currently available:
 - [overview](finance/option_pricing/overview/README.md)
 - [overview](finance/portfolio_optimization/overview/README.md)
 - [overview](finance/rainbow_options/rainbow_options_bruteforce_method/overview/README.md)
+- [overview](finance/rainbow_options/rainbow_options_direct_method/overview/README.md)
 - [overview](finance/value_at_risk/overview/README.md)
 - [overview](logistics/facility_location/overview/README.md)
 - [overview](logistics/traveling_salesman_problem/overview/README.md)

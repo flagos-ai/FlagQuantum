@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **152/213**.
+Validated local Notebook workflows: **153/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -244,7 +244,7 @@ Validated local Notebook workflows: **152/213**.
 | `applications/finance/portfolio_optimization/portfolio_optimization` | notebook_workflow | [Native program](applications/finance/portfolio_optimization/overview/main.py) | validated |
 | `applications/finance/portfolio_optimization_hhl/HHL_portfolio` | notebook_workflow | [Native program](applications/finance/portfolio_optimization_hhl/hhl_portfolio/main.py) | pending |
 | `applications/finance/rainbow_options/rainbow_options_bruteforce_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_bruteforce_method/overview/main.py) | validated |
-| `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_direct_method/main.py) | pending |
+| `applications/finance/rainbow_options/rainbow_options_direct_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_direct_method/overview/main.py) | validated |
 | `applications/finance/rainbow_options/rainbow_options_integration_method` | notebook_workflow | [Native program](applications/finance/rainbow_options/rainbow_options_integration_method/main.py) | pending |
 | `applications/finance/value_at_risk/value_at_risk` | notebook_workflow | [Native program](applications/finance/value_at_risk/overview/main.py) | validated |
 | `applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection` | notebook_workflow | Pending | pending |
