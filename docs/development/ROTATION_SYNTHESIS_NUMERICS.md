@@ -29,3 +29,25 @@ locked reference environment. These files declare numerical operations.
 Their direct rotation-synthesis consumers have separate ledger items for
 channel, lattice, integer ring and matrix work. Circuit amplitudes,
 primitive counts and scratch checks apply at those consumers.
+
+## Integer square-root-two ring
+
+| Item | Frozen file under `rotation_synthesis/rings/` | Git blob |
+| --- | --- | --- |
+| Q-0856 | `_test_utils.py` | `57d62f94b3aef1392b47487d8906c2cdbc246aa1` |
+| Q-0857 | `_zsqrt2.py` | `c94516686151c5cda561e18eb045e0b54166d1f5` |
+| Q-0859 | `zsqrt2_test.py` | `caa82503b022b450dc141b97b35e36f52e20d958` |
+
+`ZSqrt2` stores the coefficients of `a + b*sqrt(2)` as immutable Python
+integers. Ordering, norms, quotient rounding and the Euclidean GCD stay
+in exact arithmetic. The port preserves the source's GCD unit selection,
+prime factor order, constants and cached radii. Numerical evaluation uses
+the configured square root of two. Prime operations require SymPy and load
+it only when called. Integer-valued native elements hash like equal Python
+integers, so either key finds the same dictionary entry.
+
+All 3,858 original cases pass on the locked source and in the native
+suite. Differential checks compare exact coefficient pairs, large-integer
+ordering, Euclidean division, exceptional inputs and all three radius
+backends. The original prime fixture remains test data. Complex ring,
+lattice and matrix consumers keep their own acceptance items.
