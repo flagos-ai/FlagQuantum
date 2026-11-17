@@ -1712,5 +1712,8 @@ and the repaired wheel carries the `cp310-abi3-manylinux_2_28_x86_64` tag.
 Its embedded Stim extension tops out at `GLIBC_2.14` and does not link a
 Stim Python extension, PyMatching, or PyTorch. A clean glibc 2.28 environment
 with CPython 3.12 and Torch 2.10.0 CPU ran both no-SDK reports and passed 29
-installed tests, with 18 skips. The release interpreter and runtime matrix
-still needs qualification.
+installed tests, with 18 skips. The identical repaired wheel also passed
+dependency verification and the same installed tests in a clean glibc 2.28
+environment with CPython 3.10.22 and Torch 2.14.1 CPU. Both reports again
+returned `stim_circuit 35 0`. This evidence is for the opt-in wheel built
+from commit `1a4620c6`; the default release workflow remains unchanged.
