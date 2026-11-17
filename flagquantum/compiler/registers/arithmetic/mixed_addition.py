@@ -4,12 +4,13 @@
 
 """Mixed-offset arithmetic with the locked measured carry cleanup."""
 
-from dataclasses import dataclass, field, replace
+from dataclasses import replace
 from math import ceil, inf, isnan
 
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
+from ...lowering.physical_trace import PhysicalTrace
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..layout.workspace import GenerationWorkspace
@@ -22,15 +23,6 @@ from .carry_parity import (
     carry_parity_ir,
 )
 from .vented_addition import vented_addition_ir
-
-
-@dataclass
-class AdditionExport:
-    """Own source component ranges and feedback scopes in instruction offsets."""
-
-    calls: list[ComponentCall] = field(default_factory=list)
-    feedback: list[tuple[int, int, int]] = field(default_factory=list)
-    implicit_zero_bits: set[int] = field(default_factory=set)
 
 
 def _xor_parity(
@@ -130,7 +122,7 @@ def _clean_prefix(
     workspace: GenerationWorkspace,
     bits: tuple[int, ...],
     btol: float,
-    export: AdditionExport | None,
+    export: PhysicalTrace | None,
     start: int,
 ) -> tuple[Instruction, ...]:
     if not bits:
@@ -199,12 +191,14 @@ def _add(
     bits: tuple[int, ...],
     btol: float,
     *,
-    export: AdditionExport | None = None,
+    export: PhysicalTrace | None = None,
     start: int = 0,
 ) -> tuple[Instruction, ...]:
     children = (
-        AdditionExport(
-            feedback=export.feedback, implicit_zero_bits=export.implicit_zero_bits
+        PhysicalTrace(
+            feedback=export.feedback,
+            implicit_zero_bits=export.implicit_zero_bits,
+            recycled_bits=export.recycled_bits,
         )
         if export is not None
         else None
@@ -230,12 +224,24 @@ def _add_body(
     control: int | bool,
     bits: tuple[int, ...],
     btol: float,
-    export: AdditionExport | None,
+    export: PhysicalTrace | None,
     start: int,
 ) -> tuple[Instruction, ...]:
     n = len(target)
     if n == 0:
         return ()
+    if len(offset) < n and export is not None:
+        return _add(
+            target,
+            (*offset, *((False,) * (n - len(offset)))),
+            workspace,
+            carry,
+            control,
+            bits,
+            btol,
+            export=export,
+            start=start,
+        )
     offset = (*offset, *((False,) * max(0, n - len(offset))))
     clean = workspace.clean
     if n > 1 and len(clean) < 2:
@@ -306,7 +312,11 @@ def _add_body(
     initialize = (
         tuple(ClassicalXor((), bit).instruction() for bit in vents[1:])
         if export is None
-        else ()
+        else tuple(
+            ClassicalXor((), bit).instruction()
+            for bit in bits[: n - 1]
+            if bit in export.recycled_bits
+        )
     )
     feedback: list[tuple[int, int, int]] | None = [] if export is not None else None
     body = vented_addition_ir(
@@ -339,12 +349,16 @@ def _add_body(
     )
     if export is not None and feedback is not None:
         export.implicit_zero_bits.update(vents[1:])
-        export.feedback.extend((start + a, start + b, bit) for a, b, bit in feedback)
-        stop_body = start + len(body)
+        export.feedback.extend(
+            (start + len(initialize) + a, start + len(initialize) + b, bit)
+            for a, b, bit in feedback
+        )
+        begin_body = start + len(initialize)
+        stop_body = begin_body + len(body)
         begin_erase = stop_body + len(invert) + len(correction)
         export.calls.extend(
             (
-                ComponentCall("c_iadd_classical_vented", start, stop_body),
+                ComponentCall("c_iadd_classical_vented", begin_body, stop_body),
                 ComponentCall("c_ixor_carries", begin_erase, begin_erase + len(erase)),
             )
         )
@@ -363,7 +377,7 @@ def mixed_addition_ir(
     minimize_qubits: bool = False,
     btol: float = inf,
     subtract: bool = False,
-    export: AdditionExport | None = None,
+    export: PhysicalTrace | None = None,
 ) -> tuple[Instruction, ...]:
     """Update a big-endian quantum word with a mixed offset and carry or borrow.
 
