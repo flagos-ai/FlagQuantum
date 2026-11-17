@@ -42,6 +42,14 @@ class RegisterInitialization:
 
 
 @dataclass(frozen=True)
+class BasisInput:
+    """Snapshot of the initialized packed wires before circuit execution."""
+
+    qubits: dict[int, int]
+    bits: dict[int, int]
+
+
+@dataclass(frozen=True)
 class BasisBatch:
     """Packed wire values, exact per-shot phase and actual operation counts."""
 
@@ -49,6 +57,8 @@ class BasisBatch:
     bits: dict[int, int]
     phase_units: tuple[int, ...]
     counts: Counter[str]
+    sign_mask: int
+    before: BasisInput | None
 
 
 def _apply_initialization(
@@ -87,15 +97,24 @@ def sample_basis_batch(
     rng: Random,
     initialization: Sequence[RegisterInitialization] = (),
     outcome_mask: Callable[[], int] | None = None,
+    capture_before: bool = False,
+    debug: Callable[[int, bool], None] | None = None,
 ) -> BasisBatch:
-    """Run up to 64 input-basis shots, retaining exact signed phase per shot."""
+    """Run up to 64 input-basis shots and report exact combined phase.
+
+    An optional debug observer receives shot zero's value when active and
+    a flag identifying angle values. Debug angle reads see the rotation
+    accumulator; the source commits the separate sign mask after the scan.
+    """
     if not 1 <= shots <= 64:
         raise ValueError("A physical basis batch requires 1 to 64 shots")
     full = (1 << shots) - 1
     q: defaultdict[int, int] = defaultdict(int)
     b: defaultdict[int, int] = defaultdict(int)
     _apply_initialization(initialization, q, b, shots, rng)
+    before = BasisInput(dict(q), dict(b)) if capture_before else None
     scopes = [full]
+    sign = 0
     phases = [0] * shots
     counts: Counter[str] = Counter()
     draw = outcome_mask if outcome_mask is not None else lambda: rng.getrandbits(shots)
@@ -114,6 +133,13 @@ def sample_basis_batch(
 
         counts[code] += active.bit_count()
         if code.startswith("DEBUG_PRINT"):
+            if debug is not None and active & 1:
+                if record.qubits:
+                    debug(q[record.qubits[0]] & 1, False)
+                elif record.result_bit is not None:
+                    debug(b[record.result_bit] & 1, False)
+                else:
+                    debug(phases[0], True)
             continue
         if code in {"BIT_STORE0", "BIT_STORE1", "BIT_INVERT"}:
             result = record.result_bit
@@ -138,7 +164,6 @@ def sample_basis_batch(
             q[left] ^= toggled
             q[right] ^= toggled
         else:
-            phase = _SIGN
             if code in {"R", "HMR"}:
                 target = record.qubits[0]
                 selected = active
@@ -152,14 +177,19 @@ def sample_basis_batch(
             elif code in {"Z", "CZ", "CCZ", "Z_POW", "NEG"}:
                 for wire in record.qubits:
                     active &= q[wire]
-                if record.angle is not None:
-                    phase = record.angle.units
             else:
                 raise ValueError(f"Unsupported physical basis operation {code!r}")
+            if record.angle is None:
+                sign ^= active
+                continue
+            phase = record.angle.units
             while active:
                 low = active & -active
                 index = low.bit_length() - 1
                 phases[index] = (phases[index] + phase) % _TURN
                 active ^= low
 
-    return BasisBatch(dict(q), dict(b), tuple(phases), counts)
+    angles = tuple(
+        (phase + ((sign >> i) & 1) * _SIGN) % _TURN for i, phase in enumerate(phases)
+    )
+    return BasisBatch(dict(q), dict(b), angles, counts, sign, before)
