@@ -1,0 +1,402 @@
+{
+  "estimate_ccz_states_0": {
+    "text": "\n        ",
+    "canonical": "",
+    "stats": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "estimate_ccz_states_1": {
+    "text": "\n            Z_POW q0 0.25\n            Z_POW q1 0.25\n        ",
+    "canonical": "Z_POW q0 0.25\nZ_POW q1 0.25",
+    "stats": [
+      2,
+      0,
+      0,
+      2,
+      2,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      1
+    ]
+  },
+  "estimate_ccz_states_2": {
+    "text": "\n            CCX q0 q1 q2\n            CCZ q0 q1 q2\n            CSWAP q0 q1 q2\n            CCX q0 q1 q2 if b0\n            CCZ q0 q1 q2 if b1\n            CSWAP q0 q1 q2 if b2\n        ",
+    "canonical": "CCX q0 q1 q2\nCCZ q0 q1 q2\nCSWAP q0 q1 q2\nCCX q0 q1 q2 if b0\nCCZ q0 q1 q2 if b1\nCSWAP q0 q1 q2 if b2",
+    "stats": [
+      3,
+      3,
+      0,
+      6,
+      0,
+      0,
+      6,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      6
+    ]
+  },
+  "estimate_ccz_states_3": {
+    "text": "\n        REGISTER r0\n        APPEND_TO_REGISTER q0 r0\n        APPEND_TO_REGISTER b0 r0\n        DEBUG_PRINT\n        X q0\n        X q1 if b0\n        CX q0 q1\n        CX q1 q2 if b1\n        NEG\n        NEG if b3\n        Z q5\n        Z q6 if b4\n        CZ q5 q6\n        CZ q6 q7 if b5\n        HMR q9 b7\n        HMR q10 b17 if b18\n        R q11\n        R q12 if b19\n        BIT_INVERT b8\n        BIT_INVERT b9 if b10\n        BIT_STORE0 b11\n        BIT_STORE0 b12 if b13\n        BIT_STORE1 b14\n        BIT_STORE1 b15 if b16\n        PUSH_CONDITION if b21\n        SWAP q13 q14\n        SWAP q15 q16 if b20\n        POP_CONDITION\n    ",
+    "canonical": "APPEND_TO_REGISTER q0 r0\nAPPEND_TO_REGISTER b0 r0\nDEBUG_PRINT\nX q0\nX q1 if b0\nCX q0 q1\nCX q1 q2 if b1\nNEG\nNEG if b3\nZ q5\nZ q6 if b4\nCZ q5 q6\nCZ q6 q7 if b5\nHMR q9 b7\nHMR q10 b17 if b18\nR q11\nR q12 if b19\nBIT_INVERT b8\nBIT_INVERT b9 if b10\nBIT_STORE0 b11\nBIT_STORE0 b12 if b13\nBIT_STORE1 b14\nBIT_STORE1 b15 if b16\nPUSH_CONDITION if b21\nSWAP q13 q14\nSWAP q15 q16 if b20\nPOP_CONDITION",
+    "stats": [
+      17,
+      22,
+      1,
+      25,
+      8,
+      6,
+      0,
+      8,
+      12,
+      0,
+      0,
+      0,
+      1,
+      0
+    ]
+  },
+  "compute_max_condition_depth_0": {
+    "text": "\n    ",
+    "canonical": "",
+    "stats": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "compute_max_condition_depth_1": {
+    "text": "\n        X q0\n    ",
+    "canonical": "X q0",
+    "stats": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "compute_max_condition_depth_2": {
+    "text": "\n        POP_CONDITION\n    ",
+    "canonical": "POP_CONDITION",
+    "stats": [
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "compute_max_condition_depth_3": {
+    "text": "\n        PUSH_CONDITION if b0\n    ",
+    "canonical": "PUSH_CONDITION if b0",
+    "stats": [
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0
+    ]
+  },
+  "compute_max_condition_depth_4": {
+    "text": "\n        POP_CONDITION\n        PUSH_CONDITION if b0\n    ",
+    "canonical": "POP_CONDITION\nPUSH_CONDITION if b0",
+    "stats": [
+      0,
+      1,
+      0,
+      2,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0
+    ]
+  },
+  "compute_max_condition_depth_5": {
+    "text": "\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        POP_CONDITION\n        POP_CONDITION\n    ",
+    "canonical": "PUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPOP_CONDITION\nPOP_CONDITION",
+    "stats": [
+      0,
+      2,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      2,
+      0
+    ]
+  },
+  "compute_max_condition_depth_6": {
+    "text": "\n        PUSH_CONDITION if b0\n        POP_CONDITION\n        PUSH_CONDITION if b1\n        POP_CONDITION\n    ",
+    "canonical": "PUSH_CONDITION if b0\nPOP_CONDITION\nPUSH_CONDITION if b1\nPOP_CONDITION",
+    "stats": [
+      0,
+      2,
+      0,
+      4,
+      0,
+      0,
+      0,
+      0,
+      2,
+      0,
+      0,
+      0,
+      1,
+      0
+    ]
+  },
+  "compute_max_condition_depth_7": {
+    "text": "\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        PUSH_CONDITION if b2\n    ",
+    "canonical": "PUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPUSH_CONDITION if b2",
+    "stats": [
+      0,
+      3,
+      0,
+      3,
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0,
+      0,
+      3,
+      0
+    ]
+  },
+  "compute_max_condition_depth_8": {
+    "text": "\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        PUSH_CONDITION if b2\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n    ",
+    "canonical": "PUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPUSH_CONDITION if b2\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION",
+    "stats": [
+      0,
+      3,
+      0,
+      9,
+      0,
+      0,
+      0,
+      0,
+      3,
+      0,
+      0,
+      0,
+      3,
+      0
+    ]
+  },
+  "compute_max_condition_depth_9": {
+    "text": "\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        PUSH_CONDITION if b2\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n    ",
+    "canonical": "PUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPUSH_CONDITION if b2\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPUSH_CONDITION if b0\nPUSH_CONDITION if b1",
+    "stats": [
+      0,
+      3,
+      0,
+      11,
+      0,
+      0,
+      0,
+      0,
+      5,
+      0,
+      0,
+      0,
+      3,
+      0
+    ]
+  },
+  "compute_max_condition_depth_10": {
+    "text": "\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        PUSH_CONDITION if b2\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        PUSH_CONDITION if b2\n    ",
+    "canonical": "PUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPUSH_CONDITION if b2\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPUSH_CONDITION if b2",
+    "stats": [
+      0,
+      3,
+      0,
+      12,
+      0,
+      0,
+      0,
+      0,
+      6,
+      0,
+      0,
+      0,
+      3,
+      0
+    ]
+  },
+  "compute_max_condition_depth_11": {
+    "text": "\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        PUSH_CONDITION if b2\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        POP_CONDITION\n        PUSH_CONDITION if b0\n        PUSH_CONDITION if b1\n        PUSH_CONDITION if b2\n        PUSH_CONDITION if b1\n    ",
+    "canonical": "PUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPUSH_CONDITION if b2\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPOP_CONDITION\nPUSH_CONDITION if b0\nPUSH_CONDITION if b1\nPUSH_CONDITION if b2\nPUSH_CONDITION if b1",
+    "stats": [
+      0,
+      3,
+      0,
+      13,
+      0,
+      0,
+      0,
+      0,
+      7,
+      0,
+      0,
+      0,
+      4,
+      0
+    ]
+  },
+  "syntax": {
+    "text": "# header\r\nX q1 # inline\rHMR q8 b1 if b2\nINFO_TAG \"caf\u00e9\"\n",
+    "canonical": "X q1\nHMR q8 b1 if b2\nINFO_TAG \"caf\u00e9\"",
+    "stats": [
+      9,
+      3,
+      0,
+      3,
+      2,
+      0,
+      0,
+      1,
+      1,
+      0,
+      1,
+      5,
+      0,
+      0
+    ]
+  },
+  "named": {
+    "text": "REGISTER r2 \"only name\"\nAPPEND_TO_REGISTER q5 r1\nAPPEND_TO_REGISTER b8 r1\nINFO_TAG \"a\\P\\n\"\nCCZ q0 q1 q2\nZ_POW q1 0.5 if b8\n",
+    "canonical": "REGISTER r0\nAPPEND_TO_REGISTER q5 r1\nAPPEND_TO_REGISTER b8 r1\nREGISTER r2 \"only name\"\nINFO_TAG \"a\\P\\n\"\nCCZ q0 q1 q2\nZ_POW q1 0.5 if b8",
+    "stats": [
+      6,
+      9,
+      3,
+      3,
+      1,
+      0,
+      1,
+      0,
+      1,
+      1,
+      1,
+      3,
+      0,
+      2
+    ]
+  },
+  "trailing_blank": {
+    "text": "X q0\r\n\r\n",
+    "canonical": "X q0",
+    "stats": [
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  "debug_columns": {
+    "text": "DEBUG_PRINT\nDEBUG_PRINT q3 if b1\nDEBUG_PRINT b2\n",
+    "canonical": "DEBUG_PRINT\nDEBUG_PRINT q3 if b1\nDEBUG_PRINT b2",
+    "stats": [
+      4,
+      3,
+      0,
+      3,
+      1,
+      0,
+      0,
+      1,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

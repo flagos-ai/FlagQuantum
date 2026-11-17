@@ -32,6 +32,7 @@ _ANGLE = Struct("<QQ")
 _REGISTER = re.compile(rf'REGISTER[ \t]+r([0-9]+)(?:[ \t]+"({QUOTED_UNIT}*)")?')
 _MEMBER = re.compile(r"APPEND_TO_REGISTER[ \t]+([qb][0-9]+)[ \t]+r([0-9]+)")
 _TAG = re.compile(rf'INFO_TAG[ \t]+"({QUOTED_UNIT}*)"')
+_FILE_QUOTED_FIELD = re.compile(r'"(?:[^"\\]|\\.)*"')
 _MAX_WIRES = 500_000_000
 _MAX_REGISTERS = 1_000_000
 _MAX_RECORDS = 2_000_000_000
@@ -235,12 +236,21 @@ def _pack_words(values: Sequence[int], word: Struct) -> bytes:
     return b"".join(word.pack(value) for value in values)
 
 
-def encode_kmb(text: str) -> bytes:
-    """Encode KMX operations and register directives as source-compatible KMB v2."""
+def _parse_kmx(text: str, *, file_text: bool = False) -> _Columns:
     columns = _Columns()
-    for raw in text.split("\n"):
+    for raw in re.split(r"[\r\n]", text):
+        if file_text:
+            raw = _FILE_QUOTED_FIELD.sub(
+                lambda match: match[0].replace("#", r"\P"), raw, count=1
+            )
         if line := raw.partition("#")[0].strip():
             _parse_statement(columns, line)
+    return columns
+
+
+def encode_kmb(text: str) -> bytes:
+    """Encode KMX operations and register directives as source-compatible KMB v2."""
+    columns = _parse_kmx(text)
     _, n_qubits, n_bits = _validated_lines(columns)
     names = [tag.encode() for tag in columns.tags]
     tag_text = b"".join(names)
