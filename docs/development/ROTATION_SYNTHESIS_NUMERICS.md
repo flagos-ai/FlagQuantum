@@ -75,3 +75,40 @@ integer GCDs against the source, both subring directions, type and value
 of the three numerical backends, and the original errors on unsupported
 exponents and scalar equality. No circuit or resource model is emitted
 by this layer.
+
+## Exact SU(2) Clifford+T matrices
+
+| Item | Frozen file under `rotation_synthesis/matrix/` | Git blob |
+| --- | --- | --- |
+| Q-0840 | `_su2_ct.py` | `5096d82e23a7fc95ecbacd887952a0ed31946033` |
+| Q-0844 | `su2_ct_test.py` | `9380fe8358cc30bbab4d0f2f41e91cf9414c7c58` |
+
+`flagquantum/synth/_su2_ct.py` keeps exact scaled matrices over the
+existing integer rings. It stores the circuit-order word when both
+multiplication operands carry one. The source adjoint drops that word,
+and scale reduction preserves it. Determinant, parametric coordinates,
+phase selection for input pairs and the parity lookup operate on exact
+coefficients. Float, NumPy and mpmath normalization use the existing
+math configurations.
+
+The complete original suite and the corresponding native cases pass.
+The native tests use a fixed seed and materialize the parameter grids.
+They compare coefficients, gate words, parity keys, primitive operands,
+and both columns of the native CPU matrix against the locked reference.
+The circuit tests bind words with the existing `Circuit.append(op)`
+protocol and use one wire with no ancillary or measured registers.
+
+The source normalizes H by `i`, S by `exp(-i*pi/4)`, X and Z by `i`,
+Y by `-i`, and each positive axis T by `exp(-i*pi/8)` relative to
+the physical gates or conjugation recipes. The tests apply each
+specified factor, conjugating it for adjoints, before checking complex
+amplitudes. The native X-axis recipe emits H, T, H in circuit order,
+giving three primitives and one T. The Y-axis recipe emits S adjoint,
+H, T, H, S, giving five primitives and one T. The Z-axis recipe emits
+one T. The exact determinant model reports one T for each rotation.
+The Z-axis rotation followed by its inverse emits T and T adjoint,
+while the scale-reduced determinant model reports zero T.
+
+The Clifford catalogue used by the original T-count test remains a
+frozen test fixture until its generation module is ported. The exact
+matrix module has no production dependency on that catalogue.
