@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **162/213**.
+Validated local Notebook workflows: **163/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -227,7 +227,7 @@ Validated local Notebook workflows: **162/213**.
 | `applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial` | notebook_workflow | Pending | pending |
 | `applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/main.py) | validated |
 | `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/main.py) | pending |
-| `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | [Native program](applications/chemistry/qpe_for_molecules/main.py) | pending |
+| `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | [Native program](applications/chemistry/qpe_for_molecules/overview/main.py) | validated |
 | `applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator` | notebook_workflow | [Native program](applications/chemistry/quantum_drude_oscillator/overview/main.py) | validated |
 | `applications/chemistry/quantum_walk_fmo/quantum_walk_fmo` | notebook_workflow | [Native program](applications/chemistry/quantum_walk_fmo/main.py) | validated |
 | `applications/chemistry/second_quantized_hamiltonian/second_quantized_hamiltonian` | notebook_workflow | [Native program](applications/chemistry/second_quantized_hamiltonian/overview/main.py) | validated |

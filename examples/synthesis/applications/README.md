@@ -72,6 +72,7 @@ Native FlagQuantum programs currently available:
 - [overview](chemistry/molecular_energy_curve/overview/README.md)
 - [overview](chemistry/molecule_eigensolver/overview/README.md)
 - [overview](chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/README.md)
+- [overview](chemistry/qpe_for_molecules/overview/README.md)
 - [overview](chemistry/quantum_drude_oscillator/overview/README.md)
 - [quantum_walk_fmo](chemistry/quantum_walk_fmo/README.md)
 - [overview](chemistry/second_quantized_hamiltonian/overview/README.md)
