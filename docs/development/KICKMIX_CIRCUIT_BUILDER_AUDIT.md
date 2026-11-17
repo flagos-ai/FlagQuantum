@@ -497,3 +497,31 @@ mixed-lane records and the 27 affine wire selections also remain covered.
 Binary/unary conversion uses native typed CSWAP and CX row binding in both
 traversal directions. No additional quantum resources or result slots
 are allocated by dispatch. K-0012 covers the separate benchmark file.
+
+### Physical column workloads
+
+K-0012 covers the five workloads in locked `circuit_pattern.perf.cc`
+(blob `fcf2d76936178fd3fb503e544e5eb33e89ff7995`). Both paths use 256 lanes
+and the original unsigned input sequence `k*k+3`. The original C++ oracle
+uses the locked gather implementation and the original column definitions.
+Native binding checks the SHA-256 of the full lane-ordered operand stream
+against that oracle before timing.
+
+| Columns | Operands checked | Source gather | Native binding median |
+| --- | ---: | ---: | ---: |
+| 1 | 256 | 260 ns | 181 µs |
+| 2 | 512 | 360 ns | 370 µs |
+| 3 | 768 | 410 ns | 549 µs |
+| 4 | 1024 | 880 ns | 744 µs |
+| 7 | 1792 | 1.3 µs | 1293 µs |
+
+The five shapes cover offset, contiguous, positive and negative stride, and
+broadcast columns. The source figures time raw 32-bit arena gathering
+with a 0.01-second target. Native figures time binding preselected physical
+columns and allocating Python operation objects. The two timed contracts
+differ. Neither workload executes a circuit or has primitive or modeled
+quantum resource counts.
+
+Run the native verification and timing with
+`python -m benchmarks.reversible_pattern_binding --iterations 3`.
+The separate circuit-builder benchmark is K-0007.
