@@ -132,6 +132,9 @@ def test_original_gate_order_and_abstract_vs_decomposed_costs(
     ):
         assert getattr(root, attr) == getattr(source, attr)
     assert root.signal_state.selection_width == source.signal_state.selection_bitsize
+    assert [(r.name, r.bitsize) for r in root.signature] == [
+        (r.name, r.bitsize) for r in source.signature
+    ]
     original = source.adjoint() if adjoint else source
     order = (
         tuple(range(len(blocks))) if adjoint else tuple(reversed(range(len(blocks))))
@@ -556,3 +559,117 @@ def test_runtime_product_projected_block_and_exact_inverse(capsys):
     assert "Model T equivalents / emitted T instructions 9 9" in output
     assert "Abstract / decomposition model Clifford counts 9 21" in output
     assert "Model logical peak / reserved wires 7 7" in output
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize(
+    "ancilla_kinds, resource_kinds",
+    [
+        (("a", "b"), (0, 0)),
+        (("a", 0), (0, 0)),
+        (("a", 1), (0, 0)),
+        (("a", 2), (0, 0)),
+        (("a", "b"), ("r", "r")),
+        ((0, "b"), (0, "positive_r")),
+        (("a", 0, "b"), (0, 0, 0)),
+        ((0, 2), (0, 0)),
+    ],
+)
+def test_symbolic_product_declaration_and_fallback_resource_model(
+    ancilla_kinds: tuple[int | str, ...], resource_kinds: tuple[int | str, ...]
+) -> None:
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.basic_gates import Hadamard, Identity, TGate
+    from qualtran.bloqs.block_encoding import Product, Unitary
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from sympy import Symbol, simplify
+
+    from flagquantum.algorithms.primitives.product_block_encoding import (
+        source_product_block_signature,
+        source_symbolic_product_resource_formula,
+    )
+    from flagquantum.algorithms.primitives.unitary_block_encoding import (
+        source_unitary_block_resource_formula,
+    )
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
+        SymbolicResourceFormula,
+    )
+
+    symbols = {key: Symbol(key) for key in ("a", "b", "r")}
+    symbols["positive_r"] = Symbol("p", integer=True, positive=True)
+    ancillas = tuple(symbols[v] if isinstance(v, str) else v for v in ancilla_kinds)
+    resources = tuple(symbols[v] if isinstance(v, str) else v for v in resource_kinds)
+    system = symbols["a"] if ancilla_kinds == (0, 2) else 1
+    leaf = (
+        (TGate(), Hadamard(), TGate())
+        if system == 1
+        else (Identity(system), Identity(system))
+    )
+    leaf_gates = ((0, 1), (1, 0), (0, 1)) if system == 1 else ((0, 0), (0, 0))
+    native_children = tuple(
+        source_unitary_block_resource_formula(
+            SymbolicResourceFormula(0, c, 0, system, t=t), ancilla=a, resource=r
+        )
+        for (c, t), a, r in zip(
+            leaf_gates[: len(ancillas)], ancillas, resources, strict=True
+        )
+    )
+    locked = Product(
+        tuple(
+            Unitary(gate, ancilla_bitsize=a, resource_bitsize=r)
+            for gate, a, r in zip(
+                leaf[: len(ancillas)], ancillas, resources, strict=True
+            )
+        )
+    )
+    native = source_product_block_signature(system, ancillas, resources)
+    assert [(reg.name, reg.bitsize) for reg in native] == [
+        (reg.name, reg.bitsize) for reg in locked.signature
+    ]
+    with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+        locked.decompose_bloq()
+    for legacy in (False, True):
+        expected = get_cost_value(locked, QECGatesCost(legacy_shims=legacy))
+        formula = source_symbolic_product_resource_formula(
+            system, ancillas, resources, native_children, legacy_shims=legacy
+        )
+        for name in asdict(GateCost()):
+            assert simplify(getattr(formula, name) - getattr(expected, name)) == 0
+        assert (
+            simplify(formula.logical_qubits - get_cost_value(locked, QubitCount())) == 0
+        )
+
+
+@pytest.mark.ftqc_reference
+def test_symbolic_unequal_resource_partition_keeps_source_admission_boundary() -> None:
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+    from qualtran.bloqs.block_encoding import Product, Unitary
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+    from sympy import Symbol
+
+    from flagquantum.algorithms.primitives.product_block_encoding import (
+        source_product_block_signature,
+        source_symbolic_product_resource_formula,
+    )
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
+        SymbolicResourceFormula,
+    )
+
+    r = Symbol("r")
+    locked = Product.of(Unitary(TGate(), resource_bitsize=r), Unitary(Hadamard()))
+    declared = source_product_block_signature(1, (0, 0), (r, 0))
+    assert [(port.name, port.bitsize) for port in declared] == [
+        (port.name, port.bitsize) for port in locked.signature
+    ]
+    with pytest.raises(ValueError, match="Total bitsize.*partition"):
+        get_cost_value(locked, QECGatesCost())
+    with pytest.raises(ValueError, match="unequal nonzero"):
+        source_symbolic_product_resource_formula(
+            1,
+            (0, 0),
+            (r, 0),
+            (
+                SymbolicResourceFormula(0, 0, 0, r + 1, t=1),
+                SymbolicResourceFormula(0, 1, 0, 1),
+            ),
+        )
