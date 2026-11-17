@@ -6,15 +6,13 @@
 
 from collections.abc import Sequence
 
-from ...core.ir import CircuitIR
 from .._component_trace.trace import ComponentCall, ComponentTrace
 from ..artifacts.reversible_phase import ReversiblePhaseProgram
 from ..formats.kmb import _MAX_WIRES, KmxRegister
 from ..formats.kmx_block_marks import encode_kmx_block_marks
 from ..formats.kmx_circuit import KmxCircuit, read_kmx_circuit
-from ..lowering.reversible_phase import lower_reversible_phase
-from .arithmetic.inplace_addition import inplace_addition_ir
 from .arithmetic.physical_addition import physical_classical_addition
+from .arithmetic.physical_inplace_addition import physical_inplace_addition
 from .comparison.physical_comparison import physical_less_than
 from .finite_field.coefficients import ClassicalFieldCoefficient
 from .lookup.measured_unlookup import measured_unlookup_operations
@@ -58,29 +56,20 @@ def generate_addition(
     enable = (control_wire,) if controlled else ()
     dirty_start = control_wire + len(enable)
     dirty = tuple(range(dirty_start, dirty_start + dirty_count))
-    gates = inplace_addition_ir(
+    program, calls = physical_inplace_addition(
         target[::-1],
         offset[::-1],
         clean=clean,
         dirty=dirty,
         control=control_wire if controlled else True,
-        measurement_bit=0,
         minimize_qubits=minimize_qubits,
-        emit_resets=True,
     )
-    width_with_work = max(
-        1,
-        dirty_start + dirty_count,
-        1 + max((wire for gate in gates for wire in gate.wires), default=-1),
-    )
-    program = lower_reversible_phase(CircuitIR(width_with_work, gates))
     registers: tuple[KmxRegister, ...] = (
         _quantum_register(target),
         _quantum_register(offset),
     )
     if controlled:
         registers += (_quantum_register(enable),)
-    calls = [ComponentCall("iadd", 0, len(program.operations))]
     return _physical_circuit(registers, program, calls)
 
 
