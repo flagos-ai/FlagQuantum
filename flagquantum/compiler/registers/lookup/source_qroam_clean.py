@@ -42,7 +42,12 @@ def optimal_qroam_clean_log_block_size(data_size: int, target_bits: int) -> int:
 
 @dataclass(frozen=True)
 class QroamCleanTable:
-    """Concrete scalar datasets on shared axes with explicit block exponents."""
+    """Concrete scalar datasets on shared axes with explicit block exponents.
+
+    A block spanning the complete table loads constant banks with no high
+    address, then routes by the low address. Mixed omitted selectors retain
+    the source admission boundary.
+    """
 
     shape: tuple[int, ...]
     log_block_sizes: tuple[int, ...]
@@ -66,7 +71,8 @@ class QroamCleanTable:
         ):
             raise ValueError("QROAM requires datasets matching the full table shape")
         if any(self.log_block_sizes) and (
-            not all(self.log_block_sizes) or 1 in self.batch_shape
+            not all(self.log_block_sizes)
+            or (1 in self.batch_shape and not all(n == 1 for n in self.batch_shape))
         ):
             raise ValueError(
                 "Source blocked QROAM cannot bind omitted high or low selectors"

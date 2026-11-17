@@ -341,12 +341,48 @@ def test_locked_source_omitted_selectors(
     source = QROAMClean.build_from_data(
         np.array(dataset).reshape(shape), log_block_sizes=logs
     )
-    with pytest.raises(ValueError, match="omitted"):
-        QroamCleanTable(shape, logs, (dataset,))
+    if shape == (4,):
+        table = QroamCleanTable(shape, logs, (dataset,))
+        assert table.workspace_size(0, (2,)) == 0
+    else:
+        with pytest.raises(ValueError, match="omitted"):
+            QroamCleanTable(shape, logs, (dataset,))
     from qualtran._infra.composite_bloq import BloqError
 
     with pytest.raises(BloqError):
         source.decompose_bloq()
+
+
+def test_whole_table_block_loads_constants_and_routes_exact_phases() -> None:
+    table = QroamCleanTable((4,), (2,), ((0, 1, 2, 3),))
+    selection = (0, 1)
+    bank = ((2, 3), (4, 5), (6, 7), (8, 9))
+    banks = (bank,)
+    gates = source_qroam_clean_ir(table, (), (selection,), banks, (), ())
+    inverse = source_qroam_clean_uncompute_ir(table, (), (selection,), banks, (), ())
+    load = (
+        Instruction("x", (5,)),
+        Instruction("x", (6,)),
+        Instruction("x", (8,)),
+        Instruction("x", (9,)),
+    )
+    route = (
+        *source_relative_swap(1, bank[0], bank[1]),
+        *source_relative_swap(1, bank[2], bank[3]),
+        *source_relative_swap(0, bank[0], bank[2]),
+    )
+    assert_source(gates, (*load, *route))
+    state = torch.zeros(1 << 10, dtype=torch.complex128)
+    for address in range(4):
+        state[address << 8] = complex(address + 1, 4 - address)
+    state /= state.norm()
+    expected = forced_branch(state, (*load, *route), ())
+    torch.testing.assert_close(
+        forced_branch(state, gates, ()), expected, atol=2e-12, rtol=0
+    )
+    torch.testing.assert_close(
+        forced_branch(expected, inverse, ()), state, atol=2e-12, rtol=0
+    )
 
 
 def test_rejects_bad_table_and_bank_bindings() -> None:
