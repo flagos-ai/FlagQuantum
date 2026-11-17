@@ -3,19 +3,24 @@
 # Adapted from Qualtran v0.7.0 BlackBoxPrepare and its AutoPartition binding.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/state_preparation/black_box_prepare.py
 
-"""Expose a concrete preparation through packed selection and junk ports."""
+"""Declare packed PREPARE ports and bind concrete preparation emitters."""
+
+from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from functools import cached_property
 
 from ...circuit import Circuit
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.auto_partition import AutoPartition
 from ...compiler.registers.layout.partition import RegisterLayout
 from ...core.ir import CircuitIR, Instruction
-from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt, SymbolicReal, ssum
+from .prepare_oracle import PrepareOracle
 
 PrepareEmitter = Callable[
     [Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
@@ -30,6 +35,64 @@ def _identity_prepare(
     adjoint: bool,
 ) -> tuple[Instruction, ...]:
     return ()
+
+
+@dataclass(frozen=True)
+class PackedPrepareDeclaration:
+    """Preserve the packed metadata of a native PREPARE oracle."""
+
+    prepare: PrepareOracle
+
+    @cached_property
+    def selection_width(self) -> SymbolicInt:
+        return ssum(reg.total_bits() for reg in self.prepare.selection_registers)
+
+    @cached_property
+    def junk_width(self) -> SymbolicInt:
+        return ssum(reg.total_bits() for reg in self.prepare.junk_registers)
+
+    @cached_property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return (Register("selection", opaque_register_type(self.selection_width)),)
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return (Register("junk", opaque_register_type(self.junk_width)),)
+
+    @cached_property
+    def signature(self) -> Signature:
+        return Signature.build(selection=self.selection_width, junk=self.junk_width)
+
+    @cached_property
+    def l1_norm_of_coeffs(self) -> SymbolicReal:
+        return self.prepare.l1_norm_of_coeffs
+
+    def bind(self, emit: PrepareEmitter) -> BlackBoxPrepare:
+        """Bind a native emitter once the named layout and its norm are concrete."""
+        selection = _concrete_layout(self.prepare.selection_registers)
+        junk = _concrete_layout(self.prepare.junk_registers)
+        try:
+            normalization = self.l1_norm_of_coeffs
+        except NotImplementedError:
+            normalization = None
+        if normalization is not None and not isinstance(normalization, (int, float)):
+            raise ValueError("PREPARE binding requires a concrete normalization")
+        return BlackBoxPrepare(selection, junk, emit, normalization)
+
+    def __str__(self) -> str:
+        return "Prep"
+
+
+def _concrete_layout(registers: tuple[Register, ...]) -> RegisterLayout:
+    layout: list[tuple[str, int]] = []
+    for reg in registers:
+        width = reg.total_bits()
+        if not isinstance(width, int):
+            raise ValueError(
+                f"PREPARE binding requires a concrete width for {reg.name}"
+            )
+        layout.append((reg.name, width))
+    return tuple(layout) if any(width for _, width in layout) else ()
 
 
 @dataclass(frozen=True)
@@ -62,17 +125,7 @@ class BlackBoxPrepare:
     @property
     def signature(self) -> Signature:
         """Describe the original scalar packed through ports."""
-        widths = (("selection", self.selection_width), ("junk", self.junk_width))
-        return Signature(
-            tuple(
-                Register(
-                    name,
-                    quantum_bit_type() if width == 1 else opaque_register_type(width),
-                )
-                for name, width in widths
-                if width
-            )
-        )
+        return Signature.build(selection=self.selection_width, junk=self.junk_width)
 
     def make_on(
         self,
