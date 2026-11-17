@@ -94,6 +94,21 @@ def binary_linear_map_ir(
     return _linear_map(target[::-1], _inverse_columns(columns) if adjoint else columns)
 
 
+def physical_binary_linear_map(
+    target: tuple[int, ...], columns: tuple[int, ...], *, adjoint: bool = False
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export the source PLU map and its single block mark."""
+    body = binary_linear_map_ir(target, columns, adjoint=adjoint)
+    calls = [ComponentCall("linear_map", 0, len(body))] if target else []
+    return lower_physical_trace(
+        body,
+        0,
+        max(target, default=0),
+        PhysicalTrace(calls=calls),
+        reorder_feedback=False,
+    )
+
+
 def field_constant_scale_ir(
     target: tuple[int, ...],
     constant: int,
@@ -161,6 +176,18 @@ def physical_field_constant_scale(
     )
 
 
+def _frobenius_columns(width: int, count: int, modulus: int) -> tuple[int, ...]:
+    root = _remainder(2, modulus)
+    for _ in range(count):
+        root = _product(root, root, modulus)
+    columns = []
+    value = 1
+    for _ in range(width):
+        columns.append(value)
+        value = _product(value, root, modulus)
+    return tuple(columns)
+
+
 def field_frobenius_ir(
     target: tuple[int, ...],
     count: int = 1,
@@ -177,15 +204,7 @@ def field_frobenius_ir(
     count = (-count if adjoint else count) % width
     if count == 0:
         return ()
-    root = _remainder(2, modulus)
-    for _ in range(count):
-        root = _product(root, root, modulus)
-    columns = []
-    value = 1
-    for _ in target:
-        columns.append(value)
-        value = _product(value, root, modulus)
-    return _linear_map(target[::-1], tuple(columns))
+    return _linear_map(target[::-1], _frobenius_columns(width, count, modulus))
 
 
 def append_field_frobenius(
