@@ -7,6 +7,10 @@
 from math import gcd
 
 from ....core.ir import Instruction
+from ..._component_trace.trace import ComponentCall
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
+from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
+from ._physical_calls import append_field_call
 from .field_multiplication import (
     _field_plu,
     _field_power,
@@ -132,6 +136,44 @@ def field_frobenius_ir(
         columns.append(value)
         value = _product(value, root, modulus)
     return _linear_map(target[::-1], tuple(columns))
+
+
+def append_field_frobenius(
+    gates: list[Instruction],
+    calls: list[ComponentCall] | None,
+    word: tuple[int, ...],
+    count: int,
+    modulus: int,
+    *,
+    adjoint: bool = False,
+) -> None:
+    """Append the exact map and mark it when the source would emit a call."""
+    body = field_frobenius_ir(word, count, modulus=modulus, adjoint=adjoint)
+    if count % len(word):
+        name = "gf_ifrobenius_adjoint" if adjoint else "gf_ifrobenius"
+        append_field_call(
+            gates, calls, name, body, (ComponentCall("linear_map", 0, len(body)),)
+        )
+
+
+def physical_field_frobenius(
+    target: tuple[int, ...],
+    count: int = 1,
+    *,
+    modulus: int,
+    adjoint: bool = False,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export the in-place transformation with its source linear-map mark."""
+    calls: list[ComponentCall] = []
+    gates: list[Instruction] = []
+    append_field_frobenius(gates, calls, target, count, modulus, adjoint=adjoint)
+    return lower_physical_trace(
+        tuple(gates),
+        0,
+        max(target),
+        PhysicalTrace(calls=calls),
+        reorder_feedback=False,
+    )
 
 
 def field_monomial_scale_ir(

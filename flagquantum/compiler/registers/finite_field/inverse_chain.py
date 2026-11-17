@@ -8,11 +8,10 @@ from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
 from ..primitives.measurement import delete_zero_register_ir, reset_x_register_ir
 from ._physical_calls import append_field_call
-from .binary_linear_map import field_frobenius_ir
+from .binary_linear_map import append_field_frobenius, field_frobenius_ir
 from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
-from .polynomial_product import append_field_product, field_product_xor_ir
-from .product_erasure import field_product_erase_ir
+from .polynomial_product import append_field_product
 
 
 def field_inverse_chain_size(width: int) -> int:
@@ -77,23 +76,6 @@ def _word_swap(
     )
 
 
-def _append_frobenius(
-    gates: list[Instruction],
-    calls: list[ComponentCall] | None,
-    word: tuple[int, ...],
-    count: int,
-    modulus: int,
-    *,
-    adjoint: bool = False,
-) -> None:
-    body = field_frobenius_ir(word, count, modulus=modulus, adjoint=adjoint)
-    if count % len(word):
-        name = "gf_ifrobenius_adjoint" if adjoint else "gf_ifrobenius"
-        append_field_call(
-            gates, calls, name, body, (ComponentCall("linear_map", 0, len(body)),)
-        )
-
-
 def _append_double_word(
     gates: list[Instruction],
     words: tuple[tuple[int, ...], ...],
@@ -108,7 +90,7 @@ def _append_double_word(
     previous = words[i - 1]
     count = 1 << (i - 1)
     append_field_call(gates, calls, "gf_iadd", _word_xor(previous, scratch))
-    _append_frobenius(gates, calls, scratch, count, modulus)
+    append_field_frobenius(gates, calls, scratch, count, modulus)
     append_field_product(
         gates,
         calls,
@@ -119,7 +101,7 @@ def _append_double_word(
         bits=bits,
         parity_bit=parity_bit,
     )
-    _append_frobenius(gates, calls, scratch, count, modulus, adjoint=True)
+    append_field_frobenius(gates, calls, scratch, count, modulus, adjoint=True)
     append_field_call(gates, calls, "gf_iadd", _word_xor(previous, scratch))
 
 
@@ -133,7 +115,7 @@ def _build_folds(
 ) -> None:
     for i, power in enumerate(folds, start=start):
         left = words[i]
-        _append_frobenius(gates, calls, left, 1 << power, modulus)
+        append_field_frobenius(gates, calls, left, 1 << power, modulus)
         append_field_product(gates, calls, left, words[power], words[i + 1], modulus)
 
 
@@ -159,7 +141,7 @@ def _erase_folds(
             bits=bits,
             parity_bit=parity_bit,
         )
-        _append_frobenius(gates, calls, left, 1 << power, modulus, adjoint=True)
+        append_field_frobenius(gates, calls, left, 1 << power, modulus, adjoint=True)
 
 
 def _delete_zero_word(word: tuple[int, ...], bit: int) -> tuple[Instruction, ...]:
@@ -214,7 +196,7 @@ def field_inverse_chain_ir(
             gates.extend(_word_swap(words[len(doubles)], target))
         else:
             append_field_call(gates, calls, "gf_iadd", _word_xor(source, target))
-    _append_frobenius(gates, calls, target, 1, modulus)
+    append_field_frobenius(gates, calls, target, 1, modulus)
     return tuple(gates)
 
 
@@ -245,7 +227,7 @@ def field_inverse_chain_erase_ir(
     expected = len(source) if doubles or folds else 1
     _validate_inverse_slots(measurement_bits, expected, parity_bit)
     gates: list[Instruction] = []
-    _append_frobenius(gates, calls, target, 1, modulus, adjoint=True)
+    append_field_frobenius(gates, calls, target, 1, modulus, adjoint=True)
     if folds:
         _erase_folds(
             gates,
