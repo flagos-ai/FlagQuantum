@@ -74,6 +74,15 @@ class KmxRegister:
     name: str
     members: tuple[tuple[Literal["q", "b"], int], ...]
 
+    def to_kmx(self, index: int) -> Iterator[str]:
+        """Render ordered members followed by the optional register name."""
+        for kind, operand in self.members:
+            yield f"APPEND_TO_REGISTER {kind}{operand} r{index}"
+        if self.name:
+            yield f'REGISTER r{index} "{escape_kmx_text(self.name)}"'
+        elif not self.members:
+            yield f"REGISTER r{index}"
+
 
 @dataclass
 class _RegisterData:
@@ -215,12 +224,7 @@ def _register_lines(columns: _Columns) -> tuple[list[str], int, int]:
                 q_max = max(q_max, operand)
             else:
                 b_max = max(b_max, operand)
-            lines.append(f"APPEND_TO_REGISTER {kind}{operand} r{index}")
-        if register.name:
-            name = escape_kmx_text(register.name)
-            lines.append(f'REGISTER r{index} "{name}"')
-        elif not register.members:
-            lines.append(f"REGISTER r{index}")
+        lines.extend(register.to_kmx(index))
 
     return lines, q_max, b_max
 
@@ -301,9 +305,9 @@ def _parse_kmx(text: str, *, file_text: bool = False) -> _Columns:
     return columns
 
 
-def encode_kmb(text: str) -> bytes:
+def encode_kmb(text: str, *, file_text: bool = False) -> bytes:
     """Encode KMX operations and register directives as source-compatible KMB v2."""
-    columns = _parse_kmx(text)
+    columns = _parse_kmx(text, file_text=file_text)
     _, n_qubits, n_bits = _validated_lines(columns)
     names = [tag.encode() for tag in columns.tags]
     tag_text = b"".join(names)
@@ -356,10 +360,12 @@ def decode_kmb(data: bytes) -> str:
     )
     if version != 2:
         raise ValueError("Unsupported KMB version")
+    if ops > _MAX_RECORDS:
+        raise ValueError(f"KMB num_ops={ops} > MAX_CIRCUIT_INSTRUCTIONS={_MAX_RECORDS}")
     if (
         max(q, b) > _MAX_WIRES
         or register_count > _MAX_REGISTERS
-        or max(ops, chars) > _MAX_RECORDS
+        or chars > _MAX_RECORDS
     ):
         raise ValueError("KMB header exceeds format limits")
     if max(q3, q2, q1, bt, bc, angles, tags) > ops:

@@ -5,7 +5,9 @@
 """Structural operations on KMX circuits and binary file detection."""
 
 from collections import Counter
+from collections.abc import Iterator
 from dataclasses import dataclass
+from itertools import chain
 
 from .kmb import (
     _CLASSICAL_TARGET,
@@ -14,7 +16,6 @@ from .kmb import (
     _MAX_RECORDS,
     KmxRecord,
     KmxRegister,
-    _Columns,
     _iter_records,
     _iter_registers,
     _parse_kmx,
@@ -51,29 +52,55 @@ class KmxCircuitStats:
 class KmxCircuit:
     """Validated records and raw register declarations for format consumers."""
 
-    qubits: int
     registers: tuple[KmxRegister, ...]
     records: tuple[KmxRecord, ...]
+
+    @property
+    def qubits(self) -> int:
+        """Return the highest physical qubit identifier plus one."""
+        members = (
+            index
+            for register in self.registers
+            for kind, index in register.members
+            if kind == "q"
+        )
+        operands = (qubit for record in self.records for qubit in record.qubits)
+        return max(chain(members, operands), default=-1) + 1
+
+    @property
+    def bits(self) -> int:
+        """Return the highest physical bit identifier plus one."""
+        members = (
+            index
+            for register in self.registers
+            for kind, index in register.members
+            if kind == "b"
+        )
+        operands = (
+            bit
+            for record in self.records
+            for bit in (record.result_bit, record.condition_bit)
+            if bit is not None
+        )
+        return max(chain(members, operands), default=-1) + 1
+
+    def __iter__(self) -> Iterator[KmxRecord]:
+        return iter(self.records)
+
+    def to_kmx(self) -> str:
+        """Render register declarations and ordered records without a final newline."""
+        register_lines = (
+            line
+            for index, register in enumerate(self.registers)
+            for line in register.to_kmx(index)
+        )
+        return "\n".join(chain(register_lines, (record.to_kmx() for record in self)))
 
 
 def read_kmx_circuit(text: str) -> KmxCircuit:
     """Read raw records, register membership and the inferred quantum width."""
     columns = _parse_kmx(text)
-    registers = tuple(_iter_registers(columns))
-    records = tuple(_iter_records(columns))
-    register_max = max(
-        (
-            index
-            for register in registers
-            for kind, index in register.members
-            if kind == "q"
-        ),
-        default=-1,
-    )
-    operation_max = max(
-        (qubit for record in records for qubit in record.qubits), default=-1
-    )
-    return KmxCircuit(max(register_max, operation_max) + 1, registers, records)
+    return KmxCircuit(tuple(_iter_registers(columns)), tuple(_iter_records(columns)))
 
 
 def inspect_kmx(text: str) -> KmxCircuitStats:
@@ -110,42 +137,25 @@ def inspect_kmx(text: str) -> KmxCircuitStats:
 
 def concatenate_kmx(left: str, right: str) -> str:
     """Append ordered records on shared wire IDs, preferring the left registers."""
-    first = _parse_kmx(left)
-    second = _parse_kmx(right)
-    _validated_lines(first)
-    _validated_lines(second)
-    if len(first.operations) + len(second.operations) > _MAX_RECORDS:
+    first = read_kmx_circuit(left)
+    second = read_kmx_circuit(right)
+    if len(first.records) + len(second.records) > _MAX_RECORDS:
         raise ValueError("KMX circuit exceeds the record limit")
-    combined = _Columns(
-        registers=first.registers or second.registers,
-        operations=first.operations + second.operations,
-        words=tuple(a + b for a, b in zip(first.words, second.words, strict=True)),
-        angles=first.angles + second.angles,
-        tags=first.tags + second.tags,
-    )
-    lines, _, _ = _validated_lines(combined)
-    return "\n".join(lines)
+    return KmxCircuit(
+        first.registers or second.registers, first.records + second.records
+    ).to_kmx()
 
 
 def repeat_kmx(text: str, repetitions: int) -> str:
     """Repeat ordered records on the same wires and retain the original registers."""
     if not 0 <= repetitions < 1 << 64:
         raise ValueError("KMX repetitions must fit an unsigned 64-bit integer")
-    columns = _parse_kmx(text)
-    lines, _, _ = _validated_lines(columns)
-    if not columns.operations or repetitions == 1:
-        return "\n".join(lines)
-    if len(columns.operations) * repetitions > _MAX_RECORDS:
+    circuit = read_kmx_circuit(text)
+    if not circuit.records or repetitions == 1:
+        return circuit.to_kmx()
+    if len(circuit.records) * repetitions > _MAX_RECORDS:
         raise ValueError("KMX circuit exceeds the record limit")
-    repeated = _Columns(
-        registers=columns.registers,
-        operations=columns.operations * repetitions,
-        words=tuple(word * repetitions for word in columns.words),
-        angles=columns.angles * repetitions,
-        tags=columns.tags * repetitions,
-    )
-    lines, _, _ = _validated_lines(repeated)
-    return "\n".join(lines)
+    return KmxCircuit(circuit.registers, circuit.records * repetitions).to_kmx()
 
 
 def decode_kmx_or_kmb(data: bytes) -> str:

@@ -1,11 +1,11 @@
 # Raw circuit structure and file audit
 
-The locked Kickmix source files under review are `circuit.cc` (K-0014, blob
+The locked Kickmix source files covered here are `circuit.cc` (K-0014, blob
 `fa9ce4093c1e37c416774b1d87447ad73d64a79d`), `circuit.h` (K-0015, blob
 `1456cb523d4a1cb29896a5c2ab09ab4e781dbb53`) and `circuit.test.cc` (K-0017,
 blob `f63b40b44c8822344f0a1c3d026f362af4f2341f`). All 48 unchanged C++
-tests ran successfully against the locked implementation. The three source
-files remain open pending the complete native test and lifetime mapping.
+tests ran successfully against the locked implementation. Their native
+coverage is listed by original test name below.
 
 ## Structure and composition
 
@@ -34,7 +34,7 @@ subset after it has received its executable header.
 The CCZ-state estimate counts three-qubit operation records and half of
 rotation records rounded up. Guarded records count once. It is separate
 from the actual opcode histogram, reaction depth and the per-angle
-analysis-chart model. A composed with-phase example emits two CX and two
+analysis-chart model. A repeated phase circuit emits two CX and two
 Z_POW records and has model weight one. Its complete complex state agrees
 with the analytic result after append and execution. No work wires are
 needed by that example.
@@ -105,23 +105,88 @@ against both the locked and native pages. It also verified native hash
 restoration and far-view sampling of 2,200 physical records. The headless
 probe used the browser timer queue to advance the animation callbacks.
 
-## Reference evidence and remaining ownership
+## Circuit ownership and source dispositions
 
-The native structure fixture records 20 cases captured by an unchanged
-locked Circuit reader, including all four original state-weight cases and
-all 12 original condition-depth cases. The original 17 malformed binary
-byte fixtures are preserved and rejected. Four composition paths were
-captured from the source operators and replayed locally. Existing KMB
-round-trip, opcode, reaction-depth, phase, and large-file evidence remains
-applicable.
+The native circuit is a structural value. Its frozen registers and records
+own their labels, ordered physical operands, guards, and exact angles.
+Inferred widths include declared register members and operation operands.
+Equality compares ordered fields. Iteration and per-record KMX formatting
+produce the source order. Copy and deepcopy preserve the full value, and
+rebinding or replacing a circuit with an empty value leaves existing
+references valid. Composition operates on these values directly.
 
-| Reference areas | Native disposition |
+The unchanged C++ ownership probe copied and assigned the 45-record
+all-operation circuit, verified independent aligned buffers, moved both
+copies, and verified the moved-from objects were empty. Repeated source
+`clear()` releases operation buffers but retains declared registers and
+cached widths. The native ownership boundary has two consistent states,
+an intact immutable value and an explicitly replaced empty value.
+Low-level aligned allocation, manual destruction and pointer diagnostics
+map to Python value ownership and validation. Native error messages and
+record repr use Python diagnostics. The binary and raw text boundaries
+retain explicit index, payload, duplicate-wire, opcode, and record limits.
+
+Eight original positive binary literals are reproduced byte for byte. The
+17 original malformed payloads are retained, and the unknown-opcode test
+covers every unassigned byte, including the original `0x05`. The locked
+2,207,593-byte file is kept in the reference checkout and was verified
+independently in both directions. Its 263,405 records are distinct from
+the number of canonical KMX lines, which includes declaration lines.
+
+## Original Circuit test map
+
+The source names in this table are from the pinned test file. Test names
+starting with `test_` refer to the native unit suites. The external large
+fixture is evaluated by replay against the pinned source extension and
+the native codec in the same environment.
+
+| Source test | Native evidence |
 | --- | --- |
-| Auto-detection, widths, columns, resources, scope depth and composition | Raw format and structure tests cover locked fixtures and the source ordering. |
-| KMB layout, refusals and full-file round trip | Existing complete opcode and large-file fixtures plus the original malformed payloads. Map remaining original positive cases and limit assertions individually before closing K-0017. |
-| Named registers, tag rendering in KMX, ordinary stream output and exact rotation spelling | Existing codecs and exact angle owner. The full native assertion map remains open. |
-| Reaction depth and touched qubits | Reuse the reaction-depth implementation and accepted source fixtures. |
-| Text diagrams and control merging | K-0018 closed by the exact ASCII and Unicode layout fixtures. |
-| HTML and circuit SVG diagrams | K-0019 and K-0020 closed by exact geometry, interval and statistics comparisons and browser interaction probes. |
-| Analysis SVG and flame-chart assertions | Physical block walk, per-angle CCZ model, and SVG structure verified against the locked reference. The logical flame graph retains its own model. |
-| C++ aligned mutable buffers, copy and move | Native raw circuit operations use owned Python structures. Mutation and low-level allocation parity require a separate mapping. |
+| `circuit.text_diagram` | `test_locked_text_diagram` |
+| `circuit.text_diagram_merge_cx` | `test_locked_text_diagram` |
+| `circuit.text_diagram_supports_all_gates` | `test_locked_text_diagram` |
+| `circuit.text_diagram_z_pow` | `test_locked_text_diagram` |
+| `circuit.estimate_ccz_states` | `test_source_file_detection_and_structure` |
+| `circuit.reaction_depth` | `test_locked_reaction_depth` |
+| `circuit.write_to` | `test_original_all_operation_file_and_record_streams_agree` |
+| `circuit.kmb_every_operation` | `test_all_physical_records_are_owned_values` |
+| `circuit.kmb_empty` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_x` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_parsing_rejects_unknown_operation` | `test_all_unsupported_opcode_bytes_are_rejected` |
+| `circuit.kmb_cx` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_ccz_if` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_cswap_if` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_registers` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_info_tag` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_circuit_with_every_operation` | `test_original_literal_kmb_bytes` |
+| `circuit.kmb_validate_unknown_version` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_qubits` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_bits` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_registers` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_registers2` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_ops` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_qqq_ops` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_qq_ops` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_q_ops` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_b_ops` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_num_c_ops` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_magic_bytes` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_non_zero_num_qqq` | `test_original_malformed_kmb_cases` |
+| `circuit.kmb_validate_info_tags` | `test_original_malformed_kmb_cases` |
+| `circuit.kmx_file_and_stream_agree` | `test_original_all_operation_file_and_record_streams_agree` |
+| `circuit.named_registers` | `test_original_named_registers_and_tag_offsets` and `test_original_register_and_tag_refusals` |
+| `circuit.info_tags` | `test_original_named_registers_and_tag_offsets` and `test_original_register_and_tag_refusals` |
+| `circuit.write_analysis_svg_to_every_gate` | `test_locked_physical_analysis_svg` |
+| `circuit.write_analysis_svg_to_info_tags` | `test_locked_physical_analysis_svg` |
+| `circuit.compute_max_condition_depth` | `test_source_file_detection_and_structure` |
+| `circuit.reaction_depth_bit_invert_preserves_depth` | `test_original_equivalent_rotation_and_invert_depth` |
+| `circuit.parse_z_pow` | `test_original_file_text_and_exact_phase_writes` |
+| `circuit.parse_z_pow_if` | `test_original_file_text_and_exact_phase_writes` |
+| `circuit.parse_multiple_z_pow` | `test_original_file_text_and_exact_phase_writes` |
+| `op.kmx_str_works_on_every_op` | `test_all_physical_records_are_owned_values` |
+| `circuit.reaction_depth_of_zpow_1_if` | `test_original_equivalent_rotation_and_invert_depth` |
+| `circuit.flame_chart_every_op` | `test_locked_physical_analysis_svg` |
+| `circuit.compute_has_unknown_ops` | `test_all_unsupported_opcode_bytes_are_rejected` and `test_all_physical_records_are_owned_values` |
+| `circuit.parse_big_circuit_kmb` | Locked large KMB replay and native byte-for-byte round trip. |
+| `circuit.max_num_registers` | `test_original_header_and_identifier_bounds` and `test_corrupt_kmb_header_or_payload_is_refused` |
+| `circuit.validate_max_circuit_instructions_error_message` | `test_original_header_and_identifier_bounds` |

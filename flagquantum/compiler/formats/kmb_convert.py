@@ -17,7 +17,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         raw = sys.stdin.buffer.read() if args.input is None else args.input.read_bytes()
         if args.direction == "kmx2kmb":
-            result = encode_kmb(raw.decode())
+            result = encode_kmb(raw.decode(), file_text=True)
         else:
             text = decode_kmb(raw)
             result = (text + "\n").encode() if text else b""
