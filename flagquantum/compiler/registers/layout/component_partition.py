@@ -39,17 +39,28 @@ def partition_component_program(
 ) -> ProgramRecord:
     """Build a concrete partition or its inverse using existing split/join calls."""
     signature = partition_signature(registers, reverse=reverse)
-    word = signature[0]
     builder = ComponentProgramBuilder(signature, name=name)
+    outputs = rebind_partition(builder, signature[0], registers, reverse=reverse)
+    return _namespace_helpers(builder.finalize(outputs), name)
+
+
+def rebind_partition(
+    builder: ComponentProgramBuilder,
+    word: Register,
+    registers: tuple[Register, ...],
+    *,
+    reverse: bool,
+) -> dict[str, BindingCollection]:
+    """Split or join register slices on an existing directional signature."""
     outputs: dict[str, BindingCollection] = {}
     if reverse:
         joined_bits: list[RegisterBinding] = []
         for register in registers:
             for binding in np.asarray(builder.inputs[register.name]).flat:
                 joined_bits.extend(builder.split(binding))
-        outputs["x"] = builder.join(joined_bits, word.dtype)
+        outputs[word.name] = builder.join(joined_bits, word.dtype)
     else:
-        packed = builder.inputs["x"]
+        packed = builder.inputs[word.name]
         assert isinstance(packed, RegisterBinding)
         bits = builder.split(packed)
         offset = 0
@@ -60,4 +71,4 @@ def partition_component_program(
                 values[index] = builder.join(bits[offset : offset + n], register.dtype)
                 offset += n
             outputs[register.name] = values if register.shape else values[()]
-    return _namespace_helpers(builder.finalize(outputs), name)
+    return outputs
