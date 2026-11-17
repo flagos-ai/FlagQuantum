@@ -294,3 +294,26 @@ support an identity comparison for a reused ellipse. Comparing
 separately constructed array-backed ellipses retains the NumPy
 ambiguous-truth error. Use explicit array comparison for numerical
 geometry checks.
+
+## Clifford+T relative norm
+
+| Item | Frozen file under `rotation_synthesis/relative_norm/` | Git blob |
+| --- | --- | --- |
+| Q-0852 | `__init__.py` | `7d471a7490ccbf507febcb821fab9bfca37cf32d` |
+| Q-0853 | `_clifford_t.py` | `afee83bf529d5d59495b92c760d66d995351c40a` |
+| Q-0854 | `clifford_t_test.py` | `f6d39297d0a67c3b72c9835eb35817cab5eb82a5` |
+
+The internal solver reuses the accepted integer rings. It preserves the
+ordered rational and ideal factors, the four root candidates, unit
+selection and the locked inert-prime rejection. It loads SymPy when
+factoring a nontrivial target. The 600 original cases pass and the
+native random sample has a fixed seed. Additional cases compare exact
+witness coordinates and verify each accepted pair by recomputing the
+relative norm. For example, the target seven has no witness.
+
+Negative one falls outside the relative norm image. The locked solver
+returns one for this input, whose recomputed norm is positive one.
+This out-of-domain behavior is preserved and tested as a diagnostic.
+The approximation protocol's locked call site checks the witness
+before accepting a point. The solver itself is classical and emits no
+quantum primitives.
