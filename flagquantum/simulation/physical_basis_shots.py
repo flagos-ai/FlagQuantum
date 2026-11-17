@@ -90,34 +90,29 @@ def _apply_initialization(
                 )
 
 
-def sample_basis_batch(
-    records: Iterable[BasisRecord],
-    *,
-    shots: int,
-    rng: Random,
-    initialization: Sequence[RegisterInitialization] = (),
-    outcome_mask: Callable[[], int] | None = None,
-    capture_before: bool = False,
-    debug: Callable[[int, bool], None] | None = None,
-) -> BasisBatch:
-    """Run up to 64 input-basis shots and report exact combined phase.
+@dataclass
+class PackedBasisState:
+    """Packed persistent state with one exact angle accumulator per lane."""
 
-    An optional debug observer receives shot zero's value when active and
-    a flag identifying angle values. Debug angle reads see the rotation
-    accumulator; the source commits the separate sign mask after the scan.
-    """
-    if not 1 <= shots <= 64:
-        raise ValueError("A physical basis batch requires 1 to 64 shots")
-    full = (1 << shots) - 1
-    q: defaultdict[int, int] = defaultdict(int)
-    b: defaultdict[int, int] = defaultdict(int)
-    _apply_initialization(initialization, q, b, shots, rng)
-    before = BasisInput(dict(q), dict(b)) if capture_before else None
-    scopes = [full]
-    sign = 0
-    phases = [0] * shots
-    counts: Counter[str] = Counter()
-    draw = outcome_mask if outcome_mask is not None else lambda: rng.getrandbits(shots)
+    qubits: defaultdict[int, int]
+    bits: defaultdict[int, int]
+    phases: list[int]
+    sign: int = 0
+
+
+def apply_packed_basis_records(
+    records: Iterable[BasisRecord],
+    state: PackedBasisState,
+    draw: Callable[[], int],
+    *,
+    counts: Counter[str] | None = None,
+    debug: Callable[[int, bool], None] | None = None,
+) -> None:
+    """Apply physical records to packed state with a fresh condition stack."""
+    q, b, phases = state.qubits, state.bits, state.phases
+    shots = len(phases)
+    scopes = [(1 << shots) - 1]
+    sign = state.sign
 
     for record in records:
         code = record.opcode
@@ -128,10 +123,12 @@ def sample_basis_batch(
         elif code == "POP_CONDITION" and len(scopes) > 1:
             scopes.pop()
         if code in {"PUSH_CONDITION", "POP_CONDITION", "INFO_TAG"}:
-            counts[code] += shots
+            if counts is not None:
+                counts[code] += shots
             continue
 
-        counts[code] += active.bit_count()
+        if counts is not None:
+            counts[code] += active.bit_count()
         if code.startswith("DEBUG_PRINT"):
             if debug is not None and active & 1:
                 if record.qubits:
@@ -139,7 +136,7 @@ def sample_basis_batch(
                 elif record.result_bit is not None:
                     debug(b[record.result_bit] & 1, False)
                 else:
-                    debug(phases[0], True)
+                    debug((phases[0] + (state.sign & 1) * _SIGN) % _TURN, True)
             continue
         if code in {"BIT_STORE0", "BIT_STORE1", "BIT_INVERT"}:
             result = record.result_bit
@@ -189,7 +186,39 @@ def sample_basis_batch(
                 phases[index] = (phases[index] + phase) % _TURN
                 active ^= low
 
+    state.sign = sign
+
+
+def sample_basis_batch(
+    records: Iterable[BasisRecord],
+    *,
+    shots: int,
+    rng: Random,
+    initialization: Sequence[RegisterInitialization] = (),
+    outcome_mask: Callable[[], int] | None = None,
+    capture_before: bool = False,
+    debug: Callable[[int, bool], None] | None = None,
+) -> BasisBatch:
+    """Run up to 64 input-basis shots and report exact combined phase.
+
+    An optional debug observer receives shot zero's value when active and
+    a flag identifying angle values. Debug angle reads see the rotation
+    accumulator; the source commits the separate sign mask after the scan.
+    """
+    if not 1 <= shots <= 64:
+        raise ValueError("A physical basis batch requires 1 to 64 shots")
+    q: defaultdict[int, int] = defaultdict(int)
+    b: defaultdict[int, int] = defaultdict(int)
+    _apply_initialization(initialization, q, b, shots, rng)
+    before = BasisInput(dict(q), dict(b)) if capture_before else None
+    state = PackedBasisState(q, b, [0] * shots)
+    counts: Counter[str] = Counter()
+    draw = outcome_mask if outcome_mask is not None else lambda: rng.getrandbits(shots)
+
+    apply_packed_basis_records(records, state, draw, counts=counts, debug=debug)
+
     angles = tuple(
-        (phase + ((sign >> i) & 1) * _SIGN) % _TURN for i, phase in enumerate(phases)
+        (phase + ((state.sign >> i) & 1) * _SIGN) % _TURN
+        for i, phase in enumerate(state.phases)
     )
-    return BasisBatch(dict(q), dict(b), angles, counts, sign, before)
+    return BasisBatch(dict(q), dict(b), angles, counts, state.sign, before)
