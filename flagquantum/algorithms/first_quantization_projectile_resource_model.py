@@ -5,7 +5,8 @@
 
 """Resource models for first-quantized chemistry with a quantum projectile."""
 
-from dataclasses import replace
+from dataclasses import dataclass, replace
+from functools import cached_property
 
 from ..compiler._component_trace.resource_model import (
     ComponentCost,
@@ -14,6 +15,8 @@ from ..compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
 from ..compiler.registers.arithmetic.arithmetic_resource_model import source_add_cost
+from ..core.ir.program.registers import Register
+from ..core.ir.program.signatures import Signature
 from .first_quantization import (
     source_controlled_multiplexed_cswap_3d_cost,
     source_multiplexed_cswap_3d_cost,
@@ -42,6 +45,7 @@ from .first_quantization_resource_model import (
     source_prepare_ij_cost,
     source_prepare_zeta_cost,
 )
+from .primitives.prepare_oracle import PrepareOracle
 
 
 def source_projectile_power_two_cost(
@@ -398,3 +402,93 @@ def source_projectile_prepare_first_quantization_adjoint_gate_cost(
     )
     # The adjoint term preparation declares zero gates at every precision.
     return potential.plus(kinetic.gates, 1).plus(particles.gates, 1)
+
+
+@dataclass(frozen=True)
+class ProjectilePrepareDeclaration(PrepareOracle):
+    """Declare the projectile PREPARE ports and forward resource schedule."""
+
+    num_bits_p: int
+    num_bits_n: int
+    eta: int
+    num_atoms: int
+    lambda_zeta: int
+    m_param: int = 2**8
+    num_bits_nuc_pos: int = 16
+    num_bits_t: int = 16
+    num_bits_rot_aa: int = 8
+
+    @cached_property
+    def signature(self) -> Signature:
+        return projectile_prepare_signature(
+            self.num_bits_n, self.eta, self.num_atoms, self.m_param
+        )
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return self.signature[:-3]
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return self.signature[-3:]
+
+    def resource_model(self, *, adjoint: bool = False) -> ComponentCost:
+        """Price the forward schedule or the native corrected adjoint."""
+        model = (
+            projectile_prepare_first_quantization_adjoint_model
+            if adjoint
+            else source_projectile_prepare_first_quantization_cost
+        )
+        return model(
+            self.num_bits_p,
+            self.num_bits_n,
+            self.eta,
+            self.num_atoms,
+            self.lambda_zeta,
+            m_param=self.m_param,
+            num_bits_t=self.num_bits_t,
+            num_bits_rot_aa=self.num_bits_rot_aa,
+        )
+
+
+@dataclass(frozen=True)
+class ProjectileSelectDeclaration:
+    """Declare the projectile SELECT ports and resource schedule."""
+
+    num_bits_p: int
+    num_bits_n: int
+    eta: int
+    num_atoms: int
+    lambda_zeta: int
+    m_param: int = 2**8
+    num_bits_nuc_pos: int = 16
+    num_bits_t: int = 16
+    num_bits_rot_aa: int = 8
+
+    @cached_property
+    def signature(self) -> Signature:
+        return projectile_select_signature(
+            self.num_bits_p, self.num_bits_n, self.eta, self.num_atoms, self.m_param
+        )
+
+    @property
+    def control_registers(self) -> tuple[Register, ...]:
+        return self.signature[:3]
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return self.signature[3:-2]
+
+    @property
+    def target_registers(self) -> tuple[Register, ...]:
+        return self.signature[-2:]
+
+    def resource_model(self) -> ComponentCost:
+        return source_projectile_select_first_quantization_cost(
+            self.num_bits_p,
+            self.num_bits_n,
+            self.eta,
+            self.num_atoms,
+            m_param=self.m_param,
+            num_bits_nuc_pos=self.num_bits_nuc_pos,
+        )

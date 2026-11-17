@@ -6,13 +6,9 @@
 
 from dataclasses import replace
 
-from flagquantum.algorithms.first_quantization_projectile import (
-    projectile_prepare_signature,
-    projectile_select_signature,
-)
 from flagquantum.algorithms.first_quantization_projectile_resource_model import (
-    source_projectile_prepare_first_quantization_cost,
-    source_projectile_select_first_quantization_cost,
+    ProjectilePrepareDeclaration,
+    ProjectileSelectDeclaration,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, CostCall
 from flagquantum.core.ir.program.signatures import Signature
@@ -21,22 +17,21 @@ from flagquantum.core.ir.program.signatures import Signature
 def notebook_cases() -> dict[str, tuple[Signature, ComponentCost]]:
     """Preserve both examples, including the SELECT bookkeeping vertices."""
     p, n, eta, atoms, charge = 6, 8, 10, 10, 10
-    m, nuclear = 256, 16
-    select = source_projectile_select_first_quantization_cost(p, n, eta, atoms)
+    prepare = ProjectilePrepareDeclaration(p, n, eta, atoms, charge)
+    select = ProjectileSelectDeclaration(p, n, eta, atoms, charge)
+    model = select.resource_model()
+    nuclear = select.num_bits_nuc_pos
     return {
-        "prepare": (
-            projectile_prepare_signature(n, eta, atoms, m),
-            source_projectile_prepare_first_quantization_cost(p, n, eta, atoms, charge),
-        ),
+        "prepare": (prepare.signature, prepare.resource_model()),
         "select": (
-            projectile_select_signature(p, n, eta, atoms, m),
+            select.signature,
             replace(
-                select,
+                model,
                 calls=(
                     CostCall(ComponentCost("Allocate", n), 3),
                     CostCall(ComponentCost("Allocate", p), 3),
                     CostCall(ComponentCost("Allocate", nuclear)),
-                    *select.calls,
+                    *model.calls,
                     CostCall(ComponentCost("Free", n), 3),
                     CostCall(ComponentCost("Free", p), 3),
                     CostCall(ComponentCost("Free", nuclear)),

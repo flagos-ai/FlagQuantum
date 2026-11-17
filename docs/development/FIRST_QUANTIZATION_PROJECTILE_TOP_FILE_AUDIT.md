@@ -6,6 +6,7 @@ The reference is Qualtran v0.7.0 at
 
 | Inventory | Source file | Git blob |
 | --- | --- | --- |
+| Q-0374 | `__init__.py` | `47a2b869976eab2cea2c4e62df7308c509f0fd11` |
 | Q-0381 | `projectile.ipynb` | `3184e60fe47204d63a5851ebdd2d674b8c65303d` |
 | Q-0382 | `select_and_prepare.py` | `dde8e7eb6c1802cf71d67a3338d5cc4214e6e963` |
 | Q-0383 | `select_and_prepare_test.py` | `078897c69fdf25ac6aa0ebecee673819bf5d7252` |
@@ -16,6 +17,18 @@ retains all widths and multiplicities of the allocation and release
 nodes. Those nodes carry no physical gate charge. Both frozen and
 native notebooks ran in independent kernels. The other original
 test modes gave eight passes and four skips.
+
+Q-0374 accounts for the two original package re-exports and the complete
+introduction. The
+[native tutorial](../../examples/notebooks/register_first_quantization_projectile.ipynb)
+retains the source introduction verbatim, including the three projectile
+terms, separate momentum grid, and Gaussian wavepacket assumption. It
+constructs `ProjectilePrepareDeclaration` and
+`ProjectileSelectDeclaration` from the native resource module. Tests
+verify the source re-export identities and grouped ports and resource
+models for the tutorial parameters and a distinct precision setup. The
+source PREPARE declares no L1 norm. The corresponding native normalization
+query is unimplemented.
 
 ## Register contracts and resources
 
