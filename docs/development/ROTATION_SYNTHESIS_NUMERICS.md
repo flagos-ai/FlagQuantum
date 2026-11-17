@@ -171,3 +171,44 @@ Tz, the binding emits one T plus the four scalar operations. Its
 determinant model reports one T separately. The unrescaled double Tx
 emits two T in XYZ and zero T in XZ, where the matrix is first reduced.
 Neither path allocates work or performs measurements.
+
+## Analytical ZXZ decomposition and matrix exports
+
+| Item | Frozen file under `rotation_synthesis/matrix/` | Git blob |
+| --- | --- | --- |
+| Q-0836 | `__init__.py` | `b449545fa983766987c78e335d781eb4476f55b0` |
+| Q-0837 | `_analytical_decomposition.py` | `98faf18574ecb686b4961912e894c4a2712f78c8` |
+| Q-0841 | `analytical_decomposition_test.py` | `b7766cfafa47afd7e8384c8ccef5415b684d33fa` |
+
+The analytical helper accepts an SU(2) matrix and a math configuration,
+then returns `theta1, phi, theta2` for the product
+`Rz(theta1) @ Rx(phi) @ Rz(theta2)`. Append applies `theta2` first.
+The helper preserves the locked cosine clipping and angle branches.
+The caller supplies an SU(2) matrix, as in the original. Near a diagonal
+matrix, source floating rounding can make the reconstructed operator
+differ from the input by about 7.5e-9 in an off-diagonal entry. Native
+CPU execution compares both complex columns directly to the locked
+reconstruction at 1e-12 absolute tolerance. The 80-decimal configuration
+also preserves the original object-array arithmetic.
+
+The analytical conversion emits no circuit itself. Binding its angles
+through native append in the execution tests emits three rotation
+primitives on the target wire, with no scratch, measurement or
+feedback. This check counts the emitted rotations before any
+Clifford+T approximation.
+
+The nine callable exports of the frozen matrix package have these
+native owners.
+
+| Exports | Owner |
+| --- | --- |
+| `su_unitary_to_zxz_angles`, `unitary_from_zxz` | `synth/_analytical_decomposition.py` |
+| `to_sequence` | `synth/_clifford_t_repr.py` |
+| `to_cirq` | `ecosystem/cirq/_rotation_export.py` |
+| `to_quirk` | `ecosystem/_quirk_rotation.py` |
+| `generate_cliffords`, `generate_rotations`, `generate_rotations_iter` | `synth/_rotation_generation.py` |
+| `SU2CliffordT` | `synth/_su2_ct.py` |
+
+The package audit checks the complete inventory. Synthesis callers use
+the native math and gate-word modules directly. The ecosystem boundary
+owns external representations and optional dependencies.
