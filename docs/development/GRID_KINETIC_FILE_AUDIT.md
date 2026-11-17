@@ -8,4 +8,11 @@ The locked top-level decomposition sends each electron's three axes to `SumOfSqu
 
 The native dynamic operator supports `circuit.append(op)`. It uses exponentiated unsigned phase weights supplied by the caller and reapplies the sum computation to erase its result. Forward and adjoint on the two-electron, one-bit grid preserve complex amplitudes and clear scratch on all 16 measurement histories. The two-bit test covers all coordinate values with sampled histories and verifies independent ownership of an occupied classical slot.
 
-The two-electron fixture emits 16 T-family instructions and four measurements. The source budget estimates two Toffoli and a peak of ten logical qubits. Its QVR leaves give rotation multiplicity without fixed angles. Its source `Free` is also a different operation from the native uncomputation. Together these boundaries prevent comparison against a complete locked primitive stream. The source's custom whole-operation wire label remains outside this batch.
+The two-electron fixture emits 16 T-family instructions and four measurements. The source budget estimates two Toffoli and a peak of ten logical qubits. Its QVR leaves give rotation multiplicity without fixed angles. Its source `Free` is also a different operation from the native uncomputation. Together these boundaries prevent comparison against a complete locked primitive stream.
+
+The shared chemistry drawer now preserves the fixed `U_T(dt)` root and every
+indexed axis TextBox. `test_grid_energy_symbols.py` compares the complete
+register layout to the immutable source at one, two and three electrons and
+one, three and eight grid points. JSON round trips and Matplotlib rendering
+preserve the labels and geometry. This presentation mapping adds no execution
+gates and does not close the unspecified-angle or cleanup boundaries.

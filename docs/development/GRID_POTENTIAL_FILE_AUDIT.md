@@ -13,7 +13,14 @@ The native dynamic path accepts `circuit.append(op)`, binds big-endian coordinat
 | Two-electron baseline fixture | 3,104 T-family instructions, 776 measurements, 177 workspace wires | Peak 81 logical qubits |
 | Two-electron cubic fixture | 4,136 T-family instructions, 1,034 measurements, 212 workspace wires | Model peak 81 logical qubits |
 
-The original pair feeds the second axis straight into the out-of-place adder. At equal unit inputs that leaf produces two, while the native difference is zero. The locked comments describe a sign adjustment but the decomposition does not implement it. The locked polynomial and Newton specify costs without primitive decompositions, QVR leaves the angle unspecified, and the original `Free` calls provide no matching native cleanup stream. Labels and arbitrary user-supplied pair coefficient data are outside the native physical binding.
+The original pair feeds the second axis straight into the out-of-place adder. At equal unit inputs that leaf produces two, while the native difference is zero. The locked comments describe a sign adjustment but the decomposition does not implement it. The locked polynomial and Newton specify costs without primitive decompositions, QVR leaves the angle unspecified, and the original `Free` calls provide no matching native cleanup stream. Arbitrary user-supplied pair coefficient data remains outside the native physical binding.
+
+The shared chemistry drawer preserves pair `U_{label}(dt)_ij` and total
+`U_{label}(dt)` labels, with default, custom `Coulomb`, and empty labels.
+The whole layouts include ordered `system_i`, `system_j`, and shaped `system`
+axis TextBoxes. Source geometry comparisons at three grid sizes, followed by
+JSON round trips and rendering, cover these presentation bindings. Existing
+physical execution and resource evidence above is reused unchanged.
 
 The grid package initializer Q-0424 exports kinetic, pair potential and total
 potential. The source identities and all three imports are checked against

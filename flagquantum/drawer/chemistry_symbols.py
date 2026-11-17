@@ -3,7 +3,9 @@
 # Adapted from Qualtran v0.7.0 ApplyControlledZs.wire_symbol.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/chemistry/black_boxes.py
 
-"""Typed register-score glyphs for chemistry number phase."""
+"""Typed register-score glyphs for chemistry operations."""
+
+from typing import Literal
 
 from ..core.ir.program.registers import Register
 from .register_score import RegisterStep
@@ -39,5 +41,26 @@ def inverse_sqrt_wire_symbol(
             "text": "y=x^{-1/2}" if newton else "y~x^{-1/2}",
             "fontsize": 10,
         }
+    suffix = "[" + ", ".join(map(str, idx)) + "]" if idx else ""
+    return "TextBox", {"text": register.name + suffix}
+
+
+def grid_energy_wire_symbol(
+    step: RegisterStep,
+    register: Register | None,
+    idx: tuple[int, ...] | None,
+    *,
+    term: Literal["kinetic", "pair", "potential"],
+    label: str = "V",
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Preserve the grid Hamiltonian's root and shaped through-port labels.
+
+    Adapted from kinetic.py and potential.py in the pinned Qualtran grid_ham
+    package. Kinetic energy has a fixed T label; potential labels are caller-owned.
+    """
+    if register is None:
+        name = "T" if term == "kinetic" else label
+        suffix = "_ij" if term == "pair" else ""
+        return "Text", {"text": f"U_{name}(dt){suffix}", "fontsize": 10}
     suffix = "[" + ", ".join(map(str, idx)) + "]" if idx else ""
     return "TextBox", {"text": register.name + suffix}
