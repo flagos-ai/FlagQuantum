@@ -183,3 +183,22 @@ independent QEC comparisons. All four paths use caller-owned wires and have no
 measurement branches. The concentrated regression passed 272 tests. The
 implementation and original-test boundaries above remain open for their own
 file rows.
+
+
+### Typed coefficient rebinding under inherited controls
+
+The Compiler wraps an opaque packed word and a typed array of admitted
+binary-field coefficients using the existing Partition split/join body.
+It preserves the source's two directional `reg` ports, descending
+coefficient order and big-endian bits. Source and native graphs each
+perform one rebinding and return the same inherited control tuple.
+Degree-zero and degree-two cases match in both directions with reversed
+physical wire order. The existing Split/Join drawer callback reproduces
+the source's blank packed label and indexed coefficient boxes.
+
+The bound programs preserve complete complex amplitudes through append,
+including coherent controls. They emit zero gates and have no workspace
+events. The independent source model counts zero gates and peaks at
+three or eight lines including the controls. The physical view keeps
+its coefficient dtype. General QGFPoly Program descriptors, nonbinary
+typed field execution, and direct foreign object protocols remain open.

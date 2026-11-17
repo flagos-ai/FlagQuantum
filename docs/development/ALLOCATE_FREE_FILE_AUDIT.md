@@ -11,7 +11,7 @@ Reference: Qualtran v0.7.0 at
 | Q-0312 | `allocate_test.py` | `96f411955b10a466d37e8ba3b0698a0823d42ba9` | Closed for the runnable source scenarios and notebook. |
 | Q-0323 | `free.py` | `8a0c73db71e1d8ffa31b2c7a15d246f02f8f4f63` | Open for external object hooks, full executable dtype and symbolic component drawing. |
 | Q-0324 | `free_test.py` | `63ffa89314718cfaa94bfb0104953e52fd1c518e` | Closed for the runnable symbolic fixture and ten-wire utility round trip. |
-| Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | All eight bookkeeping-package descendants verified. Polynomial descendants and generic descriptors remain open. |
+| Q-0309 | `_bookkeeping_bloq.py` | `32b9b7498417c20ee8ca86c8e53f16b2d63bada4` | All ten descendants verified on admitted concrete paths. Generic descriptors remain open. |
 
 ## Lifetime, bit order and ownership
 
@@ -63,9 +63,8 @@ emitted instructions initialize the caller's two input bits. The locked
 graph accepts the shaped Cast call, and its numerical callback raises
 on the array. Scalar source callbacks provide the value oracle for each
 element. The two finite-field polynomial descendants live under
-`gf_poly_arithmetic`. Their wire views have existing numerical and
-physical coverage. Typed control composition and generic descriptors
-remain open in Q-0533.
+`gf_poly_arithmetic`. Their binary coefficient views also use the shared typed control callback.
+Generic descriptor admission remains open in Q-0533.
 
 ## Original cases and resource accounting
 
