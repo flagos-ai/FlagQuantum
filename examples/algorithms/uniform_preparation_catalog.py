@@ -4,6 +4,8 @@
 
 """Bind the locked uniform-preparation tutorial examples."""
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from math import acos
 
@@ -12,29 +14,22 @@ from flagquantum.compiler._component_trace.call_graph import (
     SymbolicCallGraph,
     symbolic_call_graph,
 )
-from flagquantum.compiler._component_trace.symbolic_math import (
-    SymbolicInt,
-    bit_length,
-    floor,
-    log2,
-)
+from flagquantum.compiler._component_trace.symbolic_math import SymbolicInt
 from flagquantum.compiler.registers.preparation.uniform_preparation import (
     _odd_factor,
     uniform_preparation_ir,
     uniform_preparation_requirements,
 )
 from flagquantum.compiler.registers.preparation.uniform_preparation_resource_model import (
+    normalize_uniform_controls,
+    source_uniform_abstract_calls,
     source_uniform_preparation_resource_formula,
+    source_uniform_preparation_signature,
 )
 from flagquantum.compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from flagquantum.core.ir import CircuitIR
-from flagquantum.core.ir.program.register_types import (
-    opaque_register_type,
-    quantum_bit_type,
-)
-from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
 
 
@@ -43,26 +38,27 @@ class UniformPreparationExample:
     count: SymbolicInt = 5
     controls: tuple[int, ...] = ()
     adjoint: bool = False
+    abstract_control_width: SymbolicInt | None = None
+
+    def __post_init__(self) -> None:
+        values, width = normalize_uniform_controls(
+            self.controls, self.abstract_control_width
+        )
+        object.__setattr__(self, "controls", values)
+        object.__setattr__(self, "abstract_control_width", width)
 
     @property
     def signature(self) -> Signature:
-        return Signature(
-            tuple(
-                Register(
-                    name,
-                    quantum_bit_type() if width == 1 else opaque_register_type(width),
-                )
-                for name, width in (
-                    ("ctrl", len(self.controls)),
-                    ("target", bit_length(self.count - 1)),
-                )
-                if width != 0
-            )
+        width = (
+            len(self.controls)
+            if self.abstract_control_width is None
+            else self.abstract_control_width
         )
+        return source_uniform_preparation_signature(self.count, width)
 
     @property
     def qubit_count(self) -> int:
-        if not isinstance(self.count, int):
+        if not isinstance(self.count, int) or self.abstract_control_width is not None:
             raise ValueError(
                 "Bind a concrete number of states before appending uniform preparation"
             )
@@ -73,11 +69,13 @@ class UniformPreparationExample:
 
     def resource_model(self) -> SymbolicResourceFormula:
         return source_uniform_preparation_resource_formula(
-            self.count, control_values=self.controls
+            self.count,
+            control_values=self.controls,
+            abstract_control_width=self.abstract_control_width,
         )
 
     def diagram_symbols(self) -> tuple[str, ...]:
-        if not isinstance(self.count, int):
+        if not isinstance(self.count, int) or self.abstract_control_width is not None:
             raise ValueError("Uniform diagram requires a concrete count")
         width = (self.count - 1).bit_length()
         symbols = tuple("@" if ctrl else "@(0)" for ctrl in self.controls)
@@ -87,7 +85,7 @@ class UniformPreparationExample:
         root = "PrepareUniformSuperposition"
         count = self.count
         calls: dict[str, SymbolicInt]
-        if isinstance(count, int):
+        if isinstance(count, int) and self.abstract_control_width is None:
             width = (count - 1).bit_length()
             odd = _odd_factor(count)
             prefix = (odd - 1).bit_length()
@@ -117,23 +115,11 @@ class UniformPreparationExample:
                     }
                 )
         else:
-            from sympy import acos as symbolic_acos
-
-            width = bit_length(count - 1)
-            angle = symbolic_acos(1 - 2 ** floor(log2(count)) / count)
-            compare = f"LessThanConstant({width}, {count})"
-            calls = {
-                "Hadamard": 3 * width,
-                compare: 1,
-                f"{compare}†": 1,
-                f"Rz({angle}, 1e-11)": 2,
-                f"MultiAnd(HasLength({width}))": 1,
-                f"MultiAnd(HasLength({width}))†": 1,
-            }
+            calls = source_uniform_abstract_calls(count)
         return symbolic_call_graph(root, {root: calls}, max_depth=1)
 
     def append_to(self, circuit: Circuit) -> Circuit:
-        if not isinstance(self.count, int):
+        if not isinstance(self.count, int) or self.abstract_control_width is not None:
             raise ValueError(
                 "Bind a concrete number of states before appending uniform preparation"
             )
