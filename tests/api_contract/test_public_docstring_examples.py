@@ -84,6 +84,7 @@ from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qcis import import_qcis
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
+from flagquantum.experimental.qec import run_stim_matching_experiment
 from flagquantum.lindblad import plan as plan_lindblad_evolution
 from flagquantum.observables.boson import BosonOperator
 from flagquantum.observables.boson import position as boson_position
@@ -241,6 +242,7 @@ ENTRIES = (
     fq.save,
     fq.load,
     run_memory_experiment,
+    run_stim_matching_experiment,
     convert_measurement_records,
     compile_m2d_converter,
     CompiledMeasurementsToDetectionEventsConverter,

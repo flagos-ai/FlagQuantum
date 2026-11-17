@@ -1177,9 +1177,36 @@ def _prepare_stim_experiment(
     )
 
 
-def _stim_experiment_dem_text(circuit_text: str, *, decompose_errors: bool) -> str:
+def _stim_experiment_dem_text(
+    circuit_text: str,
+    *,
+    decompose_errors: bool,
+    normalize_uniform_pauli: bool = False,
+) -> str:
     """Keep exact SDK conversion refusals and normalize only missing shape."""
     circuit = _parse_stim_experiment(circuit_text)
+    if normalize_uniform_pauli:
+        # Stim's exact DEM conversion understands uniform depolarization. The
+        # native gate-noise exporter can spell the same law as a Pauli channel.
+        normalized = _stim().Circuit()
+        depolarizing = {
+            "PAULI_CHANNEL_1": "DEPOLARIZE1",
+            "PAULI_CHANNEL_2": "DEPOLARIZE2",
+        }
+        for instruction in circuit.flattened():
+            gate = depolarizing.get(instruction.name)
+            if gate is not None:
+                probabilities = instruction.gate_args_copy()
+                if all(p == probabilities[0] for p in probabilities):
+                    normalized.append(
+                        gate,
+                        instruction.targets_copy(),
+                        math.fsum(probabilities),
+                        tag=instruction.tag,
+                    )
+                    continue
+            normalized.append(instruction)
+        circuit = normalized
     try:
         model = circuit.detector_error_model(
             decompose_errors=decompose_errors,
