@@ -11,6 +11,7 @@ from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
+from ..layout.workspace import GenerationWorkspace
 from ..primitives._mixed_gates import _delete_and_ir, _flip, _invert_operand
 from ..primitives.measurement import measure_x_clear_ir
 from .carry_parity import (
@@ -113,8 +114,7 @@ def _clean_prefix(
     offset: tuple[_Coefficient, ...],
     carry: _Coefficient,
     control: int | bool,
-    clean: tuple[int, ...],
-    dirty: tuple[int, ...],
+    workspace: GenerationWorkspace,
     bits: tuple[int, ...],
     btol: float,
 ) -> tuple[Instruction, ...]:
@@ -122,6 +122,7 @@ def _clean_prefix(
         raise ValueError("Mixed addition requires a reusable measurement slot")
     slot = bits[0]
     outcome = ClassicalFieldCoefficient(slot)
+    clean = workspace.clean
     m = min(len(target) - 1, len(clean) - 2)
     low = offset[:m]
     quantum = all(type(value) is int for value in offset)
@@ -135,16 +136,15 @@ def _clean_prefix(
     for k in range(1, m):
         gates.extend(_flip(clean[k - 1], control, offset[k]))
         gates.extend(_flip(clean[k], target[k], clean[k - 1]))
+    leased, remainder = workspace.take_clean(m)
     gates.extend(
         _add(
             target[m:],
             offset[m:],
-            clean[m:],
-            (*clean[: m - 1], *dirty),
-            clean[m - 1],
+            remainder.with_borrowed(leased[:-1]),
+            leased[-1],
             control,
             bits,
-            False,
             btol,
         )
     )
@@ -164,23 +164,22 @@ def _clean_prefix(
 def _add(
     target: tuple[int, ...],
     offset: tuple[_Coefficient, ...],
-    clean: tuple[int, ...],
-    dirty: tuple[int, ...],
+    workspace: GenerationWorkspace,
     carry: _Coefficient,
     control: int | bool,
     bits: tuple[int, ...],
-    minimize: bool,
     btol: float,
 ) -> tuple[Instruction, ...]:
     n = len(target)
     if n == 0:
         return ()
     offset = (*offset, *((False,) * max(0, n - len(offset))))
+    clean = workspace.clean
     if n > 1 and len(clean) < 2:
         raise ValueError("Mixed addition requires two clean wires")
     if n <= 3:
         return _short_addition(target, offset, carry, control, clean, bits)
-    if len(clean) + len(dirty) < n:
+    if len(clean) + workspace.borrowed_count < n:
         raise ValueError("Mixed addition requires at least n work wires")
     if btol < n and isinstance(offset[n - 1], bool):
         inverted = offset[n - 1]
@@ -194,12 +193,10 @@ def _add(
                 return _add(
                     target[:width],
                     low,
-                    clean,
-                    (*target[width:], *dirty),
+                    workspace.with_borrowed(target[width:]),
                     carry,
                     control,
                     bits,
-                    minimize,
                     inf,
                 )
             complemented = tuple(_invert_operand(value) for value in low)
@@ -209,12 +206,10 @@ def _add(
             sub = _add(
                 target[:width],
                 tuple(value for value, _ in complemented),
-                clean,
-                (*target[width:], *dirty),
+                workspace.with_borrowed(target[width:]),
                 inverted_carry,
                 control,
                 bits,
-                minimize,
                 inf,
             )
             return (
@@ -226,15 +221,15 @@ def _add(
                 *invert,
                 *input_gates,
             )
-    if not minimize and len(clean) > 2:
-        return _clean_prefix(target, offset, carry, control, clean, dirty, bits, btol)
-    if len(dirty) < n - 2:
+    if len(workspace.preferred_clean) > 2:
+        return _clean_prefix(target, offset, carry, control, workspace, bits, btol)
+    if workspace.borrowed_count < n - 2:
         raise ValueError("Mixed addition requires n - 2 dirty wires for vented carries")
     if control is True:
         raise ValueError("Locked vented carry cleanup requires a quantum enable")
     if len(bits) < n:
         raise ValueError("Mixed addition requires n classical slots for vented carries")
-    dirty = dirty[: n - 2]
+    dirty = workspace.borrowed_prefix(n - 2)
     vents, slot = bits[1 : n - 1], bits[n - 1]
     # Native clean slots start at zero. Only the used vent slots need a store.
     initialize = tuple(ClassicalXor((), bit).instruction() for bit in vents[1:])
@@ -313,12 +308,10 @@ def mixed_addition_ir(
     gates = _add(
         word,
         offset[::-1],
-        clean,
-        dirty,
+        GenerationWorkspace(clean, minimize_qubits).with_borrowed(dirty),
         carry_in,
         control,
         classical_bits,
-        minimize_qubits,
         btol,
     )
     invert = tuple(Instruction("x", (wire,)) for wire in word) if subtract else ()

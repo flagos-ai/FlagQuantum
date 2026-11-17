@@ -7,6 +7,7 @@
 from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
+from ..layout.workspace import GenerationWorkspace
 from ..primitives._mixed_gates import _flip
 from ..primitives.measurement import measure_x_clear_ir
 
@@ -85,11 +86,9 @@ def _carry_schedule(
 def _addition(
     target: tuple[int, ...],
     offset: tuple[int, ...],
-    clean: tuple[int, ...],
-    dirty: tuple[int, ...],
+    workspace: GenerationWorkspace,
     control: int | bool,
     measurement_bit: int | None,
-    minimize_qubits: bool,
 ) -> tuple[Instruction, ...]:
     n, m = len(target), len(offset)
     if not n or not m:
@@ -97,9 +96,8 @@ def _addition(
     if n == 1:
         return _flip(target[0], control, offset[0])
     if n == 2:
-        scratch = (
-            clean[0] if type(control) is int and clean and not minimize_qubits else None
-        )
+        preferred = workspace.preferred_clean
+        scratch = preferred[0] if type(control) is int and preferred else None
         if scratch is not None and measurement_bit is None:
             raise ValueError("Kickmix addition requires a reusable measurement slot")
         return (
@@ -119,24 +117,31 @@ def _addition(
     if n <= m:
         prefix = _flip(target[-1], control, offset[n - 1])
         # The native workspace stack borrows from the newest span first.
-        dirty = offset[n - 1 :]
+        workspace = workspace.with_borrowed(offset[n - 1 :])
         offset = offset[: n - 1]
     padding = n - len(offset) - 1
-    if padding > len(clean):
+    if padding > len(workspace.clean):
         raise ValueError(
             "Kickmix addition requires clean wires to zero-extend the offset"
         )
-    offset = (*offset, *clean[:padding])
-    clean = clean[padding:]
-    if not clean and not dirty:
+    padded, workspace = workspace.take_clean(padding)
+    offset = (*offset, *padded)
+    clean = workspace.clean
+    if workspace.has_no_workspace:
         raise ValueError("Kickmix addition requires a clean or dirty carry wire")
     if clean and measurement_bit is None:
         raise ValueError("Kickmix addition requires a reusable measurement slot")
-    carry = clean[0] if clean else dirty[-1]
+    carry = clean[0] if clean else workspace.borrowed_back()
     return (
         *prefix,
         *_carry_schedule(
-            target, offset, clean, carry, control, measurement_bit, minimize_qubits
+            target,
+            offset,
+            clean,
+            carry,
+            control,
+            measurement_bit,
+            workspace.minimize_qubits,
         ),
     )
 
@@ -172,7 +177,11 @@ def inplace_addition_ir(
         return ()
     left, right = target[::-1], offset[::-1]
     gates = _addition(
-        left, right, clean, dirty, control, measurement_bit, minimize_qubits
+        left,
+        right,
+        GenerationWorkspace(clean, minimize_qubits).with_borrowed(dirty),
+        control,
+        measurement_bit,
     )
     invert = tuple(Instruction("x", (wire,)) for wire in left) if subtract else ()
     return (*invert, *gates, *invert)

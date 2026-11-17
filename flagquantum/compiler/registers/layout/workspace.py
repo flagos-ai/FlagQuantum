@@ -2,10 +2,13 @@
 # SPDX-License-Identifier: Apache-2.0
 # Allocation and free contracts adapted from Qualtran v0.7.0.
 # https://github.com/quantumlib/Qualtran/tree/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/bookkeeping
+# Ordered generator views follow locked Kickmix CircuitGenCtx.
+# https://github.com/quantumlib/Qualtran/blob/9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453/kickmix/src/kickmix/build/circuit_gen_ctx.h
 
 """Compile-time ownership of caller-provided clean and borrowed wires."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from itertools import chain, islice
 
 
 @dataclass(frozen=True, eq=False)
@@ -146,3 +149,48 @@ class RegisterWorkspace:
     def used_wires(self) -> tuple[int, ...]:
         """Return all touched workspace wires in physical wire order."""
         return tuple(sorted(self._used))
+
+
+@dataclass(frozen=True)
+class GenerationWorkspace:
+    """Ordered views of caller-owned storage for nested generator selection.
+
+    These bindings have already passed the caller's port checks.
+    RegisterWorkspace owns allocation and release of live leases.
+    """
+
+    clean: tuple[int, ...]
+    minimize_qubits: bool = False
+    _borrowed: tuple[tuple[int, ...], ...] = ()
+
+    @property
+    def preferred_clean(self) -> tuple[int, ...]:
+        return () if self.minimize_qubits else self.clean
+
+    @property
+    def borrowed_count(self) -> int:
+        return sum(map(len, self._borrowed))
+
+    @property
+    def has_no_workspace(self) -> bool:
+        return not self.clean and not self._borrowed
+
+    def with_borrowed(self, wires: tuple[int, ...]) -> "GenerationWorkspace":
+        """Prepend one source segment while retaining the parent view."""
+        return replace(self, _borrowed=(wires, *self._borrowed)) if wires else self
+
+    def take_clean(self, count: int) -> tuple[tuple[int, ...], "GenerationWorkspace"]:
+        if not 0 <= count <= len(self.clean):
+            raise ValueError("Insufficient clean generator workspace")
+        return self.clean[:count], replace(self, clean=self.clean[count:])
+
+    def borrowed_prefix(self, count: int) -> tuple[int, ...]:
+        if not 0 <= count <= self.borrowed_count:
+            raise ValueError("Insufficient borrowed generator workspace")
+        return tuple(islice(chain.from_iterable(self._borrowed), count))
+
+    def borrowed_back(self) -> int:
+        """Read the last lane of the most recently added segment."""
+        if not self._borrowed:
+            raise ValueError("Empty borrowed generator workspace")
+        return self._borrowed[0][-1]

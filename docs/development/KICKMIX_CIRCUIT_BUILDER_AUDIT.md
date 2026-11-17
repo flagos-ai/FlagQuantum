@@ -421,3 +421,28 @@ The source test consumer K-0008 has a native equivalent for every
 assertion family. K-0005 and K-0006 remain open. Production compatibility
 still has gaps for allocation scopes, general loops, debug output, mutable
 builder failure behavior and degenerate quantum-wire aliases.
+
+
+## Generator context ownership
+
+K-0009 covers locked `circuit_gen_ctx.h` at blob
+`ab6cc825738f96922e1a447c0ea7693aaa861ed8`. The native
+`GenerationWorkspace` selects ordered storage for nested generators.
+The existing `RegisterWorkspace` continues to issue and release live
+leases. No gate, measurement or result slot is emitted by a generator
+view.
+
+| Source behavior | Native owner and verification |
+| --- | --- |
+| Empty context and optional clean storage when minimizing | View state and `preferred_clean` select the same paths in in-place addition and mixed addition. Explicit clean requests can still use the supplied work. |
+| Child clean subspan and prefix take | A validated prefix-binding returns the chosen prefix and a sliced child view. The parent's tuple is retained. An out-of-range optional subview is represented by an ordinary empty tuple slice. |
+| Nested dirty insertion and count | New segments are prepended, preserving direction within a segment. The source span with stride -1 becomes the physical order 10, 9, 8. A child sees 5, 6, 10, 9, 8 while its parent sees 10, 9, 8. |
+| Borrowed prefix and back | A prefix walks the newest group first. Back selects the last lane of that group, q6 in the fixture. Mixed addition consumes the prefix, and in-place addition selects the carry through back. |
+| Insufficient storage | The locked borrowed copy appends the available prefix and then throws. Native selection validates the whole request before returning a tuple. Both reject over-requesting, with the native caller's lease state preserved. |
+| Local assertion helper | Existing validation raises `ValueError` at the owning call site. |
+
+The locked source oracle and the native context test agree on the selected
+lanes and widths. The unchanged addition fixtures also verify ordered
+physical gates, clean return and borrowed state restoration. The source
+context declares no analytical costs, and the view changes no resource
+counts.
