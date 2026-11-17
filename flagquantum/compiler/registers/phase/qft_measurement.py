@@ -4,6 +4,7 @@
 
 """Source-ordered demolition Fourier measurement with exact phase feedback."""
 
+from ..._component_trace.trace import ComponentCall
 from ...artifacts.phase_angle import PhaseAngle128
 from ...artifacts.reversible_phase import (
     ReversiblePhaseOperation,
@@ -67,3 +68,19 @@ def qft_measurement_program(
     bits = max(output, default=-1) + 1
     inputs = tuple(bit for bit in range(bits) if bit not in output)
     return ReversiblePhaseProgram(n_qubits, bits, operations, inputs)
+
+
+def physical_qft_measurement(
+    target: tuple[int, ...],
+    output: tuple[int, ...],
+    *,
+    n_qubits: int,
+    inverse_qft: bool = False,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export the source block mark, including for an empty word."""
+    program = qft_measurement_program(
+        target, output, n_qubits=n_qubits, inverse_qft=inverse_qft
+    )
+    return program, (
+        ComponentCall("qft_demolition_measure", 0, len(program.operations)),
+    )
