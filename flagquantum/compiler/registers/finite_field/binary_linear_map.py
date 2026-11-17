@@ -95,19 +95,69 @@ def binary_linear_map_ir(
 
 
 def field_constant_scale_ir(
-    target: tuple[int, ...], constant: int, *, modulus: int
+    target: tuple[int, ...],
+    constant: int,
+    *,
+    modulus: int,
+    divide: bool = False,
 ) -> tuple[Instruction, ...]:
-    """Multiply a big-endian word by a nonzero polynomial on fixed wires."""
-    _validate_field(len(target), modulus)
+    """Multiply or divide a big-endian word by a nonzero field polynomial."""
+    width = len(target)
+    _validate_field(width, modulus)
     _validate_registers(target)
     if type(constant) is not int or constant < 0:
         raise ValueError("Field constant must be a nonnegative binary polynomial")
+    if type(divide) is not bool:
+        raise ValueError("Field constant scaling direction must be boolean")
     constant = _remainder(constant, modulus)
     if not constant:
-        raise ValueError("In-place field multiplication by zero is not reversible")
+        operation = "division" if divide else "multiplication"
+        raise ValueError(f"In-place field {operation} by zero is not reversible")
+    if constant == 1:
+        return ()
+    if divide:
+        constant = _field_power(constant, (1 << width) - 2, modulus)
     return _linear_map(
         target[::-1],
-        tuple(_product(1 << i, constant, modulus) for i in range(len(target))),
+        tuple(_product(1 << i, constant, modulus) for i in range(width)),
+    )
+
+
+def append_field_constant_scale(
+    gates: list[Instruction],
+    calls: list[ComponentCall] | None,
+    target: tuple[int, ...],
+    constant: int,
+    modulus: int,
+    *,
+    divide: bool = False,
+) -> None:
+    """Append the source's classical scale with its nested PLU call."""
+    body = field_constant_scale_ir(target, constant, modulus=modulus, divide=divide)
+    if body:
+        name = "gf_idiv_classical" if divide else "gf_imul_classical"
+        append_field_call(
+            gates, calls, name, body, (ComponentCall("linear_map", 0, len(body)),)
+        )
+
+
+def physical_field_constant_scale(
+    target: tuple[int, ...],
+    constant: int,
+    *,
+    modulus: int,
+    divide: bool = False,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export a constant multiplication or division with source block marks."""
+    calls: list[ComponentCall] = []
+    gates: list[Instruction] = []
+    append_field_constant_scale(gates, calls, target, constant, modulus, divide=divide)
+    return lower_physical_trace(
+        tuple(gates),
+        0,
+        max(target),
+        PhysicalTrace(calls=calls),
+        reorder_feedback=False,
     )
 
 

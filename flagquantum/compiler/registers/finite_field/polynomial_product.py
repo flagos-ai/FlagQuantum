@@ -10,11 +10,11 @@ from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
 from ._physical_calls import append_field_call
 from .binary_linear_map import (
-    field_constant_scale_ir,
+    append_field_constant_scale,
     field_monomial_scale_ir,
 )
 from .coefficients import gf2_add_coefficients_ir, gf2_add_ir
-from .field_multiplication import _field_power, _validate_field
+from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
 from .product_erasure import field_product_erase_ir
 
@@ -103,7 +103,6 @@ def field_product_xor_ir(
     half = (width + 1) // 2
     high_width = width - half
     factor = 1 | (1 << half)
-    inverse = _field_power(factor, (1 << width) - 2, modulus)
     x, y, result = left[::-1], right[::-1], target[::-1]
     gates: list[Instruction] = []
     append_field_call(
@@ -113,14 +112,7 @@ def field_product_xor_ir(
         field_monomial_scale_ir(target, -half, modulus=modulus),
     )
     gates.extend(_middle_product(result[: 2 * half - 1], x, y, half))
-    scale = field_constant_scale_ir(target, inverse, modulus=modulus)
-    append_field_call(
-        gates,
-        calls,
-        "gf_idiv_classical",
-        scale,
-        (ComponentCall("linear_map", 0, len(scale)),),
-    )
+    append_field_constant_scale(gates, calls, target, factor, modulus, divide=True)
     gates.extend(_polynomial_product(result[: 2 * high_width - 1], x[half:], y[half:]))
     append_field_call(
         gates,
@@ -129,14 +121,7 @@ def field_product_xor_ir(
         field_monomial_scale_ir(target, half, modulus=modulus),
     )
     gates.extend(_polynomial_product(result[: 2 * half - 1], x[:half], y[:half]))
-    scale = field_constant_scale_ir(target, factor, modulus=modulus)
-    append_field_call(
-        gates,
-        calls,
-        "gf_imul_classical",
-        scale,
-        (ComponentCall("linear_map", 0, len(scale)),),
-    )
+    append_field_constant_scale(gates, calls, target, factor, modulus)
     return tuple(gates)
 
 
