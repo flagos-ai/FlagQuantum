@@ -187,8 +187,8 @@ class _Limits(TypedDict, total=False):
 @pytest.mark.parametrize(
     "limits",
     [
-        dict(max_qubits=149),
-        dict(max_workspace=82),
+        dict(max_qubits=67),
+        dict(max_workspace=0),
         dict(max_operations=1032),
         dict(max_depth=628),
         dict(memory_limit_bytes=4799),
@@ -197,6 +197,26 @@ class _Limits(TypedDict, total=False):
 def test_actual_emitted_resources_refuse_before_execution(limits: _Limits) -> None:
     with pytest.raises(ValueError, match="budget|limit|requires|constraints"):
         synth.synthesize(main, **limits)
+
+
+@pytest.mark.parametrize("limits", [dict(max_qubits=149), dict(max_workspace=82)])
+def test_tight_budgets_select_exact_narrower_schedule(limits: _Limits) -> None:
+    program = synth.synthesize(main, **limits)
+    assert program.circuit.n_wires == 136
+    assert program.report["workspace_qubits"] == 69
+    for enabled in ((), (29,), tuple(range(67))):
+        prefix = tuple(Instruction("x", (66 - bit,)) for bit in enabled)
+        state = run_mps(
+            replace(
+                program.circuit, instructions=(*prefix, *program.circuit.instructions)
+            )
+        )
+        expected = run_mps(reference_circuit(enabled))
+        bits, phase = product_signature(state.tensors)
+        reference_bits, reference_phase = product_signature(expected.tensors)
+        assert bits[:67] == reference_bits[:67]
+        assert bits[67:] == (0,) * 69
+        assert phase == reference_phase == (-1 if marked(enabled) else 1)
 
 
 @pytest.mark.parametrize(

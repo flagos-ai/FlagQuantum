@@ -1,0 +1,67 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/oracle_generation/3sat_oracles.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "643b843a3900dde93cb7dae85f364f7e5015fc88f0588488f3187aaa05556716",
+  "git_blob_sha1": "c955aa8516fc01f1c78a494d51b7217773591834",
+  "scope": "All nine source code stages, all 23 original sizes through 68 variables, and a separate complete coherent reference.",
+  "native_semantic_adaptations": "Use Python qfunc for admitted wide cases and a bounded reversible Circuit for smaller or planning-refused cases, labeled separately. Verify three full instruction traces per generated circuit. Keep archived Qiskit points and the disabled rerun from the source.",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.oracle_generation.three_sat_oracles.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_three_sat_oracle_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Generate a bounded signed-clause formula by drawing two valid permutations.",
+      "sha256": "e1d91a17be3bb1270f6fd99b4bf44b52fe2c70e40dc804fa2a7939bd17ce49ad"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "stage": "Inspect the generated Python predicate and synthesize its exact phase oracle.",
+      "sha256": "a2e8464949d846f84039fbe003cb80603e30caa57d67c2439860656e3f2c7e89"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "stage": "Check every coherent amplitude against an independent truth-table Circuit.",
+      "sha256": "6c8e5bb6152b7f927575a40acedb47c177dd4702e23737b6f11e01c78039b3bb"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "stage": "Use the local monotonic clock and native resource estimator.",
+      "sha256": "814477103417d2a850a289dafb6ef1a14eae6541100ab585b8be38cb730afd71"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "stage": "Retain seed 128 and every size from the original rounding formula.",
+      "sha256": "6aa46e783a53e9ae173dd7132615ce1a3d7edc1b4da57dc4894741a092622d42"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "The original Qiskit installation and timing loop remain disabled.",
+      "sha256": "88c1f9b137160c3fde775d49d8c81fcfd641ff13cfba5daf305176165cb50558"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 7,
+      "stage": "Construct all 23 oracles and verify their emitted instructions.",
+      "sha256": "3be45607d6be9c0ea7da9be562fced29b853c563b3d33b8a21393beddab7d72a"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "stage": "Keep the 12 archived Qiskit times with their source labels.",
+      "sha256": "8d865017b749a248de8ea4ee760f9a123a7f28a6bf6f38ef8d90baf965da4759"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 9,
+      "stage": "Plot the measured local generation time and physical width.",
+      "sha256": "09822ba1c0f30746a596c1aeada03a62bf82f65960e87a65febedc340bfcdfbb"
+    }
+  ]
+}
