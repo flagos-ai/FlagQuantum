@@ -58,6 +58,22 @@ The dedicated controlled exchange remains executable through
 comparisons cover its small measurement branches and noncontiguous
 operands. The locked source's `cvs=0` display disagrees with its
 execution polarity. The source-compatible path preserves its
-observed execution. Independent negative-control semantics and
-end-to-end physical leaves remain open under Q-0382. Q-0381 and
+observed execution.
+
+The native `control_values` argument activates on an explicit bit pattern
+in the bound control order. With the argument omitted, the operation
+retains the locked all-one activation. Each zero bit adds one X before
+the positive-control traversal and one after it. The logical model
+charges these Clifford gates separately from the source model. The
+traversal, controlled swaps, measurement feedback and scratch allocation
+are identical to the source-compatible path. The source child graph
+comparison covers both directions and noncontiguous wiring. The
+independent permutation checks `(0,)`, `(0, 1)`, `(1, 0)` and `(0, 0)`
+on coherent inputs across both addresses and every control word, with
+all small measurement histories, tail preservation, and scratch returned
+to zero. These checks distinguish the native polarity extension from the
+locked source behavior.
+
+End-to-end physical leaves and the locked recursive adjoint failure
+remain open under Q-0382. Q-0381 and
 Q-0383 close the complete tutorial and original test coverage.

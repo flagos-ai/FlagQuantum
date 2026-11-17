@@ -8,10 +8,10 @@
 """Components for first-quantized plane-wave chemistry."""
 
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from ..circuit import Circuit
-from ..compiler._component_trace.resource_model import ComponentCost, CostCall
+from ..compiler._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..compiler.registers.bits.bitwise import _validate_wires
 from ..compiler.registers.lookup.multiplexed_swap import (
     multiplexed_cswap_ir,
@@ -184,6 +184,7 @@ class ControlledMultiplexedCSwap3D:
 
     Words are big-endian in x/y/z order. The locked source uses cvs for
     diagram labels and the child exchange activates on all-one controls.
+    An explicit control_values pattern sets the native activation.
     The untouched suffixes may carry arbitrary states. The workspace is clean.
     """
 
@@ -195,6 +196,7 @@ class ControlledMultiplexedCSwap3D:
     workspace: tuple[int, ...] = ()
     classical_bits: tuple[int, ...] = ()
     adjoint: bool = False
+    control_values: tuple[int, ...] | None = None
 
     @classmethod
     def make_on(
@@ -208,8 +210,9 @@ class ControlledMultiplexedCSwap3D:
         workspace: Sequence[int] = (),
         classical_bits: Sequence[int] = (),
         adjoint: bool = False,
+        control_values: Sequence[int] | None = None,
     ) -> "ControlledMultiplexedCSwap3D":
-        """Bind control, coordinate and workspace wires for circuit.append."""
+        """Bind wires, with optional explicit activation in control order."""
         return cls(
             tuple(controls),
             (cvs,) if isinstance(cvs, int) else tuple(cvs),
@@ -219,10 +222,10 @@ class ControlledMultiplexedCSwap3D:
             tuple(workspace),
             tuple(classical_bits),
             adjoint,
+            None if control_values is None else tuple(control_values),
         )
 
-    def emit(self) -> tuple[Instruction, ...]:
-        """Preserve source control activation and exchange only coordinate prefixes."""
+    def _activation(self) -> tuple[int, ...]:
         if (
             not self.controls
             or len(self.controls) != len(self.cvs)
@@ -231,6 +234,16 @@ class ControlledMultiplexedCSwap3D:
             raise ValidationError(
                 "Supply at least one control and one binary label per control."
             )
+        values = self.control_values
+        if values is None:
+            return (1,) * len(self.controls)
+        if len(values) != len(self.controls) or any(
+            type(value) is not int or value not in (0, 1) for value in values
+        ):
+            raise ValidationError("Supply one binary activation value per control.")
+        return values
+
+    def _coordinate_widths(self) -> tuple[int, int]:
         if (
             len(self.targets) < 2
             or len(self.selection) != (len(self.targets) - 1).bit_length()
@@ -253,6 +266,12 @@ class ControlledMultiplexedCSwap3D:
             for row in self.targets
         ):
             raise ValidationError("Electron coordinates must have equal widths.")
+        return width, junk_width
+
+    def emit(self) -> tuple[Instruction, ...]:
+        """Exchange coordinate prefixes under the bound activation."""
+        values = self._activation()
+        width, _ = self._coordinate_widths()
         targets = tuple(
             tuple(wire for word in row for wire in word) for row in self.targets
         )
@@ -265,7 +284,12 @@ class ControlledMultiplexedCSwap3D:
                 *self.workspace,
             )
         )
-        return multiplexed_cswap_ir(
+        flips = tuple(
+            Instruction("x", (wire,))
+            for wire, value in zip(self.controls, values, strict=True)
+            if value == 0
+        )
+        exchange = multiplexed_cswap_ir(
             self.controls,
             (self.selection,),
             (len(targets),),
@@ -274,6 +298,19 @@ class ControlledMultiplexedCSwap3D:
             self.workspace,
             self.classical_bits,
             adjoint=self.adjoint,
+        )
+        return (*flips, *exchange, *flips)
+
+    def resource_model(self) -> ComponentCost:
+        """Price the source exchange plus the explicit control flips."""
+        values = self._activation()
+        width, junk_width = self._coordinate_widths()
+        exchange = source_controlled_multiplexed_cswap_3d_cost(
+            len(self.targets), width, junk_width, len(values)
+        )
+        return replace(
+            exchange,
+            gates=exchange.gates.plus(GateCost(clifford=2 * values.count(0)), 1),
         )
 
     def append_to(self, circuit: Circuit) -> Circuit:

@@ -2,6 +2,7 @@
 
 from collections import Counter
 from dataclasses import asdict
+from itertools import product
 
 import pytest
 import torch
@@ -13,10 +14,12 @@ from flagquantum.algorithms.first_quantization import (
     source_controlled_multiplexed_cswap_3d_cost,
     source_multiplexed_cswap_3d_cost,
 )
+from flagquantum.core.ir import Instruction
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.errors import ValidationError
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.measurement_checks import forced_branch
 from tests.unit.register_source_graph import (
     SourcePorts,
     SourceResult,
@@ -204,7 +207,10 @@ def test_source_single_particle_has_no_zero_selection_decomposition() -> None:
     ],
 )
 @pytest.mark.parametrize("adjoint", [False, True])
-def test_pinned_controlled_momentum_exchange_graph(eta, p, n, cvs, permuted, adjoint):
+@pytest.mark.parametrize("explicit_activation", [False, True])
+def test_pinned_controlled_momentum_exchange_graph(
+    eta, p, n, cvs, permuted, adjoint, explicit_activation
+):
     pytest.importorskip("qualtran")
     from qualtran import Adjoint
     from qualtran.bloqs.chemistry.pbc.first_quantization.projectile.select_and_prepare import (
@@ -236,8 +242,12 @@ def test_pinned_controlled_momentum_exchange_graph(eta, p, n, cvs, permuted, adj
         workspace=workspace,
         classical_bits=slots,
     )
-    op = ControlledMultiplexedCSwap3D.make_on(**args, adjoint=adjoint)
-    actual = DynamicCircuit(total).append(op).to_ir().instructions
+    values = cvs if explicit_activation else None
+    op = ControlledMultiplexedCSwap3D.make_on(
+        **args, adjoint=adjoint, control_values=values
+    )
+    ir = DynamicCircuit(total).append(op).to_ir()
+    actual = ir.instructions
     base = SourceSwap(p, n, eta, cvs)
     source = base.adjoint() if adjoint else base
     ports = {
@@ -279,27 +289,38 @@ def test_pinned_controlled_momentum_exchange_graph(eta, p, n, cvs, permuted, adj
 
     expected, outputs = walk_source_graph(source, ports, ports, leaf)
     assert outputs == ports and child_calls == 1
+    flips = tuple(
+        Instruction("x", (wire,))
+        for wire, value in zip(controls, cvs, strict=True)
+        if explicit_activation and value == 0
+    )
+    expected = (*flips, *expected, *flips)
     assert_source_dependencies(actual, expected)
     tails = {wire for word in junk for wire in word[p:]}
     assert not any(tails.intersection(gate.wires) for gate in actual)
     cost = get_cost_value(source, QECGatesCost())
-    report = estimate_ftqc_resources(
-        source_controlled_multiplexed_cswap_3d_cost(eta, p, n, len(cvs))
-    )
+    report = estimate_ftqc_resources(op.resource_model(), emitted_ir=ir)
+    expected_counts = cost.asdict()
+    if flips:
+        expected_counts["clifford"] = expected_counts.get("clifford", 0) + 2 * len(
+            flips
+        )
     assert {
         key: value for key, value in asdict(report.logical.gates).items() if value
-    } == cost.asdict()
+    } == expected_counts
     assert (
         report.logical.peak_logical_qubits
         == get_cost_value(source, QubitCount())
         == total
     )
     counts = Counter(gate.name for gate in actual)
+    assert report.emitted is not None
+    assert report.emitted.unconditional.get("x", 0) == counts["x"]
     assert counts["t"] + counts["tdg"] == cost.total_t_count(ts_per_cswap=7)
     assert counts["measure"] == counts["reset"] == cost.measurement
     if not permuted:
         inverse = ControlledMultiplexedCSwap3D.make_on(
-            **args, adjoint=not adjoint
+            **args, adjoint=not adjoint, control_values=values
         ).emit()
         assert_controlled_exchange_branches(
             actual, expected, inverse, data_width, workspace
@@ -320,9 +341,9 @@ def test_projectile_swap_executes_all_one_activation_and_preserves_suffixes() ->
     # addressed 101 with the projectile prefixes 010, retaining tails 110.
     state = torch.zeros(1 << 15, dtype=torch.complex128)
     expected = torch.zeros_like(state)
-    inactive = int("01" "000" "101" "01" "11" "00" "0", 2)
-    active = int("11" "000" "101" "01" "11" "00" "0", 2)
-    exchanged = int("11" "000" "010" "11" "01" "10" "0", 2)
+    inactive = int("010001010111000", 2)
+    active = int("110001010111000", 2)
+    exchanged = int("110000101101100", 2)
     state[inactive] = 0.6
     state[active] = 0.8j
     expected[inactive] = 0.6
@@ -332,6 +353,73 @@ def test_projectile_swap_executes_all_one_activation_and_preserves_suffixes() ->
     torch.testing.assert_close(
         result.final_states, expected.expand(4, -1), atol=2e-12, rtol=0
     )
+
+
+@pytest.mark.parametrize("pattern", [(0,), (0, 1), (1, 0), (0, 0)])
+def test_explicit_momentum_activation_matches_complex_permutation(
+    pattern: tuple[int, ...],
+) -> None:
+    control_count = len(pattern)
+    width = 13 + 2 * control_count
+    controls = tuple(range(control_count))
+    workspace = tuple(range(width - control_count, width))
+    binding = dict(
+        controls=controls,
+        cvs=(1,) * control_count,
+        selection=(control_count,),
+        targets=tuple(
+            tuple((control_count + 1 + 3 * row + axis,) for axis in range(3))
+            for row in range(2)
+        ),
+        junk=tuple(
+            (control_count + 7 + 2 * axis, control_count + 8 + 2 * axis)
+            for axis in range(3)
+        ),
+        workspace=workspace,
+        classical_bits=tuple(range(14, 14 + control_count)),
+    )
+    base = ControlledMultiplexedCSwap3D.make_on(**binding).emit()
+    op = ControlledMultiplexedCSwap3D.make_on(**binding, control_values=pattern)
+    circuit = DynamicCircuit(width).append(op)
+    gates = circuit.to_ir().instructions
+    added = Counter(gate.name for gate in gates) - Counter(gate.name for gate in base)
+    assert added == {"x": 2 * pattern.count(0)}
+
+    state = torch.zeros(1 << width, dtype=torch.complex128)
+    ideal = torch.zeros_like(state)
+    for control in product((0, 1), repeat=control_count):
+        for address in (0, 1):
+            rows = ["000", "101"]
+            junk = ["01", "11", "00"]
+            prefix = "".join(map(str, control)) + str(address)
+            work = "0" * control_count
+            before = prefix + "".join(rows + junk) + work
+            if control == pattern:
+                old = rows[address]
+                rows[address] = "".join(word[0] for word in junk)
+                junk = [bit + word[1] for bit, word in zip(old, junk, strict=True)]
+            after = prefix + "".join(rows + junk) + work
+            amplitude = complex(1 + address, (-1) ** sum(control))
+            state[int(before, 2)] = amplitude
+            ideal[int(after, 2)] = amplitude
+
+    inverse = ControlledMultiplexedCSwap3D.make_on(
+        **binding, control_values=pattern, adjoint=True
+    )
+    undo = circuit.append(inverse).to_ir().instructions[len(gates) :]
+    for history in product((0, 1), repeat=control_count):
+        torch.testing.assert_close(
+            forced_branch(state, gates, history),
+            ideal / 2 ** (control_count / 2),
+            atol=2e-12,
+            rtol=0,
+        )
+        torch.testing.assert_close(
+            forced_branch(ideal, undo, history),
+            state / 2 ** (control_count / 2),
+            atol=2e-12,
+            rtol=0,
+        )
 
 
 def test_projectile_swap_rejects_invalid_idle_wires() -> None:
@@ -352,6 +440,12 @@ def test_projectile_swap_rejects_invalid_idle_wires() -> None:
         replace(op, junk=((8, 0), (10, 11), (12, 13))).emit()
     with pytest.raises(ValidationError, match="binary label"):
         replace(op, cvs=(2,)).emit()
+    for values in ((), (0, 1), (2,), (False,)):
+        invalid = replace(op, control_values=values)
+        with pytest.raises(ValidationError, match="binary activation value"):
+            invalid.emit()
+        with pytest.raises(ValidationError, match="binary activation value"):
+            invalid.resource_model()
 
 
 @pytest.mark.ftqc_reference
