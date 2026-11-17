@@ -75,7 +75,7 @@ def draw_register_score_label(ax: Axes, connector: ScoreVerticalLine) -> None:
         connector["x"],
         0.5 - connector["bottom_y"],
         label["text"],
-        label["fontsize"],
+        label.get("fontsize", 10),
     )
 
 

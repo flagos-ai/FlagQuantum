@@ -12,6 +12,8 @@ from collections.abc import Callable, Collection
 from graphlib import TopologicalSorter
 from typing import Literal, TypedDict
 
+from typing_extensions import NotRequired
+
 from ..core.ir.program.registers import Register, RegisterSide
 from .register_score import (
     RegisterScore,
@@ -52,7 +54,7 @@ class ScoreHorizontalLine(TypedDict):
 
 class ScoreLabel(TypedDict):
     text: str
-    fontsize: int
+    fontsize: NotRequired[int]
 
 
 class ScoreVerticalLine(TypedDict):
@@ -359,18 +361,21 @@ def register_score_data(
             )
             if label_supplier is not None:
                 symbol, attributes = label_supplier(step, None, None)
-                if (
-                    symbol != "Text"
-                    or not isinstance(attributes.get("text"), str)
-                    or type(attributes.get("fontsize")) is not int
+                if symbol == "TextBox" and attributes == {"text": ""}:
+                    label = {"text": ""}
+                elif (
+                    symbol == "Text"
+                    and isinstance(attributes.get("text"), str)
+                    and type(attributes.get("fontsize")) is int
                 ):
+                    label = {
+                        "text": str(attributes["text"]),
+                        "fontsize": int(attributes["fontsize"]),
+                    }
+                else:
                     raise ValueError(
-                        "connector wire symbols require Text with text and fontsize"
+                        "connector wire symbols require Text with text and fontsize or an empty TextBox"
                     )
-                label = {
-                    "text": str(attributes["text"]),
-                    "fontsize": int(attributes["fontsize"]),
-                }
             connectors.append(
                 {
                     "x": column.sequence,
