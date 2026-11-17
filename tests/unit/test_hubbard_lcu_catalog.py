@@ -239,3 +239,102 @@ def test_hubbard_lcu_three_by_three_locked_full_output(
         assert {index >> work: amp for index, amp in result.items()} == pytest.approx(
             expected, abs=8e-12
         )
+
+
+@pytest.mark.parametrize("packed", (False, True))
+def test_lcu_declarations_preserve_original_register_types(packed: bool) -> None:
+    from qualtran import BQUInt, CtrlSpec, QAny, QBit
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import (
+        _black_box_lcu_block,
+        _black_box_select_block,
+        _lcu_block,
+        _select_block,
+    )
+
+    example = HubbardLCUExample(packed=packed)
+    select = (_black_box_select_block if packed else _select_block)()
+    lcu = (_black_box_lcu_block if packed else _lcu_block)()
+    pairings = [
+        (example.select_signature(), select.signature),
+        (example.lcu_signature(), lcu.signature),
+        (
+            example.lcu_signature(controlled=True),
+            lcu.controlled(CtrlSpec(cvs=0)).signature,
+        ),
+        (
+            example.lcu_signature(controlled=True),
+            lcu.controlled(CtrlSpec(cvs=1)).signature,
+        ),
+    ]
+    for native, original in pairings:
+        assert len(native) == len(original)
+        for actual, expected in zip(native, original, strict=True):
+            assert (actual.name, actual.bitsize, actual.shape, actual.side.name) == (
+                expected.name,
+                expected.bitsize,
+                expected.shape,
+                expected.side.name,
+            )
+            if isinstance(expected.dtype, BQUInt):
+                assert actual.dtype.encoding == "uint"
+                assert actual.dtype.parameters == (
+                    ("bound", expected.dtype.iteration_length),
+                )
+            elif isinstance(expected.dtype, QBit):
+                assert actual.dtype.encoding == "bit"
+            else:
+                assert isinstance(expected.dtype, QAny)
+                assert actual.dtype.encoding == "opaque"
+
+
+def test_lcu_declared_signature_exposes_only_through_junk() -> None:
+    from attrs import frozen
+    from qualtran import BQUInt, QAny, Side
+    from qualtran import Register as SourceRegister
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import (
+        LCUBlockEncoding as SourceLCU,
+    )
+    from qualtran.bloqs.block_encoding.lcu_block_encoding import _select_block
+    from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+
+    from flagquantum.algorithms.primitives.lcu_block_encoding import (
+        source_lcu_block_signature,
+    )
+    from flagquantum.core.ir.program.register_types import (
+        bounded_unsigned_register_type,
+        opaque_register_type,
+    )
+    from flagquantum.core.ir.program.registers import Register, RegisterSide
+
+    @frozen
+    class DirectedPrepare(PrepareOracle):
+        @property
+        def selection_registers(self):
+            return (SourceRegister("selection", BQUInt(2, 3), shape=(2,)),)
+
+        @property
+        def junk_registers(self):
+            return (
+                SourceRegister("consumed", QAny(2), side=Side.LEFT),
+                SourceRegister("retained", QAny(3), shape=(2,)),
+                SourceRegister("created", QAny(4), side=Side.RIGHT),
+            )
+
+    source = SourceLCU(_select_block().select, DirectedPrepare())
+    selection = Register("selection", bounded_unsigned_register_type(2, 3), shape=(2,))
+    retained = Register("retained", opaque_register_type(3), shape=(2,))
+    target = Register("target", opaque_register_type(18))
+    native = source_lcu_block_signature(
+        (selection,),
+        (
+            Register("consumed", opaque_register_type(2), side=RegisterSide.LEFT),
+            retained,
+            Register("created", opaque_register_type(4), side=RegisterSide.RIGHT),
+        ),
+        (target,),
+    )
+    assert tuple(native) == (selection, retained, target)
+    assert [(reg.name, reg.total_bits(), reg.side.name) for reg in native] == [
+        (reg.name, reg.total_bits(), reg.side.name) for reg in source.signature
+    ]
+    assert native.n_qubits() == source.signature.n_qubits() == 28

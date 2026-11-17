@@ -14,6 +14,8 @@ from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import RegisterLayout, partition_register
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from .black_box_prepare import BlackBoxPrepare
 
 SelectEmitter = Callable[
@@ -26,6 +28,13 @@ ControlledSelectEmitter = Callable[
     [int, Mapping[str, tuple[int, ...]], tuple[int, ...], tuple[int, ...], bool],
     tuple[Instruction, ...],
 ]
+
+
+def source_select_block_signature(
+    selection: tuple[Register, ...], target: tuple[Register, ...]
+) -> Signature:
+    """Expose the SELECT ports while leaving PREPARE junk in the signal state."""
+    return Signature((*selection, *target))
 
 
 @dataclass(frozen=True)

@@ -7,7 +7,7 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0282 | `lcu_block_encoding.ipynb` | `4f457c91bedc3baaf94f7515242a67fffc4bf4b7` | Closed by the native tutorial. |
-| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Open for generic source external objects, register typing, and wire-symbol dispatch. |
+| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Named and packed types, directed junk declarations and wire symbols verified. General external oracle binding remains open. |
 | Q-0284 | `lcu_block_encoding_test.py` | `0632799611bbd5ec2b7ca724533d4bbd1bbb7169` | Closed by the original-fixture mapping and existing controlled branch evidence. |
 
 ## Binding and work ownership
@@ -27,6 +27,25 @@ and source error metadata zero. PREPARE owns the two logical direction
 bits. SELECT does not receive those bits. Each stage owns its temporary
 work and result slots during the call. The sequential stages can reuse the
 same physical allocation.
+
+## Typed declarations and drawing
+
+The SELECT declaration preserves the selection and target descriptors.
+PREPARE junk remains part of the independent signal preparation. The LCU
+declaration starts with the optional scalar QBit control, retains the
+PREPARE selection, includes only THRU junk, and then exposes the SELECT
+target. Descriptors retain their shape and dtype. The direction-filter
+test covers both LEFT and RIGHT junk and a retained register array.
+This is a signature check. Physical bindings still require caller-owned
+scratch and compatible branch cleanup.
+
+The named Hubbard example keeps bounded integer selection words and an
+opaque target. The packed example keeps opaque selection, junk and system
+words. The notebook uses these typed declarations for its signature
+figures. Drawer callbacks preserve the empty connector, `B[H]` boxes and
+the source's literal `control` glyph rule. The actual source control port
+is named `ctrl` and renders as `B[H]`. A port named `control` renders as the
+filled or empty circle for its activation value.
 
 ## Original scenarios
 
@@ -71,10 +90,9 @@ The independent source export and native primitive stream differ in
 their lowering of modular increment, swaps and multi-control arithmetic.
 The accepted named and packed native streams remain identical. The
 full complex comparison covers the complete resulting support for the
-specified coherent input and four histories in each direction and
-control configuration. Arbitrary input states, exhaustive long histories,
-external object binding, general typed ports and wire-symbol dispatch
-remain open.
+specified coherent input and four histories in each direction and control
+configuration. Arbitrary input states, exhaustive long histories, and
+foreign oracle object binding remain open.
 
 ## Emission and source model
 

@@ -9,14 +9,24 @@ from flagquantum.algorithms.primitives.black_box_prepare import (
 )
 from flagquantum.algorithms.primitives.hubbard_prepare import PrepareHubbard
 from flagquantum.algorithms.primitives.hubbard_select import SelectHubbard
-from flagquantum.algorithms.primitives.lcu_block_encoding import LCUBlockEncoding
-from flagquantum.algorithms.primitives.select_block_encoding import SelectBlockEncoding
+from flagquantum.algorithms.primitives.lcu_block_encoding import (
+    LCUBlockEncoding,
+    source_lcu_block_signature,
+)
+from flagquantum.algorithms.primitives.prepare_oracle import PrepareOracle
+from flagquantum.algorithms.primitives.select_block_encoding import (
+    SelectBlockEncoding,
+    source_select_block_signature,
+)
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
 from flagquantum.compiler._component_trace.resource_model import ComponentCost, CostCall
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import Instruction
+from flagquantum.core.ir.program.register_types import opaque_register_type
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.dynamic import DynamicCircuit
 
 
@@ -34,6 +44,32 @@ class HubbardLCUExample:
     @property
     def selection(self) -> SelectHubbard:
         return SelectHubbard(self.side)
+
+    def _prepare_declaration(self) -> PrepareOracle | PackedPrepareDeclaration:
+        prepare = self.preparation
+        return PackedPrepareDeclaration(prepare) if self.packed else prepare
+
+    def _target_registers(self) -> tuple[Register, ...]:
+        name, width = self.selection.layout[-1]
+        return (
+            Register("system" if self.packed else name, opaque_register_type(width)),
+        )
+
+    def select_signature(self) -> Signature:
+        """Declare the original named or packed SELECT ports."""
+        return source_select_block_signature(
+            self._prepare_declaration().selection_registers, self._target_registers()
+        )
+
+    def lcu_signature(self, *, controlled: bool = False) -> Signature:
+        """Declare the original named or packed LCU ports, including through junk."""
+        prepare = self._prepare_declaration()
+        return source_lcu_block_signature(
+            prepare.selection_registers,
+            prepare.junk_registers,
+            self._target_registers(),
+            controlled=controlled,
+        )
 
     @property
     def prepare_oracle(self) -> BlackBoxPrepare:

@@ -12,8 +12,34 @@ from ...compiler._component_trace.resource_model import ComponentCost, CostCall
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import RegisterLayout, partition_register
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import quantum_bit_type
+from ...core.ir.program.registers import Register, RegisterSide
+from ...core.ir.program.signatures import Signature
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
+
+
+def source_lcu_block_signature(
+    selection: tuple[Register, ...],
+    junk: tuple[Register, ...],
+    target: tuple[Register, ...],
+    *,
+    controlled: bool = False,
+) -> Signature:
+    """Expose typed through junk while retaining preparation-local directions.
+
+    Selection and target descriptors keep their original shape, type and
+    side. The source exports only THRU junk through the conjugation.
+    """
+    control = (Register("ctrl", quantum_bit_type()),) if controlled else ()
+    return Signature(
+        (
+            *control,
+            *selection,
+            *(reg for reg in junk if reg.side == RegisterSide.THRU),
+            *target,
+        )
+    )
 
 
 @dataclass(frozen=True)
