@@ -23,11 +23,10 @@ execution, core IR, noise channels and the optional stabilizer sampler.
   observable layouts, without executing an amplitude store. The original forced
   execution remains the independent small-system test reference. DEM construction consumes these
   functions/constants without a reverse import, avoiding a module cycle.
-- `experiments.py`: the approved fixed-shot composition of original-source
-  export, strict actual-law DEM, complete-record batch decoding and a single
-  owned sampler. Canonical imports only; no root/parent re-export or persistence
-  schema. Run `examples/qec/memory_experiment.py` with the Stim/PyMatching extras
-  for all five default decoders; unsupported model/decoder intersections refuse.
+- `experiments.py`: fixed-shot composition of original-source sampling,
+  DEM construction and batch decoding. Run `examples/qec/memory_experiment.py`
+  with the Stim extra for bundled Sparse Blossom or select
+  `--decoder minimum_weight_matching` for the reference matcher.
 - `measurement_conversion.py`: reference-normalized detector and logical flips
   from existing records. Use `convert_measurement_records` with
   `circuit_format="stim"` and run

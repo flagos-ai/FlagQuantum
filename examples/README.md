@@ -12,8 +12,8 @@ lower-level samples. The [compatibility table](../docs/reference/QEC_STIM_PYMATC
 distinguishes native code and optional SDK routes.
 
 - [Existing Stim circuit report](qec/stim_memory_experiment.py): run
-  `python examples/qec/stim_memory_experiment.py`; CPU plus Stim/PyMatching,
-  35 shots and two deliberately swapped logical columns. Expected output is
+  `python examples/qec/stim_memory_experiment.py` with the Stim extra. The
+  bundled Sparse Blossom solver decodes 35 shots and two deliberately swapped logical columns. Expected output is
   `35 0 (0, 0)` followed by `stim_circuit`.
 - [Native memory declarations](qec/memory_experiment.py): use repetition or
   `--code surface --basis x` / `--code surface --basis z` for fixed-shot reports.
@@ -241,7 +241,7 @@ These examples do not use that alias:
   cost, and different logical predictions need not indicate a decoding defect.
 - [`qec/surface_memory_sweep.py`](qec/surface_memory_sweep.py) reports eight
   fixed CPU Surface points: X/Z, distances 3/5 and two explicit noise profiles.
-  Install the existing Stim/PyMatching extras. Each point uses 35 shots in
+  Install the Stim extra for the bundled Sparse Blossom workflow. Each point uses 35 shots in
   batches 16, 16, 3 and a declared keyed seed; stdout contains configuration,
   eight point records and a completion record only on full success. The JSON
   lines are example output, not a persistence API. Wilson intervals are
@@ -256,17 +256,15 @@ These examples do not use that alias:
   independent edge costs and the unique selected pair edge.
 - [`qec/stim_memory_experiment.py`](qec/stim_memory_experiment.py) runs an
   external Stim circuit through the canonical QEC fixed-shot report entry,
-  using domain imports rather than the root-level alias. CPU and the existing
-  Stim/PyMatching extras are required; it prints `35 0 (0, 0)` and `stim_circuit`.
-- [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
-  fixed-shot experiment through its canonical QEC execution import. It uses one
-  original source and exact final partial batches with five default decoders;
-  install the Stim and PyMatching extras. Reports counts without a speed claim.
-  Add `--code surface --basis z` or `--code surface --basis x` for distance-three,
+  with the Stim extra and bundled Sparse Blossom. It prints `35 0 (0, 0)`
+  and `stim_circuit`.
+- [`qec/memory_experiment.py`](qec/memory_experiment.py) reports fixed-shot
+  counts using the Stim extra and bundled Sparse Blossom by default.
+  Select `--decoder minimum_weight_matching` for the reference matcher or use
+  `--decoder all` with both extras to compare the example's decoders. Use
+  `--code surface --basis z` or `--code surface --basis x` for distance-three,
   three-round memory using 35 shots in batches of 16, 16 and 3. X memory uses
-  the certified all-data X product. Each command reports five decoder counts
-  and checks the fixed-shot interval; zero observed failures do not establish
-  logical suppression, a threshold or decoder performance.
+  the all-data X product.
   Use `--batch-size 1`, `--batch-size 35` or `--batch-size 64` to request
   respectively 35 single-shot batches, one full batch or one capped batch.
   The default remains 16. Each setting advances one seeded stream; different

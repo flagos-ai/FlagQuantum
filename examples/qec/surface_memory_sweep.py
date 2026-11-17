@@ -1,7 +1,7 @@
 """Report eight fixed-shot CPU Surface configurations using existing QEC APIs.
 
-Install the existing ``stim,pymatching`` extras. Output is illustrative JSON
-lines, not a library persistence schema. Intervals are marginal per point.
+Install FlagQuantum with its ``stim`` extra. The bundled Sparse Blossom solver
+decodes each point. The example prints JSON lines and marginal intervals.
 """
 
 from __future__ import annotations
@@ -34,6 +34,7 @@ _SEEDS = {
     ("z", 5, "high"): 60,
 }
 _NOISE = {"low": (0.005, 0.007, 0.009), "high": (0.01, 0.014, 0.018)}
+_DECODER = "sparse_blossom"
 
 
 def _points() -> tuple[tuple[str, int, str, int], ...]:
@@ -58,7 +59,7 @@ def _configuration(
         rounds=3,
         shots=35,
         batch_size=16,
-        decoder="pymatching",
+        decoder=_DECODER,
     )
 
 
@@ -74,7 +75,7 @@ def _validate_points(points: tuple[tuple[str, int, str, int], ...]) -> None:
 def _versions() -> dict[str, str]:
     return {
         "python": platform.python_version(),
-        **{name: version(name) for name in ("torch", "stim", "pymatching")},
+        **{name: version(name) for name in ("torch", "stim")},
     }
 
 
@@ -149,7 +150,7 @@ def main() -> None:
                 noise=PhenomenologicalNoise(
                     data_flip=data, phase_flip=phase, measurement_flip=measurement
                 ),
-                decoder="pymatching",
+                decoder=_DECODER,
                 shots=35,
                 batch_size=16,
                 seed=seed,

@@ -1,7 +1,7 @@
-"""Run a fixed-shot CPU memory experiment with each default decoder.
+"""Run a fixed-shot CPU memory experiment with bundled Sparse Blossom.
 
-Install with ``python -m pip install -e '.[stim,pymatching]'``. No GPU is used.
-The explicit noise keeps every declared detector represented for PyMatching.
+Install FlagQuantum with the Stim extra. Select a different decoder with
+``--decoder``; ``pymatching`` and ``all`` also need the PyMatching extra.
 """
 
 import argparse
@@ -15,6 +15,15 @@ from flagquantum.qec import (
 )
 from flagquantum.qec.execution.experiments import run_memory_experiment
 
+_DECODERS = (
+    "sparse_blossom",
+    "minimum_weight_matching",
+    "sliding_window_matching",
+    "belief_propagation",
+    "belief_propagation_osd",
+    "pymatching",
+)
+
 
 def main() -> None:
     """Count shot-level logical disagreements, retaining the one-shot tail."""
@@ -24,6 +33,12 @@ def main() -> None:
     )
     parser.add_argument("--basis", choices=("x", "z"), default="z")
     parser.add_argument("--batch-size", type=int, default=16)
+    parser.add_argument(
+        "--decoder",
+        choices=(*_DECODERS, "all"),
+        default="sparse_blossom",
+        help="Decoder to use (default: %(default)s).",
+    )
     args = parser.parse_args()
     if args.batch_size <= 0:
         parser.error("--batch-size must be positive")
@@ -39,13 +54,8 @@ def main() -> None:
         noise = PhenomenologicalNoise(
             data_flip=0.005, phase_flip=0.007, measurement_flip=0.009
         )
-    for decoder in (
-        "minimum_weight_matching",
-        "sliding_window_matching",
-        "belief_propagation",
-        "belief_propagation_osd",
-        "pymatching",
-    ):
+    decoders = _DECODERS if args.decoder == "all" else (args.decoder,)
+    for decoder in decoders:
         result = run_memory_experiment(
             memory,
             noise=noise,
