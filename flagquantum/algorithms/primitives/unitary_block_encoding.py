@@ -5,12 +5,15 @@
 
 """Bind a THRU unitary as a block encoding with untouched auxiliary ports."""
 
+from __future__ import annotations
+
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
+from typing import cast
 
 from ...circuit import Circuit
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.control.control_predicate import (
     ControlRegister,
     bind_control_registers,
@@ -71,9 +74,22 @@ def source_unitary_block_resource_formula(
     *,
     ancilla: SymbolicInt = 0,
     resource: SymbolicInt = 0,
+    system: SymbolicInt | None = None,
 ) -> SymbolicResourceFormula:
-    """Keep both auxiliary ports live for the single source child call."""
-    return replace(child, logical_qubits=child.logical_qubits + ancilla + resource)
+    """Track the source partition, child call and idle auxiliary ports."""
+    system_width = child.logical_qubits if system is None else system
+    auxiliary = ancilla + resource
+    partition_peak = cast(SymbolicInt, smax(0, system_width))
+    peak = cast(
+        SymbolicInt,
+        smax(
+            0,
+            system_width + auxiliary,
+            partition_peak + auxiliary,
+            child.logical_qubits + auxiliary,
+        ),
+    )
+    return replace(child, logical_qubits=peak)
 
 
 @dataclass(frozen=True)
