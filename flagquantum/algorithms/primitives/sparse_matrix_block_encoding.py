@@ -12,7 +12,7 @@ from ...compiler._component_trace.resource_model import (
     CostCall,
     GateCost,
 )
-from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal
 from ...compiler.registers.preparation.uniform_preparation import (
     source_uniform_preparation_cost,
     uniform_preparation_ir,
@@ -20,9 +20,19 @@ from ...compiler.registers.preparation.uniform_preparation import (
 )
 from ...compiler.registers.primitives.swap import swap_register_ir
 from ...core.ir import Instruction
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 from .sparse_matrix_oracles import EntryOracle, RowColumnOracle
+
+
+def source_sparse_matrix_signature(width: SymbolicInt) -> Signature:
+    """Declare the ordered sparse-access ports before concrete binding."""
+    return Signature.build_from_dtypes(
+        system=opaque_register_type(width),
+        ancilla=opaque_register_type(width + 1),
+    )
 
 
 @dataclass(frozen=True)
@@ -59,6 +69,10 @@ class SparseMatrixBlockEncoding:
     @property
     def resource_bitsize(self) -> int:
         return 0
+
+    @property
+    def signature(self) -> Signature:
+        return source_sparse_matrix_signature(self.system_bitsize)
 
     @property
     def alpha(self) -> int:
