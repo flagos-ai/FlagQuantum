@@ -16,6 +16,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--physical", action="store_true")
     args = parser.parse_args()
     cases = []
     harness = Path(__file__).with_name("kickmix_controlled_addition_oracle.cc")
@@ -44,36 +45,64 @@ def main() -> None:
                             text=True,
                             timeout=5,
                         )
-                        stream = normalized_stream(text)
-                        cases.append(
-                            {
-                                "width": width,
-                                "offset_tail": tail,
-                                "extra_clean": extra,
-                                "carry_kind": kind,
-                                "subtract": subtract,
-                                "sha256": hashlib.sha256(
-                                    json.dumps(stream).encode()
-                                ).hexdigest(),
-                                "opcodes": dict(
-                                    Counter(
-                                        primitive.split()[0] for primitive, _ in stream
-                                    )
-                                ),
-                            }
-                        )
+                        case = {
+                            "width": width,
+                            "offset_tail": tail,
+                            "extra_clean": extra,
+                            "carry_kind": kind,
+                            "subtract": subtract,
+                        }
+                        cases.append({**case, **_fingerprint(text, args.physical)})
+        if args.physical:
+            text = subprocess.check_output(
+                [str(oracle), "256", "0", "0", "2", "0", "perf"],
+                text=True,
+                timeout=5,
+            )
+            cases.append(
+                {
+                    "width": 256,
+                    "offset_tail": 0,
+                    "extra_clean": 0,
+                    "carry_kind": 2,
+                    "subtract": False,
+                    **_fingerprint(text, True),
+                }
+            )
     args.output.write_text(
         json.dumps(
             {
                 "source_commit": "9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453",
                 "source_blob": SOURCE_BLOB,
-                "normalization": "Register/INFO annotations and reset of caller-supplied zero carries omitted; ordered primitive operands and effective classical guard sets retained.",
+                "normalization": (
+                    "Only register declarations removed; all ordered physical records retained."
+                    if args.physical
+                    else "Register/INFO annotations and reset of caller-supplied zero carries omitted; ordered primitive operands and effective classical guard sets retained."
+                ),
                 "cases": cases,
             },
             indent=2,
         )
         + "\n"
     )
+
+
+def _fingerprint(text: str, physical: bool) -> dict[str, object]:
+    if physical:
+        lines = [
+            line
+            for line in text.splitlines()
+            if not line.startswith(("APPEND_TO_REGISTER ", "REGISTER "))
+        ]
+        payload = "\n".join(lines)
+    else:
+        stream = normalized_stream(text)
+        lines = [primitive for primitive, _ in stream]
+        payload = json.dumps(stream)
+    return {
+        "sha256": hashlib.sha256(payload.encode()).hexdigest(),
+        "opcodes": dict(Counter(line.split()[0] for line in lines)),
+    }
 
 
 if __name__ == "__main__":

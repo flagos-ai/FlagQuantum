@@ -1,0 +1,3056 @@
+{
+  "source_commit": "9a0c11a4ee7697c082fbf8f2e1e8bf4a71fcb453",
+  "source_blob": "ee8062ae063ce241383bdb633ead74c4dafc5db1",
+  "normalization": "Only register declarations removed; all ordered physical records retained.",
+  "cases": [
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "e3f1c25d776887356c10b0e84fe9981e94e5401f0dd9b8be3a967b2f5f99ef92",
+      "opcodes": {
+        "INFO_TAG": 4
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "e3f1c25d776887356c10b0e84fe9981e94e5401f0dd9b8be3a967b2f5f99ef92",
+      "opcodes": {
+        "INFO_TAG": 4
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "e3f1c25d776887356c10b0e84fe9981e94e5401f0dd9b8be3a967b2f5f99ef92",
+      "opcodes": {
+        "INFO_TAG": 4
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "a84b2075fdce9f9182707b8f60f4b84583256a611fc71e14436fe97befb90cc3",
+      "opcodes": {
+        "INFO_TAG": 2
+      }
+    },
+    {
+      "width": 0,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "e3f1c25d776887356c10b0e84fe9981e94e5401f0dd9b8be3a967b2f5f99ef92",
+      "opcodes": {
+        "INFO_TAG": 4
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "dbe261b7a55b5a1f35c692a26117af5ad9e54d8d540ee8b8b14057c57a0e54f7",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "4c22d888eb27c3cb4926e8f19cd25a47b0eac02467485918a4366a64af8221b7",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a3158093f8707db016281ab98b10b1b73e42ab540a78c1fb00b96ab6e16b2616",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 2
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "91a06cda72c2523968dff3e3c67d826d760a373937025e0d28d74cdbce36e3d4",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "d3c4a0813fd76b19032a4fe8c6a2a613b3b2d8775b2a009ad2bd33348bcc7f3a",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "dbe261b7a55b5a1f35c692a26117af5ad9e54d8d540ee8b8b14057c57a0e54f7",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "4c22d888eb27c3cb4926e8f19cd25a47b0eac02467485918a4366a64af8221b7",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a3158093f8707db016281ab98b10b1b73e42ab540a78c1fb00b96ab6e16b2616",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 2
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "91a06cda72c2523968dff3e3c67d826d760a373937025e0d28d74cdbce36e3d4",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "d3c4a0813fd76b19032a4fe8c6a2a613b3b2d8775b2a009ad2bd33348bcc7f3a",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "79f012bf09d8b8b3b27ecd416bb8ff622f2ecc56e5933b608b64befb6696ced1",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "c86c5ad70a4bfe157027eed1b9a330623a6e09782fd67da21d0bdf9675aca30d",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "ca65499c27fd5e4cf7a917b3b875f4fffe688f608c663402c31bb146d34d9fe2",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 2
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "e10fe6d8ec2d116f54e6a16931b8f99b3c7cfba4ccf8a8bee1bc0a9fa5b4845f",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "3cb39a65b71d74c5386a2aeda046d3c82c863f1fa2656ec05de34249a9c4cc5e",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "79f012bf09d8b8b3b27ecd416bb8ff622f2ecc56e5933b608b64befb6696ced1",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "c86c5ad70a4bfe157027eed1b9a330623a6e09782fd67da21d0bdf9675aca30d",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "ca65499c27fd5e4cf7a917b3b875f4fffe688f608c663402c31bb146d34d9fe2",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 2
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "e10fe6d8ec2d116f54e6a16931b8f99b3c7cfba4ccf8a8bee1bc0a9fa5b4845f",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CCX": 1,
+        "CX": 1
+      }
+    },
+    {
+      "width": 1,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "3cb39a65b71d74c5386a2aeda046d3c82c863f1fa2656ec05de34249a9c4cc5e",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 2,
+        "CCX": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "9e6f0b552c884d4239fd3a1b3418a01fc7922dcb7208ace596a6040d3f52a43c",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "ec13025d2809939dab4f4cb0ced7fe7cad25a17c19bff72bf20510fa331c1a54",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "f85d66fed01a0e92668793d0b95ceb7d6ed5ba66ecdf40a87bfccc0b4a8a81b1",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 7,
+        "R": 1,
+        "CCX": 3,
+        "HMR": 1,
+        "CZ": 1,
+        "Z": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "d20d31e6abbb6732b209add277c1846222ab69c88a01202d57252508a0cdb2e8",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "b7ecbad2bdd146052e8ad6fcd2ec0f2224acdff3736ae05c0bb1e890faaaaa00",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 4,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "9e6f0b552c884d4239fd3a1b3418a01fc7922dcb7208ace596a6040d3f52a43c",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "ec13025d2809939dab4f4cb0ced7fe7cad25a17c19bff72bf20510fa331c1a54",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "f85d66fed01a0e92668793d0b95ceb7d6ed5ba66ecdf40a87bfccc0b4a8a81b1",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 7,
+        "R": 1,
+        "CCX": 3,
+        "HMR": 1,
+        "CZ": 1,
+        "Z": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "d20d31e6abbb6732b209add277c1846222ab69c88a01202d57252508a0cdb2e8",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "b7ecbad2bdd146052e8ad6fcd2ec0f2224acdff3736ae05c0bb1e890faaaaa00",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 4,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "820db42d76065fc2b748a31f5eada9d9cf564ca34f47bccae24df2cb667f2697",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "3702daffb9795f3713fb1b7da9ea4082e1c37996aeac7719ca42de0f5fee4ac0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "fdab89234a7d95941a70e8c0b51b240c6dbf2e376943b15470cf3a9d7b3b712e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 7,
+        "R": 1,
+        "CCX": 3,
+        "HMR": 1,
+        "CZ": 1,
+        "Z": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "4308d9e39348e9e15d27ce8845bdd0e1b8b1b497b817e86044c2e3a59aeffdb5",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "f3a9cc85496cb928cbd064852e5e23f8901f6bc9dcf8d541f79f9e2c5e9afa00",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 4,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "820db42d76065fc2b748a31f5eada9d9cf564ca34f47bccae24df2cb667f2697",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "3702daffb9795f3713fb1b7da9ea4082e1c37996aeac7719ca42de0f5fee4ac0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "fdab89234a7d95941a70e8c0b51b240c6dbf2e376943b15470cf3a9d7b3b712e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 7,
+        "R": 1,
+        "CCX": 3,
+        "HMR": 1,
+        "CZ": 1,
+        "Z": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "4308d9e39348e9e15d27ce8845bdd0e1b8b1b497b817e86044c2e3a59aeffdb5",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 2,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "f3a9cc85496cb928cbd064852e5e23f8901f6bc9dcf8d541f79f9e2c5e9afa00",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 4,
+        "R": 1,
+        "CCX": 3,
+        "CX": 2,
+        "HMR": 1,
+        "CZ": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "e6fbc730f9a5d532ef182344ee4787098b57b05fec17d65ed1b6817271bd0232",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "be7a51627ea913d9416d74402594b29905cb1e12526496e87dc53ec7b3a17bba",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "1a50f96cc272afc5564cf05fad054e3fb92f0334818fc13174b72725bff38896",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 12,
+        "R": 2,
+        "CCX": 5,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 2
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "6c6cba1ee06404ad3fc14f92887403b6136e26493286b32ea749300ba761b3f0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "8dcdd0b3b9bf4ea7916773c011e2949e2bac80ec6c08e2ec33afea130e0d3dca",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 6,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "e6fbc730f9a5d532ef182344ee4787098b57b05fec17d65ed1b6817271bd0232",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "be7a51627ea913d9416d74402594b29905cb1e12526496e87dc53ec7b3a17bba",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "1a50f96cc272afc5564cf05fad054e3fb92f0334818fc13174b72725bff38896",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 12,
+        "R": 2,
+        "CCX": 5,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 2
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "6c6cba1ee06404ad3fc14f92887403b6136e26493286b32ea749300ba761b3f0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "8dcdd0b3b9bf4ea7916773c011e2949e2bac80ec6c08e2ec33afea130e0d3dca",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 6,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "c90755fc52aa1af42c2be1283f9fb01f4b39cbea49506c1e2e510bf7d183785a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "a32fd7fb6c2fa01c662b1e5cd94f9c43a5d7c21251a579caa3ec57dcc41b7a05",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "f064df433de759fda88afae9006b091728f9d450be5be9bf8cd734e04b1b7c4b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 12,
+        "R": 2,
+        "CCX": 5,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 2
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "d4017d96e8ef5ffb99369bf53b571b5777a3e92b49dff8d94d45563556da7581",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "9b5d4f37cb87023e88faa381c61251d0948e9c0e1bf42312f2ebc5797f078471",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 6,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "c90755fc52aa1af42c2be1283f9fb01f4b39cbea49506c1e2e510bf7d183785a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "a32fd7fb6c2fa01c662b1e5cd94f9c43a5d7c21251a579caa3ec57dcc41b7a05",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "f064df433de759fda88afae9006b091728f9d450be5be9bf8cd734e04b1b7c4b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 12,
+        "R": 2,
+        "CCX": 5,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 2
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "d4017d96e8ef5ffb99369bf53b571b5777a3e92b49dff8d94d45563556da7581",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 3,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "9b5d4f37cb87023e88faa381c61251d0948e9c0e1bf42312f2ebc5797f078471",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 6,
+        "R": 2,
+        "CCX": 5,
+        "CX": 7,
+        "HMR": 2,
+        "CZ": 2,
+        "Z": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "f2c544142ef77d1d384644c028eb7844059cd8aa0e58dbd324df56fd181dbcb0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "eab64850a0086444d344faec06631188c5ae8f395c25121b71ab3605fcf564e6",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a92bf9dfbbce0a125ab42fb7a8617281b31e75ee64212e687fb4fc68cfa60efa",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 17,
+        "R": 3,
+        "CCX": 7,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 3
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "9287d2d88cb1ca73530228a0d554d8e32f4d6b69a98e6c49d68ddce85c29e304",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "8468b376cae1ace2dcd9741aade249b2e02bab2294a7b2ae9d120a162aa5789b",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 8,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "f2c544142ef77d1d384644c028eb7844059cd8aa0e58dbd324df56fd181dbcb0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "eab64850a0086444d344faec06631188c5ae8f395c25121b71ab3605fcf564e6",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a92bf9dfbbce0a125ab42fb7a8617281b31e75ee64212e687fb4fc68cfa60efa",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 17,
+        "R": 3,
+        "CCX": 7,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 3
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "9287d2d88cb1ca73530228a0d554d8e32f4d6b69a98e6c49d68ddce85c29e304",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "8468b376cae1ace2dcd9741aade249b2e02bab2294a7b2ae9d120a162aa5789b",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 8,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "a7aa9ef5c9fb75f915e8c8f7c9ca85877665a5b470ede4529eabe222cad9b17a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "58e61b28ecbf2403766e1d827790bc6f37e0b2ed1011096862f15e19c41825b2",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a8f81627669846684fb1509c83f62fb36743fa1417787e617115e736aec8d35b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 17,
+        "R": 3,
+        "CCX": 7,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 3
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "4ed50788998bf35e1bba7819ed8d686840abebbdcd7277fa158310a634bbc3bf",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "d713eaf399ead19a5184d0cda77f1991c102b7714b672cf944af4d35d32e1eed",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 8,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "a7aa9ef5c9fb75f915e8c8f7c9ca85877665a5b470ede4529eabe222cad9b17a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "58e61b28ecbf2403766e1d827790bc6f37e0b2ed1011096862f15e19c41825b2",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "a8f81627669846684fb1509c83f62fb36743fa1417787e617115e736aec8d35b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 17,
+        "R": 3,
+        "CCX": 7,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 3
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "4ed50788998bf35e1bba7819ed8d686840abebbdcd7277fa158310a634bbc3bf",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 4,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "d713eaf399ead19a5184d0cda77f1991c102b7714b672cf944af4d35d32e1eed",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 8,
+        "R": 3,
+        "CCX": 7,
+        "CX": 12,
+        "HMR": 3,
+        "CZ": 3,
+        "Z": 2
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "ec4c40516da854b154996fad3a8af6a4f96f8bc03f7a30f36e5f2147ae0654b9",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "eddcc83c428b3dc4e82114ffd59a9dbb25a60535bacfd548b36da191964fdd05",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "cd747e99db027ab891704c11ec7fbd9425f6d46345463102ed7eb8a1fe483261",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 22,
+        "R": 4,
+        "CCX": 9,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 4
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "3d329942c50c4690d6abee572df151c7755f4aa71d29a7bc2a0c5f86c28dbe8b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "9f25f856a3be00f44a5775af12eb8fd55ad849343c95c4ae1f8775c995958b99",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 10,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "ec4c40516da854b154996fad3a8af6a4f96f8bc03f7a30f36e5f2147ae0654b9",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "eddcc83c428b3dc4e82114ffd59a9dbb25a60535bacfd548b36da191964fdd05",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "cd747e99db027ab891704c11ec7fbd9425f6d46345463102ed7eb8a1fe483261",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 22,
+        "R": 4,
+        "CCX": 9,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 4
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "3d329942c50c4690d6abee572df151c7755f4aa71d29a7bc2a0c5f86c28dbe8b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "9f25f856a3be00f44a5775af12eb8fd55ad849343c95c4ae1f8775c995958b99",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 10,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "673204a0035664cbfb2a950672a0404f4862dde9ba2a3edecce3e0cf36724fbb",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "32841dadea79e6d092c24d8c610a12e78cc2220dd82cf038503635719c1be78f",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "8f7ffa16e4b05315273a3fa866595ce872c520da16173eb7fe72f3ce5baa4f3e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 22,
+        "R": 4,
+        "CCX": 9,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 4
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "1f6dd65ec36729e7a0c38e29ee24e9bb7697fde537dded9bad14823e78293aa1",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "90ee0f778056f53a301f82a73eef6af9e2c7c5a8288a94c4a6f2af38a5f060d4",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 10,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "673204a0035664cbfb2a950672a0404f4862dde9ba2a3edecce3e0cf36724fbb",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "32841dadea79e6d092c24d8c610a12e78cc2220dd82cf038503635719c1be78f",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "8f7ffa16e4b05315273a3fa866595ce872c520da16173eb7fe72f3ce5baa4f3e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 22,
+        "R": 4,
+        "CCX": 9,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 4
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "1f6dd65ec36729e7a0c38e29ee24e9bb7697fde537dded9bad14823e78293aa1",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 5,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "90ee0f778056f53a301f82a73eef6af9e2c7c5a8288a94c4a6f2af38a5f060d4",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 10,
+        "R": 4,
+        "CCX": 9,
+        "CX": 17,
+        "HMR": 4,
+        "CZ": 4,
+        "Z": 3
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "5fe337e4505ed708014191da175fa858f3960657fc2f2c9432f63f99377af056",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "f6e4a8c6d09ba3765c616dfc371e0ce7ae3d8560581642d13f01dd3fea1e269c",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "fe90434d39e2fcbcb7e7b1a99873288fe74dbcf833af041fbcc70ce2e8b67f4a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 27,
+        "R": 5,
+        "CCX": 11,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 5
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "f7983d5cb22caff46d31871a6c4d8bb8f674147e197778dcc81f5404258e811a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "1a8aceb2e403ae2ffbe3b9c3da132fcd042fb9246936545b2e6df7263c58a196",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 12,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "5fe337e4505ed708014191da175fa858f3960657fc2f2c9432f63f99377af056",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "f6e4a8c6d09ba3765c616dfc371e0ce7ae3d8560581642d13f01dd3fea1e269c",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "fe90434d39e2fcbcb7e7b1a99873288fe74dbcf833af041fbcc70ce2e8b67f4a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 27,
+        "R": 5,
+        "CCX": 11,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 5
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "f7983d5cb22caff46d31871a6c4d8bb8f674147e197778dcc81f5404258e811a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "1a8aceb2e403ae2ffbe3b9c3da132fcd042fb9246936545b2e6df7263c58a196",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 12,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "e6891ff25ccf6a5143ba8648b83aff88cd42efeb503f58e27fba9391f748815a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "c1c891145e8e570cb3b2b8131d5944b6233adc9741c55287f569f27aed69997e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "8143f1e3adcd523d2c6a486b967267f7f9bf0778b209fdb26a88e2eee8ec9014",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 27,
+        "R": 5,
+        "CCX": 11,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 5
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "d2e86921b790fa181587849ee9517a4275b3897d15f6b0f25b4b1740f89b76cd",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "08976fb20ea849f0ea81e93ec97953da68b534e700483813d4ec9517f9f63325",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 12,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "e6891ff25ccf6a5143ba8648b83aff88cd42efeb503f58e27fba9391f748815a",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "c1c891145e8e570cb3b2b8131d5944b6233adc9741c55287f569f27aed69997e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "8143f1e3adcd523d2c6a486b967267f7f9bf0778b209fdb26a88e2eee8ec9014",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 27,
+        "R": 5,
+        "CCX": 11,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 5
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "d2e86921b790fa181587849ee9517a4275b3897d15f6b0f25b4b1740f89b76cd",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 6,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "08976fb20ea849f0ea81e93ec97953da68b534e700483813d4ec9517f9f63325",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 12,
+        "R": 5,
+        "CCX": 11,
+        "CX": 22,
+        "HMR": 5,
+        "CZ": 5,
+        "Z": 4
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "5720085fa5a2480a06228f2e938e9bb8402f81f4be4314c0188118ecb1d9cb18",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "38c4fa3a04fef3c30aa0fb3f6bb9b06d5547f669713e01104ed355e549cc0ea9",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "590ae1e72bb5f5a5b915a41be5847929a60226416d0970e49adcb3c2095c22f0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 32,
+        "R": 6,
+        "CCX": 13,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 6
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "330634e5f66b34bbe73bf8e8ff602de2b648e4b39cc474433085b7dea8eea01d",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "c07ad92de98b4ebc8af8b5773eb59e1e431da818f12757f4c4891681aab472f2",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 14,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "5720085fa5a2480a06228f2e938e9bb8402f81f4be4314c0188118ecb1d9cb18",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "38c4fa3a04fef3c30aa0fb3f6bb9b06d5547f669713e01104ed355e549cc0ea9",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "590ae1e72bb5f5a5b915a41be5847929a60226416d0970e49adcb3c2095c22f0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 32,
+        "R": 6,
+        "CCX": 13,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 6
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "330634e5f66b34bbe73bf8e8ff602de2b648e4b39cc474433085b7dea8eea01d",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "c07ad92de98b4ebc8af8b5773eb59e1e431da818f12757f4c4891681aab472f2",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 14,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "bf4b9abea62c361cc257fa18137e3f1dcbcf418e04ba7ac4c02a3578f0ac8460",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "673aaa97afdf519921a2b937b5bb933b5e4b2abbb9a8df0d3ed19b4bb9ee42ff",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "e4f5c9eb236feb0133ff1f5edfe4884e710638ca495c1c8c745321d367b8fa1e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 32,
+        "R": 6,
+        "CCX": 13,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 6
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "924ee61daee9460a589540ca75dfe1a5edb4088236e8f12b44a90cd38580a43b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "1c25767c8dcc8540edc85021c664804ac36fdd78f1a23e6e4e39c52a46a86ab7",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 14,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "bf4b9abea62c361cc257fa18137e3f1dcbcf418e04ba7ac4c02a3578f0ac8460",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "673aaa97afdf519921a2b937b5bb933b5e4b2abbb9a8df0d3ed19b4bb9ee42ff",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "e4f5c9eb236feb0133ff1f5edfe4884e710638ca495c1c8c745321d367b8fa1e",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 32,
+        "R": 6,
+        "CCX": 13,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 6
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "924ee61daee9460a589540ca75dfe1a5edb4088236e8f12b44a90cd38580a43b",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 7,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "1c25767c8dcc8540edc85021c664804ac36fdd78f1a23e6e4e39c52a46a86ab7",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 14,
+        "R": 6,
+        "CCX": 13,
+        "CX": 27,
+        "HMR": 6,
+        "CZ": 6,
+        "Z": 5
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "7c135dfb6a95c60e37b95ad179fe4083dfedf007d40d196496ef7eb5b20b0afd",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "b89131f6eb5cfb679a797a842438513f460bd7b0b1ad3fc31590430d90e34520",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "9cd23980634e308e6ed4e1f905484ca46a619961c58a8fe0199f6ecd7370ffb0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 37,
+        "R": 7,
+        "CCX": 15,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 7
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "e8db64836f4764b73cb144d5e179a447663f87e7cffc911690b103c1519d155d",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "f8a590e89571d3cd718d0acf245f25c2d4851a674e73e5dcdd61153208d4cb90",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 16,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "7c135dfb6a95c60e37b95ad179fe4083dfedf007d40d196496ef7eb5b20b0afd",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "b89131f6eb5cfb679a797a842438513f460bd7b0b1ad3fc31590430d90e34520",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "9cd23980634e308e6ed4e1f905484ca46a619961c58a8fe0199f6ecd7370ffb0",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 37,
+        "R": 7,
+        "CCX": 15,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 7
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "e8db64836f4764b73cb144d5e179a447663f87e7cffc911690b103c1519d155d",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 0,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "f8a590e89571d3cd718d0acf245f25c2d4851a674e73e5dcdd61153208d4cb90",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 16,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "9d6efc0d4663f0d9cc70b17e96403f09f62ceb3844c605c44956af3b256c0ff5",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "b7037dc34de37cf699152ae8a2c19ccebe9fc990f4ae69b243d3a3b2cb18cfb4",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "b911218a62293544e2c5844758d1bdd8cc35d3b4bdaa1e698db7111f5202fa83",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 37,
+        "R": 7,
+        "CCX": 15,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 7
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "5481099d9e038529bc14d218805504077aa5edf42d25296c1948544f7a94542c",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 0,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "820fd9fb3f3430a625c8dd63c84ca836ce2ab59abd5995ea16dac7c2313eca49",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 16,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": false,
+      "sha256": "9d6efc0d4663f0d9cc70b17e96403f09f62ceb3844c605c44956af3b256c0ff5",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 1,
+      "subtract": false,
+      "sha256": "b7037dc34de37cf699152ae8a2c19ccebe9fc990f4ae69b243d3a3b2cb18cfb4",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "NEG": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "b911218a62293544e2c5844758d1bdd8cc35d3b4bdaa1e698db7111f5202fa83",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 37,
+        "R": 7,
+        "CCX": 15,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 7
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 3,
+      "subtract": false,
+      "sha256": "5481099d9e038529bc14d218805504077aa5edf42d25296c1948544f7a94542c",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "X": 5,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6,
+        "PUSH_CONDITION": 1,
+        "NEG": 1,
+        "POP_CONDITION": 1
+      }
+    },
+    {
+      "width": 8,
+      "offset_tail": 2,
+      "extra_clean": 2,
+      "carry_kind": 0,
+      "subtract": true,
+      "sha256": "820fd9fb3f3430a625c8dd63c84ca836ce2ab59abd5995ea16dac7c2313eca49",
+      "opcodes": {
+        "INFO_TAG": 4,
+        "X": 16,
+        "R": 7,
+        "CCX": 15,
+        "CX": 32,
+        "HMR": 7,
+        "CZ": 7,
+        "Z": 6
+      }
+    },
+    {
+      "width": 256,
+      "offset_tail": 0,
+      "extra_clean": 0,
+      "carry_kind": 2,
+      "subtract": false,
+      "sha256": "e9ad4b6e32c2a9b732645add2a69f6de5291f765643d86c6a5ab537d8ee53457",
+      "opcodes": {
+        "INFO_TAG": 2,
+        "CX": 1277,
+        "R": 255,
+        "CCX": 511,
+        "HMR": 255,
+        "CZ": 255,
+        "Z": 255
+      }
+    }
+  ]
+}
