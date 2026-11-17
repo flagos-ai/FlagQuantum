@@ -2,9 +2,14 @@
 
 import subprocess
 import sys
+from io import BytesIO
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
+
+from flagquantum.compiler.formats import kmb_convert
 
 
 def _convert(
@@ -58,3 +63,31 @@ def test_binary_stdstreams_and_invalid_input_leave_existing_output(
     bad = _convert("kmb2kmx", "--out", str(path), data=raw.stdout[:-1])
     assert bad.returncode and b"Truncated" in bad.stderr
     assert path.read_bytes() == b"original"
+
+
+@pytest.mark.parametrize(
+    "short_write,diagnostic",
+    [(True, "Incomplete write"), (False, "cannot flush output")],
+)
+def test_converter_reports_output_failure(
+    short_write: bool,
+    diagnostic: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    output = Mock(spec=BytesIO, wraps=BytesIO())
+    if short_write:
+        output.write.return_value = 1
+    else:
+        output.flush.side_effect = OSError("cannot flush output")
+    monkeypatch.setattr(
+        kmb_convert,
+        "sys",
+        SimpleNamespace(
+            stdin=SimpleNamespace(buffer=BytesIO(b"X q0\n")),
+            stdout=SimpleNamespace(buffer=output),
+            stderr=sys.stderr,
+        ),
+    )
+    assert kmb_convert.main(["kmx2kmb"]) == 1
+    assert diagnostic in capsys.readouterr().err

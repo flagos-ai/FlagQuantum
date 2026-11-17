@@ -2,6 +2,7 @@
 
 import json
 from base64 import b64decode
+from hashlib import sha256
 from pathlib import Path
 from struct import pack_into, unpack_from
 
@@ -13,6 +14,27 @@ from flagquantum.compiler.formats.kmb_operations import OPERATION_CODES
 _FIXTURES = json.loads(
     (Path(__file__).parent / "fixtures" / "kickmix_kmb.json").read_text()
 )
+
+
+@pytest.mark.parametrize(
+    "count,expected",
+    [
+        (0, "4a5f45be02c47817938a91c5c9b8fc7c0653183e204968e9f06fa846069b014a"),
+        (1, "03a0a3e142fb78a78e42bf3221422fa000b0e9b25b9e58a3cab1d3d93edd7781"),
+        (127, "aa16903fcc523269b7b6ac93d2823f2d9234b104dfd35e88ea63759169dfa2e6"),
+        (128, "a63b37e1b185f9ae87362f74ccac9e4c32070c865be7fd60f5eecf8117dcac8f"),
+        (129, "62e06d568a9eeedf8764133725a8d8c95f51c6f0b88fbba7235de0c34e1f0e61"),
+        (257, "9f7b99ca196096d1b87b4ea8516d7a0d25962ba06826327e2efc9f050204c71d"),
+    ],
+)
+def test_word_block_matches_locked_kmb_writer(count: int, expected: str) -> None:
+    text = "\n".join(f"X q{0x01234500 + index}" for index in range(count))
+    raw = encode_kmb(text)
+    assert sha256(raw).hexdigest() == expected
+    assert decode_kmb(raw) == text
+    if count:
+        with pytest.raises(ValueError, match="Truncated"):
+            decode_kmb(raw[: 216 + 5 * count - 1])
 
 
 @pytest.mark.parametrize("name", tuple(_FIXTURES))

@@ -21,10 +21,15 @@ def main(argv: list[str] | None = None) -> int:
         else:
             text = decode_kmb(raw)
             result = (text + "\n").encode() if text else b""
-        if args.output is None:
+        written = (
             sys.stdout.buffer.write(result)
-        else:
-            args.output.write_bytes(result)
+            if args.output is None
+            else args.output.write_bytes(result)
+        )
+        if written != len(result):
+            raise OSError(f"Incomplete write: wrote {written} of {len(result)} bytes")
+        if args.output is None:
+            sys.stdout.buffer.flush()
     except (OSError, ValueError) as error:
         print(error, file=sys.stderr)
         return 1
