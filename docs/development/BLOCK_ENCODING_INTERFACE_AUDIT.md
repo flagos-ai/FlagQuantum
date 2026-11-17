@@ -7,16 +7,17 @@ copyright Google LLC.
 
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0275 | `__init__.py` | `03c07b29829d3d6322c90faef4508f404e44cef1` | Open. Inventory mapped below. |
+| Q-0275 | `__init__.py` | `03c07b29829d3d6322c90faef4508f404e44cef1` | Closed. All twelve source exports have verified native destinations. |
 | Q-0276 | `block_encoding.ipynb` | `b3f096d4123dd67e39f2d051b98256e868981e4c` | Closed by the native interface tutorial. |
-| Q-0277 | `block_encoding_base.py` | `8e6acb38828863e959c0a8543d79bebc0bda1d2f` | Open for symbolic width composition and the generic foreign base-object contract. |
+| Q-0277 | `block_encoding_base.py` | `8e6acb38828863e959c0a8543d79bebc0bda1d2f` | Concrete and symbolic metadata contracts verified. Generic foreign base-object dispatch remains open. |
 | Q-0278 | `block_encoding_base_test.py` | `534c9e329fdabd21cc005f0ca8ab12148a06110e` | Closed. Its sole scenario is independent execution of the interface notebook. |
 
 ## Interface and register ownership
 
-The source interface declares six properties. The existing private
-`_BlockMetadata` structural contract has the same six properties for
-native concrete composition.
+The source base declares six properties and inherits the signature
+requirement from Bloq. The private native `_BlockDeclaration` exposes
+the six properties structurally. Physical compositions use the existing
+`_BlockMetadata` specialization with concrete widths and a bound signal.
 
 | Source property | Native owner |
 | --- | --- |
@@ -35,21 +36,27 @@ after scaling, and the exact inverse obtained through the same append path.
 Its forward resource model declares one Clifford and peak width three.
 The forward circuit emits one S and owns no temporary work or classical slots.
 
-The source permits symbolic system, ancilla and resource widths in the base
-contract. Native structural metadata currently requires concrete port widths.
-The public spectral block protocol has its own existing consumer contract.
-Generic source inheritance and foreign-object dispatch remain open.
+The symbolic view retains system, ancilla and resource expressions and
+allows declaration-only signal preparation. The packed signature builder
+is shared by Unitary, Phase and both Chebyshev owners. The test compares
+all three symbolic widths, normalization, error and signal width with the
+locked symbolic Unitary. Generic source inheritance and foreign-object
+dispatch remain open.
 
 ## Source package exports
 
 | Source export | FlagQuantum status |
 | --- | --- |
-| `BlockEncoding` | Existing private structural metadata for concrete source-style compositions. |
+| `BlockEncoding` | Structural declaration with a concrete binding specialization. |
 | `LCUBlockEncoding`, `SelectBlockEncoding` | Domain-owned LCU and SELECT compositions. |
 | `LinearCombination` | `LinearCombinationBlockEncoding` in Algorithms. |
 | `Phase`, `Product`, `TensorProduct`, `Unitary` | Existing phase, product, tensor product and unitary block owners. |
-| `ChebyshevPolynomial`, `ScaledChebyshevPolynomial` | Source-specific executable families still pending. |
-| `SparseMatrix`, `SparseMatrixHermitian` | Source-specific block owners still pending. |
+| `ChebyshevPolynomial`, `ScaledChebyshevPolynomial` | `ChebyshevBlockEncoding` and `ScaledChebyshevBlockEncoding` in their respective algorithm modules. |
+| `SparseMatrix`, `SparseMatrixHermitian` | `SparseMatrixBlockEncoding` and `HermitianSparseMatrixBlockEncoding` in their respective algorithm modules. |
+
+The export audit checks all twelve names from the locked package against
+distinct native owners and the six metadata properties. Executable cases
+remain covered by their family tests and append examples.
 
 The source notebook has four cells. The six-cell native tutorial preserves
 the metadata, block projection, normalization, error, SELECT/PREPARE and
