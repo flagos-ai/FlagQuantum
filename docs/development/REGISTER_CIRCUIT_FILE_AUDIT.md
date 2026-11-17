@@ -5,8 +5,7 @@ The locked Kickmix source files under review are `circuit.cc` (K-0014, blob
 `1456cb523d4a1cb29896a5c2ab09ab4e781dbb53`) and `circuit.test.cc` (K-0017,
 blob `f63b40b44c8822344f0a1c3d026f362af4f2341f`). All 48 unchanged C++
 tests ran successfully against the locked implementation. The three source
-files remain open pending HTML and SVG circuit drawing and complete native
-test mapping.
+files remain open pending the complete native test and lifetime mapping.
 
 ## Structure and composition
 
@@ -79,6 +78,33 @@ empty circuits, and classical-only input. Raw KMX and the KMB bridge produce
 the same output. The diagram changes presentation only. In particular,
 merging the visual controls preserves all original CX and CZ records.
 
+## Physical graphical diagrams
+
+The complete graphical renderer (K-0019, blob
+`cf4bd18a609ff39336bf11ceef913dab6fa7d11d`) and its original tests
+(K-0020, blob `0441e1299093dd8f545e1ed899cda88e36fc100b`) map to
+`drawer/reversible_phase_graphics.py` and the embedded browser viewer.
+Both output modes use the same physical column occupancy, unguarded CX
+fusion, gate glyphs, register labels, HMR/reset wire intervals, and tag spans.
+HTML adds the source's near and far geometry, visible-range selection,
+zoom, pan, and URL hash state. The display statistics reuse reaction
+depth and count serialized gate classes and physically touched wires. A
+visual group does not reduce its constituent physical opcode counts.
+
+The five unchanged original C++ tests passed. Seven locked SVG/HTML cases
+compare SVG nodes and their coordinates, near and far geometry, interval
+boundaries, tag labels, viewport bounds, and circuit statistics. The
+source all-gate SVG contains an unescaped ampersand in the classical
+`b1&=!b0` label. The native writer escapes the ampersand and preserves
+the displayed text. The HTML payload carries escaped JSON and imports
+the SVG fragments as parsed XML. Labels containing script delimiters or
+JavaScript interpolation remain data.
+
+Chrome verified mouse-wheel zoom, drag, tag labels, and URL hash updates
+against both the locked and native pages. It also verified native hash
+restoration and far-view sampling of 2,200 physical records. The headless
+probe used the browser timer queue to advance the animation callbacks.
+
 ## Reference evidence and remaining ownership
 
 The native structure fixture records 20 cases captured by an unchanged
@@ -96,6 +122,6 @@ applicable.
 | Named registers, tag rendering in KMX, ordinary stream output and exact rotation spelling | Existing codecs and exact angle owner. The full native assertion map remains open. |
 | Reaction depth and touched qubits | Reuse the reaction-depth implementation and accepted source fixtures. |
 | Text diagrams and control merging | K-0018 closed by the exact ASCII and Unicode layout fixtures. |
-| HTML and circuit SVG diagrams | K-0019 and K-0020 own the remaining graphical path. |
+| HTML and circuit SVG diagrams | K-0019 and K-0020 closed by exact geometry, interval and statistics comparisons and browser interaction probes. |
 | Analysis SVG and flame-chart assertions | Physical block walk, per-angle CCZ model, and SVG structure verified against the locked reference. The logical flame graph retains its own model. |
 | C++ aligned mutable buffers, copy and move | Native raw circuit operations use owned Python structures. Mutation and low-level allocation parity require a separate mapping. |
