@@ -18,10 +18,9 @@ from ...compiler.registers.preparation.prepare_reflection import (
     source_prepare_reflection_cost,
 )
 from ...core.ir import Instruction
-from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
-from ._block_metadata import _BlockMetadata
+from ._block_metadata import _BlockMetadata, _packed_block_signature
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 
 
@@ -53,10 +52,8 @@ class ChebyshevBlockEncoding:
     @property
     def signature(self) -> Signature:
         """Declare the source-ordered packed through ports."""
-        return Signature.build_from_dtypes(
-            system=opaque_register_type(self.system_bitsize),
-            ancilla=opaque_register_type(self.ancilla_bitsize),
-            resource=opaque_register_type(self.resource_bitsize),
+        return _packed_block_signature(
+            self.system_bitsize, self.ancilla_bitsize, self.resource_bitsize
         )
 
     @property

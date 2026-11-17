@@ -31,10 +31,9 @@ from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import CircuitIR, Instruction
-from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
-from ._block_metadata import _BlockMetadata
+from ._block_metadata import _BlockMetadata, _packed_block_signature
 from .black_box_prepare import BlackBoxPrepare
 
 
@@ -42,11 +41,7 @@ def source_phase_block_signature(
     system: SymbolicInt, ancilla: SymbolicInt = 0, resource: SymbolicInt = 0
 ) -> Signature:
     """Declare the locked packed ports without binding symbolic child wires."""
-    return Signature.build_from_dtypes(
-        system=opaque_register_type(system),
-        ancilla=opaque_register_type(ancilla),
-        resource=opaque_register_type(resource),
-    )
+    return _packed_block_signature(system, ancilla, resource)
 
 
 def source_phase_block_resource_formula(

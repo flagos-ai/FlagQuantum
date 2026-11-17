@@ -31,9 +31,9 @@ from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import CircuitIR, Instruction
-from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
+from ._block_metadata import _packed_block_signature
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 
 _UnitaryEmitter = Callable[
@@ -48,25 +48,13 @@ _ControlledUnitaryEmitter = Callable[
 ]
 
 
-def _packed_unitary_signature(
-    system: SymbolicInt, ancilla: SymbolicInt, resource: SymbolicInt
-) -> Signature:
-    return Signature.build_from_dtypes(
-        system=opaque_register_type(system),
-        ancilla=opaque_register_type(ancilla),
-        resource=opaque_register_type(resource),
-    )
-
-
 def source_unitary_block_signature(
     child: Signature, *, ancilla: SymbolicInt = 0, resource: SymbolicInt = 0
 ) -> Signature:
     """Declare source widths, which sum the child element widths independently of shape."""
     if not child.thru_registers_only:
         raise ValueError("Block encoded unitary must have all THRU registers")
-    return _packed_unitary_signature(
-        sum(reg.bitsize for reg in child), ancilla, resource
-    )
+    return _packed_block_signature(sum(reg.bitsize for reg in child), ancilla, resource)
 
 
 def source_unitary_block_resource_formula(
@@ -163,7 +151,7 @@ class UnitaryBlockEncoding:
     @property
     def signature(self) -> Signature:
         """Return the packed source system, ancilla and resource declaration."""
-        return _packed_unitary_signature(
+        return _packed_block_signature(
             self.system_bitsize, self.ancilla_bitsize, self.resource_bitsize
         )
 
