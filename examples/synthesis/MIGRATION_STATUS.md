@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **165/213**.
+Validated local Notebook workflows: **166/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -212,7 +212,7 @@ Validated local Notebook workflows: **165/213**.
 | `applications/CFD/QLS_for_hybrid_solvers/chebyshev_approximation` | notebook_workflow | [Native program](applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/main.py) | validated |
 | `applications/CFD/QLS_for_hybrid_solvers/classical_functions_be` | python_unclassified | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/pauli_be` | python_unclassified | Pending | pending |
-| `applications/CFD/QLS_for_hybrid_solvers/qls_chebyshev_lcu` | notebook_workflow | Pending | pending |
+| `applications/CFD/QLS_for_hybrid_solvers/qls_chebyshev_lcu` | notebook_workflow | [Native program](applications/cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview/main.py) | validated |
 | `applications/CFD/QLS_for_hybrid_solvers/qls_qsvt` | notebook_workflow | Pending | pending |
 | `applications/CFD/QLS_for_hybrid_solvers/verify_block_encoding` | notebook_workflow | [Native program](applications/cfd/qls_for_hybrid_solvers/verify_block_encoding/overview/main.py) | validated |
 | `applications/CFD/double_slit_experiment/quantum_double_slit_experiment` | notebook_workflow | Pending | pending |
