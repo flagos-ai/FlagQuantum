@@ -49,8 +49,8 @@ class SelectHubbard:
     control_value: int = field(default=1, kw_only=True)
 
     def __post_init__(self) -> None:
-        if type(self.dimension) is not int or self.dimension < 2:
-            raise ValueError("Hubbard SELECT requires square side length at least two")
+        if type(self.dimension) is not int or self.dimension < 1:
+            raise ValueError("Hubbard SELECT requires positive square side length")
         if type(self.controlled) is not bool:
             raise ValueError("Hubbard SELECT control flag must be boolean")
         if type(self.control_value) is not int or self.control_value not in (0, 1):
@@ -71,12 +71,19 @@ class SelectHubbard:
         """Return the clean Majorana work and reusable feedback slots."""
         d = self.dimension
         work = bounded_majorana_workspace(
-            2 * d**2, controlled=self.controlled, axis_extents=(d, d, 2)
+            2 * d**2,
+            controlled=self.controlled,
+            axis_extents=(d, d, 2) if d > 1 else (),
+            selection_width=1 if d == 1 else None,
         )
         return work, work - 1
 
     def source_resource_model(self) -> ComponentCost:
         """Report the source wrapper's declared costs and its decomposed width."""
+        if self.dimension == 1:
+            raise ValueError(
+                "Locked Hubbard SELECT resources are undefined for side one"
+            )
         sites = self.dimension**2
         controls = int(self.controlled)
         coordinate = (self.dimension - 1).bit_length()
@@ -173,15 +180,30 @@ class SelectHubbard:
         (u,), (v,) = ports["U"], ports["V"]
         target = ports["target"]
         control = ports["control"][0] if self.controlled else None
-        axes = (d, d, 2)
-        swap_x = controlled_swap_ir(v, px, qx)
-        swap_y = controlled_swap_ir(v, py, qy)
+        axes = (d, d, 2) if d > 1 else ()
+        selection_width = 1 if d == 1 else None
+        swap_x = controlled_swap_ir(v, px, qx) if px else ()
+        swap_y = controlled_swap_ir(v, py, qy) if py else ()
         swap_spin = controlled_swap_ir(v, alpha, beta)
         majorana_y = bounded_majorana_ir(
-            (*px, *py, *alpha), target, control, "Y", work, slots, axis_extents=axes
+            (*px, *py, *alpha),
+            target,
+            control,
+            "Y",
+            work,
+            slots,
+            axis_extents=axes,
+            selection_width=selection_width,
         )
         majorana_x = bounded_majorana_ir(
-            (*qx, *qy, *beta), target, control, "X", work, slots, axis_extents=axes
+            (*qx, *qy, *beta),
+            target,
+            control,
+            "X",
+            work,
+            slots,
+            axis_extents=axes,
+            selection_width=selection_width,
         )
         swap_out = (*swap_x, *swap_y, *swap_spin)
         swap_back = (*swap_spin, *swap_y, *swap_x)

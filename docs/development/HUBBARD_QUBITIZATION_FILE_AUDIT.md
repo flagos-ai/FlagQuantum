@@ -77,3 +77,29 @@ work wires. All four histories match the normalized reference on zero
 and coherent inputs, with work cleared. All sixteen forward and
 adjoint history pairs return the zero input. The source resource method
 reports the unavailable reference model for this size.
+
+
+### Side-one SELECT
+
+The native bind path keeps the four zero-width coordinate ports and
+the full spin address. Its single-orbital Majorana stage selects on that
+spin bit. It reuses the existing flat Majorana compiler, including the
+zero-feedback case. The spin-up stage retains its predicate and single
+Z target. Four empty coordinate swaps are identities.
+
+The locked top-level generator runs. Its graph export fails on the
+zero-width y connection, so the source QEC and peak queries fail.
+The locked Majorana child fails in its singleton coordinate traversal,
+and the spin-up child rejects an empty selection word. The independent
+primitive comparison takes the frozen top-level schedule, omits its
+empty swaps, invokes the frozen SelectedMajoranaFermion on the spin bit,
+and substitutes the single spin-up phase on the retained operands.
+The negative control uses the source X sandwich.
+
+The native uncontrolled case emits 14 T/T-dagger instructions with no
+measurement and one work wire. Each control polarity emits 26 T/T-dagger
+instructions and three measurements with two work wires. These are
+physical counts. The tests check the complete complex action on a
+coherent state spanning every populated basis value, all small feedback
+histories, exact inverse recovery, and work restoration. Source
+side-one resource estimation remains unavailable.

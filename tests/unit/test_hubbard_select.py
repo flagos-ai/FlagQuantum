@@ -143,7 +143,7 @@ def test_hubbard_select_controlled_gate_dependencies_match_source(side):
     )
 
 
-@pytest.mark.parametrize("side,control_value", tuple(product((2, 3), (None, 0, 1))))
+@pytest.mark.parametrize("side,control_value", tuple(product((1, 2, 3), (None, 0, 1))))
 def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value):
     controlled = control_value is not None
     select = SelectHubbard(
@@ -166,7 +166,7 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
             flip,
         )
     counts = count_emitted_instructions(ir)
-    events = counts.unconditional["measure"]
+    events = counts.unconditional.get("measure", 0)
     inverse = select._emit(
         ports,
         tuple(range(logical, width)),
@@ -175,6 +175,8 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
     )
     assert sum(gate.name == "measure" for gate in inverse) == events
     assert (counts.t_count, events, work) == {
+        (1, False): (14, 0, 1),
+        (1, True): (26, 3, 2),
         (2, False): (102, 15, 3),
         (2, True): (114, 18, 4),
         (3, False): (230, 40, 5),
@@ -192,10 +194,23 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
     rows = tuple(
         product(range(1 + int(controlled)), (0, 1), (0, 1), range(side), range(side))
     )
-    for row, (ctrl, u, v, x, y) in enumerate(rows):
+    fields_per_row = (
+        (
+            (row, alpha, beta, data)
+            for row in rows
+            for alpha, beta, data in product((0, 1), (0, 1), range(4))
+        )
+        if side == 1
+        else (
+            (row, i % 2, (i // 2) % 2, (12345 * (i + 1)) % (1 << n))
+            for i, row in enumerate(rows)
+        )
+    )
+    norm = sqrt(
+        sum(i * i for i in range(1, 16 * len(rows) + 1)) if side == 1 else len(rows)
+    )
+    for index, ((ctrl, u, v, x, y), alpha, beta, data) in enumerate(fields_per_row):
         qx, qy = (x + 1) % side, (y + 1) % side
-        alpha, beta = row % 2, (row // 2) % 2
-        data = (12345 * (row + 1)) % (1 << n)
         fields = dict(
             control=ctrl,
             U=u,
@@ -208,7 +223,7 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
             beta=beta,
             target=data,
         )
-        amp = 1j**row / sqrt(len(rows))
+        amp = 1j**index * (index + 1 if side == 1 else 1) / norm
         initial[pack(fields)] = amp
         if not controlled or ctrl == control_value:
             p = 2 * (x * side + y) + alpha
@@ -228,8 +243,12 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
         fields["target"] = data
         expected[pack(fields)] = amp
 
-    for pattern in ((0,), (1,), (0, 1), (1, 0)):
-        history = (pattern * events)[:events]
+    histories = (
+        product((0, 1), repeat=events)
+        if side == 1
+        else ((pattern * events)[:events] for pattern in ((0,), (1,), (0, 1), (1, 0)))
+    )
+    for history in histories:
         result = _branch(
             ir.instructions, width, history, initial, normalize_measurements=True
         )
@@ -248,3 +267,116 @@ def test_hubbard_select_complex_amplitudes_branches_and_work(side, control_value
             result,
             normalize_measurements=True,
         ) == pytest.approx(initial, abs=5e-12)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("control_value", [None, 0, 1])
+def test_side_one_select_matches_normalized_locked_schedule(control_value):
+    import cirq
+    import numpy as np
+    from qualtran import BloqError, BQUInt, CtrlSpec, QBit, Register
+    from qualtran.bloqs.basic_gates import CSwap
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+        HubbardMajorannaOperator,
+        HubbardSpinUpZ,
+    )
+    from qualtran.bloqs.chemistry.hubbard_model.qubitization.select_hubbard import (
+        SelectHubbard as Source,
+    )
+    from qualtran.bloqs.mcmt.and_bloq import And
+    from qualtran.bloqs.multiplexers.selected_majorana_fermion import (
+        SelectedMajoranaFermion,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    controlled = control_value is not None
+    source = Source(1, 1, control_val=1 if controlled else None)
+    native = SelectHubbard(
+        1, controlled, control_value=1 if control_value is None else control_value
+    )
+    assert native.layout == tuple((r.name, r.bitsize) for r in source.signature)
+    with pytest.raises(BloqError, match=r"LeftDangle.q_y is not an available Soquet"):
+        get_cost_value(source, QECGatesCost())
+    with pytest.raises(
+        RuntimeError, match=r"LeftDangle.q_y is not an available Soquet"
+    ):
+        get_cost_value(source, QubitCount())
+    with pytest.raises(ValueError, match="undefined for side one"):
+        native.source_resource_model()
+    with pytest.raises(AssertionError):
+        HubbardMajorannaOperator(1, 1).decompose_bloq()
+    with pytest.raises(
+        NotImplementedError, match="Selection register must not be empty"
+    ):
+        HubbardSpinUpZ(1, 1).decompose_bloq()
+    if control_value == 0:
+        negative = Source(1, 1).controlled(CtrlSpec(cvs=0))
+        assert [
+            type(instance.bloq).__name__
+            for instance, *_ in negative.decompose_bloq().iter_bloqsoqs()
+        ] == ["XGate", "SelectHubbard", "XGate"]
+
+    class NormalizedSource:
+        signature = source.signature
+
+        def decompose_from_registers(self, *, context, **ports):
+            if control_value == 0:
+                yield cirq.X(*ports["control"])
+            dropped = 0
+            for op in cirq.flatten_op_tree(
+                source.decompose_from_registers(context=context, **ports)
+            ):
+                original_gate = getattr(op.gate, "bloq", op.gate)
+                if isinstance(original_gate, CSwap):
+                    assert original_gate.bitsize == 0 and len(op.qubits) == 1
+                    dropped += 1
+                elif isinstance(original_gate, HubbardMajorannaOperator):
+                    *controls, spin, first, second = op.qubits
+                    # The actual source child delegates here with two extra
+                    # singleton coordinates. Only the spin address has a bit.
+                    majorana = SelectedMajoranaFermion(
+                        (Register("spin", BQUInt(1, 2)),),
+                        (Register("control", QBit()),) if controls else (),
+                        original_gate._target_cirq_gate,
+                    )
+                    yield from majorana.decompose_from_registers(
+                        context,
+                        spin=np.asarray([spin]),
+                        target=np.asarray([first, second]),
+                        control=np.asarray(controls),
+                    )
+                elif isinstance(original_gate, HubbardSpinUpZ):
+                    *controls, v, _, spin_up = op.qubits
+                    if controls:
+                        (pred,) = context.qubit_manager.qalloc(1)
+                        yield And().on(v, controls[0], pred)
+                        yield cirq.CZ(pred, spin_up)
+                        yield And().adjoint().on(v, controls[0], pred)
+                        context.qubit_manager.qfree([pred])
+                    else:
+                        yield cirq.CZ(v, spin_up)
+                else:
+                    yield op
+            assert dropped == 4
+            if control_value == 0:
+                yield cirq.X(*ports["control"])
+
+    logical = sum(width for _, width in native.layout)
+    ports = partition_register(tuple(range(logical)), native.layout)
+    work_count, slots = native.requirements()
+    work = tuple(range(logical, logical + work_count))
+    actual = DynamicCircuit(logical + work_count).append(
+        native.make_on(ports, workspace=work)
+    )
+    expected = reference_arithmetic_gates(
+        NormalizedSource(),
+        ports,
+        work,
+        dict.fromkeys(work, 0) if slots else {},
+        cirq_style=True,
+        keep_pauli_leaves=True,
+        keep_exchange_leaves=True,
+        preserve_components=True,
+        scalar_phase_anchor=ports["U"][0],
+    )
+    assert_source(actual.to_ir().instructions, expected)
