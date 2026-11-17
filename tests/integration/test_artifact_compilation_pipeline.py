@@ -3,6 +3,7 @@ from __future__ import annotations
 import math
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from functools import partial
 
 import pytest
 import torch
@@ -209,31 +210,61 @@ def test_binding_lineage_is_preserved_through_target_compilation() -> None:
         ),
         producer="phase35-symbolic",
     )
-    binding = bind_circuit_artifact(
-        symbolic,
-        {"theta": 0.25},
-        producer="phase35-binding",
+    snapshot = _snapshot()
+    prepare = partial(
+        prepare_artifact_deployment,
+        snapshot=snapshot,
+        provider=snapshot.target_identity.provider,
+        target_id=snapshot.target_identity.target_id,
+        shots=128,
+        evaluated_at=_NOW,
     )
-    result = _compile(binding)
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    handoffs = []
+    for angle, expected in ((0.0, (1, 0)), (math.pi, (0, -1j))):
+        binding = bind_circuit_artifact(
+            symbolic, {"theta": angle}, producer="phase35-binding"
+        )
+        result = _compile(binding)
+        bundle = build_compilation_evidence_bundle(
+            result, snapshot=snapshot, producer="flagquantum.compiler"
+        )
+        evidence = read_compilation_evidence_bundle_json(bundle.to_json())
+        artifact = result.executable_artifact
+        assert result.source_artifact_identity == symbolic.artifact_identity
+        assert (
+            result.circuit_artifact_identity == binding.bound_artifact.artifact_identity
+        )
+        assert result.binding_identity == binding.binding_identity
+        assert artifact.circuit_content_hash == result.legalization.program.content_hash
+        assert evidence.source["binding_identity"] == binding.binding_identity
 
-    assert result.source_artifact_identity == symbolic.artifact_identity
-    assert result.circuit_artifact_identity == binding.bound_artifact.artifact_identity
-    assert result.binding_identity == binding.binding_identity
-    assert result.executable_artifact.circuit_content_hash == (
-        result.legalization.program.content_hash
+        prepared = prepare(artifact, source=binding, compilation_evidence=evidence)
+        assert prepared.capability_match.executable
+        assert prepared.compilation_evidence_identity == evidence.bundle_identity
+
+        imported = fq.from_openqasm(prepared.program)
+        assert imported.version == 3.0
+        assert imported.measurement_qubits == (0,)
+        state = fq.run(imported.to_circuit(), options=options).statevector()
+        torch.testing.assert_close(
+            state.reshape(-1),
+            torch.tensor(expected, dtype=torch.complex128),
+            atol=1e-12,
+            rtol=0,
+        )
+
+        handoffs.append((binding, artifact, evidence))
+
+    (_, _, zero_evidence), (pi_binding, pi_artifact, pi_evidence) = handoffs
+    assert (
+        zero_evidence.source["binding_identity"]
+        != pi_evidence.source["binding_identity"]
     )
-    evidence = build_compilation_evidence_bundle(
-        result,
-        snapshot=_snapshot(),
-        producer="flagquantum.compiler",
-    )
-    verify_compilation_evidence_handoff(
-        evidence,
-        binding,
-        result.executable_artifact,
-        snapshot=_snapshot(),
-    )
-    assert evidence.source["binding_identity"] == binding.binding_identity
+    with pytest.raises(ExecutionError, match="source lineage"):
+        prepare(pi_artifact, source=pi_binding, compilation_evidence=zero_evidence)
 
 
 def test_artifact_compilation_rejects_symbolic_and_embedded_shots() -> None:
