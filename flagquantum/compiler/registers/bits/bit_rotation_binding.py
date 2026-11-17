@@ -4,18 +4,21 @@
 
 """Bind caller-owned ports and flags to the shared register rotation."""
 
+from collections.abc import Sequence
+
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..arithmetic.carry_parity import _Coefficient
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
+from ..layout.operand_word import bind_operand_word, bind_quantum_word, bind_z_word
 from ..primitives.control_binding import apply_control_guards, bind_z_enable
 from .bit_rotation import bit_rotation_ir
 
 
 def bound_bit_rotation_ir(
-    target: tuple[int, ...],
-    shift: int | tuple[_Coefficient, ...] = 1,
+    target: Sequence[int],
+    shift: int | Sequence[_Coefficient] = 1,
     *,
     control: _Coefficient = True,
     right: bool = False,
@@ -29,13 +32,19 @@ def bound_bit_rotation_ir(
     enable can be overwritten by shift parity, predicate_bit supplies a fresh
     temporary classical slot for its entry value. The slot is cleared on exit.
     """
-    _validate_registers(target)
+    target_word = bind_quantum_word(target, sequence_only=True)
+    _validate_registers(target_word)
     enable, slots = bind_z_enable(control)
     if enable is False:
         return ()
+    shift_word = (
+        int(shift)
+        if isinstance(shift, int)
+        else bind_z_word(bind_operand_word(shift, sequence_only=True))
+    )
     body = bit_rotation_ir(
-        target,
-        int(shift) if isinstance(shift, bool) else shift,
+        target_word,
+        shift_word,
         control=enable if type(enable) is int else None,
         right=right,
         clean=clean,
@@ -50,9 +59,9 @@ def bound_bit_rotation_ir(
         for gate in body
     )
     if writes_enable:
-        assert isinstance(shift, tuple)
+        assert isinstance(shift_word, tuple)
         input_slots = {
-            bit.slot for bit in shift if isinstance(bit, ClassicalFieldCoefficient)
+            bit.slot for bit in shift_word if isinstance(bit, ClassicalFieldCoefficient)
         }
         if (
             type(predicate_bit) is not int
