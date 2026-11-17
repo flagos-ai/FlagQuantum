@@ -78,6 +78,7 @@ Native FlagQuantum programs currently available:
 - [overview](quantum_primitives/gqsp/overview/README.md)
 - [overview](quantum_primitives/gradient_estimation/overview/README.md)
 - [overview](quantum_primitives/hadamard_test/overview/README.md)
+- [overview](quantum_primitives/quantum_oracle_sketching_boolean/overview/README.md)
 - [overview](quantum_primitives/swap_test/overview/README.md)
 - [overview](quantum_state_preparation/adapt_vqe/overview/README.md)
 - [overview](quantum_state_preparation/fermionic_gaussian/overview/README.md)
