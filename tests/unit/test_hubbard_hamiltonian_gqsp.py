@@ -1,6 +1,8 @@
 """Check measured Hubbard GQSP against the locked source and its free boundary."""
 
 from collections import Counter, defaultdict
+from collections.abc import Iterable
+from itertools import repeat
 from math import sqrt
 from typing import Any
 
@@ -19,10 +21,12 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def _modadd_leaf(op: cirq.Operation) -> Any:
+    from qualtran import Adjoint
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
 
     gate = op.gate
-    gate = getattr(gate, "subbloq", gate)
+    if isinstance(gate, Adjoint) and isinstance(gate.subbloq, ModAddK):
+        return gate.subbloq**-1
     return gate if isinstance(gate, ModAddK) else None
 
 
@@ -30,9 +34,10 @@ def _source_sparse_branch(
     operations: list[cirq.Operation],
     visible: tuple[cirq.Qid, ...],
     initial: dict[int, complex],
-    outcome: int,
+    outcomes: int | Iterable[int],
 ) -> dict[int, complex]:
-    """Run the source Cirq stream with only its opaque one-bit ModAddK adapted."""
+    """Run the source Cirq stream with its opaque ModAddK classical permutation."""
+    history = repeat(outcomes) if isinstance(outcomes, int) else iter(outcomes)
     hidden = sorted({q for op in operations for q in op.qubits} - set(visible))
     wires = (*visible, *hidden)
     positions = {q: 1 << (len(wires) - i - 1) for i, q in enumerate(wires)}
@@ -50,6 +55,7 @@ def _source_sparse_branch(
         masks = tuple(positions[q] for q in op.qubits)
         if cirq.is_measurement(op):
             (mask,) = masks
+            outcome = next(history)
             measured[cirq.measurement_key_name(op)] = outcome
             projected = {k: v for k, v in state.items() if bool(k & mask) == outcome}
             assert sum(abs(v) ** 2 for v in projected.values()) == pytest.approx(
@@ -64,14 +70,31 @@ def _source_sparse_branch(
             continue
         modadd = _modadd_leaf(op)
         if modadd is not None:
-            assert (modadd.bitsize, modadd.mod, modadd.add_val, modadd.cvs) == (
-                1,
-                2,
-                1,
-                (0, 0),
+            controls, target = masks[: len(modadd.cvs)], masks[len(modadd.cvs) :]
+            assert len(target) == modadd.bitsize
+            addresses = tuple(
+                sum(mask for i, mask in enumerate(reversed(target)) if (word >> i) & 1)
+                for word in range(1 << len(target))
             )
-            a, b, target = masks
-            state = {k if k & (a | b) else k ^ target: v for k, v in state.items()}
+            marked = sum(
+                mask for mask, value in zip(controls, modadd.cvs, strict=True) if value
+            )
+            control_value = int("".join(map(str, modadd.cvs)), 2) if controls else None
+            permutation = {
+                address: addresses[
+                    modadd.on_classical_vals(x=word, ctrl=control_value)["x"]
+                ]
+                for word, address in enumerate(addresses)
+            }
+            control_mask, target_mask = sum(controls), sum(target)
+            state = {
+                (
+                    (key & ~target_mask) | permutation[key & target_mask]
+                    if key & control_mask == marked
+                    else key
+                ): amplitude
+                for key, amplitude in state.items()
+            }
             continue
         unitary = cirq.unitary(op)
         chunks = [
@@ -96,6 +119,8 @@ def _source_sparse_branch(
             for destination, coefficient in transitions[key & mask]:
                 values[(key & ~mask) | destination] += amp * coefficient
         state = {k: v for k, v in values.items() if abs(v) > 1e-12}
+    if not isinstance(outcomes, int):
+        assert next(history, None) is None
     assert all(k % (1 << len(hidden)) == 0 for k in state)
     return {k >> len(hidden): v for k, v in state.items()}
 
@@ -160,13 +185,15 @@ def test_hubbard_measured_append_and_outer_temp_leakage() -> None:
     ops = cirq.decompose(
         stages,
         context=context,
-        keep=lambda op: len(op.qubits) <= 3
-        and (
-            cirq.is_measurement(op)
-            or cirq.has_unitary(op)
-            or isinstance(op, cirq.ClassicallyControlledOperation)
-            or isinstance(op.gate, cirq.ResetChannel)
-            or _modadd_leaf(op) is not None
+        keep=lambda op: (
+            len(op.qubits) <= 3
+            and (
+                cirq.is_measurement(op)
+                or cirq.has_unitary(op)
+                or isinstance(op, cirq.ClassicallyControlledOperation)
+                or isinstance(op.gate, cirq.ResetChannel)
+                or _modadd_leaf(op) is not None
+            )
         ),
     )
     expected = _source_sparse_branch(
