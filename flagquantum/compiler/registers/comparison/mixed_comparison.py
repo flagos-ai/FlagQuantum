@@ -18,7 +18,7 @@ from ..primitives._mixed_gates import (
     _invert_operand,
     _parity_controlled_flip,
 )
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 from .low_space_comparison import low_space_less_than_ir
 
 
@@ -32,6 +32,7 @@ def quantum_compare_ir(
     control: int | bool = True,
     measurement_bit: int | None = None,
     minimize_qubits: bool = False,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """XOR the controlled comparison predicate into a qubit or negate its phase.
 
@@ -69,15 +70,22 @@ def quantum_compare_ir(
     if width == 1:
         link = Instruction("cx", (right[0], left[0]))
         parity = _flip(right[0], or_equal)
+        scratch = workspace[0] if workspace else None
+        reset = (
+            reset_x_register_ir((scratch,))
+            if emit_resets and scratch is not None and type(control) is int
+            else ()
+        )
         return (
             link,
             *parity,
+            *reset,
             *_flip(
                 target,
                 right[0],
                 control,
                 left[0],
-                scratch=workspace[0] if workspace else None,
+                scratch=scratch,
                 measurement_bit=measurement_bit,
             ),
             *parity,
@@ -115,6 +123,7 @@ def quantum_compare_ir(
             (
                 Instruction("cx", (clean[i], rhs[i])),
                 Instruction("cx", (clean[i], lhs[i])),
+                *(reset_x_register_ir((clean[i + 1],)) if emit_resets else ()),
                 Instruction("ccx", (rhs[i], lhs[i], clean[i + 1])),
                 Instruction("cx", (clean[i], clean[i + 1])),
             )
@@ -266,6 +275,7 @@ def mixed_less_than_ir(
     minimize_qubits: bool = False,
     btol: float = inf,
     low_space_bits: tuple[int, ...] = (),
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Emit the locked comparison for equal-width mixed words.
 
@@ -277,7 +287,8 @@ def mixed_less_than_ir(
     `ceil(btol) - 1` coefficients. A budget of one or less skips the
     comparison when below the word width. Infinity selects exact dispatch.
     The three-clean-wire classical schedule uses the caller's
-    `low_space_bits` instead of the full ladder's single result slot.
+    `low_space_bits` instead of the full ladder's single result slot. Physical
+    export can retain the source resets on leased clean wires.
     """
     width = len(left)
     if len(right) != width:
@@ -306,6 +317,7 @@ def mixed_less_than_ir(
             control=control,
             measurement_bit=measurement_bit,
             minimize_qubits=minimize_qubits,
+            emit_resets=emit_resets,
         )
     output = () if target is None else (target,)
     quantum_controls = tuple(q for q in (or_equal, control) if type(q) is int)
@@ -331,10 +343,15 @@ def mixed_less_than_ir(
     lhs, rhs = left[::-1], right[::-1]
     difference = _broadcast_controlled_flip(True, rhs, lhs)
     invert = tuple(Instruction("x", (wire,)) for wire in lhs)
+
+    def reset(wire: int | None) -> tuple[Instruction, ...]:
+        return reset_x_register_ir((wire,)) if emit_resets and wire is not None else ()
+
     if width == 1:
         scratch = workspace[0] if workspace and not minimize_qubits else None
         return (
             *difference,
+            *(reset(scratch) if type(control) is int else ()),
             *_flip(
                 target,
                 control,
@@ -344,6 +361,7 @@ def mixed_less_than_ir(
                 measurement_bit=measurement_bit,
             ),
             *invert,
+            *(reset(scratch) if type(or_equal) is int and type(control) is int else ()),
             *_flip(
                 target,
                 or_equal,
@@ -380,6 +398,7 @@ def mixed_less_than_ir(
     gates = [
         *invert,
         *difference,
+        *reset(clean[0]),
         *_parity_controlled_flip(clean[0], or_equal, rhs[0], lhs[0]),
         *_flip(clean[0], rhs[0]),
         *_flip(clean[0], rhs[1]),
@@ -389,6 +408,7 @@ def mixed_less_than_ir(
         controls = (clean[i - 1], lhs[i]) if loop_dispatch else (lhs[i], clean[i - 1])
         gates.extend(
             (
+                *reset(clean[i]),
                 Instruction("ccx", (*controls, clean[i])),
                 *_flip(clean[i], rhs[i]),
                 *_flip(clean[i], rhs[i + 1]),
@@ -402,6 +422,7 @@ def mixed_less_than_ir(
         (
             *_flip(target, control, rhs[-1]),
             *restore,
+            *(reset(scratch) if type(control) is int else ()),
             *_flip(
                 target,
                 control,
