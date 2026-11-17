@@ -66,6 +66,7 @@ Native FlagQuantum programs currently available:
 
 - [overview](cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/README.md)
 - [overview](cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview/README.md)
+- [overview](cfd/qls_for_hybrid_solvers/qls_qsvt/overview/README.md)
 - [overview](cfd/qls_for_hybrid_solvers/verify_block_encoding/overview/README.md)
 - [overview](cfd/heat_eq_qsvt/overview/README.md)
 - [overview](cfd/qlbm/overview/README.md)
