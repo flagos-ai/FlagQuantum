@@ -8,21 +8,9 @@ from collections.abc import Iterable, Sized
 from itertools import islice
 from typing import cast
 
-from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..primitives._mixed_gates import _Control, _XBasisTarget
+from ..primitives.operand_binding import _Operand, bind_operand
 from .register_bits import split_integer
-
-_Operand = _Control | _XBasisTarget
-
-
-def _operand(value: object) -> _Operand:
-    if isinstance(value, (ClassicalFieldCoefficient, _XBasisTarget, bool)):
-        return value
-    if type(value) is int and value >= 0:
-        return value
-    if isinstance(value, str) and value in ("|+>", "|->"):
-        return _XBasisTarget(value == "|->")
-    raise ValueError("Expected a quantum wire, classical bit or basis literal")
 
 
 def bind_operand_word(
@@ -38,10 +26,10 @@ def bind_operand_word(
         entries = tuple(islice(iterator, size + 1))
         if len(entries) != size:
             raise ValueError("Operand sequence length differs from its iteration")
-        return tuple(_operand(entry) for entry in entries)
+        return tuple(bind_operand(entry) for entry in entries)
     if sequence_only:
         raise ValueError("Expected an operand sequence")
-    return (_operand(value),)
+    return (bind_operand(value),)
 
 
 def bind_operand_word_or_integer(

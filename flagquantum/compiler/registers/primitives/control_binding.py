@@ -7,30 +7,36 @@
 from dataclasses import replace
 
 from ....core.ir import Instruction
+from ...artifacts.operand_identity import OperandIdentity
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ._mixed_gates import _Control, _XBasisTarget
+from .operand_binding import bind_operand
 
 
-def bind_z_enable(control: _Control) -> tuple[int | bool, tuple[int, ...]]:
+def bind_z_enable(
+    control: _Control | OperandIdentity,
+) -> tuple[int | bool, tuple[int, ...]]:
     """Return the quantum enable or literal and the outer classical reads."""
-    if isinstance(control, ClassicalFieldCoefficient):
-        return True, (control.slot,)
-    if isinstance(control, int):
-        return control, ()
+    operand = bind_operand(control)
+    if isinstance(operand, ClassicalFieldCoefficient):
+        return True, (operand.slot,)
+    if isinstance(operand, int):
+        return operand, ()
     raise ValueError("Control must be a Boolean, quantum wire or classical slot")
 
 
 def bind_x_output(
-    target: int | _XBasisTarget,
+    target: int | _XBasisTarget | OperandIdentity | str,
 ) -> tuple[int | None, bool, tuple[int, ...]]:
     """Return the target wire or phase, skip flag and outer classical reads."""
-    if type(target) is int:
-        return target, False, ()
-    if isinstance(target, _XBasisTarget):
-        if isinstance(target.outcome, ClassicalFieldCoefficient):
-            return None, False, (target.outcome.slot,)
-        if type(target.outcome) is bool:
-            return None, not target.outcome, ()
+    operand = bind_operand(target)
+    if type(operand) is int:
+        return operand, False, ()
+    if isinstance(operand, _XBasisTarget):
+        if isinstance(operand.outcome, ClassicalFieldCoefficient):
+            return None, False, (operand.outcome.slot,)
+        if type(operand.outcome) is bool:
+            return None, not operand.outcome, ()
     raise ValueError("Output must be a quantum wire or an X-basis operand")
 
 

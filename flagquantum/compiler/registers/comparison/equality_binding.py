@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 
 from ....core.ir import Instruction
+from ...artifacts.operand_identity import OperandIdentity
 from ..layout.operand_word import (
     bind_operand_word_or_integer,
     bind_quantum_word,
@@ -18,12 +19,12 @@ from .mixed_comparison import quantum_equal_ir
 
 
 def bound_quantum_equal_ir(
-    left: int | Sequence[int],
-    right: _Control | Sequence[_Control],
-    target: int | _XBasisTarget,
+    left: int | OperandIdentity | Sequence[int | OperandIdentity],
+    right: _Control | OperandIdentity | Sequence[_Control | OperandIdentity],
+    target: int | _XBasisTarget | OperandIdentity | str,
     workspace: tuple[int, ...] = (),
     *,
-    control: _Control = True,
+    control: _Control | OperandIdentity = True,
     measurement_bit: int | None = None,
 ) -> tuple[Instruction, ...]:
     """Bind the equality child and preserve outer classical enable semantics."""
