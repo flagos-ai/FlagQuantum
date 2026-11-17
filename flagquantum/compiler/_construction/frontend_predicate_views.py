@@ -6,7 +6,7 @@ import ast
 from copy import deepcopy
 from typing import TYPE_CHECKING, cast
 
-from .._phase_polynomial import Location
+from ._phase_polynomial import Location
 from .frontend_python import _error
 from .frontend_views import locations
 

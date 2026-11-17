@@ -20,9 +20,10 @@ from examples.synthesis.algorithms.quantum_linear_solvers.adiabatic_linear_solve
 )
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler import ResourceEstimate, _pauli_products
+from flagquantum.compiler import ResourceEstimate
 from flagquantum.compiler._construction.frontend_python import _QuantumFunction
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
+from flagquantum.compiler.lowering import _pauli_products
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_qmod_aqc_qlsp import aqc_reference, original
 from tests.team.compiler.test_construction_python_program import program_definition
