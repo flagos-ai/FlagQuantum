@@ -9,7 +9,7 @@ copyright Google LLC.
 | --- | --- | --- | --- |
 | Q-0296 | `sparse_matrix.ipynb` | `2a85ed895beeee25d508e68a093af307ca9f1826` | Closed by the full native tutorial. |
 | Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Open for generic symbolic oracle models/binding and external objects. |
-| Q-0301 | `sparse_matrix_test.py` | `afcb0771b405ed26bfce7827d70d81c3d7f7a0d8` | Open for the remaining original stress, random entry and Vlasov fixtures. |
+| Q-0301 | `sparse_matrix_test.py` | `afcb0771b405ed26bfce7827d70d81c3d7f7a0d8` | Closed with the original stress, random entry, banded index and Vlasov fixtures. |
 
 ## Oracle and block ownership
 
@@ -56,6 +56,43 @@ and seven expected failures. The unchanged 13-cell original and the
 four signatures, including the original symbolic shape, and the original
 six-call graph. The new append example checks the uniform projected
 matrix and exact inverse. The concentrated native run passes 193 cases.
+
+## Original random, banded and Vlasov tests
+
+The native signature declares the same packed system and ancilla order,
+including the original symbolic fixture. The symbolic declaration can
+be queried without binding wires or constructing data. Generic symbolic
+oracle costs and execution and external object adapters remain open
+under Q-0297.
+
+The eleven explicit tables, both banded pressure fixtures and the
+Vlasov example now execute through append in both directions. For each
+case, the locked tensor supplies the whole logical operator. The tests
+check the projected input matrix at the original approximation tolerance
+and compare all populated complex amplitudes of a coherent input across
+the full logical space. All private wires return to zero on the all-zero
+and alternating measurement histories. Both directions also match the
+independent source QEC category vector and peak. The sparse branch
+evaluator uses the exact three-CNOT SWAP identity only for evaluation.
+Emitted gate counts are taken before that conversion.
+
+The original three-column top-left example matches the projected matrix
+and full coherent outputs at every measurement history in both
+directions. The standalone three-bit banded oracle covers both full
+operators, all 24 valid index/ordinal pairs and every small measurement
+history. The complete enumerations for these bounded cases complement
+the sampled long histories above.
+
+| Vlasov emission | Locked logical model |
+| --- | --- |
+| 376 T/T adjoint, 94 measurements, seven controlled Ry, 19 reserved wires | 94 And, 94 measurements, 11 rotations, 413 Cliffords, 19 peak qubits |
+
+The seven controlled Ry are the explicit entry rotations. Other
+rotations include those from uniform preparation. No T synthesis cost
+is inferred from the emitted rotation instructions. The 94-measurement
+composite histories and direct flattened source comparison for all
+large measured streams remain open outside the original test-file
+coverage. The unchanged source slow run passes all four tests.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_sparse_matrix_block_encoding.ipynb
