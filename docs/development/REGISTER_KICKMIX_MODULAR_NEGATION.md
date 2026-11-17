@@ -87,3 +87,41 @@ circuit.append(FieldOperation(5, bind_reversible_phase_execution(program)))
 ```
 
 This is an internal compiler slice and introduces no stable public API.
+
+## Whole-file acceptance
+
+K-0124 through K-0126 cover the implementation above, header blob
+`7bcbdd3e5615880b41aeb722eda81b56a55878a2`, and test blob
+`39358fd2f847549d874cc7880c1400ca28ea3baf`. The unchanged
+`ineg_mod.fuzz` passed at the locked revision. All 17 focused native tests
+and 5,420 concentrated regressions passed, along with strict typing, format,
+scope, architecture, internal IR and public API checks.
+
+A separately generated fixture adds 30 admitted layouts through width 17,
+covering all three modulus operand kinds and zero or eight borrowed wires.
+It retains raw source counts and compares every effective quantum
+operation, ordered operand, and saved feedback predicate over independent
+classical and measurement variables. Known-zero leaf resets and block
+marks are counted separately. The fixture was independently reproduced
+byte for byte. For width 17 and eight borrowed wires:
+
+| Modulus kind | Source records including marks | Matched effective quantum operations | HMR on both sides | CCX on both sides |
+| --- | ---: | ---: | ---: | ---: |
+| Constant | 396 | 305 | 51 | 48 |
+| Classical | 478 | 387 | 51 | 48 |
+| Quantum | 479 | 388 | 51 | 65 |
+
+The locked Simulator ran 64 deterministic basis cases for each operand
+kind at widths 8 and 17 on both implementations. All sampled arithmetic
+outputs and phases agreed with the modular negation, clean work returned
+to zero, and borrowed work and modulus inputs were restored. Exhaustive
+complex-amplitude and branch checks remain scoped to the smaller
+instances above. The source has no standalone negation benchmark.
+
+Regenerate the source fixture with:
+
+```sh
+python tests/unit/fixtures/generate_kickmix_modular_negation_file.py \
+  --source-root <locked-kickmix-root> \
+  --output tests/unit/fixtures/kickmix_modular_negation_file.json
+```

@@ -1,7 +1,9 @@
 """Check zero repair, measured phases and modulus input preservation."""
 
+import json
 from collections import Counter
 from itertools import product
+from pathlib import Path
 
 import pytest
 import torch
@@ -20,6 +22,7 @@ from flagquantum.compiler.registers.modular.mixed_modular_negation import (
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
+from tests.unit.fixtures.kickmix_modular_feedback import feedback_digest
 from tests.unit.test_kickmix_modular_addition import _certify_all_histories
 
 pytestmark = pytest.mark.unit
@@ -60,9 +63,8 @@ def test_modular_negation_preserves_complex_amplitudes(
         if classical
     )
     gates = bind_reversible_phase_execution(program)
-    circuit = DynamicCircuit(
-        program.n_qubits, inputs=initial, dtype=torch.complex128
-    ).append(FieldOperation(program.n_qubits, (*setup, *gates)))
+    circuit = DynamicCircuit(program.n_qubits, inputs=initial, dtype=torch.complex128)
+    circuit.append(FieldOperation(program.n_qubits, (*setup, *gates)))
     result = run_dynamic(circuit, shots=64, seed=41, strategy="batched")
     torch.testing.assert_close(
         result.final_states.reshape(64, -1), expected.expand(64, -1), atol=1e-12, rtol=0
@@ -118,13 +120,18 @@ def test_quantum_modulus_and_entangled_dirty_work_are_preserved(width: int) -> N
         for x, borrowed in product(range(modulus), range(4)):
             suffix = ((modulus - (1 << (width - 1))) << (len(clean) + 2)) | borrowed
             shift = (width - 1) + len(clean) + 2
-            amplitude = complex(x + 1, modulus + 2 * borrowed)
+            amplitude = torch.tensor(
+                complex(x + 1, modulus + 2 * borrowed), dtype=torch.complex128
+            )
             initial[(x << shift) | suffix] = amplitude
             expected[((-x % modulus) << shift) | suffix] = amplitude
     scale = initial.norm()
     circuit = DynamicCircuit(
         program.n_qubits, inputs=initial / scale, dtype=torch.complex128
-    ).append(FieldOperation(program.n_qubits, bind_reversible_phase_execution(program)))
+    )
+    circuit.append(
+        FieldOperation(program.n_qubits, bind_reversible_phase_execution(program))
+    )
     result = run_dynamic(circuit, shots=32, seed=41, strategy="batched")
     torch.testing.assert_close(
         result.final_states.reshape(32, -1),
@@ -169,3 +176,46 @@ def test_resources_match_locked_native_primitive_counts(
     assert emitted["ccx"] == source_counts["ccx"]
     assert emitted["measure"] == source_counts["hmr"]
     assert program.n_qubits == width + work
+
+
+def test_locked_negation_effects_for_constant_classical_and_quantum_moduli() -> None:
+    fixture = json.loads(
+        Path(__file__)
+        .with_name("fixtures")
+        .joinpath("kickmix_modular_negation_file.json")
+        .read_text()
+    )
+    assert fixture["source_blob"] == "73017205939c5ca0803f216fa91c9252047af90d"
+    assert len(fixture["cases"]) == 30
+    for row in fixture["cases"]:
+        width: int = row["width"]
+        mode, dirty = row["mode"], row["dirty"]
+        assert not row["rejected"]
+        start = 2 * width - 1 if mode == 2 else width
+        if mode == 0:
+            modulus: tuple[bool | int | ClassicalFieldCoefficient, ...] = tuple(
+                bit in (0, width - 1) or bit % 3 == 0 for bit in reversed(range(width))
+            )
+        elif mode == 1:
+            modulus = (
+                True,
+                *(ClassicalFieldCoefficient(bit) for bit in reversed(range(width - 1))),
+            )
+        else:
+            modulus = (True, *reversed(range(width, 2 * width - 1)))
+        program = mixed_modular_negation_program(
+            tuple(reversed(range(width))),
+            modulus,
+            clean=tuple(range(start, start + width + 2)),
+            dirty=tuple(range(start + width + 2, start + width + 2 + dirty)),
+        )
+        text = encode_kmx(program)
+        records = text.splitlines()[1:]
+        counts = Counter(record.split()[0] for record in records)
+        for opcode in ("CCX", "CX", "CZ", "HMR"):
+            assert counts[opcode] == row["counts"].get(opcode, 0), row
+        assert decode_kmx(text) == program
+        assert feedback_digest(records, program.input_bits) == (
+            row["feedback_effects"],
+            row["feedback_sha256"],
+        ), row
