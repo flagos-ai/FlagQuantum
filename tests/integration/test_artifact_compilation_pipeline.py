@@ -4,6 +4,7 @@ import math
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from functools import partial
+from pathlib import Path
 
 import pytest
 import torch
@@ -565,3 +566,57 @@ def test_synthesized_bell_legalizes_reverse_cx_for_offline_preflight() -> None:
         match="directed-CX legalization exceeds max_added_operations",
     ):
         compile_with_direction_budget(0)
+
+
+def test_qmod_bell_reaches_verified_offline_preflight() -> None:
+    qmod_path = (
+        Path(__file__).resolve().parents[1]
+        / "fixtures/classiq_qmod/prepare_bell_state.qmod"
+    )
+    circuit = replace(
+        synthesize(qmod_path).circuit,
+        measurements=(MeasurementNode("samples", (0, 1)),),
+    )
+    source = ProgramArtifactV2.from_circuit_ir(circuit, producer="qmod-bell-source")
+    snapshot = _snapshot(native_gates=(("h", ()), ("cx", ()), ("x", ())))
+
+    result = compile_circuit_artifact_for_target(
+        source,
+        backend="qasm",
+        profile="openqasm-3.0",
+        snapshot=snapshot,
+        producer="flagquantum.compiler",
+        evaluated_at=_NOW,
+        coupling_map=CouplingMap.line(2),
+    )
+    bundle = build_compilation_evidence_bundle(
+        result, snapshot=snapshot, producer="flagquantum.compiler"
+    )
+    restored = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert restored.source["source_artifact_identity"] == source.artifact_identity
+
+    executable = result.executable_artifact
+    prepared = prepare_artifact_deployment(
+        executable,
+        snapshot=snapshot,
+        source=source,
+        compilation_evidence=restored,
+        provider=snapshot.target_identity.provider,
+        target_id=snapshot.target_identity.target_id,
+        shots=256,
+        evaluated_at=_NOW,
+    )
+    assert prepared.capability_match.executable
+    assert prepared.compilation_evidence_identity == restored.bundle_identity
+    assert prepared.program == executable.payload
+
+    imported = fq.from_openqasm(prepared.program)
+    assert imported.version == 3.0
+    assert imported.measurement_qubits == (0, 1)
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    state = fq.run(imported.to_circuit(), options=options).statevector()
+    amplitude = 1 / math.sqrt(2)
+    expected = torch.tensor([0, amplitude, amplitude, 0], dtype=torch.complex128)
+    torch.testing.assert_close(state.reshape(-1), expected, atol=1e-12, rtol=0)
