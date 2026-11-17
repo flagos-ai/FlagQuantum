@@ -5,13 +5,30 @@
 
 """Schedule fixed-point phase additions in the original coefficient bit order."""
 
+from dataclasses import replace
 from math import isfinite
 
 from ....core.ir import Instruction
 from ..._component_trace.resource_model import ComponentCost, CostCall
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..arithmetic.arithmetic_resource_model import source_phase_add_cost
 from ..bits.bitwise import _validate_wires
-from .phase_addition import phase_add_ir, phase_add_workspace_size
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
+from .phase_addition import (
+    phase_add_ir,
+    phase_add_workspace_size,
+    source_phase_add_formula,
+)
+
+
+def source_symbolic_scaled_phase_add_formula(
+    input_width: SymbolicInt,
+    gradient_width: SymbolicInt,
+    coefficient_width: SymbolicInt,
+) -> SymbolicResourceFormula:
+    """Use the source bound when the coefficient is symbolic."""
+    leaf = source_phase_add_formula(input_width, gradient_width)
+    return replace(leaf, toffoli=leaf.toffoli * ((coefficient_width + 2) // 2))
 
 
 def _coefficient_word(coefficient: float, width: int, fraction_bits: int) -> int:

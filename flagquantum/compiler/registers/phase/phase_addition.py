@@ -6,13 +6,60 @@
 
 """Add or subtract a fixed-point word into a phase-gradient register."""
 
+from __future__ import annotations
+
 from ....core.ir import Instruction
+from ....core.ir.program.register_types import (
+    fixed_point_register_type,
+    quantum_bit_type,
+)
+from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
+from ..._component_trace.symbolic_math import SymbolicInt, smax
 from ..arithmetic.addition import add_adjoint_ir, add_ir
 from ..arithmetic.controlled_addition import (
     controlled_add_adjoint_ir,
     controlled_add_ir,
 )
 from ..bits.bitwise import _validate_wires
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
+
+
+def source_phase_add_signature(
+    input_width: SymbolicInt,
+    gradient_width: SymbolicInt,
+    *,
+    controlled: bool = False,
+    input_fraction_bits: SymbolicInt | None = None,
+) -> Signature:
+    """Declare the source's through ports, including mixed fixed-point input."""
+    fraction = input_width if input_fraction_bits is None else input_fraction_bits
+    ports: tuple[Register, ...] = (
+        (Register("ctrl", quantum_bit_type()),) if controlled else ()
+    )
+    if input_width != 0:
+        ports += (Register("x", fixed_point_register_type(input_width, fraction)),)
+    if gradient_width != 0:
+        ports += (
+            Register(
+                "phase_grad", fixed_point_register_type(gradient_width, gradient_width)
+            ),
+        )
+    return Signature(ports)
+
+
+def source_phase_add_formula(
+    input_width: SymbolicInt, gradient_width: SymbolicInt, *, controlled: bool = False
+) -> SymbolicResourceFormula:
+    """Report the locked abstract estimate, including negative small-width values."""
+    control_width = int(controlled)
+    return SymbolicResourceFormula(
+        and_bloq=0,
+        clifford=0,
+        measurement=0,
+        logical_qubits=smax(3, input_width + gradient_width + control_width),
+        toffoli=(1 + control_width) * (gradient_width - 2),
+    )
 
 
 def _active_widths(

@@ -11,18 +11,79 @@ from math import isfinite, pi
 from typing import cast
 
 from ....core.ir import Instruction
+from ....core.ir.program.register_types import (
+    fixed_point_register_type,
+    quantum_bit_type,
+)
+from ....core.ir.program.registers import Register, RegisterSide
+from ....core.ir.program.signatures import Signature
 from ..._component_trace.resource_classification import classify_resource_gate
-from ..._component_trace.resource_generalization import RotationCall
+from ..._component_trace.resource_generalization import (
+    ControlledZPowerCall,
+    RotationCall,
+)
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
-from ..._component_trace.symbolic_math import SymbolicInt, smax
+from ..._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ..bits.bitwise import _validate_wires
 from ..control.control_predicate_resource_model import control_predicate_cost
 from ..primitives.controlled_rotation import controlled_z_power_ir
 from ..resources.symbolic_resource_model import SymbolicResourceFormula
 
 
+def source_phase_gradient_unitary_signature(
+    width: SymbolicInt, *, controlled: bool = False
+) -> Signature:
+    """Declare through fractional gradient and optional control ports."""
+    ports: tuple[Register, ...] = (
+        (Register("ctrl", quantum_bit_type()),) if controlled else ()
+    )
+    if width != 0:
+        ports += (Register("phase_grad", fixed_point_register_type(width, width)),)
+    return Signature(ports)
+
+
+def source_phase_gradient_state_signature(width: SymbolicInt) -> Signature:
+    """Declare the prepared right-only fractional register."""
+    return Signature(
+        (
+            Register(
+                "phase_grad",
+                fixed_point_register_type(width, width),
+                side=RegisterSide.RIGHT,
+            ),
+        )
+    )
+
+
+def source_phase_gradient_unitary_calls(
+    width: SymbolicInt,
+    exponent: SymbolicReal = 1,
+    *,
+    controlled: bool = False,
+    epsilon: SymbolicReal = 1e-10,
+) -> dict[RotationCall | ControlledZPowerCall, SymbolicInt]:
+    """Preserve source phase keys, precision division and dictionary coalescing."""
+    concrete = isinstance(width, int)
+    if concrete and width == 0:
+        return {}
+    if concrete and width < 0:
+        raise ValueError("Phase-gradient width must be nonnegative")
+    budget = epsilon / width
+    powers = (
+        (exponent / 2**i for i in range(width)) if concrete else (exponent / 2**width,)
+    )
+    return {
+        (
+            ControlledZPowerCall(power, budget)
+            if controlled
+            else RotationCall("zpow", power, budget)
+        ): (1 if concrete else width)
+        for power in powers
+    }
+
+
 def source_phase_gradient_unitary_cost(
-    width: int, exponent: float = 1, *, controlled: bool = False
+    width: int, exponent: float = 1, *, controlled: bool = False, epsilon: float = 1e-10
 ) -> ComponentCost:
     """Model the source's distinct Z or CZ power declarations."""
     if type(width) is not int or width < 1 or not isfinite(exponent):
@@ -31,8 +92,14 @@ def source_phase_gradient_unitary_cost(
         )
     logical_width = width + 2 * controlled
     calls = []
-    for power in dict.fromkeys(exponent / 2**i for i in range(width)):
-        family = classify_resource_gate(RotationCall("zpow", power))
+    declared = source_phase_gradient_unitary_calls(
+        width, exponent, controlled=controlled, epsilon=epsilon
+    )
+    for call in declared:
+        power = (
+            call.exponent if isinstance(call, ControlledZPowerCall) else call.parameter
+        )
+        family = classify_resource_gate(RotationCall("zpow", power, call.precision))
         rotation = ComponentCost(
             f"ZPowGate({power})",
             1,
