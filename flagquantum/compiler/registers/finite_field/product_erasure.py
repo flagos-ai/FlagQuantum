@@ -7,7 +7,9 @@
 from ....core.classical_dataflow import ClassicalXor
 from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
 from ..primitives.measurement import ParityPhase, measure_x_clear_ir
+from ._physical_calls import lower_field_erasure_trace
 from .field_erasure import _field_product_phase_masks
 from .field_multiplication import _validate_field
 from .polynomial import _validate_registers
@@ -33,21 +35,30 @@ def field_product_phase_ir(
     if len(right) != width or len(mask_bits) != width:
         raise ValueError("Product phase requires equal register and mask widths")
     slots = mask_bits if parity_bit is None else (*mask_bits, parity_bit)
-    if len(set(slots)) != len(slots) or any(
-        type(bit) is not int or bit < 0 for bit in slots
-    ):
-        raise ValueError("Product phase requires distinct nonnegative classical slots")
+    if parity_bit in mask_bits or any(type(bit) is not int or bit < 0 for bit in slots):
+        raise ValueError(
+            "Product phase requires nonnegative masks and a distinct parity slot"
+        )
 
-    phases, high_masks = _field_product_phase_masks(left, right, mask_bits, modulus)
+    # Keep coefficient positions distinct while forming the columns. A physical
+    # mask bit can appear multiple times, and repeated toggles must be retained.
+    phases, high_masks = _field_product_phase_masks(
+        left, right, tuple(range(width)), modulus
+    )
     offset = width * (width + 1) // 2
-    gates = [gate for phase in phases[:offset] for gate in phase.lower()]
-    for i, mask in enumerate(high_masks[:-1]):
+    gates = [
+        gate
+        for phase in phases[:offset]
+        for gate in ParityPhase(phase.qubits, (mask_bits[phase.bits[0]],)).lower()
+    ]
+    for i, positions in enumerate(high_masks[:-1]):
+        mask = tuple(mask_bits[position] for position in positions)
         end = offset + width - i - 1
         group = phases[offset:end]
         offset = end
         if len(mask) <= 1:
             for phase in group:
-                gates.extend(phase.lower())
+                gates.extend(ParityPhase(phase.qubits, mask).lower())
             continue
         if parity_bit is None:
             raise ValueError(
@@ -81,6 +92,8 @@ def field_product_erase_ir(
     _validate_registers(left, right, product)
     if len(product) != len(left):
         raise ValueError("Product erasure requires equal register widths")
+    if len(set(measurement_bits)) != len(measurement_bits):
+        raise ValueError("Product erasure requires distinct measurement slots")
     feedback = field_product_phase_ir(
         left, right, measurement_bits, modulus=modulus, parity_bit=parity_bit
     )
@@ -96,3 +109,21 @@ def field_product_erase_ir(
             )
         )
     return (*measures, *feedback)
+
+
+def physical_field_product_phase(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    mask_bits: tuple[int, ...],
+    *,
+    modulus: int,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export the marked product phase with caller-owned classical masks."""
+    parity = max(mask_bits, default=-1) + 1
+    body = field_product_phase_ir(
+        left, right, mask_bits, modulus=modulus, parity_bit=parity
+    )
+    call = ComponentCall("gf_phase_by_product", 0, len(body))
+    return lower_field_erasure_trace(
+        list(body), call, parity, max((*left, *right)), input_bits=mask_bits
+    )

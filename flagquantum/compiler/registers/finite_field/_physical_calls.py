@@ -36,10 +36,15 @@ def append_field_call(
 
 
 def lower_field_erasure_trace(
-    gates: list[Instruction], call: ComponentCall, parity: int, last_wire: int
+    gates: list[Instruction],
+    call: ComponentCall,
+    parity: int,
+    last_wire: int,
+    *,
+    input_bits: tuple[int, ...] = (),
 ) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
     """Use the source's initially zero bit for the first parity lease."""
-    trace = PhysicalTrace(calls=[call])
+    trace = PhysicalTrace(calls=[call], implicit_zero_bits=set(input_bits))
     for index, gate in enumerate(gates):
         if gate.name == "classical_xor":
             assignment = parse_classical_xor(gate)

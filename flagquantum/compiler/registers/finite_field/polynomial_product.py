@@ -8,7 +8,10 @@ from collections.abc import Iterator
 
 from ....core.ir import Instruction
 from ..._component_trace.trace import ComponentCall
-from ._physical_calls import append_field_call
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
+from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
+from ..primitives.measurement import reset_x_register_ir
+from ._physical_calls import append_field_call, lower_field_erasure_trace
 from .binary_linear_map import (
     append_field_constant_scale,
     append_field_monomial_scale,
@@ -77,6 +80,33 @@ def _middle_product(
     yield from _polynomial_product(target, left[:half], right[:half])
     yield from add_right
     yield from add_left
+
+
+def polynomial_product_xor_ir(
+    left: tuple[int, ...], right: tuple[int, ...], target: tuple[int, ...]
+) -> tuple[Instruction, ...]:
+    """XOR a carryless product into a big-endian word without field reduction."""
+    width = len(left)
+    if width == 0:
+        return ()
+    if len(right) != width or len(target) != 2 * width - 1:
+        raise ValueError("Polynomial product requires equal factors and a 2n-1 target")
+    _validate_registers(left, right, target)
+    return tuple(_polynomial_product(target[::-1], left[::-1], right[::-1]))
+
+
+def physical_polynomial_product(
+    left: tuple[int, ...], right: tuple[int, ...], target: tuple[int, ...]
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export the unmarked source carryless product path."""
+    body = polynomial_product_xor_ir(left, right, target)
+    return lower_physical_trace(
+        body,
+        0,
+        max((*left, *right, *target), default=0),
+        PhysicalTrace(),
+        reorder_feedback=False,
+    )
 
 
 def field_product_xor_ir(
@@ -157,6 +187,8 @@ def controlled_field_product_xor_ir(
     *,
     modulus: int,
     parity_bit: int | None = None,
+    emit_resets: bool = False,
+    calls: list[ComponentCall] | None = None,
 ) -> tuple[Instruction, ...]:
     """XOR the product into target under a positive quantum control.
 
@@ -166,15 +198,65 @@ def controlled_field_product_xor_ir(
     """
     _validate_registers((control,), left, right, target, workspace)
     add = gf2_add_coefficients_ir(workspace, target, control=control)
-    return (
-        *field_product_xor_ir(left, right, workspace, modulus=modulus),
-        *add,
-        *field_product_erase_ir(
+    gates = list(reset_x_register_ir(workspace[::-1])) if emit_resets else []
+    append_field_product(gates, calls, left, right, workspace, modulus)
+    append_field_call(gates, calls, "c_gf_iadd", add)
+    append_field_product(
+        gates,
+        calls,
+        left,
+        right,
+        workspace,
+        modulus,
+        bits=measurement_bits,
+        parity_bit=parity_bit,
+    )
+    return tuple(gates)
+
+
+def physical_field_product(
+    left: tuple[int, ...],
+    right: tuple[int, ...],
+    target: tuple[int, ...],
+    *,
+    modulus: int,
+    erase: bool = False,
+    control: int | None = None,
+    workspace: tuple[int, ...] = (),
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export accumulation or erasure with the source control dispatch."""
+    width = len(left)
+    bits = tuple(reversed(range(width)))
+    calls: list[ComponentCall] = []
+    ports = (*left, *right, *target, *workspace)
+    if control is None:
+        gates: list[Instruction] = []
+        append_field_product(
+            gates,
+            calls,
             left,
             right,
-            workspace,
-            measurement_bits,
-            modulus=modulus,
-            parity_bit=parity_bit,
-        ),
-    )
+            target,
+            modulus,
+            bits=bits if erase else None,
+            parity_bit=width,
+        )
+        (call,) = calls
+    else:
+        gates = list(
+            controlled_field_product_xor_ir(
+                control,
+                left,
+                right,
+                target,
+                workspace[:width],
+                bits,
+                modulus=modulus,
+                parity_bit=width,
+                emit_resets=True,
+                calls=calls,
+            )
+        )
+        call = ComponentCall("c_gf_mul", 0, len(gates), children=tuple(calls))
+        ports = (*ports, control)
+    return lower_field_erasure_trace(gates, call, width, max(ports))
