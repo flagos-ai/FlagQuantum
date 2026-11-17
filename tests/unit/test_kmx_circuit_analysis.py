@@ -8,7 +8,7 @@ from xml.etree.ElementTree import fromstring
 import pytest
 
 from flagquantum.compiler.formats.kmb import decode_kmb, encode_kmb
-from flagquantum.compiler.formats.kmx_circuit import inspect_kmx, read_kmx_records
+from flagquantum.compiler.formats.kmx_circuit import inspect_kmx, read_kmx_circuit
 from flagquantum.drawer.reversible_phase_analysis import (
     render_reversible_phase_analysis_svg,
 )
@@ -52,8 +52,9 @@ def test_locked_physical_analysis_svg(name: str) -> None:
 
 def test_records_preserve_order_guards_and_quoted_tags() -> None:
     kmx = 'INFO_TAG "@enter:mix"\nCSWAP q2 q1 q0 if b4\nZ_POW q1 0.125\nHMR q2 b0'
-    width, records = read_kmx_records(kmx)
-    assert width == 3
+    circuit = read_kmx_circuit(kmx)
+    assert circuit.qubits == 3
+    records = circuit.records
     assert [record.to_kmx() for record in records] == kmx.splitlines()
     assert records[1].qubits == (2, 1, 0)
     assert records[1].condition_bit == 4

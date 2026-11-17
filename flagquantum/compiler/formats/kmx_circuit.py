@@ -13,10 +13,11 @@ from .kmb import (
     _MAGIC,
     _MAX_RECORDS,
     KmxRecord,
+    KmxRegister,
     _Columns,
     _iter_records,
+    _iter_registers,
     _parse_kmx,
-    _register_lines,
     _validated_lines,
     decode_kmb,
 )
@@ -46,15 +47,33 @@ class KmxCircuitStats:
         return self.quantum_columns[2] + (self.rotations + 1) // 2
 
 
-def read_kmx_records(text: str) -> tuple[int, tuple[KmxRecord, ...]]:
-    """Read structural records and the inferred quantum width for analysis."""
+@dataclass(frozen=True)
+class KmxCircuit:
+    """Validated records and raw register declarations for format consumers."""
+
+    qubits: int
+    registers: tuple[KmxRegister, ...]
+    records: tuple[KmxRecord, ...]
+
+
+def read_kmx_circuit(text: str) -> KmxCircuit:
+    """Read raw records, register membership and the inferred quantum width."""
     columns = _parse_kmx(text)
-    _, register_max, _ = _register_lines(columns)
+    registers = tuple(_iter_registers(columns))
     records = tuple(_iter_records(columns))
+    register_max = max(
+        (
+            index
+            for register in registers
+            for kind, index in register.members
+            if kind == "q"
+        ),
+        default=-1,
+    )
     operation_max = max(
         (qubit for record in records for qubit in record.qubits), default=-1
     )
-    return max(register_max, operation_max) + 1, records
+    return KmxCircuit(max(register_max, operation_max) + 1, registers, records)
 
 
 def inspect_kmx(text: str) -> KmxCircuitStats:

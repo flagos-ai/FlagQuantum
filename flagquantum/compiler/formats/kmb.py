@@ -8,6 +8,7 @@ import re
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from struct import Struct, iter_unpack
+from typing import Literal
 
 from ..artifacts.phase_angle import PhaseAngle128
 from ._kmx_text import QUOTED_UNIT, escape_kmx_text, unescape_kmx_text
@@ -64,6 +65,14 @@ class KmxRecord:
         if self.condition_bit is not None:
             fields.extend(("if", f"b{self.condition_bit}"))
         return " ".join(fields)
+
+
+@dataclass(frozen=True)
+class KmxRegister:
+    """Raw register name and ordered physical members."""
+
+    name: str
+    members: tuple[tuple[Literal["q", "b"], int], ...]
 
 
 @dataclass
@@ -179,17 +188,29 @@ def _parse_statement(columns: _Columns, line: str) -> None:
     columns.operations.append(code)
 
 
-def _register_lines(columns: _Columns) -> tuple[list[str], int, int]:
-    lines: list[str] = []
+def _iter_registers(columns: _Columns) -> Iterator[KmxRegister]:
     names = [reg.name for reg in columns.registers if reg.name]
     if len(names) != len(set(names)):
         raise ValueError("Duplicate KMB register name")
+    for register in columns.registers:
+        yield KmxRegister(
+            register.name,
+            tuple(
+                (
+                    "q" if member & _REGISTER_QUANTUM else "b",
+                    member & ~_REGISTER_QUANTUM,
+                )
+                for member in register.members
+            ),
+        )
+
+
+def _register_lines(columns: _Columns) -> tuple[list[str], int, int]:
+    lines: list[str] = []
     q_max = -1
     b_max = -1
-    for index, register in enumerate(columns.registers):
-        for member in register.members:
-            kind = "q" if member & _REGISTER_QUANTUM else "b"
-            operand = member & ~_REGISTER_QUANTUM
+    for index, register in enumerate(_iter_registers(columns)):
+        for kind, operand in register.members:
             if kind == "q":
                 q_max = max(q_max, operand)
             else:

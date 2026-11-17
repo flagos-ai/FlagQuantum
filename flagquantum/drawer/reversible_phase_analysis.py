@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from xml.etree.ElementTree import Element, SubElement, tostring
 
 from ..compiler.formats.kmb import KmxRecord
-from ..compiler.formats.kmx_circuit import read_kmx_records
+from ..compiler.formats.kmx_circuit import read_kmx_circuit
 
 
 @dataclass
@@ -121,8 +121,9 @@ def render_reversible_phase_analysis_svg(
     """Render source block summaries with vertical markers at reference intervals."""
     if reference_qubit_count < 0:
         raise ValueError("Reference qubit count must be nonnegative")
-    qubits, records = read_kmx_records(kmx)
-    total, groups = _group_operations(records)
+    circuit = read_kmx_circuit(kmx)
+    qubits = circuit.qubits
+    total, groups = _group_operations(circuit.records)
     svg = Element(
         "svg",
         viewBox="-100 -140 1200.0 340.0",
