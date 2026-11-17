@@ -317,3 +317,43 @@ This out-of-domain behavior is preserved and tested as a diagnostic.
 The approximation protocol's locked call site checks the witness
 before accepting a point. The solver itself is classical and emits no
 quantum primitives.
+
+## Rotation approximation protocols
+
+| Item | Frozen file under `rotation_synthesis/protocols/` | Git blob |
+| --- | --- | --- |
+| Q-0845 | `__init__.py` | `a869319efbbca01d1baa2b9c84bef56cb2c07eb5` |
+| Q-0846 | `_clifford_t_synthesis.py` | `22a9071e3d26377deb39a149480c72b3a5a13cc9` |
+| Q-0847 | `_diagonal.py` | `32362fde0005c870378186459e9e689bdc1f0a73` |
+| Q-0848 | `_fallback.py` | `330ff3201fbcf41637c06e927c3f87f363006996` |
+| Q-0849 | `_mixed_diagonal.py` | `ac3b5a49eb46b8e9be929338c24a0a0a4fb2fe99` |
+| Q-0850 | `_protocol.py` | `5082ab37b791e5de48cb0d5cb13fcc5c605070b7` |
+| Q-0851 | `clifford_t_synthesis_test.py` | `b2cefd61bac6d1636c57865f64464a59fd359955` |
+
+The internal protocol package owns the three search regions, ordered
+candidate stream, split-region tie rule and twelve locked exports.
+The five synthesis entry points preserve the source cutoffs, selection
+order and exact relative-norm witness check. The tests exercise all 90
+original cases and compare exact ring coefficients, nested channel
+shape, mixture probabilities, distance and T models directly against
+the frozen source. Optional Matplotlib is loaded in the plot methods,
+and patch geometry is checked for all three regions.
+
+The finite-search exhaustion cases preserve the locked behavior.
+Diagonal returns None. Fallback may attempt to iterate a missing result.
+Mixed diagonal may attempt to unpack a missing result. Mixed fallback
+reports the failed region with a ValueError. Its nested correction
+searches use their default relative norm solver, as in the source.
+The mixed-fallback cutoff retains the source mpmath default when mpmath
+is installed and uses the same decimal value as a float otherwise.
+
+The deterministic and projective results reuse the accepted native
+append bindings. At theta 0.9, error 0.03 and success threshold 0.99,
+the projective binding emits 47 unconditional primitives including the
+measurement, and 45 primitives conditioned on outcome one including the
+ancilla cleanup. The unconditional rotation and conditional correction
+each emit nine T gates. The source weighted model reports about 9.01413
+T. Both unnormalized complex columns match in each measurement branch,
+with operand and condition checks and the ancilla returned to zero.
+Mixed and twirled results keep the analytical channel model and
+resource semantics described in the preceding section.
