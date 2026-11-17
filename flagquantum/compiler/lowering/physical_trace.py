@@ -18,10 +18,11 @@ class PhysicalTrace:
     feedback: list[tuple[int, int, int]] = field(default_factory=list)
     implicit_zero_bits: set[int] = field(default_factory=set)
     recycled_bits: frozenset[int] = frozenset()
+    inline_guards: list[tuple[int, int]] = field(default_factory=list)
 
 
 def _feedback_order(
-    operations: tuple[Operation, ...], result_start: int
+    operations: tuple[Operation, ...], result_start: int, preserve: set[int]
 ) -> tuple[Operation, ...]:
     """Place the HMR result outside the coefficient test for a phase gate."""
     result: list[Operation] = []
@@ -31,7 +32,8 @@ def _feedback_order(
         if len(span) == 3:
             enter, gate, leave = span
             if (
-                enter.opcode == "push_condition"
+                i not in preserve
+                and enter.opcode == "push_condition"
                 and enter.condition_bit is not None
                 and enter.condition_bit < result_start
                 and gate.condition_bit is not None
@@ -93,8 +95,13 @@ def lower_physical_trace(
     lowered = lower_reversible_phase(
         CircuitIR(width, (*setup, *gates)), operation_offsets=offsets
     )
+    inline = {
+        i
+        for begin, end in export.inline_guards
+        for i in range(offsets[begin + len(setup)], offsets[end + len(setup)])
+    }
     ordered = (
-        _feedback_order(lowered.operations, inputs)
+        _feedback_order(lowered.operations, inputs, inline)
         if reorder_feedback
         else lowered.operations
     )

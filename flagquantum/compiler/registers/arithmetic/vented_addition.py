@@ -23,6 +23,7 @@ def _vented_carries(
     measurement_bit: int | None,
     emit_resets: bool,
     feedback: list[tuple[int, int, int]] | None,
+    inline_guards: list[tuple[int, int]] | None,
     start: int,
 ) -> tuple[Instruction, ...]:
     n = len(target)
@@ -31,7 +32,12 @@ def _vented_carries(
     if n == 2:
         return (
             *_carry_parity_gate(
-                target[1], parity, (control, target[0]), clean, measurement_bit
+                target[1],
+                parity,
+                (control, target[0]),
+                clean,
+                measurement_bit,
+                emit_resets=emit_resets,
             ),
             *_flip(target[1], control, offset[0]),
             *_flip(target[0], control, carry_in),
@@ -40,9 +46,14 @@ def _vented_carries(
         raise ValueError("Vented addition requires a reusable measurement slot")
     outcome = ClassicalFieldCoefficient(measurement_bit)
     if n == 3:
-        return (
+        short = (
             *_carry_parity_gate(
-                a, parity, (control, target[0]), clean[1:], measurement_bit
+                a,
+                parity,
+                (control, target[0]),
+                clean[1:],
+                measurement_bit,
+                emit_resets=emit_resets,
             ),
             *_flip(a, control, offset[0]),
             *_flip(target[1], a),
@@ -53,10 +64,14 @@ def _vented_carries(
             *_flip(target[2], control, offset[1]),
             *measure_x_clear_ir(a, measurement_bit),
             *_carry_parity_gate(None, parity, (control, target[0], outcome), (), None),
+        )
+        direct = (
             *_flip(None, control, offset[0], outcome),
             *_flip(None, control, offset[1], outcome),
-            *_flip(target[0], control, carry_in),
         )
+        if inline_guards is not None:
+            inline_guards.append((start + len(short), start + len(short) + len(direct)))
+        return (*short, *direct, *_flip(target[0], control, carry_in))
 
     gates = [
         *(reset_x_register_ir((a,)) if emit_resets else ()),
@@ -132,6 +147,7 @@ def vented_addition_ir(
     measurement_bit: int | None = None,
     emit_resets: bool = False,
     feedback: list[tuple[int, int, int]] | None = None,
+    inline_guards: list[tuple[int, int]] | None = None,
 ) -> tuple[Instruction, ...]:
     """Add a mixed offset and expose the locked carry XOR and measurement effects.
 
@@ -211,6 +227,7 @@ def vented_addition_ir(
             measurement_bit,
             emit_resets,
             feedback,
+            inline_guards,
             len(prefix),
         ),
         *copy_gates,

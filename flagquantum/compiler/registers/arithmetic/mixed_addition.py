@@ -150,6 +150,9 @@ def _clean_prefix(
         gates.extend(_flip(clean[k - 1], control, offset[k]))
         gates.extend(_flip(clean[k], target[k], clean[k - 1]))
     leased, remainder = workspace.take_clean(m)
+    nested = export
+    if export is not None and any(gate.name == "measure" for gate in gates):
+        nested = replace(export, recycled_bits=export.recycled_bits | {slot})
     gates.extend(
         _add(
             target[m:],
@@ -159,7 +162,7 @@ def _clean_prefix(
             control,
             bits,
             btol,
-            export=export,
+            export=nested,
             start=start + len(gates),
         )
     )
