@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0298 | `sparse_matrix_hermitian.ipynb` | `117edcce9169b81c911d40885946e193e829d438` | Closed by the complete native tutorial. |
-| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Symbolic oracle composition, structured controls and padded primitive flow verified. Binding foreign oracle objects remains open. |
+| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Symbolic composition, structured controls, padded primitive flow and independent user oracle replacement verified. Automatic conversion of raw foreign oracle objects remains open. |
 | Q-0300 | `sparse_matrix_hermitian_test.py` | `367de6a3ae0ac011a16a5cc13b63dbb77cd7ba53` | Closed for the original runnable scenarios and their notebook. Source fixture mode limits are recorded below. |
 
 ## Interface and direct dependencies
@@ -68,7 +68,52 @@ every measurement history. The controlled reflection is self-adjoint.
 The padded typed control additionally enumerates all 2,048 histories
 on a correlated complex input with active and inactive control values.
 It matches every output amplitude and returns all five temporary wires
-to zero. Foreign oracle objects still need native binding callbacks.
+to zero. Raw foreign oracle objects still need native conversion at the
+optional Ecosystem boundary; native user implementations are covered below.
+
+## Independent oracle replacement
+
+`examples/algorithms/custom_sparse_oracles.py` implements both existing
+structural protocols without inheriting the built-in oracles. Its column
+map is `ordinal XOR index XOR all-ones`. Its nonuniform square-root entry
+is an Ry rotation by `base + delta * (low_row AND low_column)`. The And
+uses one clean caller work bit, erases it with measurement and feedback,
+and exposes one classical slot. Forward and adjoint callbacks bind the
+same through words and restore scratch.
+
+User extensions of the pinned abstract source oracles implement these
+operations independently in the test fixture. The original Hermitian
+consumer and its source files are unchanged. Tests follow all source
+Soquet connections down to primitive gates, operands, parameters, result
+slots and classical feedback. They also compare the independent logical
+models, including zero, Clifford, T and generic rotation classification.
+Widths one and two, ordinary and positive-controlled blocks, match every
+complex amplitude against the original tensor contraction and the analytic
+projected matrix. The input includes nonzero ancilla and spectator
+entanglement. All four erasure histories give the same normalized output,
+and all sixteen histories of a block followed by its adjoint recover the
+input. A prior measurement at slot zero remains available after the
+oracle reuses slot one. The borrowed work bit returns to zero.
+
+| Index width / control | Emitted T/T-dagger | Emitted Ry / measurements | Source logical model | Source peak |
+| --- | --- | --- | --- | --- |
+| 1 / ordinary | 8 | 6 / 2 | 2 And, 14 Clifford, 6 rotation, 2 measurement | 5 |
+| 1 / positive | 22 | 6 / 2 | 2 And, 12 Clifford, 2 CSwap, 6 rotation, 2 measurement | 6 |
+| 2 / ordinary | 8 | 6 / 2 | 2 And, 21 Clifford, 6 rotation, 2 measurement | 7 |
+| 2 / positive | 29 | 6 / 2 | 2 And, 18 Clifford, 3 CSwap, 6 rotation, 2 measurement | 8 |
+
+This closes the missing native callback conformance evidence. It does not
+automatically translate an arbitrary external library object. The existing
+Cirq importer rejects the original And erasure circuit: it requires line
+qubits and terminal measurements, and rejects its conditional feedback
+and reset operations. That conversion gap belongs to Ecosystem, not to a
+new oracle protocol or an Algorithms dependency on the reference package.
+Q-0299 stays open for that concrete foreign conversion requirement.
+
+```bash
+python -m examples.algorithms.custom_sparse_oracles
+pytest -q tests/unit/test_hermitian_custom_oracles.py
+```
 
 ## Symbolic declarations and original validation
 
