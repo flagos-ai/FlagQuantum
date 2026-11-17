@@ -10,6 +10,7 @@ from math import ceil, inf, isnan
 from typing import cast
 
 from ....core.ir import Instruction
+from ...lowering.physical_trace import PhysicalTrace
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import (
@@ -276,6 +277,7 @@ def mixed_less_than_ir(
     btol: float = inf,
     low_space_bits: tuple[int, ...] = (),
     emit_resets: bool = False,
+    export: PhysicalTrace | None = None,
 ) -> tuple[Instruction, ...]:
     """Emit the locked comparison for equal-width mixed words.
 
@@ -383,6 +385,7 @@ def mixed_less_than_ir(
             measurement_bits=low_space_bits,
             or_equal=or_equal,
             control=control,
+            export=export,
         )
     if len(workspace) < width - 1:
         raise ValueError("Comparison requires at least width minus one clean wires")
@@ -437,14 +440,17 @@ def mixed_less_than_ir(
     outcome = ClassicalFieldCoefficient(measurement_bit)
     for i in reversed(range(width - 1)):
         incoming = clean[i - 1] if i else or_equal
+        gates.extend(measure_x_clear_ir(clean[i], measurement_bit))
+        begin = len(gates)
         gates.extend(
             (
-                *measure_x_clear_ir(clean[i], measurement_bit),
                 *_flip(None, rhs[i], outcome),
                 *_flip(None, lhs[i], incoming, outcome),
                 *_flip(None, lhs[i], rhs[i], outcome),
             )
         )
+        if export is not None:
+            export.feedback.append((begin, len(gates), measurement_bit))
     return (*gates, *difference, *invert)
 
 

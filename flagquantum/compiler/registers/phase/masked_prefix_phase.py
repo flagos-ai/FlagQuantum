@@ -9,7 +9,7 @@ from ....core.ir import Instruction
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip, _three_control_ir
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 
 
 def _four_operand_phase(
@@ -43,6 +43,7 @@ def masked_prefix_phase_ir(
     dirty: tuple[int, ...] = (),
     measurement_bit: int | None = None,
     minimize_qubits: bool = False,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Apply one sign per all-ones prefix whose corresponding mask is set.
 
@@ -76,6 +77,8 @@ def masked_prefix_phase_ir(
         if n >= 2:
             gates.extend(_flip(None, targets[0], targets[1], masks[1]))
         if n == 3:
+            if emit_resets and clean and not minimize_qubits and type(masks[2]) is int:
+                gates.extend(reset_x_register_ir((clean[0],)))
             gates.extend(
                 _four_operand_phase(
                     targets[0],
@@ -91,6 +94,8 @@ def masked_prefix_phase_ir(
     anc = (*clean, *dirty)
     if clean and measurement_bit is None:
         raise ValueError("Masked prefix phase requires a classical result slot")
+    if emit_resets:
+        gates.extend(reset_x_register_ir(clean[: n - 3]))
     last_mask = masks[n - 1]
     for step in range(2):
         for k in reversed(range(n - 4)):
