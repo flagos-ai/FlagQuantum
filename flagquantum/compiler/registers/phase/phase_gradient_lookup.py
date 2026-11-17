@@ -5,13 +5,23 @@
 
 """Programmable phase kickback through a QROM and an external gradient."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+
 from ....core.ir import Instruction
+from ....core.ir.program.signatures import Signature
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..bits.bitwise import _validate_wires
 from ..lookup.qrom_table import QromTable
-from .phase_addition import phase_add_ir, phase_add_workspace_size
+from .phase_addition import (
+    phase_add_ir,
+    phase_add_workspace_size,
+    source_phase_add_signature,
+)
 
 
-def _lookup_table(
+def phase_gradient_lookup_table(
     control_count: int, selection_width: int, phase_width: int, words: tuple[int, ...]
 ) -> QromTable:
     # Words already satisfy the flat compiler input contract; do not coerce them.
@@ -23,6 +33,33 @@ def _lookup_table(
         control_count,
         (words,),
     )
+
+
+@dataclass(frozen=True)
+class PhaseGradientLookupCall:
+    """Source PRGA identity with a literal or shape-only QROM."""
+
+    table: QromTable
+
+    @property
+    def signature(self) -> Signature:
+        return Signature.build(
+            control=self.table.num_controls,
+            selection=self.table.selection_bitsizes[0],
+            phase_gradient=self.table.target_bitsizes[0],
+        )
+
+    @property
+    def addition_signature(self) -> Signature:
+        width = self.table.target_bitsizes[0]
+        return source_phase_add_signature(width, width)
+
+    def direct_calls(
+        self,
+    ) -> dict[QromTable | tuple[str, SymbolicInt, SymbolicInt], int]:
+        """Coalesce the source's self-adjoint QROM load and erase."""
+        width = self.table.target_bitsizes[0]
+        return {self.table: 2, ("AddIntoPhaseGrad", width, width): 1}
 
 
 def phase_gradient_lookup_requirements(
@@ -38,7 +75,7 @@ def phase_gradient_lookup_requirements(
     ):
         raise ValueError("Phase lookup requires a complete table for the selection")
     add = phase_add_workspace_size(phase_width, phase_width)
-    lookup = _lookup_table(
+    lookup = phase_gradient_lookup_table(
         control_count, selection_width, phase_width, words
     ).workspace_size
     scratch = max(add, lookup)
@@ -67,7 +104,7 @@ def phase_gradient_lookup_ir(
         raise ValueError("Phase lookup requires its declared workspace and slots")
     _validate_wires((*controls, *selection, *gradient, *workspace))
     angle, scratch = workspace[:width], workspace[width:]
-    table = _lookup_table(len(controls), len(selection), width, words)
+    table = phase_gradient_lookup_table(len(controls), len(selection), width, words)
     lookup_size = table.workspace_size
     lookup = table.bind_packed(
         (*controls, *selection, *angle),
