@@ -253,3 +253,44 @@ scalar correction as needed. The final conditional X adds one
 primitive and zero T. The expected T model weights the second T by
 the outcome-one probability. The measured bit retains its result
 after cleanup. All 103 original test cases pass in the native suite.
+
+## Exact lattice generation
+
+| Item | Frozen file under `rotation_synthesis/lattice/` | Git blob |
+| --- | --- | --- |
+| Q-0825 | `__init__.py` | `62babd8ac6ef95657a690e1a6bb74ee764066b5d` |
+| Q-0826 | `_geometry.py` | `946d4f89c86d28e0b109e2f4bb89cc6468d9088b` |
+| Q-0827 | `_grid_operators.py` | `6d2f4020b7e988a83a82068256ad639d52ecea1a` |
+| Q-0828 | `_ipe.py` | `fb54fb68cc0cf145bd91ce518ff135f08be3da46` |
+| Q-0829 | `_state.py` | `67e66a6804e39459c8ff1d33c968b18960bec8d5` |
+| Q-0830 | `_test_utils.py` | `e2e23df593af06af3bff4756658a8fcc73306fd5` |
+| Q-0831 | `geometry_test.py` | `1a6aed7a6f4f671494532a609bd4abfb74c10d3e` |
+| Q-0832 | `grid_operators_test.py` | `d4ebaa7ed4e6691bee16c30be22ea65a8dd2fbec` |
+| Q-0833 | `ipe_test.py` | `8c890d4bd02bae53e9fe5c433e3c6e31a7477cfc` |
+| Q-0834 | `state_test.py` | `f051a3cee6f04e7b016e2341db7d323831e69412` |
+| Q-0835 | `test_utils_test.py` | `db26d880030601269f8d12f3ec3d2f19f5c879b8` |
+
+The internal lattice package exposes the ten locked symbols. Geometry
+owns scalar ranges, ellipse transforms and optional plotting. Exact grid
+operators keep the source square-root-two scaling, coefficient parity,
+composition order and conjugation. State transforms retain the ordered
+action path and center transforms. Enumeration preserves the ring
+coordinate order, including the two eighth-root cosets in the upright
+case. The shared random fixtures live in tests.
+
+All 6,246 original cases run natively. Differential checks compare
+complete ordered point streams, exact grid coefficients and floating
+state matrices under NumPy and mpmath. The plot check compares the
+Matplotlib patch geometry and style. Iterator parameters are
+materialized, the randomized geometry cases use a fixed seed and the
+mpmath tests scope the precision change. Lattice generation is a
+classical synthesis input and has no quantum primitive counts.
+
+The locked grid power routine uses its existing behavior for negative
+indices, which return the operator instead of its inverse. The locked
+one-dimensional enumeration requires nonzero interval width and
+propagates the configured logarithm's domain error. Native data classes
+support an identity comparison for a reused ellipse. Comparing
+separately constructed array-backed ellipses retains the NumPy
+ambiguous-truth error. Use explicit array comparison for numerical
+geometry checks.
