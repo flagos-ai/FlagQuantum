@@ -14,12 +14,17 @@ from ..primitives.operand_binding import _Operand, bind_operand, identify_operan
 from .register_bits import split_integer
 
 
+def is_operand_sequence(value: object) -> bool:
+    """Distinguish a sequence port from a scalar even when either has width one."""
+    return isinstance(value, Sized) and not isinstance(value, (str, bytes))
+
+
 def bind_operand_word(
     value: object, *, sequence_only: bool = False
 ) -> tuple[_Operand, ...]:
     """Snapshot ordered operands; a singleton is accepted outside sequence mode."""
-    if isinstance(value, Sized) and not isinstance(value, (str, bytes)):
-        size = len(value)
+    if is_operand_sequence(value):
+        size = len(cast(Sized, value))
         try:
             iterator = iter(cast(Iterable[object], value))
         except TypeError as error:
