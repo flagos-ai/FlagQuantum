@@ -460,7 +460,7 @@ def test_measurement_adjoint_consumes_lookup_banks(log, include_two_body):
 
 
 @pytest.mark.ftqc_reference
-@pytest.mark.parametrize(("spatial", "log"), [(1, 0), (2, 2)])
+@pytest.mark.parametrize(("spatial", "log"), [(1, 0), (1, 1), (2, 2)])
 def test_signature_preserves_empty_orbitals_and_multiple_retained_cells(spatial, log):
     pytest.importorskip("qualtran")
     from qualtran.bloqs.chemistry.sparse.prepare import PrepareSparse
@@ -483,11 +483,11 @@ def test_signature_preserves_empty_orbitals_and_multiple_retained_cells(spatial,
             reference.decompose_bloq()
 
 
-@pytest.mark.parametrize("two_body", [0.0, -0.5])
-def test_single_orbital_prepares_and_clears_without_empty_bank_binding(two_body):
+@pytest.mark.parametrize(("two_body", "log"), [(0.0, 0), (-0.5, 0), (-0.5, 1)])
+def test_single_orbital_prepares_and_clears_without_empty_bank_binding(two_body, log):
     one = np.array([[1.0]])
     two = np.full((1,) * 4, two_body)
-    data = sparse_chemistry_data(one, two, probability_bits=1, log_block_size=0)
+    data = sparse_chemistry_data(one, two, probability_bits=1, log_block_size=log)
     op = PrepareSparseChemistry(data)
     layout = (*op.selection_layout, *op.junk_layout)
     width = sum(bits for _, bits in layout)
@@ -517,14 +517,24 @@ def test_single_orbital_prepares_and_clears_without_empty_bank_binding(two_body)
     events = sum(g.name == "measure" for g in raw.instructions)
     coherent_events = sum(g.name == "measure" for g in inverse.instructions)
     measured_events = sum(g.name == "measure" for g in measured.instructions)
-    assert (events, coherent_events, measured_events, work) == (1, 1, 6, 2)
+    assert (events, coherent_events, measured_events, work) == (
+        1,
+        1,
+        11 if log else 6,
+        2,
+    )
     assert measured_events == coherent_events + bank_width
     for stage in (raw, inverse, measured):
-        assert sum(g.name in {"t", "tdg"} for g in stage.instructions) == 11
-    expected = _expected_unblocked(data, layout, work, events)
+        assert sum(g.name in {"t", "tdg"} for g in stage.instructions) == (
+            31 if log else 11
+        )
+    expected = None if log else _expected_unblocked(data, layout, work, events)
     for history in product((0, 1), repeat=events):
         prepared = _branch(raw.instructions, wires, history)
+        if expected is None:
+            expected = prepared
         assert prepared == pytest.approx(expected, abs=2e-12)
+        assert all(index & ((1 << work) - 1) == 0 for index in prepared)
         for circuit, count in [(inverse, coherent_events), (measured, measured_events)]:
             for reverse_history in product((0, 1), repeat=count):
                 restored = _branch(

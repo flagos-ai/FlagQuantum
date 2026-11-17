@@ -46,13 +46,31 @@ amplitudes and clean work.
 | Coherent inverse | 11 | 1 | 2 |
 | Measurement inverse | 11 | 6 | 2 |
 
+The two-row one-orbital table can also occupy one complete two-cell
+block. Its high address has zero width, so the shared QROAM loads
+constant banks before the low-address routing. The compiler checks
+that stream against locked CSwapApprox gates and the explicit constant
+load, including the relative phases and coherent reversal. The full
+locked QROAM graph still fails when it tries to bind an omitted selector.
+The locked one-orbital PREPARE still fails at `target0_`.
+
+The native sparse binding retains the zero-width orbital metadata and
+loads its five nonempty datasets into ten bank wires. All two forward
+histories have identical unnormalized complex amplitudes and clean
+scratch. Each is composed with both coherent inverse histories and all
+2,048 measurement inverse histories, recovering the zero input with
+the expected positive branch amplitude. The forward and both reverse
+paths each emit 31 T/T† using two work wires. Their measurement counts
+are 1, 1, and 11, respectively. The original abstract erasure resource
+declaration remains independent of these executed counts.
+
 The original suite returned 13 passes, one skip, and one expected
 failure. The native concentrated regression passed 123 cases. Strict
 typing, format, ownership, architecture, IR, and public API checks
 passed.
 
 Q-0409 closes the runnable original tests. Q-0408 stays open for the
-blocked one-orbital layout, the source full one-orbital failure, and
+source full one-orbital failure and
 the opaque original measurement erase leaf. Q-0407 also covers the
 SELECT export and the sparse Hamiltonian convention. That package
 boundary remains for the SELECT batch.
