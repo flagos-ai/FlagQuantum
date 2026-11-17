@@ -9,6 +9,14 @@ from collections.abc import Iterator
 from math import prod
 
 from ....core.ir import Instruction
+from ....core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+)
+from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
+from ....core.value_parameters import is_symbolic_value
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..bits.bitwise import _validate_wires
 from ..control.control_predicate import ControlRegister
 from ..control.controlled_component import controlled_component_ir
@@ -16,6 +24,29 @@ from ..primitives.relative_controlled_swap import (
     control_relative_swap_ir,
     relative_controlled_swap_ir,
 )
+
+
+def swap_with_zero_signature(
+    widths: tuple[SymbolicInt, ...],
+    word: SymbolicInt,
+    shape: tuple[SymbolicInt, ...],
+) -> Signature:
+    """Declare source selectors for live axes with their iteration bounds."""
+    axes = tuple(
+        (width, extent)
+        for width, extent in zip(widths, shape, strict=True)
+        if is_symbolic_value(width) or width > 0
+    )
+    selectors = tuple(
+        Register(
+            "selection" if len(axes) == 1 else f"selection{i}_",
+            bounded_unsigned_register_type(width, extent),
+        )
+        for i, (width, extent) in enumerate(axes)
+    )
+    return Signature(
+        (*selectors, Register("targets", opaque_register_type(word), shape=shape))
+    )
 
 
 def swap_with_zero_ir(
@@ -99,16 +130,14 @@ def _swap_sequence(
     exchanges = [
         (selections[axis][-1 - bit], left, right)
         for axis, bit, left, right in swap_with_zero_stages(
-            tuple(map(len, selections)), shape
+            tuple(map(len, selections)), shape, adjoint=adjoint
         )
     ]
-    if adjoint:
-        exchanges.reverse()
     return exchanges
 
 
 def swap_with_zero_stages(
-    selection_widths: tuple[int, ...], shape: tuple[int, ...]
+    selection_widths: tuple[int, ...], shape: tuple[int, ...], *, adjoint: bool = False
 ) -> Iterator[tuple[int, int, int, int]]:
     """Yield source axis, LSB index and flat locations for each exchange."""
 
@@ -124,4 +153,5 @@ def swap_with_zero_stages(
             for row in range(0, extent - half, 2 * half):
                 yield axis, bit, start + row * stride, start + (row + half) * stride
 
-    yield from visit(0, 0)
+    stages = visit(0, 0)
+    yield from reversed(tuple(stages)) if adjoint else stages
