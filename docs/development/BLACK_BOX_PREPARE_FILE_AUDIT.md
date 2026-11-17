@@ -46,6 +46,24 @@ expected failure for serialization.
 | Native packed, either direction | 47 | 66 | 3 | — | 12 reserved |
 | Source model | — | — | 2 | 5 CSwap, 2 And, 11 Clifford, 4 rotations | 12 logical |
 
+## Typed and symbolic packing
+
+`PackedPrepareDeclaration` reads the ordered register descriptors from
+the native PREPARE contract. Its widths sum each descriptor's total
+bits, including array shape. It preserves the source's opaque group
+descriptors, zero-width filtering and one-bit top-level encoding.
+A shaped selection of width `n` twice plus a one-bit register declares
+`2*n + 1` selection bits. Three width-`n` junk elements declare `3*n`
+junk bits. The coefficient norm passes through unchanged in metadata,
+including when it is symbolic. A missing norm raises the source exception
+on access and is represented by `None` on a bound emitter.
+
+The named Hubbard consumer derives its concrete layout from the same
+declaration. The shaped fixture verifies ordered binding on reversed
+physical wires through `circuit.append(op)`. Existing Hubbard
+and alias tests cover emitted gates, measurement histories, complex
+amplitudes, scratch restoration and source resource estimates.
+
 ## Package and remaining boundaries
 
 The four exports in Q-0690 point to the following native owners.
@@ -59,7 +77,7 @@ own parent items.
 | `SparseStatePreparationAliasSampling` | `algorithms/primitives/alias_preparation.py`, sparse table |
 | `StatePreparationViaRotations` | `algorithms/primitives/rotation_preparation.py`, rotation program |
 
-Q-0692 is covered. Q-0691 remains open for general symbolic packed
-layouts and importing or serializing external oracle objects. The
-native wrapper binds concrete named emitters through explicit ports.
-Q-0690 remains open for its exported owners.
+Q-0690 and Q-0692 are covered. Q-0691 retains importing or serializing
+external oracle objects and execution of unresolved symbolic bindings.
+The native wrapper binds named emitters once their widths and supplied
+normalization are concrete.

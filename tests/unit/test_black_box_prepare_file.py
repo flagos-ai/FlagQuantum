@@ -12,12 +12,19 @@ from typing import Any
 import numpy as np
 import pytest
 import torch
+from sympy import Symbol
 
 from examples.algorithms.hubbard_lcu_catalog import (
     HubbardLCUExample,
     hubbard_packed_prepare_circuit,
 )
-from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+from flagquantum.algorithms.primitives.black_box_prepare import (
+    BlackBoxPrepare,
+    PackedPrepareDeclaration,
+)
+from flagquantum.algorithms.primitives.prepare_oracle import (
+    PrepareOracle as NativeOracle,
+)
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
 )
@@ -27,6 +34,9 @@ from flagquantum.compiler._component_trace.resource_model import (
 )
 from flagquantum.compiler.registers.layout.partition import partition_register
 from flagquantum.core.ir import Instruction
+from flagquantum.core.ir.program.register_types import opaque_register_type
+from flagquantum.core.ir.program.registers import Register as NativeRegister
+from flagquantum.core.value_math import SymbolicReal
 from flagquantum.dynamic import DynamicCircuit
 from tests.unit.measurement_checks import forced_branch
 
@@ -51,7 +61,9 @@ def source_module() -> Any:
     return black_box_prepare
 
 
-def compare_signature(native: BlackBoxPrepare, source: Any) -> None:
+def compare_signature(
+    native: BlackBoxPrepare | PackedPrepareDeclaration, source: Any
+) -> None:
     for local, pinned in (
         (native.selection_registers, source.selection_registers),
         (native.junk_registers, source.junk_registers),
@@ -225,11 +237,21 @@ def test_zero_width_groups_follow_source(
         calls.append((ports, adjoint))
         return ()
 
-    native = BlackBoxPrepare(
-        (("z", selection_width),) if selection_width else (),
-        (("a", junk_width),) if junk_width else (),
-        emit,
-    )
+    class DeclarationOracle(NativeOracle):
+        @property
+        def selection_registers(self) -> tuple[NativeRegister, ...]:
+            return (NativeRegister("z", opaque_register_type(selection_width)),)
+
+        @property
+        def junk_registers(self) -> tuple[NativeRegister, ...]:
+            return (NativeRegister("a", opaque_register_type(junk_width)),)
+
+    declaration = PackedPrepareDeclaration(DeclarationOracle())
+    compare_signature(declaration, source)
+    with pytest.raises(NotImplementedError):
+        _ = declaration.l1_norm_of_coeffs
+    native = declaration.bind(emit)
+    assert native.normalization is None
     compare_signature(native, source)
     circuit = DynamicCircuit(max(1, selection_width + junk_width))
     for adjoint in (False, True):
@@ -245,6 +267,78 @@ def test_zero_width_groups_follow_source(
     )
     assert calls == expected
     assert circuit.to_ir().instructions == ()
+
+
+@pytest.mark.parametrize("shape_width", [2, Symbol("n", integer=True, positive=True)])
+def test_packed_shaped_ports_keep_widths_and_norm(
+    source_module: Any, shape_width: Any
+) -> None:
+    from qualtran import QAny, Register
+    from qualtran.bloqs.state_preparation.prepare_base import PrepareOracle
+
+    norm = 7.0 if isinstance(shape_width, int) else Symbol("lambda", positive=True)
+
+    class SourceOracle(PrepareOracle):  # type: ignore[misc]
+        @property
+        def selection_registers(self) -> tuple[Any, ...]:
+            return (
+                Register("i", QAny(shape_width), shape=(2,)),
+                Register("j", QAny(1)),
+            )
+
+        @property
+        def junk_registers(self) -> tuple[Any, ...]:
+            return (Register("work", QAny(shape_width), shape=(3,)),)
+
+        @property
+        def l1_norm_of_coeffs(self) -> SymbolicReal:
+            return norm
+
+    class DeclarationOracle(NativeOracle):
+        @property
+        def selection_registers(self) -> tuple[NativeRegister, ...]:
+            return (
+                NativeRegister("i", opaque_register_type(shape_width), shape=(2,)),
+                NativeRegister("j", opaque_register_type(1)),
+            )
+
+        @property
+        def junk_registers(self) -> tuple[NativeRegister, ...]:
+            return (
+                NativeRegister("work", opaque_register_type(shape_width), shape=(3,)),
+            )
+
+        @property
+        def l1_norm_of_coeffs(self) -> SymbolicReal:
+            return norm
+
+    native = PackedPrepareDeclaration(DeclarationOracle())
+    source = source_module.BlackBoxPrepare(SourceOracle())
+    compare_signature(native, source)
+    assert native.selection_width == source.selection_bitsize == 2 * shape_width + 1
+    assert native.junk_width == source.junk_bitsize == 3 * shape_width
+    assert native.l1_norm_of_coeffs == source.l1_norm_of_coeffs == norm
+    assert str(native) == str(source) == "Prep"
+
+    def emit(
+        ports: Mapping[str, tuple[int, ...]],
+        work: tuple[int, ...],
+        bits: tuple[int, ...],
+        adjoint: bool,
+    ) -> tuple[Instruction, ...]:
+        assert ports == {"i": (4, 3, 2, 1), "j": (0,), "work": (10, 9, 8, 7, 6, 5)}
+        assert not work and not bits and not adjoint
+        return (Instruction("cx", (ports["i"][0], ports["work"][-1])),)
+
+    if not isinstance(shape_width, int):
+        with pytest.raises(ValueError, match="concrete width for i"):
+            native.bind(emit)
+        return
+    box = native.bind(emit)
+    assert box.normalization == norm
+    circuit = DynamicCircuit(11)
+    circuit.append(box.make_on(selection=(4, 3, 2, 1, 0), junk=(10, 9, 8, 7, 6, 5)))
+    assert circuit.to_ir().instructions == (Instruction("cx", (4, 5)),)
 
 
 def test_append_width_validation() -> None:
