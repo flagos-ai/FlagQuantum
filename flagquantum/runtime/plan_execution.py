@@ -36,6 +36,8 @@ from .execution_plan_contract import (
     _noise_model_from_payload,
     _require_mapping,
     _validate_plan_environment_payload,
+    has_initial_state_extension,
+    has_runtime_inputs_extension,
 )
 from .measurements import validate_measurements
 from .result import ExecutionResult
@@ -269,7 +271,12 @@ def _execute_through_backend(
     )
 
 
-def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
+def execute_plan(
+    execution_plan: ExecutionPlan,
+    *,
+    initial_state: torch.Tensor | None = None,
+    inputs: Mapping[str, float | torch.Tensor] | None = None,
+) -> ExecutionResult:
     """Execute one verified plan without invoking planner or compiler again."""
 
     from .execution import _normalize_execution_output, run_native
@@ -278,6 +285,28 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
     # embedded dense matrices. Reuse one validated snapshot within this attempt.
     payload = execution_plan.to_dict()
     _validate_plan_environment_payload(payload)
+    bound_program = None
+    named_inputs_required = has_runtime_inputs_extension(payload)
+    if inputs is not None and not named_inputs_required:
+        raise CapabilityError(
+            "this ExecutionPlan does not accept runtime inputs; run the symbolic Circuit to create a compatible plan"
+        )
+    if named_inputs_required:
+        if initial_state is not None:
+            raise CapabilityError("inputs and initial_state cannot be combined yet")
+        from ._runtime_inputs import bind_runtime_inputs
+
+        bound_program = bind_runtime_inputs(execution_plan, inputs)
+    input_required = has_initial_state_extension(payload)
+    if initial_state is not None and not input_required:
+        raise CapabilityError(
+            "this ExecutionPlan does not accept external initial_state; run the source Circuit to create a compatible plan"
+        )
+    owned_input = None
+    if input_required:
+        from ._initial_state import bind_initial_state
+
+        owned_input = bind_initial_state(execution_plan, initial_state)
     native_profile = payload["version"] in ("1.1", "1.2", "1.3")
     if native_profile != (execution_plan.analysis is None):
         raise ExecutionPlanContractError(
@@ -395,7 +424,11 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
             str(decision["backend"]),
             str(decision["precision"]),
         )
-    execution_ir = _canonical_program(source_ir, execution_plan)
+    execution_ir = (
+        bound_program
+        if bound_program is not None
+        else _canonical_program(source_ir, execution_plan)
+    )
     noise_model = _noise_model_from_payload(payload)
     requests = tuple(source_ir.measurements)
     validate_measurements(requests, n_qubits=source_ir.n_wires)
@@ -478,8 +511,18 @@ def execute_plan(execution_plan: ExecutionPlan) -> ExecutionResult:
                     isqrt(execution_plan.state_bytes // denominator),
                 ),
             }
+        execution_source: Circuit | CircuitIR = execution_ir
+        if owned_input is not None:
+            from ..circuit import Circuit
+
+            execution_source = Circuit.from_ir(
+                execution_ir,
+                inputs=owned_input,
+                dtype=getattr(torch, precision),
+                device="cpu",
+            )
         output, returned_plan = run_native(
-            execution_ir,
+            execution_source,
             noise_model=noise_model,
             mode=mode,
             return_plan=True,

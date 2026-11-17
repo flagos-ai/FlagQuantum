@@ -6,7 +6,7 @@ from collections.abc import Callable, Hashable, Mapping, Sequence
 from fractions import Fraction
 from typing import NoReturn, TypeVar
 
-from .._fixed_word import truth_cubes
+from ._fixed_word import truth_cubes
 from .fixed_point import FixedPointBranches, FixedPointScalar, fixed_point_number
 
 _Location = TypeVar("_Location", bound=Hashable)

@@ -48,6 +48,40 @@ result = run_repetition_memory_experiment(
 print(result.logical_error_rate)
 ```
 
+## Run a batch experiment with the bundled matcher
+
+Choose `decoder="sparse_blossom"` in `run_memory_experiment` or
+`run_stim_experiment` to decode a batch with FlagQuantum's bundled Sparse
+Blossom C++ solver. The experiment needs Stim for sampling. The solver is
+included in the FlagQuantum wheel and uses no PyMatching Python package.
+
+```python
+from flagquantum.qec import (
+    PhenomenologicalNoise,
+    RotatedSurfaceCode,
+    build_memory_circuit,
+)
+from flagquantum.qec.execution.experiments import run_memory_experiment
+
+memory = build_memory_circuit(RotatedSurfaceCode(distance=3), rounds=3)
+result = run_memory_experiment(
+    memory,
+    noise=PhenomenologicalNoise(data_flip=0.005, measurement_flip=0.005),
+    decoder="sparse_blossom",
+    shots=4096,
+    batch_size=1024,
+    seed=23,
+)
+print(result.logical_error_rate, result.confidence_interval)
+```
+
+The experiment samples the original noisy circuit, using Stim's graphlike DEM
+decomposition to choose matching weights. Uniform Pauli channels can be
+represented as equivalent depolarizing channels during DEM construction.
+The backend accepts one matching edge per detector pair and up to 64 logical
+observables. Unsupported graphs raise a capability error. Fixed-point edge
+weights can give very close paths equal matching cost.
+
 ## Declare a code and its detection layout
 
 The `codes` package holds the code records and `circuit.py` turns one into a memory

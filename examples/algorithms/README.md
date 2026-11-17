@@ -259,17 +259,20 @@ boundary for each.
 
 [`fermion_fcidump_training.py`](fermion_fcidump_training.py) reads the small
 [H2 STO-3G FCIDUMP](data/h2_sto3g.fcidump) and trains the existing UCCSD circuit
-through native JW expectations and PyTorch Adam. Run
+through native expectations and PyTorch Adam. Run
 `python -m examples.algorithms.fermion_fcidump_training`, or pass a two-orbital,
 two-electron restricted FCIDUMP path as its positional argument. The bundled
 example lowers the energy to approximately -1.1372701747 Ha, below the reference
 determinant's -1.1166843871 Ha. It measures gradients against central differences,
 an actual parameter update and particle number 2. Its dense N=2 diagonalization
-only supplies a reference energy; no eigenvector initializes the ansatz.
+only supplies a reference energy; no eigenvector initializes the ansatz. Add
+`--encoding parity` or `--encoding bravyi_kitaev` to use the same UCCSD angles and Adam loop in the matching full-register basis. See
+[the three-encoding H2 guide](../../docs/development/FERMION_H2_UCCSD_ENCODINGS.md)
+for the state, gradient and update comparisons.
 
 The circuit state uses complex128, but existing UCCSD angle ingestion uses
 float32. The fixed example demonstrates convergence only for this input; other
-accepted integral files need not converge or fit the ansatz. This is a CPU/full-JW
+accepted integral files need not converge or fit the ansatz. This is a full-register CPU
 inspection path with an exponential dense reference, without geometry/SCF
 gradients, hardware execution or scalability claims. OpenFermion, Cirq, PySCF,
 SciPy and HDF5 are unnecessary; PyTorch optimizer initialization may import NumPy.
@@ -363,7 +366,9 @@ combines native one- and two-body densities to reconstruct the energy of a
 four-mode H2 determinant pair. It reports -0.8766911918 Ha and an angle
 gradient of 0.5945439485 Ha/rad. The matched JW and BK preparations give the
 same result. See the [two-body density guide](../../docs/development/FERMION_TWO_BODY_DENSITY.md)
-for the index convention and O(n^4) dense output cost.
+for the index convention and O(n^4) dense output cost. Add `--project` to
+compare raw and projected [fixed-particle densities](../../docs/development/FERMION_RDM_PROJECTION.md)
+after a deterministic perturbation.
 
 [`fermion_hubbard_ring_training.py`](fermion_hubbard_ring_training.py), run with
 `python -m examples.algorithms.fermion_hubbard_ring_training`, composes the
@@ -434,6 +439,15 @@ the final energy and both generator eigenvalues under `torch.no_grad()`; it is
 not a differentiable lifting API. Only circuit angles are trainable. See the
 [training scope](../../docs/development/FERMION_PAULI_TRAINING.md) for independent
 gradient/sector tests and the bounded CPU qualification.
+
+[`fermion_h2_tapered_uccsd.py`](fermion_h2_tapered_uccsd.py), run with
+`python -m examples.algorithms.fermion_h2_tapered_uccsd`, trains all three H2
+UCCSD angles on two qubits in an explicit physical spin-parity sector. Use
+`--encoding parity` or `--encoding bravyi_kitaev` to replace the default JW
+encoding. All three reuse the full-register Adam loop and reach about
+-1.1372701747 Ha for the fixture.
+See the [tapered UCCSD guide](../../docs/development/FERMION_H2_TAPERED_UCCSD.md)
+for the comparison with four-qubit training.
 
 [`fermion_h2_sector_training.py`](fermion_h2_sector_training.py), run with
 `python -m examples.algorithms.fermion_h2_sector_training`, reads the fixed H2

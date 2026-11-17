@@ -4,7 +4,8 @@ set -euo pipefail
 python="$FQ_CI_PRIVATE/venv/bin/python"
 if [[ "${1:-}" == --prepare && "${0##*/}" == python ]]; then
   command=(bash -euc '
-    cmp pyproject.toml /opt/flagquantum/pyproject.toml
+    /opt/ci/bin/python .github/actions/offline-cpu/check_manifest.py \
+      pyproject.toml /opt/flagquantum/pyproject.toml
     cmp docker/ci/profiles.json /opt/flagquantum/profiles.json
     python -c "import sys; assert sys.argv[1] == \".\".join(map(str, sys.version_info[:2]))" "$1"
     python -c "import socket; assert {name for _, name in socket.if_nameindex()} == {\"lo\"}"

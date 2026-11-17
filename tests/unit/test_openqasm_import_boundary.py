@@ -8,12 +8,14 @@ directly and confirm the contract gate is wired into the required workflows.
 
 from __future__ import annotations
 
+import inspect
 import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
+from flagquantum.compiler.openqasm_import import import_openqasm
 from tools.check_openqasm_import_contract import (
     IMPORTER,
     gate_tables_defined_once,
@@ -52,7 +54,7 @@ assert not loaded, loaded
 
 def test_the_tool_and_the_importer_resolve_the_same_root() -> None:
     assert TOOL_ROOT == ROOT
-    assert IMPORTER == ROOT / "flagquantum" / "compiler" / "openqasm_import.py"
+    assert Path(inspect.getfile(import_openqasm)).resolve() == IMPORTER
 
 
 def test_emission_and_import_share_one_copy_of_each_gate_table() -> None:

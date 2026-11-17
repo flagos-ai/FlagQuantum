@@ -1,12 +1,23 @@
 # Compiler
 
-The compiler groups implementation modules by responsibility. `optimization/`
-owns circuit rewrites and synthesis. `topology/` owns connectivity and routing
-heuristics. `lowering/` owns gate and target legalization. `formats/` owns
-internal format tables and emission profiles. `artifacts/` owns physical
-plans, evidence, and target artifacts. `registers/` owns register-level
-decompositions. Documented compiler entry modules remain importable at their
-existing paths.
+The compiler groups implementation modules by responsibility. The stages below
+share `CircuitIR` where their entry points require it.
+
+| Stage | Implementation | Output |
+| --- | --- | --- |
+| Source capture and adaptation | [`_construction/`](_construction/) and [`_hybrid/`](_hybrid/) | Internal `HybridProgram` |
+| Circuit construction and lowering | [`_construction/`](_construction/) and [`_hybrid/`](_hybrid/) | `CircuitIR` or a template with bindings |
+| Circuit optimization | [`optimization/`](optimization/) | Optimized `CircuitIR` |
+| Target adaptation | [`lowering/`](lowering/) and [`topology/`](topology/) | Target-legal circuit and scheduling evidence, as required by the selected path |
+| Code generation and interchange | [`formats/`](formats/) | OpenQASM, QCIS, or QIR text |
+| Output verification and artifact construction | [`artifacts/`](artifacts/) | Verified executable artifact |
+
+[`pipeline.py`](pipeline.py) composes the native circuit path. `registers/`
+provides shared register decompositions. `_torch/` owns the PyTorch frontend
+capture and training compilation. Documented compiler entry modules remain
+importable at their existing paths. Deployment packaging is owned by
+[`flagquantum.deployment`](../deployment/). Bounded Pauli products and
+product-formula schedules are implemented in [`lowering/`](lowering/).
 
 Transform quantum programs while preserving their numerical meaning,
 measurement behavior, and required gradients. The design direction is one
@@ -18,7 +29,7 @@ resources. Compiler does not run the program.
 
 ## Reusable Module frontend
 
-[Module capture](module_builder.py) owns the private entry approved in
+[Module capture](_torch/module_builder.py) owns the private entry approved in
 [the lowering contract](../../docs/development/MODULE_REUSABLE_EXECUTION_CONTRACT.md).
 It replaces Runtime's capture with canonical CircuitIR placeholders plus the
 existing Torch FX binding graph. The graph is an ephemeral classical artifact,
@@ -81,21 +92,22 @@ admits a transformation this repository does not ship; see
 
 | Change | Entry point |
 | --- | --- |
-| Canonical optimization | [pipeline.py](pipeline.py) |
+| Canonical gate rewrites | [canonicalization.py](optimization/canonicalization.py) |
+| Pass composition and compile orchestration | [pipeline.py](pipeline.py) |
 | Declared optimization levels and the pass order each one runs | [optimization_levels.py](optimization/optimization_levels.py) |
-| The pass registry, the pass binding, and the fixed point | [pass_manager.py](pass_manager.py) |
+| The pass registry, the pass binding, and the fixed point | [pass_manager.py](optimization/pass_manager.py) |
 | Cancellation of a declared inverse pair | [inverse_cancellation.py](optimization/inverse_cancellation.py) |
 | Resets on a wire still in the zero state | [zero_state_reset.py](optimization/zero_state_reset.py) |
 | Commutation rules and the block partition | [commutation.py](optimization/commutation.py) |
 | Cancellation across a proven commuting gap | [commutation_cancellation.py](optimization/commutation_cancellation.py) |
 | Diagonal gates before a measurement | [diagonal_before_measure.py](optimization/diagonal_before_measure.py) |
-| Connectivity and routing | [coupling.py](topology/coupling.py), [directed_topology.py](topology/directed_topology.py), [routing.py](routing.py), [routing_cost.py](topology/routing_cost.py), [sabre.py](topology/sabre.py), [topology_legalization.py](topology/topology_legalization.py) |
-| Qubit layouts and the layout restore | [layout.py](layout.py) |
-| Initial placement on a device | [layout_planning.py](layout_planning.py) |
+| Connectivity and routing | [coupling.py](topology/coupling.py), [directed_topology.py](topology/directed_topology.py), [routing.py](topology/routing.py), [routing_cost.py](topology/routing_cost.py), [sabre.py](topology/sabre.py), [topology_legalization.py](topology/topology_legalization.py) |
+| Qubit layouts and the layout restore | [layout.py](topology/layout.py) |
+| Initial placement on a device | [layout_planning.py](topology/layout_planning.py) |
 | Native-gate and target requirements | [native_gate_legalization.py](lowering/native_gate_legalization.py), [target_legalization.py](lowering/target_legalization.py) |
-| Named-gate identities and the basis search | [basis_translation.py](basis_translation.py) |
-| Conversion into a named basis | [basis_conversion.py](basis_conversion.py) |
-| Exact quarter-turn rotations | [angle_synthesis.py](angle_synthesis.py) |
+| Named-gate identities and the basis search | [basis_translation.py](lowering/basis_translation.py) |
+| Conversion into a named basis | [basis_conversion.py](lowering/basis_conversion.py) |
+| Exact quarter-turn rotations | [angle_synthesis.py](lowering/angle_synthesis.py) |
 | One-qubit Euler angles | [one_qubit_synthesis.py](optimization/one_qubit_synthesis.py) |
 | One-qubit run folding | [one_qubit_optimization.py](optimization/one_qubit_optimization.py) |
 | Two-qubit block folding | [two_qubit_optimization.py](optimization/two_qubit_optimization.py) |
@@ -105,10 +117,10 @@ admits a transformation this repository does not ship; see
 | The runnable path through all three synthesis entry points | `python -m examples.compiler_synthesis` |
 | Dependency scheduling | [schedule_legalization.py](lowering/schedule_legalization.py) |
 | Emission and round-trip checks | [target_emission.py](formats/target_emission.py), [target_conformance.py](artifacts/target_conformance.py) |
-| OpenQASM interchange | [openqasm.py](openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](openqasm_import.py) |
+| OpenQASM interchange | [openqasm.py](formats/openqasm.py), [openqasm_gates.py](formats/openqasm_gates.py), [openqasm_import.py](formats/openqasm_import.py) |
 | Structured hybrid programs | [_hybrid/](_hybrid/README.md) |
-| Static resource estimation | [resource_estimation.py](resource_estimation.py) |
-| QIR base-profile emission | [qir.py](qir.py) |
+| Static resource estimation | [resource_estimation.py](optimization/resource_estimation.py) |
+| QIR base-profile emission | [qir.py](formats/qir.py) |
 
 ## Replace a fact the passes read
 
@@ -754,7 +766,7 @@ claiming agreement everywhere.
 
 A *named* gate has no matrix on this layer, so it can only leave a program for
 a basis that does not carry it through a closed identity.
-[basis_translation.py](basis_translation.py) is that table, plus the
+[basis_translation.py](lowering/basis_translation.py) is that table, plus the
 deterministic search that composes it, and it is the Compiler-layer counterpart
 of the equivalence library and basis search Qiskit ships. Each rule is an exact
 closed form that forwards the source instruction's own parameter objects and
@@ -1110,7 +1122,7 @@ holds that boundary, including the case where a chosen layout would move a
 legal multi-qubit operation onto non-adjacent physical qubits.
 
 A placement is a tuple of physical qubits, one per logical qubit: the argument
-`route_to_directed_topology` takes as `initial_layout`. [layout.py](layout.py)
+`route_to_directed_topology` takes as `initial_layout`. [layout.py](topology/layout.py)
 `Layout` carries the same assignment as a value, and since a routed program on a
 device wider than the program leaves slots idle, `Layout` takes a
 `physical_slot_count` and reports `None` for an idle slot. Routing on a plain

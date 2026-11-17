@@ -14,7 +14,8 @@ from ..basis_conversion import (
     require_basis,
 )
 from ..layout import Layout, _routing_swap_phases, final_layout, remove_layout_restore
-from ..pipeline import compile, schedule_layers
+from ..lowering.schedule_legalization import schedule_layers
+from ..pipeline import compile
 from ..topology.coupling import CouplingMap
 
 

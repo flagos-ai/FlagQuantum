@@ -36,6 +36,27 @@ to reconstruct the energy and angle gradient of a four-mode H2 determinant
 pair. See the [two-body scope](../../../docs/development/FERMION_TWO_BODY_DENSITY.md)
 for the pair order, molecular coefficient convention and O(n^4) costs.
 
+For static measured densities with a known particle number, the optional
+[fixed-particle projection](../../../docs/development/FERMION_RDM_PROJECTION.md)
+operates on the assembled tensors and leaves the raw measurements untouched.
+Add `--project` to the two-body H2 example to compare constraint residuals
+and energies. The projection enforces linear identities, without a positivity
+or N-representability guarantee.
+
+The [H2 UCCSD encoding example](../../../docs/development/FERMION_H2_UCCSD_ENCODINGS.md)
+uses `encode_occupation` to derive a four-wire basis conversion at the end of
+the existing state preparation. The Hamiltonian and number observable use
+the same explicit encoding. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_h2_uccsd_encodings.py -q`
+to compare states, energy, gradients and an Adam update against JW.
+
+The [tapered H2 UCCSD example](../../../docs/development/FERMION_H2_TAPERED_UCCSD.md)
+also reduces the three ordered excitation generators into the Hamiltonian's
+explicit spin-parity sector in the chosen JW, parity or BK encoding before
+constructing a two-qubit circuit. Run
+`python -m pytest tests/integration/test_fermion_h2_tapered_uccsd.py -q` after
+changing the fixture angles to check the lifted state and the shared Adam step.
+
 Modules are split by numerical responsibility: decomposition.py returns adjacent
 orbital matrices without importing Circuit; lowering.py lifts them to JW gates;
 preparation.py creates Slater determinants and canonical Gaussian vacua.

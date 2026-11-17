@@ -12,6 +12,25 @@ from ...core.ir import CircuitIR, Instruction, ensure_circuit_ir
 from ...errors import CompilationError
 
 
+def schedule_layers(ir: CircuitIR) -> list[list[Instruction]]:
+    """ASAP-schedule instructions without reversing per-qubit dependencies."""
+
+    layers: list[list[Instruction]] = []
+    last_layer_by_wire: dict[int, int] = {}
+    for instruction in ir:
+        layer_index = 1 + max(
+            (last_layer_by_wire.get(wire, -1) for wire in instruction.wires),
+            default=-1,
+        )
+        if layer_index == len(layers):
+            layers.append([instruction])
+        else:
+            layers[layer_index].append(instruction)
+        for wire in instruction.wires:
+            last_layer_by_wire[wire] = layer_index
+    return layers
+
+
 class ScheduleLegalizationError(CompilationError):
     """A circuit cannot be represented by the bounded logical scheduler."""
 
@@ -243,4 +262,5 @@ __all__ = (
     "ScheduleLegalizationError",
     "ScheduledInstruction",
     "schedule_circuit_dependencies",
+    "schedule_layers",
 )

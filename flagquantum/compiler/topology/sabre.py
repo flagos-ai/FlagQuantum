@@ -55,7 +55,7 @@ from ...core.ir import CircuitIR, Instruction
 from ..optimization.ordering_barrier import is_ordering_barrier
 
 if TYPE_CHECKING:
-    from ..routing import CouplingMap
+    from .routing import CouplingMap
 
 # SABRE defaults. The extended layer is bounded so planning stays linear in the
 # circuit size, and the lookahead weight keeps the front layer dominant.
@@ -188,7 +188,7 @@ def _planning_coupling(coupling: CouplingMap, n_wires: int) -> CouplingMap:
     if coupling.n_qubits == n_wires:
         return coupling
     # ``routing`` imports this module, so the value type is imported here.
-    from ..routing import CouplingMap as _CouplingMap
+    from .routing import CouplingMap as _CouplingMap
 
     return _CouplingMap(
         n_wires,

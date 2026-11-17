@@ -226,6 +226,9 @@ def test_each_gated_validator_rejects_an_undisclosed_pin(
     artifact: str, errors_for: Callable[[dict], tuple[str, ...]]
 ) -> None:
     payload = json.loads((ROOT / artifact).read_text(encoding="utf-8"))
+    # A full clone may contain the artifact's recorded revision. Exercise the
+    # missing-revision boundary independently of the checkout's local history.
+    payload["source"]["revision"] = ABSENT_REVISION
     payload["source"].pop("revision_origin")
 
     assert errors_for(payload), artifact
@@ -238,4 +241,6 @@ def test_each_gated_validator_accepts_a_disclosure_it_cannot_verify(
     # The control for the test above: the same payload passes once the artifact
     # states why its pin is not resolvable here, so the failure is the missing
     # disclosure and not an unrelated complaint.
-    assert errors_for(json.loads((ROOT / artifact).read_text(encoding="utf-8"))) == ()
+    payload = json.loads((ROOT / artifact).read_text(encoding="utf-8"))
+    payload["source"]["revision"] = ABSENT_REVISION
+    assert errors_for(payload) == ()

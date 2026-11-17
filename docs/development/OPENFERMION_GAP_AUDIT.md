@@ -151,9 +151,12 @@ complex CPU density assembly with circuit-parameter gradients. It adds no
 OpenFermion/Cirq dependency, new RDM class or execution implementation.
 
 Step D landed in #1181 as a separate experimental registration. Step E
-provides [native two-body measurements and H2 energy reconstruction](FERMION_TWO_BODY_DENSITY.md)
-for small full-register CPU states. Measured-data constraint projection and
-separate capability registration are outside the implementation scope.
+landed in #1182 and provides [native two-body measurements and H2 energy reconstruction](FERMION_TWO_BODY_DENSITY.md)
+for small full-register CPU states. A separate Integration change records that
+workflow as experimental (#1183). The independent
+[fixed-particle projection](FERMION_RDM_PROJECTION.md) landed in #1185. Its
+separate experimental registration covers static CPU linear constraints.
+Stronger representability checks, sampling and noise models remain deferred.
 The upstream inventory and its hashes still refer to the original audit pin;
 neither root import count nor this delivery update implies full compatibility.
 
@@ -162,8 +165,12 @@ neither root import count nor this delivery update implies full compatibility.
 - **General encoded/tapered ansatz:** valuable for extending UCCSD, but the
   full circuit legality, basis transformation and gradient semantics must be
   designed first. Fixed determinant examples do not establish a general
-  transform. Admit a minimal full-register encoding replacement before sector
-  tapering, without changing consumer training code.
+  transform. The [four-mode H2 UCCSD composition](FERMION_H2_UCCSD_ENCODINGS.md)
+  uses a native full-register basis conversion and a shared training loop.
+  The [two-qubit H2 UCCSD example](FERMION_H2_TAPERED_UCCSD.md) further
+  reduces the ordered excitation generators into the same explicit sector as
+  the Hamiltonian in JW, parity and BK. General circuit conversion and
+  automatic sector selection remain outside this example.
 - **Weighted/complex Hubbard:** admit only with a concrete lattice/flux use
   case. Keep edge validation and symbolic assembly in the model module; verify
   Hermiticity, orientation conjugation and gauge-invariant loop spectra
@@ -174,7 +181,7 @@ neither root import count nor this delivery update implies full compatibility.
 - **Sparse reference solver:** requires an explicit size budget and a current
   scientific need beyond small dense tests. It must not become a backend or
   bypass one of the three owned numerical cores.
-- **RDM constraint projection, bosonic interop, resource-estimate families and
+- **Broader RDM constraints, bosonic interop, resource-estimate families and
   additional encodings:** remain separate proposals. Their downstream need,
   dependency review and replacement/conformance evidence must precede code.
 

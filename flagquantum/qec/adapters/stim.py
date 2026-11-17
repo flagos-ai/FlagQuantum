@@ -117,3 +117,10 @@ def stim_circuit_to_dem_text(
     if not isinstance(decompose_errors, bool):
         raise TypeError("decompose_errors must be a boolean")
     return _stim_experiment_dem_text(circuit_text, decompose_errors=decompose_errors)
+
+
+def _stim_circuit_to_matching_dem_text(circuit_text: str) -> str:
+    """Request graphlike decomposition for the opt-in matching experiment."""
+    return _stim_experiment_dem_text(
+        circuit_text, decompose_errors=True, normalize_uniform_pauli=True
+    )

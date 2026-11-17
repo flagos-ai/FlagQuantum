@@ -21,7 +21,12 @@ from ...core.operator_schema import canonical_opcode, get_operator_schema
 from ...errors import CapabilityError, FlagQuantumError, ValidationError
 from ...noise import KrausChannel
 from ._gate_expansions import GATE_EXPANSIONS, expand_gate
-from ._validation import _pauli_letters, _validate_seed, _validate_shots
+from ._validation import (
+    _bounded_stim_expansion,
+    _pauli_letters,
+    _validate_seed,
+    _validate_shots,
+)
 
 # FlagQuantum opcode -> engine gate name. Only Clifford gates appear here, and
 # the mapping is total over the Clifford subset of the operator schema: an
@@ -1070,26 +1075,6 @@ def _prepare_noisy_measurements(
     return _PreparedMeasurements(circuit.compile_sampler(seed=validated_seed), columns)
 
 
-def _bounded_stim_expansion(program: Any) -> int:
-    """Count repeated instructions before asking the SDK to expand them."""
-    count = 0
-    pending = [(program, 1)]
-    while pending:
-        body, multiplier = pending.pop()
-        for instruction in body:
-            if hasattr(instruction, "repeat_count"):
-                pending.append(
-                    (instruction.body_copy(), multiplier * instruction.repeat_count)
-                )
-            else:
-                count += multiplier
-            if count > 1_000_000:
-                raise CapabilityError(
-                    "Stim experiment exceeds 1,000,000 expanded instructions"
-                )
-    return count
-
-
 def _parse_stim_experiment(circuit_text: str) -> Any:
     if not isinstance(circuit_text, str):
         raise TypeError("circuit_text must be a string")
@@ -1191,9 +1176,36 @@ def _prepare_stim_experiment(
     )
 
 
-def _stim_experiment_dem_text(circuit_text: str, *, decompose_errors: bool) -> str:
+def _stim_experiment_dem_text(
+    circuit_text: str,
+    *,
+    decompose_errors: bool,
+    normalize_uniform_pauli: bool = False,
+) -> str:
     """Keep exact SDK conversion refusals and normalize only missing shape."""
     circuit = _parse_stim_experiment(circuit_text)
+    if normalize_uniform_pauli:
+        # Stim's exact DEM conversion understands uniform depolarization. The
+        # native gate-noise exporter can spell the same law as a Pauli channel.
+        normalized = _stim().Circuit()
+        depolarizing = {
+            "PAULI_CHANNEL_1": "DEPOLARIZE1",
+            "PAULI_CHANNEL_2": "DEPOLARIZE2",
+        }
+        for instruction in circuit.flattened():
+            gate = depolarizing.get(instruction.name)
+            if gate is not None:
+                probabilities = instruction.gate_args_copy()
+                if all(p == probabilities[0] for p in probabilities):
+                    normalized.append(
+                        gate,
+                        instruction.targets_copy(),
+                        math.fsum(probabilities),
+                        tag=instruction.tag,
+                    )
+                    continue
+            normalized.append(instruction)
+        circuit = normalized
     try:
         model = circuit.detector_error_model(
             decompose_errors=decompose_errors,

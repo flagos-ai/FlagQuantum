@@ -50,11 +50,6 @@ from ...core.target_capabilities import (
     match_target_capabilities,
 )
 from ...errors import CompilationError
-
-# `GateDecompositionRecord` is re-exported rather than defined here so that both
-# import paths name one class object.
-from ..basis_conversion import GateDecompositionRecord
-from ..basis_translation import translate
 from ..optimization.one_qubit_synthesis import (
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
@@ -65,6 +60,11 @@ from ..optimization.two_qubit_synthesis import (
     SUPERCONTROLLED_ENTANGLERS,
     synthesize_two_qubit,
 )
+
+# `GateDecompositionRecord` is re-exported rather than defined here so that both
+# import paths name one class object.
+from .basis_conversion import GateDecompositionRecord
+from .basis_translation import translate
 
 
 class NativeGateLegalizationError(CompilationError):

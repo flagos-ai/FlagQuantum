@@ -3,7 +3,17 @@
 ## Current delivery status
 
 The current checked main baseline is
-`8f71c80fd0732feeb74d25a71b9ad9b21ab3ad9f` on November 13, 2026 (UTC+08:00).
+`7b45cad4f4bcb8db27dd407adac7f586c872036d` on November 16, 2026 (UTC+08:00).
+Fixed-particle density projection merged in
+[#1185](https://github.com/flagos-ai/FlagQuantum/pull/1185). Its experimental
+registration covers opt-in static CPU postprocessing of measured tensors.
+See the [projection acceptance](FERMION_RDM_PROJECTION.md#merged-implementation-acceptance)
+for exact revision evidence and the linear-constraint boundary.
+Native two-body density and bounded H2 energy reconstruction merged in
+[#1182](https://github.com/flagos-ai/FlagQuantum/pull/1182). Its separate
+experimental registration records the exact CPU, full-register scope and
+O(n^4) dense measurement and output costs. See the
+[two-body density acceptance](FERMION_TWO_BODY_DENSITY.md#merged-implementation-acceptance).
 Native one-body density measurement and one-body energy reconstruction merged
 in [#1179](https://github.com/flagos-ai/FlagQuantum/pull/1179). The actual merged
 sources passed 118 related scientific, docstring, isolation and API tests;
@@ -12,8 +22,7 @@ PR head passed all 239 CI checks with three conditional skips. See the
 [density scope and acceptance](FERMION_ONE_BODY_DENSITY.md#merged-implementation-acceptance).
 The separate Integration registration keeps this capability experimental:
 static observables, caller-matched full JW/parity/BK preparations and
-differentiable measured-tensor assembly on CPU. Two-body density and molecular
-two-body energy reconstruction remain future stages. The previous checked
+differentiable measured-tensor assembly on CPU. The previous checked
 graph baseline was `b58fc8a01d9395972042abd1aaa507c9769b73da`.
 Explicit graph Hubbard assembly merged in #1174 and passed the bounded
 actual-main acceptance recorded below. Experimental registration #1175 and

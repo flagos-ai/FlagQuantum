@@ -463,7 +463,7 @@ def test_every_declaration_kind_is_on_the_attribute_ledger() -> None:
     assert owned["instance"] == set()
     assert "flagquantum/circuit.py::Circuit::n_wires" in owned["member"]
     assert (
-        "flagquantum/compiler/openqasm_import.py::OpenQASMImport::n_wires"
+        "flagquantum/compiler/formats/openqasm_import.py::OpenQASMImport::n_wires"
         in owned["member"]
     )
     # The retirement table is where the exhausted kinds still live: `WQ-8`'s own
@@ -475,14 +475,17 @@ def test_every_declaration_kind_is_on_the_attribute_ledger() -> None:
         for row in contract["attribute_retirement"]["sites"]
     }
     assert (
-        "flagquantum/compiler/routing.py::CouplingMap::n_wires",
+        "flagquantum/compiler/topology/routing.py::CouplingMap::n_wires",
         "field",
     ) in retired
     assert (
         "flagquantum/remote/qpu/http.py::HttpQuantumProvider::default_n_wires",
         "instance",
     ) in retired
-    assert "flagquantum/compiler/routing.py::CouplingMap::n_wires" not in owned["field"]
+    assert (
+        "flagquantum/compiler/topology/routing.py::CouplingMap::n_wires"
+        not in owned["field"]
+    )
     # The exclusion list is split across two of the three kinds, and an instance
     # attribute is the one kind that has never reached a payload.
     assert {site.declaration for site in scanned.excluded} == {"field", "member"}

@@ -24,9 +24,12 @@ from ..errors import (
 from .builder_compilation import (
     BuilderBindings,
     _bind_current_builder,
+    _bind_named_instructions,
     _builder_tensor_inputs,
     _install_captured_bindings,
+    _parameter_checkpoint_signature,
     _remember_local_ir,
+    _reset_builder_capture,
     _tensor_constant_key,
     can_defer_ir_snapshot,
     deferred_ir_snapshot,
@@ -174,6 +177,8 @@ class Module(torch.nn.Module):
         self._parallel_plan: HybridParallelPlan | None = None
         self._last_ir_snapshot: CircuitIR | None = None
         self._last_ir_factory: Callable[[], CircuitIR] | None = None
+        self._checkpoint_source: object | None = None
+        self._captured_checkpoint_digest: str | None = None
         self._compiled_topology_signature: str | None = None
         self._compile_count = 0
         self._program_cache_hits = 0
@@ -216,14 +221,19 @@ class Module(torch.nn.Module):
     @property
     def _last_ir(self) -> CircuitIR | None:
         if self._last_ir_factory is not None:
-            snapshot = self._last_ir_factory()
-            self._last_ir = snapshot
+            self._last_ir_snapshot = self._last_ir_factory()
+            self._last_ir_factory = None
         return self._last_ir_snapshot
 
     @_last_ir.setter
     def _last_ir(self, value: CircuitIR | None) -> None:
         self._last_ir_snapshot = value
         self._last_ir_factory = None
+        self._checkpoint_source = (
+            self.circuit_builder.to_ir()
+            if type(self.circuit_builder) is Circuit
+            else self._captured_builder
+        )
 
     @staticmethod
     def _require_policy_precision(policy: RuntimePolicy, complex_dtype: str) -> None:
@@ -265,7 +275,14 @@ class Module(torch.nn.Module):
         register: Callable[[Callable[[torch.Tensor], torch.Tensor]], object] = (
             parameter.register_hook
         )
-        handle = register(self._finite_gradient_hook)
+        # Register even for a frozen owned weight so later native PyTorch
+        # unfreezing retains the policy's gradient check.
+        was_trainable = parameter.requires_grad
+        try:
+            parameter.requires_grad_(True)
+            handle = register(self._finite_gradient_hook)
+        finally:
+            parameter.requires_grad_(was_trainable)
         if not isinstance(handle, RemovableHandle):
             raise TypeError(
                 "PyTorch gradient hook registration must return a removable handle"
@@ -322,14 +339,7 @@ class Module(torch.nn.Module):
         self._jax_kernel = None
         self._jax_kernel_signature = None
         self._jax_ir_template = None
-        object.__setattr__(self, "_builder_program", None)
-        self._builder_program_signature = None
-        self._captured_builder = None
-        self._training_program = None
-        self._jax_constant_snapshots.clear()
-        self._builder_bound_circuit = None
-        self._builder_bindings.clear()
-        self._builder_slots = ()
+        _reset_builder_capture(self)
         return self
 
     @staticmethod
@@ -352,7 +362,16 @@ class Module(torch.nn.Module):
                     raise TypeError(
                         "a symbolic Circuit template does not accept inputs"
                     )
-                program = self.circuit_builder.bind_parameters(parameters)
+                if type(self.circuit_builder) is Circuit:
+                    program = Circuit(**self.circuit_builder.circuit_param)
+                    program._instructions.extend(
+                        _bind_named_instructions(
+                            self.circuit_builder._instructions, parameters
+                        )
+                    )
+                else:
+                    # Circuit subclasses retain their binding behavior.
+                    program = self.circuit_builder.bind_parameters(parameters)
             else:
                 program = self._build_from_compiled_builder(inputs, parameters)
         self._require_program_precision(program)
@@ -412,11 +431,16 @@ class Module(torch.nn.Module):
         object.__setattr__(self, "_builder_program", capture.binding_graph)
         self._builder_program_signature = signature
         self._captured_builder = capture
+        self._captured_checkpoint_digest = capture.checkpoint_signature()
         self._builder_bound_circuit = bound
         self._builder_slots = slots
         self._builder_compile_count += 1
 
-    def _checkpoint_signature(self, *, prepare: bool = False) -> str | None:
+    def _checkpoint_signature(
+        self, *, prepare: bool = False, parameter_training: bool = False
+    ) -> str | None:
+        if parameter_training:
+            return _parameter_checkpoint_signature(self, prepare=prepare)
         capture = self._captured_builder
         signature = self._builder_program_signature
         if (
@@ -1062,6 +1086,7 @@ class Module(torch.nn.Module):
                     _bind_current_builder(self, tensors)
                 else:
                     self._build(inputs, selected)
+                self._checkpoint_source = self._captured_builder
                 self._last_ir_snapshot = None
                 self._last_ir_factory = deferred_ir_snapshot(
                     self._builder_program,

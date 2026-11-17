@@ -132,6 +132,7 @@ SCRIPTS = (
     "fermion_pauli_discovery",
     "fermion_pauli_training",
     "fermion_h2_sector_training",
+    "fermion_h2_tapered_uccsd",
 )
 
 # One or more phrases per script, each the load-bearing half of that unit's
@@ -161,6 +162,10 @@ PREMISE_PHRASES: dict[str, tuple[str, ...]] = {
         "Statevector storage remains exponential",
     ),
     "fermion_hubbard_graph": ("fixed determinant pair", "single_device_fast_path"),
+    "fermion_h2_tapered_uccsd": (
+        "explicit odd spin parities",
+        "no automatic sector choice or scalability claim",
+    ),
     "fermion_h2_sector_training": (
         "Only the reduced circuit angle is trainable",
         "discovery does not infer sectors or transform UCCSD",
@@ -1839,8 +1844,12 @@ def test_fermion_fcidump_example_measures_the_input_reference() -> None:
     _assert_premise("fermion_fcidump", output)
 
 
-def test_fcidump_training_recovers_the_small_molecular_correlation_energy() -> None:
-    output = _run("fermion_fcidump_training")
+@pytest.mark.parametrize("encoding", ("jordan_wigner", "parity", "bravyi_kitaev"))
+def test_fcidump_training_recovers_the_small_molecular_correlation_energy(
+    encoding: str,
+) -> None:
+    output = _run("fermion_fcidump_training", "--encoding", encoding)
+    assert _labelled(output, "Encoding") == encoding
     determinant = float(_labelled(output, "Reference determinant").split()[0])
     initial = float(_labelled(output, "Initial energy").split()[0])
     final = float(_labelled(output, "Final energy").split()[0])
@@ -1908,6 +1917,32 @@ def test_fermion_two_body_density_reconstructs_molecular_energy() -> None:
     )
     assert _number(output, "Direct energy residual") < 1e-12
     _assert_premise("fermion_two_body_density", output)
+
+
+def test_fermion_two_body_density_projects_perturbed_measurements() -> None:
+    output = _run("fermion_two_body_density", "--encoding", "parity", "--project")
+    assert _number(output, "Input contraction residual") > 0.1
+    assert _number(output, "Projected contraction residual") < 1e-10
+    raw = float(_labelled(output, "Input energy").removesuffix(" Ha"))
+    projected = float(_labelled(output, "Projected energy").removesuffix(" Ha"))
+    assert raw == pytest.approx(-1.0730413218, abs=1e-10)
+    assert projected == pytest.approx(-0.8944686996, abs=1e-10)
+
+
+@pytest.mark.parametrize("encoding", (None, "parity", "bravyi_kitaev"))
+def test_tapered_h2_uccsd_trains_on_two_qubits(encoding: str | None) -> None:
+    args = ("--encoding", encoding) if encoding else ()
+    output = _run("fermion_h2_tapered_uccsd", *args)
+    assert _labelled(output, "Encoding") == (encoding or "jordan_wigner")
+    assert _labelled(output, "Register") == "4 -> 2 qubits"
+    initial = float(_labelled(output, "Initial energy").removesuffix(" Ha"))
+    final = float(_labelled(output, "Final energy").removesuffix(" Ha"))
+    assert initial == pytest.approx(-1.1347755088, abs=1e-7 if encoding else 1e-9)
+    assert final == pytest.approx(-1.1372701747, abs=1e-6)
+    assert final < initial - 1e-3
+    assert _number(output, "Gradient norm") > 1e-2
+    assert _number(output, "Parameter update norm") > 0.1
+    _assert_premise("fermion_h2_tapered_uccsd", output)
 
 
 def test_the_example_directory_is_covered_and_indexed() -> None:

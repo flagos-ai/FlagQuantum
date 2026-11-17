@@ -6,8 +6,8 @@ import ast
 from fractions import Fraction
 from typing import TYPE_CHECKING, NoReturn
 
-from .._fixed_word import exact_expression, fixed_xor_table, truth_cubes
-from .._phase_polynomial import Location
+from ._fixed_word import exact_expression, fixed_xor_table, truth_cubes
+from ._phase_polynomial import Location
 from .frontend_python import _error, _QuantumFunction
 from .frontend_views import locations
 from .register_profile import register_width

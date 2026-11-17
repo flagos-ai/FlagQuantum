@@ -63,3 +63,15 @@ same-width encoding or mode order from the expectation values. Sampled,
 tapered, ancilla, accelerator and distributed workflows have no qualification
 here. There is no OpenFermion or Cirq dependency, stable export, new RDM type
 or solver. Capability registration is a separate Integration change.
+
+## Merged implementation acceptance
+
+Implementation [PR #1182](https://github.com/flagos-ai/FlagQuantum/pull/1182)
+merged at `41a11c13b24624034ec9d2d613d1add4fc0f763f`. Its final head
+`dbbb94012cd9edd79c5518486c3bcbecfa82a619` passed 239 checks with three
+conditional skips. Linux CI on the repaired head validated the indexed H2 CLI
+example and the numerical doctest independent of signed-zero formatting.
+[Main smoke](https://github.com/flagos-ai/FlagQuantum/actions/runs/43795387760)
+passed on the merged revision. A focused local run on that revision passed
+69 density, CLI, doctest and dependency-isolation tests. This evidence
+supports the bounded CPU workflow; the capability remains experimental.

@@ -51,6 +51,15 @@ This catalog is generated from the machine-validated
 | Simulate a small or medium circuit exactly | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Train a parameterized quantum circuit | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
 | Run local VQE and quantum machine learning | Local statevector simulation and training | Production supported | [Run example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py) |
+| Supply a quantum state as execution data | External statevector execution inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Reuse a plan for compatible inputs | External statevector execution inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Differentiate input and gate parameters | External statevector execution inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Bind named scalar angles | Named runtime angle inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Reuse one plan across optimizer steps | Named runtime angle inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Preserve caller-owned PyTorch gradients | Named runtime angle inputs | Experimental | [Read guide](../../flagquantum/runtime/README.md) |
+| Resume a partially frozen model | Training parameter checkpoint state | Experimental | [Run example](../../examples/local/train_parameters.py) |
+| Preserve optimizer moments | Training parameter checkpoint state | Experimental | [Run example](../../examples/local/train_parameters.py) |
+| Reject reordered optimizer parameters before loading | Training parameter checkpoint state | Experimental | [Run example](../../examples/local/train_parameters.py) |
 | Discover an executable scientific operation | Research capability discovery, execution, and evidence | Production supported | [Read guide](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
 | Preflight a bounded VQE request before numerical work | Research capability discovery, execution, and evidence | Production supported | [Read guide](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
 | Execute VQE with exact-reference and energy-variance validation | Research capability discovery, execution, and evidence | Production supported | [Read guide](../../docs/development/API_CHANGE_PROPOSAL_070_RESEARCH_CAPABILITY_SERVICES.md) |
@@ -409,6 +418,10 @@ This catalog is generated from the machine-validated
 | Measure the same fixed-particle state through JW, parity and BK encoding | Spinful Fermi-Hubbard periodic ring | Experimental | [Read guide](../../docs/development/FERMION_HUBBARD_RING.md) |
 | Measure complex one-body fermionic densities on matched full JW, parity or BK registers | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
 | Reconstruct one-body energy while retaining circuit-parameter gradients | Fermionic one-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_one_body_density.py) |
+| Measure two-body fermionic densities on matched full JW, parity or BK registers | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
+| Reconstruct the energy of a small molecular state while retaining circuit-parameter gradients | Fermionic two-body density measurement | Experimental | [Run example](../../examples/algorithms/fermion_two_body_density.py) |
+| Correct one- and two-body densities that violate fixed-particle linear identities | Fixed-particle fermionic density projection | Experimental | [Read guide](../../docs/development/FERMION_RDM_PROJECTION.md) |
+| Compare raw and projected constraint residuals and molecular energies | Fixed-particle fermionic density projection | Experimental | [Read guide](../../docs/development/FERMION_RDM_PROJECTION.md) |
 | Build a spinful model from explicit undirected edges, including branching and disconnected graphs | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Reuse native encodings and train a bounded determinant pair with an independently verified spectator sign | Spinful Fermi-Hubbard explicit graph | Experimental | [Run example](../../examples/algorithms/fermion_hubbard_graph.py) |
 | Discover independent commuting X/Y/Z symmetries of a native Pauli operator | Commuting Pauli symmetry discovery | Experimental | [Read guide](../../docs/development/FERMION_PAULI_DISCOVERY.md) |
@@ -582,6 +595,48 @@ Run exact circuits and differentiable quantum workloads on a CPU or one GPU.
 - **Start:** [quick example](../../examples/single_machine_quantum_ai/01_vqe_statevector.py)
 - **Documentation:** [guide](../../examples/single_machine_quantum_ai/README.md)
 - **Known boundary:** Capacity is bounded by one device; distributed capacity claims use the sharded capability. The paired complex64/complex128 CPU grid in artifacts/development/representation_agreement_precision/ covers open-boundary transverse-field Ising at h=0.7, widths 4-20, depths 2/4, nearest-neighbour throughout and all-to-all at widths 4/8, with bond caps 4/16 and identical float32-initialized angles. Each precision has 22 untruncated cells: maximum relative energy spread is 4.10343e-06 for complex64 and 1.10583e-14 for complex128. The six truncated cells per precision reach 0.225926 and 0.28199 respectively; higher precision does not eliminate truncation error. Wider all-to-all configurations are explicitly skipped because contraction repeats per Pauli term. These measured bounds do not cover arbitrary circuits or GPU execution. CI exercises a subgrid in both precisions. Corrected state, observable and parameter-gradient conformance is recorded in artifacts/development/representation_conformance_cpu_20261102/: widths 4/8, depths 2/4, caps 4/16, both interaction structures and three seeds at both precisions, 48 complete cells per precision with 39 untruncated and nine truncated. State, observables, autograd, local scans and finite differences use the same grad-enabled forward. In untruncated cells the maximum MPS/TN gradient relative L2 errors are 3.99256e-15/2.27939e-15 at complex128 and 3.60876e-06/1.23751e-06 at complex64; normalized fidelity deficit is at most 3.33067e-16 and 2.25264e-13 respectively, with norm drift reported separately. Exact-map parameter shift agrees to 2.92733e-15 and 1.67403e-06 inside width eight. The explicitly authorized truncated rule remains approximate: three chain cells have step-consistent same-map derivative error 0.0887126-0.136455 at complex128. Six truncated all-to-all cells per precision carry near-degenerate actual intermediate SVD warnings; unstable double-precision finite differences are domain boundaries with no derivative-error aggregate. Float32 central differences are skipped as unsupported precision. Final ideal-state Schmidt gaps and finite local scans do not prove absence of intermediate degeneracy or existence/nonexistence of a derivative. Earlier October gradient artifacts are retained as historical evidence with corrected interpretation. The earlier precision grid measures forward-only execution rather than this training-forward path. Matched sharded/unsharded CPU MPS values and gradients at worlds 2/3/4, caps 2/64, are recorded in artifacts/development/mps_placement_conformance_cpu_20261102/ with full provenance, launch commands, tolerances, ownership, memory and communication metadata; relative placement errors are below 6e-16 in this small corpus. These bounds do not cover arbitrary circuits, GPU or accelerator execution, widths above the recorded corpus, optimizer steps or multi-step training, and do not promote performance or scalability claims.
+
+### External statevector execution inputs
+
+Execute an ordinary static Circuit with a per-call CPU initial state and replay its input-compatible plan.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.run`, `fq.ExecutionPlan`, `fq.save`, `fq.load`
+- **Runtime modes:** `statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `first_order_native_pytorch`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../flagquantum/runtime/README.md)
+- **Documentation:** [guide](../../docs/development/EXECUTION_INITIAL_STATE_PROPOSAL.md)
+- **Known boundary:** Exact unbatched CPU PyTorch statevectors and probability outputs only; ordinary static Circuit sources only. Matching complex precision and unit norm are required. Dynamic/QEC external inputs, precompiled sources, structured/matrix operations, other engines, accelerators, distribution, noise, shots and remote loading are unsupported. Plans record input requirements, not amplitudes; caller resupplies compatible input. Marked plan-only FQX saves are refused. Minimum state-plus-copy budget is not a kernel workspace, autograd or RSS bound. No release, performance or scalability claim.
+
+### Named runtime angle inputs
+
+Bind declared symbolic gate angles per execution and reuse an accepted symbolic plan.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.run`, `fq.Parameter`, `fq.ParameterExpression`, `fq.ExecutionPlan`, `fq.save`, `fq.load`
+- **Runtime modes:** `statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `first_order_native_pytorch`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../flagquantum/runtime/README.md)
+- **Documentation:** [guide](../../docs/development/EXECUTION_RUNTIME_INPUTS_PROPOSAL.md)
+- **Known boundary:** Exact unbatched CPU PyTorch statevectors and probability outputs for ordinary static Circuit sources only. All symbolic names must be bound each run using finite Python floats or matching real scalar CPU tensors. Plans retain no supplied values or graphs. Optimization is disabled. External initial states, tensor literals, structured/matrix/dynamic operations, synthesis Program, other engines, accelerators, distribution, noise, shots, observables and remote binding are unsupported. Marked plan-only FQX saves are refused. State-memory preflight does not bound kernel temporary memory, autograd or process RSS. No release or speedup claim.
+
+### Training parameter checkpoint state
+
+Resume qualified quantum training with frozen parameters, ordered optimizer bindings and transactional failure recovery.
+
+- **Maturity:** Experimental
+- **Public API:** `fq.Module`
+- **Runtime modes:** `statevector`, `mps`, `tensor_network`
+- **Hardware:** `cpu`
+- **Gradient support:** `native_pytorch_step_boundary_resume`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/local/train_parameters.py)
+- **Documentation:** [guide](../../docs/guides/TRAINING_PARAMETERS.md)
+- **Known boundary:** V3 qualification covers certified captured builders and ordinary named symbolic Circuit templates with default construction initial state and no source Tensor literals. V1/v2 keep caller-owned flags. Unqualified frozen sources refuse save. Exact optimizer names/order are required. Aliases, duplicate/unregistered optimizer references, custom state hooks/loading methods/optimizers and shared or custom storage are refused. Successful restore clears gradients; accumulated gradients and live graphs are not resumed. The quantum-owner identity does not fingerprint arbitrary classical host code. Local CPU conformance does not promote accelerator, distributed, cross-Torch-version, performance or release support.
 
 ### Research capability discovery, execution, and evidence
 
@@ -1562,6 +1617,34 @@ Build Hermitian density observables and assemble their native expectations into 
 - **Start:** [quick example](../../examples/algorithms/fermion_one_body_density.py)
 - **Documentation:** [guide](../../docs/development/FERMION_ONE_BODY_DENSITY.md)
 - **Known boundary:** Exact local CPU expectation workflow on a full unreduced register, gamma[p,q]=<a-dagger[p] a[q]> in physical mode order. The caller supplies a preparation matched to the explicit JW, prefix-parity or Fenwick BK encoding and width; same-width encoding/order mismatches cannot be inferred from unlabelled values. The observable producer is static; tensor assembly preserves existing circuit-parameter gradients without making observable coefficients trainable. Requires n_modes**2 ordered finite real single-element CPU float32/float64 expectations of one dtype; returns complex64/complex128. Scientific acceptance uses complex128 through four modes; float32 assembly has unit evidence only. Conjugate symmetry is imposed by the measurement design, with no eigenvalue clipping, particle-number normalization or noise projection. Measurement/output count is O(n**2), encoded strings add width-dependent costs and runtime statevector storage remains exponential. No two-body density, molecular two-body energy, tapered/ancilla register support, automatic ansatz conversion, sampling/noise, hardware, accelerator, distributed or scalability qualification. Native workflow imports neither OpenFermion nor Cirq.
+
+### Fermionic two-body density measurement
+
+Build native two-body observables and assemble their expectations into a complex PyTorch tensor for molecular energy reconstruction.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density.two_body_density_observables`, `flagquantum.algorithms.fermion.density.two_body_density`
+- **Runtime modes:** `local_statevector`
+- **Hardware:** `cpu`
+- **Gradient support:** `circuit_parameter_gradients_through_measured_tensor_assembly`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick example](../../examples/algorithms/fermion_two_body_density.py)
+- **Documentation:** [guide](../../docs/development/FERMION_TWO_BODY_DENSITY.md)
+- **Known boundary:** Exact local CPU expectations on a full matched JW, prefix-parity or Fenwick BK register. Requires at least two modes and binomial(n, 2)**2 ordered, finite, single-element float32 or float64 CPU expectations of one dtype. Returns a dense complex64 or complex128 tensor. Measurement count and output grow as O(n^4); statevector storage remains exponential. Complex128 evidence covers four modes; float32 coverage is limited to assembly. Observable coefficients are static; circuit-parameter gradients flow through measured-tensor assembly. No automatic encoding or mode-order inference, noise projection, N-representability enforcement, tapered or ancilla registers, sampling, accelerator, distributed or scalability qualification. Native workflow requires neither OpenFermion nor Cirq.
+
+### Fixed-particle fermionic density projection
+
+Project measured one- and two-body densities jointly onto known particle-number constraints without modifying the input tensors.
+
+- **Maturity:** Experimental
+- **Public API:** `flagquantum.algorithms.fermion.density_projection.project_fixed_particle_densities`
+- **Runtime modes:** `local_cpu_tensor`
+- **Hardware:** `cpu`
+- **Gradient support:** `static_inputs_only`
+- **Distribution semantics:** `single_device_fast_path`
+- **Start:** [quick-start guide](../../docs/development/FERMION_RDM_PROJECTION.md)
+- **Documentation:** [guide](../../docs/development/FERMION_RDM_PROJECTION.md)
+- **Known boundary:** Opt-in postprocessing of finite static dense CPU complex128 tensors in physical mode order, on two through eight modes with an explicit integer particle count between two and the mode count. Rejects autograd inputs and outputs that fail the absolute 1e-10 constraint tolerance. Returns new tensors and uses a fixed distance metric with equal weight in the one-mode and independent pair matrices. Dense work and storage are O(m^4). Enforces Hermiticity, pair antisymmetry, fixed-number traces and contraction consistency; no positivity, N-representability, noise-model or energy-accuracy guarantee. Run the H2 demonstration with --project. No dependency on OpenFermion or Cirq.
 
 ### Spinful Fermi-Hubbard explicit graph
 

@@ -13,6 +13,7 @@ from flagquantum import synth
 from flagquantum.compiler import estimate_resources
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.services._synthesis_registers import synthesize_registers
+from tools.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -59,7 +60,9 @@ def test_proposal_does_not_activate_or_change_the_existing_public_api():
         )
         == active["synthesize_signature"]
     )
-    assert str(inspect.signature(fq.run)) == active["run_signature"]
+    assert str(inspect.signature(fq.run)) == _initial_state_run_signature(
+        active["run_signature"]
+    )
     assert (
         str(inspect.signature(synth.Program.probabilities))
         == active["probabilities_signature"]

@@ -278,7 +278,7 @@ def test_the_module_takes_its_rule_from_the_operator_schema() -> None:
     assert "core.operator_schema.get_operator_schema" in imports
     assert "core.operator_schema.inverse_operator" in imports
     # The wire index that `merge_self_inverse` also uses, rather than a second one.
-    assert "pipeline._WireLocalProgram" in imports
+    assert "canonicalization._WireLocalProgram" in imports
 
 
 @pytest.mark.parametrize(

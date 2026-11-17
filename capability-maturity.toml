@@ -193,6 +193,58 @@ integration_tests = "tests/test_backends.py"
 hardware_evidence = ".github/workflows/local-gpu.yml"
 operational_runbook = "docs/architecture/RUNTIME_ARCHITECTURE.md"
 
+[capabilities.external_initial_state]
+title = "External statevector execution inputs"
+summary = "Execute an ordinary static Circuit with a per-call CPU initial state and replay its input-compatible plan."
+category = "simulation_and_training"
+user_goals = ["Supply a quantum state as execution data", "Reuse a plan for compatible inputs", "Differentiate input and gate parameters"]
+public_apis = ["run", "ExecutionPlan", "save", "load"]
+runtime_modes = ["statevector"]
+hardware = ["cpu"]
+gradient_support = "first_order_native_pytorch"
+distribution_semantics = "single_device_fast_path"
+quick_start = "flagquantum/runtime/README.md"
+documentation = "docs/development/EXECUTION_INITIAL_STATE_PROPOSAL.md"
+level = "experimental"
+owner = "Runtime maintainers"
+limitations = "Exact unbatched CPU PyTorch statevectors and probability outputs only; ordinary static Circuit sources only. Matching complex precision and unit norm are required. Dynamic/QEC external inputs, precompiled sources, structured/matrix operations, other engines, accelerators, distribution, noise, shots and remote loading are unsupported. Plans record input requirements, not amplitudes; caller resupplies compatible input. Marked plan-only FQX saves are refused. Minimum state-plus-copy budget is not a kernel workspace, autograd or RSS bound. No release, performance or scalability claim."
+focused_tests = "tests/api_contract/test_execution_initial_state.py"
+
+[capabilities.runtime_angle_inputs]
+title = "Named runtime angle inputs"
+summary = "Bind declared symbolic gate angles per execution and reuse an accepted symbolic plan."
+category = "simulation_and_training"
+user_goals = ["Bind named scalar angles", "Reuse one plan across optimizer steps", "Preserve caller-owned PyTorch gradients"]
+public_apis = ["run", "Parameter", "ParameterExpression", "ExecutionPlan", "save", "load"]
+runtime_modes = ["statevector"]
+hardware = ["cpu"]
+gradient_support = "first_order_native_pytorch"
+distribution_semantics = "single_device_fast_path"
+quick_start = "flagquantum/runtime/README.md"
+documentation = "docs/development/EXECUTION_RUNTIME_INPUTS_PROPOSAL.md"
+level = "experimental"
+owner = "Runtime maintainers"
+limitations = "Exact unbatched CPU PyTorch statevectors and probability outputs for ordinary static Circuit sources only. All symbolic names must be bound each run using finite Python floats or matching real scalar CPU tensors. Plans retain no supplied values or graphs. Optimization is disabled. External initial states, tensor literals, structured/matrix/dynamic operations, synthesis Program, other engines, accelerators, distribution, noise, shots, observables and remote binding are unsupported. Marked plan-only FQX saves are refused. State-memory preflight does not bound kernel temporary memory, autograd or process RSS. No release or speedup claim."
+focused_tests = "tests/api_contract/test_execution_runtime_inputs.py"
+
+[capabilities.training_parameter_checkpoint]
+title = "Training parameter checkpoint state"
+summary = "Resume qualified quantum training with frozen parameters, ordered optimizer bindings and transactional failure recovery."
+category = "simulation_and_training"
+user_goals = ["Resume a partially frozen model", "Preserve optimizer moments", "Reject reordered optimizer parameters before loading"]
+public_apis = ["Module"]
+runtime_modes = ["statevector", "mps", "tensor_network"]
+hardware = ["cpu"]
+gradient_support = "native_pytorch_step_boundary_resume"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/local/train_parameters.py"
+documentation = "docs/guides/TRAINING_PARAMETERS.md"
+level = "experimental"
+owner = "Runtime maintainers"
+limitations = "V3 qualification covers certified captured builders and ordinary named symbolic Circuit templates with default construction initial state and no source Tensor literals. V1/v2 keep caller-owned flags. Unqualified frozen sources refuse save. Exact optimizer names/order are required. Aliases, duplicate/unregistered optimizer references, custom state hooks/loading methods/optimizers and shared or custom storage are refused. Successful restore clears gradients; accumulated gradients and live graphs are not resumed. The quantum-owner identity does not fingerprint arbitrary classical host code. Local CPU conformance does not promote accelerator, distributed, cross-Torch-version, performance or release support."
+focused_tests = "tests/unit/test_training_parameter_state.py"
+integration_tests = "tests/integration/test_training_parameter_lifecycle.py"
+
 [capabilities.research_capability_services]
 title = "Research capability discovery, execution, and evidence"
 summary = "Discover and execute the bounded local ground-state research slice through one transport-neutral service contract with preflight, scientific validation, and tamper-evident evidence."
@@ -2351,6 +2403,44 @@ limitations = "Exact local CPU expectation workflow on a full unreduced register
 focused_tests = "tests/unit/fermion/test_density.py"
 integration_tests = "tests/integration/test_fermion_one_body_density.py"
 development_artifact = "docs/development/FERMION_ONE_BODY_DENSITY.md"
+
+[capabilities.fermion_two_body_density]
+title = "Fermionic two-body density measurement"
+summary = "Build native two-body observables and assemble their expectations into a complex PyTorch tensor for molecular energy reconstruction."
+category = "simulation_and_training"
+user_goals = ["Measure two-body fermionic densities on matched full JW, parity or BK registers", "Reconstruct the energy of a small molecular state while retaining circuit-parameter gradients"]
+public_apis = ["flagquantum.algorithms.fermion.density.two_body_density_observables", "flagquantum.algorithms.fermion.density.two_body_density"]
+runtime_modes = ["local_statevector"]
+hardware = ["cpu"]
+gradient_support = "circuit_parameter_gradients_through_measured_tensor_assembly"
+distribution_semantics = "single_device_fast_path"
+quick_start = "examples/algorithms/fermion_two_body_density.py"
+documentation = "docs/development/FERMION_TWO_BODY_DENSITY.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Exact local CPU expectations on a full matched JW, prefix-parity or Fenwick BK register. Requires at least two modes and binomial(n, 2)**2 ordered, finite, single-element float32 or float64 CPU expectations of one dtype. Returns a dense complex64 or complex128 tensor. Measurement count and output grow as O(n^4); statevector storage remains exponential. Complex128 evidence covers four modes; float32 coverage is limited to assembly. Observable coefficients are static; circuit-parameter gradients flow through measured-tensor assembly. No automatic encoding or mode-order inference, noise projection, N-representability enforcement, tapered or ancilla registers, sampling, accelerator, distributed or scalability qualification. Native workflow requires neither OpenFermion nor Cirq."
+focused_tests = "tests/unit/fermion/test_density.py"
+integration_tests = "tests/integration/test_fermion_one_body_density.py"
+development_artifact = "docs/development/FERMION_TWO_BODY_DENSITY.md"
+
+[capabilities.fermion_fixed_particle_rdm_projection]
+title = "Fixed-particle fermionic density projection"
+summary = "Project measured one- and two-body densities jointly onto known particle-number constraints without modifying the input tensors."
+category = "simulation_and_training"
+user_goals = ["Correct one- and two-body densities that violate fixed-particle linear identities", "Compare raw and projected constraint residuals and molecular energies"]
+public_apis = ["flagquantum.algorithms.fermion.density_projection.project_fixed_particle_densities"]
+runtime_modes = ["local_cpu_tensor"]
+hardware = ["cpu"]
+gradient_support = "static_inputs_only"
+distribution_semantics = "single_device_fast_path"
+quick_start = "docs/development/FERMION_RDM_PROJECTION.md"
+documentation = "docs/development/FERMION_RDM_PROJECTION.md"
+level = "experimental"
+owner = "Algorithms maintainers"
+limitations = "Opt-in postprocessing of finite static dense CPU complex128 tensors in physical mode order, on two through eight modes with an explicit integer particle count between two and the mode count. Rejects autograd inputs and outputs that fail the absolute 1e-10 constraint tolerance. Returns new tensors and uses a fixed distance metric with equal weight in the one-mode and independent pair matrices. Dense work and storage are O(m^4). Enforces Hermiticity, pair antisymmetry, fixed-number traces and contraction consistency; no positivity, N-representability, noise-model or energy-accuracy guarantee. Run the H2 demonstration with --project. No dependency on OpenFermion or Cirq."
+focused_tests = "tests/unit/fermion/test_density_projection.py"
+integration_tests = "tests/test_algorithm_examples.py"
+development_artifact = "docs/development/FERMION_RDM_PROJECTION.md"
 
 [capabilities.fermion_hubbard_graph]
 title = "Spinful Fermi-Hubbard explicit graph"

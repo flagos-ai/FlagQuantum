@@ -470,7 +470,7 @@ def architecture_errors() -> tuple[str, ...]:
     ):
         errors.append(
             "flagquantum/compilation/noise: migrated noise compilation package "
-            "must not return; use flagquantum/compiler/noise.py for lowering and "
+            "must not return; use flagquantum/compiler/lowering/noise.py for lowering and "
             "the existing execution-plan product for planning"
         )
 

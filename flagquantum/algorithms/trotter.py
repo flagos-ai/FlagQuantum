@@ -34,7 +34,7 @@ from typing import TYPE_CHECKING, Any
 
 import torch
 
-from ..compiler import _pauli_schedule
+from ..compiler.lowering import _pauli_schedule
 from ..errors import CapabilityError
 from ..simulation.pauli import finite_rotation_angle, pauli_word_operators
 
