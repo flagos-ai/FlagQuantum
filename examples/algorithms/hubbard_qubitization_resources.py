@@ -7,6 +7,8 @@
 
 from argparse import ArgumentParser
 from dataclasses import asdict
+from functools import partial
+from typing import Literal
 
 from flagquantum.algorithms.primitives.hubbard_prepare import (
     PrepareHubbard,
@@ -27,11 +29,13 @@ from flagquantum.core.ir.program.register_types import (
 )
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
+from flagquantum.drawer.hubbard_symbols import hubbard_consumer_wire_symbol
 from flagquantum.drawer.register_score import (
     RegisterScore,
     RegisterStep,
     layout_register_score,
 )
+from flagquantum.drawer.register_score_data import MusicalScoreData, register_score_data
 from flagquantum.qec.resources.estimation import (
     estimate_ftqc_resources,
     estimate_symbolic_ftqc_resources,
@@ -82,6 +86,29 @@ def notebook_consumer_signature(
     )
     return Signature(
         (*control, *selection, Register("target", opaque_register_type(2 * side**2)))
+    )
+
+
+def notebook_consumer_score(
+    side: int, *, majorana: Literal["X", "Y"] | None = None, controlled: bool = False
+) -> MusicalScoreData:
+    """Draw the original concrete Majorana or spin-up Z leaf."""
+    ports = tuple(
+        notebook_consumer_signature(
+            side, majorana=majorana is not None, controlled=controlled
+        )
+    )
+    widths = {port.name: int(port.bitsize) for port in ports}
+    names = tuple(widths)
+    step = RegisterStep(
+        "Hubbard consumer", names, names, input_registers=ports, output_registers=ports
+    )
+    score = layout_register_score(
+        widths, names, (step,), input_registers=ports, output_registers=ports
+    )
+    return register_score_data(
+        score,
+        register_wire_symbol=partial(hubbard_consumer_wire_symbol, majorana=majorana),
     )
 
 

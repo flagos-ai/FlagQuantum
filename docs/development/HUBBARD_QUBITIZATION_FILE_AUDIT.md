@@ -103,3 +103,17 @@ physical counts. The tests check the complete complex action on a
 coherent state spanning every populated basis value, all small feedback
 histories, exact inverse recovery, and work restoration. Source
 side-one resource estimation remains unavailable.
+
+### Majorana and spin-up Z score
+
+The native concrete example scores retain the source coordinate, spin
+and potential labels, the filled control circles, and both mathematical
+target captions. The reference draws a filled circle even when a leaf
+is declared with control value zero. The empty connector is a
+TextBox without a font-size field. Drawer carries that blank record
+through JSON and skips it during rendering.
+
+The frozen and native score records match for the two Majorana Paulis
+and spin-up Z at sides one and three, with absent, zero and positive
+control. The native scores also render in Matplotlib. Execution and
+resource evidence is accounted for separately in the preceding sections.
