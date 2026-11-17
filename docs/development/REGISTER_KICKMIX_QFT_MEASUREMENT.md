@@ -77,6 +77,34 @@ These are emitted primitive counts, not executed branch counts or synthesized
 T counts. The source routine supplies no independent T-resource model; phase
 precision and a synthesis model must be specified before quoting such a cost.
 
+## Whole-file acceptance
+
+K-0127 through K-0129 cover the source implementation, header
+blob `dc9ff22031bd8f788a22784de2351640e3c79194` and test
+blob `5af02c31fe5fc010332a21bc7b13c459b3d05f40`. All three locked
+original tests passed, including the two unmodified circuit diagrams.
+All 65 focused native tests and 5,421 concentrated regressions passed,
+along with strict typing, format, scope, architecture, internal IR and
+public API checks.
+
+`physical_qft_measurement` reuses the existing program and attaches the
+source `qft_demolition_measure` block. An empty word carries the empty
+block without any quantum operation. The regenerated fixture compares 66
+complete streams through width 130, with both directions, reversed and
+interleaved targets, and sparse feedback slots. Every exact angle string,
+operand, measurement result, predicate and mark matches. Tagged KMX decoding
+also preserves the ambient widths and caller-owned classical holes.
+At width 130, the table above accounts for 8,580 operations, plus two mark
+records. The source has no standalone performance workload for this routine.
+
+Regenerate the source fixture with:
+
+```sh
+python tests/unit/fixtures/generate_kickmix_qft_measurement_file.py \
+  --source-root <locked-kickmix-root> \
+  --output tests/unit/fixtures/kickmix_qft_measurement_file.json
+```
+
 ## Runnable user example
 
 ```sh

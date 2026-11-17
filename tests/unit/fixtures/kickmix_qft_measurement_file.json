@@ -1,0 +1,833 @@
+{
+  "source_blob": "59c942ad6d1a4e40e3776166afb99220bbf93f6b",
+  "cases": [
+    {
+      "width": 0,
+      "mode": 0,
+      "inverse": false,
+      "records": 2,
+      "counts": {
+        "INFO_TAG": 2
+      },
+      "sha256": "515afe4f8085635cf0ace6b365b5c49426ce43c69e6f843ffc31a7feec6775e7"
+    },
+    {
+      "width": 0,
+      "mode": 0,
+      "inverse": true,
+      "records": 2,
+      "counts": {
+        "INFO_TAG": 2
+      },
+      "sha256": "515afe4f8085635cf0ace6b365b5c49426ce43c69e6f843ffc31a7feec6775e7"
+    },
+    {
+      "width": 0,
+      "mode": 1,
+      "inverse": false,
+      "records": 2,
+      "counts": {
+        "INFO_TAG": 2
+      },
+      "sha256": "515afe4f8085635cf0ace6b365b5c49426ce43c69e6f843ffc31a7feec6775e7"
+    },
+    {
+      "width": 0,
+      "mode": 1,
+      "inverse": true,
+      "records": 2,
+      "counts": {
+        "INFO_TAG": 2
+      },
+      "sha256": "515afe4f8085635cf0ace6b365b5c49426ce43c69e6f843ffc31a7feec6775e7"
+    },
+    {
+      "width": 0,
+      "mode": 2,
+      "inverse": false,
+      "records": 2,
+      "counts": {
+        "INFO_TAG": 2
+      },
+      "sha256": "515afe4f8085635cf0ace6b365b5c49426ce43c69e6f843ffc31a7feec6775e7"
+    },
+    {
+      "width": 0,
+      "mode": 2,
+      "inverse": true,
+      "records": 2,
+      "counts": {
+        "INFO_TAG": 2
+      },
+      "sha256": "515afe4f8085635cf0ace6b365b5c49426ce43c69e6f843ffc31a7feec6775e7"
+    },
+    {
+      "width": 1,
+      "mode": 0,
+      "inverse": false,
+      "records": 3,
+      "counts": {
+        "INFO_TAG": 2,
+        "HMR": 1
+      },
+      "sha256": "a256eeb798433b1401db4de1e0fc91ee8a34ecc2cf7931762698f50cdbaea6aa"
+    },
+    {
+      "width": 1,
+      "mode": 0,
+      "inverse": true,
+      "records": 3,
+      "counts": {
+        "INFO_TAG": 2,
+        "HMR": 1
+      },
+      "sha256": "a256eeb798433b1401db4de1e0fc91ee8a34ecc2cf7931762698f50cdbaea6aa"
+    },
+    {
+      "width": 1,
+      "mode": 1,
+      "inverse": false,
+      "records": 3,
+      "counts": {
+        "INFO_TAG": 2,
+        "HMR": 1
+      },
+      "sha256": "a256eeb798433b1401db4de1e0fc91ee8a34ecc2cf7931762698f50cdbaea6aa"
+    },
+    {
+      "width": 1,
+      "mode": 1,
+      "inverse": true,
+      "records": 3,
+      "counts": {
+        "INFO_TAG": 2,
+        "HMR": 1
+      },
+      "sha256": "a256eeb798433b1401db4de1e0fc91ee8a34ecc2cf7931762698f50cdbaea6aa"
+    },
+    {
+      "width": 1,
+      "mode": 2,
+      "inverse": false,
+      "records": 3,
+      "counts": {
+        "INFO_TAG": 2,
+        "HMR": 1
+      },
+      "sha256": "2a9d2ff02cf6a350c375e6973eb51bb2eee893218bdd0b27eebc4ccc4b09daea"
+    },
+    {
+      "width": 1,
+      "mode": 2,
+      "inverse": true,
+      "records": 3,
+      "counts": {
+        "INFO_TAG": 2,
+        "HMR": 1
+      },
+      "sha256": "2a9d2ff02cf6a350c375e6973eb51bb2eee893218bdd0b27eebc4ccc4b09daea"
+    },
+    {
+      "width": 2,
+      "mode": 0,
+      "inverse": false,
+      "records": 6,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 2,
+        "Z_POW": 1
+      },
+      "sha256": "e4898507ee2e7dbc45bdec562e31ba2949e81a54bb7e3c134bb4420d4dcfc6a5"
+    },
+    {
+      "width": 2,
+      "mode": 0,
+      "inverse": true,
+      "records": 6,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 2,
+        "Z_POW": 1
+      },
+      "sha256": "5aead116e0156cd594553712efd596790eff9df013d40494a17339e300c5b4ff"
+    },
+    {
+      "width": 2,
+      "mode": 1,
+      "inverse": false,
+      "records": 6,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 2,
+        "Z_POW": 1
+      },
+      "sha256": "ef95b13815f7896cdf1a7e3cb2054a6384c475c58cf9e90c8d7ab0767c0edc02"
+    },
+    {
+      "width": 2,
+      "mode": 1,
+      "inverse": true,
+      "records": 6,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 2,
+        "Z_POW": 1
+      },
+      "sha256": "33c31c9c23b63b7f67097e399b6fb80ebb5e58ea704f9d612a54443119932381"
+    },
+    {
+      "width": 2,
+      "mode": 2,
+      "inverse": false,
+      "records": 6,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 2,
+        "Z_POW": 1
+      },
+      "sha256": "a4225d1056ee69787c39b0ee0bcea2aa1efa235d7c7f2915d2aa41801244218a"
+    },
+    {
+      "width": 2,
+      "mode": 2,
+      "inverse": true,
+      "records": 6,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 2,
+        "Z_POW": 1
+      },
+      "sha256": "455e3a871171314e1e2deb338eb280a8dbbb8b39d18a2d0f763d4a40d20d441c"
+    },
+    {
+      "width": 3,
+      "mode": 0,
+      "inverse": false,
+      "records": 9,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 3,
+        "Z_POW": 3
+      },
+      "sha256": "be76db31a7e8b9b46aa4e533fa54a1406467999be13b4c964bce3ae029bd4e3c"
+    },
+    {
+      "width": 3,
+      "mode": 0,
+      "inverse": true,
+      "records": 9,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 3,
+        "Z_POW": 3
+      },
+      "sha256": "94e2525a5f465c90d638292904afca97199f4c4a5ad13dcf392def011dd11f89"
+    },
+    {
+      "width": 3,
+      "mode": 1,
+      "inverse": false,
+      "records": 9,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 3,
+        "Z_POW": 3
+      },
+      "sha256": "5cfabb43237562f4341773629c183baf930b2c808573444a6d141ea893aace08"
+    },
+    {
+      "width": 3,
+      "mode": 1,
+      "inverse": true,
+      "records": 9,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 3,
+        "Z_POW": 3
+      },
+      "sha256": "af309f7c195cc2e5c540d115bde398ca002427b857f2c443f3a510352dbb3255"
+    },
+    {
+      "width": 3,
+      "mode": 2,
+      "inverse": false,
+      "records": 9,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 3,
+        "Z_POW": 3
+      },
+      "sha256": "ca4533d0f7f4a86da67934c3af1c0c9d1a471664ff3abbdcb704610e2dea6a0e"
+    },
+    {
+      "width": 3,
+      "mode": 2,
+      "inverse": true,
+      "records": 9,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 1,
+        "HMR": 3,
+        "Z_POW": 3
+      },
+      "sha256": "45b948b2f23c805bcb2047cb4c67a5cc1d36da1039807177b521cbe7fae20c73"
+    },
+    {
+      "width": 4,
+      "mode": 0,
+      "inverse": false,
+      "records": 14,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 2,
+        "HMR": 4,
+        "Z_POW": 6
+      },
+      "sha256": "3d1b2e02968ea5d91d74214288bff3826bffa9e94c248ec73fad7622f2ca69be"
+    },
+    {
+      "width": 4,
+      "mode": 0,
+      "inverse": true,
+      "records": 14,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 2,
+        "HMR": 4,
+        "Z_POW": 6
+      },
+      "sha256": "1f15815225e4489ae5faab1da254f013a25596e12b1877de955b6b490bd24d6f"
+    },
+    {
+      "width": 4,
+      "mode": 1,
+      "inverse": false,
+      "records": 14,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 2,
+        "HMR": 4,
+        "Z_POW": 6
+      },
+      "sha256": "94a389d15d3e6b788f4901f5de5f259370ac74dcb2f82e27ddd2169c095c25e3"
+    },
+    {
+      "width": 4,
+      "mode": 1,
+      "inverse": true,
+      "records": 14,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 2,
+        "HMR": 4,
+        "Z_POW": 6
+      },
+      "sha256": "76161c5014a040511f078fc5b83b72e4d25554692e290d2226f337e854e19887"
+    },
+    {
+      "width": 4,
+      "mode": 2,
+      "inverse": false,
+      "records": 14,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 2,
+        "HMR": 4,
+        "Z_POW": 6
+      },
+      "sha256": "9e2db1e4a08c34be5afd39c9beb3c43f99bb52602aa4a6adc337da2bc0d9584e"
+    },
+    {
+      "width": 4,
+      "mode": 2,
+      "inverse": true,
+      "records": 14,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 2,
+        "HMR": 4,
+        "Z_POW": 6
+      },
+      "sha256": "4ff1cb318ee12e13ba5c85c7bcf5326deb5e5637d9ab8f2ddc7643c95af1b59e"
+    },
+    {
+      "width": 8,
+      "mode": 0,
+      "inverse": false,
+      "records": 42,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 4,
+        "HMR": 8,
+        "Z_POW": 28
+      },
+      "sha256": "0bd6c93f451284b60a62b2b999afaea5ae901f332dcf90a2051d2648ce0786fd"
+    },
+    {
+      "width": 8,
+      "mode": 0,
+      "inverse": true,
+      "records": 42,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 4,
+        "HMR": 8,
+        "Z_POW": 28
+      },
+      "sha256": "1624168d652d921d79996d9ffb8191808d9a41c01dcc3114803e979006fae167"
+    },
+    {
+      "width": 8,
+      "mode": 1,
+      "inverse": false,
+      "records": 42,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 4,
+        "HMR": 8,
+        "Z_POW": 28
+      },
+      "sha256": "1070e71407628fa16235caebcb1a0fa57e38da59a294f0f37808519a3277a73e"
+    },
+    {
+      "width": 8,
+      "mode": 1,
+      "inverse": true,
+      "records": 42,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 4,
+        "HMR": 8,
+        "Z_POW": 28
+      },
+      "sha256": "2483f4c4c5ae913e171e1dddfd2bbaa61e3e6a6f417b7d179f9949cc1f6e2899"
+    },
+    {
+      "width": 8,
+      "mode": 2,
+      "inverse": false,
+      "records": 42,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 4,
+        "HMR": 8,
+        "Z_POW": 28
+      },
+      "sha256": "e1ab04bf9ede35ad8801abbfdbe2722a8818ac6af82f1d3a1bd09ff0816d00ff"
+    },
+    {
+      "width": 8,
+      "mode": 2,
+      "inverse": true,
+      "records": 42,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 4,
+        "HMR": 8,
+        "Z_POW": 28
+      },
+      "sha256": "7801c17271ef09e05aea29ccdde934896542fecfdca646e04658f184261241e5"
+    },
+    {
+      "width": 17,
+      "mode": 0,
+      "inverse": false,
+      "records": 163,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 8,
+        "HMR": 17,
+        "Z_POW": 136
+      },
+      "sha256": "5f8b1c68b9b933ffa492a9b78e9f3f016a806d61f183d920b2b4f73743a6b38f"
+    },
+    {
+      "width": 17,
+      "mode": 0,
+      "inverse": true,
+      "records": 163,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 8,
+        "HMR": 17,
+        "Z_POW": 136
+      },
+      "sha256": "6159bd676acc26a5d43c719aa11b5eb2bccebd92710b8d300ee7fba260cf1213"
+    },
+    {
+      "width": 17,
+      "mode": 1,
+      "inverse": false,
+      "records": 163,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 8,
+        "HMR": 17,
+        "Z_POW": 136
+      },
+      "sha256": "5f5c670ce4dae260fce9fcee5f502442d88d15ba128c93703a4a7258420f0791"
+    },
+    {
+      "width": 17,
+      "mode": 1,
+      "inverse": true,
+      "records": 163,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 8,
+        "HMR": 17,
+        "Z_POW": 136
+      },
+      "sha256": "04271c7d8fa3bf0ba7fba5002f2f9354319014af8bb954164c2d9cfe01054bc0"
+    },
+    {
+      "width": 17,
+      "mode": 2,
+      "inverse": false,
+      "records": 163,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 8,
+        "HMR": 17,
+        "Z_POW": 136
+      },
+      "sha256": "bb856f32f2b2ceffed7d9151cc97d97ca0e688b8bc4304b5b0264eae6867deb9"
+    },
+    {
+      "width": 17,
+      "mode": 2,
+      "inverse": true,
+      "records": 163,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 8,
+        "HMR": 17,
+        "Z_POW": 136
+      },
+      "sha256": "a591b53ca907959457140dd21692af25aa178f6b16d57422d311948075f0e03e"
+    },
+    {
+      "width": 64,
+      "mode": 0,
+      "inverse": false,
+      "records": 2114,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 32,
+        "HMR": 64,
+        "Z_POW": 2016
+      },
+      "sha256": "d11c151506c640e9731d842d1c51c772c03eb3a75d0ea1cf2fa9046a1ad6c12d"
+    },
+    {
+      "width": 64,
+      "mode": 0,
+      "inverse": true,
+      "records": 2114,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 32,
+        "HMR": 64,
+        "Z_POW": 2016
+      },
+      "sha256": "6faed3d0f22844dcc73448b4d73378524c7dc58e212f652fd83ca8181addde67"
+    },
+    {
+      "width": 64,
+      "mode": 1,
+      "inverse": false,
+      "records": 2114,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 32,
+        "HMR": 64,
+        "Z_POW": 2016
+      },
+      "sha256": "7a6e63c48c6caf6b320a87ec953d329a35a2f454dceddd7d77858d49dd1bb899"
+    },
+    {
+      "width": 64,
+      "mode": 1,
+      "inverse": true,
+      "records": 2114,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 32,
+        "HMR": 64,
+        "Z_POW": 2016
+      },
+      "sha256": "5fa0addf84b3e6bc94baa8135a8be0c8387f8d15f0f3fdd67ee9b3e37ab521dc"
+    },
+    {
+      "width": 64,
+      "mode": 2,
+      "inverse": false,
+      "records": 2114,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 32,
+        "HMR": 64,
+        "Z_POW": 2016
+      },
+      "sha256": "563660e026549c53d20ba8a7cef20cd79f9d4eb71cb560455fd6ef991f2694a7"
+    },
+    {
+      "width": 64,
+      "mode": 2,
+      "inverse": true,
+      "records": 2114,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 32,
+        "HMR": 64,
+        "Z_POW": 2016
+      },
+      "sha256": "2b79f0652100a6d8354fe842e91ae72296ffef367e88e0e31908968904fe3c11"
+    },
+    {
+      "width": 128,
+      "mode": 0,
+      "inverse": false,
+      "records": 8322,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 128,
+        "Z_POW": 8128
+      },
+      "sha256": "94176490bbbf580b7c629e025b07d9cebb0b9cda16375753397d584dc27e9f07"
+    },
+    {
+      "width": 128,
+      "mode": 0,
+      "inverse": true,
+      "records": 8322,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 128,
+        "Z_POW": 8128
+      },
+      "sha256": "a5ab38dfe898e79ecae92bd154ae83cb9dffd43f5f84f24d60aab2babd2107bc"
+    },
+    {
+      "width": 128,
+      "mode": 1,
+      "inverse": false,
+      "records": 8322,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 128,
+        "Z_POW": 8128
+      },
+      "sha256": "11ae47d41b1bf02b5c49ab1d272b41f86fd7d4d06f3ca5d46ccf98cddbebf134"
+    },
+    {
+      "width": 128,
+      "mode": 1,
+      "inverse": true,
+      "records": 8322,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 128,
+        "Z_POW": 8128
+      },
+      "sha256": "f098d55c59d330168b440d35bd71dd88b06ff531250ac21a58649f51445da64d"
+    },
+    {
+      "width": 128,
+      "mode": 2,
+      "inverse": false,
+      "records": 8322,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 128,
+        "Z_POW": 8128
+      },
+      "sha256": "94b5ef439ce3c83103150387817df95cc1d5668bea6c59d8aef9b8671ea405d4"
+    },
+    {
+      "width": 128,
+      "mode": 2,
+      "inverse": true,
+      "records": 8322,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 128,
+        "Z_POW": 8128
+      },
+      "sha256": "42cdbba0546f5bd750fa805c22a1934a1bef94fbc6c44e7c7f7a41bceaaf288c"
+    },
+    {
+      "width": 129,
+      "mode": 0,
+      "inverse": false,
+      "records": 8451,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 129,
+        "Z_POW": 8256
+      },
+      "sha256": "c4348af2550d34a9c465a61d9bb51f578e995def07064d2ca89d9fbcb42a0395"
+    },
+    {
+      "width": 129,
+      "mode": 0,
+      "inverse": true,
+      "records": 8451,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 129,
+        "Z_POW": 8256
+      },
+      "sha256": "553c12fdb2c892d96164c2f7238c2c877aaec5768ccfdf47ca8d889c255b5ad4"
+    },
+    {
+      "width": 129,
+      "mode": 1,
+      "inverse": false,
+      "records": 8451,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 129,
+        "Z_POW": 8256
+      },
+      "sha256": "c373f839d21c4c3756500cdd73aa8199cde3a2e8c150088a8388aaee94c05b8e"
+    },
+    {
+      "width": 129,
+      "mode": 1,
+      "inverse": true,
+      "records": 8451,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 129,
+        "Z_POW": 8256
+      },
+      "sha256": "fe549cafcd39dffcaac8806f7cba0a3c92dce3a95a6694725951e724f44a2dfc"
+    },
+    {
+      "width": 129,
+      "mode": 2,
+      "inverse": false,
+      "records": 8451,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 129,
+        "Z_POW": 8256
+      },
+      "sha256": "402d48378bd81874459a3732d8612fdb55eb984a24192f77677a8b5508e7ad40"
+    },
+    {
+      "width": 129,
+      "mode": 2,
+      "inverse": true,
+      "records": 8451,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 64,
+        "HMR": 129,
+        "Z_POW": 8256
+      },
+      "sha256": "b39a14dcc0c4a7bd1882ab09569e4bfa16a78fdd48d9eb7758693d1854b98106"
+    },
+    {
+      "width": 130,
+      "mode": 0,
+      "inverse": false,
+      "records": 8582,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 65,
+        "HMR": 130,
+        "Z_POW": 8385
+      },
+      "sha256": "9b2ca59e5a3a99daf7d92080c8b10496a3b8e94b6278666d3cf6dcb85d04b017"
+    },
+    {
+      "width": 130,
+      "mode": 0,
+      "inverse": true,
+      "records": 8582,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 65,
+        "HMR": 130,
+        "Z_POW": 8385
+      },
+      "sha256": "60a5c60c1ad7747b40585ff035b43f991997bcb96d1e52242851122bb083f0c4"
+    },
+    {
+      "width": 130,
+      "mode": 1,
+      "inverse": false,
+      "records": 8582,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 65,
+        "HMR": 130,
+        "Z_POW": 8385
+      },
+      "sha256": "43ab899b94b5b35b94ecc01ef8b0694f64be09eebca24ad7d5d82739afa472d1"
+    },
+    {
+      "width": 130,
+      "mode": 1,
+      "inverse": true,
+      "records": 8582,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 65,
+        "HMR": 130,
+        "Z_POW": 8385
+      },
+      "sha256": "e033df174e7e240b88d41e2406cf5a618325bb1eb9c3aad604b804dbd1a3b6b9"
+    },
+    {
+      "width": 130,
+      "mode": 2,
+      "inverse": false,
+      "records": 8582,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 65,
+        "HMR": 130,
+        "Z_POW": 8385
+      },
+      "sha256": "e1253b0d5a313fd97a648ceb4c7d545278e0daad7039a6e4ac8a5e35cf677e5e"
+    },
+    {
+      "width": 130,
+      "mode": 2,
+      "inverse": true,
+      "records": 8582,
+      "counts": {
+        "INFO_TAG": 2,
+        "SWAP": 65,
+        "HMR": 130,
+        "Z_POW": 8385
+      },
+      "sha256": "59f65b7ad6c1a18f3c7c675565b6e72e6b7f4250a079c33fbad4b9f4b9831f9d"
+    }
+  ]
+}
