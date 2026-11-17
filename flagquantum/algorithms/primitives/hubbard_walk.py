@@ -57,7 +57,7 @@ class HubbardWalk:
 
     @property
     def alpha(self) -> float:
-        return self.prepare.alpha
+        return self.prepare.l1_norm_of_coeffs
 
     @property
     def reflection_layout(self) -> RegisterLayout:

@@ -7,6 +7,7 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from functools import cached_property
 from math import acos, isfinite, sqrt
 
 from ...circuit import Circuit
@@ -31,7 +32,13 @@ from ...compiler.registers.preparation.uniform_preparation import (
 from ...compiler.registers.primitives.controlled_swap import controlled_swap_ir
 from ...core.classical_control import validate_classical_control
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import (
+    bounded_unsigned_register_type,
+    opaque_register_type,
+)
+from ...core.ir.program.registers import Register
 from ...dynamic import DynamicCircuit
+from .prepare_oracle import PrepareOracle
 
 
 def hubbard_selection_layout(dimension: int) -> RegisterLayout:
@@ -50,7 +57,7 @@ def hubbard_selection_layout(dimension: int) -> RegisterLayout:
 
 
 @dataclass(frozen=True)
-class PrepareHubbard:
+class PrepareHubbard(PrepareOracle):
     """Bind the source selection ports and its two retained direction bits."""
 
     dimension: int
@@ -73,6 +80,26 @@ class PrepareHubbard:
     def alpha(self) -> float:
         modes = 2 * self.dimension**2
         return 2 * modes * self.t + (modes * self.u) // 2
+
+    @property
+    def l1_norm_of_coeffs(self) -> float:
+        return self.alpha
+
+    @cached_property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return tuple(
+            Register(
+                name,
+                bounded_unsigned_register_type(
+                    width, self.dimension if name in {"p_x", "p_y", "q_x", "q_y"} else 2
+                ),
+            )
+            for name, width in self.selection_layout
+        )
+
+    @cached_property
+    def junk_registers(self) -> tuple[Register, ...]:
+        return (Register("temp", opaque_register_type(2)),)
 
     @property
     def selection_layout(self) -> RegisterLayout:
