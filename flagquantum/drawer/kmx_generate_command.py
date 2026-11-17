@@ -6,11 +6,16 @@
 
 import argparse
 import sys
+from math import inf
 from pathlib import Path
 
 from ..compiler.formats._binary_streams import write_binary_result
 from ..compiler.formats.kmb import encode_kmb
-from ..compiler.registers.circuit_generation import generate_addition, generate_table
+from ..compiler.registers.circuit_generation import (
+    generate_addition,
+    generate_comparison,
+    generate_table,
+)
 from .reversible_phase_analysis import render_reversible_phase_analysis_svg
 from .reversible_phase_diagram import render_circuit_text
 
@@ -27,7 +32,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=__doc__, allow_abbrev=False, exit_on_error=False
     )
-    parser.add_argument("--kind", choices=("iadd", "lookup", "unlookup"))
+    parser.add_argument("--kind", choices=("iadd", "flip_if_lt", "lookup", "unlookup"))
     for flag in ("n", "w", "clean", "dirty"):
         parser.add_argument(f"--{flag}", type=_size, default=-1)
     for flag in (
@@ -39,22 +44,33 @@ def main(argv: list[str] | None = None) -> int:
         "skip_output",
     ):
         parser.add_argument(f"--{flag}", action="store_true")
+    parser.add_argument("--btol", type=float, default=inf)
     parser.add_argument("--flame_out", type=Path)
     parser.add_argument("--out", type=Path)
     try:
         args, unknown = parser.parse_known_args(argv)
         if unknown:
             raise ValueError(f"Unrecognized command line argument {unknown[0]}")
+        if not args.btol >= 0:
+            raise ValueError("Bit tolerance must be nonnegative")
         n = args.n
+        if args.kind in ("iadd", "flip_if_lt") and n == -1:
+            raise ValueError("Need '--n #'.")
         if args.kind == "iadd":
-            if n == -1:
-                raise ValueError("Need '--n #'.")
             circuit = generate_addition(
                 n,
                 clean_count=max(0, args.clean),
                 dirty_count=max(0, args.dirty),
                 controlled=args.controlled,
                 minimize_qubits=args.minimize_qubits,
+            )
+        elif args.kind == "flip_if_lt":
+            circuit = generate_comparison(
+                n,
+                clean_count=n if args.clean == -1 else args.clean,
+                controlled=args.controlled,
+                minimize_qubits=args.minimize_qubits,
+                btol=args.btol,
             )
         elif args.kind in ("lookup", "unlookup"):
             n = 3 if n == -1 else n

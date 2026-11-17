@@ -12,6 +12,7 @@ from ..formats.kmx_block_marks import encode_kmx_block_marks
 from ..formats.kmx_circuit import KmxCircuit, read_kmx_circuit
 from ..lowering.reversible_phase import lower_reversible_phase
 from .arithmetic.inplace_addition import inplace_addition_ir
+from .comparison.physical_comparison import physical_less_than
 from .finite_field.coefficients import ClassicalFieldCoefficient
 from .lookup.measured_unlookup import measured_unlookup_operations
 from .lookup.recursive_lookup import recursive_lookup_operations
@@ -77,6 +78,40 @@ def generate_addition(
         registers += (_quantum_register(enable),)
     calls = [ComponentCall("iadd", 0, len(program.operations))]
     return _physical_circuit(registers, program, calls)
+
+
+def generate_comparison(
+    width: int,
+    *,
+    clean_count: int,
+    controlled: bool,
+    minimize_qubits: bool,
+    btol: float,
+) -> KmxCircuit:
+    """Generate a less-than comparison with the measured and narrow routes."""
+    left = tuple(range(width))
+    right = tuple(range(width, 2 * width))
+    clean = tuple(range(2 * width, 2 * width + clean_count))
+    enable = 2 * width + clean_count
+    target = enable + int(controlled)
+    program, call = physical_less_than(
+        left[::-1],
+        right[::-1],
+        target,
+        clean,
+        control=enable if controlled else True,
+        btol=btol,
+        minimize_qubits=minimize_qubits,
+    )
+    registers: tuple[KmxRegister, ...] = (
+        _quantum_register(left),
+        _quantum_register(right),
+    )
+    if controlled:
+        registers = (*registers, _quantum_register((enable,)))
+    return _physical_circuit(
+        (*registers, _quantum_register((target,))), program, [call]
+    )
 
 
 def generate_table(

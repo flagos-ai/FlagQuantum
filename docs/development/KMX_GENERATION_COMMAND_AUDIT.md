@@ -26,7 +26,7 @@ K-0036 tracks the complete `main_generate_circuit.cc` at locked Kickmix blob
 ## Verification
 
 The checked-in CLI capture was generated with the unchanged source command.
-Thirteen cases cover both serializations, zero-width and width-one table
+The initial thirteen cases cover both serializations, zero-width and width-one table
 paths, controlled lookup, measured unlookup, and controlled and uncontrolled
 addition with borrowed and measured carry. The source's diagram and analysis
 outputs are also captured. A separate grid sweeps widths 0–4, admissible
@@ -45,13 +45,42 @@ two-address-bit, one-output-bit case, lookup has 25 physical operations and
 unlookup has 30, excluding call marks and register declarations. The analysis
 SVG reports the source's CCZ-state estimate separately.
 
+## Quantum less-than generation
+
+The fourth mode uses the shared comparator schedules. The locked source calls
+`gen_cmp.cc` (blob `fd73b653bd9ef09000e56021aab804a0b2733cf3`) and dispatches
+to `gen_cmp_qq.cc` (blob `7c618915a2b61ea26472652cf88bc79fe17c4096`) for
+infinite tolerance with fewer clean wires than input lanes. Finite tolerances
+below the word width either skip the operation or recursively compare the
+most significant `ceil(btol) - 1` lanes. The control, output and workspace keep
+their original wire IDs. The physical exporter retains allocations as R
+records and encloses the default ladder's feedback in one condition scope per
+erased carry; the narrow route retains inline guards. Reserved dirty wires
+are unused in these quantum routes.
+
+Twelve captured comparator cases cover both serializations, nested calls,
+empty widths, work allocation, and exact and reduced comparisons. An
+independent 240-case sweep matches every one of 216 admitted KMX streams
+and all 80 captured KMB streams. The native path rejects the same twenty
+insufficient-clean inputs that abort the source, plus four finite-tolerance,
+two-bit, zero-clean inputs where the source indexes nonexistent carry wires
+and segfaults. The native validation error preserves the output file.
+
+The execution test projects all reset and erasure branches on complex
+superpositions of each logical register, output, and optional control.
+For the three-bit controlled default case, the primitive stream has 14 CX,
+5 CCX, 4 CZ, 3 explicit R and 3 HMR. POP/PUSH records and component marks
+are separate. The three-bit controlled narrow case has 13 CX and 9 CCX
+with zero resets or outcomes. Idle or borrowed storage is restored and
+all active clean wires end in zero. These are emitted record counts, with
+the CCZ-state estimate still provided separately through the resource chart.
+
 ## Open source paths
 
 | Source mode | Remaining physical alignment |
 | --- | --- |
-| `flip_if_lt` | The default-clean quantum path dispatches through the measured comparison ladder in `gen_cmp.cc`. The existing quantum comparison emitter follows the other `gen_cmp_qq.cc` route. Port the dispatch, ladder, and tolerance recursion. |
 | `iadd_classical` | Match clean-wire resets at their allocation sites and preserve the HMR result as the outer condition in erasure feedback. |
 | `iadd_classical_simple` | Match reset interleaving and HMR condition nesting in the one-clean-wire-per-lane schedule. |
 | `imul2_mod` | Match helper resets, nested component marks, outer HMR conditions, and result slot allocation after the full physical modulus register, including fixed-endpoint slots. Cover both constant and register modulus forms. |
 
-The K-0036 source inventory remains open for these four modes.
+The K-0036 source inventory remains open for these three modes.
