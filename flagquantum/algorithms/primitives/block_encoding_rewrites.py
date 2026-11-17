@@ -5,7 +5,7 @@
 
 """Collect signed terms before binding a block encoding to a circuit."""
 
-from collections import defaultdict
+from collections.abc import Callable, Hashable
 from dataclasses import replace
 from typing import cast
 
@@ -21,44 +21,66 @@ def _uses_default_oracles(block: LinearCombinationBlockEncoding) -> bool:
     return block.prepare_override is None and block.select_override is None
 
 
-def collect_like_terms(block: _BlockMetadata) -> _BlockMetadata:
-    """Flatten nested default LCUs, preserving first occurrence order and precision.
+def collect_like_terms(
+    block: _BlockMetadata,
+    *,
+    rebuild_oracles: bool = False,
+    term_key: Callable[[_BlockMetadata], Hashable | None] | None = None,
+) -> _BlockMetadata:
+    """Collect terms in first occurrence order with the source precision rule.
 
-    Native child equality determines which terms can merge. Custom-oracle
-    blocks and unrecognized block families pass through as opaque children.
-    Bind the rewritten block with factories in its new term order.
+    By default, supplied oracles remain opaque. Set `rebuild_oracles` to use
+    the original rule that recomputes PREPARE and SELECT even for customized
+    blocks. Bind the result using its new layouts and term order.
+
+    A supplied key declares interchangeability of complete terms, including
+    their metadata and directional binders. A key of None uses native object
+    equality. The first term for each key supplies the binding.
     """
-    if isinstance(block, PhaseBlockEncoding):
-        return replace(block, block_encoding=collect_like_terms(block.block_encoding))
-    if isinstance(block, (ProductBlockEncoding, TensorProductBlockEncoding)):
-        return replace(
-            block,
-            block_encodings=tuple(
-                collect_like_terms(child) for child in block.block_encodings
-            ),
-        )
-    if not isinstance(
-        block, LinearCombinationBlockEncoding
-    ) or not _uses_default_oracles(block):
-        return block
 
-    coefficients: dict[_BlockMetadata, float] = defaultdict(float)
-    precision = block.coefficient_bits
-    for child, weight in zip(block.block_encodings, block.coefficients, strict=True):
-        term = collect_like_terms(child)
-        if isinstance(term, LinearCombinationBlockEncoding) and _uses_default_oracles(
-            term
-        ):
-            precision = cast(
-                SymbolicInt,
-                smax(precision, block.coefficient_bits + term.coefficient_bits),
+    def rewrite(node: _BlockMetadata) -> _BlockMetadata:
+        if isinstance(node, PhaseBlockEncoding):
+            return replace(node, block_encoding=rewrite(node.block_encoding))
+        if isinstance(node, (ProductBlockEncoding, TensorProductBlockEncoding)):
+            return replace(
+                node,
+                block_encodings=tuple(rewrite(child) for child in node.block_encodings),
             )
-            for nested, coefficient in zip(
-                term.block_encodings, term.coefficients, strict=True
-            ):
-                coefficients[nested] += weight * coefficient
-        else:
-            coefficients[term] += weight
-    return LinearCombinationBlockEncoding(
-        tuple(coefficients), tuple(coefficients.values()), precision
-    )
+        if not isinstance(node, LinearCombinationBlockEncoding) or (
+            not rebuild_oracles and not _uses_default_oracles(node)
+        ):
+            return node
+
+        terms: dict[
+            tuple[bool, _BlockMetadata | Hashable], tuple[_BlockMetadata, float]
+        ] = {}
+
+        def accumulate(term: _BlockMetadata, coefficient: float) -> None:
+            explicit = term_key(term) if term_key is not None else None
+            key = (False, term) if explicit is None else (True, explicit)
+            first, subtotal = terms.get(key, (term, 0.0))
+            terms[key] = first, subtotal + coefficient
+
+        precision = node.coefficient_bits
+        for child, weight in zip(node.block_encodings, node.coefficients, strict=True):
+            term = rewrite(child)
+            if isinstance(
+                term, LinearCombinationBlockEncoding
+            ) and _uses_default_oracles(term):
+                precision = cast(
+                    SymbolicInt,
+                    smax(precision, node.coefficient_bits + term.coefficient_bits),
+                )
+                for nested, coefficient in zip(
+                    term.block_encodings, term.coefficients, strict=True
+                ):
+                    accumulate(nested, weight * coefficient)
+            else:
+                accumulate(term, weight)
+        return LinearCombinationBlockEncoding(
+            tuple(term for term, _ in terms.values()),
+            tuple(coefficient for _, coefficient in terms.values()),
+            precision,
+        )
+
+    return rewrite(block)

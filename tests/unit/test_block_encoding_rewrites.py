@@ -21,6 +21,7 @@ from flagquantum.algorithms.primitives.product_block_encoding import (
 from flagquantum.algorithms.primitives.tensor_product_block_encoding import (
     TensorProductBlockEncoding,
 )
+from flagquantum.circuit import _CircuitOperation
 from flagquantum.compiler._component_trace.resource_model import (
     ComponentCost,
     GateCost,
@@ -151,6 +152,47 @@ def _controlled(
     return bind
 
 
+def _bind_rewritten_lcu(
+    block: LinearCombinationBlockEncoding,
+    binders: tuple[
+        Callable[
+            [
+                int,
+                Mapping[str, tuple[int, ...]],
+                tuple[int, ...],
+                tuple[int, ...],
+                bool,
+            ],
+            _CircuitOperation,
+        ],
+        ...,
+    ],
+    *,
+    adjoint: bool = False,
+) -> tuple[DynamicCircuit, tuple[int, ...]]:
+    ancilla_end = block.system_bitsize + block.ancilla_bitsize
+    through = ancilla_end + block.resource_bitsize
+    prep_work, prep_slots = block.coefficient_preparation.workspace_requirements
+    traversal = indexed_component_workspace((block.select.selection_bitsize,), 0)
+    work = tuple(range(through, through + max(prep_work, traversal)))
+    slots = tuple(range(max(prep_slots, traversal)))
+    operation = block.make_on(
+        binders,
+        system=tuple(range(block.system_bitsize)),
+        ancilla=tuple(range(block.system_bitsize, ancilla_end)),
+        resource=tuple(range(ancilla_end, through)),
+        prepare_workspace=work[:prep_work],
+        prepare_classical_bits=slots[:prep_slots],
+        traversal_workspace=work[:traversal],
+        traversal_classical_bits=slots[:traversal],
+        workspaces=((),) * len(binders),
+        classical_bits=((),) * len(binders),
+        adjoint=adjoint,
+    )
+    width = through + len(work)
+    return DynamicCircuit(width).append(operation), work
+
+
 def test_original_rewritten_terms_append_projection_and_modeled_cost(
     request: pytest.FixtureRequest,
 ) -> None:
@@ -172,27 +214,11 @@ def test_original_rewritten_terms_append_projection_and_modeled_cost(
     expected = (
         torch.as_tensor(get_tensors(source), dtype=torch.complex128) / source.alpha
     )
-    ancilla = tuple(range(1, 1 + block.ancilla_bitsize))
-    resource = tuple(range(1 + len(ancilla), 1 + len(ancilla) + block.resource_bitsize))
-    through = 1 + block.ancilla_bitsize + block.resource_bitsize
-    prep_work, prep_slots = block.coefficient_preparation.workspace_requirements
-    traversal = indexed_component_workspace((block.select.selection_bitsize,), 0)
-    work = tuple(range(through, through + max(prep_work, traversal)))
-    slots = tuple(range(max(prep_slots, traversal)))
-    operation = block.make_on(
-        (_controlled("cx"), _controlled("ch"), _controlled("ch", negate=True)),
-        system=(0,),
-        ancilla=ancilla,
-        resource=resource,
-        prepare_workspace=work[:prep_work],
-        prepare_classical_bits=slots[:prep_slots],
-        traversal_workspace=work[:traversal],
-        traversal_classical_bits=slots[:traversal],
-        workspaces=((),) * 3,
-        classical_bits=((),) * 3,
+    circuit, work = _bind_rewritten_lcu(
+        block, (_controlled("cx"), _controlled("ch"), _controlled("ch", negate=True))
     )
-    width = through + len(work)
-    gates = DynamicCircuit(width).append(operation).to_ir().instructions
+    width = circuit.n_qubits
+    gates = circuit.to_ir().instructions
     events = sum(gate.name == "measure" for gate in gates)
     assert events == 11
     data = torch.tensor([1, 1j], dtype=torch.complex128) / sqrt(2)
@@ -227,3 +253,173 @@ def test_original_rewritten_terms_append_projection_and_modeled_cost(
         key: getattr(source_cost, key) for key in asdict(cost.gates)
     }
     assert cost.peak_logical_qubits == get_cost_value(source, QubitCount())
+
+
+@pytest.mark.parametrize("mode", ("prepare", "select", "both", "both_no_junk"))
+def test_source_reconstruction_replaces_supplied_oracles(mode: str) -> None:
+    from qualtran.bloqs.block_encoding.rewrites import collect_like_terms as original
+
+    from tests.unit.test_linear_combination_custom_oracles import fixture
+
+    native, base, controlled, *_ = fixture(mode, False, True, False)
+    source = original(controlled)
+    rewritten = collect_like_terms(native, rebuild_oracles=True)
+    assert isinstance(rewritten, LinearCombinationBlockEncoding)
+    assert collect_like_terms(native) is native
+    assert rewritten.block_encodings == native.block_encodings
+    assert rewritten.coefficients == source._lambd
+    assert rewritten.coefficient_bits == source.lambd_bits
+    assert (rewritten.ancilla_bitsize, rewritten.resource_bitsize) == (
+        source.ancilla_bitsize,
+        source.resource_bitsize,
+    )
+    assert (rewritten.alpha, rewritten.epsilon) == (source.alpha, source.epsilon)
+    assert base._prepare is not None or base._select is not None
+    assert not source.is_controlled
+    assert source._prepare is source._select is None
+    assert rewritten.prepare_override is rewritten.select_override is None
+    assert rewritten.controlled_select is None
+
+
+@pytest.mark.parametrize("nested", (False, True))
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_rebuilt_oracles_and_explicit_term_identity_through_append(
+    nested: bool, adjoint: bool
+) -> None:
+    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.block_encoding import LinearCombination, Unitary
+    from qualtran.bloqs.block_encoding.rewrites import collect_like_terms as original
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+    from tests.unit.test_linear_combination_catalog import _assert_source_flow
+    from tests.unit.test_linear_combination_custom_oracles import source_prepare
+    from tests.unit.test_sparse_chemistry_prepare import _branch
+
+    x, other_x, h = product_child("x"), product_child("x"), product_child("h")
+    custom_prepare = BlackBoxPrepare(
+        (("address", 1),),
+        (("tag", 1), ("history", 1)),
+        lambda *args: pytest.fail("Rewritten block invoked the discarded preparation"),
+        7.0,
+    )
+    native = LinearCombinationBlockEncoding((x, h), (1.0, -2.0), 1, custom_prepare)
+    source = LinearCombination(
+        (Unitary(XGate()), Unitary(Hadamard())),
+        (1.0, -2.0),
+        1,
+        prepare=source_prepare(1, True),
+    )
+    keys = {x: "x", other_x: "x", h: "h"}
+    if nested:
+        native = LinearCombinationBlockEncoding((native, other_x), (2.0, -1.0), 2)
+        source = LinearCombination((source, Unitary(XGate())), (2.0, -1.0), 2)
+
+    rewritten = collect_like_terms(native, rebuild_oracles=True, term_key=keys.get)
+    source = original(source)
+    assert isinstance(rewritten, LinearCombinationBlockEncoding)
+    assert rewritten.block_encodings == (x, h)
+    assert rewritten.block_encodings[0] is x
+    assert rewritten.coefficients == source._lambd
+    assert rewritten.coefficient_bits == source.lambd_bits
+    assert (rewritten.ancilla_bitsize, rewritten.resource_bitsize) == (
+        source.ancilla_bitsize,
+        source.resource_bitsize,
+    )
+    circuit, work = _bind_rewritten_lcu(
+        rewritten, (_controlled("cx"), _controlled("ch")), adjoint=adjoint
+    )
+    if adjoint:
+        source = source.adjoint()
+    _assert_source_flow(source, rewritten, circuit)
+
+    ir = circuit.to_ir()
+    measurements = sum(gate.name == "measure" for gate in ir.instructions)
+    partial = {0: 1 / sqrt(2), 1 << (ir.n_wires - 1): 1j / sqrt(2)}
+    matrix = torch.as_tensor(source.tensor_contract(), dtype=torch.complex128)
+    if nested:
+        expected = sum(
+            amplitude * matrix[:, index >> len(work)]
+            for index, amplitude in partial.items()
+        )
+        sparse_expected = {
+            index << len(work): amplitude
+            for index, amplitude in enumerate(expected.tolist())
+            if abs(amplitude) > 1e-12
+        }
+        for pattern in ((0,), (1,), (0, 1), (1, 0)):
+            observed = _branch(
+                ir.instructions,
+                ir.n_wires,
+                (pattern * measurements)[:measurements],
+                partial,
+                normalize_measurements=True,
+            )
+            assert all(index % (1 << len(work)) == 0 for index in observed)
+            assert observed == pytest.approx(sparse_expected, abs=5e-12)
+    else:
+        initial = torch.zeros(1 << ir.n_wires, dtype=torch.complex128)
+        for index, amplitude in partial.items():
+            initial[index] = amplitude
+        clean = torch.zeros_like(initial).reshape(-1, 1 << len(work))
+        clean[:, 0] = matrix @ initial.reshape_as(clean)[:, 0]
+        for history in product((0, 1), repeat=measurements):
+            torch.testing.assert_close(
+                forced_branch(initial, ir.instructions, history),
+                clean.flatten() / sqrt(2**measurements),
+                rtol=0,
+                atol=5e-12,
+            )
+
+    costs = (
+        ComponentCost("CX", 2, GateCost(clifford=1)),
+        ComponentCost("CH", 2, GateCost(clifford=4, rotation=2)),
+    )
+    for legacy in (False, True):
+        prepare = rewritten.coefficient_preparation.resource_model(legacy_shims=legacy)
+        select = rewritten.select.resource_model(
+            costs, adjoint=adjoint, legacy_shims=legacy
+        )
+        model = estimate_component_resources(
+            rewritten.resource_model(
+                select, prepare, prepare, adjoint=adjoint, legacy_shims=legacy
+            )
+        )
+        reference = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
+        assert model.peak_logical_qubits == get_cost_value(source, QubitCount())
+        assert asdict(model.gates) == {
+            key: getattr(reference, key) for key in asdict(model.gates)
+        }
+
+
+def test_locked_symbolic_precision_and_order_with_declared_nested_identity() -> None:
+    from qualtran.bloqs.basic_gates import Hadamard, XGate
+    from qualtran.bloqs.block_encoding import LinearCombination, Phase, Unitary
+    from qualtran.bloqs.block_encoding.rewrites import collect_like_terms as original
+    from sympy import Symbol
+
+    p = Symbol("p")
+    first_x, second_x, h = product_child("x"), product_child("x"), product_child("h")
+    first_phase, second_phase = (
+        PhaseBlockEncoding(first_x, phi=1, eps=0),
+        PhaseBlockEncoding(second_x, phi=1, eps=0),
+    )
+    first = LinearCombinationBlockEncoding((first_phase, h), (1.0, 2.0), 2)
+    parent = LinearCombinationBlockEncoding((first, second_phase), (1.0, -1.0), p)
+    native = PhaseBlockEncoding(parent, phi=0.5, eps=0)
+
+    x0, x1, h0 = Unitary(XGate()), Unitary(XGate()), Unitary(Hadamard())
+    phase0, phase1 = Phase(x0, phi=1, eps=0), Phase(x1, phi=1, eps=0)
+    inner = LinearCombination((phase0, h0), (1.0, 2.0), 2)
+    locked = original(Phase(LinearCombination((inner, phase1), (1.0, -1.0), p), 0.5, 0))
+
+    declared = {first_phase: ("phase", 1, "x"), second_phase: ("phase", 1, "x")}
+    rewritten = collect_like_terms(native, term_key=declared.get)
+    assert isinstance(rewritten, PhaseBlockEncoding)
+    block = rewritten.block_encoding
+    assert isinstance(block, LinearCombinationBlockEncoding)
+    source = locked.block_encoding
+    assert block.block_encodings == (first_phase, h)
+    assert rewritten.phi == locked.phi
+    assert block.coefficients == source._lambd == (0.0, 2.0)
+    assert block.coefficient_bits == source.lambd_bits

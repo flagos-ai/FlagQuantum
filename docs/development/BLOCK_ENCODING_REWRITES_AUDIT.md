@@ -7,7 +7,7 @@ copyright Google LLC.
 
 | Item | Frozen source | Git blob | Disposition |
 | --- | --- | --- | --- |
-| Q-0294 | `rewrites.py` | `209c5aad537c9cbd8458d26294bdb6eb09a5a43d` | Open for generic foreign term identity and custom-oracle rewrite semantics. |
+| Q-0294 | `rewrites.py` | `209c5aad537c9cbd8458d26294bdb6eb09a5a43d` | Verified source oracle reconstruction and explicit term identity. Automatic equivalence for arbitrary callable and foreign terms remains open. |
 | Q-0295 | `rewrites_test.py` | `79422a95c589b573eea88b689686508b69cd9ab1` | Closed. Both original test scenarios have native equivalents. |
 
 The rewrite operates on unbound Algorithms block objects. It traverses
@@ -18,15 +18,18 @@ maximum of the parent precision and the parent-plus-child value for each
 nested LCU. Cancellation preserves zero-valued terms. A single remaining
 unique term retains the source constructor's minimum-arity refusal.
 
-Native emitters are Python callables and their existing equality and hash
-govern term equivalence. The source's separate structurally equal X gate
-objects can merge. Two independently constructed native callable wrappers
-remain distinct unless their existing equality establishes equivalence.
-The test reuses the same native X object for the original duplicated term.
-When presented with explicit PREPARE or SELECT overrides, FlagQuantum keeps
-that block opaque and preserves its oracles. The source rule rebuilds LCU
-objects with default oracles. No generic callable or external-block
-compatibility contract is introduced.
+Native term equality and hash govern the ordinary rewrite. A caller can
+supply `term_key` for independently constructed interchangeable terms. The
+key covers the complete term, including parameters and directional bindings.
+The first representative is retained. A key of `None` uses the existing
+equality, so a caller can declare equivalence only for terms it knows.
+
+Supplied native oracles are opaque by default. The `rebuild_oracles=True`
+path follows the locked rule and reconstructs every visited LCU with its
+default PREPARE and SELECT. The locked constructor also clears the source's
+stored control flag. Native LCU controls are supplied at binding, so
+the equivalent result is appended without an outer control. Callers rebind
+using the rewritten port sizes, work ownership and new term order.
 
 The original atomic/phase/product scenario and the nested tensor product
 scenario both pass. The latter changes the nested terms to X, H and phased H
@@ -44,6 +47,29 @@ projected block and clears all five temporary work wires.
 | Measurements | 11 | 11 |
 | Width | 15 reserved | 15 peak logical qubits |
 | Additional modeled categories | Reported as primitive instruction opcodes | 110 Cliffords and four rotations |
+
+## Reconstructed oracle cases
+
+Four supplied-oracle configurations compare the rebuilt signature,
+coefficients, error and normalization. The PREPARE-only case grows the
+resource word from two to four. Nesting that block and an independently
+constructed X merges the two X terms, preserves the first X binding and
+produces coefficients `(1, -4)` at precision three. The symbolic case
+checks source precision propagation under an enclosing Phase and
+retains a zero coefficient on cancellation.
+
+Both directions of the standalone and nested cases compare literal
+primitive operands and measurement feedback to the locked exports. The
+standalone case checks all four measurement histories. The nested case
+checks all-zero, all-one and both alternating histories across ten
+measurements. Every checked history compares the complete output for the
+specified coherent input and clears private work. The independent models
+agree in both resource profiles.
+
+| Rewritten fixture | Physical emission | Modern source model |
+| --- | --- | --- |
+| Standalone, precision one | 22 T/T-dagger, 53 CX, 2 measurements, 8 reserved wires | 2 Fredkins, 2 And, 48 Cliffords, 2 rotations, 2 measurements, peak 8 |
+| Nested, precision three | 54 T/T-dagger, 175 CX, 10 measurements, 18 reserved wires | 2 Fredkins, 10 And, 142 Cliffords, 2 rotations, 10 measurements, peak 18 |
 
 ```python
 from examples.algorithms.product_block_catalog import product_child
