@@ -327,3 +327,38 @@ def test_target_region_plot_matches_locked_patch_geometry(
             locked.get_path().vertices
         )
         np.testing.assert_array_equal(vertices, locked_vertices)
+
+
+def test_rotation_root_exports_map_to_native_owners() -> None:
+    from qualtran import rotation_synthesis as source
+
+    from flagquantum.ecosystem._quirk_rotation import to_quirk
+    from flagquantum.ecosystem.cirq._rotation_export import to_cirq
+    from flagquantum.synth import _rotation_protocols as native
+    from flagquantum.synth._clifford_t_repr import to_sequence
+
+    native_exports = {
+        "NumpyConfig": mc.NumpyConfig,
+        "with_dps": mc.with_dps,
+        "to_cirq": to_cirq,
+        "to_quirk": to_quirk,
+        "to_sequence": to_sequence,
+        "diagonal_unitary_approx": native.diagonal_unitary_approx,
+        "fallback_protocol": native.fallback_protocol,
+        "magnitude_approx": native.magnitude_approx,
+        "mixed_diagonal_protocol": native.mixed_diagonal_protocol,
+        "mixed_fallback_protocol": native.mixed_fallback_protocol,
+    }
+    assert set(native_exports) == {
+        name
+        for name, value in vars(source).items()
+        if not name.startswith("_") and (callable(value) or name == "NumpyConfig")
+    }
+    for name, implementation in native_exports.items():
+        if name == "NumpyConfig":
+            assert isinstance(implementation, mc.MathConfig)
+            assert implementation.name == source.NumpyConfig.name
+        else:
+            assert (
+                callable(implementation) and getattr(implementation, "__name__") == name
+            )

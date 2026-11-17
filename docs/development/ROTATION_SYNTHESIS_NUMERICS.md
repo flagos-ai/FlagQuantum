@@ -357,3 +357,104 @@ T. Both unnormalized complex columns match in each measurement branch,
 with operand and condition checks and the ancilla returned to zero.
 Mixed and twirled results keep the analytical channel model and
 resource semantics described in the preceding section.
+
+## Running the source examples
+
+| Item | Frozen file under `rotation_synthesis/` | Git blob |
+| --- | --- | --- |
+| Q-0818 | `README.md` | `ffe88969b5c173869c7012b8111da7ecefd6de36` |
+| Q-0819 | `__init__.py` | `9a8b46f674a9a464b37c146a4fb9ee9f21d57db5` |
+
+The four original examples approximate `exp(i theta Z)`, which is
+`Rz(-2 * theta)`, at theta 0.1 and error 1e-8. The internal synthesis
+owners provide these entry points for integration. The example scopes
+the requested mpmath precision because `with_dps` sets it process-wide.
+
+```python
+import mpmath
+import torch
+
+from flagquantum import Circuit
+from flagquantum.dynamic import DynamicCircuit
+from flagquantum.synth import _rotation_protocols as synthesis
+from flagquantum.synth._clifford_t_repr import to_sequence
+from flagquantum.synth._rotation_channel_operation import (
+    ProjectiveChannelOperation,
+    UnitaryChannelOperation,
+)
+from flagquantum.synth._rotation_math import with_dps
+
+with mpmath.workdps(300):
+    config = with_dps(300)
+    theta = 0.1
+    eps = mpmath.mpf(1e-8)
+    diagonal = synthesis.diagonal_unitary_approx(theta, eps, 400, config)
+    fallback = synthesis.fallback_protocol(theta, eps, 0.99, 200, config)
+    mixed_diagonal = synthesis.mixed_diagonal_protocol(theta, eps, 300, config)
+    mixed_fallback = synthesis.mixed_fallback_protocol(theta, eps, 0.99, 300, config)
+    assert diagonal and fallback and mixed_diagonal and mixed_fallback
+
+    for channel in (diagonal, fallback, mixed_diagonal, mixed_fallback):
+        expected = float(channel.expected_num_ts(config))
+        distance = float(channel.diamond_norm_distance_to_rz(theta, config))
+        print(f"{expected:.6f} T, diamond distance {distance:.8e}")
+
+    exact_matrix = diagonal.to_matrix()
+    word = to_sequence(exact_matrix)
+    circuit = Circuit(1, dtype=torch.complex128).append(
+        UnitaryChannelOperation(diagonal, 0, "xyz")
+    )
+    measured = DynamicCircuit(2, dtype=torch.complex128).append(
+        ProjectiveChannelOperation(fallback, target=0, ancilla=1, classical_bit=0, fmt="xyz")
+    )
+    print(len(word), len(circuit.to_ir().instructions), len(measured.to_ir().instructions))
+```
+
+| Protocol | Model T count | Model diamond distance |
+| --- | ---: | ---: |
+| Diagonal | 80 | 8.85416237e-9 |
+| Fallback | 32.335168 expected | 8.35838888e-9 |
+| Mixed diagonal | 40.645503 expected | 9.33668500e-9 |
+| Mixed fallback | 18.982145 expected | 5.39736297e-10 |
+
+The fallback model uses 32 T in the projection and 65 T in the
+correction, which happens with probability about 0.005156. With the
+XYZ binding above, the diagonal word has 82 labels and emits 248
+primitives. The fallback IR contains 323 primitives, including
+conditional correction and cleanup. Use `measured.to_ir().instructions`
+to inspect the classical conditions. The mixed forms expose distance
+and weighted T models for the channel mixture.
+
+Optional exports of the deterministic and projective results use the
+Ecosystem adapters. Running Cirq export requires the Cirq extra.
+
+```python
+from flagquantum.ecosystem._quirk_rotation_channels import (
+    export_projective_channel_quirk,
+    export_unitary_channel_quirk,
+)
+from flagquantum.ecosystem.cirq._rotation_channels import (
+    export_projective_channel_cirq,
+    export_unitary_channel_cirq,
+)
+
+diagonal_cirq = export_unitary_channel_cirq(diagonal, "xz")
+fallback_cirq = export_projective_channel_cirq(fallback, "xz")
+diagonal_quirk = export_unitary_channel_quirk(diagonal, "xz")
+fallback_quirk = export_projective_channel_quirk(fallback, "xz")
+```
+
+The locked guide uses roughly `10 * log10(1 / eps)` decimal digits as
+an empirical starting point. Low precision can miss a candidate or
+trigger a numerical error. Higher precision increases runtime. The
+finite-search return and exception behavior is described above.
+
+The ten root exports map to the existing native modules.
+
+| Exports | Owner |
+| --- | --- |
+| `NumpyConfig`, `with_dps` | `synth/_rotation_math.py` |
+| `to_sequence` | `synth/_clifford_t_repr.py` |
+| `to_cirq` | `ecosystem/cirq/_rotation_export.py` |
+| `to_quirk` | `ecosystem/_quirk_rotation.py` |
+| `diagonal_unitary_approx`, `fallback_protocol`, `magnitude_approx`, `mixed_diagonal_protocol`, `mixed_fallback_protocol` | `synth/_rotation_protocols/` |
