@@ -390,3 +390,199 @@ def test_child_model_includes_all_system_ports():
     encoding, *_ = _fixture("add2", 0, 0)
     with pytest.raises(ValueError, match="every system"):
         encoding.resource_model(ComponentCost("narrow", 3))
+
+
+@pytest.mark.ftqc_reference
+def test_original_shaped_ports_and_symbolic_declarations() -> None:
+    from dataclasses import dataclass
+
+    import numpy as np
+    from qualtran import Bloq, BloqBuilder, QBit
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import Hadamard, Identity, XGate
+    from qualtran.bloqs.block_encoding import Unitary
+    from qualtran.resource_counting import QubitCount, get_cost_value
+    from sympy import Symbol
+
+    from flagquantum import Circuit
+    from flagquantum.algorithms.primitives.unitary_block_encoding import (
+        source_unitary_block_resource_formula,
+        source_unitary_block_signature,
+    )
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
+        SymbolicResourceFormula,
+    )
+    from flagquantum.core.ir.program.register_types import quantum_bit_type
+    from flagquantum.core.ir.program.registers import Register
+    from flagquantum.core.ir.program.signatures import Signature
+    from flagquantum.simulation.unitary import get_unitary
+
+    @dataclass(frozen=True)
+    class ShapedX(Bloq):
+        shape: tuple
+
+        @property
+        def signature(self) -> SourceSignature:
+            return SourceSignature([SourceRegister("q", QBit(), shape=self.shape)])
+
+        def build_composite_bloq(
+            self, bb: BloqBuilder, q: np.ndarray
+        ) -> dict[str, np.ndarray]:
+            return {
+                "q": np.array(
+                    [bb.add(XGate(), q=wire) for wire in q.flat], dtype=object
+                ).reshape(q.shape)
+            }
+
+    def emit(
+        ports: Mapping[str, tuple[int, ...]],
+        work: tuple[int, ...],
+        slots: tuple[int, ...],
+        adjoint: bool,
+    ) -> tuple[Instruction, ...]:
+        return (Instruction("x", ports["q"]),)
+
+    for shape in ((1,), (1, 1), (2,), (Symbol("k", positive=True, integer=True),)):
+        typed = Signature((Register("q", quantum_bit_type(), shape=shape),))
+        locked = Unitary(ShapedX(shape))
+        declared = source_unitary_block_signature(typed)
+        assert [(r.name, r.bitsize) for r in declared] == [
+            (r.name, r.bitsize) for r in locked.signature
+        ]
+        if shape in ((1,), (1, 1)):
+            native = UnitaryBlockEncoding.from_signature(typed, emit)
+            actual = Circuit(1, dtype=torch.complex128).append(
+                native.make_on(system=(0,))
+            )
+            assert actual.to_ir().instructions == (Instruction("x", (0,)),)
+            torch.testing.assert_close(
+                get_unitary(actual),
+                torch.as_tensor(locked.tensor_contract(), dtype=torch.complex128),
+            )
+        else:
+            with pytest.raises(ValueError, match="Total bitsize"):
+                locked.tensor_contract()
+            with pytest.raises(
+                ValueError, match="source packed width|concrete quantum"
+            ):
+                UnitaryBlockEncoding.from_signature(typed, emit)
+
+    a, r = (Symbol(name, positive=True, integer=True) for name in ("a", "r"))
+    locked = Unitary(Hadamard(), ancilla_bitsize=a, resource_bitsize=r)
+    signature = source_unitary_block_signature(
+        Signature.build(q=1), ancilla=a, resource=r
+    )
+    assert [(reg.name, reg.bitsize) for reg in signature] == [
+        (reg.name, reg.bitsize) for reg in locked.signature
+    ]
+    formula = source_unitary_block_resource_formula(
+        SymbolicResourceFormula(0, 1, 0, 1), ancilla=a, resource=r
+    )
+    assert formula.logical_qubits == get_cost_value(locked, QubitCount())
+    assert formula.clifford == 1
+    n = Symbol("n", positive=True, integer=True)
+    variable_child = Signature.build(q=n)
+    variable = source_unitary_block_signature(variable_child, ancilla=a, resource=r)
+    locked_variable = Unitary(Identity(n), ancilla_bitsize=a, resource_bitsize=r)
+    assert [(reg.name, reg.bitsize) for reg in variable] == [
+        (reg.name, reg.bitsize) for reg in locked_variable.signature
+    ]
+    with pytest.raises(ValueError, match="concrete quantum"):
+        UnitaryBlockEncoding.from_signature(variable_child, emit)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("pattern", [(1,), (0,), (1, 0), (1, 0, 1)])
+@pytest.mark.parametrize("adjoint", [False, True])
+@pytest.mark.parametrize("aux", [False, True])
+def test_generic_unitary_control_preserves_complex_branches(
+    pattern: tuple[int, ...], adjoint: bool, aux: bool
+) -> None:
+    import numpy as np
+    from qualtran import CtrlSpec
+    from qualtran.bloqs.basic_gates import TGate
+    from qualtran.bloqs.block_encoding import Unitary
+
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+    from flagquantum.dynamic import DynamicCircuit
+
+    child, *_ = _fixture("t", int(aux), int(aux))
+    original = Unitary(TGate(), ancilla_bitsize=int(aux), resource_bitsize=int(aux))
+    spec = CtrlSpec(cvs=pattern[0] if len(pattern) == 1 else np.array(pattern))
+    root = original.controlled(ctrl_spec=spec)
+    if adjoint:
+        root = root.adjoint()
+    target = len(pattern)
+    ancilla, resource = ((target + 1,), (target + 2,)) if aux else ((), ())
+    logical = target + 1 + 2 * int(aux)
+    work = tuple(range(logical, logical + target - 1))
+    slots = tuple(range(3, 3 + len(work)))
+    width = logical + len(work)
+    registers = (ControlRegister(1, pattern),)
+    predicate = work[-1] if work else 0
+
+    def bind(
+        control: int,
+        ports: Mapping[str, tuple[int, ...]],
+        child_work: tuple[int, ...],
+        child_slots: tuple[int, ...],
+        inverse: bool,
+    ) -> tuple[Instruction, ...]:
+        assert (control, ports["q"], child_work, child_slots, inverse) == (
+            predicate,
+            (target,),
+            (),
+            (),
+            adjoint,
+        )
+        return (
+            Instruction(
+                "cphase",
+                (control, target),
+                params={"theta": (-1 if inverse else 1) * pi / 4},
+            ),
+        )
+
+    # The concrete fixture's child register name is q.
+    operation = child.make_controlled_on(
+        bind,
+        controls=(tuple(range(target)),),
+        control_registers=registers,
+        system=(target,),
+        ancilla=ancilla,
+        resource=resource,
+        control_workspace=work,
+        control_classical_bits=slots,
+        adjoint=adjoint,
+    )
+    gates = DynamicCircuit(width).append(operation).to_ir().instructions
+    assert tuple(g.wires for g in gates if g.name == "cphase") == ((predicate, target),)
+    assert tuple(
+        g.metadata["classical_bit"] for g in gates if g.name == "measure"
+    ) == tuple(reversed(slots))
+    values = torch.arange(1 << logical, dtype=torch.float64)
+    state = torch.complex(values + 1, values % 7 - 3)
+    state /= state.norm()
+    initial = torch.zeros(1 << width, dtype=torch.complex128)
+    expected = torch.zeros_like(initial)
+    initial[:: 1 << len(work)] = state
+    source = torch.as_tensor(root.tensor_contract(), dtype=torch.complex128)
+    expected[:: 1 << len(work)] = source @ state
+    for history in product((0, 1), repeat=len(work)):
+        torch.testing.assert_close(
+            forced_branch(initial, gates, history),
+            expected * 2 ** (-len(work) / 2),
+            rtol=0,
+            atol=3e-12,
+        )
+    for legacy in (False, True):
+        _assert_model(
+            child.controlled_resource_model(
+                ComponentCost("ControlledT", 2, GateCost(rotation=1)),
+                registers,
+                legacy_shims=legacy,
+            ),
+            root,
+            legacy,
+        )

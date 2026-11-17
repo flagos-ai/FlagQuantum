@@ -39,8 +39,8 @@ signature and the declared scale and error. Their full 2-by-2 and
 the forward stream has T on the system only and the inverse restores
 all basis columns. Tests verify identity signal preparation and the
 source's refusal to wrap a one-sided integer state. The concrete typed
-adapter uses the existing register metadata; it refuses shaped, symbolic,
-and classical child registers because the binding uses flat quantum words.
+adapter uses the existing register metadata. The shape cases below
+cover which source declarations can bind.
 
 The unchanged original non-notebook run has eight passes and two
 expected source serialization failures. The original 11-cell and native
@@ -48,6 +48,33 @@ expected source serialization failures. The original 11-cell and native
 preserves both fixtures, their graphical signatures, and the single-call
 graph, then exercises append and adjoint with full complex matrices. The
 native notebook runner rejects reference imports and checks both SVGs.
+
+## Shaped, symbolic and controlled bindings
+
+The locked wrapper declares the sum of child element widths, without
+multiplying by the register shape. Concrete single-element shapes
+`(1,)` and `(1, 1)` bind in the original child port order and agree
+with the complete locked matrix. A two-element shape and a symbolic
+shape each declare width one and fail locked partition. Native
+declarations retain width one and reject the incompatible numerical
+binding. Symbolic ancilla and resource widths appear in the packed
+signature and the independent child peak formula. They require
+concrete sizes before execution.
+
+The generic controlled binding places the directional child behind
+the source positive predicate. It reuses the shared negative-control
+and measured conjunction paths. The comparison covers 16 configurations
+including direct/inverse, four activation patterns, and coherent idle
+ancilla/resource values. Every applicable small measurement history
+matches the full locked complex output with predicate work at zero.
+The two QEC profiles agree with the independent locked model.
+
+For mixed-polarity three-bit control of the T wrapper, native IR emits
+one controlled phase, eight T/T-adjoint instructions for the predicate,
+and two measurements. The source model counts one rotation, two And
+calls and two measurements. A source-compatible quantum child binds
+by its named emitter. Direct generic foreign object and source object
+serialization compatibility remain open.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_unitary_block_encoding.ipynb
