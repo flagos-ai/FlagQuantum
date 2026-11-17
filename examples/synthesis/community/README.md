@@ -24,5 +24,6 @@ Native FlagQuantum programs currently available:
 - [overview](paper_implementation_project/block_encoding/select_structures_be/overview/README.md)
 - [overview](paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/README.md)
 - [overview](paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/README.md)
+- [overview](paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

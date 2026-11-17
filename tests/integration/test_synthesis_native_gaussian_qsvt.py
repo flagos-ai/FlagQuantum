@@ -198,11 +198,24 @@ def test_invalid_declared_overlap_refuses(amplitude: float) -> None:
         native.build_program(amplitude)
 
 
+@pytest.mark.parametrize("limits", [{"max_qubits": 17}, {"max_workspace": 4}])
+def test_tighter_budget_selects_equivalent_lower_width_candidate(
+    limits: Limits,
+) -> None:
+    program = synth.synthesize(
+        native.main, classical_inputs=native.classical_inputs(), **limits
+    )
+    assert program.report["workspace_qubits"] == 4
+    torch.testing.assert_close(
+        state(program, 8192), state(native.build_program(), 8192), atol=1e-10, rtol=0
+    )
+
+
 @pytest.mark.parametrize(
     "limits",
     [
-        {"max_qubits": 17},
-        {"max_workspace": 4},
+        {"max_qubits": 13},
+        {"max_workspace": 0},
         {"max_operations": 3756},
         {"max_depth": 3185},
         {"memory_limit_bytes": 1024},

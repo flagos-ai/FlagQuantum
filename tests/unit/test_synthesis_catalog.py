@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 170
+    assert len(validated) == 171
+    assert (
+        "community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt",
+        "examples/synthesis/community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/main.py",
+    ) in validated
     assert (
         "algorithms/quantum_primitives/quantum_oracle_sketching_boolean/quantum_oracle_sketching_boolean",
         "examples/synthesis/algorithms/quantum_primitives/quantum_oracle_sketching_boolean/overview/main.py",
@@ -809,7 +813,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**170/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**171/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
