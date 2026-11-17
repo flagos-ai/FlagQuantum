@@ -107,10 +107,41 @@ The controlled four-bit vented example uses 27 CX, 6 CCX, 3 CZ, 2 R,
 reported separately from these physical operations. The analysis SVG
 continues to report the source's CCZ-state estimate separately.
 
-## Open source paths
+## Modular doubling generation
 
-| Source mode | Remaining physical alignment |
-| --- | --- |
-| `imul2_mod` | Match helper resets, nested component marks, outer HMR conditions, and result slot allocation after the full physical modulus register, including fixed-endpoint slots. Cover both constant and register modulus forms. |
+Both fixed modulus and classical-register modulus forms follow
+`gen_imul2_mod.cc` (blob `f2c07c7825e05cd44bd2f793c0c8a826cf426cb5`).
+The register form keeps both forced endpoint slots in the declaration so
+result allocation starts beyond the entire physical word. The fixed form
+accepts decimal, binary and hexadecimal literals and retains binary width.
+A control register follows the modulus declaration and precedes reserved
+work. The exact path retains rotate tags, helper resets, and measurement
+feedback. The finite-tolerance path composes comparison, prefix phase,
+mixed addition and rotation through their shared emitters. A recycled
+classical vent slot emits the source's explicit store before the vented call.
 
-The K-0036 source inventory remains open for the two parameter forms of `imul2_mod`.
+The first locked CLI grid contains 168 cases. Its 78 admitted KMX and 24
+captured KMB streams match. Native validation rejects all 90 source
+aborts. The extended register-modulus, fixed-modulus, and wide all-ones
+sweeps match 460 more KMX and 460 KMB streams, exercising widths through
+33 and both exact and low-workspace paths. Fourteen locked fixtures
+cover output bytes and argument boundaries. Small exact doubling on
+fixed and variable moduli also checks all reset and HMR histories with
+complex superpositions, including disabled control and work reset to zero.
+
+With constant modulus five and width three, the exact uncontrolled route
+uses 2 SWAP, 2 CX, 2 CCX, 1 reset and 1 HMR. Register modulus width three
+with a quantum control emits 2 CSWAP, 6 CX, 4 CCX, 3 resets and 3 HMR.
+These are physical counts. The analysis output separately reports the
+source's CCZ-state estimate.
+
+The locked all-ones finite-tolerance route reads an empty span while
+trimming the complemented half-modulus. At tested four-lane allocation
+boundaries it pads an empty word; elsewhere it retains the high bit.
+The physical export reproduces the observed fixture behavior in bounds.
+The existing algorithm route keeps its explicit rejection of the empty
+complemented word. Physical compatibility here records the locked
+runtime's observed behavior under this source defect.
+
+K-0036 is accepted for all seven generation modes. The retained upstream
+defects and native validation behavior are documented above.

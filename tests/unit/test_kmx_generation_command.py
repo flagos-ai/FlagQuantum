@@ -11,6 +11,7 @@ from xml.etree.ElementTree import Element, fromstring
 import pytest
 import torch
 
+from flagquantum.compiler._component_trace.trace import ComponentTrace
 from flagquantum.compiler.lowering.reversible_phase_execution import (
     bind_reversible_phase_execution,
 )
@@ -22,6 +23,9 @@ from flagquantum.compiler.registers.comparison.physical_comparison import (
 )
 from flagquantum.compiler.registers.finite_field.coefficients import (
     ClassicalFieldCoefficient,
+)
+from flagquantum.compiler.registers.modular.modular_doubling_dispatch import (
+    modular_doubling_program,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.drawer.kmx_generate_command import main
@@ -71,6 +75,11 @@ def test_diagram_precedes_kmb_and_analysis_survives_skip(tmp_path: Path) -> None
     "argv",
     [
         ["--kind", "iadd"],
+        ["--kind", "imul2_mod", "--mod", "5", "--n", "3"],
+        ["--kind", "imul2_mod", "--n", "1"],
+        ["--kind", "imul2_mod", "--mod", "8"],
+        ["--kind", "imul2_mod", "--mod", "0b0101"],
+        ["--kind", "imul2_mod", "--mod", "xyz"],
         ["--kind", "iadd_classical", "--n", "4", "--minimize_qubits"],
         ["--kind", "iadd_classical_simple", "--n", "2", "--clean", "1"],
         ["--kind", "flip_if_lt"],
@@ -230,4 +239,74 @@ def test_classical_addition_export_restores_every_complex_branch(
         branch = forced_branch(state, gates, outcomes)
         torch.testing.assert_close(
             branch, expected / 2 ** (events / 2), atol=5e-14, rtol=5e-14
+        )
+
+
+@pytest.mark.parametrize(
+    "modulus,register,controlled",
+    [
+        (5, False, False),
+        (5, True, True),
+        (7, False, True),
+        (7, True, False),
+    ],
+)
+def test_exported_modular_doubling_preserves_exact_complex_branches(
+    modulus: int, register: bool, controlled: bool
+) -> None:
+    width = modulus.bit_length()
+    control = width if controlled else None
+    inputs = width + int(controlled)
+    clean = tuple(range(inputs, inputs + width))
+    middle = ClassicalFieldCoefficient(1) if register else bool(modulus & 2)
+    program = modular_doubling_program(
+        tuple(reversed(range(width))),
+        (True, middle, True),
+        clean=clean,
+        control=control,
+        physical_trace=ComponentTrace(),
+        declared_input_width=width if register else 0,
+    )
+    outcome = width if register else 0
+    assert {op.result_bit for op in program.operations if op.opcode == "hmr"} == {
+        outcome
+    }
+    size = 1 << program.n_qubits
+    state = torch.zeros(size, dtype=torch.complex128)
+    expected = torch.zeros_like(state)
+    for value, enable in product(range(modulus), range(1 + int(controlled))):
+        physical = sum(
+            ((value >> q) & 1) << (program.n_qubits - 1 - q) for q in range(width)
+        )
+        enabled = not controlled or bool(enable)
+        if controlled:
+            physical |= enable << (program.n_qubits - 1 - width)
+        amplitude = torch.tensor(
+            complex(value + 2, 3 - value + enable), dtype=torch.complex128
+        )
+        state[physical] = amplitude
+        updated = 2 * value % modulus if enabled else value
+        for q in range(width):
+            physical ^= (((value ^ updated) >> q) & 1) << (program.n_qubits - 1 - q)
+        expected[physical] = amplitude
+    norm = state.norm()
+    state /= norm
+    expected /= norm
+    setup = tuple(
+        ClassicalXor((), bit, bit == 1 and bool(modulus & 2)).instruction()
+        for bit in program.input_bits
+    )
+    gates = (
+        *setup,
+        *expand_reset_branches(
+            bind_reversible_phase_execution(program), first_slot=program.n_bits + 2
+        ),
+    )
+    events = sum(gate.name == "measure" for gate in gates)
+    for outcomes in product((0, 1), repeat=events):
+        torch.testing.assert_close(
+            forced_branch(state, gates, outcomes),
+            expected / 2 ** (events / 2),
+            atol=5e-14,
+            rtol=5e-14,
         )

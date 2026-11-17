@@ -5,6 +5,7 @@
 """Generate physical arithmetic and table circuits as KMX, KMB or text diagrams."""
 
 import argparse
+import re
 import sys
 from math import inf
 from pathlib import Path
@@ -15,6 +16,7 @@ from ..compiler.registers.circuit_generation import (
     generate_addition,
     generate_classical_addition,
     generate_comparison,
+    generate_modular_doubling,
     generate_table,
 )
 from .reversible_phase_analysis import render_reversible_phase_analysis_svg
@@ -28,6 +30,24 @@ def _size(value: str) -> int:
     return parsed
 
 
+def _modulus(value: str) -> tuple[int, int]:
+    text = value.strip(" ")
+    if text.startswith("0b"):
+        digits, radix, pattern = text[2:], 2, r"[01_]+"
+    elif text.startswith("0x"):
+        digits, radix, pattern = text[2:], 16, r"[0-9a-fA-F_]+"
+    else:
+        digits, radix, pattern = text, 10, r"[0-9_]+"
+    if not re.fullmatch(pattern, digits):
+        raise ValueError("Invalid fixed modulus")
+    digits = digits.replace("_", "")
+    number = int(digits, radix)
+    width = len(digits) if radix == 2 else number.bit_length()
+    if radix == 16:
+        width = 4 * (len(digits) - 1) + int(digits[0], 16).bit_length()
+    return number, width
+
+
 def main(argv: list[str] | None = None) -> int:
     """Build and validate the complete physical stream before writing output."""
     parser = argparse.ArgumentParser(
@@ -39,6 +59,7 @@ def main(argv: list[str] | None = None) -> int:
             "iadd",
             "iadd_classical",
             "iadd_classical_simple",
+            "imul2_mod",
             "flip_if_lt",
             "lookup",
             "unlookup",
@@ -55,6 +76,7 @@ def main(argv: list[str] | None = None) -> int:
         "skip_output",
     ):
         parser.add_argument(f"--{flag}", action="store_true")
+    parser.add_argument("--mod")
     parser.add_argument("--btol", type=float, default=inf)
     parser.add_argument("--flame_out", type=Path)
     parser.add_argument("--out", type=Path)
@@ -65,7 +87,11 @@ def main(argv: list[str] | None = None) -> int:
         if not args.btol >= 0:
             raise ValueError("Bit tolerance must be nonnegative")
         n = args.n
-        if args.kind not in (None, "lookup", "unlookup") and n == -1:
+        if (
+            args.kind
+            in ("iadd", "iadd_classical", "iadd_classical_simple", "flip_if_lt")
+            and n == -1
+        ):
             raise ValueError("Need '--n #'.")
         if args.kind == "iadd":
             circuit = generate_addition(
@@ -85,6 +111,21 @@ def main(argv: list[str] | None = None) -> int:
                 minimize_qubits=args.minimize_qubits,
                 btol=args.btol,
                 simple=simple,
+            )
+        elif args.kind == "imul2_mod":
+            modulus = None
+            if args.mod is not None:
+                if n != -1:
+                    raise ValueError("Specify '--mod #' xor '--n #'.")
+                modulus, n = _modulus(args.mod)
+            circuit = generate_modular_doubling(
+                n,
+                modulus=modulus,
+                clean_count=n if args.clean == -1 else args.clean,
+                dirty_count=max(0, args.dirty),
+                controlled=args.controlled,
+                minimize_qubits=args.minimize_qubits,
+                btol=args.btol,
             )
         elif args.kind == "flip_if_lt":
             circuit = generate_comparison(

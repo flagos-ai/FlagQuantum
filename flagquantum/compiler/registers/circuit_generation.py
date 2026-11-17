@@ -19,6 +19,7 @@ from .comparison.physical_comparison import physical_less_than
 from .finite_field.coefficients import ClassicalFieldCoefficient
 from .lookup.measured_unlookup import measured_unlookup_operations
 from .lookup.recursive_lookup import recursive_lookup_operations
+from .modular.modular_doubling_dispatch import modular_doubling_program
 
 
 def _quantum_register(wires: tuple[int, ...]) -> KmxRegister:
@@ -154,6 +155,53 @@ def generate_comparison(
     return _physical_circuit(
         (*registers, _quantum_register((target,))), program, [call]
     )
+
+
+def generate_modular_doubling(
+    width: int,
+    *,
+    modulus: int | None,
+    clean_count: int,
+    dirty_count: int,
+    controlled: bool,
+    minimize_qubits: bool,
+    btol: float,
+) -> KmxCircuit:
+    """Generate doubling with either a constant or a physical modulus register."""
+    if width < 1 or (modulus is None and width < 2):
+        raise ValueError("Specify '--mod #' xor '--n #'.")
+    target = tuple(range(width))
+    control = width if controlled else None
+    work_start = width + int(controlled)
+    dirty_start = work_start + clean_count
+    registers: tuple[KmxRegister, ...] = (_quantum_register(target),)
+    coefficients: tuple[bool | ClassicalFieldCoefficient, ...]
+    if modulus is None:
+        registers += (KmxRegister("", tuple(("b", bit) for bit in range(width))),)
+        coefficients = (
+            True,
+            *(ClassicalFieldCoefficient(bit) for bit in reversed(range(1, width - 1))),
+            True,
+        )
+    else:
+        coefficients = tuple(
+            bool((modulus >> bit) & 1) for bit in reversed(range(width))
+        )
+    if control is not None:
+        registers += (_quantum_register((control,)),)
+    trace = ComponentTrace()
+    program = modular_doubling_program(
+        target[::-1],
+        coefficients,
+        clean=tuple(range(work_start, dirty_start)),
+        dirty=tuple(range(dirty_start, dirty_start + dirty_count)),
+        control=control,
+        minimize_qubits=minimize_qubits,
+        btol=btol,
+        physical_trace=trace,
+        declared_input_width=width if modulus is None else 0,
+    )
+    return _physical_circuit(registers, program, trace.calls)
 
 
 def generate_table(
