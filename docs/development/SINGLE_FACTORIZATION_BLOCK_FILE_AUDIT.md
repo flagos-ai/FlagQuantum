@@ -45,6 +45,30 @@ and temporary cleanup. The two-spatial-orbital case emits 408 T/T† and
 leaves are declaration-only, so there is no complete source primitive
 stream for that physical comparison.
 
+The standalone native `SingleFactorizationOneBody` binds the same body
+used in the full block. It applies inner PREPARE, the two Hadamards, the
+controlled orbital exchange, signed SELECT, and the matching inverse
+preparation. It retains the input factor address and success flag. With
+success zero its system action is the identity. The projected active
+block equals the signed alias-quantized Pauli average. Measurements
+clear borrowed work and lookup outputs, while the coherent signal can
+have nonzero components outside the projected subspace. The complete
+native block used the same instruction sequences before and after the
+extraction in all three existing fixtures.
+
+| Standalone circuit | Emitted T/T† | Measurements | Work wires | Feedback slots | Branch comparison |
+| --- | ---: | ---: | ---: | ---: | --- |
+| One spatial orbital with one or two rows | 26 | 3 | 2 | 1 | All eight histories |
+| Two spatial orbitals with one row | 148 | 23 | 4 | 3 | Four representative histories |
+
+All tested histories agree on the complete complex output for both
+success values and every system basis input. The test also compares the
+projected complex matrix and checks the unchanged address and cleanup.
+The locked standalone graph passes `sys`, `l_ne_zero`, and `rot_aa`
+through, and its SELECT declaration has no `sys` port. The native
+system action uses the independently validated physical SELECT,
+with emitted counts recorded separately from the source model.
+
 ## Tutorial, tests, and remaining boundary
 
 The unmodified 18-cell source tutorial passed in an independent kernel.
@@ -56,7 +80,7 @@ passes, three skips and one notebook deselection with OpenFermion
 format, ownership, architecture, IR, and public API checks passed.
 
 Q-0404 and Q-0406 close the notebook and runnable original tests.
-Q-0405 remains open for a standalone executable one-body binding and
-the end-to-end source-to-physical boundary. The locked source alpha
+Q-0405 remains open for the end-to-end source-to-physical boundary.
+The locked source alpha
 and epsilon getters are both unimplemented and remain explicitly
 outside the verified numerical contract.

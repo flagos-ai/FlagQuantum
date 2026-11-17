@@ -1,6 +1,6 @@
 """Executable single-factorization block encoding from Fig. 15 of arXiv:2011.03494."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 
 from ...circuit import Circuit
@@ -17,6 +17,89 @@ from .single_factorization_inner_prepare import PrepareSingleFactorizationInner
 from .single_factorization_outer_prepare import PrepareSingleFactorizationOuter
 
 _REFLECTED_PORTS = ("p", "q", "sigma", "rotation", "spin", "swap_pq")
+
+
+@dataclass(frozen=True)
+class SingleFactorizationOneBody:
+    """Apply the signed one-body SELECT conjugated by inner preparation.
+
+    A standalone one-body table has only row zero. With a multirow table,
+    the input factor address selects the row. The factor address and outer
+    success flag are retained. The inner signal starts at zero, as do the
+    spin, swap and caller-owned work wires. The signal can leave the zero
+    subspace. The projected zero-signal block is the signed Pauli average.
+    """
+
+    inner: PrepareSingleFactorizationInner
+
+    @property
+    def layout(self) -> RegisterLayout:
+        return (
+            ("succ_l", 1),
+            *self.inner.layout,
+            ("spin", 1),
+            ("swap_pq", 1),
+            ("system", 2 * self.inner.orbitals),
+        )
+
+    def requirements(self) -> tuple[int, int]:
+        """Return borrowed qubits and feedback slots for the standalone body."""
+        inner_work, inner_slots = self.inner.requirements()
+        select_work = SelectSingleFactorization.workspace_size(2 * self.inner.orbitals)
+        select_slots = select_work - int(self.inner.orbitals > 1)
+        return max(inner_work, select_work), max(inner_slots, select_slots)
+
+    def make_on(
+        self, ports: Mapping[str, tuple[int, ...]], *, workspace: tuple[int, ...]
+    ) -> "_BoundSingleFactorization":
+        """Bind the body to a DynamicCircuit."""
+        return _BoundSingleFactorization.bind(self, ports, workspace)
+
+    def _emit(
+        self, ports: Mapping[str, tuple[int, ...]], work: tuple[int, ...], start: int
+    ) -> tuple[Instruction, ...]:
+        return self._prepare_body(ports, work, start)(None)
+
+    def _prepare_body(
+        self, ports: Mapping[str, tuple[int, ...]], work: tuple[int, ...], start: int
+    ) -> Callable[[int | None], tuple[Instruction, ...]]:
+        inner_ports = {name: ports[name] for name, _ in self.inner.layout}
+        inner_work, inner_slots = self.inner.requirements()
+        slots = tuple(range(start, start + inner_slots))
+        prepare = self.inner._emit(inner_ports, work[:inner_work], slots, False)
+        unprepare = self.inner._emit(inner_ports, work[:inner_work], slots, True)
+        p, q = inner_ports["p"], inner_ports["q"]
+        spin, exchange = ports["spin"][0], ports["swap_pq"][0]
+        system = ports["system"]
+        hadamards = (Instruction("h", (spin,)), Instruction("h", (exchange,)))
+        swap = controlled_swap_ir(exchange, p, q) if p else ()
+
+        def emit(factor_control: int | None) -> tuple[Instruction, ...]:
+            size = SelectSingleFactorization.workspace_size(
+                len(system), additional_control=factor_control is not None
+            )
+            select = SelectSingleFactorization(
+                p,
+                q,
+                spin,
+                inner_ports["succ_pq"][0],
+                ports["succ_l"][0],
+                system,
+                work[:size],
+                factor_control,
+                coefficient_sign=inner_ports["theta"][0],
+            )
+            return (
+                *prepare,
+                *hadamards,
+                *swap,
+                *select._emit(start),
+                *swap,
+                *reversed(hadamards),
+                *unprepare,
+            )
+
+        return emit
 
 
 @dataclass(frozen=True)
@@ -97,13 +180,7 @@ class SingleFactorizationBlockEncoding:
         self, ports: Mapping[str, tuple[int, ...]], *, workspace: tuple[int, ...]
     ) -> "_BoundSingleFactorization":
         """Bind the block encoding to a DynamicCircuit."""
-        logical = unpartition_register(ports, self.layout)
-        _validate_wires((*logical, *workspace))
-        if len(workspace) != self.requirements()[0]:
-            raise ValueError("SF block encoding requires matching clean workspace")
-        return _BoundSingleFactorization(
-            self, dict(ports), workspace, max((*logical, *workspace)) + 1
-        )
+        return _BoundSingleFactorization.bind(self, ports, workspace)
 
     def _emit(
         self, ports: Mapping[str, tuple[int, ...]], work: tuple[int, ...], start: int
@@ -115,47 +192,15 @@ class SingleFactorizationBlockEncoding:
             for name, _ in self.inner.layout
         }
         outer_work, outer_slots = self.outer.requirements()
-        inner_work, inner_slots = self.inner.requirements()
-        inner = self.inner._emit(
-            inner_ports, work[:inner_work], slots[:inner_slots], False
-        )
-        inner_inverse = self.inner._emit(
-            inner_ports, work[:inner_work], slots[:inner_slots], True
-        )
-        p, q = inner_ports["p"], inner_ports["q"]
-        spin, exchange = ports["spin"][0], ports["swap_pq"][0]
         succ_l, nonzero = ports["succ_l"][0], ports["l_ne_zero"][0]
-        hadamards = (Instruction("h", (spin,)), Instruction("h", (exchange,)))
-        swap = controlled_swap_ir(exchange, p, q) if p else ()
-
-        def body(additional_control: bool) -> tuple[Instruction, ...]:
-            size = SelectSingleFactorization.workspace_size(
-                len(ports["system"]), additional_control=additional_control
-            )
-            select = SelectSingleFactorization(
-                p,
-                q,
-                spin,
-                inner_ports["succ_pq"][0],
-                succ_l,
-                ports["system"],
-                work[:size],
-                nonzero if additional_control else None,
-                coefficient_sign=inner_ports["theta"][0],
-            )
-            return (
-                *inner,
-                *hadamards,
-                *swap,
-                *select._emit(start),
-                *swap,
-                *reversed(hadamards),
-                *inner_inverse,
-            )
-
-        reflected_ports = inner_ports | {"spin": (spin,), "swap_pq": (exchange,)}
+        body_ports = inner_ports | {
+            name: ports[name] for name in ("succ_l", "spin", "swap_pq", "system")
+        }
+        body = SingleFactorizationOneBody(self.inner)._prepare_body(
+            body_ports, work, start
+        )
         reflected = tuple(
-            wire for name in _REFLECTED_PORTS for wire in reflected_ports[name]
+            wire for name in _REFLECTED_PORTS for wire in body_ports[name]
         )
         count = len(reflected)
         controls = (succ_l, nonzero)
@@ -178,9 +223,9 @@ class SingleFactorizationBlockEncoding:
             *self.outer._emit(
                 outer_ports, work[:outer_work], slots[:outer_slots], False
             ),
-            *body(False),
+            *body(None),
             *reflection,
-            *body(True),
+            *body(nonzero),
             *self.outer._emit(
                 outer_ports, work[:outer_work], slots[:outer_slots], True
             ),
@@ -189,10 +234,23 @@ class SingleFactorizationBlockEncoding:
 
 @dataclass(frozen=True)
 class _BoundSingleFactorization:
-    encoding: SingleFactorizationBlockEncoding
+    encoding: SingleFactorizationBlockEncoding | SingleFactorizationOneBody
     ports: Mapping[str, tuple[int, ...]]
     workspace: tuple[int, ...]
     required_qubits: int
+
+    @classmethod
+    def bind(
+        cls,
+        encoding: SingleFactorizationBlockEncoding | SingleFactorizationOneBody,
+        ports: Mapping[str, tuple[int, ...]],
+        workspace: tuple[int, ...],
+    ) -> "_BoundSingleFactorization":
+        logical = unpartition_register(ports, encoding.layout)
+        _validate_wires((*logical, *workspace))
+        if len(workspace) != encoding.requirements()[0]:
+            raise ValueError("SF block encoding requires matching clean workspace")
+        return cls(encoding, dict(ports), workspace, max((*logical, *workspace)) + 1)
 
     def append_to(self, circuit: Circuit) -> Circuit:
         if circuit.n_qubits < self.required_qubits or not isinstance(

@@ -7,6 +7,10 @@ import pytest
 
 from flagquantum.algorithms.primitives.single_factorization_block_encoding import (
     SingleFactorizationBlockEncoding,
+    SingleFactorizationOneBody,
+)
+from flagquantum.algorithms.primitives.single_factorization_inner_prepare import (
+    PrepareSingleFactorizationInner,
 )
 from flagquantum.compiler._component_trace.resource_comparison import (
     count_emitted_instructions,
@@ -62,6 +66,89 @@ def _paper_body(orbitals, row, bits):
         )
         terms.append(np.sign(value) * probability * average)
     return sum(terms)
+
+
+@pytest.mark.parametrize(
+    ("orbitals", "rows", "address"),
+    [
+        (1, ((-1.0,),), 0),
+        (1, ((1.0,), (-2.0,)), 1),
+        (2, ((1.0, -2.0, 1.0),), 0),
+    ],
+)
+def test_standalone_one_body_projection_and_clean_work(orbitals, rows, address):
+    inner = PrepareSingleFactorizationInner.from_coefficients(
+        orbitals, rows[0], rows[1:], probability_bits=1
+    )
+    body = SingleFactorizationOneBody(inner)
+    logical = sum(width for _, width in body.layout)
+    work, slots = body.requirements()
+    width = logical + work
+    ports = partition_register(tuple(range(logical)), body.layout)
+    bound = body.make_on(ports, workspace=tuple(range(logical, width)))
+    ir = DynamicCircuit(width).append(bound).to_ir()
+    counts = count_emitted_instructions(ir)
+    events = counts.unconditional["measure"]
+    assert (counts.t_count, events, work, slots) == (
+        (26, 3, 2, 1) if orbitals == 1 else (148, 23, 4, 3)
+    )
+    assert {
+        gate.metadata["classical_bit"]
+        for gate in ir.instructions
+        if gate.name == "measure"
+    } == set(range(slots))
+    system_size = 1 << (2 * orbitals)
+    system_mask = (system_size - 1) << work
+    success_mask = 1 << (width - 1 - ports["succ_l"][0])
+    address_shift = width - 1 - ports["l"][-1] if ports["l"] else 0
+    address_mask = ((1 << len(ports["l"])) - 1) << address_shift
+    cleaned = (1 << work) - 1
+    for name in ports.keys() - {
+        "succ_l",
+        "l",
+        "p",
+        "q",
+        "sigma",
+        "rotation",
+        "spin",
+        "swap_pq",
+        "system",
+    }:
+        cleaned |= sum(1 << (width - 1 - wire) for wire in ports[name])
+    histories = (
+        product((0, 1), repeat=events)
+        if orbitals == 1
+        else ((pattern * events)[:events] for pattern in ((0,), (1,), (0, 1), (1, 0)))
+    )
+
+    full_outputs = {}
+    for history in histories:
+        for success in (0, 1):
+            fixed = (success * success_mask) | (address << address_shift)
+            matrix = np.zeros((system_size, system_size), dtype=complex)
+            for col in range(system_size):
+                state = _branch(
+                    ir.instructions,
+                    width,
+                    history,
+                    {fixed | (col << work): 1 + 0j},
+                    normalize_measurements=True,
+                )
+                assert all(not index & cleaned for index in state)
+                assert all(
+                    index & (success_mask | address_mask) == fixed for index in state
+                )
+                known = full_outputs.setdefault((success, col), state)
+                assert state == pytest.approx(known, abs=4e-12)
+                for index, amplitude in state.items():
+                    if index & ~system_mask == fixed:
+                        matrix[(index & system_mask) >> work, col] = amplitude
+            reference = (
+                _paper_body(orbitals, rows[address], 1)
+                if success
+                else np.eye(system_size)
+            )
+            np.testing.assert_allclose(matrix, reference, atol=4e-12, rtol=0)
 
 
 @pytest.mark.parametrize(

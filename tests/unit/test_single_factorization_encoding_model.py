@@ -48,6 +48,7 @@ def _assert_source_graph(model, source):
 @pytest.mark.parametrize("adjoint", [False, True])
 def test_locked_one_body_graph(forward, inverse, adjoint):
     pytest.importorskip("qualtran")
+    from qualtran import LeftDangle, RightDangle
     from qualtran.bloqs.chemistry.sf.single_factorization import (
         SingleFactorizationOneBody,
     )
@@ -70,7 +71,25 @@ def test_locked_one_body_graph(forward, inverse, adjoint):
     assert_source_signature(signature, source.signature)
     assert_source_signature(signature[3:-1], source.selection_registers)
     assert_source_signature(signature[3:-1], source.signal_state.prepare.signature)
-    _assert_source_graph(model, source)
+    stages = _assert_source_graph(model, source)
+    [select] = [
+        instance.bloq
+        for instance, _, _ in stages
+        if type(instance.bloq).__name__ == "SelectSingleFactorization"
+    ]
+    assert [reg.name for reg in select.signature] == [
+        "p",
+        "q",
+        "spin",
+        "succ_pq",
+        "succ_l",
+    ]
+    bypass = {
+        edge.left.reg.name
+        for edge in source.decompose_bloq().connections
+        if edge.left.binst == LeftDangle and edge.right.binst == RightDangle
+    }
+    assert bypass == {"l_ne_zero", "rot_aa", "sys"}
     with pytest.raises(NotImplementedError):
         _ = source.alpha
     with pytest.raises(NotImplementedError):
