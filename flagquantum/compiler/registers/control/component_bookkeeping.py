@@ -5,9 +5,21 @@
 
 """Pass controls unchanged through verified lifetime and register rebindings."""
 
+from collections.abc import Mapping
+
 from ....core.ir.program import ProgramRecord, verify_program_record
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from .component_extension import StructuredControlAdder
+
+
+def call_with_unchanged_controls(
+    builder: ComponentProgramBuilder,
+    callee: str,
+    controls: tuple[BindingCollection, ...],
+    values: Mapping[str, object],
+) -> tuple[tuple[BindingCollection, ...], tuple[BindingCollection, ...]]:
+    """Call an already selected body and return the original control tuple."""
+    return controls, builder.call_tuple(callee, values)
 
 
 def bookkeeping_component_control_system(
@@ -60,6 +72,6 @@ def bookkeeping_component_control_system(
         controls: tuple[BindingCollection, ...],
         values: dict[str, BindingCollection],
     ) -> tuple[tuple[BindingCollection, ...], tuple[BindingCollection, ...]]:
-        return controls, builder.call_tuple(entry, values)
+        return call_with_unchanged_controls(builder, entry, controls, values)
 
     return record, add
