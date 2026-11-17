@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 173
+    assert len(validated) == 174
+    assert (
+        "tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution",
+        "examples/synthesis/tutorials/technology_demonstrations/hamiltonian_evolution/overview/main.py",
+    ) in validated
     assert (
         "applications/image_processing/quantum_hadamard_edge_detection/quantum_image_edge_detection",
         "examples/synthesis/applications/image_processing/quantum_hadamard_edge_detection/overview/main.py",
@@ -821,7 +825,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**173/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**174/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

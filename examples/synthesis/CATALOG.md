@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **173/213**.
+Validated local Notebook workflows: **174/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -421,6 +421,7 @@ Validated local Notebook workflows:
 - [overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/pennylane_catalyst_discrete_quantum_walk/overview/README.md)
 - [overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/qiskit_discrete_quantum_walk/overview/README.md)
 - [overview](tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/README.md)
+- [overview](tutorials/technology_demonstrations/hamiltonian_evolution/overview/README.md)
 - [overview](tutorials/technology_demonstrations/hardware_aware_mcx/overview/README.md)
 - [overview](tutorials/technology_demonstrations/hhl/hhl_example/overview/README.md)
 - [overview](tutorials/technology_demonstrations/qaoa/qaoa_demonstration/overview/README.md)

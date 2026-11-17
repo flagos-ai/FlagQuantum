@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **173/213**.
+Validated local Notebook workflows: **174/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -413,7 +413,7 @@ Validated local Notebook workflows: **173/213**.
 | `tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk` | notebook_workflow | [Native program](tutorials/technology_demonstrations/classiq_paper/quantum_walk/tket_discrete_quantum_walk/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle` | notebook_workflow | [Native program](tutorials/technology_demonstrations/discrete_quantum_walk_circle/main.py) | pending |
 | `tutorials/technology_demonstrations/fault_tolerance_engine_end_to_end/fault_tolerance_engine_end_to_end` | notebook_workflow | Pending | pending |
-| `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hamiltonian_evolution/main.py) | pending |
+| `tutorials/technology_demonstrations/hamiltonian_evolution/hamiltonian_evolution` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hamiltonian_evolution/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/hardware_aware_mcx/hardware_aware_mcx` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hardware_aware_mcx/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/hhl/hhl_example` | notebook_workflow | [Native program](tutorials/technology_demonstrations/hhl/hhl_example/overview/main.py) | validated |
 | `tutorials/technology_demonstrations/oracle_generation/3sat_oracles` | notebook_workflow | [Native program](tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/main.py) | pending |
