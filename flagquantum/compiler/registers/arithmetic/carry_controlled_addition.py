@@ -6,10 +6,13 @@
 """Controlled quantum addition with a constant, classical or quantum carry."""
 
 from ....core.ir import Instruction
+from ..._component_trace.trace import ComponentCall
+from ...artifacts.reversible_phase import ReversiblePhaseProgram
+from ...lowering.physical_trace import PhysicalTrace, lower_physical_trace
 from ..finite_field.coefficients import ClassicalFieldCoefficient
 from ..finite_field.polynomial import _validate_registers
 from ..primitives._mixed_gates import _flip
-from ..primitives.measurement import measure_x_clear_ir
+from ..primitives.measurement import measure_x_clear_ir, reset_x_register_ir
 from .inplace_addition import _erase_carry
 
 
@@ -20,6 +23,7 @@ def _add_with_carry(
     carry: int | bool | ClassicalFieldCoefficient,
     clean: tuple[int, ...],
     measurement_bit: int | None,
+    emit_resets: bool,
 ) -> tuple[Instruction, ...]:
     n = len(target)
     if not n:
@@ -34,6 +38,7 @@ def _add_with_carry(
     gates = [
         *_flip(target[0], carry),
         *_flip(offset[0], carry),
+        *(reset_x_register_ir((clean[0],)) if emit_resets else ()),
         *_flip(clean[0], target[0], offset[0]),
         *_flip(clean[0], carry),
     ]
@@ -42,6 +47,7 @@ def _add_with_carry(
             (
                 *_flip(target[k], clean[k - 1]),
                 *_flip(offset[k], clean[k - 1]),
+                *(reset_x_register_ir((clean[k],)) if emit_resets else ()),
                 *_flip(clean[k], offset[k], target[k]),
                 *_flip(clean[k], clean[k - 1]),
             )
@@ -85,12 +91,14 @@ def carry_controlled_addition_ir(
     clean: tuple[int, ...] = (),
     measurement_bit: int | None = None,
     subtract: bool = False,
+    emit_resets: bool = False,
 ) -> tuple[Instruction, ...]:
     """Update target under a quantum enable and restore offset, carry and work.
 
     Target and offset are big-endian; extra high offset bits are preserved.
     Width n >= 2 needs n clean wires and a reusable, separate result slot.
     Subtraction follows the source carry-false NOT conjugation only.
+    The physical route emits source resets on borrowed work wires at first use.
     """
     if type(carry_in) not in (int, bool) and not isinstance(
         carry_in, ClassicalFieldCoefficient
@@ -127,7 +135,50 @@ def carry_controlled_addition_ir(
         raise ValueError("Measured controlled addition requires a result slot")
     little = target[::-1]
     gates = _add_with_carry(
-        little, offset[::-1], control, carry_in, clean, measurement_bit
+        little, offset[::-1], control, carry_in, clean, measurement_bit, emit_resets
     )
     invert = tuple(Instruction("x", (wire,)) for wire in little) if subtract else ()
     return (*invert, *gates, *invert)
+
+
+def physical_carry_controlled_addition(
+    target: tuple[int, ...],
+    offset: tuple[int, ...],
+    *,
+    control: int,
+    carry_in: int | bool | ClassicalFieldCoefficient = False,
+    clean: tuple[int, ...] = (),
+    measurement_bit: int = 0,
+    subtract: bool = False,
+) -> tuple[ReversiblePhaseProgram, tuple[ComponentCall, ...]]:
+    """Export physical reset, carry feedback, and nested source block marks."""
+    instructions = carry_controlled_addition_ir(
+        target,
+        offset,
+        control=control,
+        carry_in=carry_in,
+        clean=clean,
+        measurement_bit=measurement_bit,
+        subtract=subtract,
+        emit_resets=True,
+    )
+    ports = (*target, *offset, *clean, control)
+    last_wire = max((*ports, carry_in) if type(carry_in) is int else ports)
+    stop = len(instructions)
+    flips = len(target) if subtract else 0
+    add = ComponentCall("iadd_control", flips, stop - flips)
+    call = ComponentCall("isub_control", 0, stop, children=(add,)) if subtract else add
+    trace = PhysicalTrace(calls=[call])
+    if isinstance(carry_in, ClassicalFieldCoefficient):
+        trace.implicit_zero_bits.add(carry_in.slot)
+        if len(target) > 1:
+            # The scalar correction tests the incoming bit inside the HMR scope.
+            start = next(
+                i
+                for i, gate in enumerate(instructions)
+                if gate.metadata.get("exact_scalar_sign") is True
+            )
+            trace.feedback.append((start, start + 4, measurement_bit))
+    return lower_physical_trace(
+        instructions, 0, last_wire, trace, reorder_feedback=False
+    )

@@ -91,7 +91,9 @@ def lower_physical_trace(
     known = (*range(inputs), *sorted(export.implicit_zero_bits))
     setup = tuple(ClassicalXor((), bit).instruction() for bit in known)
     offsets: dict[int, int] = {}
-    width = 1 + max((q for gate in gates for q in gate.wires), default=fallback_wire)
+    width = 1 + max(
+        fallback_wire, max((q for gate in gates for q in gate.wires), default=0)
+    )
     lowered = lower_reversible_phase(
         CircuitIR(width, (*setup, *gates)), operation_offsets=offsets
     )
