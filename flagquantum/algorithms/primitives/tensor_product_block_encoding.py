@@ -5,20 +5,64 @@
 
 """Compose disjoint native block encodings through packed source partitions."""
 
+from __future__ import annotations
+
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from math import prod
 from typing import cast
 
 from ...circuit import _CircuitOperation
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.bits.bitwise import _validate_wires
 from ...compiler.registers.layout.partition import partition_register
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
+)
 from ...core.ir import Instruction
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
+
+
+def source_tensor_product_block_signature(
+    widths: tuple[tuple[SymbolicInt, SymbolicInt, SymbolicInt], ...],
+) -> Signature:
+    """Pack child widths declared in system, ancilla and resource order."""
+    if not widths:
+        raise ValueError("Tensor product requires at least one block")
+    system, ancilla, resource = (sum(port) for port in zip(*widths, strict=True))
+    return Signature.build_from_dtypes(
+        system=opaque_register_type(system),
+        ancilla=opaque_register_type(ancilla),
+        resource=opaque_register_type(resource),
+    )
+
+
+def source_symbolic_tensor_product_resource_formula(
+    widths: tuple[tuple[SymbolicInt, SymbolicInt, SymbolicInt], ...],
+    children: tuple[SymbolicResourceFormula, ...],
+) -> SymbolicResourceFormula:
+    """Compose child gate counts and apply the locked symbolic peak fallback."""
+    signature = source_tensor_product_block_signature(widths)
+    if len(widths) != len(children):
+        raise ValueError("Tensor product needs one child model per declaration")
+    if all(type(reg.bitsize) is int for reg in signature):
+        raise ValueError("Use the concrete tensor product model for resolved widths")
+    return SymbolicResourceFormula(
+        logical_qubits=cast(
+            SymbolicInt,
+            smax(signature.n_qubits(), *(child.logical_qubits for child in children)),
+        ),
+        **{
+            field.name: sum(getattr(child, field.name) for child in children)
+            for field in fields(SymbolicResourceFormula)
+            if field.name != "logical_qubits"
+        },
+    )
 
 
 @dataclass(frozen=True)
@@ -43,6 +87,15 @@ class TensorProductBlockEncoding:
     @property
     def resource_bitsize(self) -> int:
         return sum(child.resource_bitsize for child in self.block_encodings)
+
+    @property
+    def signature(self) -> Signature:
+        return source_tensor_product_block_signature(
+            tuple(
+                (child.system_bitsize, child.ancilla_bitsize, child.resource_bitsize)
+                for child in self.block_encodings
+            )
+        )
 
     @property
     def alpha(self) -> SymbolicReal:

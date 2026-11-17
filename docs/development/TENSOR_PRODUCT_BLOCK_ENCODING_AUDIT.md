@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0302 | `tensor_product.ipynb` | `f3f3652c6dd29f21f8151392c164267d689ae7b5` | Closed by the complete native tutorial. |
-| Q-0303 | `tensor_product.py` | `d1a01a8eccee2fff1f319668b6bd34f4a3890d13` | Open for generic symbolic port admission and external child-object protocols. |
+| Q-0303 | `tensor_product.py` | `d1a01a8eccee2fff1f319668b6bd34f4a3890d13` | Symbolic declarations and fallback costs verified. General shaped and external child bindings remain open. |
 | Q-0304 | `tensor_product_test.py` | `1f997603c83beb1ca274a42e5c7ce102335c41e2` | Closed for the original runnable scenarios. The original fixture-mode outcomes are recorded below. |
 
 ## Ownership and reused evidence
@@ -44,11 +44,22 @@ the six-qubit logical peak are distinct quantities.
 | Notebook execution | Unchanged 12-cell original and 14-cell native tutorial executed in independent kernels. Native kernel rejects reference imports and checks both SVG outputs. |
 
 The unchanged original non-notebook run has seven passes, two fixture-mode
-skips and two expected serialization failures. The symbolic ancilla is
-shown as a register declaration in the tutorial. Executable child binding
-still requires concrete widths. There is no generic admission for arbitrary
-external child objects, source wire-symbol hooks, or a fully zero-wire
-numerical product.
+skips and two expected serialization failures.
+
+## Symbolic admission and cost
+
+The native declaration packs the sum of each category of child ports and
+omits zero-width ports. The source rejects symbolic numerical decomposition.
+Its QEC fallback sums child gate categories and takes the maximum of the
+outer signature width and the individual logical peaks. The concrete peak
+accounts for bystander widths separately. Tests compare both QEC profiles
+and symbolic peaks for unknown system, ancilla and resource widths.
+
+The source inherits the register-name label from its base object. Arbitrary
+source child-object and wire-symbol hooks and general shaped partitions
+remain open. A source tensor mixing a zero-width identity with a nonempty
+system raises a missing system-port error during partition construction.
+A fully zero-wire native numerical product remains outside Circuit admission.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_tensor_product_block_encoding.ipynb

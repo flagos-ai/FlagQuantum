@@ -217,7 +217,9 @@ def _source(kinds, mixed):
         child = (
             Add(QUInt(int(kind[-1])))
             if kind.startswith("add")
-            else TGate() if kind == "t" else CNOT()
+            else TGate()
+            if kind == "t"
+            else CNOT()
         )
         children.append(
             Unitary(
@@ -605,3 +607,63 @@ def test_nested_tensor_keeps_child_work_and_original_grouping(adjoint):
     _assert_model(
         outer.resource_model((inner_cost, last_cost), adjoint=adjoint), source, False
     )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("case", ("ancillas", "system", "resources"))
+def test_symbolic_tensor_signature_and_fallback(case):
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.basic_gates import Hadamard, Identity, TGate
+    from qualtran.bloqs.block_encoding import TensorProduct, Unitary
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from sympy import Symbol, simplify
+
+    from flagquantum.algorithms.primitives.tensor_product_block_encoding import (
+        source_symbolic_tensor_product_resource_formula,
+        source_tensor_product_block_signature,
+    )
+    from flagquantum.algorithms.primitives.unitary_block_encoding import (
+        source_unitary_block_resource_formula,
+    )
+    from flagquantum.compiler.registers.resources.symbolic_resource_model import (
+        SymbolicResourceFormula,
+    )
+
+    a, b, r, s = (Symbol(name) for name in "abrs")
+    cases = {
+        "ancillas": (((1, a, 0), (1, b, 0)), TGate(), 1),
+        "system": (((s, 2, 0), (1, 0, r)), Identity(s), 0),
+        "resources": (((1, 0, 2), (1, 0, r)), TGate(), 1),
+    }
+    widths, first, first_t = cases[case]
+    source = TensorProduct.of(
+        *(
+            Unitary(gate, ancilla_bitsize=ancilla, resource_bitsize=resource)
+            for gate, (_, ancilla, resource) in zip(
+                (first, Hadamard()), widths, strict=True
+            )
+        )
+    )
+    signature = source_tensor_product_block_signature(widths)
+    assert [(reg.name, reg.bitsize) for reg in signature] == [
+        (reg.name, reg.bitsize) for reg in source.signature
+    ]
+    with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+        source.decompose_bloq()
+
+    child_models = tuple(
+        source_unitary_block_resource_formula(
+            SymbolicResourceFormula(0, cliffords, 0, system, t=t),
+            ancilla=ancilla,
+            resource=resource,
+        )
+        for (cliffords, t), (system, ancilla, resource) in zip(
+            ((0, first_t), (1, 0)), widths, strict=True
+        )
+    )
+    model = source_symbolic_tensor_product_resource_formula(widths, child_models)
+    for legacy in (False, True):
+        expected = get_cost_value(source, QECGatesCost(legacy_shims=legacy))
+        for name in GateCost.__dataclass_fields__:
+            assert simplify(getattr(model, name) - getattr(expected, name)) == 0
+    assert simplify(model.logical_qubits - get_cost_value(source, QubitCount())) == 0
