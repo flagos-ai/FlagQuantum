@@ -20,6 +20,7 @@ from examples.synthesis.algorithms.number_theory_and_cryptography.elliptic_curve
     translation_steps,
 )
 from flagquantum import synth
+from flagquantum.compiler import ResourceEstimate
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from flagquantum.synth import (
@@ -231,8 +232,7 @@ def test_unproved_source_seed_refuses(seed: tuple[int, int]) -> None:
 @pytest.mark.parametrize(
     "limits",
     [
-        {"max_qubits": 14},
-        {"max_workspace": 2},
+        {"max_qubits": 11},
         {"max_operations": 100},
         {"max_depth": 100},
         {"memory_limit_bytes": 1024},
@@ -244,6 +244,19 @@ def test_budgets_refuse(limits: Limits) -> None:
         match="budget|limit|requires|exceed|infeasible",
     ):
         synth.synthesize(native.main, classical_inputs=bindings(), **limits)
+
+
+@pytest.mark.parametrize("limits", [{"max_qubits": 14}, {"max_workspace": 2}])
+def test_tighter_budgets_select_a_valid_smaller_workspace(limits: Limits) -> None:
+    program = synth.synthesize(native.main, classical_inputs=bindings(), **limits)
+    workspace = program.report["workspace_qubits"]
+    resources = program.report["resources"]
+    assert isinstance(workspace, int)
+    assert isinstance(resources, ResourceEstimate)
+    assert workspace <= 2
+    assert resources.n_qubits <= 14
+    expected = fq.run(reference_circuit((4, 2))).statevector().flatten()
+    torch.testing.assert_close(state(program, 4096), expected, atol=1e-11, rtol=0)
 
 
 def test_group_identity_and_inverse() -> None:
