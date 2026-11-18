@@ -1,4 +1,4 @@
-"""Capture an external scalar-port component into owned primitive IR."""
+"""Capture an external component with concrete ports into owned primitive IR."""
 
 from collections.abc import Iterable, Iterator
 from dataclasses import replace
@@ -50,18 +50,30 @@ class _CleanAllocations:
 
 def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitIR, int]:
     cirq = _cirq()
+    shapes: dict[str, tuple[int, ...]] = {}
     for side in (source.signature.lefts(), source.signature.rights()):
         side = tuple(side)
-        actual = tuple((reg.name, reg.bitsize) for reg in side)
-        if actual != ports or any(reg.shape for reg in side):
+        if any(
+            type(reg.bitsize) is not int
+            or reg.bitsize <= 0
+            or any(type(size) is not int or size <= 0 for size in reg.shape)
+            for reg in side
+        ):
+            raise ValueError("Foreign component ports need concrete positive shapes")
+        actual = tuple((reg.name, reg.total_bits()) for reg in side)
+        layout = {reg.name: (*reg.shape, reg.bitsize) for reg in side}
+        if actual != ports or (shapes and shapes != layout):
             raise ValueError(
-                "Foreign oracle must have the declared scalar input/output ports"
+                "Foreign component must have matching declared input/output ports"
             )
+        shapes = layout
     incoming = tuple(cirq.LineQubit.range(sum(width for _, width in ports)))
     arrays: dict[str, Any] = {}
     offset = 0
     for name, width in ports:
-        arrays[name] = np.asarray(incoming[offset : offset + width], dtype=object)
+        arrays[name] = np.asarray(
+            incoming[offset : offset + width], dtype=object
+        ).reshape(shapes[name])
         offset += width
     manager = _CleanAllocations(cirq, incoming)
     register_names = [reg.name for reg in source.signature]
@@ -78,9 +90,9 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
     outgoing: list[Any] = []
     for name, width in ports:
         array = np.asarray(returned[name], dtype=object)
-        if array.shape != (width,):
+        if array.shape != shapes[name]:
             raise ValueError("Foreign oracle returned a different port shape")
-        outgoing.extend(array.tolist())
+        outgoing.extend(array.reshape(-1).tolist())
     if len(set(outgoing)) != len(incoming):
         raise ValueError("Foreign oracle returned overlapping quantum outputs")
 

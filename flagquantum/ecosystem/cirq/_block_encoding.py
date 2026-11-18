@@ -24,8 +24,9 @@ def import_block_encoding(
 ) -> CircuitBlockEncoding:
     """Capture actual forward/adjoint and positive-controlled source operations.
 
-    Only concrete scalar system/ancilla/resource ports and an identity signal
-    preparation are admitted. The original source decides how each control and
+    Concrete system/ancilla/resource ports and an identity signal preparation
+    are admitted. Shaped ports are flattened in source row-major order and must
+    retain identical input/output shapes. The source decides how each control and
     adjoint decomposes; no measurement-containing stream is inverted afterward.
     Logical outputs are restored explicitly and binding swaps counted separately.
     Missing independent models remain unavailable; emission never implies a cost.
