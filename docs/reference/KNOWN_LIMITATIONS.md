@@ -1670,6 +1670,24 @@ that stream. It does not extend the supported noise models, feedback, the
 annotated Stim text path, or the supported build platforms. The standard
 profile still uses the Stim Python SDK.
 
+## Toric-code distance acceptance
+
+The exact search routes below refine the historical subset-search description
+in the generated capability table without changing its maturity. The periodic
+square-lattice constructor proves both family distances at
+3, 5, 7, 9, 11, 13 and 15 using an exact shortest logical-cycle search after
+existing CSS validation. Eligibility is derived from the check matrices and
+the complete two-bit dual logical space, rather than assuming distance from
+the lattice size. Other matrices retain their existing exact search routes.
+The installed acceptance covers both logical observables, X/Z readout,
+three rounds and 64 original-circuit shots per configuration, with independent
+and correlated Pauli-noise profiles. Strict undecomposed DEM mechanisms are
+compared against Stim 1.16.0; BP/OSD corrections must reproduce every syndrome.
+Text export still requires the SDK; an embedded installation can consume the
+captured text without Stim or PyMatching. This bounded campaign proves neither
+a threshold nor logical suppression, decoder optimality or arbitrary-distance
+performance. See the [per-configuration evidence](../../artifacts/development/qec_toric_distance_acceptance_20261118.json).
+
 ## Triangular colour-code distance acceptance
 
 The existing 6.6.6 constructor now proves distances 3, 5, 7, 9, 11, 13 and 15

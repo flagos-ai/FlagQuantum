@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import itertools
 import random
+from typing import Literal
 
 import pytest
 
-from flagquantum.qec import toric_code
+from flagquantum.qec import StabilizerCode, build_memory_circuit, toric_code
 from flagquantum.qec.codes import _css_helpers as helper
 from flagquantum.qec.gf2 import nullspace, reduce_rows, reduce_vector
 
@@ -106,3 +107,19 @@ def test_full_toric_distance_list_preserves_both_logical_qubits(size: int) -> No
     checks = tuple(helper._mask(tuple(row)) for row in code.hx)
     own = tuple(helper._mask(tuple(row)) for row in code.hz)
     assert helper._logical_cycle_graph(2 * size**2, checks, own) is not None
+
+
+@pytest.mark.parametrize("size", (3, 15))
+@pytest.mark.parametrize("basis", ("x", "z"))
+def test_each_readout_basis_preserves_two_distinct_logical_observables(
+    size: int, basis: Literal["x", "z"]
+) -> None:
+    code = toric_code(size)
+    assert isinstance(code, StabilizerCode)
+    memory = build_memory_circuit(code, rounds=3, readout_basis=basis)
+    observables = memory.observables.observables
+    assert memory.readout_basis == basis
+    assert tuple(item.index for item in observables) == (0, 1)
+    assert observables[0].pauli != observables[1].pauli
+    assert all(item.pauli in code.logical_observables for item in observables)
+    assert all(bool(item.pauli.x_qubits) == (basis == "x") for item in observables)
