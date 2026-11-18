@@ -1,4 +1,4 @@
-"""Execute complete frozen and native Kikuchi list/matrix/block notebooks."""
+"""Execute complete frozen and native Kikuchi list/matrix/block/guiding notebooks."""
 
 import builtins
 import json
@@ -32,6 +32,19 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
             11,
             ("kikuchi_matrix_entry_symb", "kikuchi_matrix_entry"),
             3,
+        ),
+        (
+            "kikuchi_guiding_state.ipynb",
+            "ca6e8c12a2c0f2e387609045996675e2738b5205",
+            21,
+            (
+                "simple_guiding_state_symb",
+                "simple_guiding_state",
+                "guiding_state_symb_c",
+                "guiding_state_symb",
+                "guiding_state",
+            ),
+            7,
         ),
         (
             "kikuchi_block_encoding.ipynb",
@@ -96,7 +109,8 @@ def test_complete_original_and_native_cells_signatures_graphs_and_models(
     assert all("<svg" in item.data for item in svg)
     for name in names:
         actual, expected = migrated[name], original[name]
-        assert actual.ell == expected.ell
+        if hasattr(expected, "ell"):
+            assert actual.ell == expected.ell
         assert [
             (r.name, r.bitsize, r.shape_symbolic, r.side.name) for r in actual.signature
         ] == [
@@ -130,7 +144,21 @@ def test_complete_original_and_native_cells_signatures_graphs_and_models(
         inverse = type(child).__name__ == "Adjoint"
         if inverse:
             child = child.subbloq
-        normalized[type(child).__name__ + ("†" if inverse else "")] = count
+        source_name = type(child).__name__
+        aliases = {
+            "SparseStatePreparationViaRotations": "SparseRotationPreparation",
+            "SimpleGuidingState": "ScopeGuidingState",
+        }
+        normalized[aliases.get(source_name, source_name) + ("†" if inverse else "")] = (
+            count
+        )
     assert migrated[graph_name + "_sigma"] == normalized
+    if filename == "kikuchi_guiding_state.ipynb":
+        expected_calls = original["guiding_state_symb_c_sigma"]
+        aliases = {"SimpleGuidingState": "ScopeGuidingState"}
+        assert migrated["guiding_state_symb_c_sigma"] == {
+            aliases.get(type(child).__name__, type(child).__name__): count
+            for child, count in expected_calls.items()
+        }
     model_owner = names[0] if filename == "kikuchi_block_encoding.ipynb" else names[-1]
     assert migrated["model_categories"] == migrated[model_owner].resource_gates()
