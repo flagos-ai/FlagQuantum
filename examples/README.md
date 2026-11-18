@@ -993,7 +993,7 @@ Stim 1.16.0. External repeated-slot records 010 produce detectors 10 and logical
 1. Expected output: `shots 64`, `detectors 10; observables 1`, `file_bytes 64 64`.
 The example performs bounded file conversion, not sampling or a research study.
 
-- `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build and PyMatching required).
-- `qec/shot_file_encoding.py`: write caller-owned Torch shot rows in Stim-compatible formats and read them back (Stim 1.16.0 extra or embedded build required).
+- `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build, with bundled Sparse Blossom).
+- `qec/shot_file_encoding.py`: write caller-owned Torch shot rows in Stim-compatible formats, stream them back and decode packed batches (embedded build, with bundled Sparse Blossom).
 
-- `qec/compiled_dem_sampler.py`: record and replay canonical error columns, write bounded detector/error files, and decode packed batches; expected `shots 64 batches 4 logical_failures 0` (embedded build or Stim 1.16.0, plus PyMatching).
+- `qec/compiled_dem_sampler.py`: record and replay canonical error columns, write bounded detector/error files, and decode packed batches; expected `shots 64 batches 4 logical_failures 0` (embedded build, with bundled Sparse Blossom).
