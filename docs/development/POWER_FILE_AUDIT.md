@@ -32,8 +32,10 @@ queries still have the previously documented source refusal.
 `power_wire_symbols` applies the source `^power` suffix in wire order after
 the display owner has resolved the child's labels. The source wrapper's
 foreign diagram callback and automatic fallback label discovery remain open.
-The native paths also lack a general foreign `GateWithRegisters` wrapper and
-its overloaded `__pow__` object semantics. These boundaries keep Q-0248 open.
+The existing named Ecosystem emitter now captures complete foreign
+`GateWithRegisters` Power objects, including the source's own nested `__pow__`
+and `adjoint` results. Arbitrary foreign child vocabulary and automatic label
+discovery remain separate unsupported boundaries. These keep Q-0248 open.
 
 ## Original test coverage
 
@@ -63,3 +65,40 @@ cleanup through a full inverse.
 ```bash
 python -m examples.algorithms.classical_power_values
 ```
+
+
+## Whole-wrapper source capture and measured dependency closure
+
+The named emitter previously treated every gate attribute named `bloq` as the
+Cirq `BloqAsCirqGate` wrapper. Power itself has a `bloq` child field. This
+incorrectly removed the entire repeat wrapper and captured only one child.
+`ecosystem/cirq/_component_snapshot.py` now unwraps only actual
+`BloqAsCirqGate` instances, at leaf dispatch and lifetime inspection. The
+unchanged source remains authoritative for the whole Power call chain.
+
+`test_power_source_binding.py` covers complete `Power(OnEach(3, S), 2)`
+objects after each of `**1`, `**2`, `**-1` and `**-2`, plus their actual source
+adjoints. Exact per-wire dependencies, operand order, full complex matrices and
+independent source Clifford counts agree. The native literal repetition remains
+available as an independent implementation behind the owned IR boundary.
+
+The complete two- and three-repeat CZPow call chains independently compare
+against the existing measured controlled-phase recipe for every primitive,
+operand, phase parameter and feedback result. Source capture retains one fresh
+classical result per repetition while reusing the same clean work wire. Each
+direction runs behind the existing SELECT callback with `circuit.append(op)`
+and JSON-restored owned snapshots. Every logical column and a coherent input
+match in every measurement history with zero work population. All forward and
+reverse history pairs restore the complete unnormalized coherent amplitude.
+
+Measured inventories per direction are `4 * repeats` T-family instructions,
+`repeats` phase instructions and `repeats` measurements. The independent source
+model reports `repeats` And, rotations and measurements, with peak width three.
+The two source/native cost channels are checked separately. No physical gate
+inventory is substituted for the declared model.
+
+The 2026-11-18 concentrated regression passed 1294 cases. Two pre-existing
+PennyLane S/T checks were skipped because that optional package is absent from
+this interpreter. All new whole-Power cases executed. Strict typing of the two
+changed Python files, formatting, lint, Ecosystem scope, architecture,
+multilevel IR and public API checks passed.

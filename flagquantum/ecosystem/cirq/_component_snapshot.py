@@ -65,6 +65,7 @@ def _snapshot(
     from qualtran.bloqs.basic_gates import TGate, TwoBitCSwap
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
     from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
+    from qualtran.cirq_interop import BloqAsCirqGate
 
     cirq = _cirq()
     if type(scalar_carrier) is not bool or (scalar_carrier and ports):
@@ -173,7 +174,7 @@ def _snapshot(
         nonlocal modular_calls, phase_calls, square_calls
         if op.tags:
             return NotImplemented
-        arithmetic = getattr(op.gate, "bloq", op.gate)
+        arithmetic = op.gate.bloq if isinstance(op.gate, BloqAsCirqGate) else op.gate
         square = arithmetic.subbloq if isinstance(arithmetic, Adjoint) else arithmetic
         if type(square) is Square:
             square_calls += 1
@@ -219,7 +220,7 @@ def _snapshot(
                 qubit_manager=decomposition_manager, q=op.qubits[1:]
             )
             return phase.controlled_by(op.qubits[0])
-        leaf = getattr(op.gate, "bloq", None)
+        leaf = op.gate.bloq if isinstance(op.gate, BloqAsCirqGate) else None
         if leaf is None:
             return NotImplemented
         if type(leaf) is TwoBitCSwap:
@@ -269,7 +270,7 @@ def _snapshot(
                 if admitted(op):
                     yield op
                     continue
-                leaf = getattr(op.gate, "bloq", op.gate)
+                leaf = op.gate.bloq if isinstance(op.gate, BloqAsCirqGate) else op.gate
                 consumed: set[Any] = set()
                 produced: set[Any] = set()
                 if isinstance(leaf, Bloq):
