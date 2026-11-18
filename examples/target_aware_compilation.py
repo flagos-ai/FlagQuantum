@@ -9,20 +9,10 @@ import flagquantum.compiler as compiler
 
 
 def main() -> None:
-    circuit = (
-        fq.Circuit(n_qubits=5, dtype=torch.complex128)
-        .h(0)
-        .cx(0, 4)
-        .h(4)
-        .cx(0, 4)
-    )
+    circuit = fq.Circuit(n_qubits=5, dtype=torch.complex128).h(0).cx(0, 4).h(4).cx(0, 4)
     coupling = compiler.CouplingMap.line(5)
 
-    compiled = compiler.compile(
-        circuit,
-        coupling_map=coupling,
-        routing_strategy="auto",
-    )
+    compiled = compiler.compile(circuit, coupling_map=coupling)
     routing = compiled.metadata["routing"]
 
     target_edges_are_valid = all(

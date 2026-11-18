@@ -17,6 +17,16 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Native `flagquantum.compiler.compile` now defaults to `routing_strategy="auto"`
+  when a topology is supplied. It chooses among deployable routing strategies
+  and records the selection, while preserving calibration restrictions and final
+  layout restoration. Specify `routing_strategy="restore_after_each_gate"` to
+  retain the earlier implicit policy. Calls without a topology skip route
+  search. This can change compilation cost, instruction order, hashes, and
+  routing metadata; it does not change root native target admission or establish
+  a workload-level performance improvement. See the
+  [approved proposal](../api-changes/FQ-COMPILER-AUTO-ROUTING-20261118.md).
+
 - Add an approved candidate `write_shot_data_file` entry for caller-owned CPU
   bool and packed uint8 shot tables in six Stim 1.16.0 formats. It reuses the
   existing SDK or embedded source closure, validates a bounded owned copy, and
