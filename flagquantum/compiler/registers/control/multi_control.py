@@ -17,10 +17,13 @@ from ....core.ir import Instruction
 from ..._component_trace.qec_gate_cost import query_qec_gate_cost
 from ..._component_trace.resource_generalization import (
     CliffordCall,
+    ControlPattern,
     PredicateControlledCall,
 )
 from ..._component_trace.resource_model import ComponentCost, GateCost
+from ..._component_trace.symbolic_math import SymbolicInt, smax
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
 
 
 def _validate_controls(
@@ -216,4 +219,33 @@ def source_multi_control_x_cost(values: tuple[int, ...]) -> ComponentCost:
             clifford=int(cost.clifford),
             measurement=int(cost.measurement),
         ),
+    )
+
+
+def source_multi_control_x_resource_formula(
+    controls: ControlPattern,
+) -> SymbolicResourceFormula:
+    """Retain unknown-polarity source counts and concrete/symbolic width rules."""
+    count: SymbolicInt = len(controls) if isinstance(controls, tuple) else controls
+    if isinstance(count, (bool, float)) or isinstance(count, int) and count < 0:
+        raise ValueError(
+            "Control model requires a nonnegative integer or symbolic count"
+        )
+    if isinstance(controls, tuple) or type(count) is int:
+        values = controls if isinstance(controls, tuple) else (1,) * count
+        concrete = source_multi_control_x_cost(values)
+        return SymbolicResourceFormula(
+            concrete.gates.and_bloq,
+            concrete.gates.clifford,
+            concrete.gates.measurement,
+            concrete.qubits,
+        )
+    gates = query_qec_gate_cost(
+        PredicateControlledCall(CliffordCall("cx", 2), controls)
+    )
+    return SymbolicResourceFormula(
+        gates.and_bloq,
+        gates.clifford,
+        gates.measurement,
+        smax(3, count + 1, 2 * count - 1),
     )

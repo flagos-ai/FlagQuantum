@@ -8,7 +8,10 @@
 
 from ....core.ir import Instruction
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..primitives.controlled_swap import controlled_swap_ir
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
+from .comparison_resource_model import source_less_equal_resource_formula
 from .ordering import greater_adjoint_ir, greater_ir, source_greater_cost
 
 
@@ -49,4 +52,18 @@ def source_compare_exchange_cost(width: int, *, adjoint: bool = False) -> Compon
         2 * width + 1,
         GateCost(cswap=width),
         (CostCall(greater),),
+    )
+
+
+def source_compare_exchange_resource_formula(
+    width: SymbolicInt,
+) -> SymbolicResourceFormula:
+    """Compose the existing symbolic comparison query with CSwap declarations."""
+    comparison = source_less_equal_resource_formula(width, width)
+    return SymbolicResourceFormula(
+        comparison.and_bloq,
+        comparison.clifford + 1,
+        comparison.measurement,
+        comparison.logical_qubits,
+        cswap=width,
     )

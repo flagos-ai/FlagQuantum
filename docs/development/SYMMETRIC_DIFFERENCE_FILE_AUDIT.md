@@ -37,11 +37,13 @@ executable acceptance.
 
 The source has no root decomposition. Its register prose calls flag a duplicate
 flag, while its class and cost predicate specify cardinality matching. Its model
-has no impossible-parity rejection or compaction. Native generic symbolic QEC
-queries, source diagnostic shapes outside the positive power-of-two merge domain,
+has no impossible-parity rejection or compaction. Source degenerate/invalid diagnostic shapes,
 foreign/static execution admission and original test fixture gaps remain open
-under Q-0205/Q-0206. Standalone symbolic signatures and source symbolic factory
-test evidence do not claim a native symbolic cost implementation.
+under Q-0205/Q-0206. The native symbolic model now covers both original factories and mixed-bound
+length/width/output fields. Its direct dependencies preserve concrete versus
+symbolic comparison rules and source nested peak schedules. Positive non-power-of-two
+merge lengths retain the original declaration fallback while executable merging
+keeps its power-of-two contract.
 
 For 1+1 one-bit inputs and zero output words, the original root's QubitCount
 fails through its one-bit Hamming child. Its QEC query still matches the native
@@ -53,3 +55,26 @@ IPython temporary-directory fallback warning remains. Changed production/tests
 and all extracted notebook code passed strict typing, Black, Ruff, Compiler
 scope, architecture, multilevel IR and protected API checks. Four notebook
 figures were rendered and visually inspected.
+
+
+## Symbolic declaration closure
+
+`source_symmetric_difference_resource_formula` composes shared comparator,
+bitonic merge, equality, constant equality, controlled-X and Hamming formulas.
+Both original symbolic factories match every QEC category and full peak expression.
+Mixed symbolic lengths, widths and output sizes are checked independently. Source
+nested Max schedules are retained for concrete merge lengths with symbolic widths,
+including first-round and parallel-stage history lifetimes. Symbolic list lengths
+retain the original individual-child fallback. Unknown control polarities remain
+separate from concrete all-zero controls. Symbolic expressions are not replaced
+by numerically bound circuit costs.
+
+Original source files remain blob-identical. Existing concrete gate, operand,
+feedback, complex-state, measurement-history and work-cleanup evidence is reused.
+No execution path changed. Source compaction/parity omissions, raw callback and
+protected physical admission gaps remain separately registered.
+
+The symbolic follow-up passed 822 concentrated cases with no skips and one
+existing IPython fallback warning. Changed Python and extracted notebook cells
+passed strict typing, format, lint, scope, architecture, multilevel IR and API
+checks. Source model-only positive non-power-of-two merge fallback is now covered.

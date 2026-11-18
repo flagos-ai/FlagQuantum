@@ -26,7 +26,7 @@ The root model independently predicts 96 CSwap, 205 And, 2276 Clifford, 205
 measurements and 55 logical peak wires. No equality is inferred between these
 accounts.
 
-Native symbolic model queries, protected execution admission, source duplicate
+Duplicate symbolic model queries, protected execution admission, source duplicate
 alias/erasure and callback-control defects, and source missing symmetric-difference
 compaction/parity logic remain in their implementation/test parent rows. Teaching
 asset closure does not close those parents. Figures are rendered and visually

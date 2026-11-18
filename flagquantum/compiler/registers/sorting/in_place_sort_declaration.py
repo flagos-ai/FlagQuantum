@@ -12,8 +12,10 @@ from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..._component_trace.symbolic_math import SymbolicInt, ceil, log2, smax
-from ..comparison.compare_exchange import source_compare_exchange_cost
-from ..comparison.comparison_resource_model import source_less_equal_resource_formula
+from ..comparison.compare_exchange import (
+    source_compare_exchange_cost,
+    source_compare_exchange_resource_formula,
+)
 from ..resources.symbolic_resource_model import SymbolicResourceFormula
 
 
@@ -65,12 +67,12 @@ def source_in_place_sort_resource_formula(
     """
     if isinstance(length, (bool, float)) or isinstance(length, int) and length < 1:
         raise ValueError("Sort model length must be positive or symbolic")
-    compare = source_less_equal_resource_formula(width, width)
+    compare = source_compare_exchange_resource_formula(width)
     copies = 3 * length**2
     ports = length * (width + ceil(log2(length)))
     return SymbolicResourceFormula(
         and_bloq=2 * copies * compare.and_bloq,
-        clifford=copies * (2 * (compare.clifford + 1) + width),
+        clifford=copies * (2 * compare.clifford + width),
         measurement=2 * copies * compare.measurement,
         logical_qubits=cast(SymbolicInt, smax(ports, compare.logical_qubits)),
         cswap=2 * copies * width,

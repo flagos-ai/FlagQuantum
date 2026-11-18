@@ -155,3 +155,102 @@ def test_original_one_adjacency_peak_failure_and_separate_native_model() -> None
     with pytest.raises(RuntimeError):
         get_cost_value(source, QubitCount())
     assert native.peak_logical_qubits == 5
+
+
+def test_all_symbolic_factory_models_and_mixed_binding() -> None:
+    import sympy
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic.lists import SymmetricDifference
+    from qualtran.bloqs.arithmetic.lists.symmetric_difference import (
+        _symm_diff_equal_size_symb,
+        _symm_diff_symb,
+    )
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from flagquantum.compiler.registers.sorting.symmetric_difference_declaration import (
+        source_symmetric_difference_resource_formula,
+    )
+
+    length, width, output = sympy.symbols("l w d", positive=True, integer=True)
+    cases = (
+        _symm_diff_symb.make(),
+        _symm_diff_equal_size_symb.make(),
+        SymmetricDifference(length, 2, output, QUInt(3)),
+        SymmetricDifference(4, 2, 4, QUInt(width)),
+        SymmetricDifference(4, 2, output, QUInt(3)),
+        SymmetricDifference(3, 2, 3, QUInt(3)),
+    )
+    for source in cases:
+        formula = source_symmetric_difference_resource_formula(
+            source.n_lhs, source.n_rhs, source.n_diff, source.dtype.num_qubits
+        )
+        observed = asdict(formula)
+        peak = observed.pop("logical_qubits")
+        expected = get_cost_value(source, QECGatesCost()).asdict()
+        for category in observed.keys() | expected.keys():
+            assert (
+                sympy.simplify(observed.get(category, 0) - expected.get(category, 0))
+                == 0
+            )
+        expected_peak = get_cost_value(source, QubitCount())
+        assert sympy.simplify(peak - expected_peak) == 0
+
+
+def test_symbolic_dependency_formulas_preserve_unknown_control_and_binding() -> None:
+    import sympy
+    from qualtran import QUInt
+    from qualtran.bloqs.arithmetic import Equals, EqualsAConstant
+    from qualtran.bloqs.arithmetic.sorting import BitonicMerge, Comparator
+    from qualtran.bloqs.mcmt import MultiControlX
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+    from qualtran.symbolics import HasLength
+
+    from flagquantum.compiler.registers.comparison.compare_exchange import (
+        source_compare_exchange_resource_formula,
+    )
+    from flagquantum.compiler.registers.comparison.equality import (
+        source_equality_constant_resource_formula,
+        source_equality_resource_formula,
+    )
+    from flagquantum.compiler.registers.control.multi_control import (
+        source_multi_control_x_resource_formula,
+    )
+    from flagquantum.compiler.registers.sorting.bitonic_merge import (
+        source_bitonic_merge_resource_formula,
+    )
+
+    length, width, value = sympy.symbols("l w v", positive=True, integer=True)
+    cases = [
+        (
+            source_multi_control_x_resource_formula(width),
+            MultiControlX(HasLength(width)),
+        ),
+        (source_multi_control_x_resource_formula(3), MultiControlX(HasLength(3))),
+        (source_equality_resource_formula(width), Equals(QUInt(width))),
+        (
+            source_equality_constant_resource_formula(width, value),
+            EqualsAConstant(width, value),
+        ),
+        (
+            source_equality_constant_resource_formula(3, value),
+            EqualsAConstant(3, value),
+        ),
+        (source_equality_constant_resource_formula(3, 2), EqualsAConstant(3, 2)),
+        (source_compare_exchange_resource_formula(width), Comparator(width)),
+        (source_bitonic_merge_resource_formula(4, width), BitonicMerge(4, width)),
+        (source_bitonic_merge_resource_formula(length, 3), BitonicMerge(length, 3)),
+        (source_bitonic_merge_resource_formula(3, 3), BitonicMerge(3, 3)),
+    ]
+    for pattern in ((0,), (1,), (0, 1), (0, 0, 1)):
+        cases.append(
+            (source_multi_control_x_resource_formula(pattern), MultiControlX(pattern))
+        )
+    for formula, source in cases:
+        counts = asdict(formula)
+        peak = counts.pop("logical_qubits")
+        expected = get_cost_value(source, QECGatesCost()).asdict()
+        for category in counts.keys() | expected.keys():
+            assert (
+                sympy.simplify(counts.get(category, 0) - expected.get(category, 0)) == 0
+            )
+        assert sympy.simplify(peak - get_cost_value(source, QubitCount())) == 0

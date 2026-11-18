@@ -8,11 +8,29 @@
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
-from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
-from ..._component_trace.symbolic_math import SymbolicInt
-from ..bits.hamming_weight_resource_model import source_hamming_weight_cost
-from ..comparison.equality import source_equality_constant_cost, source_equality_cost
-from .bitonic_merge import source_bitonic_merge_cost
+from ..._component_trace.qec_gate_cost import QECGateCost
+from ..._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+    estimate_component_resources,
+)
+from ..._component_trace.symbolic_math import SymbolicInt, bit_length, smax
+from ..bits.hamming_weight_resource_model import (
+    source_hamming_weight_cost,
+    source_hamming_weight_resource_formula,
+)
+from ..comparison.equality import (
+    source_equality_constant_cost,
+    source_equality_constant_resource_formula,
+    source_equality_cost,
+    source_equality_resource_formula,
+)
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
+from .bitonic_merge import (
+    source_bitonic_merge_cost,
+    source_bitonic_merge_resource_formula,
+)
 
 
 def symmetric_difference_signature(
@@ -88,4 +106,57 @@ def source_symmetric_difference_cost(
         "SymmetricDifference",
         (left_size + right_size + output_size) * width + 1,
         calls=calls,
+    )
+
+
+def source_symmetric_difference_resource_formula(
+    left_size: SymbolicInt,
+    right_size: SymbolicInt,
+    output_size: SymbolicInt,
+    width: SymbolicInt,
+) -> SymbolicResourceFormula:
+    """Compose every original child formula before binding symbolic dimensions.
+
+    Symbolic cardinality uses the original floor predicate and Hamming lower
+    bound. Bound widths retain their separate concrete source cost rules.
+    """
+    if all(type(n) is int for n in (left_size, right_size, output_size, width)):
+        report = estimate_component_resources(
+            source_symmetric_difference_cost(left_size, right_size, output_size, width)
+        )
+        return SymbolicResourceFormula(
+            report.gates.and_bloq,
+            report.gates.clifford,
+            report.gates.measurement,
+            report.peak_logical_qubits,
+            cswap=report.gates.cswap,
+        )
+    adjacent = left_size + right_size - 1
+    population = source_hamming_weight_resource_formula(adjacent)
+    erase = source_hamming_weight_resource_formula(adjacent, adjoint=True)
+    merge = source_bitonic_merge_resource_formula(left_size, width)
+    equality = source_equality_resource_formula(width)
+    predicate = source_equality_constant_resource_formula(
+        bit_length(adjacent), (left_size + right_size - output_size) // 2
+    )
+    gates = QECGateCost(clifford=output_size * width + 1)
+    for child, count in (
+        (merge, 2),
+        (equality, 2 * adjacent),
+        (population, 1),
+        (erase, 1),
+        (predicate, 2),
+    ):
+        gates = gates.plus(child, count)
+    peak = smax(
+        2,
+        2 * width,
+        (left_size + right_size + output_size) * width + 1,
+        merge.logical_qubits,
+        equality.logical_qubits,
+        population.logical_qubits,
+        predicate.logical_qubits,
+    )
+    return SymbolicResourceFormula(
+        gates.and_bloq, gates.clifford, gates.measurement, peak, cswap=gates.cswap
     )
