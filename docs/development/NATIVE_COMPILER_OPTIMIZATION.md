@@ -24,6 +24,7 @@ Changes to protected contracts require their own approved integration change.
 | Target-independent optimization | `compiler/pipeline.py` | No built-in optimization pass changes |
 | SABRE search | `compiler/topology/sabre.py` | No second SABRE implementation |
 | Automatic routing | `compiler/topology/routing.py` | Existing candidate selection reused as the approved native compile default |
+| Device and source routing costs | `compiler/topology/routing_cost.py` | Shared channel, topology, and orientation counting remains beside the existing device cost model |
 | Compilation orchestration | `compiler/lowering/pipeline.py` | Retain stage ownership and router replacement through the entry facade |
 | Numeric instruction matrices | `compiler/optimization/two_qubit_optimization.py` | Reuse matrix reading and multiplication; normalize reversed operands |
 | Two-qubit KAK synthesis | `compiler/optimization/two_qubit_synthesis.py` | Reuse existing CZ synthesis |
@@ -208,6 +209,14 @@ evidence, not SDKBench resource-isolated performance evidence.
   eight changed Python files, and the 45 default-routing and CZ-block tests pass.
   This correction does not resolve the separate evidence-origin failure below
   or establish that the dependency-version test suites have passed.
+- The following Linux quality run reached the architecture checker and rejected
+  `compiler/topology/routing.py` at 1,285 lines against the unchanged 1,250-line
+  ceiling. Three unchanged private pricing functions moved into the existing
+  `routing_cost.py`, leaving the router at 1,220 lines and the cost module at 714.
+  Public types, signatures, planner replacement, and serialized identities remain
+  in place. The architecture check passes; no ceiling was raised or waived.
+  All 2,764 focused compiler, deployment, routing-candidate, and integration cases
+  passed again after this move in 50.23 seconds.
 - The earlier full smoke/unit run was **not green**: 20,344 passed, 15 failed,
   6 errors, and 785 skipped. The routing assertion was migrated to the explicit
   approved previous policy and subsequently passed in the compiler suite.

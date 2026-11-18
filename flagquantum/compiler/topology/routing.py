@@ -24,7 +24,10 @@ from .coupling import UNREACHABLE_DISTANCE as UNREACHABLE_DISTANCE
 from .coupling import CouplingMap as CouplingMap
 from .routing_cost import LinkErrorRates as LinkErrorRates
 from .routing_cost import (
+    _count_sabre_orientation_swaps,
+    _is_routable_two_wire_gate,
     _PricedDevice,
+    _source_routing_counts,
     _topology_cost_model,
     _TopologyCostModel,
     emitted_link_faults,
@@ -175,52 +178,6 @@ class RoutingStrategySelection:
         }
 
 
-def _is_routable_two_wire_gate(instruction: Instruction) -> bool:
-    """Report whether a routing strategy inserts SWAPs for this instruction's qubits.
-
-    The SWAP estimate and a planner's placements have to answer this the same way,
-    or the price and the plan disagree about which gates the strategy moved. A
-    channel moves with its qubits and an ordering barrier moves nothing at all, so
-    neither is a gate a strategy prices.
-    """
-
-    if is_ordering_barrier(instruction):
-        return False
-    return len(instruction.wires) == 2 and not instruction.metadata.get("is_channel")
-
-
-def _source_routing_counts(
-    ir: CircuitIR,
-    topology: _TopologyCostModel,
-) -> tuple[int, int, int]:
-    """Return the source program's topology, routed, and skipped-channel counts.
-
-    These three describe a program against one device, and every strategy reports
-    them the same way: a two-qubit operation is a topology gate, one the device
-    cannot execute as written is also a routed gate, and a two-qubit channel is
-    neither because routing may not move a channel -- and an ordering barrier is
-    excluded at every width because it is not a gate. On an ordered device "as
-    written" is a claim about the operands, so a CX written against its link's
-    declared direction counts as routed work rather than as a gate the device
-    already carries. Counting them in one place keeps a strategy's routing
-    metadata and its cost estimate from disagreeing about the same program.
-    """
-
-    topology_gate_count = 0
-    routed_gate_count = 0
-    skipped_channel_count = 0
-    for instruction in ir:
-        if is_ordering_barrier(instruction) or len(instruction.wires) != 2:
-            continue
-        if instruction.metadata.get("is_channel"):
-            skipped_channel_count += 1
-            continue
-        topology_gate_count += 1
-        if not topology.executes(instruction, instruction.wires):
-            routed_gate_count += 1
-    return topology_gate_count, routed_gate_count, skipped_channel_count
-
-
 def _estimate_swap_plan(
     ir: CircuitIR,
     topology: _TopologyCostModel,
@@ -323,28 +280,6 @@ def _estimate_swap_plan(
         pre_restore_layout,
         direction_swap_count,
         expected_link_faults if calibrated else None,
-    )
-
-
-def _count_sabre_orientation_swaps(
-    ir: CircuitIR,
-    topology: _TopologyCostModel,
-    placements: tuple[tuple[int, ...], ...],
-) -> int:
-    """Count the gates one planned placement leaves on their link the wrong way.
-
-    A planner reports where it places every source instruction, so the count is
-    read off that placement rather than re-derived, and the price of a planned plan
-    describes the plan the caller will get. Each counted gate costs two SWAPs: the
-    materializer wraps it in a SWAP sandwich, so the plan's own layout bookkeeping
-    survives the repair and the rest of the plan stays valid.
-    """
-
-    return sum(
-        1
-        for index, instruction in enumerate(ir)
-        if _is_routable_two_wire_gate(instruction)
-        and topology.needs_orientation_swap(instruction, tuple(placements[index]))
     )
 
 
