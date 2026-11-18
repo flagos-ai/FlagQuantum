@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0291 | `product.ipynb` | `727fb156b779618d838b430868681e886a902ca6` | Closed by the complete native tutorial. |
-| Q-0292 | `product.py` | `0c806922e9d734f7a2d823c960369c1a443ebb4a` | Symbolic signature and fallback costs verified. External-source objects and symbolic execution remain open, with the locked unequal resource failure recorded. |
+| Q-0292 | `product.py` | `0c806922e9d734f7a2d823c960369c1a443ebb4a` | Complete interface, concrete execution, resolved declarations, external objects and owned IR roundtrip verified. Source symbolic decomposition, unequal resource partition and protobuf failures remain explicit. |
 | Q-0293 | `product_test.py` | `389ffb997e324e16e3bb64e87e9bbd274188bdbe` | Closed by the original scenarios and existing measured flag evidence. |
 
 ## Port and execution rules
@@ -73,8 +73,66 @@ The original QEC query rejects this for unequal concrete resources
 and for a symbolic resource whose equality to the shared width is
 unproven. The native declaration remains available. Numerical binding
 and the affected resource query retain the explicit refusal.
-These are source admission boundaries. Foreign source object binding
-and serialization remain open.
+These are source admission boundaries, not working numerical execution paths.
+
+## Complete definition and external-object closure
+
+`ProductBlockEncoding.of(*children)` retains the source ordered tuple factory.
+The constructor owns its nonempty, equal-system and identity-signal checks.
+Its metadata and signature retain source normalization, weighted error, packed
+flags, shared signal, and resource widths. `make_on` owns the executable
+partition, reverse child order, zero-polarity flag checks and inverse binding.
+`source_product_block_signature` owns unresolved declarations; the independent
+symbolic resource function owns the source fallback. Partition and child
+objects remain native owners rather than copied SDK objects. Source display
+labels are represented by the existing graph/catalogue teaching assets.
+
+`test_product_external_file.py` imports the actual original T/H constituents
+and substitutes them into the unchanged Product consumer. Four resolved
+ancilla pairs, including unequal widths in both orders, match the original
+symbolic signature and scalar substitutions. Both directions compare the
+independently declared direct source costs, the concrete decomposed costs,
+all small measurement histories, complete complex amplitudes on occupied
+logical flags and signal, clean private flag work, and native IR JSON
+roundtrip. No automatic source symbolic decomposition is claimed: the
+unresolved original still raises `DecomposeTypeError`.
+
+Both concrete original root factories are captured through the shared
+optional Ecosystem boundary in forward and adjoint directions. All ten
+original seeded dense root families are captured in all four ordinary and
+positive-controlled directions. Each retains exactly one explicit matrix
+leaf per source child; complete matrices and JSON roundtrips match the
+unchanged source, including idle logical flags. The nested original three-X
+root retains its exact primitive operands. This conversion does not contract
+an arbitrary component into a replacement matrix or store source objects in
+native metadata. A missing independent root model raises explicitly.
+
+All three original factories fail the unchanged source protobuf check with
+`Object arrays cannot be saved when allow_pickle=False`. The source files
+and diagnostic are tested unchanged. Native emitted IR serialization is a
+separate supported contract, not a claim that the original objects serialize.
+Both unequal nonzero resource orders retain the original decomposition and
+external-import failure. The source assumes every child restores its shared
+resource register; a logical resource is not private scratch, and arbitrary
+leaking external children do not acquire a cleanup guarantee.
+
+Direct graph flags use all-one abstract controls; actual decomposition uses
+all-zero controls followed by X. Their Clifford totals are compared separately.
+For the resolved T/H streams, actual T/Tdg count is four per concrete source
+And plus the one T leaf, and actual measurement count equals the concrete
+source measurement count. Dense leaves have an explicit primitive count but
+no invented Clifford/T estimate. Returned-wire binding swaps remain an
+independent snapshot statistic. Measurement certificates cover every admitted
+history structurally; small histories are also evaluated numerically.
+
+The final concentrated Product, external snapshot, Unitary, feedback and
+measurement-certificate regression passes 192 tests without skips. The
+Product notebook passes in an independent kernel (eight code cells, two
+SVG outputs). The two touched production/example files pass strict mypy;
+Black, Ruff, team scope, architecture, multilevel IR and protected API
+checks pass. The three source asset blobs remain unchanged. Existing
+accepted source-suite and notebook evidence above is reused rather than
+rerunning unchanged upstream failures.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_product_block_encoding.ipynb
