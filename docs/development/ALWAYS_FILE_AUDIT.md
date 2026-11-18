@@ -62,3 +62,47 @@ exception passes through unchanged, as in the locked source for atomic
 Allocate. Native cost delegation uses an explicit child declaration.
 Automatic cost declarations for arbitrary children and direct foreign
 object interoperability remain open.
+
+## Actual foreign wrapper and local-output lifetime closure
+
+`test_always_source_binding.py` captures the actual `_always_and` example through
+`import_register_emitter`, with `target` declared as caller-owned clean local
+output. Forward and the independently captured source adjoint both survive
+native snapshot JSON restoration. Their bound streams match the existing native
+And compute and measured erase for every operand and feedback condition. No
+foreign wrapper object reaches execution.
+
+The native Always wrapper receives these owned directional emitters. Its shaped
+inherited-control tuple is returned by identity and remains absent from the
+child stream. A coherent spectator shares arbitrary amplitudes with the two
+logical inputs. The entire source isometry agrees through `circuit.append(op)`.
+Each erase outcome restores the complete unnormalized input and returns the
+local target to zero. The forward emits 6 CX, 2 H, 2 T, 2 Tdg and 1 S. The
+adjoint emits H, measurement, conditional CZ and reset. Independent source
+Always(And) QEC refusal and child-level models are reused from the accepted
+original test suite and retain their distinct meanings.
+
+The actual Always(Add) wrapper with two- and three-bit words is captured in
+both directions, then rebound to reversed logical words, one spectator and two
+clean work slots. The direct unmodified source traversal independently matches
+the instruction order/dependencies, operands, measurements and corrections.
+Both directions use the ordinary append-to-IR entry and JSON restoration. Every
+one of four measurement histories preserves the complete source complex action
+with zero work population. All sixteen history pairs per starting direction
+restore the full unnormalized input. Each direction emits 20 CX, 6 H, 4 T,
+4 Tdg, 2 S, 2 measurements, 2 conditional CZ and 2 resets. The accepted native
+Add resource declaration and source query remain independent of that inventory.
+
+Source signature forwarding, actual factory/DocSpec identity, child display,
+adjoint swapping, actual typed control adders and successful/error cost
+provider delegation now have complete concrete interface evidence. Q-0314
+remains open for the explicitly recorded automatic declaration of arbitrary
+undeclared foreign children. Existing native cost delegation deliberately
+requires an explicit child declaration or provider. The source atomic-child
+resource failure and original serialization xfail remain recorded. No new
+foreign reflection registry or inferred zero cost is introduced.
+
+The final concentrated batch passed 142 cases with no warnings or skips.
+Formatting, lint, strict typing for the changed Python file, Compiler scope,
+architecture, multilevel IR and protected API checks all passed. Logs are
+retained under `ftqc-reference-env/g2-always-binding-*.log`.
