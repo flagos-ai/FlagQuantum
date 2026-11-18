@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 190
+    assert len(validated) == 191
+    assert (
+        "algorithms/QML/qgan/qgan_bars_and_strips",
+        "examples/synthesis/algorithms/machine_learning/qgan/qgan_bars_and_strips/overview/main.py",
+    ) in validated
     assert (
         "tutorials/basic_tutorials/mcx/mcx",
         "examples/synthesis/tutorials/basics/mcx/overview/main.py",
@@ -889,7 +893,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**190/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**191/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

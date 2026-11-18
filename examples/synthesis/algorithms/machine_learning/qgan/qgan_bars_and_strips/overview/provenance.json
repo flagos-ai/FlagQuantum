@@ -1,0 +1,151 @@
+{
+  "upstream_path": "algorithms/QML/qgan/qgan_bars_and_strips.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "bf2215a3d2df641e723e13988688ad11e0ed769c74c3c6dde6bdc23451cf5eea",
+  "git_blob_sha1": "442a9c6cf058d9e9bb814e9113fd03472407a399",
+  "scope": "All 23 code stages, the original checkpoints, 1,000 classical images and ten epochs, 250 hybrid images and one epoch, and 4,096 finite shots per four-qubit binding.",
+  "native_semantic_adaptations": "Use seeded local data and PyTorch training with an exact native batched Circuit. Estimate the four commuting projector observations from each shared finite sample. Use exact expectation derivatives before the source rounding, whose gradient is zero. Preserve the source diagonal score and also report exact pattern membership and diversity.",
+  "native_entrypoint": "examples.synthesis.algorithms.machine_learning.qgan.qgan_bars_and_strips.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/machine_learning/qgan/qgan_bars_and_strips/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qgan_workflow_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Use the local runtime and read the original tensor checkpoints.",
+      "sha256": "20b8e78a176626e0983c29032a9aa5355d4072097a5ceeba013d72eae9bd6e7a"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "stage": "Generate independent horizontal and vertical stripe patterns.",
+      "sha256": "dc15d42e0dedec9129eef404dd071c1e62146f2314def65613b2f65334649c5c"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "stage": "Retain the original 1,000 training images.",
+      "sha256": "5f4605b51d4380b757c8b6127714446ce1e33dfe211b8a570c4ab9e5fa0f89aa"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "stage": "Use a three-by-three grid to inspect nine images.",
+      "sha256": "7c239989346716064f4e02e258a4fbdc5a97945805a52ebddf33b154b050f407"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "stage": "Retain nine fresh training examples for the plot.",
+      "sha256": "bd76bd668195b089d1a22823ca2933f212e697379ef9981514cde949c65589b3"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 6,
+      "stage": "Keep the source batch size and CPU training path.",
+      "sha256": "15671b0a6a7da3d201ad8014718365e82a597102c8a167d32a3a81952fe06f59"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "stage": "Use local loss records in place of the optional TensorBoard viewer.",
+      "sha256": "a75159e0e5f848ae5f2f0407f5251e3bda7724c72fcbd4f6f4d847e9c8571ab1"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "stage": "Instantiate the original generator and discriminator classes.",
+      "sha256": "c5c8107b54ff7f78a148b6fb2afe6fa133f5f8465d9bda6b5e07a2377bb88179"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 9,
+      "stage": "Use the original BCE and Adam training flow.",
+      "sha256": "9035bb042a956e483da0ae1a2878887f2b5cd68788c6a9de7aa3fd6700d5f831"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 10,
+      "stage": "Keep two Gaussian latent features.",
+      "sha256": "3efe0ada7d3516b772fac661725ceb9adaaf71628f68539adfe7c26725f88e09"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 11,
+      "stage": "Run ten full classical epochs and reload the saved state.",
+      "sha256": "f74f5693c77457332db6665dfb8a3a05febf082f50e4aa43114f08ef1b985573"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 12,
+      "stage": "Report the actual 100-sample classical evaluation and losses.",
+      "sha256": "5914e1d8c7210b9f4d096f18cc0d624872ffc69c46056e39210bdc012d241de1"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 13,
+      "stage": "Display actual classical samples and the fresh reference image grid separately.",
+      "sha256": "87da4819f0caff87bd75f501fad2c2bea91513c39269e60c44c8e3cedee00659"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 14,
+      "stage": "Use the native differentiable four-qubit circuit.",
+      "sha256": "4fe6a0c92e98b93361f5370d81e5a2a3adccfb6796e0e224f95921737f07cc46"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 15,
+      "stage": "Bind the original eight weights and 4,096 finite shots per data row.",
+      "sha256": "4f162abc31b2c31a06fd9b771e0eb017c4abe94090879051f3270aae2dc1fe70"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 16,
+      "stage": "Use the source hybrid neural network and its rounding behavior.",
+      "sha256": "b233dffdef87070d467e233d321a5cbe65fc82b49c44276f9368a4caf4493578"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 17,
+      "stage": "Keep the checkpoint architecture and batched circuit shape.",
+      "sha256": "8d5b3d769fc6ccbe4d888d579408db99dc2b0d589a3d070e80c20702c453b160"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 18,
+      "stage": "Use four Bernoulli latent features.",
+      "sha256": "69309ae622dba367ab5d2e84efc12df323a8dbdd04414973dbd67e5ce3702a98"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 19,
+      "stage": "Retain the source-disabled notebook TensorBoard launch.",
+      "sha256": "6ea81f4b61ca4502884f2aa2a34d9631b0e13c5fd06927ed24679968a315f51f"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 20,
+      "stage": "Regenerate all 250 hybrid training images.",
+      "sha256": "c8ce7c4bc90e2a4338de4025f5c2a25d0d9fa853f33a25be5a45ea72b428d14d"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 21,
+      "stage": "Load the original checkpoint and run the full hybrid epoch.",
+      "sha256": "b8ada730bb1ce540eb29014936291fa7484156ff3f0795b9dc4756b72b5bebab"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 22,
+      "stage": "Evaluate ten new input vectors and report sampled metrics.",
+      "sha256": "76be5c8335434b7d98040f7ef08c31b1db445831569d8dc87dbd8b65d8f43cd5"
+    },
+    {
+      "index": 50,
+      "native_code_cell": 23,
+      "stage": "Report the final generated rows, finite shots, and independent state check.",
+      "sha256": "63e38172a593da874db56eff1c54cac95db51e19e804cced0957b7c689385ffd"
+    }
+  ]
+}
