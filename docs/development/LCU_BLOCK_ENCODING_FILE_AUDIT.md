@@ -7,7 +7,7 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0282 | `lcu_block_encoding.ipynb` | `4f457c91bedc3baaf94f7515242a67fffc4bf4b7` | Closed by the native tutorial. |
-| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Named and packed types, directed junk declarations and wire symbols verified. General external oracle binding remains open. |
+| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Named/packed types and source instruction capture verified. Native external oracle-provider replacement remains open. |
 | Q-0284 | `lcu_block_encoding_test.py` | `0632799611bbd5ec2b7ca724533d4bbd1bbb7169` | Closed by the original-fixture mapping and existing controlled branch evidence. |
 
 ## Binding and work ownership
@@ -104,6 +104,70 @@ foreign oracle object binding remain open.
 The physical Hubbard stage expands its bounded arithmetic and Fredkin
 decompositions. The locked source model uses abstract charges for those
 children. Both columns retain their own counting and scheduling conventions.
+
+## External instruction dependencies
+
+The optional feedback importer maps exact unshifted half-X powers to the
+existing native `sx/sxdg` and positive-controlled `csx/csxdg` opcodes. Their
+absolute scalar phase is retained. The shifted rotation convention remains
+`rx`; it is not silently replaced by a square-root-X instruction. Source
+instrument comparisons cover both inverse powers and measured feedback.
+No public static importer contract or protected gate vocabulary is changed.
+
+The locked `ModAddK` supplies a total classical permutation and a declaration
+of five additions, without a physical decomposition. Its optional conversion
+uses the existing native bounded increment owner for literal steps `+1/-1`
+and the bounded modular addition owner for other constants. It does not
+contract an arbitrary source object into a matrix or manufacture a reference
+gate stream. The original adjoint wrapper resolves through the source's own
+negative integer power before native binding, not by reversing measurement
+instructions. All binary padding states remain fixed.
+
+The bridge owns its clean work from allocation through complete expansion and
+releases it in `finally`. Existing register export handles quantum placement
+and feedback. Bridge-private key tags are removed before import; keys are
+assigned deterministically after reserving every foreign measurement name.
+They cannot shadow the original records. Repeated capture produces identical
+native JSON, and a colliding source-key fixture retains distinct conditions.
+Native SDK helper objects do not enter the returned IR.
+
+All binary inputs and a complete coherent input are compared against the
+unchanged `ModAddK.on_classical_vals` contract for unit increments, decrements,
+a nonunit constant, full binary modulus, modulus one and both control
+polarities. The native history certificate proves every measured branch and
+clean private work; numerical reference checks include the full binary input
+basis. Source `mod_addition.py` remains blob
+`0a167e84fe00d5df50488c4b28925ea6114728f7`.
+
+All four original named/packed SELECT and LCU objects now capture actual
+forward and adjoint instructions. Both LCU activation values also pass capture,
+native IR JSON roundtrip, deterministic recapture and every-history cleanup
+proof. The source typed register order is preserved, with big-endian bit order
+inside each word. SELECT has 30 logical wires; PREPARE's two logical junk bits
+are absent from its execution signature. The LCU has 32 logical wires, or 33
+when controlled. Returned-wire binding swaps are zero.
+
+| Captured source mode, named or packed | Reserved wires | Instructions | Measurements | T/T-dagger |
+| --- | ---: | ---: | ---: | ---: |
+| SELECT | 35 | 1134 | 40 | 230 |
+| LCU | 38 | 2526 | 86 | 540 |
+| LCU, control on zero | 39 | 2578 | 89 | 552 |
+| LCU, control on one | 39 | 2576 | 89 | 552 |
+
+Both directions retain these figures. The source abstract model still reports
+74 or 77 measurements and its own logical peak as shown above. The added
+physical work and erasures belong to native realization of the declared
+arithmetic. An earlier generic realization used more work for unit steps;
+the accepted path reuses the same unit-step owner as native Hubbard PREPARE.
+
+These dependencies pass 166 concentrated feedback, modular, source-root,
+block-snapshot and sparse-oracle regressions. Strict checks cover the three
+production files and shared certificate; format and architecture checks are
+recorded with the publication. Q-0283 remains open: instruction capture and
+history proofs do not replace consumer-level native PREPARE/SELECT providers,
+preserved typed/sided junk ownership, or full source/native state comparisons
+through those providers. The existing signal PREPARE must stay nonidentity
+for SELECT. Its SDK object must not become native metadata.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_lcu_block_encoding.ipynb
