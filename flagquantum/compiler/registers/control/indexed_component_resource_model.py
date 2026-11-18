@@ -111,7 +111,9 @@ def indexed_component_cost(
     ):
         raise ValueError("Child target width must fit the parent target ports")
     signature = control_count + sum(axis_widths) + target_width
-    if break_early is not None and break_early((), 0, extents[0]):
+    if not any(axis_widths) or (
+        break_early is not None and break_early((), 0, extents[0])
+    ):
         if zero_selection is None:
             raise ValueError("Folded first-axis root requires a zero-selection recipe")
         if type(zero_selection.qubits) is not int or zero_selection.qubits < signature:

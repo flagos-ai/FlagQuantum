@@ -203,11 +203,11 @@ def append_nested_bounded_unary_tree(
     The callback sees the retained parent-axis indices and the current node's
     half-open interval. It must preserve the leaf recipe throughout any folded
     interval. A folded first-axis root requires a separate zero-selection
-    recipe, as in the source base class, and is refused by this traversal.
+    recipe, as in the source base class. Empty selectors use that same recipe.
     """
     if type(adjoint) is not bool:
         raise ValueError("Nested traversal direction must be a boolean")
-    if break_early is not None and break_early((), 0, extents[0]):
+    if not any(axes) or (break_early is not None and break_early((), 0, extents[0])):
         if zero_selection is None:
             raise ValueError("Folded first-axis root requires a zero-selection recipe")
         zero_selection()

@@ -19,13 +19,17 @@ from .multi_control import multi_and_ir
 def indexed_component_workspace(
     axis_widths: tuple[int, ...], control_count: int
 ) -> int:
-    """Return reserved clean parent work, excluding the child's own storage."""
-    if not axis_widths or any(
-        type(width) is not int or width < 1 for width in axis_widths
-    ):
+    """Return parent work, excluding child storage and empty-selection recipes."""
+    if any(type(width) is not int or width < 0 for width in axis_widths):
         raise ValueError("Indexed components require positive concrete axis widths")
     if type(control_count) is not int or control_count < 0:
         raise ValueError("Indexed components require a nonnegative control count")
+    if not any(axis_widths):
+        return 0
+    if 0 in axis_widths:
+        raise ValueError(
+            "Indexed components require positive concrete axis widths for mixed signatures"
+        )
     return sum(axis_widths) + control_count - 1
 
 
@@ -70,8 +74,10 @@ def indexed_component_ir(
         raise ValueError(
             "Indexed components require one distinct classical slot per work wire"
         )
-    _validate_wires((*controls, *(wire for axis in axes for wire in axis), *workspace))
-    if break_early is not None and break_early((), 0, extents[0]):
+    wires = (*controls, *(wire for axis in axes for wire in axis), *workspace)
+    if wires:
+        _validate_wires(wires)
+    if not any(axes) or (break_early is not None and break_early((), 0, extents[0])):
         if emit_zero_selection is None:
             raise ValueError("Folded first-axis root requires a zero-selection recipe")
         return emit_zero_selection()
