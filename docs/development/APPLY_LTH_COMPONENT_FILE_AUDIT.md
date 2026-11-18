@@ -71,3 +71,25 @@ recipes and explicit storage.
 The new fixture, notebook test and file audit pass strict typing. Standalone
 strict typing of the shared source reader reports the same 13 diagnostics
 as the baseline, covering Cirq's dynamic types and existing metadata typing.
+
+## Complete directional source capture
+
+The existing named emitter captures the whole source in both directions. The
+Ecosystem adapter preserves the default singly controlled T leaf by controlling
+the exact Cirq operation returned by the source T gate. Source operands and
+adjoint direction are retained. The resulting native snapshots are consumed
+through the existing SelectBlockEncoding and Circuit.append entry.
+
+The T/H and T/H/Z/X banks cover no control and both declared control values.
+Each original direction is checked on every logical operator column and every
+measurement history. JSON round trips, exact phases and clean work are verified.
+The locked direct declaration with control value zero still activates on one.
+The capture preserves that behavior, and the existing native specialized control
+path has separate coverage for negative activation.
+
+The two- and four-leaf banks emit one controlled phase and one CH in each
+direction. The traversal contributes four primitive T-family gates per
+measurement. The independent indexed model checks source QEC categories and peak
+width in both directions. The model prices the controlled T and H as rotations.
+Mixed empty axes, repeated multi-bit control and source object serialization
+retain the documented boundaries above.
