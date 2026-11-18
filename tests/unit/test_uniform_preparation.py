@@ -1,8 +1,10 @@
 """Pinned uniform preparation, exact phases and measured workspace cleanup."""
 
 from collections import Counter
+from collections.abc import Iterable, Iterator
 from itertools import product
 from math import acos, sin, sqrt
+from typing import Any
 
 import pytest
 import torch
@@ -22,7 +24,9 @@ from tests.unit.test_register_constant_addition import reference_arithmetic_gate
 pytestmark = pytest.mark.unit
 
 
-def layout(count, values):
+def layout(
+    count: int, values: tuple[int, ...]
+) -> tuple[tuple[int, ...], tuple[int, ...], tuple[int, ...], tuple[int, ...]]:
     width, work, slots = uniform_preparation_requirements(count, len(values))
     controls = tuple(range(len(values)))
     target = tuple(range(len(values), len(values) + width))
@@ -30,7 +34,9 @@ def layout(count, values):
     return target, workspace, tuple(range(slots)), controls
 
 
-def emitted(count, values, adjoint=False):
+def emitted(
+    count: int, values: tuple[int, ...], adjoint: bool = False
+) -> tuple[Instruction, ...]:
     target, work, slots, controls = layout(count, values)
     return uniform_preparation_ir(
         count,
@@ -43,7 +49,7 @@ def emitted(count, values, adjoint=False):
     )
 
 
-def embedded(logical, work):
+def embedded(logical: torch.Tensor, work: int) -> torch.Tensor:
     state = torch.zeros((len(logical), 1 << work), dtype=torch.complex128)
     state[:, 0] = logical
     return state.flatten()
@@ -53,7 +59,9 @@ def embedded(logical, work):
     "count,values",
     [(2, ()), (4, (0, 1)), (3, ()), (5, (1,)), (6, (1, 0)), (12, (0, 1, 0))],
 )
-def test_uniform_support_relative_phase_inverse_and_counts(count, values):
+def test_uniform_support_relative_phase_inverse_and_counts(
+    count: int, values: tuple[int, ...]
+) -> None:
     target, work, _, controls = layout(count, values)
     full = 1 << len(target)
     active = sum(value << i for i, value in enumerate(values[::-1]))
@@ -87,7 +95,8 @@ def test_uniform_support_relative_phase_inverse_and_counts(count, values):
         len(controls) + len(target) + len(work),
         inputs=embedded(initial, len(work)),
         dtype=torch.complex128,
-    ).append(FieldOperation(len(controls) + len(target) + len(work), gates))
+    )
+    circuit.append(FieldOperation(len(controls) + len(target) + len(work), gates))
     result = run_dynamic(circuit, shots=8, seed=33, strategy="trajectory")
     torch.testing.assert_close(
         result.final_states.reshape(8, -1),
@@ -96,10 +105,9 @@ def test_uniform_support_relative_phase_inverse_and_counts(count, values):
         rtol=0,
     )
     inverse = emitted(count, values, adjoint=True)
+    circuit.append(FieldOperation(len(controls) + len(target) + len(work), inverse))
     restored = run_dynamic(
-        circuit.append(
-            FieldOperation(len(controls) + len(target) + len(work), inverse)
-        ),
+        circuit,
         shots=8,
         seed=47,
         strategy="trajectory",
@@ -112,15 +120,17 @@ def test_uniform_support_relative_phase_inverse_and_counts(count, values):
     )
 
 
-def test_empty_target_and_invalid_inputs():
+def test_empty_target_and_invalid_inputs() -> None:
     assert emitted(1, ()) == emitted(1, (1, 0), True) == ()
     with pytest.raises(ValueError, match="positive integer"):
         uniform_preparation_requirements(0)
     with pytest.raises(ValueError, match="nonnegative"):
         uniform_preparation_requirements(3, -1)
     target, work, bits, controls = layout(3, (0,))
+    # Deliberately malformed external input exercises runtime type validation.
+    invalid_adjoint: Any = 1
     with pytest.raises(ValueError, match="adjoint"):
-        uniform_preparation_ir(3, target, work, bits, adjoint=1)
+        uniform_preparation_ir(3, target, work, bits, adjoint=invalid_adjoint)
     with pytest.raises(ValueError, match="zero/one"):
         uniform_preparation_ir(3, target, work, bits, controls=controls)
     with pytest.raises(ValueError, match="clean work"):
@@ -148,7 +158,9 @@ def test_empty_target_and_invalid_inputs():
     ],
 )
 @pytest.mark.parametrize("adjoint", (False, True))
-def test_full_source_complex_map_and_erasure_histories(count, values, adjoint):
+def test_full_source_complex_map_and_erasure_histories(
+    count: int, values: tuple[int, ...], adjoint: bool
+) -> None:
     pytest.importorskip("qualtran")
     import cirq
     import numpy as np
@@ -269,15 +281,26 @@ def reference_uniform_preparation_gates(
     quregs = split_qubits(
         source.signature, tuple(cirq.LineQubit(wire) for wire in (*controls, *target))
     )
-    ops = list(
-        cirq.flatten_op_tree(source.decompose_from_registers(context=manager, **quregs))
+    ops = tuple(
+        cirq.flatten_to_ops(source.decompose_from_registers(context=manager, **quregs))
     )
 
-    def source_predicate(bloq, ctrl, prefix):
+    def line_ids(qubits: Iterable[cirq.Qid]) -> tuple[int, ...]:
+        ids = []
+        for qubit in qubits:
+            assert isinstance(qubit, cirq.LineQubit)
+            ids.append(qubit.x)
+        return tuple(ids)
+
+    def source_predicate(
+        bloq: Any, ctrl: tuple[int, ...], prefix: tuple[int, ...]
+    ) -> tuple[tuple[Instruction, ...], tuple[Instruction, ...]]:
+        from qualtran.bloqs.mcmt import And
+
         qubits = tuple(cirq.LineQubit(q) for q in (*ctrl, *prefix))
         source_leaves = (
             tuple(
-                cirq.flatten_op_tree(
+                cirq.flatten_to_ops(
                     bloq.decompose_from_registers(
                         context=manager, **split_qubits(bloq.signature, qubits)
                     )
@@ -286,9 +309,11 @@ def reference_uniform_preparation_gates(
             if len(prefix) > 1
             else (bloq.on(*qubits),)
         )
-        compute, erase = [], []
+        compute: list[Instruction] = []
+        erase: list[tuple[Instruction, ...]] = []
         for leaf in source_leaves:
-            left, right, flag = (q.x for q in leaf.qubits)
+            left, right, flag = line_ids(leaf.qubits)
+            assert isinstance(leaf.gate, And)
             binding = {"ctrl": (left, right), "target": (flag,)}
             compute.extend(
                 reference_arithmetic_gates(leaf.gate, binding, (), {}, cirq_style=True)
@@ -304,8 +329,8 @@ def reference_uniform_preparation_gates(
             )
         return tuple(compute), tuple(g for block in reversed(erase) for g in block)
 
-    from flagquantum.ecosystem.cirq._component_snapshot import _has_explicit_matrix
     from flagquantum.ecosystem.cirq._feedback_import import (
+        _has_explicit_matrix,
         _lower_feedback_gate,
         import_cirq_feedback,
     )
@@ -328,12 +353,13 @@ def reference_uniform_preparation_gates(
         )
         imported = import_cirq_feedback(
             cirq.Circuit(leaves, strategy=cirq.InsertStrategy.NEW),
-            qubit_order=tuple(cirq.LineQubit.range(len(controls) + len(target))),
+            # Keep physical IDs when the preparation is a slice of a larger body.
+            qubit_order=tuple(cirq.LineQubit.range(max((*controls, *target)) + 1)),
         ).ir
         initial.append(imported.instructions)
 
     _, odd, high = source.k_l_logL()
-    assert tuple(q.x for q in quregs["target"]) == target
+    assert line_ids(quregs["target"]) == target
     h_stage = tuple(
         gate for part in (reversed(initial) if adjoint else initial) for gate in part
     )
@@ -343,9 +369,14 @@ def reference_uniform_preparation_gates(
         rest = ops[len(target) :]
         lt, rz, undo = rest[:3]
         assert lt.gate == undo.gate == LessThanConstant(high, odd)
-        middle = tuple(Instruction("h", (op.qubits[0].x,)) for op in rest[3 : 3 + high])
+        assert isinstance(lt.gate, LessThanConstant)
+        assert isinstance(rz.gate, cirq.Rz)
+        middle = tuple(
+            Instruction("h", line_ids(op.qubits)) for op in rest[3 : 3 + high]
+        )
         reflect, rotate, _ = rest[3 + high : 6 + high]
-        final = tuple(Instruction("h", (op.qubits[0].x,)) for op in rest[6 + high :])
+        final = tuple(Instruction("h", line_ids(op.qubits)) for op in rest[6 + high :])
+        assert isinstance(rotate.gate, cirq.Rz)
         assert middle == final
         assert all(op.gate == cirq.H for op in (*rest[3 : 3 + high], *rest[6 + high :]))
         less_work = workspace[1 : high + 2]
@@ -357,7 +388,7 @@ def reference_uniform_preparation_gates(
             cirq_style=True,
         )
         prefix = workspace[: high + len(values) - 1]
-        assert tuple(q.x for q in reflect.qubits[: high + len(values)]) == (
+        assert line_ids(reflect.qubits[: high + len(values)]) == (
             *target[:high],
             *controls,
         )
@@ -401,14 +432,16 @@ def reference_uniform_preparation_gates(
         (5, (1,)),
     ],
 )
-def test_pinned_outer_generator_and_inner_source_streams(count, values):
+def test_pinned_outer_generator_and_inner_source_streams(
+    count: int, values: tuple[int, ...]
+) -> None:
     target, workspace, slots, controls = layout(count, values)
     for adjoint in (False, True):
         expected = reference_uniform_preparation_gates(
             count, values, target, workspace, slots, controls, adjoint=adjoint
         )
 
-        def fixed_basis(stream):
+        def fixed_basis(stream: Iterable[Instruction]) -> Iterator[Instruction]:
             for gate in stream:
                 if gate.name == "ch":
                     leaves = translate(
@@ -446,7 +479,7 @@ def test_pinned_outer_generator_and_inner_source_streams(count, values):
 
 
 @pytest.mark.ftqc_reference
-def test_empty_source_binding_and_concrete_resource_model():
+def test_empty_source_binding_and_concrete_resource_model() -> None:
     pytest.importorskip("qualtran")
     import cirq
     import numpy as np
@@ -478,7 +511,7 @@ def test_empty_source_binding_and_concrete_resource_model():
         assert counts["t"] + counts["tdg"] + 2 * counts["ch"] == native_t
 
 
-def test_controlled_h_exact_target_translation_and_resources():
+def test_controlled_h_exact_target_translation_and_resources() -> None:
     basis = translate(
         Instruction("ch", (0, 1)),
         can_run=lambda g: g.name in {"h", "s", "sdg", "t", "tdg", "cx"},
