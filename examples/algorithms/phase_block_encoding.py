@@ -75,6 +75,7 @@ def main() -> None:
     )
     assert report.emitted is not None
     counts = Counter(gate.name for gate in forward_ir.instructions)
+    print("Block annotation (phase in pi units)", phase.label("Add"))
     print("Source-model T equivalents", report.logical.gates.total_t_count())
     print("Emitted T/T-dagger instructions", report.emitted.t_count)
     print("Emitted unsynthesized phase instructions", counts["phase"])

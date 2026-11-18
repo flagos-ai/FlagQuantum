@@ -95,6 +95,14 @@ class PhaseBlockEncoding:
     def signal_state(self) -> BlackBoxPrepare:
         return self.block_encoding.signal_state
 
+    def label(self, child_label: str) -> str:
+        """Format the block annotation with an explicit native child symbol.
+
+        The exponent is in pi units, matching the frozen source caption.
+        Supplying the child symbol avoids depending on an SDK object's repr.
+        """
+        return f"B[exp({self.phi}i){child_label}]"
+
     def resource_model(self, block_cost: ComponentCost) -> ComponentCost:
         """Retain the original scalar and block calls, independently of IR."""
         ports = self.system_bitsize + self.ancilla_bitsize + self.resource_bitsize

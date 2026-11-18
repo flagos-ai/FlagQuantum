@@ -24,6 +24,11 @@ class CircuitBlockEncoding:
     scratch. Models, when supplied, are independent declarations in the same
     order, with an unavailable direction represented by None. Missing models
     cannot be queried as zero costs.
+
+    Zero logical widths admit scalar blocks. A scalar phase snapshot can own
+    a clean carrier in its workspace, including an empty identity body; its
+    source model remains independent of that physical representation. No
+    zero-qubit Circuit or IR is constructed.
     """
 
     system_bitsize: int
@@ -54,7 +59,7 @@ class CircuitBlockEncoding:
                 "Block normalization and precision must be native scalar expressions"
             )
         widths = (self.system_bitsize, self.ancilla_bitsize, self.resource_bitsize)
-        if any(type(n) is not int or n < 0 for n in widths) or not self.system_bitsize:
+        if any(type(n) is not int or n < 0 for n in widths):
             raise ValueError("Block snapshots require concrete nonnegative port widths")
         if any(len(values) != 4 for values in (self.snapshots, self.binding_swaps)):
             raise ValueError(
@@ -164,7 +169,7 @@ class CircuitBlockEncoding:
             self.requirements(controlled=bool(control)),
             adjoint,
         )
-        return _BoundBlockOperation(gates, max((*through, *workspace)) + 1)
+        return _BoundBlockOperation(gates, max((*through, *workspace), default=-1) + 1)
 
     def bind_child(
         self,
@@ -178,7 +183,9 @@ class CircuitBlockEncoding:
         if set(ports) - {"system", "ancilla", "resource"}:
             raise ValueError("Block child received undeclared ports")
         return self.make_on(
-            system=ports["system"],
+            system=(
+                ports.get("system", ()) if not self.system_bitsize else ports["system"]
+            ),
             ancilla=ports.get("ancilla", ()),
             resource=ports.get("resource", ()),
             control=(predicate,),
