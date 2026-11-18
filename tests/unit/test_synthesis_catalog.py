@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 204
+    assert len(validated) == 205
+    assert (
+        "applications/logistics/task_scheduling_problem/task_scheduling_problem",
+        "examples/synthesis/applications/logistics/task_scheduling_problem/overview/main.py",
+    ) in validated
     assert (
         "community/Hackathons/QInnovision_2025/advection_equation/advection_equation_winning_submission",
         "examples/synthesis/community/hackathons/qinnovision_2025/advection_equation/winning/overview/main.py",
@@ -945,7 +949,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**204/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**205/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

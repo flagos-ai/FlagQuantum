@@ -101,6 +101,7 @@ Native FlagQuantum programs currently available:
 - [overview](finance/value_at_risk/overview/README.md)
 - [overview](image_processing/quantum_hadamard_edge_detection/overview/README.md)
 - [overview](logistics/facility_location/overview/README.md)
+- [overview](logistics/task_scheduling_problem/overview/README.md)
 - [overview](logistics/traveling_salesman_problem/overview/README.md)
 - [overview](logistics/vehicle_routing_problem/overview/README.md)
 - [overview](optimization/adapt_qaoa/overview/README.md)
