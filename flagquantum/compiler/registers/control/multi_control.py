@@ -14,6 +14,12 @@ from collections.abc import Callable, Iterator
 from typing import Literal
 
 from ....core.ir import Instruction
+from ..._component_trace.qec_gate_cost import query_qec_gate_cost
+from ..._component_trace.resource_generalization import (
+    CliffordCall,
+    PredicateControlledCall,
+)
+from ..._component_trace.resource_model import ComponentCost, GateCost
 from ..primitives.and_compute import and_compute_ir, and_uncompute_ir
 
 
@@ -193,5 +199,21 @@ def _controlled_target_ir(
         positive_controlled(workspace[-1]),
         *multi_and_ir(
             controls, values, workspace, classical_bits=classical_bits, uncompute=True
+        ),
+    )
+
+
+def source_multi_control_x_cost(values: tuple[int, ...]) -> ComponentCost:
+    """Query the original predicate, controlled X and predicate adjoint model."""
+    if not values:
+        return ComponentCost("MultiControlX", 1, GateCost(clifford=1))
+    cost = query_qec_gate_cost(PredicateControlledCall(CliffordCall("cx", 2), values))
+    return ComponentCost(
+        "MultiControlX",
+        max(len(values) + 1, 2 * len(values)),
+        GateCost(
+            and_bloq=int(cost.and_bloq),
+            clifford=int(cost.clifford),
+            measurement=int(cost.measurement),
         ),
     )

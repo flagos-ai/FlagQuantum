@@ -7,7 +7,11 @@
 """Original bitonic merge composition over shared comparison primitives."""
 
 from ....core.ir import Instruction
-from ..comparison.compare_exchange import compare_exchange_ir
+from ..._component_trace.resource_model import ComponentCost, CostCall
+from ..comparison.compare_exchange import (
+    compare_exchange_ir,
+    source_compare_exchange_cost,
+)
 from ..comparison.comparison_layout import validate_comparison_layout
 from ..comparison.parallel_comparison import parallel_compare_ir
 
@@ -77,3 +81,18 @@ def bitonic_merge_ir(
         )
     )
     return (*rest, *first) if adjoint else (*first, *rest)
+
+
+def source_bitonic_merge_cost(
+    half_length: int, width: int, *, adjoint: bool = False
+) -> ComponentCost:
+    """Preserve original comparator multiplicity and retained-history peak."""
+    count = bitonic_merge_history_count(half_length)
+    compare = source_compare_exchange_cost(width, adjoint=adjoint)
+    # At the last comparison, every other input and prior history remains live.
+    bystanders = 2 * (half_length - 1) * width + count - 1
+    return ComponentCost(
+        "BitonicMergeAdjoint" if adjoint else "BitonicMerge",
+        2 * half_length * width + count,
+        calls=(CostCall(compare, count, bystanders),),
+    )

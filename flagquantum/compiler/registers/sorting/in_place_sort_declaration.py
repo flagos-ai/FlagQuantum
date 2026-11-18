@@ -12,8 +12,8 @@ from ....core.ir.program.registers import Register, RegisterType
 from ....core.ir.program.signatures import Signature
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..._component_trace.symbolic_math import SymbolicInt, ceil, log2, smax
+from ..comparison.compare_exchange import source_compare_exchange_cost
 from ..comparison.comparison_resource_model import source_less_equal_resource_formula
-from ..comparison.ordering import source_greater_cost
 from ..resources.symbolic_resource_model import SymbolicResourceFormula
 
 
@@ -39,14 +39,9 @@ def source_in_place_sort_cost(length: int, width: int) -> ComponentCost:
     """
     if type(length) is not int or length < 1:
         raise ValueError("Sort model length must be a positive integer")
-    greater = source_greater_cost(width, width)
     repetitions = 3 * length**2
-    compare = ComponentCost(
-        "Comparator", 2 * width + 1, GateCost(cswap=width), (CostCall(greater),)
-    )
-    inverse = ComponentCost(
-        "ComparatorAdjoint", compare.qubits, compare.gates, compare.calls
-    )
+    compare = source_compare_exchange_cost(width)
+    inverse = source_compare_exchange_cost(width, adjoint=True)
     return ComponentCost(
         "SortInPlace",
         length * (width + (length - 1).bit_length()),

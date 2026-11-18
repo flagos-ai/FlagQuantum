@@ -7,8 +7,9 @@
 """Reversible compare/exchange retaining the original logical swap history."""
 
 from ....core.ir import Instruction
+from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
 from ..primitives.controlled_swap import controlled_swap_ir
-from .ordering import greater_adjoint_ir, greater_ir
+from .ordering import greater_adjoint_ir, greater_ir, source_greater_cost
 
 
 def compare_exchange_ir(
@@ -36,3 +37,16 @@ def compare_exchange_ir(
     comparison = emit(left, right, history, workspace, classical_bits)
     swap = controlled_swap_ir(history, left, right)
     return (*swap, *comparison) if adjoint else (*comparison, *swap)
+
+
+def source_compare_exchange_cost(width: int, *, adjoint: bool = False) -> ComponentCost:
+    """Compose GreaterThan and width CSwap calls under the original model."""
+    if type(adjoint) is not bool:
+        raise ValueError("Compare/exchange model adjoint must be boolean")
+    greater = source_greater_cost(width, width)
+    return ComponentCost(
+        "ComparatorAdjoint" if adjoint else "Comparator",
+        2 * width + 1,
+        GateCost(cswap=width),
+        (CostCall(greater),),
+    )
