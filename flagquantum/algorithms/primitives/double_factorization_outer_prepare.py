@@ -3,7 +3,8 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from math import isfinite
-from typing import Self
+
+from typing_extensions import Self
 
 from .factor_alias_preparation import FactorAliasPreparation
 

@@ -2,7 +2,9 @@
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import ClassVar, Self
+from typing import ClassVar
+
+from typing_extensions import Self
 
 from ...circuit import Circuit
 from ...compiler.registers.bits.bitwise import _validate_wires
