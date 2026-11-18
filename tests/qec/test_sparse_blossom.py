@@ -90,6 +90,18 @@ def test_surface_code_batch_matches_pymatching(distance: int) -> None:
     assert torch.equal(
         native.decode_packed_batch(packed), external.decode_packed_batch(packed)
     )
+    for packed_input in (False, True):
+        for packed_output in (False, True):
+            options = dict(
+                bit_packed_shots=packed_input, bit_packed_predictions=packed_output
+            )
+            batch = packed if packed_input else dense
+            predictions, weights = native.decode_batch_with_weights(batch, **options)
+            expected, expected_weights = external.decode_batch_with_weights(
+                batch, **options
+            )
+            assert torch.equal(predictions, expected)
+            assert torch.equal(weights, expected_weights)
 
 
 def test_stim_experiment_without_pymatching(monkeypatch: pytest.MonkeyPatch) -> None:
