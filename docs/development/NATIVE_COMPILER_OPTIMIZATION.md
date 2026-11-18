@@ -306,11 +306,12 @@ branches, target opcodes and acceptance thresholds are unchanged. Regression
 cases cover perturbed near-anti-diagonal single-qubit matrices and complete CRX
 synthesis with both RX and SX pulses.
 
-Floating-point fidelity ties remain separate follow-up work: a CRX angle of
-`1e-9` can still select zero entanglers and produce a residual near `2.50e-10`.
-The block pass continues to reject a proposal outside its `1e-11` threshold.
-The direct synthesis helper is not certified to that stricter threshold for
-all unitary matrices by these repairs.
+After those two repairs, floating-point fidelity ties remained a separate issue:
+a CRX angle of `1e-9` could still select zero entanglers and produce a residual
+near `2.50e-10`. The block pass rejected that proposal outside its `1e-11`
+threshold. The subsequent coordinate-based selection below addresses this
+specific failure mode; these tests do not certify the direct synthesis helper
+to that stricter threshold for all unitary matrices.
 
 With both numerical repairs present, the focused selection passed **2,827
 cases**, and the three direct synthesis/CZ test files passed **125 cases**.
@@ -327,6 +328,51 @@ that environment override in a focused evidence-revision run yielded 57 passed
 and one failure: the local clone's available references disagree with 98
 checked-in origin declarations. Neither the environment-induced setup errors
 nor the remaining origin failure is counted as passing verification. The broad
-runtime attempt has its own 600-second bound; its outcome and required Linux
-CI remain separate qualification requirements. These incomplete broad attempts
-do not certify the subsequent Euler repair.
+runtime attempt also reached its 600-second bound, at 17%, and its process group
+was terminated. Required Linux CI remains a separate qualification requirement.
+These incomplete broad attempts do not certify the subsequent Euler repair.
+
+## Exact entangler-class selection
+
+Ranking `(4 + |trace|**2) / 20` in floating point can round a nonzero interaction's
+fidelity to one. Selecting the first maximum then omits interactions rather than
+merely choosing a different exact presentation. Independent operator checks
+reproduced this at all three shorter-form boundaries: a local unitary, a
+one-entangler unitary, and a two-entangler unitary with a small third Weyl
+coordinate. The problem also occurs with arbitrary local gates before and
+after the interaction, so it is not specific to a gate spelling.
+
+The chooser now tests representability directly in Weyl coordinates. Local
+coordinates select zero entanglers; equality with the basis coordinates selects
+one; a zero third coordinate selects two; otherwise the existing three-entangler
+closed form is used. The absolute zero threshold is `1e-13` radians. Coordinates
+below that numerical resolution are not claimed to be mathematically zero.
+The unused fidelity-ranking method was removed. Qiskit's closed-form factors,
+their attribution, target choices and iteration bounds remain in place. The
+block-level `1e-11` operator gate still decides whether a proposed rewrite is
+admissible. Preserving a small interaction may cost more entanglers than the
+previous rounded-fidelity result; this is a correctness tradeoff, not a gate
+count improvement claim.
+
+The updated direct synthesis file passed **63 cases**, including twelve
+operator-and-cost cases spanning the four classes with and without surrounding
+local gates. A process-local restoration of the previous chooser fails eight
+of those twelve cases. The broader focused selection passed **2,835 cases**
+before adding the six surrounding-local-gate variants; those variants then
+passed in the direct file on the same production code. The 80-circuit
+development diagnostic also passed again. Black, Ruff, architecture boundaries
+and the protected public API baseline pass. These focused checks do not replace
+the incomplete broad qualification above.
+
+The earlier Qiskit anchor restriction was addressed with a separate certified
+Qiskit **2.0.3** test import and a complete SymEngine **0.13.0** wheel installed
+only in a temporary target. The cached SymEngine directory was incomplete;
+attempting to use it produced import/setup errors and is not counted as
+verification. With the complete dependency, all **15** tests in
+`tests/benchmark_contract/test_compiler_two_qubit_synthesis.py` passed, including
+the six-basis, eighteen-opcode count anchor, with no skips. Both sides use the
+recorded unitary inputs; Qiskit uses `pulse_optimize=False`. The anchor checks
+entangler counts, not compilation speed or identical Euler instructions. Its
+certified-lane requirement and expected counts were not changed. This local
+anchor is separate from the frozen SDKBench comparison cohort and does not
+promote a participant-neutral benchmark result.

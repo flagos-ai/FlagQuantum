@@ -283,7 +283,7 @@ def test_weyl_diagonalization_resolves_small_off_diagonal_entries(angle: float) 
     )
 
 
-@pytest.mark.parametrize("angle", [1e-3, 1e-5, 1e-7])
+@pytest.mark.parametrize("angle", [1e-3, 1e-5, 1e-7, 1e-9])
 @pytest.mark.parametrize("pulse_opcode", ["rx", "sx"])
 def test_small_controlled_rotation_retains_local_factor_phases(
     angle: float, pulse_opcode: str
@@ -298,6 +298,49 @@ def test_small_controlled_rotation_retains_local_factor_phases(
     )
     assert emitted is not None
     assert _gap(emitted, source) <= 1e-11
+
+
+@pytest.mark.parametrize(
+    ("angles", "expected_count"),
+    [
+        ((0.0, 0.0, 0.0), 0),
+        ((math.pi / 2, 0.0, 0.0), 1),
+        ((1e-9, 0.0, 0.0), 2),
+        ((math.pi / 2, 1e-9, 0.0), 2),
+        ((0.41, 0.23, 1e-9), 3),
+        ((1e-9, 0.7e-9, 0.3e-9), 3),
+    ],
+)
+@pytest.mark.parametrize("surround_with_local_gates", [False, True])
+def test_rounded_fidelity_ties_do_not_remove_nonlocal_interactions(
+    angles: tuple[float, float, float],
+    expected_count: int,
+    surround_with_local_gates: bool,
+) -> None:
+    source = torch.eye(4, dtype=torch.complex128)
+    for opcode, angle in zip(("rxx", "ryy", "rzz"), angles, strict=True):
+        source = _source(opcode, {"theta": angle}) @ source
+    if surround_with_local_gates:
+        rng = random.Random(182)
+        local = [
+            _matrix(
+                Instruction(
+                    "u3",
+                    (0,),
+                    {name: rng.uniform(-3, 3) for name in ("theta", "phi", "lbd")},
+                )
+            )
+            for _ in range(4)
+        ]
+        source = (
+            torch.kron(local[0], local[1]) @ source @ torch.kron(local[2], local[3])
+        )
+    emitted = synthesize_two_qubit(
+        source, qubits=(0, 1), entangler="cz", z_rotation="rz", pulse_opcode="rx"
+    )
+    assert emitted is not None
+    assert _gap(emitted, source) <= 1e-11
+    assert _entanglers(emitted, "cz") == expected_count
 
 
 def test_the_global_phase_is_dropped_rather_than_recorded() -> None:

@@ -137,6 +137,10 @@ _UNITARY_ATOL = 1.0e-9
 _M2_ATOL = 1.0e-13
 _M2_TRIALS = 100
 
+#: Resolve exact entangler classes in radians without squaring small offsets
+#: into a rounded unit fidelity. Residual verification remains the caller's gate.
+_WEYL_ZERO_ATOL = 1.0e-13
+
 #: Qiskit's fixed first attempt at mixing ``Re(M2)`` with ``Im(M2)``. Only the
 #: ratio matters, so it is kept verbatim; agreement with Qiskit on which valid
 #: factors come out depends on it.
@@ -621,9 +625,10 @@ def _z_rotation_matrix(theta: float) -> Matrix:
 class _BasisDecomposer:
     """The zero- to three-entangler closed forms for one supercontrolled basis.
 
-    This is Qiskit's `TwoQubitBasisDecomposer` with `pulse_optimize=False` and
-    `euler_basis="ZSX"`, and with the specialized rewrites left out: the
-    classification of a target is not used, only its general Weyl angles.
+    Use Qiskit's `TwoQubitBasisDecomposer` closed forms with
+    `pulse_optimize=False` and `euler_basis="ZSX"`, without specialized factor
+    rewrites. Exact representability is classified from Weyl coordinates rather
+    than rounded average fidelities.
     """
 
     def __init__(self, entangler: str) -> None:
@@ -714,41 +719,22 @@ class _BasisDecomposer:
         self.q2l = self.u3l
         self.q2r = self.u3r
 
-    def traces(self, target: _Weyl) -> tuple[complex, complex, complex, complex]:
-        """The expected ``Tr(source^dagger * synthesized)`` per entangler count."""
-
-        ta, tb, tc = target.a, target.b, target.c
-        basis_b = self.basis.b
-        return (
-            4
-            * complex(
-                math.cos(ta) * math.cos(tb) * math.cos(tc),
-                math.sin(ta) * math.sin(tb) * math.sin(tc),
-            ),
-            4
-            * complex(
-                math.cos(_PI4 - ta) * math.cos(basis_b - tb) * math.cos(tc),
-                math.sin(_PI4 - ta) * math.sin(basis_b - tb) * math.sin(tc),
-            ),
-            4 * complex(math.cos(tc), 0.0),
-            4 + 0j,
-        )
-
     def entangler_count(self, target: _Weyl) -> int:
-        """The fewest entanglers whose expected fidelity is highest.
-
-        A FlagQuantum native gate set is exact, so the expected fidelity of a
-        count is `(4 + |trace|^2) / 20` with no per-application weighting, and
-        the lowest count wins a tie. That is Qiskit's `np.argmax` over its
-        default `basis_fidelity=1.0`, which returns the first maximum.
-        """
-
-        expected = [(4.0 + abs(trace) ** 2) / 20.0 for trace in self.traces(target)]
-        best = 0
-        for count in range(1, 4):
-            if expected[count] > expected[best]:
-                best = count
-        return best
+        """Choose the shortest exact closed form at coordinate precision."""
+        if max(abs(target.a), abs(target.b), abs(target.c)) <= _WEYL_ZERO_ATOL:
+            return 0
+        if (
+            max(
+                abs(target.a - self.basis.a),
+                abs(target.b - self.basis.b),
+                abs(target.c - self.basis.c),
+            )
+            <= _WEYL_ZERO_ATOL
+        ):
+            return 1
+        if abs(target.c) <= _WEYL_ZERO_ATOL:
+            return 2
+        return 3
 
     def decomposition(self, target: _Weyl, count: int) -> tuple[Matrix, ...]:
         """The 2x2 factors for `count` entanglers, in application order.
