@@ -77,6 +77,7 @@ def indexed_component_cost(
     adjoint: bool = False,
     legacy_shims: bool = False,
     break_early: Callable[[tuple[int, ...], int, int], bool] | None = None,
+    zero_selection: ComponentCost | None = None,
 ) -> ComponentCost:
     """Aggregate controlled THRU children without emitting or executing gates.
 
@@ -87,6 +88,8 @@ def indexed_component_cost(
     separate child models even when their costs or gate identities coincide.
     Early folding retains only the representative child's model and its live
     predicate depth. The callback has the same contract as the native emitter.
+    An explicit root-fold model covers the entire parent signature and the
+    zero-selection recipe's storage, independently of the unused child table.
     """
     indexed_component_workspace(axis_widths, control_count)
     if type(legacy_shims) is not bool:
@@ -96,10 +99,6 @@ def indexed_component_cost(
         for width, extent in zip(axis_widths, extents, strict=True)
     ):
         raise ValueError("Indexed model extents must fit their address words")
-    if control_count == 0 and extents[0] == 1:
-        raise ValueError(
-            "Source uncontrolled singleton first axis has no model traversal"
-        )
     if type(target_width) is not int or target_width < 0 or type(adjoint) is not bool:
         raise ValueError(
             "Indexed model needs nonnegative target width and boolean direction"
@@ -111,6 +110,23 @@ def indexed_component_cost(
         or not 0 <= child_target_width <= target_width
     ):
         raise ValueError("Child target width must fit the parent target ports")
+    signature = control_count + sum(axis_widths) + target_width
+    if break_early is not None and break_early((), 0, extents[0]):
+        if zero_selection is None:
+            raise ValueError("Folded first-axis root requires a zero-selection recipe")
+        if type(zero_selection.qubits) is not int or zero_selection.qubits < signature:
+            raise ValueError(
+                "Zero-selection model must cover the full parent signature"
+            )
+        return ComponentCost(
+            "IndexedComponent†" if adjoint else "IndexedComponent",
+            signature,
+            calls=(CostCall(zero_selection),),
+        )
+    if control_count == 0 and extents[0] == 1:
+        raise ValueError(
+            "Source uncontrolled singleton first axis has no model traversal"
+        )
     rows = prod(extents)
     if len(children) != rows:
         raise ValueError(
@@ -122,7 +138,6 @@ def indexed_component_cost(
         for child in children
     ):
         raise ValueError("Every child model must include its controlled THRU ports")
-    signature = control_count + sum(axis_widths) + target_width
     prefix = max(0, control_count - 1)
     traversal_ands = rows - (1 if control_count else 2)
     peak_work = sum((extent - 1).bit_length() for extent in extents) + control_count - 1
