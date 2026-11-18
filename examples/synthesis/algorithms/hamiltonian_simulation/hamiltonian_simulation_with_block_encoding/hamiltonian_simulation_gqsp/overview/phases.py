@@ -1,4 +1,4 @@
-"""Complete and strip the source degree-33 complex Laurent expansion."""
+"""Complete and strip bounded complex Laurent expansions."""
 
 import math
 from dataclasses import dataclass
@@ -84,8 +84,8 @@ def factor(
     """Generate and verify the bounded Laurent factorization for the requested degree."""
     if not math.isfinite(duration):
         raise ValueError("The phase-fitting time must be finite")
-    if type(degree) is not int or not 1 <= degree <= DEGREE:
-        raise ValueError("The supported Laurent degree must lie in [1, 33]")
+    if type(degree) is not int or not 1 <= degree <= 1024:
+        raise ValueError("The supported Laurent degree must lie in [1, 1024]")
     if not 0 < scale < 1:
         raise ValueError("The positive scale must lie below one")
     polynomial, approximation = _polynomial(duration, degree, scale)

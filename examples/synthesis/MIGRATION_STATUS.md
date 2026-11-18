@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **209/213**.
+Validated local Notebook workflows: **210/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -272,7 +272,7 @@ Validated local Notebook workflows: **209/213**.
 | `applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D` | notebook_workflow | [Native program](applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/overview/main.py) | validated |
 | `applications/physical_systems/hhl_lanchester/hhl_lanchester` | notebook_workflow | [Native program](applications/physical_systems/hhl_lanchester/overview/main.py) | validated |
 | `applications/physical_systems/ising_model/ising_model` | notebook_workflow | [Native program](applications/physical_systems/ising_model/overview/main.py) | validated |
-| `applications/physical_systems/maxwell_equation/maxwell_2d_simulation` | notebook_workflow | Pending | pending |
+| `applications/physical_systems/maxwell_equation/maxwell_2d_simulation` | notebook_workflow | [Native program](applications/physical_systems/maxwell_equation/maxwell_2d_simulation/overview/main.py) | validated |
 | `applications/physical_systems/maxwell_equation/maxwell_utils` | python_unclassified | Pending | pending |
 | `applications/physical_systems/quantum_chaos/quantum_sawtooth_map` | notebook_workflow | [Native program](applications/physical_systems/quantum_chaos/quantum_sawtooth_map/overview/main.py) | validated |
 | `applications/plasma/vlasov_ampere/vlasov_ampere` | notebook_workflow | [Native program](applications/plasma/vlasov_ampere/overview/main.py) | validated |
