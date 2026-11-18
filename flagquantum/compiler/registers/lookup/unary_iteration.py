@@ -196,6 +196,7 @@ def append_nested_bounded_unary_tree(
     *,
     adjoint: bool = False,
     break_early: Callable[[tuple[int, ...], int, int], bool] | None = None,
+    zero_selection: Callable[[], None] | None = None,
 ) -> None:
     """Visit bounded axes, preserving parent indices for source early folding.
 
@@ -207,7 +208,10 @@ def append_nested_bounded_unary_tree(
     if type(adjoint) is not bool:
         raise ValueError("Nested traversal direction must be a boolean")
     if break_early is not None and break_early((), 0, extents[0]):
-        raise ValueError("Folded first-axis root requires a zero-selection recipe")
+        if zero_selection is None:
+            raise ValueError("Folded first-axis root requires a zero-selection recipe")
+        zero_selection()
+        return
 
     def walk(
         depth: int,

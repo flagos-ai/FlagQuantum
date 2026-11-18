@@ -39,6 +39,7 @@ def indexed_component_ir(
     classical_bits: tuple[int, ...],
     adjoint: bool = False,
     break_early: Callable[[tuple[int, ...], int, int], bool] | None = None,
+    emit_zero_selection: Callable[[], tuple[Instruction, ...]] | None = None,
 ) -> tuple[Instruction, ...]:
     """Apply one child per selected tuple, preserving the source bounded tree.
 
@@ -48,6 +49,8 @@ def indexed_component_ir(
     it must emit the child adjoint; the parent does not invert child IR.
     Early folding receives the retained parent-axis indices and node interval.
     A folded interval must have an identical controlled child recipe throughout.
+    A root fold delegates the entire operation and its direction to the explicit
+    zero-selection recipe, which owns any child storage.
     """
     required = indexed_component_workspace(tuple(map(len, axes)), len(controls))
     if type(adjoint) is not bool:
@@ -57,8 +60,6 @@ def indexed_component_ir(
         for axis, size in zip(axes, extents, strict=True)
     ):
         raise ValueError("Every axis needs a concrete extent fitting its word")
-    if not controls and extents[0] == 1:
-        raise ValueError("Source uncontrolled singleton first axis has no traversal")
     if len(workspace) != required:
         raise ValueError(f"Indexed components require {required} clean work wires")
     if (
@@ -70,6 +71,12 @@ def indexed_component_ir(
             "Indexed components require one distinct classical slot per work wire"
         )
     _validate_wires((*controls, *(wire for axis in axes for wire in axis), *workspace))
+    if break_early is not None and break_early((), 0, extents[0]):
+        if emit_zero_selection is None:
+            raise ValueError("Folded first-axis root requires a zero-selection recipe")
+        return emit_zero_selection()
+    if not controls and extents[0] == 1:
+        raise ValueError("Source uncontrolled singleton first axis has no traversal")
     prefix = max(0, len(controls) - 1)
     predicate = (
         controls[0] if len(controls) == 1 else workspace[prefix - 1] if prefix else None
