@@ -3209,7 +3209,8 @@
         "native_entrypoint": "examples.synthesis.algorithms.foundational.bernstein_vazirani.main",
         "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
         "scope": "Complete local computational Notebook workflow: quantum composition, synthesis, text visualization, seeded sampling from exact named probabilities, and classical decision/recovery. Local drawing and sampling replace cloud services; no hardware result is claimed. Concrete tutorial oracles are specialized; general quantum callable ports are not added.",
-        "native_semantic_adaptations": "Use an equivalent linear phase oracle instead of a CX predicate with a minus-state auxiliary. Explicit Hadamard transforms replace gate-preparation within/apply."
+        "native_semantic_adaptations": "Use an equivalent linear phase oracle instead of a CX predicate with a minus-state auxiliary. Explicit Hadamard transforms replace gate-preparation within/apply.",
+        "native_notebook": "examples/synthesis/algorithms/foundational/bernstein_vazirani/walkthrough.ipynb"
       }
     },
     {
@@ -3278,7 +3279,8 @@
         "native_entrypoint": "examples.synthesis.algorithms.foundational.deutsch_jozsa.main",
         "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
         "scope": "Complete local computational Notebook workflow: quantum composition, synthesis, text visualization, seeded sampling from exact named probabilities, and classical decision/recovery. Local drawing and sampling replace cloud services; no hardware result is claimed. Concrete tutorial oracles are specialized; general quantum callable ports are not added.",
-        "native_semantic_adaptations": "Algebraically reduce the two concrete predicates to the high bit and its complement; retain the constant pi phase. Classify from zero-outcome probability under the promise rather than the upstream row-count heuristic. Explicit Hadamard transforms replace gate-preparation within/apply."
+        "native_semantic_adaptations": "Algebraically reduce the two concrete predicates to the high bit and its complement; retain the constant pi phase. Classify from zero-outcome probability under the promise rather than the upstream row-count heuristic. Explicit Hadamard transforms replace gate-preparation within/apply.",
+        "native_notebook": "examples/synthesis/algorithms/foundational/deutsch_jozsa/walkthrough.ipynb"
       }
     },
     {
@@ -9357,7 +9359,8 @@
             "index": 14,
             "sha256": "36fa4299e6e42cd060ab8a67a1a7db92d37ee70238056067e94ee8debcca1068"
           }
-        ]
+        ],
+        "native_notebook": "examples/synthesis/applications/chemistry/quantum_walk_fmo/walkthrough.ipynb"
       }
     },
     {
@@ -17451,7 +17454,8 @@
         ],
         "native_entrypoint": "examples.synthesis.community.basic_examples.superposition.main",
         "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
-        "scope": "Complete local tutorial workflow: composed preparation, synthesis and visualization. Text circuit drawing replaces the upstream cloud viewer. Native execution, analytical state and independent Circuit additionally verify the quantum result."
+        "scope": "Complete local tutorial workflow: composed preparation, synthesis and visualization. Text circuit drawing replaces the upstream cloud viewer. Native execution, analytical state and independent Circuit additionally verify the quantum result.",
+        "native_notebook": "examples/synthesis/community/basic_examples/superposition/walkthrough.ipynb"
       }
     },
     {
@@ -18468,7 +18472,8 @@
             "index": 3,
             "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
           }
-        ]
+        ],
+        "native_notebook": "examples/synthesis/functions/arithmetic/arithmetic_expression/arithmetic_expression_example/walkthrough.ipynb"
       }
     },
     {
@@ -18531,7 +18536,8 @@
         "native_entrypoint": "examples.synthesis.functions.arithmetic.bitwise_and.overview.main",
         "acceptance_test": "tests/integration/test_synthesis_native_expression_values.py",
         "scope": "Complete local computational Notebook workflow: two-register AND and literal-mask AND, synthesis, execution and 1000 seeded samples each. Local execution replaces cloud sampling; no hardware claim.",
-        "native_semantic_adaptations": "Reuse both native unsigned qfunc examples and replace cloud samples/dataframe display with local executed named probabilities and seeded count dictionaries."
+        "native_semantic_adaptations": "Reuse both native unsigned qfunc examples and replace cloud samples/dataframe display with local executed named probabilities and seeded count dictionaries.",
+        "native_notebook": "examples/synthesis/functions/arithmetic/bitwise_and/overview/walkthrough.ipynb"
       }
     },
     {
@@ -18594,7 +18600,8 @@
         "scope": "Complete local computational Notebook workflow: native finite-width inversion, synthesis, execution and 1000 seeded named samples; local sampling replaces the cloud call and does not claim hardware execution.",
         "native_semantic_adaptations": "Existing FlagQuantum qfunc with finite-width complement; local execution and seeded host sampling from executed named probabilities replace the cloud sampler.",
         "notebook_path": "functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example.ipynb",
-        "original_sha256": "7ec7ce1ccc51f567147112a7b7e6f5490a4e13fb6cd2f97a44c876895cf3d139"
+        "original_sha256": "7ec7ce1ccc51f567147112a7b7e6f5490a4e13fb6cd2f97a44c876895cf3d139",
+        "native_notebook": "examples/synthesis/functions/arithmetic/bitwise_invert/bitwise_invert_example/walkthrough.ipynb"
       }
     },
     {
@@ -18993,7 +19000,8 @@
             "index": 5,
             "sha256": "2263ed105a80429fe9c920ce9362dea665c440173f5c51e72b79f40a56e86281"
           }
-        ]
+        ],
+        "native_notebook": "examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example/walkthrough.ipynb"
       }
     },
     {
@@ -19038,7 +19046,8 @@
             "index": 3,
             "sha256": "50a976632f63282450edf0ac5a16877d3072bbe0a52e2942775369d4b83f0ef6"
           }
-        ]
+        ],
+        "native_notebook": "examples/synthesis/functions/arithmetic/modulo/modulo_example/walkthrough.ipynb"
       }
     },
     {
@@ -19343,7 +19352,8 @@
         ],
         "native_entrypoint": "examples.synthesis.functions.amplitude_amplification.exact_amplitude_amplification.main",
         "acceptance_test": "tests/integration/test_synthesis_native_exact_amplification_workflow.py",
-        "native_semantic_adaptations": "Reuse the existing native fixed-p=0.07, three-round R/phase composition with explicit clean auxiliary. Local seeded sampling replaces the cloud call, and a saved Matplotlib figure replaces interactive display. Classical trajectory coordinates equal the source rotation products; no native higher-order exact-amplification API or hardware execution claim."
+        "native_semantic_adaptations": "Reuse the existing native fixed-p=0.07, three-round R/phase composition with explicit clean auxiliary. Local seeded sampling replaces the cloud call, and a saved Matplotlib figure replaces interactive display. Classical trajectory coordinates equal the source rotation products; no native higher-order exact-amplification API or hardware execution claim.",
+        "native_notebook": "examples/synthesis/functions/amplitude_amplification/exact_amplitude_amplification/walkthrough.ipynb"
       }
     },
     {
@@ -19433,7 +19443,8 @@
         ],
         "native_entrypoint": "examples.synthesis.functions.hadamard_transform.main",
         "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
-        "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state."
+        "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state.",
+        "native_notebook": "examples/synthesis/functions/hadamard_transform/walkthrough.ipynb"
       }
     },
     {
@@ -19698,7 +19709,8 @@
         "native_entrypoint": "examples.synthesis.functions.qft.main",
         "acceptance_test": "tests/integration/test_synthesis_native_fourier.py",
         "scope": "Complete local computational Notebook workflow: allocate four qubits, apply QFT and synthesize. Local execution and a Fourier-matrix Circuit comparison additionally verify the program.",
-        "native_semantic_adaptations": "Use FlagQuantum qfunc and shared checked Fourier lowering. The source Notebook only constructs and synthesizes; local execution is an additional validation, with no cloud or training claim."
+        "native_semantic_adaptations": "Use FlagQuantum qfunc and shared checked Fourier lowering. The source Notebook only constructs and synthesizes; local execution is an additional validation, with no cloud or training claim.",
+        "native_notebook": "examples/synthesis/functions/qft/walkthrough.ipynb"
       }
     },
     {
@@ -19887,7 +19899,8 @@
         ],
         "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_bell_state.main",
         "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
-        "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state."
+        "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state.",
+        "native_notebook": "examples/synthesis/functions/state_preparation/prepare_bell_state/walkthrough.ipynb"
       }
     },
     {
@@ -19977,7 +19990,8 @@
         ],
         "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_ghz_state.main",
         "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
-        "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state."
+        "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state.",
+        "native_notebook": "examples/synthesis/functions/state_preparation/prepare_ghz_state/walkthrough.ipynb"
       }
     },
     {
@@ -20233,7 +20247,8 @@
             "index": 2,
             "sha256": "7be2bf433661aa064bacba8fac7527b3233eb9edb71525ed1f109f7c61cd4acf"
           }
-        ]
+        ],
+        "native_notebook": "examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter/walkthrough.ipynb"
       }
     },
     {
@@ -20322,7 +20337,8 @@
         "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_state_and_amplitudes.main",
         "acceptance_test": "tests/integration/test_synthesis_native_preparation_bindings.py",
         "scope": "Complete local computational Notebook workflow: original nonuniform probability vector, seeded sampling and probability reconstruction; host-generated signed linear amplitudes, normalization, native synthesis, raw complex state reconstruction and phase-aligned presentation. Local execution replaces cloud calls and plain Python arrays replace dataframes; no hardware result is claimed.",
-        "native_semantic_adaptations": "Ordinary host Python generates and normalizes the evenly spaced amplitude vector, then supplies immutable classical_inputs. Root preparation consumes bound vectors through existing register lowering. Independent acceptance compares raw absolute amplitudes and separately checks phase-aligned display."
+        "native_semantic_adaptations": "Ordinary host Python generates and normalizes the evenly spaced amplitude vector, then supplies immutable classical_inputs. Root preparation consumes bound vectors through existing register lowering. Independent acceptance compares raw absolute amplitudes and separately checks phase-aligned display.",
+        "native_notebook": "examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/walkthrough.ipynb"
       }
     },
     {
@@ -20553,7 +20569,8 @@
         "native_entrypoint": "examples.synthesis.functions.standard_gates.overview.main",
         "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
         "scope": "Complete local computational Notebook workflow: reuse and synthesize all nine native gate examples in source order, preserving source parameters. Direct synthesize(qfunc) replaces separate create_model and synthesis calls. Local execution and named probabilities additionally check each program; independent gate Circuit comparisons retain absolute phase. No cloud or hardware result is claimed.",
-        "native_semantic_adaptations": "Use a named two-bit QNum for the RZZ whole-register QArray; no indexing occurs. Other output names and order are unchanged."
+        "native_semantic_adaptations": "Use a named two-bit QNum for the RZZ whole-register QArray; no indexing occurs. Other output names and order are unchanged.",
+        "native_notebook": "examples/synthesis/functions/standard_gates/overview/walkthrough.ipynb"
       }
     },
     {
@@ -20598,7 +20615,8 @@
             "index": 3,
             "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
           }
-        ]
+        ],
+        "native_notebook": "examples/synthesis/functions/unitary/walkthrough.ipynb"
       }
     },
     {
@@ -21109,7 +21127,8 @@
           }
         ],
         "native_entrypoint": "examples.synthesis.tutorials.basics.entanglement.main",
-        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+        "native_notebook": "examples/synthesis/tutorials/basics/entanglement/walkthrough.ipynb"
       }
     },
     {
@@ -21473,7 +21492,8 @@
           }
         ],
         "native_entrypoint": "examples.synthesis.tutorials.basics.prepare_state.main",
-        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+        "native_notebook": "examples/synthesis/tutorials/basics/prepare_state/walkthrough.ipynb"
       }
     },
     {
@@ -22285,7 +22305,8 @@
           }
         ],
         "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.classiq_overview_tutorial.main",
-        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+        "native_notebook": "examples/synthesis/tutorials/basics/quantum_programming/classiq_overview_tutorial/walkthrough.ipynb"
       }
     },
     {
@@ -22591,7 +22612,8 @@
           }
         ],
         "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.synthesis_tutorial.main",
-        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+        "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+        "native_notebook": "examples/synthesis/tutorials/basics/quantum_programming/synthesis_tutorial/walkthrough.ipynb"
       }
     },
     {
@@ -22830,7 +22852,8 @@
           }
         ],
         "quantum_program_acceptance_test": "tests/integration/test_synthesis_native_approximate_preparation.py",
-        "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep"
+        "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep",
+        "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/approximated_state_preparation/walkthrough.ipynb"
       }
     },
     {
@@ -22921,7 +22944,8 @@
             "sha256": "b9f320b6728e522bc83f20cb7a56ee31732efd1df4cc7fcc7fa5b8cc9f186766"
           }
         ],
-        "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.auxiliary_managment.auxiliary_management.workflow"
+        "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.auxiliary_managment.auxiliary_management.workflow",
+        "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/walkthrough.ipynb"
       }
     },
     {

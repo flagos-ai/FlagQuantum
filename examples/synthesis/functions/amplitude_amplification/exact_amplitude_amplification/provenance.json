@@ -21,5 +21,6 @@
   ],
   "native_entrypoint": "examples.synthesis.functions.amplitude_amplification.exact_amplitude_amplification.main",
   "acceptance_test": "tests/integration/test_synthesis_native_exact_amplification_workflow.py",
-  "native_semantic_adaptations": "Reuse the existing native fixed-p=0.07, three-round R/phase composition with explicit clean auxiliary. Local seeded sampling replaces the cloud call, and a saved Matplotlib figure replaces interactive display. Classical trajectory coordinates equal the source rotation products; no native higher-order exact-amplification API or hardware execution claim."
+  "native_semantic_adaptations": "Reuse the existing native fixed-p=0.07, three-round R/phase composition with explicit clean auxiliary. Local seeded sampling replaces the cloud call, and a saved Matplotlib figure replaces interactive display. Classical trajectory coordinates equal the source rotation products; no native higher-order exact-amplification API or hardware execution claim.",
+  "native_notebook": "examples/synthesis/functions/amplitude_amplification/exact_amplitude_amplification/walkthrough.ipynb"
 }

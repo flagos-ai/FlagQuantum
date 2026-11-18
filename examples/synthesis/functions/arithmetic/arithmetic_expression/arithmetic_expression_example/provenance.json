@@ -17,5 +17,6 @@
       "index": 3,
       "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
     }
-  ]
+  ],
+  "native_notebook": "examples/synthesis/functions/arithmetic/arithmetic_expression/arithmetic_expression_example/walkthrough.ipynb"
 }

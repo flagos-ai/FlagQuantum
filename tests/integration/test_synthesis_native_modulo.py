@@ -62,7 +62,10 @@ def test_unsupported_divisors_fail_closed(tmp_path: Path, expression: str) -> No
     entry = definition(tmp_path, "a |= 2\nb |= 1\nres |= " + expression, (2, 2))
     with pytest.raises(
         HybridVerificationError,
-        match="program.expression" if expression == "a%(-2)" else "power of two",
+        match={
+            "a%(-2)": "program.numeric.modulo",
+            "a%2.0": "program.numeric.precision",
+        }.get(expression, "power of two"),
     ):
         synth.synthesize(entry)
 
