@@ -64,3 +64,21 @@ def grid_energy_wire_symbol(
         return "Text", {"text": f"U_{name}(dt){suffix}", "fontsize": 10}
     suffix = "[" + ", ".join(map(str, idx)) + "]" if idx else ""
     return "TextBox", {"text": register.name + suffix}
+
+
+# Copyright 2024 Google LLC
+# Source: Qualtran v0.7.0 arithmetic/conversions/contiguous_index.py.
+def contiguous_index_wire_symbol(
+    step: RegisterStep,
+    register: Register | None,
+    idx: tuple[int, ...] | None,
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Retain the original THC index labels, including its printed minus sign.
+
+    The source classical polynomial uses nu+1. Its historical drawing uses
+    nu-1. This callback reproduces that presentation without changing arithmetic.
+    """
+    if register is None:
+        return "Text", {"text": "", "fontsize": 10}
+    label = {"mu": "μ", "nu": "ν"}.get(register.name, "⊕ν(ν-1)/2+μ")
+    return "TextBox", {"text": label}
