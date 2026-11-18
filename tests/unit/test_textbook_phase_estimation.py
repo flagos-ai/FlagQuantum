@@ -136,6 +136,8 @@ def test_source_powers_full_stream_complex_amplitudes_and_inverse(width: int) ->
         )
     expected.extend(source_qft(width))
     assert_source(gates, tuple(expected))
+    for actual_gate, source_gate in zip(gates, expected, strict=True):
+        assert actual_gate.params == pytest.approx(source_gate.params, abs=1e-14)
     spectator = np.array([sqrt(0.3), 1j * sqrt(0.7)])
     eigen_superposition = np.array([sqrt(0.4), 1j * sqrt(0.6)])
     zero = np.zeros(2**width, dtype=complex)
