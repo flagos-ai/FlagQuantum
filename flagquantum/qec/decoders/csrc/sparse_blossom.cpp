@@ -133,6 +133,10 @@ pm::obs_int decode_row(pm::Mwpm& solver, const std::vector<size_t>& events) {
     }
     if (solver.node_arena.allocated.size() != solver.node_arena.available.size()) {
         solver.reset();
+        // Upstream reset explicitly destroys these arenas. Reconstruct them
+        // before another decode or the solver's eventual destruction.
+        std::construct_at(&solver.node_arena);
+        std::construct_at(&solver.flooder.region_arena);
         throw std::invalid_argument("No perfect matching exists for this syndrome.");
     }
     pm::MatchingResult result;
@@ -145,7 +149,7 @@ pm::obs_int decode_row(pm::Mwpm& solver, const std::vector<size_t>& events) {
     return result.obs_mask;
 }
 
-PyObject* decode_batch(PyObject*, PyObject* arguments) {
+PyObject* decode_batch_impl(PyObject* arguments, bool packed) {
     PyObject* capsule;
     PyObject* input;
     if (!PyArg_ParseTuple(arguments, "OO!", &capsule, &PyBytes_Type, &input)) {
@@ -160,15 +164,17 @@ PyObject* decode_batch(PyObject*, PyObject* arguments) {
     if (PyBytes_AsStringAndSize(input, &data, &size) < 0) {
         return nullptr;
     }
-    if (static_cast<size_t>(size) % matcher->detectors != 0) {
+    const size_t input_width = packed ? (matcher->detectors + 7) / 8 : matcher->detectors;
+    const size_t output_width = packed ? (matcher->observables + 7) / 8 : matcher->observables;
+    if (static_cast<size_t>(size) % input_width != 0) {
         PyErr_SetString(PyExc_ValueError, "Syndrome bytes do not match the graph width.");
         return nullptr;
     }
-    const size_t shots = static_cast<size_t>(size) / matcher->detectors;
-    if (shots > PY_SSIZE_T_MAX / matcher->observables) {
+    const size_t shots = static_cast<size_t>(size) / input_width;
+    if (shots > PY_SSIZE_T_MAX / output_width) {
         return PyErr_NoMemory();
     }
-    PyObject* output = PyBytes_FromStringAndSize(nullptr, shots * matcher->observables);
+    PyObject* output = PyBytes_FromStringAndSize(nullptr, shots * output_width);
     if (output == nullptr) {
         return nullptr;
     }
@@ -178,14 +184,28 @@ PyObject* decode_batch(PyObject*, PyObject* arguments) {
         events.reserve(matcher->detectors);
         for (size_t shot = 0; shot < shots; ++shot) {
             events.clear();
+            const auto* row = reinterpret_cast<const unsigned char*>(data);
+            const size_t remainder = matcher->detectors % 8;
+            if (packed && remainder && (row[input_width - 1] >> remainder)) {
+                throw std::invalid_argument("Unused packed detector padding bits must be zero.");
+            }
             for (size_t detector = 0; detector < matcher->detectors; ++detector) {
-                if (*data++) {
+                bool fired = packed ? ((row[detector / 8] >> (detector % 8)) & 1) : row[detector] != 0;
+                if (fired) {
                     events.push_back(detector);
                 }
             }
+            data += input_width;
             auto mask = decode_row(matcher->solver, events);
-            for (size_t observable = 0; observable < matcher->observables; ++observable) {
-                *predictions++ = (mask >> observable) & 1;
+            if (packed) {
+                // Extract bytes explicitly to preserve little-endian bit order on every host.
+                for (size_t byte = 0; byte < output_width; ++byte) {
+                    *predictions++ = static_cast<char>((mask >> (8 * byte)) & 0xff);
+                }
+            } else {
+                for (size_t observable = 0; observable < matcher->observables; ++observable) {
+                    *predictions++ = (mask >> observable) & 1;
+                }
             }
         }
         return output;
@@ -199,9 +219,18 @@ PyObject* decode_batch(PyObject*, PyObject* arguments) {
     }
 }
 
+PyObject* decode_batch(PyObject*, PyObject* arguments) {
+    return decode_batch_impl(arguments, false);
+}
+
+PyObject* decode_packed_batch(PyObject*, PyObject* arguments) {
+    return decode_batch_impl(arguments, true);
+}
+
 PyMethodDef methods[] = {
     {"create", create, METH_VARARGS, "Compile a graph for sparse blossom matching."},
     {"decode_batch", decode_batch, METH_VARARGS, "Decode dense rows of detector bits."},
+    {"decode_packed_batch", decode_packed_batch, METH_VARARGS, "Decode packed rows of detector bits."},
     {nullptr, nullptr, 0, nullptr},
 };
 

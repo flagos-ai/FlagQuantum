@@ -6,7 +6,8 @@ from tempfile import TemporaryDirectory
 
 import torch
 
-from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+from flagquantum.qec import DecodingGraph, DemError, DetectorErrorModel
+from flagquantum.qec.decoders.sparse_blossom import SparseBlossomDecoder
 from flagquantum.qec.execution.shot_data import (
     iter_shot_data_file,
     write_shot_data_file,
@@ -28,7 +29,7 @@ replayed, replayed_logicals, unused = sampler.sample(
 assert torch.equal(sampler_data, replayed)
 assert torch.equal(logicals, replayed_logicals) and unused is None
 
-decoder = PyMatchingDecoder.from_detector_error_model(model)
+decoder = SparseBlossomDecoder(DecodingGraph.from_detector_error_model(model))
 with TemporaryDirectory() as directory:
     root = Path(directory)
     write_shot_data_file(

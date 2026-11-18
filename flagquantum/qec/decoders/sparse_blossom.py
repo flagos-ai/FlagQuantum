@@ -56,6 +56,7 @@ class SparseBlossomDecoder:
             ),
         )
         self._decode = extension.decode_batch
+        self._decode_packed = extension.decode_packed_batch
 
     def decode_batch(self, detection_events: torch.Tensor) -> torch.Tensor:
         """Return an owned CPU bool matrix of logical predictions in row order."""
@@ -91,3 +92,40 @@ class SparseBlossomDecoder:
             .view(shape)
             .bool()
         )
+
+    def decode_packed_batch(self, detection_events: torch.Tensor) -> torch.Tensor:
+        """Return owned CPU uint8 logical bytes from LSB-first packed syndromes.
+
+        Each row contains one byte per eight detectors. Unused detector padding
+        bits must be zero. Output rows contain one byte per eight observables,
+        with zero padding bits. Noncontiguous input is accepted.
+        """
+        if not isinstance(detection_events, torch.Tensor):
+            raise TypeError("detection_events must be a torch.Tensor")
+        if (
+            detection_events.layout != torch.strided
+            or detection_events.dtype != torch.uint8
+        ):
+            raise TypeError("packed detection_events must be a dense uint8 tensor")
+        if detection_events.device.type != "cpu":
+            raise CapabilityError("Sparse Blossom accepts CPU tensors only")
+        width = (self._graph.num_detectors + 7) // 8
+        if detection_events.ndim != 2 or detection_events.shape[1] != width:
+            raise ValueError(
+                f"packed detection_events must have shape (shots, {width})"
+            )
+        remainder = self._graph.num_detectors % 8
+        if remainder and bool((detection_events[:, -1] >> remainder).any()):
+            raise ValueError("unused packed detector padding bits must be zero")
+        shape = (detection_events.shape[0], (self._graph.num_observables + 7) // 8)
+        if not shape[0]:
+            return torch.empty(shape, dtype=torch.uint8, device="cpu")
+        contiguous = detection_events.contiguous()
+        packed = ctypes.string_at(contiguous.data_ptr(), contiguous.numel())
+        try:
+            predictions = self._decode_packed(self._matcher, packed)
+        except ValueError as error:
+            raise CapabilityError(
+                f"Sparse Blossom could not decode the packed batch: {error}"
+            ) from error
+        return torch.frombuffer(bytearray(predictions), dtype=torch.uint8).view(shape)
