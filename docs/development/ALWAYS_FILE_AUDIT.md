@@ -7,7 +7,7 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0313 | `always.ipynb` | `5e127210038748d4b79ad8cb012b63f263139363` | Closed by the full native tutorial. |
-| Q-0314 | `always.py` | `905f79a2fef8cf14ffd3f09098d4d93ea356a250` | Open for arbitrary external objects and automatic resource declarations for undeclared children. |
+| Q-0314 | `always.py` | `905f79a2fef8cf14ffd3f09098d4d93ea356a250` | Actual concrete external wrapper capture verified. Automatic resource declarations for undeclared children remain open. |
 | Q-0315 | `always_test.py` | `2b712e48f42fdf79519c7a5493423815fe52872f` | Closed for the runnable original cases and notebook. |
 
 The Compiler wrapper passes the inherited control tuple back unchanged and
