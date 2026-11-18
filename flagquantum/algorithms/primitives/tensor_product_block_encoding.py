@@ -76,6 +76,11 @@ class TensorProductBlockEncoding:
         if not self.block_encodings:
             raise ValueError("Tensor product requires at least one block")
 
+    @classmethod
+    def of(cls, *block_encodings: _BlockMetadata) -> TensorProductBlockEncoding:
+        """Construct a tensor product from ordered constituent blocks."""
+        return cls(block_encodings)
+
     @property
     def system_bitsize(self) -> int:
         return sum(child.system_bitsize for child in self.block_encodings)
