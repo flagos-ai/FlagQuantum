@@ -61,5 +61,72 @@ Q-0681 and Q-0683 are covered. Q-0682 remains open for the source
 precision overruns, signed direct rotation indexing, zero or quantized
 zero sizing, fixed-point search overflow, recursive width on affected
 mixed dtypes, and symbolic execution. The symbolic declarations used
-by the original tutorial are modeled. Q-0666 remains open for other
-rotation exports.
+by the original tutorial are modeled. Q-0666's export inventory is accepted.
+
+## Whole-file object binding
+
+The source interface, both concrete classes, the complete fixed-point sizing
+helper and the original test file have been read. The complete definition map is:
+
+| Source surface | Owned counterpart and evidence |
+| --- | --- |
+| `QvrInterface.cost_registers`, `extra_registers`, `signature` | Named `CircuitRegisterEmitter` layout and native fixed-point register signatures. External types stop at the optional SDK boundary. |
+| `QvrZPow` fields, `from_bitsize`, dtype/port properties | Native `QvrExample`, direct QVR planner, and actual source constructors with a renamed cost port. |
+| Fractional/total rotation counts, body, declared call graph | Direct schedule and independent model in `qvr_zpow.py`; representative declared calls remain separate from per-wire emitted angles. |
+| `find_optimal_phase_grad_size`, including its nested predicate | Existing sizing owner preserves all-ones cost, binary-search bounds, repeated-add arithmetic and acceptance predicate. Earlier 1,248-point sizing evidence is reused. |
+| `QvrPhaseGradient` admission, constructors and port/dtype properties | Native unsigned admission and named cost/gradient bindings, with source signed rejection retained. |
+| Phase/formula/search/chosen widths, addition bound, coefficient formats | Existing `qvr_phase_gradient.py` format and symbolic model owners. The 54-bit cutoff, formula and numerical search remain distinct. |
+| Gradient body and call graph | Shared scaled-add owner, true separately captured adjoints and one declared scaled-add child. |
+| Two factories and documentation specifications | Original twelve-bit objects, native catalogue/notebook and their complete directional snapshots. |
+
+`test_qvr_source_binding.py` first constructs symbolic width/coefficient/epsilon
+objects, verifies unresolved physical execution fails, then explicitly resolves
+those fields with the original immutable constructor. Both signs of 0.375 are
+checked for fractional direct and gradient cases, and mixed direct cost words.
+Executable mixed and integer gradient cases with coefficient 1 are included.
+The actual port name is `energy`; positional lowering is unchanged and the
+named emitter is rebound at the same `BlackBoxPrepare` append consumer.
+
+Full logical operators, all raw-history channel identities and independent
+full-column clean-work checks agree with native replacements in both directions.
+These columns include every small gradient basis word. JSON snapshots retain
+owned IR, and true adjoints restore arbitrary logical states. Primitive opcode
+histograms agree for these cases. Earlier per-wire source leaf, operand,
+measurement-feedback, callback and phase-error evidence is reused. Direct
+fractional/mixed examples also agree with their analytic complex diagonal.
+
+The original twelve-bit direct and gradient factories are captured in both
+directions. Their counts match the native catalogue and the independent source
+model, including the 484 T-family / 1,244 CX / 121 measurements gradient body.
+The earlier sparse/coherent tutorial checks supply numerical evidence for this
+large fixture; this extension does not claim a full 31-logical-bit matrix.
+
+Actual source cases `QFxp(3,2)` and `QFxp(3,0)` with coefficient ±0.375 and
+epsilon 0.2 still fail at source dtype binding/finalization. The same two
+formats at coefficient 1 execute successfully. Tests retain the former errors
+and full operators for the latter cases rather than blanket-rejecting mixed
+formats. Source canonical Z/S leaves can differ in name from native parameter
+phase leaves for other coefficients; matching matrices do not imply identical
+opcode spellings in those cases. The source remains unchanged, and Q-0682
+stays open for its remaining precision/admission/model defects.
+
+| Actual imported body, epsilon 0.2 | Instructions | T/T† | CX | Measurements | Physical wires |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Fractional cost (2,2), coefficient ±0.375, direct | 2 | 0 | 0 | 0 | 2 |
+| Mixed cost (3,2), coefficient ±0.375, direct | 3 | 0 | 0 | 0 | 3 |
+| Fractional cost (2,2), coefficient ±0.375, gradient | 121 | 24 | 55 | 6 | 9 |
+| Mixed cost (3,2), coefficient 1, gradient | 20 | 4 | 9 | 1 | 6 |
+| Integer cost (3,0), coefficient 1, gradient | 0 | 0 | 0 | 0 | 4 |
+
+These measurements and physical allocations are observed primitive inventories.
+The independent source model continues to describe logical arithmetic costs;
+the negative one-bit-gradient estimate and affected recursive widths are not
+replaced by these observed counts. No new parent or child progress units are
+introduced by this binding extension.
+
+All 14 focused binding cases pass in 4.12 seconds. The batch regression passes
+615 cases in 37.65 seconds, including the Hamming precision counterexamples.
+Strict typing, Black, Ruff, Algorithms scope and diff whitespace checks pass.
+This tests/audit-only extension reuses accepted architecture, multilevel IR,
+protected API, CPU and independent notebook evidence. No production behavior,
+reference file or public contract changes in this batch.
