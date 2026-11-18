@@ -82,11 +82,11 @@ leaf level. Their counts are not synthesized Clifford+T costs. This module
 supplies no invented independent resource model; consumers must retain their
 separate declared estimates. No source whole-block tensor is used to emit gates.
 
-The uniform-preparation consumer is still unchanged. Its multi-control H first
-follows the source HPow → controlled half-Y + shifted-X path, including extracted
-control phases and optimized X dispatch. That front-end dispatch must be completed
-before replacing its measured-conjunction recipe. Q-0695 remains open for that
-connection and the already recorded source symbolic model failures.
+The uniform-preparation consumer now connects through the shared
+[controlled-H front end](CONTROLLED_HADAMARD.md): source HPow, controlled Y/X,
+extracted control phases and optimized dispatch are preserved. The source Bloq
+adjoint's Hadamard normalization is distinct from raw Cirq HPow(-1). Q-0695
+remains open only for its recorded symbolic source model failures.
 
 Acceptance: all 52 source/ownership/operator cases pass (3.29 s). The
 concentrated synthesis, uniform and register-import suite passes 488 cases

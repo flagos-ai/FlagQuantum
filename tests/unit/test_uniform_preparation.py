@@ -76,13 +76,13 @@ def test_uniform_support_relative_phase_inverse_and_counts(count, values):
     )
     gates = emitted(count, values)
     counts = Counter(gate.name for gate in gates)
-    ands = len(target) * max(0, len(values) - 1)
-    if odd > 1:
-        ands += 3 * high + len(values) - 1
+    ands = 3 * high + len(values) - 1 if odd > 1 else 0
     assert counts["measure"] == counts["reset"] == ands
-    assert counts["t"] + counts["tdg"] == 4 * ands
-    assert counts["rz"] == (2 if odd > 1 else 0)
-    assert counts["ch"] == (len(target) if controls else 0)
+    target, work, slots, controls = layout(count, values)
+    source_stream = reference_uniform_preparation_gates(
+        count, values, target, work, slots, controls, adjoint=False
+    )
+    assert counts == Counter(g.name for g in source_stream)
     circuit = DynamicCircuit(
         len(controls) + len(target) + len(work),
         inputs=embedded(initial, len(work)),
@@ -200,6 +200,7 @@ def test_full_source_complex_map_and_erasure_histories(count, values, adjoint):
             tuple(q + (q >= width) for q in g.wires),
             g.params,
             metadata=g.metadata,
+            matrix=g.matrix,
         )
         for g in gates
     )
@@ -257,7 +258,6 @@ def reference_uniform_preparation_gates(
     import cirq
     from qualtran._infra.gate_with_registers import split_qubits
     from qualtran.bloqs.arithmetic import LessThanConstant
-    from qualtran.bloqs.mcmt.and_bloq import And, MultiAnd
     from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
         PrepareUniformSuperposition,
     )
@@ -304,23 +304,33 @@ def reference_uniform_preparation_gates(
             )
         return tuple(compute), tuple(g for block in reversed(erase) for g in block)
 
+    from flagquantum.ecosystem.cirq._component_snapshot import _has_explicit_matrix
+    from flagquantum.ecosystem.cirq._feedback_import import (
+        _lower_feedback_gate,
+        import_cirq_feedback,
+    )
+
     initial = []
     for op in ops[: len(target)]:
-        *ctrl, wire = (q.x for q in op.qubits)
-        if op.gate == cirq.H:
-            initial.append((Instruction("h", (wire,)),))
-            continue
-        assert op.gate.sub_gate == cirq.H
-        pattern = tuple(next(iter(v)) for v in op.gate.control_values)
-        assert tuple(ctrl) == controls and pattern == values
-        if len(ctrl) == 1:
-            flip = (Instruction("x", tuple(ctrl)),) if pattern == (0,) else ()
-            initial.append((*flip, Instruction("ch", (ctrl[0], wire)), *flip))
-        else:
-            work = workspace[: len(ctrl) - 1]
-            predicate = And(*pattern) if len(ctrl) == 2 else MultiAnd(pattern)
-            compute, erase = source_predicate(predicate, tuple(ctrl), work)
-            initial.append((*compute, Instruction("ch", (work[-1], wire)), *erase))
+        # Qualtran converts source H into its self-adjoint Hadamard Bloq.
+        # Preserve that actual adjoint entry rather than raw Cirq HPow(-1).
+        from qualtran.bloqs.basic_gates import Hadamard
+
+        assert Hadamard().adjoint() == Hadamard()
+        leaves = cirq.decompose(
+            op,
+            keep=lambda leaf: (
+                isinstance(leaf.gate, cirq.GlobalPhaseGate)
+                or _has_explicit_matrix(cirq, leaf.gate)
+                or _lower_feedback_gate(cirq, leaf.gate, [], 0) is not None
+            ),
+            context=manager,
+        )
+        imported = import_cirq_feedback(
+            cirq.Circuit(leaves, strategy=cirq.InsertStrategy.NEW),
+            qubit_order=tuple(cirq.LineQubit.range(len(controls) + len(target))),
+        ).ir
+        initial.append(imported.instructions)
 
     _, odd, high = source.k_l_logL()
     assert tuple(q.x for q in quregs["target"]) == target
@@ -418,6 +428,21 @@ def test_pinned_outer_generator_and_inner_source_streams(count, values):
         assert [g.params["theta"] for g in actual if g.name == "rz"] == pytest.approx(
             [g.params["theta"] for g in expected if g.name == "rz"], abs=2e-15, rel=0
         )
+        for native, source in zip(actual, expected, strict=True):
+            assert native.params.keys() == source.params.keys()
+            for name in native.params:
+                assert native.params[name] == pytest.approx(
+                    source.params[name], abs=4e-12, rel=0
+                )
+            if source.matrix is None:
+                assert native.matrix is None
+            else:
+                torch.testing.assert_close(
+                    torch.as_tensor(native.matrix, dtype=torch.complex128),
+                    torch.as_tensor(source.matrix, dtype=torch.complex128),
+                    atol=4e-12,
+                    rtol=0,
+                )
 
 
 @pytest.mark.ftqc_reference
@@ -443,9 +468,9 @@ def test_empty_source_binding_and_concrete_resource_model():
     )
     for count, values, model_t, rotations, native_t in (
         (3, (), 20, 2, 20),
-        (3, (0,), 24, 6, 28),
-        (6, (1, 0), 40, 8, 46),
-        (5, (1, 0, 1), 68, 8, 74),
+        (3, (0,), 24, 6, 26),
+        (6, (1, 0), 40, 8, 37),
+        (5, (1, 0, 1), 68, 8, 50),
     ):
         model = t_complexity(PrepareUniformSuperposition(count, values))
         assert (model.t, model.rotations) == (model_t, rotations)

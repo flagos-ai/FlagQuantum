@@ -1,4 +1,4 @@
-"""Controlled uniform source costs, unchanged primitive path and exact branches."""
+"""Controlled uniform source declarations stay independent of physical lowering."""
 
 from dataclasses import asdict
 from itertools import product
@@ -60,7 +60,16 @@ def test_each_initial_h_retains_a_separate_predicate_model(values):
         key: 3 * value for key, value in asdict(child).items()
     }
     width, work, _ = uniform_preparation_requirements(8, len(values))
-    assert three.peak_logical_qubits == width + len(values) + work
+    assert work == 0  # Literal controlled H no longer needs clean conjunction work.
+    from qualtran.bloqs.state_preparation.prepare_uniform_superposition import (
+        PrepareUniformSuperposition,
+    )
+    from qualtran.resource_counting import QubitCount, get_cost_value
+
+    assert three.peak_logical_qubits == get_cost_value(
+        PrepareUniformSuperposition(8, values), QubitCount()
+    )
+    assert three.peak_logical_qubits >= width + len(values)
 
 
 @pytest.mark.parametrize("values", [(False,), (2,), (-1,), (0, True)])
@@ -92,7 +101,7 @@ def test_resource_only_control_query_never_emits_quantum_instructions(monkeypatc
         raise AssertionError("Resource query invoked quantum emitter")
 
     monkeypatch.setattr(module, "uniform_preparation_ir", forbidden)
-    monkeypatch.setattr(module, "_initial_hadamards", forbidden)
+    monkeypatch.setattr(module, "controlled_hadamard_ir", forbidden)
     report = estimate_ftqc_resources(
         module.source_uniform_preparation_cost(6, control_values=(1, 0))
     )
@@ -107,6 +116,7 @@ def test_runnable_controlled_uniform_model_and_lowered_ir_example(capsys):
 
     main()
     output = capsys.readouterr().out
-    assert "Emitted T/Tdag 46" in output
-    assert "Remaining unsynthesized Rz 2" in output
+    assert "Emitted T/Tdag 37" in output
+    assert "Remaining unsynthesized Rz 11" in output
+    assert "Remaining local matrix instructions 51" in output
     assert "inverse verified" in output

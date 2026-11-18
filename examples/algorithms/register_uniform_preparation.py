@@ -83,6 +83,7 @@ def main() -> None:
     print("Model rotations", report.logical.gates.rotation)
     print("Emitted T/Tdag", report.emitted.t_count)
     print("Remaining unsynthesized Rz", primitives["rz"])
+    print("Remaining local matrix instructions", primitives["any"])
     print("Measurements", primitives["measure"])
     print("Peak logical qubits", report.logical.peak_logical_qubits)
     print(

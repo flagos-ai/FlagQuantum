@@ -24,6 +24,7 @@ from ..control.control_predicate import ControlRegister
 from ..control.control_predicate_resource_model import control_predicate_cost
 from ..control.controlled_component_resource_model import controlled_component_cost
 from ..control.multi_control import multi_and_ir
+from ..primitives.controlled_hadamard import controlled_hadamard_ir
 
 
 def _odd_factor(count: int) -> int:
@@ -43,40 +44,11 @@ def uniform_preparation_requirements(
     if width == 0:
         return 0, 0, 0
     if odd == 1:
-        work = max(0, controls - 1)
-        return width, work, work
+        return width, 0, 0
     high = (odd - 1).bit_length()
     compare = less_than_constant_workspace_size(high, odd)
     reflection = high + controls - 1
     return width, max(1 + compare, reflection), max(high, reflection)
-
-
-def _initial_hadamards(
-    target: tuple[int, ...],
-    controls: tuple[int, ...],
-    values: tuple[int, ...],
-    workspace: tuple[int, ...],
-    slots: tuple[int, ...],
-) -> tuple[Instruction, ...]:
-    if not controls:
-        return tuple(Instruction("h", (qubit,)) for qubit in target)
-    control = controls[0]
-    prepare: tuple[Instruction, ...] = (
-        (Instruction("x", controls),) if values == (0,) else ()
-    )
-    erase: tuple[Instruction, ...] = prepare
-    if len(controls) > 1:
-        work = workspace[: len(controls) - 1]
-        control = work[-1]
-        prepare = multi_and_ir(controls, values, work)
-        erase = multi_and_ir(
-            controls, values, work, classical_bits=slots[: len(work)], uncompute=True
-        )
-    return tuple(
-        gate
-        for qubit in target
-        for gate in (*prepare, Instruction("ch", (control, qubit)), *erase)
-    )
 
 
 def uniform_preparation_ir(
@@ -122,12 +94,16 @@ def uniform_preparation_ir(
         return ()
 
     # Hadamards on different targets commute, but retain the adjoint order.
-    initial = _initial_hadamards(
-        target[::-1] if adjoint else target,
-        controls,
-        control_values,
-        workspace,
-        classical_bits,
+    initial = tuple(
+        gate
+        for wire in (target[::-1] if adjoint else target)
+        for gate in controlled_hadamard_ir(
+            # Qualtran's Bloq adjoint normalizes its self-adjoint Hadamard;
+            # this differs from directly lowering Cirq HPow(exponent=-1).
+            controls,
+            wire,
+            control_values=control_values,
+        )
     )
     odd = _odd_factor(count)
     if odd == 1:
@@ -187,6 +163,9 @@ def source_uniform_preparation_cost(
         raise ValueError(
             "Original controlled singleton uniform cost lacks its target port"
         )
+    # The independent source model retains measured-control peak estimates,
+    # even when literal controlled-H synthesis uses no physical clean work.
+    work = max(work, max(0, len(control_values) - 1) if width else 0)
     odd = _odd_factor(count)
     initial = GateCost(clifford=1)
     if control_values:

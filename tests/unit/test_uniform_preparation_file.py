@@ -256,7 +256,10 @@ def test_literal_control_length_resolves_before_append(source_module: Any) -> No
     assert circuit.to_ir().instructions == expected.to_ir().instructions
 
 
-@pytest.mark.parametrize("count,values", [(3, (1,)), (5, (1,)), (5, (0, 1))])
+@pytest.mark.parametrize(
+    "count,values",
+    [(3, (1,)), (3, (0,)), (5, (1,)), (5, (0, 1)), (5, (1, 1)), (3, (1, 0, 1))],
+)
 @pytest.mark.parametrize("adjoint", (False, True))
 def test_resolved_symbolic_source_replaces_uniform_execution(
     source_module: Any, count: int, values: tuple[int, ...], adjoint: bool
@@ -318,6 +321,9 @@ def test_resolved_symbolic_source_replaces_uniform_execution(
         == json.loads(emitter.snapshots[int(adjoint)].to_json())["instructions"]
     )
     expected = DynamicCircuit(native.qubit_count).append(native).to_ir()
+    assert Counter(g.name for g in imported.instructions) == Counter(
+        g.name for g in expected.instructions
+    )
     branches = []
     for ir in (imported, expected):
         branches.append(

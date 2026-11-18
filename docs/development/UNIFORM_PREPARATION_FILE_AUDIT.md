@@ -69,7 +69,7 @@ existing primitive counts above describe concrete execution.
 ## Remaining boundaries
 
 Q-0694 and Q-0696 are covered. Q-0695 remains open for the original
-symbolic dispatch boundaries and distinct physical control lowerings. The
+symbolic dispatch boundaries. The
 source symbolic graph omits control predicates. Its singleton and
 one-bit symbolic peak queries exhibit the failures retained by
 the existing resource tests. A concrete count with a tuple of symbolic
@@ -97,8 +97,8 @@ rewritten. The resolved source is converted to owned directional snapshots,
 round-tripped through CircuitIR JSON, and rebound through the existing packed
 callback. The user still calls `circuit.append(op)`.
 
-The three configurations are n=3/control(1), n=5/control(1), and
-n=5/controls(0,1), each in both directions. Every logical basis column is
+The six configurations include positive/negative single controls, both positive
+and mixed two-controls, and a mixed three-control case, each in both directions. Every logical basis column is
 compared with the existing native implementation, preserving its complete
 complex output and absolute phase. All work amplitudes outside zero are checked.
 The shared exact-erasure certificate proves every history has the same channel
@@ -111,29 +111,28 @@ count; it does not silently equate different physical lowerings.
 | Source capture, control(1) | 10 / 6 | 204 | 36 | 70 | 9 |
 | Native recipe, control(1) | 9 / 5 | 204 | 36 | 70 | 9 |
 | Source capture, controls(0,1) | 13 / 8 | 375 | 49 | 130 | 10 |
-| Native recipe, controls(0,1) | 10 / 5 | 288 | 52 | 94 | 13 |
+| Native recipe, controls(0,1), either Qualtran direction | 10 / 5 | 375 | 49 | 130 | 10 |
 
-The source two-control capture includes 60 local `any` instructions and 12
-scalar phase instructions from Cirq control lowering. These are not expanded
-Clifford+T primitive counts. Native initial controlled Hadamards instead use
-measured conjunctions and named CH instructions. Thus their full operators agree,
-but primitive parity is not claimed for that different lowering route. Binding
-the owned source snapshots preserves their original serialized instruction
-stream exactly, including local matrices, operands and measurement feedback.
+Both source and native two-control streams include 60 local `any` instructions
+and 12 phase instructions, with matching opcodes/counts at that same leaf level.
+These are not fully synthesized Clifford+T counts. The native initial H now
+uses the actual shared source front end rather than measured conjunctions.
+Whole-stream tests check operands and feedback with explicit workspace binding;
+actual source root import also independently verifies complete consumer operators.
+Source capture reserves more private names than the native reusable work layout;
+that allocation difference remains explicit in the table.
 
 Independent source declarations for control(1) are 9 And, 67 Clifford,
 8 rotations, 9 measurements and peak 9; for controls(0,1) they are 13 And,
 75 Clifford, 8 rotations, 13 measurements and peak 10. The native model agrees
 with those declarations. The actual source capture's ten measurements differ
 from its model's thirteen; those numbers are not combined into one estimate.
-Aligning the multi-control H physical lowering and resolving the documented
-source symbolic model failures remain concrete Q-0695 gaps.
+The physical control lowering is now aligned at the same source leaf level.
+The documented source symbolic model failures remain Q-0695 gaps.
 
-The complete source-file suite passes 69 cases (3.25 s), including the root
-state-sum caption and the six resolved full-operator cases. The concentrated
-dependency regression passes 418 cases (9.54 s), without skips. The catalogue
-passes strict typing; both Python files pass Black/Ruff and Algorithms scope.
-The modified tutorial passes its independent SDK-free kernel (2.45 s), and its
-signature SVG was rendered and visually checked for the original sum caption.
-Prior architecture/IR/API acceptance is reused because no boundary, Core schema
-or production transformation changed in this batch.
+The current dependency closure and validation are recorded in
+[Source controlled Hadamard](CONTROLLED_HADAMARD.md). The source-file root label
+and SDK-free tutorial remain covered. The original resource-only declaration
+is independent of the literal execution path: even a power-of-two target needs
+no physical controlled-H workspace, while its source model can retain a larger
+logical peak. No checkbox is added or parent closed for that distinction.
