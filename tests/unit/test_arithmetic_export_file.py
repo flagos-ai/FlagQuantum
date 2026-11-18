@@ -62,6 +62,11 @@ EXPORTS = (
             EXPORTS,
         ),
         (
+            "qualtran.bloqs.arithmetic.lists",
+            "7ed84457f5734a6e2d76fd6d883032fc6f815afa",
+            ("HasDuplicates", "SortInPlace", "SymmetricDifference"),
+        ),
+        (
             "qualtran.bloqs.arithmetic.conversions",
             "129a9c14487f032c3ce60c7fd4f56cd8f5bf75cd",
             (
