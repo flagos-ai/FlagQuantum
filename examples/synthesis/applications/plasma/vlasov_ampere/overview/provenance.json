@@ -1,0 +1,175 @@
+{
+  "upstream_path": "applications/plasma/vlasov_ampere/vlasov_ampere.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "fb0d4cf7a9992f6bff546d716b6f5a6557dc74dcc415eb97168622822c74fc4c",
+  "git_blob_sha1": "2bc1513aa58f8b1b9a9b283895da250c56a70a15",
+  "scope": "All 27 source stages, original 8x8 grid, actual reconstruction of all 128 block columns, original degree251 and 252 fresh phases, complete 18-bit execution and all eight electric field values.",
+  "native_semantic_adaptations": "Reuse the independently validated native plasma block encoding. Reconstruct its full projected matrix through 128 native basis-column executions. Compute the source relative minimax polynomial and its 0.95 normalization freshly. Execute all 13560 instructions through contiguous 64-instruction public Circuit segments with the complete eighteen-bit state transferred exactly. Preserve the original polynomial approximation error and the original classical i-source phase omitted by quantum preparation. Compare the full state through an independent singular-pair recurrence, and compare electric-field magnitudes as the original does. Native static matrix-operation resource counts have their own basis. Householder preparation extensions are declared in the companion block-encoding workflow.",
+  "native_entrypoint": "examples.synthesis.applications.plasma.vlasov_ampere.overview.main",
+  "native_notebook": "examples/synthesis/applications/plasma/vlasov_ampere/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_vlasov_inverse_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Use the existing native runtime and plotting packages.",
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "stage": "Use public native Circuit composition and bounded execution.",
+      "sha256": "08dd9b387c03d86c8f9d556d4302fdc842ed2f6789a7460e07a5fb05f483929c"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "stage": "Retain all original plasma, source and 8 by 8 grid parameters.",
+      "sha256": "e3e01c3809e71594cd68f3f0133028990d26fa4e7c22af62654e7f4bad32b0de"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Keep signed three-bit velocity, three-bit position and the electric-sector bit.",
+      "sha256": "c6da887ceb99fb5c8606b58ad7d872b5776529f4c0b8aa105db749950ff9129c"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 5,
+      "stage": "Use the exact finite-difference derivative in the native block encoding.",
+      "sha256": "2f724da51e2a55c01592b929511a4dcf95586231a593a7dbb739c1f58bbdbffc"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 6,
+      "stage": "Normalize all four original boundary coefficients freshly.",
+      "sha256": "499f5e2d3f4f2b6ddbc8aaecb32e15a0a1429bcc5b6c2949ee2c8f33ac6bf9f3"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 7,
+      "stage": "Preserve the boundary branch preparation, phase and flag semantics.",
+      "sha256": "469618373b824a45af48318ffb3b5ad60a0790866ffb8efe61d23485207a8165"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 8,
+      "stage": "Keep the original derivative normalization and grid spacing.",
+      "sha256": "bbb73990b1ab040cd8f8c213731250981956ad28f28a9a936794e4f00b087be3"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 9,
+      "stage": "Preserve the signed velocity ordering.",
+      "sha256": "52e8b55dc82c8206410c061d25c315d3f77819c925752e1def16531194c35ee0"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 10,
+      "stage": "Keep both original incoming-boundary predicates.",
+      "sha256": "85568e91077bca8b07f5fdfb5e071d1b46a1a86762312f4cf9d2ab71be415e25"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 11,
+      "stage": "Compose the full advective branch.",
+      "sha256": "3fd99981761d576b60e8f0cab530605b025c64be04c76f70c4e5aa6bef0471a2"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 12,
+      "stage": "Retain both E sectors and the E=0 advective selection.",
+      "sha256": "e2d2258989753757a0d292d0c7fb76f2a7bb4ed802b94ec34cb927ea91cb1095"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 13,
+      "stage": "Build the Maxwellian-weighted force vector freshly.",
+      "sha256": "a910134c39175ec10f53ed236046dc2efe3c8195d132da55bd1290d42738f93b"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 14,
+      "stage": "Keep the original velocity current term and its DV factor.",
+      "sha256": "6a0efdf6e0a1f51336866f22e568255df05eb19e98d0069dd8ba92b95b166114"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 15,
+      "stage": "Preserve the two off-diagonal branches and unequal normalization.",
+      "sha256": "368a1ce0d37a50448f55e4c1cb14fff8aa74e463b3e4cdcbef86b16f7a8387b9"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 16,
+      "stage": "Retain all force and current data positions.",
+      "sha256": "c1bdcf0abae63c3e9774b65fcf3bc7e13196c40fb2c3d88ac3128a93242c7518"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 17,
+      "stage": "Use all weighted branches, including the relative i-frequency phase.",
+      "sha256": "1da6fdd0bd0e9d833a8c56ed45baa392e6dc9d85169f7abff8c80906e22e3d0b"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 18,
+      "stage": "Build the complete native block, including both original clean work bits.",
+      "sha256": "7ea631712ba296391b03e49d6eb2cc8edd1c24c2c34d7ba84559e6fb4af6b245"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 19,
+      "stage": "Reconstruct every actual projected operator column with native execution.",
+      "sha256": "4a6293cb07fc187b2bc5e6a45ae13662a2a85b7d32d58c5608f7e59843cce5a2"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 20,
+      "stage": "Generate and normalize the original Gaussian source at all eight grid positions.",
+      "sha256": "b909aa2b5fd3eb1dde15cec632bd4749902334e304535fcdaea43c96f0794aa7"
+    },
+    {
+      "index": 56,
+      "native_code_cell": 21,
+      "stage": "Use the original degree 251 and freshly fit every inverse phase.",
+      "sha256": "a592eed0ab8b1562e383d0b2f14f3ac5320cb75b1b02f35a16d6e84c450a00b5"
+    },
+    {
+      "index": 59,
+      "native_code_cell": 22,
+      "stage": "Use the complete eighteen-bit inverse program.",
+      "sha256": "803c556e3848da5ada755208fa44a33810f19f544499e8e52ec3456faa9c1dcb"
+    },
+    {
+      "index": 60,
+      "native_code_cell": 23,
+      "stage": "Execute all 13,560 original native instructions with bounded state transfer.",
+      "sha256": "16c21e707130a6f773541c0d876cc0da22f3030cc7d6a920a19c95caa73e03b9"
+    },
+    {
+      "index": 62,
+      "native_code_cell": 24,
+      "stage": "Read the genuine block-zero probability and full-state oracle comparison.",
+      "sha256": "b73b5ac6e653cd049f63c54a0899441bec1722c80374cf64a517a5d6c2e0a37d"
+    },
+    {
+      "index": 64,
+      "native_code_cell": 25,
+      "stage": "Read all eight electric-field amplitudes from the executed inverse.",
+      "sha256": "62f35c248f74e1de0004e162a6eda441b48b6191a937f5f780d522774a599a02"
+    },
+    {
+      "index": 66,
+      "native_code_cell": 26,
+      "stage": "Preserve the source classical solve, including its explicit i source phase.",
+      "sha256": "bcc50d55b1a50fe062e715911f806d6f3340fa23cdfc05c7d6790832ae5da129"
+    },
+    {
+      "index": 67,
+      "native_code_cell": 27,
+      "stage": "Plot the reconstructed quantum operator and both original field readouts.",
+      "sha256": "67c55b820974a55f5f655293cc11e5a736e4f378762db44339dc513c90e99a90"
+    }
+  ]
+}
