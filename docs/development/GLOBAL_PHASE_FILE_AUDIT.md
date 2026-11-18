@@ -96,9 +96,13 @@ categories and zero logical peak width, while physical capture owns one carrier.
 These are different resource accounts, retained explicitly.
 
 All four two-bit QUInt control values are captured in both actual directions.
-The locked source/Cirq dispatch yields a matrix leaf for values zero and two,
+After correcting scalar leaf admission, the locked source/Cirq dispatch yields
+nine primitives for values zero and two (two X, two phase, three Rz and two CX),
 an eight-instruction specialty decomposition for value one, and one cphase for
-value three. Each complete matrix column matches the source, including the
+value three. The previous one-matrix capture for zero and two was an importer
+misclassification, not the retained source decomposition. Direct controlled
+GlobalPhase operations with one and two controls independently reproduce the
+original decomposition, including phase angles and operands. Each complete matrix column matches the source, including the
 active row's exact complex phase. These captured paths require no work or
 measurement. The independent declared model still uses a conjunction and its
 measurement inverse with peak width three. Existing source-style measured
@@ -122,3 +126,7 @@ scope, architecture, multilevel IR and public API checks passed. The pure zero-w
 static import first raises the existing minimum-one-qubit ValueError; adding an
 identity carrier reaches the separately asserted `global_phase_not_represented`
 refusal. The source's original approximate Cirq equality tolerance is retained.
+
+The scalar-admission correction passed the 1589-case concentrated regression,
+including the unchanged controlled-H front-end suite and feedback matrix cases.
+All four changed Python files passed strict typing and the repository checks.

@@ -134,9 +134,9 @@ def test_actual_word_controlled_phase_source_leaf_and_complex_columns(
         actual_source = source.adjoint() if inverse else source
         gates = emitter.snapshots[int(inverse)].instructions
         expected_names = {
-            0: ("any",),
+            0: ("x", "phase", "x", "phase", "rz", "cx", "rz", "cx", "rz"),
             1: ("x", "phase", "any", "cx", "any", "cx", "any", "x"),
-            2: ("any",),
+            2: ("x", "phase", "x", "phase", "rz", "cx", "rz", "cx", "rz"),
             3: ("cphase",),
         }
         assert tuple(gate.name for gate in gates) == expected_names[value]
@@ -199,3 +199,40 @@ def test_original_external_scalar_conventions_and_static_refusal() -> None:
         rtol=0,
         atol=2e-12,
     )
+
+
+@pytest.mark.parametrize("values", ((0,), (0, 0), (1, 0)))
+def test_controlled_scalar_retains_source_decomposition(
+    values: tuple[int, ...],
+) -> None:
+    import cirq
+    from qualtran.bloqs.basic_gates import GlobalPhase
+
+    from flagquantum.ecosystem.cirq._feedback_import import (
+        _has_explicit_matrix,
+        _lower_feedback_gate,
+        import_cirq_feedback,
+    )
+    from tests.unit.test_controlled_unitary_synthesis import assert_source_stream
+
+    source = GlobalPhase(exponent=0.37)
+    wires = tuple(cirq.LineQubit.range(len(values)))
+    operation = cirq.global_phase_operation(source.coefficient).controlled_by(
+        *wires, control_values=values
+    )
+    assert not _has_explicit_matrix(cirq, operation.gate)
+    leaves = cirq.decompose(
+        operation,
+        keep=lambda op: isinstance(op.gate, cirq.GlobalPhaseGate)
+        or _lower_feedback_gate(cirq, op.gate, [], 0) is not None,
+    )
+    expected = import_cirq_feedback(
+        cirq.Circuit(leaves, strategy=cirq.InsertStrategy.NEW), qubit_order=wires
+    ).ir
+    import numpy as np
+    from qualtran import CtrlSpec
+
+    captured = import_register_emitter(
+        source.controlled(CtrlSpec(cvs=np.asarray(values)))
+    ).snapshots[0]
+    assert_source_stream(captured, expected)

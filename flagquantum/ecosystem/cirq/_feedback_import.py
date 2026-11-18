@@ -98,6 +98,9 @@ def _has_explicit_matrix(cirq: Any, gate: Any) -> bool:
     # their unitary protocols may contract an entire algorithm.
     return (
         isinstance(gate, cirq.Gate)
+        # Scalar phases have their own importer and controlled decomposition.
+        # Unwrapping a control must not turn that scalar into a matrix atom.
+        and not isinstance(gate, cirq.GlobalPhaseGate)
         and not hasattr(gate, "signature")
         and callable(getattr(gate, "_unitary_", None))
         and not callable(getattr(gate, "_decompose_", None))
