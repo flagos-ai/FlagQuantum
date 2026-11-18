@@ -353,7 +353,8 @@ def test_original_serialization_and_zero_system_boundaries() -> None:
         TensorProduct.of(empty).decompose_bloq()
     with pytest.raises(KeyError, match="system"):
         TensorProduct.of(empty, Unitary(TGate())).decompose_bloq()
-    with pytest.raises(ValueError, match="concrete nonnegative widths"):
+    # Scalar admission now reaches the same unchanged source failure.
+    with pytest.raises(TypeError, match="required positional argument: 'system'"):
         import_block_encoding(TensorProduct.of(empty), include_controlled=False)
 
 

@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0288 | `phase.ipynb` | `c832c8d59cbbfcebd8210010b9aa44af23655ec4` | Closed by the full native tutorial. |
-| Q-0289 | `phase.py` | `d7e6b03237f63238e511a4e7aa5056808a646593` | Open for generic controlled wrappers, zero-wire numerical execution, and the original packed-child binding failures. |
+| Q-0289 | `phase.py` | `d7e6b03237f63238e511a4e7aa5056808a646593` | Native definitions and scalar binding covered; remains open for the original packed-child binding failures. |
 | Q-0290 | `phase_test.py` | `c41738844b4eb08517b4c3245d7cc47f1d6bdf1b` | Closed by the original source scenarios mapped below. |
 
 ## Binding and dependency ownership
@@ -52,8 +52,71 @@ unchanged child tensor and scalar independently.
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_phase_block_encoding.ipynb
 ```
 
-Q-0289 now covers the generic controlled binding and both source resource
-profiles, as well as packed symbolic widths. The valid source scalar and
-the source's zero-width Unitary wrapper failure are tested separately.
-An existing native control carries the scalar exactly. An uncontrolled
-zero-wire carrier is still outside the current circuit contract.
+## Complete implementation map
+
+| Source definition | Native owner and evidence |
+| --- | --- |
+| `alpha`, `system_bitsize`, `ancilla_bitsize`, `resource_bitsize`, `epsilon`, `signal_state` | `PhaseBlockEncoding` forwards the child's metadata and adds `eps`; existing metadata, symbolic and custom signal tests are reused. |
+| `signature` | `source_phase_block_signature` preserves packed port order, zero-width omission and symbolic width expressions. |
+| `build_call_graph` | Independent `resource_model` retains one scalar and one child call; controlled and symbolic declarations retain their source cost profiles without deriving costs from emission. |
+| `build_composite_bloq` | `make_on` emits the scalar before the bound child; the adjoint reverses their order. Generic controlled binding uses the existing predicate owner. |
+| `__str__` | `label(child_label)` preserves the original caption, including symbolic phi. The caller supplies the child symbol so no external SDK object enters Algorithms. The exponent is in pi units despite the abbreviated source caption. |
+| `_phase_block_encoding`, `_PHASE_DOC` | The actual original H factory and its single documented example are checked against native child replacement, full operators, models and all four source snapshots. |
+
+## Zero logical ports and physical storage
+
+`import_block_encoding` now captures legitimate scalar BlockEncoding objects
+with empty signatures. Ordinary forward/adjoint snapshots reserve one explicit
+clean workspace carrier, including for an empty identity body. Controlled
+snapshots use the existing control instead. `CircuitBlockEncoding` permits
+nonnegative concrete widths, omits absent system ports at child binding, and
+keeps source models independent of physical storage. Core still requires a
+positive physical wire count; this does not introduce a zero-wire Circuit or IR.
+
+The scalar fixture uses the unchanged source BlockEncoding/GlobalPhase APIs.
+Both accepted stock identity preparations, zero/one auxiliary widths, both
+directions and controlled/ordinary interfaces are exercised. Complete complex
+operators and CircuitIR round trips preserve arbitrary states on through ports
+and scalar carriers. Owned clean work is restored; no measurement, reset or
+unrequested control is introduced. Existing measured Add/SELECT/LCU tests
+continue to cover branch feedback and nontrivial coherent work ownership.
+
+| Scalar case | Actual primitive emission | Independent source model |
+| --- | --- | --- |
+| Nonzero scalar, ordinary | 2 X + 2 phase; one physical carrier when all logical widths are zero | Zero QEC gates and zero peak logical qubits for the empty logical signature |
+| Nonzero scalar, positive-controlled | One phase on the control; no additional carrier | Original controlled scalar model, including its logical control |
+| Child scalar -0.2 plus wrapper +0.25, ordinary | 4 X + 4 phase; full operator exp(i*pi*0.05) I | Zero QEC gates and zero peak logical qubits |
+| Empty scalar identity | Zero instructions; one explicitly reserved physical carrier | Zero QEC gates and zero peak logical qubits |
+
+### Remaining source boundaries
+
+The original `Phase(Unitary(GlobalPhase(...)))` still raises a missing-system
+TypeError. This differs from the valid scalar BlockEncoding fixture. Original
+named SELECT/LCU children still fail under Phase's packed ports, and the original
+QubitCount query fails on that route. Native composition is checked against the
+unchanged child and scalar separately; it is not labelled unchanged whole-source
+execution. Q-0289 remains open under the frozen source-defect closure criteria.
+
+Unresolved symbolic phase values remain declaration-only. In this reference
+environment, tensor contraction of a SymPy-valued scalar also fails at the
+autoray SymPy backend; native numerical admission rejects it. This diagnostic
+does not establish a mathematical or Cirq execution mismatch, and the reference
+is not modified or silently coerced.
+
+## Current batch acceptance
+
+The scalar/factory file passes all 30 cases. The concentrated 407-case block,
+LCU, sparse and feedback regression passes without skips (51.94 s). All 169
+Algorithms and touched adapter files pass strict typing. Black, Ruff, both team
+scopes, architecture, multilevel IR and protected API checks pass. The existing
+append example runs and distinguishes the four-T source estimate from its
+additional scalar representation instructions. CPU/representation integration
+passes 60 cases (45.45 s); the unchanged native tutorial passes in an independent
+kernel (2.78 s).
+
+Serial scalar/snapshot coverage passes 36 cases (4.02 s), covering 78% of the four
+entire modules; this is not a claim of complete whole-module branch coverage.
+The first concentrated run passed 406 cases and exposed the TensorProduct
+zero-width test's obsolete adapter-rejection assertion. The corrected test
+checks the original missing-system TypeError now reached after scalar admission.
+The unchanged upstream failure is retained rather than repaired or suppressed.
