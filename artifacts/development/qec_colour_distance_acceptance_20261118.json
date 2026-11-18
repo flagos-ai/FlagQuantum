@@ -1,5 +1,7 @@
 {
   "commit": "dc90ce6622b2e6b014a9ae4bc3bf966df13bf1fa",
+  "commit_origin": "unreferenced_object",
+  "commit_origin_verification": "Verified on 2026-11-18 through the repository commit API by full SHA. The object remains available by name after PR #1212 was squash-merged as 305b58f5f, but the CI clone does not obtain the original branch commit.",
   "base_commit": "c153119ead5cd849e6125b583a77707a1ce1dcf7",
   "environment": {
     "python": "3.12.16",
