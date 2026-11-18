@@ -69,7 +69,46 @@ continues to own controlled execution.
 
 Q-0590 retains typed register roles in the concrete owners. The toy and
 Hubbard cases verify their original control, selection, and target order.
-The general foreign SelectOracle subclass protocol remains open.
+The general foreign `SelectOracle` subclass protocol and resolved symbolic
+metadata are now consumed by the grouped-object binding below.
+
+## Complete interface and packed external-object binding
+
+The complete `SelectOracle` base, `BlackBoxSelect`, both documentation records,
+the three original interface properties, the cached source signature, the packed
+properties, size calculations, string value, AutoPartition body, example factory
+and original tests were read. The source files match their frozen v0.7.0 blobs.
+The existing Hubbard factory/decomposition and AutoPartition evidence above is
+reused rather than recounted.
+
+The native `SelectOracle` declaration preserves control, selection and target
+descriptor order. `PackedSelectDeclaration` keeps the packed source metadata and
+control descriptors, uses `packed_select_layout` for the opaque packed signature,
+and converts concrete quantum through widths at the Algorithms boundary. Arrays
+and named groups flatten in source order. Physical bits within each packed word
+remain big-endian, with address fields ahead of the system word. `bind` hands the
+captured emitter to the existing `SelectBlockEncoding` and identity PREPARE
+consumer. Caller-owned clean work and feedback slots remain with that consumer.
+The external SDK object does not enter native IR. No new package export or public
+API was added.
+
+`test_select_oracle_binding.py` resolves a symbolic-width external subclass and
+replaces its actual source `BlackBoxSelect` object through the same native
+`circuit.append(op)` consumer. Width cases use one/two address bits and one/two
+system bits. Both source directions match exact instruction dependencies,
+operands, JSON IR, complete complex matrices, and every basis transition. There
+are no measurements or workspace wires. Literal streams contain 2 or 3 CX,
+according to address width. The independent source model reports the same live
+logical width and its Clifford categories remain distinct from the emitted CX
+inventory. The abstract base member set, documentation import, grouped signature,
+unresolved-shape rejection, and original control/selection/target order are
+checked. The original controlled Hubbard wrapper still advertises its control
+separately while omitting it from its packed signature, so physical controlled
+packing remains refused under Q-0588.
+
+The focused dependency run passes all eight interface, wrapper and binding tests.
+The concentrated regression and separate strict type, scope, format,
+architecture, multi-level IR and API checks are recorded in the batch handoff.
 
 Strict typing passes on the new layout, fixture and file audit. The
 shared reference reader retains its baseline dynamic Cirq and metadata
