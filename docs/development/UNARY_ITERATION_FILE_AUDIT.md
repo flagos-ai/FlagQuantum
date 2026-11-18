@@ -102,3 +102,39 @@ refuse the ordinary tree route. The tests retain the source base failure.
 Symbolic extent execution, custom zero-selection recipes and additional dynamic
 subclass hooks remain open under Q-0597. Existing notebook, original test-suite,
 interval pruning, nested-axis and reversed-traversal evidence above is reused.
+
+## Explicit root-fold execution and cost overrides
+
+The native indexed consumer and the lower-level nested traversal now accept an
+explicit zero-selection recipe. When the source hook folds the first-axis root,
+the recipe replaces the entire traversal before any multi-control predicate or
+indexed leaf is emitted. Without that recipe, the previously recorded default
+failure remains. The zero-selection callback owns its direction and child
+storage. The independent model takes one whole-signature child model, omits the
+unused indexed child table, and verifies that the override covers the complete
+parent signature. The emitter and cost still preserve default caller behavior.
+
+A concrete custom source subclass overrides `decompose_zero_selection` with S
+or a controlled S phase. Physical selector width is two, with bounds one and
+four. Zero, one and two control bits are tested in both original directions.
+The actual source directions are captured into native snapshots at the existing
+Ecosystem boundary. The zero-selection recipe consumes those owned snapshots,
+so every emitted instruction, operand and feedback matches the source stream.
+The source controlled inverse uses its original measured And decomposition.
+Both the source snapshot and the appended native circuit check every logical
+operator column, every applicable measurement branch, exact complex phases,
+JSON IR and clean reserved work. Unused parent predicate wires remain zero.
+The base-class failure and missing override diagnostics remain covered.
+
+| Root override | Captured primitives | Independent source model |
+| --- | --- | --- |
+| S, either direction | One S or S†, no work or measurement used | 1 Clifford, signature width |
+| Controlled S forward | One controlled phase, no measurement used | 1 And, 2 Cliffords, 1 measurement, signature width + 1 |
+| Controlled S inverse | 4 T/T†, 1 measurement, exact source feedback | 1 And, 2 Cliffords, 1 measurement, signature width + 1 |
+
+The source model's expansion and captured primitive inventory are separate.
+The callback does not introduce an alternative one-gate inverse. Capturing
+literal zero-width ports, unresolved symbolic extents and further dynamic
+allocation/borrowing hooks remain open under Q-0597 and the existing interop
+entries. This section supersedes the earlier custom-zero-selection gap for the
+verified positive-width root-fold override.

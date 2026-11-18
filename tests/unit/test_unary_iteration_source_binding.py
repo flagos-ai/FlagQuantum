@@ -241,3 +241,161 @@ def test_inactive_fold_model_reuses_the_existing_full_call_inventory(
         break_early=lambda *_: False,
     )
     assert folded == ordinary
+
+
+@pytest.mark.parametrize("controls", (0, 1, 2))
+@pytest.mark.parametrize("extent", (1, 4))
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_custom_zero_selection_recipe_replaces_root_execution_and_model(
+    source: Any, controls: int, extent: int, adjoint: bool
+) -> None:
+    import cirq
+    from attrs import frozen
+    from qualtran import BQUInt, QAny, Register
+
+    from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+
+    @frozen
+    class RootRecipe(source.UnaryIterationGate):  # type: ignore[misc]
+        control_width: int
+        extent: int
+
+        @property
+        def control_registers(self) -> tuple[Any, ...]:
+            return (
+                (Register("enable", QAny(self.control_width)),)
+                if self.control_width
+                else ()
+            )
+
+        @property
+        def selection_registers(self) -> tuple[Any, ...]:
+            return (Register("selection", BQUInt(2, self.extent)),)
+
+        @property
+        def target_registers(self) -> tuple[Any, ...]:
+            return (Register("target", QAny(1)),)
+
+        def _break_early(
+            self, selection_index_prefix: tuple[int, ...], left: int, right: int
+        ) -> bool:
+            return not selection_index_prefix
+
+        def nth_operation(self, context: Any, control: Any, **kwargs: Any) -> Any:
+            raise AssertionError("Root recipe must bypass indexed leaves")
+
+        def decompose_zero_selection(self, context: Any, **quregs: Any) -> Any:
+            if self.control_width:
+                yield cirq.CZ(quregs["enable"][0], quregs["target"][0]) ** 0.5
+            else:
+                yield cirq.S(quregs["target"][0])
+
+    original = RootRecipe(controls, extent)
+    logical = controls + 3
+    work = controls + 1
+    source_emitter = import_register_emitter(original)
+    assert source_emitter.requirements() == ((1, 1) if controls else (0, 0))
+    ports = {
+        "selection": tuple(range(controls, controls + 2)),
+        "target": (logical - 1,),
+    }
+    if controls:
+        ports["enable"] = tuple(range(controls))
+    source_work_count, source_bits = source_emitter.requirements()
+    gates = indexed_component_ir(
+        (tuple(range(controls, controls + 2)),),
+        (extent,),
+        lambda *_: pytest.fail("Zero-selection recipe invoked an indexed leaf"),
+        controls=tuple(range(controls)),
+        workspace=tuple(range(logical, logical + work)),
+        classical_bits=tuple(range(work)),
+        adjoint=adjoint,
+        break_early=lambda *_: True,
+        emit_zero_selection=lambda: source_emitter(
+            ports,
+            tuple(range(logical, logical + source_work_count)),
+            tuple(range(source_bits)),
+            adjoint,
+        ),
+    )
+    snapshot = source_emitter.snapshots[int(adjoint)]
+    assert gates == snapshot.instructions
+    counts = Counter(gate.name for gate in gates)
+    assert counts["t"] + counts["tdg"] == (4 if adjoint and controls else 0)
+    assert counts["measure"] == int(adjoint and bool(controls))
+    native = (
+        Circuit(logical + work).append(FieldOperation(logical + work, gates)).to_ir()
+    )
+    assert CircuitIR.from_json(native.to_json()).instructions == gates
+    data = torch.eye(1 << logical, dtype=torch.complex128)
+    events = sum(g.name == "measure" for g in snapshot.instructions)
+    for column in range(1 << logical):
+        expected = data[:, column].clone()
+        if (not controls or column >> (logical - 1)) and column & 1:
+            expected *= -1j if adjoint else 1j
+        state = torch.zeros(1 << snapshot.n_wires, dtype=torch.complex128)
+        source_work = snapshot.n_wires - logical
+        state[:: 1 << source_work] = data[:, column]
+        for history in product((0, 1), repeat=events):
+            actual = forced_branch(state, snapshot.instructions, history)
+            padded = torch.zeros_like(state)
+            padded[:: 1 << source_work] = expected / 2 ** (events / 2)
+            torch.testing.assert_close(actual, padded, atol=1e-12, rtol=0)
+        native_state = torch.zeros(1 << native.n_wires, dtype=torch.complex128)
+        native_state[:: 1 << work] = data[:, column]
+        for history in product((0, 1), repeat=events):
+            actual_native = forced_branch(native_state, gates, history)
+            padded_native = torch.zeros_like(native_state)
+            padded_native[:: 1 << work] = expected / 2 ** (events / 2)
+            torch.testing.assert_close(actual_native, padded_native, atol=1e-12, rtol=0)
+    model = indexed_component_cost(
+        (2,),
+        (extent,),
+        (),
+        target_width=1,
+        control_count=controls,
+        adjoint=adjoint,
+        break_early=lambda *_: True,
+        zero_selection=ComponentCost(
+            "Root controlled phase",
+            logical + int(bool(controls)),
+            GateCost(
+                and_bloq=int(bool(controls)),
+                clifford=2 if controls else 1,
+                measurement=int(bool(controls)),
+            ),
+        ),
+    )
+    assert_source_model(model, original.adjoint() if adjoint else original)
+    assert len(model.calls) == 1
+
+
+def test_low_level_root_recipe_and_model_width_ownership() -> None:
+    from flagquantum.compiler.registers.lookup.unary_iteration import (
+        append_nested_bounded_unary_tree,
+    )
+
+    gates: list[Instruction] = []
+    kernel = Instruction("z", (3,))
+    append_nested_bounded_unary_tree(
+        gates,
+        None,
+        ((0, 1),),
+        (4,),
+        (4,),
+        (0,),
+        lambda *_: pytest.fail("Root recipe invoked a leaf"),
+        break_early=lambda *_: True,
+        zero_selection=lambda: gates.append(kernel),
+    )
+    assert gates == [kernel]
+    with pytest.raises(ValueError, match="full parent signature"):
+        indexed_component_cost(
+            (2,),
+            (4,),
+            (),
+            target_width=1,
+            control_count=1,
+            break_early=lambda *_: True,
+            zero_selection=ComponentCost("Too narrow", 1),
+        )
