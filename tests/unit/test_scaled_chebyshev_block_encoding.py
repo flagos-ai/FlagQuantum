@@ -335,22 +335,10 @@ def _controlled_leaf(
     return bind
 
 
-@pytest.mark.parametrize("order", [4, 5])
-def test_original_large_scaled_execution(
-    order: int, request: pytest.FixtureRequest
-) -> None:
-    from qualtran import BloqBuilder
-    from qualtran.bloqs.basic_gates import IntState
-    from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
-        _scaled_chebyshev_poly_even,
-        _scaled_chebyshev_poly_odd,
-    )
-
-    from tests.unit.test_sparse_chemistry_prepare import _branch
-
-    request.config.addinivalue_line("markers", "notebook: upstream notebook execution")
-    from qualtran.bloqs.block_encoding.chebyshev_polynomial_test import gate_test
-
+def original_scaled_operation(
+    order: int, *, adjoint: bool = False
+) -> tuple[ScaledChebyshevBlockEncoding, _CircuitOperation]:
+    """Bind the complete original scaled fixture through native child owners."""
     hadamard = UnitaryBlockEncoding(
         (("q", 1),), _unused_child, alpha=3.14 if order == 5 else 1
     )
@@ -361,9 +349,6 @@ def test_original_large_scaled_execution(
     scaled = ScaledChebyshevBlockEncoding(inner if order == 4 else hadamard, order)
     outer = scaled.linear_combination
     assert isinstance(outer, LinearCombinationBlockEncoding)
-    source = (
-        _scaled_chebyshev_poly_even() if order == 4 else _scaled_chebyshev_poly_odd()
-    )
     logical = scaled.system_bitsize + scaled.ancilla_bitsize + scaled.resource_bitsize
     outer_scratch = _lcu_scratch(outer, False)
     child_scratch = _lcu_scratch(inner, True) if order == 4 else 0
@@ -433,7 +418,35 @@ def test_original_large_scaled_execution(
         tuple(range(logical, size)),
         tuple(range(size - logical)),
         child_scratch=child_scratch,
+        adjoint=adjoint,
     )
+    return scaled, operation
+
+
+@pytest.mark.parametrize("order", [4, 5])
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_original_large_scaled_execution(
+    order: int, request: pytest.FixtureRequest, adjoint: bool
+) -> None:
+    from qualtran import BloqBuilder
+    from qualtran.bloqs.basic_gates import IntState
+    from qualtran.bloqs.block_encoding.chebyshev_polynomial import (
+        _scaled_chebyshev_poly_even,
+        _scaled_chebyshev_poly_odd,
+    )
+
+    from tests.unit.test_sparse_chemistry_prepare import _branch
+
+    request.config.addinivalue_line("markers", "notebook: upstream notebook execution")
+    from qualtran.bloqs.block_encoding.chebyshev_polynomial_test import gate_test
+
+    base_source = (
+        _scaled_chebyshev_poly_even() if order == 4 else _scaled_chebyshev_poly_odd()
+    )
+    source = base_source.adjoint() if adjoint else base_source
+    scaled, operation = original_scaled_operation(order, adjoint=adjoint)
+    size = operation.required_qubits
+    logical = scaled.system_bitsize + scaled.ancilla_bitsize + scaled.resource_bitsize
     gates = DynamicCircuit(size).append(operation).to_ir().instructions
     count = Counter(gate.name for gate in gates)
     from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
@@ -447,7 +460,9 @@ def test_original_large_scaled_execution(
     assert count["t"] + count["tdg"] == 4 * source_cost.and_bloq + 7 * source_cost.cswap
     assert size == (39 if order == 4 else 32)
     history = tuple(i % 2 for i in range(count["measure"]))
-    source_matrix = gate_test(source)
+    source_matrix = gate_test(base_source)
+    if adjoint:
+        source_matrix = source_matrix.conj().T
     observed = torch.zeros((2, 2), dtype=torch.complex128)
     target_mask = 1 << (size - 1)
     scratch_mask = (1 << (size - logical)) - 1
@@ -559,3 +574,25 @@ def test_original_unscaled_child_layout_and_full_outputs(order: int) -> None:
                 normalize_measurements=True,
             )
             assert actual == pytest.approx(expected_sparse, abs=3e-12)
+
+
+@pytest.mark.parametrize("order", (4, 5))
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_original_scaled_every_measurement_history_and_private_work(
+    order: int, adjoint: bool
+) -> None:
+    from flagquantum import Circuit
+    from flagquantum.core.ir import CircuitIR
+    from tests.unit.measurement_certificate import certify_erasure_histories
+
+    scaled, operation = original_scaled_operation(order, adjoint=adjoint)
+    logical = scaled.system_bitsize + scaled.ancilla_bitsize + scaled.resource_bitsize
+    ir = Circuit(operation.required_qubits).append(operation).to_ir()
+    work = tuple(range(logical, ir.n_wires))
+    assert len(work) == (16 if order == 4 else 14)
+    for owned in (ir, CircuitIR.from_json(ir.to_json())):
+        count = certify_erasure_histories(
+            owned.instructions, n_wires=owned.n_wires, zero_wires=work
+        )
+        assert count == (61 if order == 4 else 34)
+        assert count == sum(g.name == "measure" for g in owned.instructions)
