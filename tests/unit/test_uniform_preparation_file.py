@@ -1,5 +1,6 @@
 """Frozen uniform preparation factories, source grid and append behavior."""
 
+import json
 from collections import Counter
 from dataclasses import fields
 from hashlib import sha1
@@ -118,6 +119,7 @@ def test_original_wire_labels_and_control_identity(source_module: Any) -> None:
     op = UniformPreparationExample(5, (1, 0))
     source = source_module.PrepareUniformSuperposition(5, cvs=[1, 0])
     assert op.diagram_symbols() == cirq.circuit_diagram_info(source).wire_symbols
+    assert op.diagram_label == source.wire_symbol(None).text == "Σ |l>"
     assert source == source_module.PrepareUniformSuperposition(5, cvs=(1, 0))
     assert op != UniformPreparationExample(5, (0, 1))
     assert UniformPreparationExample() == UniformPreparationExample(5, ())
@@ -252,3 +254,91 @@ def test_literal_control_length_resolves_before_append(source_module: Any) -> No
     expected = DynamicCircuit(native.qubit_count)
     expected.append(UniformPreparationExample(5, controls=(1,)))
     assert circuit.to_ir().instructions == expected.to_ir().instructions
+
+
+@pytest.mark.parametrize("count,values", [(3, (1,)), (5, (1,)), (5, (0, 1))])
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_resolved_symbolic_source_replaces_uniform_execution(
+    source_module: Any, count: int, values: tuple[int, ...], adjoint: bool
+) -> None:
+    from dataclasses import replace
+
+    import torch
+    from attrs import evolve
+    from qualtran.symbolics import HasLength
+
+    from flagquantum.algorithms.primitives.black_box_prepare import BlackBoxPrepare
+    from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+    from tests.unit.measurement_certificate import certify_erasure_histories
+    from tests.unit.measurement_checks import forced_branch
+
+    n, c = Symbol("n", integer=True, positive=True), Symbol(
+        "c", integer=True, positive=True
+    )
+    source_declaration = source_module.PrepareUniformSuperposition(n, HasLength(c))
+    declaration = UniformPreparationExample(n, abstract_control_width=c)
+    with pytest.raises(ValueError, match="concrete positive shapes"):
+        import_register_emitter(source_declaration)
+    with pytest.raises(ValueError, match="Bind a concrete"):
+        DynamicCircuit(8).append(declaration)
+
+    # Resolve the immutable source declaration; no reference body is rewritten.
+    source = evolve(source_declaration, n=count, cvs=values)
+    native = replace(
+        declaration,
+        count=count,
+        controls=values,
+        abstract_control_width=None,
+        adjoint=adjoint,
+    )
+    assert_resource_model(native, source)
+    emitter = import_register_emitter(source)
+    restored = replace(
+        emitter,
+        snapshots=tuple(CircuitIR.from_json(ir.to_json()) for ir in emitter.snapshots),
+    )
+    logical = len(values) + (count - 1).bit_length()
+    work, slots = restored.requirements()
+    packed = BlackBoxPrepare(restored.layout, (), restored)
+    imported = (
+        DynamicCircuit(logical + work)
+        .append(
+            packed.make_on(
+                selection=tuple(range(logical)),
+                junk=(),
+                workspace=tuple(range(logical, logical + work)),
+                classical_bits=tuple(range(slots)),
+                adjoint=adjoint,
+            )
+        )
+        .to_ir()
+    )
+    assert (
+        json.loads(imported.to_json())["instructions"]
+        == json.loads(emitter.snapshots[int(adjoint)].to_json())["instructions"]
+    )
+    expected = DynamicCircuit(native.qubit_count).append(native).to_ir()
+    branches = []
+    for ir in (imported, expected):
+        branches.append(
+            certify_erasure_histories(
+                ir.instructions,
+                n_wires=ir.n_wires,
+                zero_wires=tuple(range(logical, ir.n_wires)),
+            )
+        )
+    # The certificate proves branch-independent erased channels. Check every
+    # logical basis column of one history, including its absolute complex phase.
+    for column in range(1 << logical):
+        outputs = []
+        for ir, events in zip((imported, expected), branches, strict=True):
+            stride = 1 << (ir.n_wires - logical)
+            initial = torch.zeros(1 << ir.n_wires, dtype=torch.complex128)
+            initial[column * stride] = 1
+            result = forced_branch(initial, ir.instructions, (0,) * events)
+            logical_result = result[::stride] * sqrt(2**events)
+            clean = torch.zeros_like(result)
+            clean[::stride] = result[::stride]
+            torch.testing.assert_close(result, clean, atol=4e-12, rtol=0)
+            outputs.append(logical_result)
+        torch.testing.assert_close(outputs[0], outputs[1], atol=4e-12, rtol=0)

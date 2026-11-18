@@ -81,6 +81,11 @@ class UniformPreparationExample:
         symbols = tuple("@" if ctrl else "@(0)" for ctrl in self.controls)
         return (*symbols, f"UNIFORM({self.count})", *("target",) * (width - 1))
 
+    @property
+    def diagram_label(self) -> str:
+        """Return the source's state-sum caption without an SDK drawing object."""
+        return "Σ |l>"
+
     def call_graph(self) -> SymbolicCallGraph[str]:
         root = "PrepareUniformSuperposition"
         count = self.count

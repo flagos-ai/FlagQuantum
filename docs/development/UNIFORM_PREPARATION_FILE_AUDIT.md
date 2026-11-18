@@ -68,10 +68,72 @@ existing primitive counts above describe concrete execution.
 
 ## Remaining boundaries
 
-Q-0694 and Q-0696 are covered. Q-0695 remains open for executable
-symbolic controls and unresolved source dispatch boundaries. The
+Q-0694 and Q-0696 are covered. Q-0695 remains open for the original
+symbolic dispatch boundaries and distinct physical control lowerings. The
 source symbolic graph omits control predicates. Its singleton and
 one-bit symbolic peak queries exhibit the failures retained by
 the existing resource tests. A concrete count with a tuple of symbolic
 control values also fails in the locked source. Q-0690 is covered by
 the state-preparation package audit.
+
+## Complete source member map
+
+| Source definition | Native owner and evidence |
+| --- | --- |
+| `signature`, `concrete_cvs` | `source_uniform_preparation_signature` and `normalize_uniform_controls` preserve target width and concrete/abstract control dispatch. Unresolved widths cannot append. |
+| `wire_symbol`, `_circuit_diagram_info_` | The tutorial's native diagram and `diagram_symbols` retain the sum caption, control polarity and target labels. Existing tests compare the actual original Cirq caption. |
+| `k_l_logL` | `_odd_factor` and uniform preparation retain the power-of-two factor, odd factor and high-word width; abstract declarations retain the source symbolic path. |
+| `decompose_from_registers` | `uniform_preparation_ir` uses the existing comparison, threshold rotation, Hadamard and zero-predicate phase owners. The original outer generator and inner lowering recipes have existing exact-stream tests. Actual whole-source import is separately bound through the owned register emitter. |
+| `build_call_graph` | Concrete and abstract resource owners preserve original direct calls and both source cost profiles. Symbolic source graphs omit controls; that defect is retained. |
+| `_prep_uniform`, `_prep_uniform_symb`, `_c_prep_uniform`, `_PREP_UNIFORM_DOC` | All three factories are mapped in the native catalogue; the two concrete documented examples and the extra symbolic example remain in the tutorial. |
+
+## Explicit symbolic resolution and actual source execution
+
+`test_resolved_symbolic_source_replaces_uniform_execution` begins with the
+actual `n`/`HasLength(c)` source declaration and the matching native declaration.
+Both reject unresolved execution. Immutable constructor binding resolves the
+state count and complete control polarity tuple; no reference implementation is
+rewritten. The resolved source is converted to owned directional snapshots,
+round-tripped through CircuitIR JSON, and rebound through the existing packed
+callback. The user still calls `circuit.append(op)`.
+
+The three configurations are n=3/control(1), n=5/control(1), and
+n=5/controls(0,1), each in both directions. Every logical basis column is
+compared with the existing native implementation, preserving its complete
+complex output and absolute phase. All work amplitudes outside zero are checked.
+The shared exact-erasure certificate proves every history has the same channel
+with its explicit `2**(-events/2)` scalar, including arbitrary coherent logical
+inputs and spectators. The comparison normalizes each route by its own event
+count; it does not silently equate different physical lowerings.
+
+| n=5 route | Wires / private work | Instructions | T/T-dagger | CX | Measurements |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Source capture, control(1) | 10 / 6 | 204 | 36 | 70 | 9 |
+| Native recipe, control(1) | 9 / 5 | 204 | 36 | 70 | 9 |
+| Source capture, controls(0,1) | 13 / 8 | 375 | 49 | 130 | 10 |
+| Native recipe, controls(0,1) | 10 / 5 | 288 | 52 | 94 | 13 |
+
+The source two-control capture includes 60 local `any` instructions and 12
+scalar phase instructions from Cirq control lowering. These are not expanded
+Clifford+T primitive counts. Native initial controlled Hadamards instead use
+measured conjunctions and named CH instructions. Thus their full operators agree,
+but primitive parity is not claimed for that different lowering route. Binding
+the owned source snapshots preserves their original serialized instruction
+stream exactly, including local matrices, operands and measurement feedback.
+
+Independent source declarations for control(1) are 9 And, 67 Clifford,
+8 rotations, 9 measurements and peak 9; for controls(0,1) they are 13 And,
+75 Clifford, 8 rotations, 13 measurements and peak 10. The native model agrees
+with those declarations. The actual source capture's ten measurements differ
+from its model's thirteen; those numbers are not combined into one estimate.
+Aligning the multi-control H physical lowering and resolving the documented
+source symbolic model failures remain concrete Q-0695 gaps.
+
+The complete source-file suite passes 69 cases (3.25 s), including the root
+state-sum caption and the six resolved full-operator cases. The concentrated
+dependency regression passes 418 cases (9.54 s), without skips. The catalogue
+passes strict typing; both Python files pass Black/Ruff and Algorithms scope.
+The modified tutorial passes its independent SDK-free kernel (2.45 s), and its
+signature SVG was rendered and visually checked for the original sum caption.
+Prior architecture/IR/API acceptance is reused because no boundary, Core schema
+or production transformation changed in this batch.
