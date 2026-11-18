@@ -8,7 +8,7 @@ Apache-2.0 attribution is retained in the native implementation.
 |---|---|---|
 | Q-0663 `reflection_using_prepare.py` | `4a8467fde126bd596be69286d88c198726a4557a` | Complete declaration, binding, controls, factory metadata, phase and declared resources. |
 | Q-0664 `reflection_using_prepare_test.py` | `df403c18060daf172e68c4a80099c306743a7a3a` | All original tests, including the restored notebook dependency, run unchanged. Original xfails are tracked below. |
-| Q-0665 `reflections.ipynb` | `e4d3316f906b697634149f4e61903333d947e7af` | Frozen notebook restored. Native tutorial migration is the next independent module. |
+| Q-0665 `reflections.ipynb` | `e4d3316f906b697634149f4e61903333d947e7af` | Complete native tutorial migrated independently; see REFLECTIONS_NOTEBOOK_AUDIT.md. |
 
 ## Ownership and complete member mapping
 
@@ -93,7 +93,7 @@ xfails, including two alias-reflection simulations marked "Broken Cirq
 simulation" and one factory counts mode. The unreachable Dirac-notation helper
 belongs to those original xfailed simulations. No successful execution is claimed
 for those cases. The restored original notebook test passes in an isolated reference kernel.
-Its native tutorial migration remains Q-0665, independently open.
+Its complete native tutorial migration is independently covered by Q-0665.
 
 The native batch uses complete frozen source hash assertions, focused regression,
 strict typing, Black/Ruff, owning-team scope, architecture, multilevel IR and
