@@ -59,10 +59,10 @@ def _snapshot(
     scalar_carrier: bool = False,
     allow_empty_ports: bool = False,
 ) -> tuple[CircuitIR, int]:
-    from qualtran import Bloq
+    from qualtran import Bloq, Controlled, CtrlSpec
     from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.arithmetic.multiplication import Square
-    from qualtran.bloqs.basic_gates import TwoBitCSwap
+    from qualtran.bloqs.basic_gates import TGate, TwoBitCSwap
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
     from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
@@ -209,6 +209,16 @@ def _snapshot(
                 f"mod_add_{modular_calls}",
                 modular_tag,
             )
+        if (
+            type(arithmetic) is Controlled
+            and type(arithmetic.subbloq) is TGate
+            and arithmetic.ctrl_spec == CtrlSpec()
+        ):
+            # The source declares this controlled phase as an atomic leaf.
+            phase, _ = arithmetic.subbloq.as_cirq_op(
+                qubit_manager=decomposition_manager, q=op.qubits[1:]
+            )
+            return phase.controlled_by(op.qubits[0])
         leaf = getattr(op.gate, "bloq", None)
         if leaf is None:
             return NotImplemented
