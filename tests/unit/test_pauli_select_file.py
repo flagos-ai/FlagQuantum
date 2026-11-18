@@ -23,6 +23,7 @@ from flagquantum.compiler.registers.lookup.unary_iteration import (
 )
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
+from flagquantum.ecosystem.cirq._select_pauli_lcu import select_pauli_lcu_from_cirq
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_first_quantization_resource_model import assert_source_model
 from tests.unit.test_register_constant_addition import reference_arithmetic_gates
@@ -67,7 +68,9 @@ def _compile(original: Any, words: tuple[str, ...]) -> tuple[CircuitIR, int]:
         ports["control"] = controls
     scratch = tuple(range(stop, stop + work))
     slots = tuple(range(work))
-    op = SelectPauliLCU(width, target, words, polarity).make_bounded_on(
+    native_select = select_pauli_lcu_from_cirq(original)
+    assert native_select.select_unitaries == words
+    op = native_select.make_bounded_on(
         selection=ports["selection"],
         target=ports["target"],
         control=controls,
@@ -233,6 +236,8 @@ def test_source_coefficient_sign_and_nonunitary_boundary(source: Any) -> None:
         cirq.DensePauliString("X", coefficient=1 + 2j),
     )
     original = source.SelectPauliLCU(1, 1, rows, 0)
+    native = select_pauli_lcu_from_cirq(original)
+    assert native.select_unitaries == ("-Y", "X")
     _compile(original, ("-Y", "X"))
     control, target = cirq.LineQubit.range(2)
     for coefficient in (0, 1j, -1j):
@@ -241,6 +246,39 @@ def test_source_coefficient_sign_and_nonunitary_boundary(source: Any) -> None:
         )
         leaf = nonunitary.nth_operation(None, 0, control, (target,))
         assert leaf.sub_operation.coefficient == 0 and not cirq.has_unitary(leaf)
+        with pytest.raises(ValueError, match="zero real coefficient"):
+            select_pauli_lcu_from_cirq(nonunitary)
+
+
+def test_cirq_select_adapter_rejects_unrepresentable_rows() -> None:
+    from types import SimpleNamespace
+
+    import cirq
+
+    valid = SimpleNamespace(
+        selection_bitsize=1,
+        target_bitsize=1,
+        select_unitaries=(cirq.DensePauliString("X"), cirq.DensePauliString("Y")),
+        control_val=None,
+    )
+    with pytest.raises(ValueError, match="cannot address every row"):
+        select_pauli_lcu_from_cirq(
+            SimpleNamespace(
+                selection_bitsize=0,
+                target_bitsize=1,
+                select_unitaries=valid.select_unitaries,
+                control_val=None,
+            )
+        )
+    with pytest.raises(TypeError, match="DensePauliString"):
+        select_pauli_lcu_from_cirq(
+            SimpleNamespace(
+                selection_bitsize=1,
+                target_bitsize=1,
+                select_unitaries=("X",),
+                control_val=None,
+            )
+        )
 
 
 def test_original_validation_and_control_metadata(source: Any) -> None:
@@ -266,3 +304,114 @@ def test_original_validation_and_control_metadata(source: Any) -> None:
         assert controlled.control_val == value
         assert controlled.adjoint() is controlled
         assert controlled.signature[0].name == "control"
+
+
+@pytest.mark.parametrize("control", (None, 0, 1))
+def test_imported_signed_rows_all_operator_columns_and_measurement_branches(
+    source: Any, control: int | None
+) -> None:
+    import cirq
+
+    from flagquantum import Circuit
+    from flagquantum.simulation.unitary import get_unitary
+
+    rows = tuple(
+        cirq.DensePauliString(word, coefficient=coefficient)
+        for word, coefficient in zip(
+            ("I", "X", "Y", "Z"), (2 + 3j, -4 + 1j, -0.5 - 3j, 0.75), strict=True
+        )
+    )
+    original = source.SelectPauliLCU(2, 1, rows, control)
+    native = select_pauli_lcu_from_cirq(original)
+    ir, work = _compile(original, ("I", "-X", "-Y", "Z"))
+    assert CircuitIR.from_json(ir.to_json()).instructions == ir.instructions
+    logical_width = ir.n_wires - work
+    logical_ir = (
+        Circuit(logical_width)
+        .append(
+            native.make_on(
+                control=() if control is None else (0,),
+                selection=tuple(range(int(control is not None), logical_width - 1)),
+                target=(logical_width - 1,),
+            )
+        )
+        .to_ir()
+    )
+    restored = CircuitIR.from_json(logical_ir.to_json())
+    assert restored.instructions == logical_ir.instructions
+    logical_matrix = get_unitary(restored, dtype=torch.complex128)
+    events = sum(g.name == "measure" for g in ir.instructions)
+    for column in range(1 << logical_width):
+        state = torch.zeros(1 << ir.n_wires, dtype=torch.complex128)
+        state[column << work] = 1
+        address = (column >> 1) & 3
+        bit = column >> 3 if control is not None else 0
+        leaf = cirq.DensePauliString(
+            rows[address].pauli_mask,
+            coefficient=1 if complex(rows[address].coefficient).real > 0 else -1,
+        )
+        output = torch.zeros_like(state)
+        start = (column >> 1) << (work + 1)
+        values = torch.zeros(2, dtype=torch.complex128)
+        values[column & 1] = 1
+        if control is None or bit == control:
+            values = (
+                torch.as_tensor(cirq.unitary(leaf), dtype=torch.complex128) @ values
+            )
+        output[start : start + (2 << work) : 1 << work] = values
+        torch.testing.assert_close(
+            logical_matrix[:, column], output[:: 1 << work], atol=2e-13, rtol=0
+        )
+        for history in product((0, 1), repeat=events):
+            torch.testing.assert_close(
+                forced_branch(state, ir.instructions, history),
+                output / 2 ** (events / 2),
+                atol=2e-13,
+                rtol=0,
+            )
+
+
+@pytest.mark.parametrize(
+    "changes,error,message",
+    [
+        ({"selection_bitsize": True}, ValueError, "selection width"),
+        ({"target_bitsize": -1}, ValueError, "target width"),
+        ({"control_val": 2}, ValueError, "control value"),
+        ({"select_unitaries": ()}, ValueError, "at least one"),
+        ({"target_bitsize": 2}, ValueError, "expected 2"),
+        ({"select_unitaries": ("X",)}, TypeError, "DensePauliString"),
+    ],
+)
+def test_cirq_select_adapter_validates_original_fields(
+    changes: dict[str, Any], error: type[Exception], message: str
+) -> None:
+    from types import SimpleNamespace
+
+    import cirq
+
+    fields = dict(
+        selection_bitsize=1,
+        target_bitsize=1,
+        select_unitaries=(cirq.DensePauliString("X"),),
+        control_val=None,
+    )
+    with pytest.raises(error, match=message):
+        select_pauli_lcu_from_cirq(SimpleNamespace(**(fields | changes)))
+    with pytest.raises(TypeError, match="missing required fields"):
+        select_pauli_lcu_from_cirq(object())
+
+
+@pytest.mark.parametrize("coefficient", (float("nan"), float("inf"), -float("inf")))
+def test_cirq_select_adapter_rejects_nonfinite_coefficients(coefficient: float) -> None:
+    from types import SimpleNamespace
+
+    import cirq
+
+    source = SimpleNamespace(
+        selection_bitsize=1,
+        target_bitsize=1,
+        select_unitaries=(cirq.DensePauliString("X", coefficient=coefficient),),
+        control_val=None,
+    )
+    with pytest.raises(ValueError, match="non-finite coefficient"):
+        select_pauli_lcu_from_cirq(source)

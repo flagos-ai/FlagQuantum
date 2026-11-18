@@ -44,8 +44,10 @@ emitted CX and other physical instructions.
 
 ## Remaining source-file boundaries
 
-Q-0591 and Q-0593 are accepted. Q-0592 retains the arbitrary foreign
-dense-Pauli object and serialization boundaries. The locked source applies
+Q-0591 and Q-0593 are accepted. Q-0592 now binds concrete foreign
+dense-Pauli rows and serializes the resulting native logical and primitive IR.
+Its source nonunitary coefficient domain and unsupported symbolic declarations
+remain explicitly outside the admitted unitary execution path. The locked source applies
 the sign of each coefficient's real part. Nonzero real parts of either
 sign map to signed unitary rows, regardless of coefficient magnitude
 or imaginary part. Zero and pure-imaginary coefficients produce a
@@ -56,3 +58,35 @@ The bounded path preserves the source's padded-address folding. The
 ordinary native logical SELECT continues to apply identity on unused
 addresses. Existing differential tests preserve the padded address
 `11` with a three-row table and its exact complex phase.
+
+## Complete external row binding
+
+The complete locked implementation, original tests, example factory and direct
+unary traversal were read. The Ecosystem-owned `select_pauli_lcu_from_cirq`
+adapter consumes the external fields and converts every `DensePauliString`
+immediately to a native signed Pauli word. Algorithms retains its existing
+`SelectPauliLCU`; Compiler retains bounded traversal and resource ownership.
+Cirq is imported lazily in the adapter and no external row is stored in native
+IR. The adapter preserves the source real-part sign rule, with finite nonzero
+real parts of either sign, arbitrary finite magnitude and imaginary part.
+Zero-real-part rows are refused as nonunitary. Invalid widths, target lengths,
+control values, insufficient address bits, empty tables, foreign row types and
+nonfinite coefficients are refused before construction.
+
+The existing four-row factory, Ising grids, source dependency comparisons,
+operand and feedback checks, resource comparisons and all small tutorial
+measurement histories now consume the actual adapter. Additional signed
+I/X/Y/Z rows with complex coefficients test every operator column and every
+measurement branch for no control and both control polarities. Full complex
+amplitudes include the raw branch normalization and work bits must return to
+zero. Logical IR and primitive IR each survive JSON serialization. These cases
+reuse the existing append entry and the original self-adjoint source semantics.
+The ordinary logical unused-address identity and source bounded padded-address
+folding remain separate, already verified behaviors.
+
+The resource table above is unchanged because the adapter changes input
+representation, leaving the traversal and emitter intact. Its emitted primitive
+inventory and independent locked And/Clifford model remain separate evidence.
+Symbolic widths require explicit concrete binding. The original nonunitary
+zero/pure-imaginary coefficient leaves remain a recorded source boundary, not
+an accepted native unitary operation.
