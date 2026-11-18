@@ -1,0 +1,121 @@
+{
+  "upstream_path": "community/basic_examples/hw_aware_synthesis/hw_aware_synthesis.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "53e41cca60b9d59268b2bb0a5c110ca55939a706709618d841b88b5398cc27c8",
+  "git_blob_sha1": "aa7cedbb53a1237fe640ca662205ecc61c59c42a",
+  "scope": "All 18 source stages, the original 10- and 12-control circuits, both 18-qubit device graphs and the CX/U basis.",
+  "native_semantic_adaptations": "Use bounded native qfunc synthesis and an explicit comparison of six native placements and routes per topology. Count the emitted CX/U3 instructions after lowering swaps. Read the two actual selected circuits separately and check complete complex states in a local ideal simulator.",
+  "native_entrypoint": "examples.synthesis.community.basic_examples.hw_aware_synthesis.hw_aware_synthesis.overview.main",
+  "native_notebook": "examples/synthesis/community/basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_hw_aware_mcx_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Use FlagQuantum synthesis and the local target compiler.",
+      "sha256": "84b9ecb6e25ddfb24d71bcfad3a1004547924e6bded823fb85801e8b5f17faac"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "stage": "Inspect the native multi-control operation.",
+      "sha256": "11dfb48288b815cce087dbe12dc35d67fa8ee766aa1386172ca0b0d9fbb6c7db"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "stage": "Bind the original ten-control instance.",
+      "sha256": "73157092599dbc77df34d236373403acdf0ca813039fae911cb9e0b5464269ad"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Synthesize the original depth-constrained MCX.",
+      "sha256": "0b798e325d7462e72c9afe1d76bff1ffd439661a4eec84ab9970b07accda0768"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "stage": "Read actual depth and verify the full native result.",
+      "sha256": "54a923cda581a7f6267057a67e4f5ccc06f15f9b40d5be50095190ebfe092719"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Reuse the same native MCX for both target topologies.",
+      "sha256": "11dfb48288b815cce087dbe12dc35d67fa8ee766aa1386172ca0b0d9fbb6c7db"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 7,
+      "stage": "Bind the original twelve-control hardware case.",
+      "sha256": "ca2a15d8bdd87dce50dd5d70ce56459522c381c966922824b374dd5083f607bc"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 8,
+      "stage": "Build both exact 18-qubit coupling maps.",
+      "sha256": "adefbda7916de10b2f276805f0a7190f695822b7be502cd9f1b4ec3c33d4bd55"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 9,
+      "stage": "Draw the original 3 \u00d7 6 grid edges.",
+      "sha256": "d2c0ef6e979f09b9ca42fa99a62cd0d1221fbdd0f5c98bbc6e698568e1d795c6"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 10,
+      "stage": "Draw the original center-to-leaf star links.",
+      "sha256": "ee1334c0d379126051a7a4f9e9ab91e3149205fbf55ed271d29033efc6b54977"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 11,
+      "stage": "Use the CX and U basis for both devices.",
+      "sha256": "41d6bdffd4852509ccf16a7da6407d2c0990622cbbbabd1df2d346f141fccfb0"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 12,
+      "stage": "Apply the original 18-qubit ceiling and select on emitted CX.",
+      "sha256": "808717f65c76c276b89a9191e4ed64f09961f02125bbe9ef0eb4b84d73996deb"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 13,
+      "stage": "Compile the native program for the grid.",
+      "sha256": "234e72d82a5dc4ded07dc2a37931c6ce2491f0a110b0404ac23b2842b8070b19"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 14,
+      "stage": "Print every grid route and verify the chosen result.",
+      "sha256": "d61a21e2b0408b122bcb9e08e7ac8538578cad15b16ccf1f693363fc179f46d1"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 15,
+      "stage": "Compile the same native program for the star.",
+      "sha256": "713b016f1e609ab5fd376463ae9b1856689e53622f3bf2e2a0626fccf098ce82"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 16,
+      "stage": "Print every star route and verify the chosen result.",
+      "sha256": "38ac5ce0f6599ef138e234ad081a7c02e20795c8c1ff90f833046239c7d8dfe2"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 17,
+      "stage": "Read the selected grid circuit depth.",
+      "sha256": "147674010b283028be19941966a04e85dae4e4de7656af89612952f266db3ca3"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 18,
+      "stage": "Read the selected star circuit depth.",
+      "sha256": "4d0f3ee52b7acf176cd6ca1967653be6ae99b00f0010a25f5a4686e6f1925cb7"
+    }
+  ]
+}
