@@ -64,8 +64,9 @@ error before sparse conversion in the reference and native factory.
 
 ## Remaining boundaries
 
-- Q-0697 retains SciPy sparse containers, executable symbolic binding and
-  the original decomposition failure cases. Independent symbolic cost
+- Q-0697 retains the original container-admission and decomposition failure
+  cases. Explicit symbolic resolution and actual external execution are now
+  covered in [phase arithmetic and sparse binding](PHASE_ADDITION_INTEROP.md). Independent symbolic cost
   declarations already have native owners.
 - The original partial map loses an indexed transition for `(3, 0)`, and
   the original singleton decomposition cannot bind its target. The native
@@ -76,3 +77,29 @@ error before sparse conversion in the reference and native factory.
   serialization cases were expected failures. The native port binds the
   concrete through wires and leaves external source-object serialization
   outside this test migration.
+
+## Actual external object and symbolic execution closure
+
+The complete constructor/default/signature, `dense_bitsize`, `is_symbolic`,
+three coefficient factories, partition, normalized dense child, permutation,
+composite body, direct calls and both original factories have native owners
+in this audit and its linked binding evidence. `from_n_coeffs` is a symbolic
+shape declaration; it must receive concrete coefficient/index data and resolved
+widths before execution. The two resolved external fixtures now bind through
+owned IR, compare every logical column with the native algorithm and restore
+the original input with the actual source adjoint. Source and native resource
+models, literal matrix leaves and measured arithmetic are listed separately.
+No claim is made that unbound symbolic dimensions can be physically executed.
+
+The source CSR factory fails at `len(coeffs)` before its advertised sparse
+conversion; native code preserves that error. This is a verified source
+admission boundary, not an unimplemented executable sparse-array algorithm.
+The unsupported source singleton and partial permutation witnesses remain
+unmodified. Q-0697 remains open for those frozen source defects and the
+recorded native boundary differences; no sub-checkbox is added.
+
+The new binding closure passes 551 concentrated dependency cases, 60 CPU/
+representation integration cases, strict typing of both touched production
+adapters and the shared branch proof, and an independent LCU notebook kernel.
+The detailed counts, differences between local-matrix and measured permutation
+lowerings, and the source-frame lifetime fix are recorded in the linked audit.

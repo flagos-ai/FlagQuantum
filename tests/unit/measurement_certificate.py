@@ -100,20 +100,30 @@ def _matrix_changed_wires(gate: Instruction) -> tuple[int, ...]:
 
 
 def certify_erasure_histories(
-    gates: tuple[Instruction, ...], *, n_wires: int, zero_wires: tuple[int, ...]
+    gates: tuple[Instruction, ...],
+    *,
+    n_wires: int,
+    zero_wires: tuple[int, ...],
+    check_clean_output: bool = True,
 ) -> int:
     """Prove every branch is the same operator times 2**(-events/2).
 
-    Initial zero_wires must be clean, and are proved clean at return. All other
+    Initial zero_wires must be clean, and by default are proved clean at return. All other
     input wires are arbitrary, including entanglement with external spectators.
     Exact four-T compute requires a zero target. Its measured inverse requires
     target == control AND control immediately before erasure. The accepted local
     primitive has positive scalar 1/sqrt(2) in either outcome. Other gates are
     unconditional unitaries. This identity extends by linearity to all complex
     amplitudes in the admitted input subspace; no measurement history is sampled.
+    With check_clean_output=False only the branch identity is certified. The
+    caller must separately prove final work cleanup, for example by checking
+    every logical basis column of one full branch. All local erasure, unitary
+    and feedback obligations remain enforced in either mode.
     """
     if type(n_wires) is not int or n_wires < 1:
         raise ValueError("Certificate width must be a positive integer")
+    if type(check_clean_output) is not bool:
+        raise ValueError("Certificate output-cleanliness mode must be Boolean")
     if any(gate.matrix is not None and gate.name != "any" for gate in gates):
         raise AssertionError("A matrix cannot override the certificate's named gates")
     if len(set(zero_wires)) != len(zero_wires) or any(
@@ -245,6 +255,6 @@ def certify_erasure_histories(
                 f"Unsupported unitary in certificate at {i}: {gate.name}"
             )
         i += 1
-    if any(values[w] != ZERO for w in zero_wires):
+    if check_clean_output and any(values[w] != ZERO for w in zero_wires):
         raise AssertionError("Certificate did not restore every declared clean wire")
     return events

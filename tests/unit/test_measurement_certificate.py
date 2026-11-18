@@ -17,6 +17,39 @@ from tests.unit.measurement_checks import forced_branch
 pytestmark = pytest.mark.unit
 
 
+def test_branch_identity_does_not_imply_clean_output() -> None:
+    gates = (
+        *and_compute_ir(0, 1, 2),
+        *and_uncompute_ir(0, 1, 2, 0),
+        Instruction("x", (2,)),
+    )
+    with pytest.raises(AssertionError, match="restore every declared clean wire"):
+        certify_erasure_histories(gates, n_wires=3, zero_wires=(2,))
+    assert (
+        certify_erasure_histories(
+            gates, n_wires=3, zero_wires=(2,), check_clean_output=False
+        )
+        == 1
+    )
+    state = torch.zeros(8, dtype=torch.complex128)
+    state[0] = 1
+    expected = torch.zeros_like(state)
+    expected[1] = 2**-0.5
+    for outcome in (0, 1):
+        torch.testing.assert_close(
+            forced_branch(state, gates, (outcome,)), expected, atol=1e-14, rtol=0
+        )
+    broken = (
+        *and_compute_ir(0, 1, 2),
+        Instruction("x", (0,)),
+        *and_uncompute_ir(0, 1, 2, 0),
+    )
+    with pytest.raises(AssertionError, match="predicate"):
+        certify_erasure_histories(
+            broken, n_wires=3, zero_wires=(2,), check_clean_output=False
+        )
+
+
 def test_compute_isometry_and_both_erasure_scalars_on_complete_input_basis() -> None:
     compute, erase = and_compute_ir(0, 1, 2), and_uncompute_ir(0, 1, 2, 0)
     for a, b in product((0, 1), repeat=2):
