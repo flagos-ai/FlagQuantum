@@ -26,9 +26,32 @@ from ...compiler.registers.preparation.prepare_reflection import (
     source_prepare_reflection_cost,
 )
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import opaque_register_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
 from ...core.value_math import SymbolicReal
+from .black_box_prepare import BlackBoxPrepare
 from .lcu_block_encoding import LCUBlockEncoding
+from .prepared_state_reflection import PreparedStateReflection
 from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
+
+
+def source_walk_signature(
+    block_selection: tuple[Register, ...],
+    reflection_selection: tuple[Register, ...],
+    targets: tuple[Register, ...],
+    junk: tuple[Register, ...],
+) -> Signature:
+    """Union complete selection descriptors, preserving deterministic port order.
+
+    The source uses a set, whose iteration order varies between processes.
+    Equal descriptors merge while same-name unequal descriptors are refused.
+    Targets and logical block junk follow the selection union.
+    """
+    selection = tuple(dict.fromkeys((*block_selection, *reflection_selection)))
+    if len({reg.name for reg in selection}) != len(selection):
+        raise ValueError("Walk selection union contains unequal same-name registers")
+    return Signature((*selection, *targets, *junk))
 
 
 @dataclass(frozen=True)
@@ -63,6 +86,51 @@ class QubitizationWalk:
         if (select.keys() | signal.keys()) & {name for name, _ in block.target_layout}:
             raise ValueError("Walk selection and target port names must be distinct")
         return tuple((select | signal).items())
+
+    @property
+    def reflection(self) -> PreparedStateReflection:
+        """Return the shared packed reflection declaration over the block signal."""
+        return PreparedStateReflection(
+            self.block_encoding.signal_state, global_phase=-1
+        )
+
+    @property
+    def prepare(self) -> BlackBoxPrepare:
+        """Return the original preparation, including for a zero-signal block."""
+        block = self.block_encoding
+        return (
+            block.select_block.signal_state
+            if isinstance(block, LCUBlockEncoding)
+            else block.signal_state
+        )
+
+    @property
+    def signature(self) -> Signature:
+        """Describe concrete scalar binding ports in their native layout order.
+
+        Complete typed declarations use source_walk_signature independently.
+        Concrete layouts retain opaque words without inventing integer semantics.
+        """
+        block = self.block_encoding
+        return source_walk_signature(
+            tuple(
+                Register(name, opaque_register_type(width))
+                for name, width in self.selection_layout
+            ),
+            (),
+            tuple(
+                Register(name, opaque_register_type(width))
+                for name, width in block.target_layout
+            ),
+            tuple(
+                Register(name, opaque_register_type(width))
+                for name, width in self.junk_layout
+            ),
+        )
+
+    def wire_symbols(self) -> tuple[str, ...]:
+        """Return one source walk label per concrete logical wire."""
+        return ("W",) * int(self.signature.n_qubits())
 
     @property
     def alpha(self) -> SymbolicReal:
