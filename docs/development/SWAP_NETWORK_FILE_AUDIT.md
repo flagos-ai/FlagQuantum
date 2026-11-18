@@ -114,9 +114,10 @@ instructions.
   aggregate cost query for generic controls remains open.
 - Q-0709 retains source singleton and zero-width selection failures and the
   generic control cases requiring unresolved controlled And leaves.
-- Q-0712 retains executable symbolic binding and the earlier zero-bit
-  axis failure. The compiler owns the stage permutation and the quantum
-  emitter. Simulation owns the in-place data callback.
+- Q-0712 now has executable symbolic-field resolution and complete external
+  binding. The earlier leading zero-bit axis failure remains. The compiler
+  owns the stage permutation and quantum emitter; Simulation owns the in-place
+  callback.
 
 ## Complete CSwapApprox source binding
 
@@ -170,3 +171,56 @@ seconds and 508 concentrated exchange/classical/erasure regression cases in
 11.20 seconds. Strict mypy on the added test, Black, Ruff, Algorithms scope,
 architecture, multilevel IR and protected API checks passed. Existing source
 notebook and CPU evidence is reused because production behavior is unchanged.
+
+## Complete SwapWithZero source binding
+
+| Complete original member | Native ownership and acceptance |
+| --- | --- |
+| `_to_tuple`, constructor and axis-count assertion | Immutable compiler stage inputs and typed shape declaration. Scalars, arrays and tuples are covered by existing source grids. |
+| Recursive `_swap_with_zero_swap_sequence` | `swap_with_zero_stages`, including inner-axis-first traversal and little-endian stage index converted to physical MSB-first selectors. |
+| Selection/target/signature properties | `swap_with_zero_signature` preserves bounded selectors, filtered zero-bit ports, original names, opaque word type and row-major target array. |
+| `cswap_n`, sequence property and composite body | Shared literal relative swap and source-ordered compiler emitter. |
+| Call graph | Independent source declaration retains product-of-extents minus one relative swaps; abstract source Cliffords remain distinct from primitive gates. |
+| Diagram, wire symbols and string | Native source catalogue shows direction, indexed targets, selectors and graph labels rather than retaining foreign drawing-protocol objects. |
+| `on_classical_vals` | Existing in-place Simulation callback, including strided arrays, insertion-order selectors and inherited leading-zero-axis failure. |
+| `adjoint` | Reverse stage order through existing native adjoint flag; the actual original source adjoint is captured independently. |
+| Three factories and DOC list | Existing catalogue and locked factory/resource grids. All three factories are concrete. Explicit symbolic constructor fields are tested separately, matching the original symbolic-count fixture. |
+
+`test_swap_zero_source_binding.py` resolves the original symbolic selector,
+word and extent fields with `attrs.evolve`, then imports the actual source in
+both directions. Only native IR passes through JSON. The existing named emitter
+binds the restored snapshots and the standalone comparison uses
+`circuit.append(SwapWithZeroExample(...))`.
+
+The four complete logical operators cover a padded three-row selector, a full
+two-dimensional array, a trailing zero-bit axis and the original small example
+with padded high selector bits and two-bit words. Every basis column is checked
+in full complex amplitude, including arbitrary target data and padded selector
+sectors; true inverse composition is the identity. Per-wire gate dependencies,
+operands and exact counts agree with the captured source after binding. No
+workspace or classical slot is allocated, and no measurement or reset appears;
+there is no measurement-branch acceptance claim for this coherent operation.
+
+| Selector widths / word / shape | Physical wires | Instructions | Explicit T/T-dagger | CX | Source declared T / Clifford / peak |
+| --- | ---: | ---: | ---: | ---: | --- |
+| `(2,)` / 1 / `(3,)` | 5 | 50 | 8 | 10 | 8 / 42 / 5 |
+| `(1,1)` / 1 / `(2,2)` | 6 | 75 | 12 | 15 | 12 / 63 / 6 |
+| `(1,0)` / 1 / `(2,1)` | 3 | 25 | 4 | 5 | 4 / 21 / 3 |
+| `(3,)` / 2 / `(2,)` | 7 | 51 | 8 | 11 | 8 / 43 / 7 |
+
+Both directions have these counts. Source independent QEC and peak queries are
+asserted separately. The preceding in-place classical callback evidence is
+reused; a basis-value callback does not replace the relative-phase unitary.
+
+The original leading-zero-axis fixture `(0,1)` over `(1,2)` still raises
+`IndexError('list index out of range')` in both direct source decomposition and
+actual capture. Native compiler admission raises `ValueError` before emission.
+No reference repair, axis reassignment or hidden port renaming is performed.
+Q-0712 remains open for this source failure; no new child or parent completion
+is counted in this batch.
+
+The current SwapWithZero batch passed five focused cases in 2.14 seconds and
+532 concentrated swap/callback/erasure regression cases in 8.95 seconds.
+Strict mypy on the new test, Black, Ruff, Algorithms scope, architecture,
+multilevel IR and protected API checks passed. Existing source notebook and CPU
+acceptance is reused because this batch changes no production behavior.
