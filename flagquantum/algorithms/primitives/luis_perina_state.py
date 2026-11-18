@@ -1,0 +1,230 @@
+# Copyright 2023 Google LLC
+# SPDX-License-Identifier: Apache-2.0
+# Adapted from Qualtran v0.7.0 phase_estimation/lp_resource_state.py at
+# bcb17bb25360ed68ce3bc084645db3e929799389.
+
+"""Compose Luis–Perina phase windows from shared rotations and reflection."""
+
+from collections.abc import Mapping
+from dataclasses import dataclass
+from math import acos, pi
+
+from ...compiler._component_trace.call_graph import (
+    SymbolicCallGraph,
+    symbolic_call_graph,
+)
+from ...compiler._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
+from ...compiler._component_trace.resource_model import ComponentCost
+from ...compiler.registers.bits.bitwise import on_each_ir
+from ...compiler.registers.preparation.prepare_reflection import (
+    prepare_reflection_requirements,
+    source_symbolic_zero_reflection_resource_formula,
+)
+from ...compiler.registers.primitives.controlled_rotation import controlled_rz_ir
+from ...core._composition import inverted_instruction
+from ...core.ir import Instruction
+from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt, SymbolicReal, ceil, log2
+from ...core.value_math import acos as symbolic_acos
+from ...core.value_math import pi as symbolic_pi
+from ._block_binding import _BoundBlockOperation, _validate_block_work
+from .black_box_prepare import BlackBoxPrepare, PackedPrepareDeclaration
+from .phase_estimation_window import PhaseEstimationWindow
+from .prepared_state_reflection import PreparedStateReflection
+
+
+@dataclass(frozen=True)
+class LuisPerinaInterim:
+    """Prepare the source's joint phase word and sine/cosine ancilla state.
+
+    The word uses big-endian order. Both registers are THRU and accept arbitrary
+    coherent inputs. No clean scratch, classical result slots or measurements
+    are required. The caller owns the ancilla's logical output.
+    """
+
+    bitsize: SymbolicInt
+    eps: float = 1e-11
+
+    @property
+    def signature(self) -> Signature:
+        return Signature.build(m=self.bitsize, anc=1)
+
+    def make_on(
+        self, *, m: tuple[int, ...], anc: int, adjoint: bool = False
+    ) -> _BoundBlockOperation:
+        """Bind the complete original H/controlled-Rz/H stream for append."""
+        if type(self.bitsize) is not int or self.bitsize < 1:
+            raise ValueError("Luis–Perina interim requires a concrete positive width")
+        if len(m) != self.bitsize or type(adjoint) is not bool:
+            raise ValueError("Interim binding needs its declared width and direction")
+        _validate_block_work((*m, anc), (), ())
+        gates = [*on_each_ir(Instruction("h", (0,)), m), Instruction("h", (anc,))]
+        for i, control in enumerate(reversed(m)):
+            angle = -2 * pi * 2**i / (2**self.bitsize + 1)
+            gates.extend(controlled_rz_ir(control, anc, angle))
+        gates.extend(
+            (
+                Instruction(
+                    "rz", (anc,), params={"theta": -2 * pi / (2**self.bitsize + 1)}
+                ),
+                Instruction("h", (anc,)),
+            )
+        )
+        stream = tuple(gates)
+        if adjoint:
+            stream = tuple(inverted_instruction(gate) for gate in reversed(stream))
+        return _BoundBlockOperation(stream, max((*m, anc)) + 1)
+
+    def source_gate_cost(self) -> QECGateCost:
+        """Query the source's independent QEC categories before decomposition."""
+        return QECGateCost(clifford=3 * self.bitsize + 2, rotation=2 * self.bitsize + 1)
+
+    def source_graph(self) -> SymbolicCallGraph[tuple[str, SymbolicReal]]:
+        """Retain angle-specific declared calls independently of primitive counts."""
+        n = self.bitsize
+        angle = -2 * symbolic_pi(n) / (2**n + 1)
+        calls: dict[tuple[str, SymbolicReal], SymbolicInt] = {
+            ("Rz", angle): 1,
+            ("OnEach(H)", n): 1,
+            ("H", 0): 2,
+        }
+        if isinstance(n, int):
+            calls.update({("CRz", angle * 2**i): 1 for i in range(n)})
+        else:
+            calls[("CRz", angle)] = n
+        return symbolic_call_graph(
+            ("LuisPerinaInterim", n),
+            {
+                ("LuisPerinaInterim", n): calls,
+                ("OnEach(H)", n): {("H", 0): n},
+            },
+        )
+
+
+@dataclass(frozen=True)
+class LuisPerinaState(PhaseEstimationWindow):
+    """Prepare the optimal sine window with one source amplitude-amplification step.
+
+    Outputs are RIGHT-only fractional phase wires. The explicit workspace starts
+    and ends clean in every measured reflection branch. Its first two wires are
+    the source ancilla and flag. Remaining scratch belongs to the shared zero
+    reflection and its result slots.
+    """
+
+    bitsize: SymbolicInt
+
+    @property
+    def m_bits(self) -> SymbolicInt:
+        return self.bitsize
+
+    @classmethod
+    def from_standard_deviation_eps(cls, eps: SymbolicReal) -> "LuisPerinaState":
+        return cls(ceil(log2(symbolic_pi(eps) / eps)))
+
+    def requirements(self) -> tuple[int, int]:
+        """Return clean physical workspace and reusable measurement result slots."""
+        if type(self.bitsize) is not int or self.bitsize < 1:
+            raise ValueError("Luis–Perina window requires a concrete positive width")
+        work, slots = prepare_reflection_requirements(
+            self.bitsize + 2, controlled=False
+        )
+        return work + 2, slots
+
+    def bind(self) -> BlackBoxPrepare:
+        """Bind named PREPARE for circuit.append(op) with explicit owned storage."""
+        self.requirements()
+        return PackedPrepareDeclaration(self).bind(self._emit)
+
+    def _emit(
+        self,
+        ports: Mapping[str, tuple[int, ...]],
+        workspace: tuple[int, ...],
+        classical_bits: tuple[int, ...],
+        adjoint: bool,
+    ) -> tuple[Instruction, ...]:
+        if (len(workspace), len(classical_bits)) != self.requirements():
+            raise ValueError(
+                "Luis–Perina preparation needs its declared work and slots"
+            )
+        m = ports["qpe_reg"]
+        _validate_block_work(m, workspace, classical_bits)
+        anc, flag = workspace[:2]
+        interim = LuisPerinaInterim(len(m))
+        forward = interim.make_on(m=m, anc=anc).instructions
+        inverse = interim.make_on(m=m, anc=anc, adjoint=True).instructions
+        angle = acos(1 / (1 + 2 ** len(m)))
+        rotate = (Instruction("ry", (flag,), params={"theta": angle}),)
+        unrotate = (Instruction("ry", (flag,), params={"theta": -angle}),)
+        reflection = (
+            PreparedStateReflection.around_zero((1, 1, len(m)), global_phase=1j)
+            .make_on(
+                selection={"reg0_": (flag,), "reg1_": (anc,), "reg2_": m},
+                reflection_workspace=workspace[2:],
+                reflection_classical_bits=classical_bits,
+                adjoint=adjoint,
+            )
+            .instructions
+        )
+        flip = (Instruction("x", (flag,)), Instruction("x", (anc,)))
+        mark = (Instruction("cz", (flag, anc)),)
+        if adjoint:
+            return (
+                *flip,
+                *unrotate,
+                *inverse,
+                *reflection,
+                *rotate,
+                *forward,
+                *mark,
+                *inverse,
+                *unrotate,
+            )
+        return (
+            *rotate,
+            *forward,
+            *mark,
+            *inverse,
+            *unrotate,
+            *reflection,
+            *forward,
+            *rotate,
+            *flip,
+        )
+
+    def source_graph(self) -> SymbolicCallGraph[tuple[str, SymbolicReal]]:
+        """Preserve all seven original direct callees and their multiplicities."""
+        n = self.bitsize
+        angle = symbolic_acos(1 / (1 + 2**n))
+        return symbolic_call_graph(
+            ("LuisPerinaState", n),
+            {
+                ("LuisPerinaState", n): {
+                    ("LuisPerinaInterim", n): 2,
+                    ("LuisPerinaInterim†", n): 1,
+                    ("Ry", angle): 2,
+                    ("Ry", -angle): 1,
+                    ("ReflectionZero(i)", n + 2): 1,
+                    ("X", 0): 2,
+                    ("CZ", 0): 1,
+                },
+            },
+        )
+
+    def source_gate_cost(self) -> QECGateCost:
+        """Reuse shared reflection categories, retaining symbolic source differences."""
+        n = self.bitsize
+        if isinstance(n, int):
+            identity = ComponentCost("IdentityPrepare", n + 2)
+            reflection = query_qec_gate_cost(
+                PreparedStateReflection.around_zero(
+                    (1, 1, n), global_phase=1j
+                ).resource_model(identity, identity)
+            )
+        else:
+            symbolic = source_symbolic_zero_reflection_resource_formula(n + 2)
+            reflection = QECGateCost().plus(symbolic, 1)
+        return (
+            LuisPerinaInterim(n).source_gate_cost() * 3
+            + reflection
+            + QECGateCost(rotation=3, clifford=3)
+        )
