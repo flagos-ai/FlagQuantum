@@ -24,6 +24,7 @@ Changes to protected contracts require their own approved integration change.
 | Target-independent optimization | `compiler/pipeline.py` | No built-in optimization pass changes |
 | SABRE search | `compiler/topology/sabre.py` | No second SABRE implementation |
 | Automatic routing | `compiler/topology/routing.py` | Existing candidate selection reused as the approved native compile default |
+| Compilation orchestration | `compiler/lowering/pipeline.py` | Retain stage ownership and router replacement through the entry facade |
 | Numeric instruction matrices | `compiler/optimization/two_qubit_optimization.py` | Reuse matrix reading and multiplication; normalize reversed operands |
 | Two-qubit KAK synthesis | `compiler/optimization/two_qubit_synthesis.py` | Reuse existing CZ synthesis |
 | Basis cost | `compiler/lowering/basis_translation.py` | Price the actual per-instruction CZ decomposition |
@@ -61,7 +62,9 @@ search within one automatic compilation. Selection objectives, candidate order,
 calibration exclusions, and final-layout restoration are unchanged. There is no
 cross-call plan cache: a different program or device is planned independently.
 Separate public calls to `select_routing_strategy` and `route_to_topology`
-continue to plan independently. Path-cache telemetry records the operations
+continue to plan independently. A caller-supplied facade router remains in
+control and receives the selected strategy; its planning work cannot be reused
+implicitly. Path-cache telemetry records the operations
 actually performed; fewer planner calls are not a measured wall-time speedup.
 
 Regression tests compare automatically routed instructions with the explicit
@@ -169,7 +172,10 @@ evidence, not SDKBench resource-isolated performance evidence.
 - Compiler unit files (`tests/unit/test_compilation*.py`), Compiler team tests,
   deployment routing evidence, routing candidate contracts, and the optimization,
   weighted-routing, synthesis, target-aware, and artifact-compilation integration
-  golden paths: **2,752 passed** in 51.15 seconds after plan reuse.
+  golden paths: **2,755 passed** in 78.25 seconds after integrating main's
+  compiler stage refactor at `2219064cee1e90a19a71239e9f22d1cb2aa36686`.
+  Router replacement remains effective through the facade; the native fast path
+  still searches SABRE once. The 28 pass-admission contract tests also passed.
 - Vocabulary census and vocabulary contracts: **173 passed** after correcting a
   new comment's terminology and selecting this checkout's Git work tree.
 - Public API migration baseline and the target-aware compilation example passed.

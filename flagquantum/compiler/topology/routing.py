@@ -10,7 +10,7 @@ device the plan names.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from types import MappingProxyType
 from typing import Any
@@ -573,11 +573,16 @@ def _select_routing_strategy(
 def _route_automatically(
     ir: CircuitIR,
     coupling_map: _PricedDevice,
+    *,
+    route_program: Callable[..., CircuitIR] | None = None,
 ) -> tuple[CircuitIR, RoutingStrategySelection]:
     """Select and route using one call-local SABRE plan, without a global cache."""
     topology = _topology_cost_model(coupling_map, ir.n_wires, "select_routing_strategy")
     selection, plan = _select_routing_strategy(ir, topology)
-    if plan is None:
+    selected_router = route_to_topology if route_program is None else route_program
+    if selected_router is not route_to_topology:
+        routed = selected_router(ir, coupling_map, strategy=selection.selected_strategy)
+    elif plan is None:
         routed = route_to_topology(ir, topology, strategy=selection.selected_strategy)
     else:
         routed = _route_sabre(

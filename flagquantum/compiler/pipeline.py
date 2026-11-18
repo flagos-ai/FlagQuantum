@@ -1,15 +1,17 @@
-"""Native FlagQuantum optimization, scheduling, and lowering pipeline."""
+"""Compiler entry points and compatibility exports for stage implementations."""
 
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from dataclasses import replace
-from types import MappingProxyType
 from typing import Any
 
-from ..core.ir import CircuitIR, ensure_circuit_ir
-from ..core.runtime_config import RuntimeConfig, get_runtime_config
+from ..core.ir import CircuitIR
+from ..core.ir import ensure_circuit_ir as ensure_circuit_ir
+from ..core.runtime_config import RuntimeConfig
+from ..core.runtime_config import get_runtime_config as get_runtime_config
+from .lowering.pipeline import compile_circuit as _compile_circuit
 from .lowering.schedule_legalization import schedule_layers as schedule_layers
+from .optimization import pipeline as _optimization_pipeline
 from .optimization.canonicalization import _ROTATION_PARAM as _ROTATION_PARAM
 from .optimization.canonicalization import _SELF_INVERSE as _SELF_INVERSE
 from .optimization.canonicalization import _add_values as _add_values
@@ -25,232 +27,86 @@ from .optimization.canonicalization import merge_self_inverse as merge_self_inve
 from .optimization.canonicalization import (
     remove_identity_gates as remove_identity_gates,
 )
-from .optimization.commutation import CommutationAnalysis, analyze_commutation
+from .optimization.commutation import CommutationAnalysis as CommutationAnalysis
+from .optimization.commutation import analyze_commutation as analyze_commutation
 from .optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
-    optimization_level_stages,
 )
-from .optimization.zero_state_reset import remove_zero_state_resets
+from .optimization.optimization_levels import (
+    optimization_level_stages as optimization_level_stages,
+)
+from .optimization.pass_registry import _BUILTIN_ANALYSES as _BUILTIN_ANALYSES
+from .optimization.pass_registry import _BUILTIN_PASS_SPECS as _BUILTIN_PASS_SPECS
+from .optimization.pass_registry import BUILTIN_PASSES as BUILTIN_PASSES
+from .optimization.pass_registry import (
+    _cancel_commuting_self_inverse as _cancel_commuting_self_inverse,
+)
+from .optimization.pass_registry import (
+    _collapse_one_qubit_runs as _collapse_one_qubit_runs,
+)
+from .optimization.pass_registry import (
+    _collapse_two_qubit_blocks as _collapse_two_qubit_blocks,
+)
+from .optimization.pass_registry import _commutation_blocks as _commutation_blocks
+from .optimization.pass_registry import (
+    _merge_commuting_rotations as _merge_commuting_rotations,
+)
+from .optimization.pass_registry import _merge_inverse_pairs as _merge_inverse_pairs
+from .optimization.pass_registry import (
+    _remove_diagonal_gates_before_measure as _remove_diagonal_gates_before_measure,
+)
+from .optimization.pass_registry import _rotation_parameters as _rotation_parameters
+from .optimization.pass_registry import _self_inverse_opcodes as _self_inverse_opcodes
+from .optimization.pass_registry import default_pass_registry as _default_pass_registry
+from .optimization.pipeline import _as_ir as _as_ir
+from .optimization.pipeline import _with_recorded_level as _with_recorded_level
+from .optimization.zero_state_reset import (
+    remove_zero_state_resets as remove_zero_state_resets,
+)
 from .pass_manager import OPTIMIZATION_PIPELINE as OPTIMIZATION_PIPELINE
 from .pass_manager import (
-    AnalysisSpec,
+    AnalysisSpec as AnalysisSpec,
+)
+from .pass_manager import (
     PassBinding,
-    PassFunction,
-    PassManager,
     PassRegistry,
-    PassSpec,
+)
+from .pass_manager import (
+    PassFunction as PassFunction,
+)
+from .pass_manager import (
+    PassManager as PassManager,
+)
+from .pass_manager import (
+    PassSpec as PassSpec,
 )
 from .routing import (
     CouplingMap,
     LinkErrorRates,
-    record_post_routing_optimization,
     route_to_topology,
 )
+from .routing import (
+    record_post_routing_optimization as record_post_routing_optimization,
+)
+from .routing import (
+    select_routing_strategy as select_routing_strategy,
+)
 from .topology.directed_topology import DirectedCouplingMap
-from .topology.routing import _route_automatically
-
-
-# The canonical opcode tables and the commutation partition are the facts the
-# optimization passes read, and they are registered as analyses rather than reached
-# as module globals. The tables follow from the operator schema instead of from the
-# program, so they are declared program-independent: the manager computes each once
-# and carries it for the rest of the run. Nothing about the values changes here; what
-# changes is that a pass now says which facts it reads, and a caller can hand the
-# same pass a different registry rather than editing this module.
-def _self_inverse_opcodes(_program: CircuitIR) -> frozenset[str]:
-    """Every opcode whose declared adjoint is itself, as the pipeline uses the term."""
-
-    return _SELF_INVERSE
-
-
-def _rotation_parameters(_program: CircuitIR) -> Mapping[str, str]:
-    """Every opcode whose single angle parameter its adjoint negates, to that name."""
-
-    return _ROTATION_PARAM
-
-
-def _commutation_blocks(program: CircuitIR) -> CommutationAnalysis:
-    """The commuting blocks of ``program``, one ordered partition per qubit."""
-
-    return analyze_commutation(program)
-
-
-_BUILTIN_ANALYSES: Mapping[str, AnalysisSpec] = MappingProxyType(
-    {
-        "self_inverse_opcodes": AnalysisSpec(
-            _self_inverse_opcodes, program_independent=True
-        ),
-        "rotation_parameters": AnalysisSpec(
-            _rotation_parameters, program_independent=True
-        ),
-        # A function of the program, so it is recomputed from the program a round
-        # actually produced and no pass may claim to preserve it.
-        "commutation_blocks": AnalysisSpec(_commutation_blocks),
-    }
-)
-# The analyses the built-in passes declare, by name.
-
-
-def _as_ir(circuit_or_ir: Any) -> CircuitIR:
-    return ensure_circuit_ir(circuit_or_ir)
-
-
-# Bind the pass library at call time. The registry forwards each declared
-# analysis to the pass that reads it.
-
-
-def _remove_diagonal_gates_before_measure(ir: CircuitIR) -> CircuitIR:
-    from .optimization.diagonal_before_measure import (
-        remove_diagonal_gates_before_measure,
-    )
-
-    return remove_diagonal_gates_before_measure(ir)
-
-
-def _merge_inverse_pairs(ir: CircuitIR) -> CircuitIR:
-    from .optimization.inverse_cancellation import merge_inverse_pairs
-
-    return merge_inverse_pairs(ir)
-
-
-def _cancel_commuting_self_inverse(
-    ir: CircuitIR, analyses: Mapping[str, object] | None = None
-) -> CircuitIR:
-    from .optimization.commutation_cancellation import cancel_commuting_self_inverse
-
-    return cancel_commuting_self_inverse(ir, analyses)
-
-
-def _merge_commuting_rotations(ir: CircuitIR) -> CircuitIR:
-    from .optimization.commutation_cancellation import merge_commuting_rotations
-
-    return merge_commuting_rotations(ir)
-
-
-def _collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
-    from .optimization.one_qubit_optimization import collapse_one_qubit_runs
-
-    return collapse_one_qubit_runs(ir)
-
-
-def _collapse_two_qubit_blocks(ir: CircuitIR) -> CircuitIR:
-    from .optimization.two_qubit_optimization import collapse_two_qubit_blocks
-
-    return collapse_two_qubit_blocks(ir)
-
-
-# The built-in passes, bound to the functions that implement them.
-BUILTIN_PASSES: Mapping[str, PassFunction] = MappingProxyType(
-    {
-        "remove_zero_state_resets": remove_zero_state_resets,
-        "remove_diagonal_gates_before_measure": (_remove_diagonal_gates_before_measure),
-        "remove_identity_gates": remove_identity_gates,
-        "merge_self_inverse": merge_self_inverse,
-        "merge_inverse_pairs": _merge_inverse_pairs,
-        "merge_adjacent_rotations": merge_adjacent_rotations,
-        "merge_commuting_rotations": _merge_commuting_rotations,
-        "cancel_commuting_self_inverse": _cancel_commuting_self_inverse,
-        "collapse_one_qubit_runs": _collapse_one_qubit_runs,
-        "collapse_two_qubit_blocks": _collapse_two_qubit_blocks,
-    }
-)
-# Maps every name in `OPTIMIZATION_PIPELINE` to the function that implements it.
-# Every binding is callable with one program argument, which is what
-# `PassRegistry.resolve` returns and what a caller that does not care about analyses
-# calls. A binding that declares analyses through `_BUILTIN_PASS_SPECS` also accepts
-# the resolved facts as a second argument, and the manager passes them.
-
-
-# What each built-in pass declares about the pipeline: the analyses it reads and the
-# ones it leaves valid. The two opcode tables are program-independent and every
-# reader asserts it preserves its own, which is what lets the manager compute them
-# once for a whole fixed-point run instead of once per round. `commutation_blocks`
-# is a function of the program, so it is declared read and never preserved.
-_BUILTIN_PASS_SPECS: Mapping[str, PassSpec] = MappingProxyType(
-    {
-        "remove_zero_state_resets": PassSpec(remove_zero_state_resets),
-        "remove_diagonal_gates_before_measure": PassSpec(
-            _remove_diagonal_gates_before_measure
-        ),
-        "remove_identity_gates": PassSpec(
-            remove_identity_gates,
-            uses=("rotation_parameters",),
-            preserves=("rotation_parameters",),
-        ),
-        "merge_self_inverse": PassSpec(
-            merge_self_inverse,
-            uses=("self_inverse_opcodes",),
-            preserves=("self_inverse_opcodes",),
-        ),
-        "merge_inverse_pairs": PassSpec(_merge_inverse_pairs),
-        "merge_adjacent_rotations": PassSpec(
-            merge_adjacent_rotations,
-            uses=("rotation_parameters",),
-            preserves=("rotation_parameters",),
-        ),
-        "merge_commuting_rotations": PassSpec(_merge_commuting_rotations),
-        "cancel_commuting_self_inverse": PassSpec(
-            _cancel_commuting_self_inverse,
-            uses=("self_inverse_opcodes", "commutation_blocks"),
-            preserves=("self_inverse_opcodes",),
-        ),
-        "collapse_one_qubit_runs": PassSpec(_collapse_one_qubit_runs),
-        "collapse_two_qubit_blocks": PassSpec(_collapse_two_qubit_blocks),
-    }
-)
-# What each built-in pass declares, by name. Every function identity matches
-# `BUILTIN_PASSES`; a registry refuses a spec whose function is a different object.
 
 
 def default_pass_registry() -> PassRegistry:
     """The registry that resolves exactly the built-in optimization passes."""
 
-    return PassRegistry(BUILTIN_PASSES, _BUILTIN_PASS_SPECS, _BUILTIN_ANALYSES)
-
-
-def _with_recorded_level(
-    ir: CircuitIR, level: int, admitted: tuple[str, ...] = ()
-) -> CircuitIR:
-    """Record the level the caller asked for, so the request is readable.
-
-    A caller who asked for level 0 and a caller who passed `optimize=False` to
-    `compile` get different programs only in this field: level 0 is a request
-    that was honored, and no field at all means no request was made.
-
-    A program built with admitted passes records their names beside the level,
-    because a program a caller's own pass changed is not the program the level
-    describes and the difference has to be readable from the result rather than
-    only from the call. The key appears only when there is something to say, so a
-    program that ran nothing but the built-in stages carries no new field.
-    """
-
-    metadata = dict(ir.metadata)
-    metadata["optimization"] = {"level": level}
-    if admitted:
-        metadata["admitted_passes"] = list(admitted)
-    return replace(ir, metadata=metadata)
+    return _default_pass_registry()
 
 
 def _registry_admitting(
     passes: Mapping[str, PassBinding] | None,
 ) -> PassRegistry:
-    """The built-in registry, extended with the caller's own names.
-
-    Registration completes before the first pass runs, so a reserved built-in name,
-    a name already taken, an empty name, and a name bound to something that is not
-    callable are all refused while the program is untouched. The names are added in
-    the order the mapping declares them, because a pass runs on the program the
-    previous one produced and the order is therefore part of the request.
-
-    `with_pass` accepts no declaration, so a pass that reads or preserves an
-    analysis is registered on a `PassRegistry` directly -- `default_pass_registry`
-    is exported beside the manager for exactly that route.
-    """
-
-    registry = default_pass_registry()
-    for name, function in (passes or {}).items():
-        registry = registry.with_pass(name, function)
-    return registry
+    # Keep replacement of the original registry entry effective for old callers.
+    return _optimization_pipeline._registry_admitting(
+        passes, registry_factory=default_pass_registry
+    )
 
 
 def _optimize_to_fixed_point(
@@ -258,31 +114,12 @@ def _optimize_to_fixed_point(
     optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
     passes: Mapping[str, PassBinding] | None = None,
 ) -> CircuitIR:
-    """Run one declared level's pass sequence to a fixed point.
-
-    The sequence, and the reason each pass sits where it does, are declared in
-    `optimization_levels.OPTIMIZATION_LEVEL_STAGES`. This function resolves the
-    declaration and hands it to `PassManager.to_fixed_point`, which owns the loop
-    and the termination condition; neither the sequence nor the loop has a second
-    copy here. A level whose sequence is empty is answered with the program
-    unchanged, which is what level 0 means -- unless the caller admitted passes, in
-    which case they run and the empty level is the whole of the built-in work.
-
-    An admitted pass joins the sequence after the declared stages rather than
-    replacing one of them, and it joins it inside the loop, so it runs whenever the
-    loop runs a round. A pass that is not idempotent therefore keeps the loop going
-    until `to_fixed_point` refuses to continue, which is the same verdict the
-    built-in passes are held to.
-    """
-
-    stages = optimization_level_stages(optimization_level)
-    ir = _as_ir(circuit_or_ir)
-    admitted = tuple((passes or {}).keys())
-    sequence = (*stages, *admitted)
-    if not sequence:
-        return _with_recorded_level(ir, optimization_level)
-    optimized = PassManager(_registry_admitting(passes)).to_fixed_point(ir, sequence)
-    return _with_recorded_level(optimized, optimization_level, admitted)
+    return _optimization_pipeline._optimize_to_fixed_point(
+        circuit_or_ir,
+        optimization_level,
+        passes,
+        registry_factory=default_pass_registry,
+    )
 
 
 def optimize(
@@ -357,10 +194,9 @@ def compile(
     that and what each coupling costs to use, so the route choice, the price the
     estimate reports, and the routing metadata all read the calibration.
 
-    `routing_strategy` defaults to `"auto"`, which chooses among deployable
-    strategies using their existing routing-cost estimates and records the
-    selection. Set `"restore_after_each_gate"` explicitly to retain the earlier
-    implicit policy. No routing search runs when `coupling_map` is absent.
+    Automatic routing selects among existing deployable strategies, honoring
+    calibration restrictions and restoring logical output placement. Request
+    ``routing_strategy="restore_after_each_gate"`` to retain the previous policy.
 
     `optimization_level` is forwarded to `optimize` at both points this function
     optimizes -- before routing and again after it, because routing inserts SWAPs
@@ -377,49 +213,17 @@ def compile(
     call asked for nothing to run.
     """
 
-    optimization_level_stages(optimization_level)
-    if passes and not optimize:
-        raise ValueError(
-            "compile() was given passes while optimization is switched off; the "
-            "admitted passes would not run, so the request is refused rather than "
-            "answered with the program unchanged"
-        )
-    from .lowering.deferred_operations import lower_deferred_operations
-    from .select_lowering import lower_select_program
-
-    ir = lower_select_program(_as_ir(circuit_or_ir), "dense")
-    ir = replace(ir, instructions=lower_deferred_operations(ir.instructions))
-    selected_config = config or get_runtime_config()
-    metadata = dict(ir.metadata)
-    metadata["runtime_config"] = selected_config.to_manifest()
-    ir = replace(ir, metadata=metadata)
-    if optimize:
-        ir = _optimize_to_fixed_point(ir, optimization_level, passes)
-    if coupling_map is not None:
-        # A device the router understands is handed over as it stands: an ordered
-        # device carries a rule an edge sequence cannot express, and rebuilding it
-        # as a ``CouplingMap`` here would settle the routing before the router saw
-        # it.
-        coupling = (
-            coupling_map
-            if isinstance(
-                coupling_map, (CouplingMap, DirectedCouplingMap, LinkErrorRates)
-            )
-            else CouplingMap(ir.n_wires, coupling_map)
-        )
-        strategy_selection = None
-        if routing_strategy == "auto":
-            ir, strategy_selection = _route_automatically(ir, coupling)
-        else:
-            ir = route_to_topology(ir, coupling, strategy=routing_strategy)
-        if optimize:
-            ir = _optimize_to_fixed_point(ir, optimization_level, passes)
-        ir = record_post_routing_optimization(ir)
-        if strategy_selection is not None:
-            metadata = dict(ir.metadata)
-            metadata["routing_strategy_selection"] = strategy_selection.summary()
-            ir = replace(ir, metadata=metadata)
-    return ir
+    return _compile_circuit(
+        circuit_or_ir,
+        coupling_map=coupling_map,
+        routing_strategy=routing_strategy,
+        optimize=optimize,
+        optimization_level=optimization_level,
+        config=config,
+        passes=passes,
+        optimize_program=_optimize_to_fixed_point,
+        route_program=route_to_topology,
+    )
 
 
 __all__ = [

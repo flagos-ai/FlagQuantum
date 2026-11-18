@@ -13,6 +13,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, LinkErrorRates, compile, pipeline
+from flagquantum.compiler.lowering import pipeline as lowering_pipeline
 from flagquantum.compiler.topology import routing
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.topology.routing import (
@@ -82,7 +83,7 @@ def test_no_topology_does_not_search(monkeypatch: pytest.MonkeyPatch) -> None:
     def refuse_search(*args: object, **kwargs: object) -> None:
         raise AssertionError("a topology-free compilation must not search routes")
 
-    monkeypatch.setattr(pipeline, "_route_automatically", refuse_search)
+    monkeypatch.setattr(lowering_pipeline, "_route_automatically", refuse_search)
     result = compile(_program())
     assert "routing_strategy_selection" not in result.metadata
     assert "routing" not in result.metadata
@@ -128,6 +129,27 @@ def test_calibrated_auto_does_not_search_uncalibrated_sabre() -> None:
         result = compile(_program(), coupling_map=device)
     assert set(result.metadata["routing_strategy_selection"]["candidates"]) == set(
         LINK_ERROR_ROUTING_STRATEGIES
+    )
+
+
+@pytest.mark.parametrize("strategy", ["auto", "restore_after_each_gate"])
+def test_default_keeps_facade_router_replacement(strategy: str) -> None:
+    source = _program()
+    device = CouplingMap.line(4)
+    with patch.object(
+        pipeline, "route_to_topology", wraps=route_to_topology
+    ) as replacement:
+        result = compile(source, coupling_map=device, routing_strategy=strategy)
+    assert replacement.call_count == 1
+    assert replacement.call_args.args[1] is device
+    selected = (
+        result.metadata["routing_strategy_selection"]["selected_strategy"]
+        if strategy == "auto"
+        else strategy
+    )
+    assert replacement.call_args.kwargs["strategy"] == selected
+    torch.testing.assert_close(
+        fq.Circuit.from_ir(result).state(), fq.Circuit.from_ir(source).state()
     )
 
 

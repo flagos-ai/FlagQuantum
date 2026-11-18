@@ -1670,6 +1670,17 @@ that stream. It does not extend the supported noise models, feedback, the
 annotated Stim text path, or the supported build platforms. The standard
 profile still uses the Stim Python SDK.
 
+## Triangular colour-code distance acceptance
+
+The existing 6.6.6 constructor now proves distances 3, 5, 7, 9, 11, 13 and 15
+with an exact bounded-width syndrome trellis after all existing CSS validation.
+Both logical readout bases pass three-round, 64-shot original noisy sampling,
+strict undecomposed DEM and bundled BP/OSD decoding, with all mechanisms checked
+against Stim 1.16.0. The model retains hyperedges and the matching decoder's
+refusal is unchanged. Text export still requires the Stim SDK. These observations
+are not a threshold or logical-suppression claim, and wider trellis frontiers
+retain the exact subset search. See the [per-distance results](QEC_COLOUR_DISTANCE_ACCEPTANCE.md).
+
 ## Differentiable orbital rotations
 
 The experimental `algorithms.chemistry_domain.orbital_rotation` workflow uses
