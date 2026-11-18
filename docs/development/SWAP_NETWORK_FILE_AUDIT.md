@@ -109,10 +109,64 @@ instructions.
 
 ## Remaining boundaries
 
-- Q-0707 retains symbolic execution and the upstream abstract Clifford cost
-  query for generic controls.
+- Q-0707 now has executable resolution of the original symbolic factory,
+  including actual imported controlled objects. The upstream abstract Clifford
+  aggregate cost query for generic controls remains open.
 - Q-0709 retains source singleton and zero-width selection failures and the
   generic control cases requiring unresolved controlled And leaves.
 - Q-0712 retains executable symbolic binding and the earlier zero-bit
   axis failure. The compiler owns the stage permutation and the quantum
   emitter. Simulation owns the in-place data callback.
+
+## Complete CSwapApprox source binding
+
+The complete pinned `cswap_approx.py` definition maps as follows:
+
+| Original member or asset | Native ownership and evidence |
+| --- | --- |
+| Width and signature | `relative_swap_signature` and `RelativeSwapExample`; original opaque words and extra scalar/shaped controls remain ordered. |
+| `decompose_from_registers` and nested G/G-inverse helper | Literal `relative_controlled_swap_ir`, shared fanout, and accepted per-wire source gate comparisons. |
+| `on_classical_vals` | Simulation controlled swap values; this basis permutation is explicitly separate from the executable relative phase. |
+| Wire and circuit-diagram methods | Native catalogue/drawer presentation of the named approximate swap and its typed control/x/y ports; foreign diagram protocol objects are not retained. |
+| `build_call_graph` | Shared `ControlledSwapCall(approximate=True)` resource declaration, including the bare-symbol width fallback. |
+| All three factories and DOC list | Existing four-/64-bit and symbolic catalogue sections; actual execution now resolves the original symbolic factory through its immutable constructor. |
+
+`test_relative_swap_source_binding.py` binds widths one and two from the actual
+original symbolic factory. Each width covers no additional control, scalar
+positive and negative controls, and a shaped two-bit mixed control. The actual
+source controlled object is captured in both directions. Its owned IR snapshots
+are JSON-restored and bound through the existing named emitter, then compared
+against `circuit.append(RelativeSwapExample(...))`.
+
+For every logical basis input, both directions preserve complete complex
+amplitudes, including the original negative relative phases. The actual source
+adjoint restores the complete initial state. Every private output is zero and
+the shared erasure certificate proves the same channel for all raw histories.
+This includes inactive sectors, arbitrary occupied targets and coherent inputs
+by linearity; it is not only a basis permutation or sampled-state comparison.
+Existing literal gate, operand, classical-value and independent resource tests
+are reused, rather than duplicating the implementation or changing the source.
+
+For width two, either direction, the actual captured and standalone native
+histograms agree:
+
+| Extra control | Instructions | Physical wires | Emitted categories |
+| --- | ---: | ---: | --- |
+| None | 51 | 5 | 8 T/T-dagger, 11 CX, 16 H, 16 S/S-dagger, no measurements |
+| Positive scalar | 51 | 6 | 11 CCX, 16 CH, 24 controlled phases |
+| Negative scalar | 53 | 6 | Same controlled categories plus 2 X |
+| Mixed shaped `(0,1)` | 72 | 9 | Same controlled categories plus predicate 4 T/T-dagger, 6 CX, 3 H, 1 S, 4 X, 1 measure, 1 CZ, 1 reset |
+
+The uncontrolled source model declares 8 T and 43 Cliffords at five logical
+wires. Controlled CH/CCX/phase leaves are not priced as synthesized Clifford+T;
+the original generic-control QEC aggregate fails on abstract controlled
+`ArbitraryClifford` and remains an explicit upstream boundary. No reference
+changes, native resource approximation or hidden replacement resolves that
+query. This batch changes acceptance and audit only, and adds no parent or child
+progress record.
+
+The current bound-source batch passed eight complete-operator cases in 4.33
+seconds and 508 concentrated exchange/classical/erasure regression cases in
+11.20 seconds. Strict mypy on the added test, Black, Ruff, Algorithms scope,
+architecture, multilevel IR and protected API checks passed. Existing source
+notebook and CPU evidence is reused because production behavior is unchanged.
