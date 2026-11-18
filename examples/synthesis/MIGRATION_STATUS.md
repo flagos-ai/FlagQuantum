@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **184/213**.
+Validated local Notebook workflows: **185/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -256,7 +256,7 @@ Validated local Notebook workflows: **184/213**.
 | `applications/optimization/electric_grid_optimization/electric_grid_optimization` | notebook_workflow | [Native program](applications/optimization/electric_grid_optimization/overview/main.py) | validated |
 | `applications/optimization/integer_linear_programming/integer_linear_programming` | notebook_workflow | [Native program](applications/optimization/integer_linear_programming/overview/main.py) | validated |
 | `applications/optimization/kidney_exchange/kidney_exchange_problem` | notebook_workflow | [Native program](applications/optimization/kidney_exchange/kidney_exchange_problem/overview/main.py) | validated |
-| `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | [Native program](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/main.py) | pending |
+| `applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs` | notebook_workflow | [Native program](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview/main.py) | validated |
 | `applications/optimization/max_clique/max_clique` | notebook_workflow | [Native program](applications/optimization/max_clique/overview/main.py) | validated |
 | `applications/optimization/max_independent_set/max_independent_set` | notebook_workflow | [Native program](applications/optimization/max_independent_set/overview/main.py) | validated |
 | `applications/optimization/max_induced_k_color_subgraph/max_induced_k_color_subgraph` | notebook_workflow | [Native program](applications/optimization/max_induced_k_color_subgraph/overview/main.py) | validated |

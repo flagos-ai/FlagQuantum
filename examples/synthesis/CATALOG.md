@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **184/213**.
+Validated local Notebook workflows: **185/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -207,6 +207,7 @@ Validated local Notebook workflows:
 - [overview](applications/optimization/electric_grid_optimization/overview/README.md)
 - [overview](applications/optimization/integer_linear_programming/overview/README.md)
 - [overview](applications/optimization/kidney_exchange/kidney_exchange_problem/overview/README.md)
+- [overview](applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview/README.md)
 - [overview](applications/optimization/max_clique/overview/README.md)
 - [overview](applications/optimization/max_independent_set/overview/README.md)
 - [overview](applications/optimization/max_induced_k_color_subgraph/overview/README.md)

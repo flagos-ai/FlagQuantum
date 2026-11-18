@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 184
+    assert len(validated) == 185
+    assert (
+        "applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs",
+        "examples/synthesis/applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview/main.py",
+    ) in validated
     assert (
         "tutorials/technology_demonstrations/discrete_quantum_walk_circle/discrete_quantum_walk_circle",
         "examples/synthesis/tutorials/technology_demonstrations/discrete_quantum_walk_circle/overview/main.py",
@@ -865,7 +869,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**184/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**185/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
