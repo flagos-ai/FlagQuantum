@@ -133,6 +133,10 @@ pm::obs_int decode_row(pm::Mwpm& solver, const std::vector<size_t>& events) {
     }
     if (solver.node_arena.allocated.size() != solver.node_arena.available.size()) {
         solver.reset();
+        // Upstream reset explicitly destroys these arenas. Reconstruct them
+        // before another decode or the solver's eventual destruction.
+        std::construct_at(&solver.node_arena);
+        std::construct_at(&solver.flooder.region_arena);
         throw std::invalid_argument("No perfect matching exists for this syndrome.");
     }
     pm::MatchingResult result;

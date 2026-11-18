@@ -248,9 +248,20 @@ def test_native_packed_validation_and_recovery() -> None:
 
     with pytest.raises(ValueError, match="padding"):
         _sparse_blossom.decode_packed_batch(decoder._matcher, b"\x01\x02")
-    with pytest.raises(CapabilityError, match="No perfect matching"):
-        decoder.decode_packed_batch(torch.tensor([[1, 0], [2, 0]], dtype=torch.uint8))
-    assert decoder.decode_packed_batch(good).tolist() == [[1]]
+    for _ in range(8):
+        # A failed batch may already have decoded a valid row and matched
+        # some events in the failing row. Reuse the same solver in both modes.
+        with pytest.raises(CapabilityError, match="No perfect matching"):
+            decoder.decode_packed_batch(
+                torch.tensor([[1, 0], [3, 0]], dtype=torch.uint8)
+            )
+        assert decoder.decode_packed_batch(good).tolist() == [[1]]
+        dense = torch.tensor([[1, 0, 0, 0, 0, 0, 0, 0, 0]], dtype=torch.uint8)
+        assert decoder.decode_batch(dense).tolist() == [[True]]
+        dense[0, 1] = 1
+        with pytest.raises(CapabilityError, match="No perfect matching"):
+            decoder.decode_batch(dense)
+        assert decoder.decode_packed_batch(good).tolist() == [[1]]
 
 
 @pytest.mark.parametrize(
