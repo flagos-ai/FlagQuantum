@@ -57,3 +57,48 @@ formatting, Compiler scope, architecture and public API checks passed.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_toffoli.ipynb
 ```
+
+## Whole-file method and original-test closure
+
+The remaining source protocols now terminate at their native owners. Drawer
+owns `toffoli_wire_symbol`, preserving the empty operation title, both indexed
+control circles, target ModPlus and unknown-register ValueError. Its complete
+score geometry is compared against the actual source composite, retaining
+`ctrl` as a QBit array of shape `(2,)` and `target` as a scalar. Ecosystem
+captures both source directions into existing native named emitters. Compiler
+and Simulation continue owning execution and full complex-state validation.
+
+| Complete source surface | Accepted evidence |
+|---|---|
+| Signature, atomic decomposition refusal, self-adjoint identity and one-leaf graph | Actual `_toffoli` factory and frozen source capture, with no work, measurement or binding swaps |
+| `my_tensors` CTRL/COPY and XOR factorization | Full source contraction against native 8-by-8 atomic operator and existing classical-action tensor suite |
+| `on_classical_vals` | Reused original target assertion, ordered control short circuit, unchanged control-array identity and all basis actions in `test_classical_controlled_bits.py` |
+| `as_cirq_op` | Actual named capture retains one `ccx`; direct Cirq round trip and both consecutive gates reproduce the original diagram assertion |
+| `as_pl_op` | Actual original PennyLane operation equality, full matrix and native bidirectional conversion |
+| `wire_symbol` | Complete source score geometry, both indexed control callbacks and exact unknown-register refusal |
+| `get_ctrl_system` and its returned adder | Reused `test_register_controlled_not.py` actual source adders, both polarities, grouped controls and signed/unsigned eight-bit declarations, operand order, feedback, complex branches and work cleanup |
+| `_toffoli`, `_TOFFOLI_DOC` and original generic factory harness | Actual factory result and documentation example identity, frozen source/test blobs, native concrete snapshot JSON and full operator |
+
+The new `test_toffoli_atom_source_binding.py` rebinds the atom to reordered
+physical wires with an entangled spectator. Both actual source directions
+preserve every complex amplitude and restore the input after the second
+application through `circuit.append(op)`. No atomic measurement branches or
+scratch exist. Existing outer-control branch evidence remains applicable and
+is included in the batch regression.
+
+The emitted atom is one `ccx`. The independent source QEC model is one Toffoli
+with four default T-equivalents and peak three. These counts have distinct
+meanings. This batch makes no physical Clifford+T synthesis assertion.
+
+Q-0266 and Q-0267 close with the complete method and original-test disposition.
+The original generic harness skips its source serialization modes. Concrete
+native snapshots pass JSON restoration, without claiming arbitrary foreign
+object serialization. Source control adders retain their tested declarations
+and the previously recorded eight-bit single-trajectory boundary. No reference
+file is modified.
+
+The concentrated whole-file batch passed 3,202 cases with no skips. Its 28
+warnings are the paired source/native NumPy overflow cases in the reused CNOT
+classical callback checks. Strict typing passed both changed Python files.
+Black, Ruff, Compiler scope, architecture, multilevel IR and protected API
+checks passed.
