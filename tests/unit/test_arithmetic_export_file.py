@@ -85,7 +85,10 @@ def test_complete_source_export_order_and_definition_identity(
     assert package.__file__ is not None
     raw = Path(package.__file__).read_bytes()
     assert sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blob
-    imports = ast.parse(raw).body
+    module_tree = ast.parse(raw)
+    imports = (
+        module_tree.body[1:] if ast.get_docstring(module_tree) else module_tree.body
+    )
     assert all(isinstance(node, ast.ImportFrom) for node in imports)
     observed: list[str] = []
     for node in imports:
