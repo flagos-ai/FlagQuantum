@@ -7,9 +7,32 @@
 """Detect adjacent duplicates in a sorted register list."""
 
 from ....core.ir import Instruction
+from ....core.ir.program.register_types import quantum_bit_type
+from ....core.ir.program.registers import Register, RegisterType
+from ....core.ir.program.signatures import Signature
+from ..._component_trace.symbolic_math import SymbolicInt
 from ..bits.bitwise import _validate_wires
 from ..comparison.half_ordering import half_compare_ir, half_compare_outputs
 from ..control.multi_control import multi_control_x_ir
+
+
+def sorted_duplicates_signature(
+    length: SymbolicInt, dtype: RegisterType, *, controlled: bool = False
+) -> Signature:
+    """Preserve shaped xs, through flag and the optional final control port.
+
+    Metadata may retain symbolic list/word sizes. Executable binding keeps the
+    existing concrete sorted big-endian contract and caller-owned scratch.
+    """
+    if type(controlled) is not bool:
+        raise ValueError("Duplicate detection controlled mode must be boolean")
+    registers = [
+        Register("xs", dtype, shape=(length,)),
+        Register("flag", quantum_bit_type()),
+    ]
+    if controlled:
+        registers.append(Register("ctrl", quantum_bit_type()))
+    return Signature(registers)
 
 
 def sorted_duplicate_requirements(
