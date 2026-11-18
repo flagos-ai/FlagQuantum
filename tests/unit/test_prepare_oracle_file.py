@@ -279,3 +279,43 @@ def test_symbolic_prepare_resolves_into_actual_external_execution(
     model = get_cost_value(original, QECGatesCost())
     assert model.clifford == width and model.rotation == 1 and model.measurement == 0
     assert get_cost_value(original, QubitCount()) == width
+
+    # Exercise the actual source AutoPartition wrapper after the same explicit
+    # symbolic resolution, then restore only owned IR at the SDK boundary.
+    from qualtran.bloqs.state_preparation.black_box_prepare import (
+        BlackBoxPrepare as SourcePackedPrepare,
+    )
+
+    with pytest.raises(ValueError, match="concrete positive shapes"):
+        import_register_emitter(SourcePackedPrepare(source_declaration))
+    packed_source = SourcePackedPrepare(source)
+    packed_emitter = import_register_emitter(packed_source)
+    assert packed_emitter.layout == (("selection", width),)
+    restored_emitter = replace(
+        packed_emitter,
+        snapshots=tuple(
+            CircuitIR.from_json(snapshot.to_json())
+            for snapshot in packed_emitter.snapshots
+        ),
+    )
+    packed_native = BlackBoxPrepare(
+        (("selection", width),), (), restored_emitter, packed_source.l1_norm_of_coeffs
+    )
+    packed_ir = (
+        Circuit(width)
+        .append(
+            packed_native.make_on(
+                selection=tuple(range(width)), junk=(), adjoint=adjoint
+            )
+        )
+        .to_ir()
+    )
+    packed_original = packed_source.adjoint() if adjoint else packed_source
+    torch.testing.assert_close(
+        get_unitary(packed_ir, dtype=torch.complex128),
+        torch.as_tensor(packed_original.tensor_contract(), dtype=torch.complex128),
+        atol=5e-12,
+        rtol=0,
+    )
+    assert packed_ir.instructions == ir.instructions
+    assert packed_native.normalization == source.l1_norm_of_coeffs
