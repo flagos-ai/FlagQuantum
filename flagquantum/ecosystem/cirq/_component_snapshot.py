@@ -49,12 +49,26 @@ class _CleanAllocations:
         )
 
 
-def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitIR, int]:
+def _snapshot(
+    source: Any,
+    ports: tuple[tuple[str, int], ...],
+    *,
+    local_ports: tuple[str, ...] = (),
+) -> tuple[CircuitIR, int]:
+    from qualtran import Bloq
     from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.basic_gates import TwoBitCSwap
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
 
     cirq = _cirq()
+    local = set(local_ports)
+    if len(local) != len(local_ports) or not local <= {name for name, _ in ports}:
+        raise ValueError("Local ports must be distinct declared physical ports")
+    local_registers = tuple(reg for reg in source.signature if reg.name in local)
+    if len(local_registers) != len(local) or any(
+        reg.side.value not in (1, 2) for reg in local_registers
+    ):
+        raise ValueError("Local storage requires one-sided source registers")
     shapes: dict[str, tuple[int, ...]] = {}
     for side in (source.signature.lefts(), source.signature.rights()):
         side = tuple(side)
@@ -65,13 +79,22 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
             for reg in side
         ):
             raise ValueError("Foreign component ports need concrete positive shapes")
-        actual = tuple((reg.name, reg.total_bits()) for reg in side)
+        actual = tuple(
+            (reg.name, reg.total_bits()) for reg in side if reg.name not in local
+        )
         layout = {reg.name: (*reg.shape, reg.bitsize) for reg in side}
-        if actual != ports or (shapes and shapes != layout):
+        through = tuple((name, width) for name, width in ports if name not in local)
+        if actual != through or any(
+            shapes[name] != shape for name, shape in layout.items() if name in shapes
+        ):
             raise ValueError(
                 "Foreign component must have matching declared input/output ports"
             )
-        shapes = layout
+        shapes.update(layout)
+    if tuple((reg.name, reg.total_bits()) for reg in local_registers) != tuple(
+        (name, width) for name, width in ports if name in local
+    ):
+        raise ValueError("Local port widths must match the source declaration")
     incoming = tuple(cirq.LineQubit.range(sum(width for _, width in ports)))
     arrays: dict[str, Any] = {}
     offset = 0
@@ -81,20 +104,34 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
         ).reshape(shapes[name])
         offset += width
     manager = _CleanAllocations(cirq, incoming)
+    input_arrays = {reg.name: arrays[reg.name] for reg in source.signature.lefts()}
     register_names = [reg.name for reg in source.signature]
     if len(register_names) != len(set(register_names)):
         # The frozen gate wrapper rejects same-name LEFT/RIGHT registers.
         # Its Composite exporter supports the original sided column signature.
         operation, returned = source.decompose_bloq().to_cirq_circuit_and_quregs(
-            qubit_manager=manager, **arrays
+            qubit_manager=manager, **input_arrays
         )
     else:
-        operation, returned = source.as_cirq_op(qubit_manager=manager, **arrays)
-    if set(returned) != {name for name, _ in ports}:
+        operation, returned = source.as_cirq_op(qubit_manager=manager, **input_arrays)
+    if set(returned) != {reg.name for reg in source.signature.rights()}:
         raise ValueError("Foreign oracle returned different logical ports")
+    returned_qubits = {
+        q for value in returned.values() for q in np.asarray(value, dtype=object).flat
+    }
+    consumed_storage = iter(q for q in incoming if q not in returned_qubits)
     outgoing: list[Any] = []
     for name, width in ports:
-        array = np.asarray(returned[name], dtype=object)
+        # A consumed local input can become a different logical output through
+        # source bookkeeping aliases. Use the freed input storage, not that
+        # possibly still-live input identity, as the physical clean output.
+        if name in returned:
+            value = returned[name]
+        else:
+            value = np.asarray(
+                [next(consumed_storage) for _ in range(width)], dtype=object
+            ).reshape(shapes[name])
+        array = np.asarray(value, dtype=object)
         if array.shape != shapes[name]:
             raise ValueError("Foreign oracle returned a different port shape")
         outgoing.extend(array.reshape(-1).tolist())
@@ -173,11 +210,32 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
         return replacement
 
     def expand(tree: Any) -> Iterator[Any]:
+        # Export constructs sibling operations before recursively decomposing
+        # them. Its allocator may already have freed a RIGHT output that is
+        # still live between the producing and consuming sibling operations.
+        live_outputs: set[Any] = set()
         for op in cirq.flatten_to_ops(tree):
             if admitted(op):
                 yield op
                 continue
-            with decomposition_manager.reserve_qubits(op.qubits):
+            leaf = getattr(op.gate, "bloq", op.gate)
+            consumed: set[Any] = set()
+            produced: set[Any] = set()
+            if isinstance(leaf, Bloq):
+                offset = 0
+                for reg in leaf.signature:
+                    count = int(reg.total_bits())
+                    qubits = op.qubits[offset : offset + count]
+                    if reg.side.value == 1:
+                        consumed.update(qubits)
+                    elif reg.side.value == 2:
+                        produced.update(qubits)
+                    offset += count
+                if offset != len(op.qubits):
+                    raise ValueError(
+                        "Foreign operation does not match its register extent"
+                    )
+            with decomposition_manager.reserve_qubits((*op.qubits, *live_outputs)):
                 child = leaf_operation(op)
                 if child is NotImplemented:
                     child = cirq.decompose_once(
@@ -190,6 +248,8 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
                         f"Foreign oracle primitive cannot be decomposed: {op!r}"
                     )
                 yield from expand(child)
+            live_outputs.difference_update(consumed)
+            live_outputs.update(produced)
 
     operations = () if operation is None else expand(operation)
     # Preserve the source's expanded operation order. Conversion must not add
@@ -197,7 +257,36 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
     primitive = cirq.Circuit(operations, strategy=cirq.InsertStrategy.NEW)
     if modular_calls:
         primitive = _private_modular_keys(cirq, primitive, modular_tag)
-    order = (*incoming, *(q for q in manager.allocated if q not in incoming))
+    # A fresh RIGHT output can use the caller's unused clean local slot by
+    # renaming its entire lifetime. This is bookkeeping, not a physical SWAP.
+    # If the source aliases an original input instead, preserve that alias and
+    # let the existing explicit output-order restoration bind it below.
+    renames: dict[Any, Any] = {}
+    used = set(primitive.all_qubits())
+    for reg in local_registers:
+        if reg.side.value == 2:
+            for actual, slot in zip(
+                np.asarray(returned[reg.name], dtype=object).flat,
+                arrays[reg.name].flat,
+                strict=True,
+            ):
+                if actual not in incoming and slot not in used:
+                    renames[actual] = slot
+    if renames:
+        primitive = primitive.transform_qubits(lambda q: renames.get(q, q))
+        outgoing = [renames.get(q, q) for q in outgoing]
+    live = set(primitive.all_qubits()) | set(outgoing)
+    order = (
+        *incoming,
+        *(
+            q
+            for q in manager.allocated
+            if q not in incoming and q not in renames
+            # The SDK's RIGHT-output relocation can leave allocation names
+            # that occur in no operation or output after that relocation.
+            and (not local or q in live)
+        ),
+    )
     if not (set(primitive.all_qubits()) | set(outgoing)) <= set(order):
         raise ValueError("Foreign oracle used undeclared external quantum inputs")
     imported = import_cirq_feedback(primitive, qubit_order=order).ir
