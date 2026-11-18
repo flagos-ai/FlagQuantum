@@ -58,3 +58,40 @@ Native callers provide controlled child recipes and explicit wire
 bindings. The locked source itself rejects symbolic iteration extents
 when resolving target registers or diagram labels. The package
 initializer Q-0581 remains open while its other exports are audited.
+
+
+## Complete callable source bindings
+
+The complete `ApplyGateToLthQubit` object is captured through the existing
+Ecosystem named-register emitter. Foreign gate and callable objects end at that
+boundary. Restored native JSON snapshots replace the emitter behind the existing
+`SelectBlockEncoding` consumer, with no new production abstraction. Users append
+the bound native operation to `Circuit` in both original source directions.
+
+The same index callable supplies alternating H/S and S/T leaves, with zero,
+one or two positive control bits and named one- or two-axis row-major selection.
+The expected logical operator is built independently from the selected target's
+single-qubit matrix and identity bystanders. Every raw measurement history is
+checked for a coherent full-register input. The two-target cases with zero or
+one control additionally check every operator column. All work returns to zero,
+including the original inverse's measured controlled-phase decomposition. Native
+IR preserves every captured instruction, operand and feedback and round-trips
+through JSON. Concrete widths are bound before capture. Unbound symbolic widths
+and symbolic iteration extents keep their explicit admission/source failures.
+
+The independently planned indexed model reuses the existing controlled-leaf
+costs and source whole-operation QEC and peak-width comparisons. It never counts
+snapshot instructions as model estimates.
+
+| Target-position binding | Captured primitives | Independent model basis |
+| --- | --- | --- |
+| Forward H/S or S/T | 4 T-family per traversal erasure, controlled phases stay atomic | Source controlled leaf models plus bounded traversal |
+| Original inverse | One extra erasure per S/T leaf, 4 T-family per erasure, plus one T-family per T leaf | Source child adjoints and independent traversal model |
+
+For `N` selected targets and `c` positive controls, the fixtures emit `N+c-2`
+forward measurements. Inverse H/S adds `N/2` and inverse S/T adds `N`.
+The source model includes controlled-S/T And costs in either direction, so its
+estimated And/measurement inventory is intentionally recorded separately from
+the captured forward primitive count. The original source callable's own foreign
+serialization remains the previously recorded expected failure. General foreign
+gates beyond the supported importer vocabulary remain open under Q-0583.
