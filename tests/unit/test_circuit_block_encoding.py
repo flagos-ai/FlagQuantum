@@ -107,3 +107,25 @@ def test_lcu_child_factory_reuses_the_same_binding_path() -> None:
         block.bind_child(5, ports, (), (), False)
     with pytest.raises(ValueError, match="declared ports"):
         block.make_on(system=(0,), control=(1, 2))
+
+
+def test_uncaptured_control_and_unknown_cost_do_not_disable_known_plain_direction() -> (
+    None
+):
+    from dataclasses import replace
+
+    full = measured_block()
+    assert full.models is not None
+    plain = replace(
+        full,
+        snapshots=(*full.snapshots[:2], None, None),
+        models=(full.models[0], None, None, None),
+    )
+    assert plain.requirements() == full.requirements()
+    assert plain.resource_model() == full.models[0]
+    with pytest.raises(ValueError, match="No independent resource model"):
+        plain.resource_model(adjoint=True)
+    with pytest.raises(ValueError, match="not captured"):
+        plain.requirements(controlled=True)
+    with pytest.raises(ValueError, match="directional pair"):
+        replace(full, snapshots=(*full.snapshots[:3], None))

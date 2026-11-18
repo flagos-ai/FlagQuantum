@@ -18,10 +18,12 @@ class CircuitBlockEncoding:
     """Own a zero-signal block's four explicitly supplied execution snapshots.
 
     Order is forward, adjoint, positive-controlled forward, positive-controlled
-    adjoint. Each snapshot packs optional control, system, ancilla, resource,
+    adjoint. The controlled pair may be explicitly absent. Each snapshot packs
+    optional control, system, ancilla, resource,
     then clean work. Auxiliary logical ports remain through ports; they are not
     scratch. Models, when supplied, are independent declarations in the same
-    order. Missing models cannot be queried as zero costs.
+    order, with an unavailable direction represented by None. Missing models
+    cannot be queried as zero costs.
     """
 
     system_bitsize: int
@@ -29,10 +31,16 @@ class CircuitBlockEncoding:
     resource_bitsize: int
     alpha: SymbolicReal
     epsilon: SymbolicReal
-    snapshots: tuple[CircuitIR, CircuitIR, CircuitIR, CircuitIR]
-    models: tuple[ComponentCost, ComponentCost, ComponentCost, ComponentCost] | None = (
-        None
-    )
+    snapshots: tuple[CircuitIR, CircuitIR, CircuitIR | None, CircuitIR | None]
+    models: (
+        tuple[
+            ComponentCost | None,
+            ComponentCost | None,
+            ComponentCost | None,
+            ComponentCost | None,
+        ]
+        | None
+    ) = None
     binding_swaps: tuple[int, int, int, int] = (0, 0, 0, 0)
 
     def __post_init__(self) -> None:
@@ -54,19 +62,29 @@ class CircuitBlockEncoding:
             )
         if self.models is not None and (
             len(self.models) != 4
-            or any(not isinstance(model, ComponentCost) for model in self.models)
+            or any(
+                model is not None and not isinstance(model, ComponentCost)
+                for model in self.models
+            )
         ):
             raise TypeError(
                 "Block snapshot models must be independent ComponentCost values"
             )
         if any(type(n) is not int or n < 0 for n in self.binding_swaps):
             raise ValueError("Block binding swap counts must be nonnegative integers")
+        if (self.snapshots[2] is None) != (self.snapshots[3] is None):
+            raise ValueError(
+                "Controlled block snapshots must be supplied as a directional pair"
+            )
+        if self.snapshots[2] is None and any(self.binding_swaps[2:]):
+            raise ValueError("Uncaptured controls cannot declare binding swaps")
         for controlled in (False, True):
+            if controlled and self.snapshots[2] is None:
+                continue
             self.requirements(controlled=controlled)
             for index in (2 * int(controlled), 2 * int(controlled) + 1):
-                if self.models is not None and self.models[index].qubits < sum(
-                    widths
-                ) + int(controlled):
+                model = self.models[index] if self.models is not None else None
+                if model is not None and model.qubits < sum(widths) + int(controlled):
                     raise ValueError("Block model omits its logical ports")
 
     @property
@@ -81,13 +99,20 @@ class CircuitBlockEncoding:
             (("ancilla", self.ancilla_bitsize),), (), _identity_prepare
         )
 
+    def _directions(self, controlled: bool) -> tuple[CircuitIR, CircuitIR]:
+        if controlled:
+            forward, backward = self.snapshots[2:]
+            if forward is None or backward is None:
+                raise ValueError("Controlled block snapshots were not captured")
+            return forward, backward
+        return self.snapshots[0], self.snapshots[1]
+
     def requirements(self, *, controlled: bool = False) -> tuple[int, int]:
         """Return reusable clean work and result slots for the selected interface."""
         if type(controlled) is not bool:
             raise ValueError("Block snapshot control mode must be Boolean")
-        offset = 2 * int(controlled)
         return _storage(
-            self.snapshots[offset : offset + 2],
+            self._directions(controlled),
             self.signature.n_qubits() + int(controlled),
         )
 
@@ -98,13 +123,16 @@ class CircuitBlockEncoding:
             raise ValueError(
                 "Block snapshot direction and control mode must be Boolean"
             )
-        if self.models is None:
-            raise ValueError(
-                "No independent resource model was supplied for this block"
-            )
         index = 2 * int(controlled) + int(adjoint)
+        model = self.models[index] if self.models is not None else None
+        if model is None:
+            raise ValueError(
+                "No independent resource model was supplied for this block direction"
+            )
         return _model(
-            self.models[index], self.snapshots[index], self.binding_swaps[index]
+            model,
+            self._directions(controlled)[int(adjoint)],
+            self.binding_swaps[index],
         )
 
     def make_on(
@@ -127,10 +155,9 @@ class CircuitBlockEncoding:
             raise ValueError("Block snapshot operands must match its declared ports")
         if type(adjoint) is not bool:
             raise ValueError("Block snapshot direction must be Boolean")
-        index = 2 * bool(control) + int(adjoint)
         through = (*control, *system, *ancilla, *resource)
         gates = _emit(
-            self.snapshots[index],
+            self._directions(bool(control))[int(adjoint)],
             through,
             workspace,
             classical_bits,
