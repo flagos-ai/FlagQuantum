@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -154,6 +155,76 @@ def test_disjoint_blocks_can_be_interleaved() -> None:
     )
     result = resynthesize_cz_blocks(source)
     assert sum(item.name == "cz" for item in result.instructions) == 4
+    _assert_equivalent(source, result)
+
+
+@pytest.mark.parametrize("pair", [(0, 1), (1, 0)])
+def test_leading_local_gates_join_the_native_pair_replacement(
+    pair: tuple[int, int],
+) -> None:
+    source = CircuitIR(
+        2,
+        (
+            Instruction("h", (pair[0],)),
+            Instruction("rx", (pair[1],), {"theta": 0.17}),
+            Instruction("swap", pair),
+            Instruction("cx", pair[::-1]),
+        ),
+    )
+    result = resynthesize_cz_blocks(source)
+    assert all(item.name in {"rz", "rx", "cz"} for item in result.instructions)
+    assert sum(item.name == "cz" for item in result.instructions) == 2
+    _assert_equivalent(source, result)
+
+
+def test_neighboring_pairs_do_not_claim_a_shared_local_gate_twice() -> None:
+    source = CircuitIR(
+        3,
+        (
+            Instruction("swap", (0, 1)),
+            Instruction("cx", (1, 0)),
+            Instruction("h", (1,)),
+            Instruction("swap", (1, 2)),
+            Instruction("cx", (2, 1)),
+        ),
+    )
+    result = resynthesize_cz_blocks(source)
+    assert all(item.name in {"rz", "rx", "cz"} for item in result.instructions)
+    assert sum(item.name == "cz" for item in result.instructions) == 4
+    _assert_equivalent(source, result)
+
+
+def test_leading_local_gates_share_the_existing_block_resource_limit() -> None:
+    source = CircuitIR(
+        2,
+        (
+            *(Instruction("rx", (0,), {"theta": 0.017}) for _ in range(100)),
+            Instruction("swap", (0, 1)),
+            Instruction("cx", (1, 0)),
+        ),
+    )
+    with patch.object(_cz_blocks, "_candidate", wraps=_cz_blocks._candidate) as search:
+        result = resynthesize_cz_blocks(source)
+    assert search.call_count > 0
+    assert all(len(call.args[0]) <= 64 for call in search.call_args_list)
+    assert sum(item.name == "cz" for item in result.instructions) == 2
+    _assert_equivalent(source, result)
+
+
+def test_annotated_leading_gate_keeps_its_boundary_and_identity() -> None:
+    held = Instruction("h", (0,), metadata={"boundary": "keep"})
+    source = CircuitIR(
+        2,
+        (
+            held,
+            Instruction("rx", (1,), {"theta": 0.17}),
+            Instruction("swap", (0, 1)),
+            Instruction("cx", (1, 0)),
+        ),
+    )
+    result = resynthesize_cz_blocks(source)
+    assert result.instructions[0] is held
+    assert sum(item.name == "cz" for item in result.instructions) == 2
     _assert_equivalent(source, result)
 
 

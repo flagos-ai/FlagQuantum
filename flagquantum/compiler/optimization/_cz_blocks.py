@@ -118,6 +118,7 @@ def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
     """
     open_blocks: dict[tuple[int, int], list[int]] = {}
     wire_blocks: dict[int, tuple[int, int]] = {}
+    claimed: set[int] = set()
     changed = False
 
     def close(pair: tuple[int, int]) -> None:
@@ -125,6 +126,23 @@ def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
         positions = open_blocks.pop(pair)
         for wire in pair:
             del wire_blocks[wire]
+        # Use the existing two-qubit collector's exclusive leading-member rule.
+        # Draw locals in only after closing, so they consume remaining capacity
+        # without splitting the established entangling block earlier.
+        leading: list[int] = []
+        back = positions[0] - 1
+        while (
+            back >= 0
+            and back not in claimed
+            and len(leading) + len(positions) < _MAX_BLOCK_OPERATIONS
+        ):
+            instruction = program.instructions[back]
+            if len(instruction.wires) != 1 or _matrix(instruction, pair) is None:
+                break
+            leading.append(back)
+            back -= 1
+        positions = [*reversed(leading), *positions]
+        claimed.update(leading)
         block = [program.instructions[index] for index in positions]
         if len(block) < 2:
             return
@@ -156,6 +174,7 @@ def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
                 close(pair)
         if joining is not None and readable and joining in open_blocks:
             open_blocks[joining].append(index)
+            claimed.add(index)
             if len(open_blocks[joining]) == _MAX_BLOCK_OPERATIONS:
                 close(joining)
         elif len(instruction.wires) == 2:
@@ -163,6 +182,7 @@ def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
             pair = (min(left, right), max(left, right))
             if _matrix(instruction, pair) is not None:
                 open_blocks[pair] = [index]
+                claimed.add(index)
                 for wire in pair:
                     wire_blocks[wire] = pair
     for pair in tuple(open_blocks):

@@ -78,6 +78,11 @@ full-CZ target with arbitrary RZ and RX rotations. It collects static operations
 over a pair, allowing commuting operations on disjoint qubits between members.
 Two open pairs cannot overlap. A different pair sharing a qubit closes the old
 block. Reversed operands are converted into the same ordered matrix basis.
+When a block closes, it can draw in contiguous, readable leading one-qubit
+operations on its pair, using the existing native collector's exclusive-membership
+rule. Operations already owned by an open or closed block cannot be claimed again.
+Leading members use only remaining space within the 64-operation bound, preserving
+the existing entangling-block partition rather than closing it earlier.
 
 Each candidate must strictly reduce CZ count relative to recursive native-basis
 translation. Already-native instructions contribute their actual cost without
@@ -153,7 +158,9 @@ is not the test oracle.
   SWAPs with neighboring gates. This slice does not resolve the complete routed
   block optimization issue. Integration must construct correct layout and
   source-to-output evidence, rather than strip metadata to unlock a rewrite.
-- Leading single-qubit instructions are not drawn into a new pair block.
+- Leading one-qubit collection is contiguous and conservative: it stops at an
+  already claimed operation, annotation, unreadable value, or operation outside
+  the pair. It does not perform general commutation or symbolic synthesis.
 - Only full CZ cost is implemented; arbitrary target gates, calibration-aware
   cost, symbolic synthesis, and approximate synthesis are not admitted.
 - Automatic routing already considers deployable SABRE. The approved native
@@ -183,6 +190,14 @@ evidence, not SDKBench resource-isolated performance evidence.
   compiler stage refactor at `2219064cee1e90a19a71239e9f22d1cb2aa36686`.
   Router replacement remains effective through the facade; the native fast path
   still searches SABRE once. The 28 pass-admission contract tests also passed.
+- After adding leading-local collection, **2,764 distinct compiler, deployment,
+  routing-candidate, and focused integration tests passed**: 2,753 in the main
+  focused run (52.45 seconds) plus 11 routing-plan candidate cases. The 28
+  pass-admission contracts also passed. Five new cases verify both operand
+  orders, exclusive ownership across neighboring pairs, annotation preservation,
+  and the shared resource bound; the CZ file now has 36 passing cases. All eight
+  changed Python files pass Black 26.10.1 and Ruff. These focused results do not
+  replace the incomplete broad qualification described below.
 - Vocabulary census and vocabulary contracts: **173 passed** after correcting a
   new comment's terminology and selecting this checkout's Git work tree.
 - Public API migration baseline and the target-aware compilation example passed.
