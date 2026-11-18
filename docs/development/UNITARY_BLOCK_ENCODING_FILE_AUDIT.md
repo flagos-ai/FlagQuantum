@@ -7,7 +7,7 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0305 | `unitary.ipynb` | `cca05e99e365416bada5a7785a43ac1ba3d57555` | Closed by the full native tutorial. |
-| Q-0306 | `unitary.py` | `bbcff63d78cbd58979bee3670597a778fdd4bdd2` | Open for symbolic and shaped child binding, generic external objects, and controlled specialization. |
+| Q-0306 | `unitary.py` | `bbcff63d78cbd58979bee3670597a778fdd4bdd2` | Closed with complete native/optional-external binding, shape and symbolic admission, controlled paths and owned IR serialization. Source serialization and partial-controlled-gate failures are retained below. |
 | Q-0307 | `unitary_test.py` | `4bead193a26eb24303fb96a15bd2233774924e0e` | Closed for the original runnable scenarios and notebook. |
 
 ## Interface, bit order and ownership
@@ -73,9 +73,78 @@ For mixed-polarity three-bit control of the T wrapper, native IR emits
 one controlled phase, eight T/T-adjoint instructions for the predicate,
 and two measurements. The source model counts one rotation, two And
 calls and two measurements. A source-compatible quantum child binds
-by its named emitter. Direct generic foreign object and source object
-serialization compatibility remain open.
+by its named emitter. The optional external snapshot and serialization evidence
+below completes the remaining binding obligations. Source object serialization
+failures are preserved rather than advertised as compatibility.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_unitary_block_encoding.ipynb
 ```
+
+
+## Direct external objects and canonical serialization
+
+The shared optional Ecosystem importer now captures the actual two original
+factory objects. Their forward/adjoint and positive-controlled forward/adjoint
+operations preserve alpha, epsilon, packed widths and idle logical ports. Every
+full complex matrix matches the unchanged source tensor, including the overridden
+factory's coherent ancilla/resource values. Each ordinary direction emits exactly
+one T/T-adjoint instruction; each positive-controlled direction emits one cphase.
+Independent supplied models retain the source gate categories and widths.
+
+Each emitted circuit roundtrips through existing CircuitIR JSON and executes with
+the same complete complex matrix. No serialization contract or source resolver
+is changed. The pinned source's own two protobuf fixture checks still fail in
+NumPy with `Serialization Failed` and an inhomogeneous-array ValueError. Native
+IR roundtrip success and upstream object roundtrip failure are separate facts.
+
+External single-element shapes `(1,)` and `(1, 1)` also match all four complete
+complex matrices. The source's element-width accounting still undercounts a
+multi-element shape, and both its tensor path and the importer refuse that
+partition. Unresolved shape/auxiliary sizes require explicit concrete resolution;
+existing native declaration and control tests retain those boundaries.
+
+## Directional availability and measured children
+
+The original Unitary(Add(QUInt(2), QUInt(2))) exports ordinary and adjoint circuits
+with measured And erasure. Actual imported streams, including their quantum and
+classical operands, execute correctly for every small measurement history on a
+coherent input spanning all system and nonzero logical auxiliary values. Private
+work returns to zero. The same branches agree after canonical IR JSON roundtrip.
+T/T-adjoint and measurement counts agree with the independent source Add model;
+return-binding swaps are zero in both ordinary directions.
+
+The generic source control reaches Controlled(And), whose partial LEFT/RIGHT
+signature has no graph decomposition and whose Cirq one-step decomposition is
+None. Both compute and uncompute variants are probed directly. The default
+four-way import still reports that unavailable primitive. It does not replace
+it with a separately invented controlled circuit.
+
+An explicit `include_controlled=False` request captures just forward/adjoint.
+The owned snapshot provider retains the missing controlled pair as None and
+refuses controlled binding on that object. This preserves the source's usable
+ordinary operation even when its generic control is unavailable. Directional
+independent models may likewise be None individually; a known ordinary cost is
+usable while an unknown adjoint/control cost remains unavailable. No zero-cost
+placeholder or implicit matrix synthesis is used.
+
+| Complete source definition | Native owner / evidence |
+| --- | --- |
+| Fields and THRU validation | UnitaryBlockEncoding metadata and typed constructor; original one-sided refusal tests |
+| system_bitsize and packed signature | Existing signature/partition owner; both original examples, scalar/singleton shapes and symbolic declarations |
+| signal_state | Identity BlackBoxPrepare, with original missing normalization behavior retained |
+| build_call_graph and build_composite_bloq | One supplied directional child plus idle bystanders; unchanged gate/operand/feedback comparisons and direct external snapshots |
+| Controlled/adjoint inherited paths | Existing shared predicate control and supplied positive child; complete matrices/all small histories, original Controlled(And) refusal recorded separately |
+| Display and example factories | Full native tutorial preserves both source factory signatures and the single-call graph; native representation uses owned component identities |
+| Serialization | Canonical native IR roundtrip; original source protobuf failures remain source failures |
+
+All source-file obligations are covered within those explicit source and import
+admission boundaries. This does not claim universal synthesis of arbitrary
+foreign gates or repair the pinned source's partial controlled operation.
+
+Validation: 295 concentrated cases pass in 76.34 seconds, including all existing
+Unitary tests, actual external factories, measured children and LCU consumers.
+The native Unitary notebook passes its independent kernel. Both changed
+production owners pass strict typing; Black/Ruff, scopes, architecture, IR and
+public API checks pass. All three original Unitary source assets match their
+frozen Git blobs. No reference file, stable schema or resource convention changed.

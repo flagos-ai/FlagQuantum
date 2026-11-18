@@ -1,7 +1,7 @@
 # Native block snapshots at the LCU boundary
 
-`CircuitBlockEncoding` owns explicit forward, adjoint, positive-controlled forward
-and positive-controlled adjoint `CircuitIR` snapshots. It implements the existing
+`CircuitBlockEncoding` owns explicit forward and adjoint `CircuitIR` snapshots,
+with an optional positive-controlled directional pair. It implements the existing
 block metadata and positive-controlled child factory; LCU itself is unchanged.
 
 Logical wire order is optional control, system, ancilla, resource. Private clean
@@ -119,3 +119,18 @@ It is not passing evidence. The final bounded run retains all 20 stream checks
 and concentrates repeated numerical execution in the representative family.
 Numerical samples are not called exhaustive histories; whole-catalogue channel
 certification remains a separate open Q-0286 obligation.
+
+
+## Explicitly requested directional availability
+
+The optional block importer defaults to all four original interfaces. Set
+`include_controlled=False` when requesting only ordinary forward/adjoint capture.
+The source control is then never requested; this is an explicit capture request,
+not an error-catching fallback. A missing controlled pair is represented by None,
+and controlled binding/requirements refuse it. Partial controlled pairs and
+binding-swap claims for uncaptured directions are invalid.
+
+Supplied models are also directional: each slot may be None independently.
+Known ordinary costs remain queryable when another direction has no model;
+missing costs never become zero gates. The original independent declarations and
+physical snapshot/binding inventories keep their existing separate accounting.
