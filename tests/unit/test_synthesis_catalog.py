@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 185
+    assert len(validated) == 186
+    assert (
+        "applications/finance/credit_card_fraud/credit_card_fraud",
+        "examples/synthesis/applications/finance/credit_card_fraud/overview/main.py",
+    ) in validated
     assert (
         "applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs",
         "examples/synthesis/applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview/main.py",
@@ -869,7 +873,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**185/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**186/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]
