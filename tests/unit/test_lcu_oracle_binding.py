@@ -39,13 +39,18 @@ def _bind_children(
 ) -> tuple[LCUBlockEncoding, CircuitRegisterEmitter, CircuitRegisterEmitter]:
     from qualtran import CtrlSpec
 
-    prepare = import_register_emitter(source.prepare)
+    local = tuple(reg for reg in source.prepare.junk_registers if reg.side.value == 2)
+    through = tuple(reg for reg in source.prepare.junk_registers if reg.side.value == 3)
+    prepare = import_register_emitter(
+        source.prepare, local_ports=tuple(reg.name for reg in local)
+    )
     select = import_register_emitter(source.select)
     signal = BlackBoxPrepare(
         _layout(source.prepare.selection_registers),
-        _layout(source.prepare.junk_registers),
+        _layout(through),
         prepare,
-        float(source.alpha),
+        source.alpha,
+        _layout(local),
     )
     block = SelectBlockEncoding(
         _layout(source.select.selection_registers),
@@ -83,22 +88,23 @@ def _circuit(source: Any, adjoint: bool) -> tuple[CircuitIR, LCUBlockEncoding]:
     native, prepare, select = _bind_children(source)
     control = int(source.control_val is not None)
     address = native.ancilla_bitsize
-    junk = native.resource_bitsize
+    junk = sum(width for _, width in native.junk_layout)
     target = native.system_bitsize
     logical = control + address + junk + target
     pw, pb = prepare.requirements()
     sw, sb = select.requirements()
+    local = native.select_block.signal_state.local_junk_width
     ir = (
-        Circuit(logical + max(pw, sw))
+        Circuit(logical + local + max(pw, sw))
         .append(
             native.make_on(
                 control=tuple(range(control)),
                 selection=tuple(range(control, control + address)),
                 junk=tuple(range(control + address, control + address + junk)),
                 target=tuple(range(control + address + junk, logical)),
-                prepare_workspace=tuple(range(logical, logical + pw)),
+                prepare_workspace=tuple(range(logical, logical + local + pw)),
                 prepare_classical_bits=tuple(range(pb)),
-                select_workspace=tuple(range(logical, logical + sw)),
+                select_workspace=tuple(range(logical + local, logical + local + sw)),
                 select_classical_bits=tuple(range(sb)),
                 adjoint=adjoint,
             )

@@ -7,7 +7,7 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0282 | `lcu_block_encoding.ipynb` | `4f457c91bedc3baaf94f7515242a67fffc4bf4b7` | Closed by the native tutorial. |
-| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Named/packed types, source capture and native through-port oracle replacement verified. Preparation-local sided junk execution remains open. |
+| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Native through/RIGHT oracle replacement and lifetimes verified. The original LEFT-junk extraction failure remains open. |
 | Q-0284 | `lcu_block_encoding_test.py` | `0632799611bbd5ec2b7ca724533d4bbd1bbb7169` | Closed by the original-fixture mapping and existing controlled branch evidence. |
 
 ## Binding and work ownership
@@ -26,7 +26,8 @@ system widths are 12, 2, and 18. Both representations have normalization 72
 and source error metadata zero. PREPARE owns the two logical direction
 bits. SELECT does not receive those bits. Each stage owns its temporary
 work and result slots during the call. The sequential stages can reuse the
-same physical allocation.
+same physical scratch allocation. Explicit preparation-local outputs instead
+stay live through SELECT and cannot share its scratch until unpreparation.
 
 ## Typed declarations and drawing
 
@@ -214,15 +215,11 @@ hide an output amplitude. Only individual local native unitaries are converted
 to matrices for the test interpreter; whole blocks are never contracted into a
 matrix as an import fallback.
 
-The emitter deliberately admits matching through-port circuits only. It rejects
-LEFT/RIGHT preparation junk instead of flattening it into exposed logical junk.
-Closing Q-0283 still requires an explicit lifetime binding for preparation-local
-outputs that persist across SELECT and are consumed by the source adjoint, plus
-the corresponding complete branch and work proofs. An unchanged source intake
-with one RIGHT junk bit captures the composed LCU in both directions (five wires,
-31 instructions); replacing it with LEFT junk fails at the original missing
-`local` input in both directions. The former is native integration work, while
-the latter remains a source diagnostic, not an invented executable contract.
+The default emitter admits matching through-port circuits. Its explicit
+`local_ports` request now also binds RIGHT outputs to clean caller storage and
+captures their consuming adjoint separately. These ports are not reclassified
+as logical THRU junk. The lifetime closure and remaining source diagnostic are
+described below.
 Independent source models remain caller-supplied declarations; a snapshot does
 not manufacture an estimated cost.
 
@@ -235,6 +232,101 @@ Runnable replacement evidence:
 
 ```bash
 pytest -q tests/unit/test_lcu_oracle_binding.py
+```
+
+## Directed local-output lifetime closure
+
+The Algorithms-owned `BlackBoxPrepare.local_junk_layout` describes persistent
+storage at the front of `prepare_workspace`. Its emitter receives those named
+ports separately from the remaining scratch. PREPARE starts with clean local
+storage, leaves its declared outputs live, and its original adjoint consumes
+them after SELECT. `LCUBlockEncoding` rejects SELECT scratch that overlaps this
+prefix. Its logical `junk_layout` still includes only THRU junk, while source
+`resource_bitsize` includes both THRU and preparation-local storage. SELECT can
+also use a named preparation-local output when the source declares that port;
+it is passed as that operand, never treated as zero scratch.
+
+Ecosystem maps fresh source RIGHT outputs to the unused caller local slots by
+qubit renaming. The SDK's temporary names eliminated by output relocation do not
+become idle native scratch. If output bookkeeping aliases an original input,
+the shared explicit output-order restoration applies physical SWAPs instead.
+When the adjoint returns a consumed local input as a different logical port,
+the remaining freed input storage supplies the clean physical local output.
+That alias case is checked on every basis column and measurement branch; it
+emits six binding SWAPs (four forward and two backward), separate from the
+source declaration's bookkeeping costs.
+
+The snapshot allocator also reserves source RIGHT outputs across sibling
+operations until their LEFT consumers finish. Eager export can otherwise free
+an allocation name before recursive expansion reaches an intervening SELECT.
+The previous adapter could borrow a still-live flag as SELECT scratch. The
+corrected lifetime handling is in the adapter; no Qualtran source was modified.
+Tests compare the complete source-root and composed native streams in order,
+including operands, parameters and measurement feedback. Only private wire
+identities and overwritten classical-slot versions are consistently renamed;
+no gate is reordered or removed. Both complete streams pass every-history
+cleanup certificates, including the scalar-local controlled witness.
+
+| Local output | Control | Native reserved wires | Native instructions | Native T/T-dagger, measurements | Independent source T-equivalent, measurements, peak |
+| --- | --- | ---: | ---: | --- | --- |
+| Scalar | None | 6 | 50 | 8, 2 | 8, 2, 6 |
+| Two-element QBit array | None | 7 | 52 | 8, 2 | 8, 2, 7 |
+| Scalar | Zero | 8 | 70 | 12, 3 | 12, 3, 8 |
+| Two-element QBit array | Zero | 9 | 72 | 12, 3 | 12, 3, 9 |
+| Scalar | One | 8 | 68 | 12, 3 | 12, 3, 8 |
+| Two-element QBit array | One | 9 | 70 | 12, 3 | 12, 3, 9 |
+
+Both directions retain these figures. All basis columns and a full complex
+input vector, with arbitrary logical THRU junk, are checked for every small
+measurement history against the unchanged source tensor. The local storage and
+private work finish at zero. The zero-selection case executes a RIGHT-output
+preparation and its adjoint around a non-self-adjoint SELECT; it does not bypass
+the preparation. Symbolic normalization stays metadata with concrete physical
+ports. Symbolic typed arrays and all directed junk descriptors retain the source
+signature order; unresolved widths are refused before numerical capture.
+
+The abstract preparation dependency is now closed as a complete source file,
+[Q-0693 PREPARE base](PREPARE_ORACLE_FILE_AUDIT.md). Its complete member and
+documentation map is separate from this consumer's remaining defect.
+
+## Complete source definition disposition
+
+| Source members | Owner and disposition |
+| --- | --- |
+| `_total_bits`; both classes' size and register properties | Ordered register totals, native layouts and typed signature helpers; concrete, symbolic and shaped declarations verified. |
+| SELECT `alpha`, `epsilon`, `signature`, `signal_state` | Native SELECT and its independent PREPARE signal; symbolic norm retained, error remains the source zero placeholder, no PREPARE junk execution port. |
+| SELECT `build_composite_bloq` | One existing SELECT emitter; original named/packed factories, both directions and complete history proofs. |
+| Both `wire_symbol` methods | `drawer/lcu_block_symbols.py`; empty connector, `B[H]`, and the original literal `control` name rule remain unchanged. |
+| LCU `control_registers`, `alpha`, `epsilon`, `signature`, `signal_state` | Optional scalar control, original selection/THRU-junk/target ordering and identity zero signal; typed and symbolic declaration tests. |
+| LCU `build_composite_bloq` | Native PREPARE, directional SELECT, original PREPARE adjoint; THRU/RIGHT storage, aliases, zero selection, complete operators and branches verified. LEFT-input extraction fails in the unchanged source. |
+| LCU `get_ctrl_system`, `adjoint` | Source-specialized SELECT is captured for each activation value and each direction; PREPARE stays unconditional. Shared control construction remains its own owner. |
+| Four factories and two documentation records | Existing named/packed Hubbard catalogue, original tests and independently executed native tutorial; Q-0282/Q-0284 evidence is reused. |
+
+Q-0283 remains open under the frozen closure criteria: the source excludes LEFT
+junk from its external signature and then requests that missing input while
+building the preparation. Both directions raise `KeyError('local')` in the
+reproducible fixture. The adapter preserves this diagnostic and does not invent
+an external operand or silently repair the reference. Wire-free scalar carrier
+admission remains tracked with the shared Phase wrapper's existing boundary.
+
+Final verification passes 361 concentrated consumer/interop cases, 14
+complete PREPARE-base cases, 60 local CPU/representation integration cases,
+and the independent LCU notebook kernel, without skips. Strict typing covers
+all 169 Algorithms and touched adapter files at the configured Python floor.
+Two existing `Self` imports now use the already-used `typing_extensions` owner
+so that default check passes; quantum algorithms are unchanged by that fix.
+Formatting, ownership, architecture, multi-level IR and public API checks pass.
+The
+parallel coverage worker failed during Torch import before running tests; it
+is not acceptance evidence. Coverage is collected serially with Torch already
+loaded, and the ordinary regression runs in two workers. The serial 109-case
+coverage subset reports 91% across the six measured modules; changed executable
+statements within that scope are 84/86 covered (97.7%). The two uncovered changed
+statements reject a non-scalar norm and an inconsistent source register extent.
+Coverage is not a substitute for the complete operator and branch comparisons.
+
+```bash
+pytest -q tests/unit/test_lcu_sided_junk.py tests/unit/test_prepare_oracle_file.py
 ```
 
 ```bash
