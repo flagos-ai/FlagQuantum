@@ -24,6 +24,7 @@ Native FlagQuantum programs currently available:
 - [overview](hackathons/iquhack_2025/winning_gaussian/overview/README.md)
 - [overview](hackathons/iquhack_2025/workshop/overview/README.md)
 - [overview](basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/README.md)
+- [overview](basic_examples/logical_qubits/logical_qubits_by_alice_and_bob/overview/README.md)
 - [superposition](basic_examples/superposition/README.md)
 - [overview](basics/vqe/overview/README.md)
 - [overview](paper_implementation_project/block_encoding_nd_laplacian/overview/README.md)

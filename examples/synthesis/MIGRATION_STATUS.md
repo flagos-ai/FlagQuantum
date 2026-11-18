@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **211/213**.
+Validated local Notebook workflows: **212/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -288,7 +288,7 @@ Validated local Notebook workflows: **211/213**.
 | `community/Hackathons/iQuHack_2025/Challenge_solution/winning_solution/classiq_iQuHack_2025_quantum_tree_sol` | notebook_workflow | [Native program](community/hackathons/iquhack_2025/winning_gaussian/overview/main.py) | validated |
 | `community/Hackathons/iQuHack_2025/Workshop/WS_iQuHack_2025_final` | notebook_workflow | [Native program](community/hackathons/iquhack_2025/workshop/overview/main.py) | validated |
 | `community/basic_examples/hw_aware_synthesis/hw_aware_synthesis` | notebook_workflow | [Native program](community/basic_examples/hw_aware_synthesis/hw_aware_synthesis/overview/main.py) | validated |
-| `community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob` | notebook_workflow | Pending | pending |
+| `community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob` | notebook_workflow | [Native program](community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob/overview/main.py) | validated |
 | `community/basic_examples/superposition/superposition` | notebook_workflow | [Native program](community/basic_examples/superposition/main.py) | validated |
 | `community/basic_examples/vqe/vqe` | notebook_workflow | [Native program](community/basics/vqe/overview/main.py) | validated |
 | `community/paper_implementation_project/Block_encoding-ND_Laplacian/1D_Periodic_Laplacian_BE` | quantum_program | [Native program](community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_1d/main.py) | pending |
