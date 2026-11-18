@@ -7,6 +7,7 @@ and any composed Boolean predicate. The existing static conversion is separate.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from math import pi
 from typing import Any
 
 from ...compiler.registers.primitives.global_phase import (
@@ -16,7 +17,7 @@ from ...compiler.registers.primitives.global_phase import (
 from ...core.classical_control import validate_classical_control
 from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import CircuitIR, Instruction
-from .conversion import _cirq, _lower_gate, _report
+from .conversion import _cirq, _lower_gate, _real_scalar, _report
 from .models import CirqConversionError, CirqConversionIssue, CirqImportResult
 
 Bit = int | bool
@@ -25,20 +26,43 @@ Bit = int | bool
 def _lower_feedback_gate(
     cirq: Any, gate: Any, issues: list[CirqConversionIssue], index: int
 ) -> tuple[str, dict[str, Any]] | None:
-    """Retain canonical singly controlled rotations as native primitives."""
+    """Retain exact phase powers and canonical singly controlled primitives."""
+    if isinstance(gate, (cirq.ZPowGate, cirq.CZPowGate)) and gate.global_shift == 0:
+        # A Z power is a phase gate, not Rz: its scalar phase is observable
+        # after coherent control. Preserve exact fixed opcodes when available.
+        lowered = _lower_gate(cirq, gate, [], index)
+        if lowered is not None:
+            return lowered
+        exponent = _real_scalar(gate.exponent, issues, index, "phase power")
+        if exponent is not None:
+            return ("cphase" if isinstance(gate, cirq.CZPowGate) else "phase"), {
+                "theta": pi * exponent
+            }
+        return None
     if (
         isinstance(gate, cirq.ControlledGate)
         and gate.num_controls() == 1
         and tuple(tuple(v) for v in gate.control_values) == ((1,),)
     ):
-        sub = gate.sub_gate
-        if (
-            isinstance(sub, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate))
-            and sub.global_shift == -0.5
+        lowered = _lower_feedback_gate(cirq, gate.sub_gate, issues, index)
+        if lowered is not None and lowered[0] in (
+            "rx",
+            "ry",
+            "rz",
+            "h",
+            "x",
+            "y",
+            "z",
+            "phase",
         ):
-            lowered = _lower_gate(cirq, sub, issues, index)
-            if lowered is not None and lowered[0] in ("rx", "ry", "rz"):
-                return "c" + lowered[0], lowered[1]
+            return "c" + lowered[0], lowered[1]
+        # Fixed S/T have precisely the same diagonal phase convention.
+        if isinstance(gate.sub_gate, cirq.ZPowGate) and gate.sub_gate.global_shift == 0:
+            exponent = _real_scalar(
+                gate.sub_gate.exponent, issues, index, "controlled phase power"
+            )
+            if exponent is not None:
+                return "cphase", {"theta": pi * exponent}
     return _lower_gate(cirq, gate, issues, index)
 
 

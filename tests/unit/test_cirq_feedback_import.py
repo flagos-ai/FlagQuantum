@@ -323,3 +323,22 @@ def test_scoped_qubit_reservation_restores_after_nested_exception() -> None:
     (restored,) = manager.qalloc(1)
     assert restored == external
     manager.qfree([first, second, restored])
+
+
+@pytest.mark.parametrize("exponent", (0.125, -0.37, 1.25))
+def test_fractional_phase_powers_and_controlled_h_preserve_absolute_phase(
+    exponent: float,
+) -> None:
+    import cirq
+
+    a, b, c = cirq.LineQubit.range(3)
+    source = cirq.Circuit(
+        cirq.H(c),
+        cirq.measure(c, key="record"),
+        cirq.ZPowGate(exponent=exponent)(a),
+        cirq.CZPowGate(exponent=exponent)(a, b),
+        cirq.H(b).controlled_by(a),
+        cirq.CZPowGate(exponent=-exponent)(a, b).with_classical_controls("record"),
+        cirq.ZPowGate(exponent=exponent)(b).controlled_by(a),
+    )
+    compare_every_branch(source, (a, b, c))
