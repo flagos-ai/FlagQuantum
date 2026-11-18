@@ -13,6 +13,7 @@ from ._feedback_import import (
     _lower_feedback_gate,
     import_cirq_feedback,
 )
+from ._modular_arithmetic import _mod_add_operations, _private_modular_keys
 from ._qubit_manager import InteropQubitManager
 from .conversion import _cirq
 
@@ -49,7 +50,9 @@ class _CleanAllocations:
 
 
 def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitIR, int]:
+    from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.basic_gates import TwoBitCSwap
+    from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
 
     cirq = _cirq()
     shapes: dict[str, tuple[int, ...]] = {}
@@ -113,11 +116,26 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
 
     decomposition_manager = InteropQubitManager(manager)
     decomposition_manager.manage_qubits(incoming)
+    modular_calls = 0
+    modular_tag = object()
 
     def leaf_operation(op: Any) -> Any:
         """Use a source leaf's concrete operation only with unchanged ports."""
+        nonlocal modular_calls
         if op.tags:
             return NotImplemented
+        arithmetic = getattr(op.gate, "bloq", op.gate)
+        if isinstance(arithmetic, Adjoint) and type(arithmetic.subbloq) is ModAddK:
+            arithmetic = arithmetic.subbloq**-1
+        if type(arithmetic) is ModAddK:
+            modular_calls += 1
+            return _mod_add_operations(
+                arithmetic,
+                tuple(op.qubits),
+                decomposition_manager,
+                f"mod_add_{modular_calls}",
+                modular_tag,
+            )
         leaf = getattr(op.gate, "bloq", None)
         if leaf is None:
             return NotImplemented
@@ -177,6 +195,8 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
     # Preserve the source's expanded operation order. Conversion must not add
     # a second scheduling pass that interleaves atomic compute/erase recipes.
     primitive = cirq.Circuit(operations, strategy=cirq.InsertStrategy.NEW)
+    if modular_calls:
+        primitive = _private_modular_keys(cirq, primitive, modular_tag)
     order = (*incoming, *(q for q in manager.allocated if q not in incoming))
     if not (set(primitive.all_qubits()) | set(outgoing)) <= set(order):
         raise ValueError("Foreign oracle used undeclared external quantum inputs")
