@@ -1,13 +1,13 @@
 # Target-CZ block optimization and many-to-many compilation lineage
 
-Status: proposed, not approved or implemented.
+Status: approved on 2026-11-18; implementation and release qualification pending.
 Date: 2026-11-18.
 Owner: Integration for the versioned contract; Core for evidence values and
 readers; Compiler for transformation and verification; Runtime and Deployment
 for read-only handoff adapters.
 Classification: `single_device_fast_path`.
 
-## Decision requested
+## Approved decision
 
 Authorize a bounded, target-dependent block optimization stage in the existing
 target compilation workflow, together with physical-plan and compilation-evidence
@@ -318,6 +318,39 @@ Required delivery order:
    time, memory, failures, unsupported cases, and regressions independently.
 
 The exact [candidate contract](../../contracts/compiler-cz-block-lineage-v4-candidate.json) records the admitted fields and bounds.
-No implementation or default change described here is authorized until the user
-approves this proposal. API-owner approval does not waive CODEOWNER review,
+The user explicitly approved the complete PR #1221 proposal scope on 2026-11-18:
+the automatic qualifying-CZ stage, appended result field, and v4 many-to-many
+evidence read/write, preserving v1-v3 reading and identity semantics. The approval
+excludes root native target admission, free final layout, and global-phase writing.
+API-owner approval does not waive CODEOWNER review,
 Integration-first delivery, capability evidence, or required checks.
+
+## Integration contract fake
+
+`tests/unit/test_compiler_cz_block_contract_fake.py` retains the actual numerical
+baseline and prototype output from the operator example. A single test consumer
+accepts either an identity stage or the recorded reducing stage, then uses the
+existing dependency scheduler and OpenQASM emitter without changing those
+consumers. The reducing fake emits two CZ operations instead of four. Its
+complete-column operator oracle embeds explicit RX/RZ/CZ definitions, independently
+of Compiler matrix multiplication and synthesis, and recomputes both block and
+complete-program equivalence. The numerical fixture remains unchanged.
+
+The fake checks exact baseline instance retention, target and stage identity,
+closed rejection counters, exclusive memberships, CZ savings, phase and operator
+residuals, empty-output cancellation, and block/combined growth limits. Tests
+recompute identities after tampering to distinguish structural or numerical
+rejection from a stale checksum. The fake's identity is explicitly test-domain
+only; it does not assign a production v4 serialization encoding.
+
+Run the review-only conformance path with:
+
+```bash
+python -m pytest tests/unit/test_compiler_cz_block_contract_fake.py -q
+```
+
+This is an executable Integration prerequisite, not evidence that a production
+v4 bundle can already be read, compiled, or deployed. Actual target-artifact
+replacement, routing transition replay, legacy bundle identity fixtures, strict
+v4 parsing, and Runtime/Deployment handoff remain the subsequent delivery gates
+above. The fake does not optimize arbitrary programs or claim performance parity.

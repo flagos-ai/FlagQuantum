@@ -1,8 +1,8 @@
 {
   "schema": "flagquantum.compiler_cz_block_lineage_candidate",
-  "status": "proposed_unapproved",
+  "status": "approved_pending_implementation",
   "proposal": "docs/api-changes/FQ-COMPILER-CZ-BLOCK-LINEAGE-20261118.md",
-  "implementation_authorized": false,
+  "implementation_authorized": true,
   "classification": "single_device_fast_path",
   "owner_sequence": [
     "integration",
@@ -164,5 +164,7 @@
     "parity_established": false,
     "superiority_established": false,
     "sdkbench_resource_evaluation_complete": false
-  }
+  },
+  "approved_on": "2026-11-18",
+  "approval_scope": "PR #1221 proposal scope approved explicitly by the user; release qualification remains pending"
 }
