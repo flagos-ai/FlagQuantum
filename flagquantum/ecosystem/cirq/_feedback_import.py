@@ -27,6 +27,8 @@ def _lower_feedback_gate(
     cirq: Any, gate: Any, issues: list[CirqConversionIssue], index: int
 ) -> tuple[str, dict[str, Any]] | None:
     """Retain exact phase powers and canonical singly controlled primitives."""
+    if gate == cirq.CY:
+        return "cy", {}
     if isinstance(gate, (cirq.XPowGate, cirq.CXPowGate)) and gate.global_shift == 0:
         exponent = _real_scalar(gate.exponent, issues, index, "X power")
         if exponent is not None and exponent % 2 in (0.5, 1.5):
