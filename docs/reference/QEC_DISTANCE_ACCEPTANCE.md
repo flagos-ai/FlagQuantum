@@ -1,7 +1,7 @@
 # Surface and Repetition distance acceptance
 
 The requested 14 Surface distances and 14 Repetition distances passed their
-default Z-memory workflow on main `ce8f07b9`. This is a fixed-budget CPU
+default Z-memory workflow on main `ce8f07b9de04e0c6de3064629c6e04479c0af314`. This is a fixed-budget CPU
 workflow check. Each configuration uses three syndrome rounds, 64 original
 noisy-circuit shots in four batches of 16, and the bundled Sparse Blossom
 decoder. The noise rates are independent X faults 0.005, Z faults 0.007 and
