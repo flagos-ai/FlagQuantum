@@ -88,9 +88,21 @@ def _has_explicit_matrix(cirq: Any, gate: Any) -> bool:
             gate = gate.subbloq
         else:
             break
-    return isinstance(gate, cirq.MatrixGate) or (
+    if isinstance(gate, cirq.MatrixGate) or (
         getattr(gate, "matrix", None) is not None
         and callable(getattr(gate, "_unitary_", None))
+    ):
+        return True
+    # A pure Cirq leaf may supply its matrix only through the unitary protocol.
+    # Keep provider decompositions and register-component boundaries intact;
+    # their unitary protocols may contract an entire algorithm.
+    return (
+        isinstance(gate, cirq.Gate)
+        and not hasattr(gate, "signature")
+        and callable(getattr(gate, "_unitary_", None))
+        and not callable(getattr(gate, "_decompose_", None))
+        and not callable(getattr(gate, "_decompose_with_context_", None))
+        and _lower_feedback_gate(cirq, gate, [], 0) is None
     )
 
 
