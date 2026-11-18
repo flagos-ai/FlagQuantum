@@ -58,8 +58,47 @@ parameters before emitting gates.
 
 ## Remaining source boundaries
 
-Q-0687 and Q-0689 are covered. Q-0688 retains symbolic execution and
-the unsigned angle format boundary. A negative forward exponent is
+Q-0687 and Q-0689 are covered. Q-0688 retains unresolved symbolic execution and
+the unsigned angle format boundary. Explicit factory resolution is covered below.
+A negative forward exponent is
 rejected in the source unsigned conversion. Native reversal uses the
 adjoint of the nonnegative encoded operation. Q-0666 remains open
 while its other rotation exports retain their registered boundaries.
+
+## Complete factory resolution and replacement
+
+The complete class, three example factories, documentation specification and
+original test file map to the existing native catalog, compiler and file tests.
+The two source symbolic factories are resolved explicitly with `attrs.evolve`
+before import. The same operation binds the concrete factory to the small
+validation cases. Native execution uses `circuit.append(op)` and the existing
+controlled-XOR and measured phase-addition owners. The source reference remains
+unchanged.
+
+`test_zpow_source_binding.py` covers widths one, two and three with exponent
+`3/8`, and three-bit exponents `1.25` and `3.0`. The latter exercises the original
+unsigned wrapping conversion. Each resolved object is imported in both directions,
+round-tripped through owned JSON IR and replaced by the native emitter at the same
+named append consumer. Complete logical operators, exact primitive histograms,
+all-history channel certificates and independently checked final-zero storage
+agree. Explicit projections enumerate every raw measurement history on a complex
+superposition of all logical words. Every Fourier-gradient input also has the
+analytic complex phase from the stored half-exponent. The existing source-graph
+walker checks child order, physical operands and feedback at the shared arithmetic
+lowering depth. Resource categories and live width are checked independently
+against the original model.
+
+| Concrete width and exponent | Literal T/T† | Literal CX | Literal measurements | Reserved wires |
+| --- | ---: | ---: | ---: | ---: |
+| 1, 3/8 | 0 | 1 | 0 | 3 |
+| 2, 3/8 | 4 | 9 | 1 | 6 |
+| 3, 3/8 | 8 | 23 | 2 | 9 |
+
+The same histograms hold in both directions. These measured primitive counts
+remain separate from the source abstract Toffoli/Clifford model above. The
+one-bit source Add model anomaly is inherited. An unresolved symbolic precision
+fails physical shape validation, while an unresolved symbolic angle reaches the
+source decomposition rejection. Negative forward exponents fail the original
+unsigned conversion and the native admission check. These cases remain explicit
+boundaries under Q-0688. The previously accepted 40-bit body, original tensor
+tests, independent notebook and symbolic model evidence are reused.
