@@ -137,7 +137,7 @@ def test_actual_hubbard_children_replace_lcu_consumers_and_clean_all_histories(
         ir.instructions, n_wires=ir.n_wires, zero_wires=work
     )
     assert count == (86 if control is None else 89)
-    assert len(work) == 6
+    assert len(work) == 8  # Complete exported-frame liveness reserves two extra names.
     counts = Counter(g.name for g in ir.instructions)
     assert counts["t"] + counts["tdg"] == (540 if control is None else 552)
     assert len(ir.instructions) == (

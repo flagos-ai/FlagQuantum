@@ -74,7 +74,9 @@ def test_actual_original_named_and_packed_roots_all_measurement_histories(
     else:
         controlled = mode != "lcu"
         assert count == (89 if controlled else 86)
-        assert len(work) == 6
+        assert (
+            len(work) == 8
+        )  # Complete exported-frame liveness reserves two extra names.
         assert (
             len(ir.instructions)
             == {

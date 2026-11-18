@@ -14,6 +14,7 @@ from ._feedback_import import (
     import_cirq_feedback,
 )
 from ._modular_arithmetic import _mod_add_operations, _private_modular_keys
+from ._phase_arithmetic import _phase_add_operations
 from ._qubit_manager import InteropQubitManager
 from .conversion import _cirq
 
@@ -60,6 +61,7 @@ def _snapshot(
     from qualtran._infra.adjoint import Adjoint
     from qualtran.bloqs.basic_gates import TwoBitCSwap
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
+    from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
 
     cirq = _cirq()
     if type(scalar_carrier) is not bool or (scalar_carrier and ports):
@@ -157,14 +159,29 @@ def _snapshot(
     decomposition_manager = InteropQubitManager(manager)
     decomposition_manager.manage_qubits(incoming)
     modular_calls = 0
+    phase_calls = 0
     modular_tag = object()
 
     def leaf_operation(op: Any) -> Any:
         """Use a source leaf's concrete operation only with unchanged ports."""
-        nonlocal modular_calls
+        nonlocal modular_calls, phase_calls
         if op.tags:
             return NotImplemented
         arithmetic = getattr(op.gate, "bloq", op.gate)
+        if (
+            isinstance(arithmetic, Adjoint)
+            and type(arithmetic.subbloq) is AddIntoPhaseGrad
+        ):
+            arithmetic = arithmetic.subbloq.adjoint()
+        if type(arithmetic) is AddIntoPhaseGrad:
+            phase_calls += 1
+            return _phase_add_operations(
+                arithmetic,
+                tuple(op.qubits),
+                decomposition_manager,
+                f"phase_add_{phase_calls}",
+                modular_tag,
+            )
         if isinstance(arithmetic, Adjoint) and type(arithmetic.subbloq) is ModAddK:
             arithmetic = arithmetic.subbloq**-1
         if type(arithmetic) is ModAddK:
@@ -216,49 +233,54 @@ def _snapshot(
         # Export constructs sibling operations before recursively decomposing
         # them. Its allocator may already have freed a RIGHT output that is
         # still live between the producing and consuming sibling operations.
-        live_outputs: set[Any] = set()
-        for op in cirq.flatten_to_ops(tree):
-            if admitted(op):
-                yield op
-                continue
-            leaf = getattr(op.gate, "bloq", op.gate)
-            consumed: set[Any] = set()
-            produced: set[Any] = set()
-            if isinstance(leaf, Bloq):
-                offset = 0
-                for reg in leaf.signature:
-                    count = int(reg.total_bits())
-                    qubits = op.qubits[offset : offset + count]
-                    if reg.side.value == 1:
-                        consumed.update(qubits)
-                    elif reg.side.value == 2:
-                        produced.update(qubits)
-                    offset += count
-                if offset != len(op.qubits):
-                    raise ValueError(
-                        "Foreign operation does not match its register extent"
-                    )
-            with decomposition_manager.reserve_qubits((*op.qubits, *live_outputs)):
-                child = leaf_operation(op)
-                if child is NotImplemented:
-                    child = cirq.decompose_once(
-                        op,
-                        context=cirq.DecompositionContext(decomposition_manager),
-                        default=None,
-                    )
-                if child is None:
-                    raise ValueError(
-                        f"Foreign oracle primitive cannot be decomposed: {op!r}"
-                    )
-                yield from expand(child)
-            live_outputs.difference_update(consumed)
-            live_outputs.update(produced)
+        frame = tuple(cirq.flatten_to_ops(tree))
+        # All sibling Qids belong to this already exported circuit frame.
+        # Later siblings can own a prepared flag even when the exporter has
+        # eagerly freed it; descendants must not allocate that live Qid.
+        with decomposition_manager.reserve_qubits(q for op in frame for q in op.qubits):
+            live_outputs: set[Any] = set()
+            for op in frame:
+                if admitted(op):
+                    yield op
+                    continue
+                leaf = getattr(op.gate, "bloq", op.gate)
+                consumed: set[Any] = set()
+                produced: set[Any] = set()
+                if isinstance(leaf, Bloq):
+                    offset = 0
+                    for reg in leaf.signature:
+                        count = int(reg.total_bits())
+                        qubits = op.qubits[offset : offset + count]
+                        if reg.side.value == 1:
+                            consumed.update(qubits)
+                        elif reg.side.value == 2:
+                            produced.update(qubits)
+                        offset += count
+                    if offset != len(op.qubits):
+                        raise ValueError(
+                            "Foreign operation does not match its register extent"
+                        )
+                with decomposition_manager.reserve_qubits((*op.qubits, *live_outputs)):
+                    child = leaf_operation(op)
+                    if child is NotImplemented:
+                        child = cirq.decompose_once(
+                            op,
+                            context=cirq.DecompositionContext(decomposition_manager),
+                            default=None,
+                        )
+                    if child is None:
+                        raise ValueError(
+                            f"Foreign oracle primitive cannot be decomposed: {op!r}"
+                        )
+                    yield from expand(child)
+                live_outputs.difference_update(consumed)
+                live_outputs.update(produced)
 
     operations = () if operation is None else expand(operation)
     # Preserve the source's expanded operation order. Conversion must not add
     # a second scheduling pass that interleaves atomic compute/erase recipes.
     primitive = cirq.Circuit(operations, strategy=cirq.InsertStrategy.NEW)
-    if modular_calls:
+    if modular_calls or phase_calls:
         primitive = _private_modular_keys(cirq, primitive, modular_tag)
     # A fresh RIGHT output can use the caller's unused clean local slot by
     # renaming its entire lifetime. This is bookkeeping, not a physical SWAP.

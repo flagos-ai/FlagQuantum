@@ -152,11 +152,14 @@ when controlled. Returned-wire binding swaps are zero.
 | Captured source mode, named or packed | Reserved wires | Instructions | Measurements | T/T-dagger |
 | --- | ---: | ---: | ---: | ---: |
 | SELECT | 35 | 1134 | 40 | 230 |
-| LCU | 38 | 2526 | 86 | 540 |
-| LCU, control on zero | 39 | 2578 | 89 | 552 |
-| LCU, control on one | 39 | 2576 | 89 | 552 |
+| LCU | 40 | 2526 | 86 | 540 |
+| LCU, control on zero | 41 | 2578 | 89 | 552 |
+| LCU, control on one | 41 | 2576 | 89 | 552 |
 
-Both directions retain these figures. The source abstract model still reports
+Both directions retain these figures. Frame lifetime protection prevents
+descendants from allocating any sibling Qid still present in the exported
+circuit; this reserves two additional private names without adding gates.
+The source abstract model still reports
 74 or 77 measurements and its own logical peak as shown above. The added
 physical work and erasures belong to native realization of the declared
 arithmetic. An earlier generic realization used more work for unit steps;
@@ -199,7 +202,9 @@ control modes, pass replacement and every-history cleanup certificates. The
 physical instruction, measurement, T-family and reserved-wire figures remain
 exactly those in the capture table above. SELECT-only replacement has 30 logical
 wires and five private wires; its nonidentity signal PREPARE retains its own two
-logical junk bits and is not executed by SELECT. The LCU has six private wires.
+logical junk bits and is not executed by SELECT. The captured LCU now reserves eight private wires after complete exported-frame
+lifetime protection; its gates and measurements remain unchanged. The existing
+hand-written Hubbard implementation still uses its original work layout.
 
 For each small source case, every basis column, arbitrary logical through-junk
 inputs and a complete complex input vector are compared with the unchanged
