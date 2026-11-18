@@ -1229,13 +1229,11 @@
       "Final-head regression and automatic CI are separate gates."
     ]
   },
-  "validation_commit": "29aa778ab5604059c5a4337f9b250c6c4b606d9c",
   "full_regression": {
-    "head": "29aa778ab5604059c5a4337f9b250c6c4b606d9c",
     "smoke_or_unit": {
       "selection": "all collected nodes matching smoke or unit",
-      "unique_nodes": 21278,
-      "passed": 21101,
+      "unique_nodes": 21361,
+      "passed": 21184,
       "skipped": 177,
       "initial_run": {
         "passed": 21100,
@@ -1244,13 +1242,18 @@
         "failure": "tests/unit/test_evidence_revisions.py::test_checked_in_evidence_accounts_for_every_recorded_revision"
       },
       "diagnosis": "The remote detached checkout contained the candidate commit as an object but had no ref pointing to the candidate branch. The evidence-revision test correctly rejected it as unaccounted.",
-      "recovery": "Created the local fix/toric-code-distance-search ref at the already-tested head; no source or test changes. Reran the failed evidence test file only: 58 passed. The rerun repeated 57 previously passing tests; unique outcomes count each selected node once.",
+      "recovery": "Created the local branch ref at the tested head without source changes. The existing smoke-remaining.xml records 84 passed: the 83 absent nodes plus the initially failed node. Set reconciliation proves no missing selected node; unique totals count each node once. Additional 58-test evidence checks pass on the publication tree.",
       "raw_evidence": {
         "junit": "smoke-unit.xml",
         "stdout": "smoke-unit.stdout",
         "stderr": "smoke-unit.stderr",
-        "focused_recovery": "evidence-unit.stdout"
-      }
+        "focused_recovery": "evidence-unit.stdout",
+        "remaining_junit": "smoke-remaining.xml",
+        "combined_receipt": "SMOKE_COMBINED_PASSED.json"
+      },
+      "selected_test_nodes": 21334,
+      "collection_skips": 27,
+      "manifest_reconciliation": "The complete marker collection has 21,334 test nodes. Initial JUnit accounts for 21,251, plus 27 collection skips. The 83 initially absent nodes comprise five evidence tests included in the 58-test recovery and 78 disjoint remaining tests."
     },
     "integration": {
       "passed": 12496,
@@ -1264,6 +1267,7 @@
         "stderr": "integration.stderr"
       },
       "native_extension_cleanup_verified": true
-    }
+    },
+    "commit": "29aa778ab5604059c5a4337f9b250c6c4b606d9c"
   }
 }
