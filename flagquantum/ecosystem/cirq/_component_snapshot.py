@@ -174,7 +174,9 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
                 yield from expand(child)
 
     operations = () if operation is None else expand(operation)
-    primitive = cirq.Circuit(operations)
+    # Preserve the source's expanded operation order. Conversion must not add
+    # a second scheduling pass that interleaves atomic compute/erase recipes.
+    primitive = cirq.Circuit(operations, strategy=cirq.InsertStrategy.NEW)
     order = (*incoming, *(q for q in manager.allocated if q not in incoming))
     if not (set(primitive.all_qubits()) | set(outgoing)) <= set(order):
         raise ValueError("Foreign oracle used undeclared external quantum inputs")
