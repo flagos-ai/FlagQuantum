@@ -1,9 +1,10 @@
+# Copyright 2023 Google LLC
 # Copyright 2024 Google LLC
 # SPDX-License-Identifier: Apache-2.0
 # Adapted from Qualtran v0.7.0 GeneralizedQSP.
 # https://github.com/quantumlib/Qualtran/blob/bcb17bb25360ed68ce3bc084645db3e929799389/qualtran/bloqs/qsp/generalized_qsp.py
 
-"""Bind finite complementary polynomials and named unitary ports for append."""
+"""Declare QSP metadata and bind known coefficients on named unitary ports."""
 
 from __future__ import annotations
 
@@ -22,9 +23,15 @@ from ...compiler.registers.layout.partition import RegisterLayout, partition_reg
 from ...compiler.registers.phase.generalized_qsp import generalized_qsp_ir
 from ...compiler.registers.phase.su2_rotation import su2_rotation_calls
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ...core.ir.program.registers import Register
+from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicInt, SymbolicReal
+from ...core.value_parameters import is_symbolic_value
 from ...simulation.numerics.qsp_complement import qsp_complementary_polynomial
 from ...simulation.numerics.qsp_grid import assert_is_qsp_polynomial
 from ...simulation.numerics.qsp_phases import qsp_phase_factors
+from ...simulation.value_dimensions import SymbolicArrayShape, value_length
 
 if TYPE_CHECKING:
     import numpy as np
@@ -36,6 +43,11 @@ UnitaryEmitter = Callable[
     [int, Mapping[str, tuple[int, ...]], tuple[int, ...], int | None, bool],
     tuple[Instruction, ...],
 ]
+
+
+def source_gqsp_signature(unitary_signature: Signature) -> Signature:
+    """Prepend the signal to the complete unchanged unitary register descriptors."""
+    return Signature((Register("signal", quantum_bit_type()), *unitary_signature))
 
 
 @dataclass(frozen=True)
@@ -51,26 +63,49 @@ class GeneralizedQSP:
 
     unitary_layout: RegisterLayout
     unitary: UnitaryEmitter
-    p: Sequence[complex]
-    q: Sequence[complex]
-    negative_power: int = 0
-    precision: float = field(default=1e-11, kw_only=True)
+    p: Sequence[complex] | SymbolicArrayShape
+    q: Sequence[complex] | SymbolicArrayShape
+    negative_power: SymbolicInt = 0
+    precision: SymbolicReal = field(default=1e-11, kw_only=True)
 
     def __post_init__(self) -> None:
-        object.__setattr__(self, "p", tuple(self.p))
-        object.__setattr__(self, "q", tuple(self.q))
-        if len(self.p) < 2 or len(self.q) < 2:
-            raise ValueError("GQSP Polynomial must have degree at least 1")
+        if not isinstance(self.p, SymbolicArrayShape):
+            object.__setattr__(self, "p", tuple(self.p))
+        if not isinstance(self.q, SymbolicArrayShape):
+            object.__setattr__(self, "q", tuple(self.q))
+        for polynomial in (self.p, self.q):
+            degree = value_length(polynomial) - 1
+            if not is_symbolic_value(degree) and degree <= 0:
+                raise ValueError("GQSP Polynomial must have degree at least 1")
+
+    @property
+    def signature(self) -> Signature:
+        """Describe scalar binding ports with the existing opaque layout types."""
+        return source_gqsp_signature(
+            Signature(
+                Register(name, opaque_register_type(width))
+                for name, width in self.unitary_layout
+            )
+        )
+
+    def is_symbolic(self) -> bool:
+        """Retain source classification of coefficients and Laurent power."""
+        return is_symbolic_value(self.p, self.q, self.negative_power)
+
+    @property
+    def precision_per_rotation(self) -> SymbolicReal:
+        """Retain source coefficient-count plus one synthesis allocation."""
+        return self.precision / (value_length(self.p) + 1)
 
     @classmethod
     def from_qsp_polynomial(
         cls,
         unitary_layout: RegisterLayout,
         unitary: UnitaryEmitter,
-        p: Sequence[complex],
+        p: Sequence[complex] | SymbolicArrayShape,
         *,
-        negative_power: int = 0,
-        precision: float = 0,
+        negative_power: SymbolicInt = 0,
+        precision: SymbolicReal = 0,
         verify: bool = False,
         verify_precision: float = 1e-7,
         fft: Callable[[_NumericArray], NDArray[np.complex128]] | None = None,
@@ -79,8 +114,11 @@ class GeneralizedQSP:
 
         Verification requires an explicit FFT provider. Its finite-grid bound
         check is not a whole-circle certificate. Preserve complement failures
-        and the source factory's zero precision default.
+        and the source factory's zero precision default. Shape-only input retains
+        the direct constructor precision default and skips numerical verification.
         """
+        if isinstance(p, SymbolicArrayShape) or is_symbolic_value(p):
+            return cls(unitary_layout, unitary, p, p, negative_power)
         if verify:
             if fft is None:
                 raise ValueError("GQSP verification requires an FFT provider")
@@ -99,6 +137,10 @@ class GeneralizedQSP:
 
     @cached_property
     def _phases(self) -> tuple[tuple[float, ...], tuple[float, ...], float]:
+        if isinstance(self.p, SymbolicArrayShape) or isinstance(
+            self.q, SymbolicArrayShape
+        ):
+            raise ValueError("Cannot compute phases for shape-only GQSP polynomials")
         theta, phi, lambd = qsp_phase_factors(self.p, self.q)
         return tuple(map(float, theta)), tuple(map(float, phi)), lambd
 
@@ -113,7 +155,7 @@ class GeneralizedQSP:
                 t,
                 p,
                 lambd if i == 0 else 0,
-                precision=self.precision / (len(self.p) + 1),
+                precision=self.precision_per_rotation,
             )
             for i, (t, p) in enumerate(zip(theta, phi, strict=True))
         )
@@ -125,6 +167,10 @@ class GeneralizedQSP:
         workspace: tuple[int, ...] = (),
     ) -> tuple[Instruction, ...]:
         """Bind ordered big-endian ports and lower through the existing Compiler."""
+        if self.is_symbolic():
+            raise ValueError("Cannot emit symbolic GQSP coefficients or Laurent power")
+        if type(self.negative_power) is not int:
+            raise ValueError("GQSP negative_power must be a nonnegative integer")
         if "signal" in dict(self.unitary_layout):
             raise ValueError("GQSP reserves the signal port name")
         ports = partition_register(target, self.unitary_layout)

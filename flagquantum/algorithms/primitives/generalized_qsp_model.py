@@ -5,7 +5,48 @@
 
 """Declared finite GQSP component calls, independent of physical emission."""
 
+from collections.abc import Hashable
+from typing import TypeVar, cast
+
+from ...compiler._component_trace.call_graph import (
+    SymbolicCallGraph,
+    symbolic_call_graph,
+)
 from ...compiler._component_trace.resource_model import ComponentCost, CostCall
+from ...core.value_math import SymbolicInt, is_zero, smax, smin
+
+_Node = TypeVar("_Node", bound=Hashable)
+
+
+def source_generalized_qsp_graph(
+    coefficient_count: SymbolicInt,
+    *,
+    negative_power: SymbolicInt = 0,
+    root: _Node,
+    signal_rotation: _Node,
+    zero_control_unitary: _Node,
+    unitary_adjoint: _Node,
+    controlled_adjoint: _Node,
+) -> SymbolicCallGraph[_Node]:
+    """Retain symbolic source multiplicities and equality-based child aggregation.
+
+    Caller-owned keys identify the chosen unitary and rotation generalizer.
+    Coefficient shapes declare lengths without supplying physical phase values.
+    Concrete priced widths remain the separate ComponentCost model's contract.
+    """
+    degree = coefficient_count - 1
+    counts: dict[_Node, SymbolicInt] = {}
+    for key, count in (
+        (signal_rotation, coefficient_count),
+        (zero_control_unitary, cast(SymbolicInt, smax(0, degree - negative_power))),
+        (unitary_adjoint, cast(SymbolicInt, smax(0, negative_power - degree))),
+        (controlled_adjoint, cast(SymbolicInt, smin(degree, negative_power))),
+    ):
+        counts[key] = counts.get(key, 0) + count
+    return symbolic_call_graph(
+        root,
+        {root: {key: count for key, count in counts.items() if not is_zero(count)}},
+    )
 
 
 def source_generalized_qsp_cost(

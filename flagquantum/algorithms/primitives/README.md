@@ -104,8 +104,11 @@ ordered named U ports and caller-owned clean workspace through
 `circuit.append(operation.make_on(...))`. It has no tensor-coefficient gradient
 or distribution claim. The [binding guide](../../../docs/development/GENERALIZED_QSP_OPERATION.md)
 contains an executable native example, workspace obligations and source-parity
-boundaries. Symbolic factories/signatures and synthesis remain open; the finite factory
-and declared model are documented below.
+boundaries. Shape-only declarations, typed signatures and symbolic call graphs
+now reuse shared owners. Physical synthesis remains its separate boundary. The
+[complete source audit](../../../docs/development/GENERALIZED_QSP_FILE_AUDIT.md)
+records the original precision skips and remaining admission gaps. The finite
+factory and declared model are documented below.
 
 The finite GQSP factory now composes existing grid verification, root complement
 and lazy phases, with an explicit FFT provider for verification. Signal resource
