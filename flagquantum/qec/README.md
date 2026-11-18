@@ -604,10 +604,12 @@ carries one X-type and one Z-type stabilizer, so the two check blocks are the sa
 matrix and the patch is read out in either basis; and a face on the triangle's
 edge spans four qubits while a face in its bulk spans six, so one data fault
 lights three detectors and the model is **not** graphlike — the matcher refuses it
-and the belief-propagation decoder answers it. The distance is searched for over
-the derived matrices exactly as it is for a code a caller writes, so the reported
-distance is a property of the patch and not of the logical string the record
-declares. At distance three that patch is the Steane code under a relabelling of
+and the belief-propagation decoder answers it. The distance is proved over the derived matrices by an exact syndrome
+trellis: prefixes sharing unfinished check parities retain only their minimum
+weight. For this self-dual one-logical-qubit code, odd kernel words are exactly
+the logical coset. The bounded live-check width makes distances through fifteen
+practical without skipping validation or assuming the requested distance. Wider
+frontiers and other code shapes retain the exact subset search. At distance three that patch is the Steane code under a relabelling of
 its wires; the family grows away from it, and either way nothing downstream can
 tell which route produced the record.
 

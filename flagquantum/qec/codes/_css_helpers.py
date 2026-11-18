@@ -108,6 +108,38 @@ def _minimum_logical_weight(
     """
 
     pivots = reduce_rows(list(stabilizer_rows))
+    # For a self-orthogonal odd-width code encoding one qubit, the stabilizer
+    # span is exactly the even-weight part of its kernel. An odd kernel word is
+    # therefore precisely a logical operator, independent of its representative.
+    if (
+        commuting_rows == stabilizer_rows
+        and width % 2 == 1
+        and 2 * len(pivots) == width - 1
+        and all(row.bit_count() % 2 == 0 for row in commuting_rows)
+        and all(
+            (left & right).bit_count() % 2 == 0
+            for left in commuting_rows
+            for right in commuting_rows
+        )
+    ):
+        spans = tuple(
+            ((row & -row).bit_length() - 1, row.bit_length() - 1)
+            for row in commuting_rows
+            if row
+        )
+        # At most 16 live checks plus logical parity: 2**17 states. Dense
+        # unstructured matrices retain the existing bounded subset search.
+        if (
+            max(
+                (
+                    sum(first <= wire < last for first, last in spans)
+                    for wire in range(width)
+                ),
+                default=0,
+            )
+            <= 16
+        ):
+            return _minimum_odd_kernel_weight(width, commuting_rows, bound)
     for weight in range(1, bound + 1):
         for positions in itertools.combinations(range(width), weight):
             vector = 0
@@ -118,6 +150,37 @@ def _minimum_logical_weight(
             if reduce_vector(vector, pivots):
                 return weight
     return None
+
+
+def _minimum_odd_kernel_weight(
+    width: int, rows: tuple[int, ...], bound: int
+) -> int | None:
+    """Find the lightest odd kernel word by an exact syndrome trellis.
+
+    A state carries the live check parities and total weight parity. Prefixes
+    with the same state have identical possible suffixes, so only their least
+    weight matters. A check must be zero as soon as its last wire is processed.
+    """
+    states = {0: 0}
+    for wire in range(width):
+        column = 1
+        finished = 0
+        for index, row in enumerate(rows, start=1):
+            if (row >> wire) & 1:
+                column |= 1 << index
+            if row.bit_length() == wire + 1:
+                finished |= 1 << index
+        following: dict[int, int] = {}
+        for syndrome, weight in states.items():
+            if not syndrome & finished:
+                following[syndrome] = min(following.get(syndrome, bound + 1), weight)
+            selected = syndrome ^ column
+            if weight < bound and not selected & finished:
+                following[selected] = min(
+                    following.get(selected, bound + 1), weight + 1
+                )
+        states = following
+    return states.get(1)
 
 
 def _refuse_non_logicals(
