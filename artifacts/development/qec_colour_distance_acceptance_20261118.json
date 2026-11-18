@@ -1,6 +1,6 @@
 {
-  "candidate_commit": "dc90ce6622b2e6b014a9ae4bc3bf966df13bf1fa",
-  "baseline_commit": "c153119ead5cd849e6125b583a77707a1ce1dcf7",
+  "commit": "dc90ce6622b2e6b014a9ae4bc3bf966df13bf1fa",
+  "base_commit": "c153119ead5cd849e6125b583a77707a1ce1dcf7",
   "environment": {
     "python": "3.12.16",
     "torch": "2.13.0+cpu",
