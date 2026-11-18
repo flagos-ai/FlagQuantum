@@ -147,7 +147,7 @@ def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
             and _matrix(instruction, joining) is not None
         )
         for pair in touching:
-            # A zero-wire directive is conservatively a global boundary.
+            # A zero-qubit directive is conservatively a global boundary.
             if not wires or pair != joining or not readable:
                 close(pair)
         if joining is not None and readable and joining in open_blocks:

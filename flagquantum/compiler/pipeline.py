@@ -45,9 +45,9 @@ from .routing import (
     LinkErrorRates,
     record_post_routing_optimization,
     route_to_topology,
-    select_routing_strategy,
 )
 from .topology.directed_topology import DirectedCouplingMap
+from .topology.routing import _route_automatically
 
 
 # The canonical opcode tables and the commutation partition are the facts the
@@ -408,15 +408,10 @@ def compile(
             else CouplingMap(ir.n_wires, coupling_map)
         )
         strategy_selection = None
-        selected_routing_strategy = routing_strategy
         if routing_strategy == "auto":
-            strategy_selection = select_routing_strategy(ir, coupling)
-            selected_routing_strategy = strategy_selection.selected_strategy
-        ir = route_to_topology(
-            ir,
-            coupling,
-            strategy=selected_routing_strategy,
-        )
+            ir, strategy_selection = _route_automatically(ir, coupling)
+        else:
+            ir = route_to_topology(ir, coupling, strategy=routing_strategy)
         if optimize:
             ir = _optimize_to_fixed_point(ir, optimization_level, passes)
         ir = record_post_routing_optimization(ir)

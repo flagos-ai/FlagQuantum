@@ -53,12 +53,27 @@ postprocessing are not imported into generic FlagQuantum optimization; this
 slice has its own explicit synthesis residual bound and preserves the existing
 exact-identity policy outside this opt-in target transformation.
 
+## Call-local routing plan reuse
+
+Native `compile` retains the SABRE plan produced when pricing candidates and
+materializes that same plan if SABRE wins. This removes a second identical
+search within one automatic compilation. Selection objectives, candidate order,
+calibration exclusions, and final-layout restoration are unchanged. There is no
+cross-call plan cache: a different program or device is planned independently.
+Separate public calls to `select_routing_strategy` and `route_to_topology`
+continue to plan independently. Path-cache telemetry records the operations
+actually performed; fewer planner calls are not a measured wall-time speedup.
+
+Regression tests compare automatically routed instructions with the explicit
+selected strategy, check statevector equivalence and deployment-plan replay,
+and exercise changed programs, changed devices, and calibrated-device exclusion.
+
 ## Bounded CZ block transformation
 
 `compiler/optimization/_cz_blocks.py` is a private, opt-in transformation for a
 full-CZ target with arbitrary RZ and RX rotations. It collects static operations
-over a pair, allowing commuting operations on disjoint wires between members.
-Two open pairs cannot overlap. A different pair sharing a wire closes the old
+over a pair, allowing commuting operations on disjoint qubits between members.
+Two open pairs cannot overlap. A different pair sharing a qubit closes the old
 block. Reversed operands are converted into the same ordered matrix basis.
 
 Each candidate must strictly reduce CZ count relative to recursive native-basis
@@ -70,13 +85,13 @@ does not claim to minimize device duration, error, or total instruction count.
 
 Each block has at most 64 source instructions. Matrix storage is constant per
 block; output and replacement storage grow with program size. The number of open
-blocks is at most half the wire count. This bounds local numerical synthesis,
+blocks is at most half the qubit count. This bounds local numerical synthesis,
 not whole-process wall time or memory. External evaluation must still enforce a
 process timeout and memory budget. KAK work is attempted only for blocks whose
 translated baseline contains at least two CZ gates.
 
 Annotations, custom matrices, nonunitaries, trainable or batched angles, and
-operations wider than two wires form boundaries. Zero-wire directives close
+operations wider than two qubits form boundaries. Zero-qubit directives close
 all blocks. Annotated routing SWAPs are retained, so layout evidence is never
 invalidated by deleting a movement operation. Program metadata, observables,
 measurements, and final assignment are retained; a logical SWAP is never
@@ -115,7 +130,7 @@ python -m pytest tests/unit/test_compilation_target_cz_resynthesis.py -q
 ```
 
 The tests independently embed Simulation gate matrices into the complete
-register, including reversed wires and disjoint spectators. They also check
+register, including reversed operands and disjoint spectators. They also check
 incorrect candidate rejection, instruction-growth rejection, long blocks,
 trainable parameter gradients, ordering boundaries, and the existing explicit
 compiler-pass workflow. Compiler matrix reconstruction is not the test oracle.
@@ -144,3 +159,39 @@ target basis, topology, initial and final layout policy, versions, seeds,
 optimization settings, CZ count, dependency depth, compile time, memory,
 timeouts, failures, and unsupported cases. Separate default-policy effects from
 algorithm and adapter effects. Gate savings alone do not establish superiority.
+
+## Development verification on 2026-11-18
+
+Environment: macOS arm64, Python 3.12.14, PyTorch 2.14; CPU execution with
+`OPENBLAS_NUM_THREADS=1` and `OMP_NUM_THREADS=1`. This is development correctness
+evidence, not SDKBench resource-isolated performance evidence.
+
+- Compiler unit files (`tests/unit/test_compilation*.py`), Compiler team tests,
+  deployment routing evidence, routing candidate contracts, and the optimization,
+  weighted-routing, synthesis, target-aware, and artifact-compilation integration
+  golden paths: **2,752 passed** in 51.15 seconds after plan reuse.
+- Vocabulary census and vocabulary contracts: **173 passed** after correcting a
+  new comment's terminology and selecting this checkout's Git work tree.
+- Public API migration baseline and the target-aware compilation example passed.
+  Ruff lint and formatting checks passed for the changed Python files.
+- The earlier full smoke/unit run was **not green**: 20,344 passed, 15 failed,
+  6 errors, and 785 skipped. The routing assertion was migrated to the explicit
+  approved previous policy and subsequently passed in the compiler suite.
+  The terminology regression and incorrect Git work-tree selection were
+  diagnosed and corrected, rather than updating expected vocabulary counts.
+- Six launch-plan failures and six MPS process-group setup errors reproduced
+  on the unchanged baseline `95f839f8fd43641143caaa5cca93f715cbf9183e`
+  in the same sandbox: port binding was denied and Gloo could not resolve a
+  local address. CPU process-group setup errors are not scalability evidence.
+- The checked-in evidence revision gate still fails against the local clone's
+  available history/origin declarations. It has not been waived or repaired in
+  this compiler change. No full-suite passing claim is made.
+- The broad runtime tier exceeded its earlier 600-second budget and was
+  terminated. Targeted local integration checks passed; the full runtime tier
+  and Linux SDKBench evaluation remain merge/release qualification work.
+
+Target legalization's per-instruction decomposition records cannot truthfully
+describe a many-to-many block rewrite. Connecting the private CZ pass to that
+workflow requires a reviewed, versioned lineage/equivalence contract first.
+Removing routing annotations or attributing a whole block to one source gate
+would corrupt mapping and source evidence and is not an admissible shortcut.

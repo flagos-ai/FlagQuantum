@@ -30,7 +30,7 @@ from .routing_cost import (
     emitted_link_faults,
     require_weight_reading_strategy,
 )
-from .sabre import plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
+from .sabre import SabrePlan, plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
 
 # The routing strategies a caller may request. This is the authoritative
 # vocabulary: the `program_compilation` limitations in `capability-maturity.toml`
@@ -412,6 +412,17 @@ def estimate_routing_cost(
         )
     ir = ensure_circuit_ir(circuit_or_ir)
     topology = _topology_cost_model(coupling_map, ir.n_wires, "estimate_routing_cost")
+    estimate, _ = _estimate_routing_cost(ir, topology, strategy=strategy)
+    return estimate
+
+
+def _estimate_routing_cost(
+    ir: CircuitIR,
+    topology: _TopologyCostModel,
+    *,
+    strategy: str,
+) -> tuple[RoutingCostEstimate, SabrePlan | None]:
+    """Retain a planner's work beside its price for one compilation only."""
     if topology.n_qubits < ir.n_wires:
         raise ValueError("Coupling map has fewer qubits than the circuit.")
 
@@ -420,6 +431,7 @@ def estimate_routing_cost(
     topology_gate_count, routed_gate_count, skipped_channel_count = (
         _source_routing_counts(ir, topology)
     )
+    plan: SabrePlan | None = None
     if strategy in SABRE_ROUTING_STRATEGIES:
         require_weight_reading_strategy(
             strategy,
@@ -457,7 +469,7 @@ def estimate_routing_cost(
             expected_link_faults,
         ) = _estimate_swap_plan(ir, topology, strategy=strategy)
     cache_after = topology.path_cache_info()
-    return RoutingCostEstimate(
+    estimate = RoutingCostEstimate(
         strategy=strategy,
         source_instruction_count=len(ir),
         estimated_instruction_count=len(ir) + planned_swaps,
@@ -475,6 +487,7 @@ def estimate_routing_cost(
         direction_swap_count=direction_swap_count,
         expected_link_faults=expected_link_faults,
     )
+    return estimate, plan
 
 
 def select_routing_strategy(
@@ -490,9 +503,9 @@ def select_routing_strategy(
     estimating strategies ahead of the planner so that an equally priced plan is
     not planned twice.
 
-    Pricing a planner is planning it, so this call does the work
-    ``route_to_topology`` will repeat. A caller who routes once should pass the
-    strategy it wants rather than asking for ``"auto"``.
+    Pricing a planner is planning it. A separate call to ``route_to_topology``
+    plans again; native ``compile`` retains the selected plan locally and
+    materializes it without repeating the search.
 
     A calibrated device narrows the candidates to
     ``LINK_ERROR_ROUTING_STRATEGIES`` and ranks them on ``expected_link_faults``
@@ -519,6 +532,14 @@ def select_routing_strategy(
 
     ir = ensure_circuit_ir(circuit_or_ir)
     topology = _topology_cost_model(coupling_map, ir.n_wires, "select_routing_strategy")
+    selection, _ = _select_routing_strategy(ir, topology)
+    return selection
+
+
+def _select_routing_strategy(
+    ir: CircuitIR,
+    topology: _TopologyCostModel,
+) -> tuple[RoutingStrategySelection, SabrePlan | None]:
     calibrated = topology.link_error_rates is not None
     # A calibrated device narrows the candidates rather than widening the ranking
     # key, because a strategy that never reads the calibration cannot be ranked by
@@ -527,9 +548,10 @@ def select_routing_strategy(
     considered = (
         LINK_ERROR_ROUTING_STRATEGIES if calibrated else DEPLOYABLE_ROUTING_STRATEGIES
     )
-    candidates = {
-        name: estimate_routing_cost(ir, topology, strategy=name) for name in considered
+    estimates_and_plans = {
+        name: _estimate_routing_cost(ir, topology, strategy=name) for name in considered
     }
+    candidates = {name: item[0] for name, item in estimates_and_plans.items()}
     selected = min(
         considered,
         key=lambda name: (
@@ -542,7 +564,30 @@ def select_routing_strategy(
             candidates[name].estimated_instruction_count,
         ),
     )
-    return RoutingStrategySelection(selected_strategy=selected, candidates=candidates)
+    return (
+        RoutingStrategySelection(selected_strategy=selected, candidates=candidates),
+        estimates_and_plans[selected][1],
+    )
+
+
+def _route_automatically(
+    ir: CircuitIR,
+    coupling_map: _PricedDevice,
+) -> tuple[CircuitIR, RoutingStrategySelection]:
+    """Select and route using one call-local SABRE plan, without a global cache."""
+    topology = _topology_cost_model(coupling_map, ir.n_wires, "select_routing_strategy")
+    selection, plan = _select_routing_strategy(ir, topology)
+    if plan is None:
+        routed = route_to_topology(ir, topology, strategy=selection.selected_strategy)
+    else:
+        routed = _route_sabre(
+            ir,
+            topology,
+            strategy=selection.selected_strategy,
+            path_cache_before=topology.path_cache_info(),
+            plan=plan,
+        )
+    return routed, selection
 
 
 def _swap_instruction(
@@ -810,6 +855,7 @@ def _route_sabre(
     *,
     strategy: str,
     path_cache_before: dict[str, int],
+    plan: SabrePlan | None = None,
 ) -> CircuitIR:
     """Materialize one SABRE persistent layout, then restore the output layout.
 
@@ -839,7 +885,8 @@ def _route_sabre(
         if strategy == "sabre_layout"
         else tuple(range(ir.n_wires))
     )
-    plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
+    if plan is None:
+        plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
     routed: list[Instruction] = []
     # Counted against the source qubits rather than the placed ones, exactly as the
     # shortest-path strategies and the cost estimate count them, so the number

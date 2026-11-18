@@ -6,12 +6,14 @@ import inspect
 import json
 from collections.abc import Callable
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 import torch
 
 import flagquantum as fq
 from flagquantum.compiler import CouplingMap, LinkErrorRates, compile, pipeline
+from flagquantum.compiler.topology import routing
 from flagquantum.compiler.topology.directed_topology import DirectedCouplingMap
 from flagquantum.compiler.topology.routing import (
     LINK_ERROR_ROUTING_STRATEGIES,
@@ -80,10 +82,53 @@ def test_no_topology_does_not_search(monkeypatch: pytest.MonkeyPatch) -> None:
     def refuse_search(*args: object, **kwargs: object) -> None:
         raise AssertionError("a topology-free compilation must not search routes")
 
-    monkeypatch.setattr(pipeline, "select_routing_strategy", refuse_search)
+    monkeypatch.setattr(pipeline, "_route_automatically", refuse_search)
     result = compile(_program())
     assert "routing_strategy_selection" not in result.metadata
     assert "routing" not in result.metadata
+
+
+def test_auto_reuses_search_without_reusing_another_compilations_plan() -> None:
+    programs_and_devices = (
+        (_program(), CouplingMap.line(4)),
+        (fq.Circuit(4).h(3).cx(3, 0).cx(2, 0).to_ir(), CouplingMap.line(4)),
+        (_program(), CouplingMap(4, ((0, 1), (0, 2), (0, 3)))),
+    )
+    for index, (source, device) in enumerate(programs_and_devices):
+        with patch.object(
+            routing, "plan_sabre_swaps", wraps=routing.plan_sabre_swaps
+        ) as search:
+            result = compile(source, coupling_map=device, optimize=False)
+        # Every uncalibrated auto call prices SABRE exactly once, including
+        # calls with changed programs or devices. A winning plan is reused
+        # only within that call.
+        assert search.call_count == 1
+        selected = result.metadata["routing_strategy_selection"]["selected_strategy"]
+        if index == 0:
+            assert selected == "sabre"
+        explicit = compile(
+            source, coupling_map=device, routing_strategy=selected, optimize=False
+        )
+        assert result.instructions == explicit.instructions
+        plan = result.metadata["routing"]
+        assert plan["mapping_restored"] is True
+        assert validate_deployment_routing_plan(plan, n_qubits=4, coupling_map=device)
+        torch.testing.assert_close(
+            fq.Circuit.from_ir(result).state(), fq.Circuit.from_ir(source).state()
+        )
+
+
+def test_calibrated_auto_does_not_search_uncalibrated_sabre() -> None:
+    device = LinkErrorRates(
+        CouplingMap.line(4), {(0, 1): 0.01, (1, 2): 0.02, (2, 3): 0.001}
+    )
+    with patch.object(
+        routing, "plan_sabre_swaps", side_effect=AssertionError("uncalibrated search")
+    ):
+        result = compile(_program(), coupling_map=device)
+    assert set(result.metadata["routing_strategy_selection"]["candidates"]) == set(
+        LINK_ERROR_ROUTING_STRATEGIES
+    )
 
 
 def test_explicit_previous_strategy_keeps_its_plan() -> None:
