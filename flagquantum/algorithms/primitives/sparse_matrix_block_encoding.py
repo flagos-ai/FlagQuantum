@@ -133,6 +133,9 @@ class SparseMatrixBlockEncoding:
         if type(self.alpha) is not int or not 1 <= self.alpha <= 1 << n:
             raise ValueError("Sparse block sparsity must fit its index width")
 
+    def __str__(self) -> str:
+        return "B[SparseMatrix]"
+
     @property
     def system_bitsize(self) -> int:
         return self.entry_oracle.system_bitsize

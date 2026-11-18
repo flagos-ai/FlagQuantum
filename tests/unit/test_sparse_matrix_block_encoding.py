@@ -163,6 +163,7 @@ def test_original_sparse_block_models_and_source_amplitudes(
         frozen = _symmetric_banded_matrix_block_encoding()
         band = SymmetricBandedRowColumnOracle(3, 1)
         native = SparseMatrixBlockEncoding(band, band, UniformEntryOracle(3, 0.3))
+    assert str(native) == str(frozen)
     source = frozen.adjoint() if adjoint else frozen
     shape = (native.system_bitsize, native.ancilla_bitsize)
     assert shape == tuple(int(register.total_bits()) for register in source.signature)
@@ -585,4 +586,174 @@ def test_symbolic_singleton_diffusion_retains_source_admission_boundary() -> Non
     with pytest.raises(ValueError, match="singleton diffusion lacks its target port"):
         source_symbolic_sparse_matrix_resource_formula(
             width, 1, row=row, column=row, entry=entry
+        )
+
+
+@pytest.mark.parametrize(
+    "configuration,width,count,band",
+    (
+        ("original", 2, 4, None),
+        ("independent-count", 2, 3, None),
+        ("concrete-width", 3, 3, None),
+        ("two-entries", 2, 2, None),
+        ("band-one", 2, 3, 1),
+        ("symbolic-band", 3, 3, 1),
+    ),
+)
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_resolved_symbolic_sparse_declarations_execute_original_call_chain(
+    configuration: str, width: int, count: int, band: int | None, adjoint: bool
+) -> None:
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.block_encoding.sparse_matrix import SparseMatrix
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        SymmetricBandedRowColumnOracle as SourceBand,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle as SourceTop,
+    )
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        UniformEntryOracle as SourceEntry,
+    )
+    from sympy import Symbol, sympify
+
+    from tests.unit.measurement_certificate import certify_erasure_histories
+
+    n, s, b = (Symbol(name, positive=True, integer=True) for name in ("n", "s", "b"))
+    symbolic_width = 3 if configuration == "concrete-width" else n
+    symbolic_count = (
+        2**n
+        if configuration == "original"
+        else 2
+        if configuration == "two-entries"
+        else s
+    )
+    symbolic_band = b if configuration == "symbolic-band" else 1
+    symbolic_index = (
+        SourceTop(symbolic_width, num_nonzero=symbolic_count)
+        if band is None
+        else SourceBand(symbolic_width, symbolic_band)
+    )
+    symbolic = SparseMatrix(
+        symbolic_index, symbolic_index, SourceEntry(symbolic_width, 0.3), eps=0
+    )
+    with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+        symbolic.decompose_bloq()
+    substitutions = {n: width, s: count, b: band or 1}
+    resolved_width = int(sympify(symbolic.system_bitsize).subs(substitutions))
+    resolved_count = int(sympify(symbolic.alpha).subs(substitutions))
+    assert (resolved_width, resolved_count) == (width, count)
+    oracle: RowColumnOracle
+    if band is None:
+        source_index = SourceTop(resolved_width, num_nonzero=resolved_count)
+        oracle = TopLeftRowColumnOracle(resolved_width, resolved_count)
+    else:
+        resolved_band = int(sympify(symbolic_band).subs(substitutions))
+        source_index = SourceBand(resolved_width, resolved_band)
+        oracle = SymmetricBandedRowColumnOracle(resolved_width, resolved_band)
+    original = SparseMatrix(source_index, source_index, SourceEntry(width, 0.3), eps=0)
+    source = original.adjoint() if adjoint else original
+    native = SparseMatrixBlockEncoding(oracle, oracle, UniformEntryOracle(width, 0.3))
+    assert [(reg.name, reg.bitsize) for reg in native.signature] == [
+        (reg.name, int(sympify(reg.bitsize).subs(substitutions)))
+        for reg in symbolic.signature
+    ]
+    assert_source_model(native.resource_model(adjoint=adjoint), source)
+    work, slots = native.requirements()
+    logical = 2 * width + 1
+    workspace = tuple(range(logical, logical + work))
+    feedback = tuple(range(slots))
+    ports = {"system": tuple(range(width)), "ancilla": tuple(range(width, logical))}
+    operation = native.make_on(
+        **ports, workspace=workspace, classical_bits=feedback, adjoint=adjoint
+    )
+    gates = Circuit(logical + work).append(operation).to_ir().instructions
+    _assert_locked_sparse_primitive_flow(
+        source, native, ports, gates, workspace, feedback
+    )
+    events = certify_erasure_histories(
+        gates, n_wires=logical + work, zero_wires=workspace
+    )
+    assert events == sum(g.name == "measure" for g in gates)
+    values = np.arange(1 << logical)
+    coherent = (values + 1 + 1j * (values % 5 - 2)).astype(np.complex128)
+    coherent /= np.linalg.norm(coherent)
+    expected = source.tensor_contract() @ coherent
+    state = torch.as_tensor(coherent, dtype=torch.complex128)
+    reference = torch.as_tensor(expected, dtype=torch.complex128)
+    clean = torch.zeros(1 << work, dtype=torch.complex128)
+    clean[0] = 1
+    state, reference = torch.kron(state, clean), torch.kron(reference, clean)
+    for history in {tuple(0 for _ in range(events)), tuple(1 for _ in range(events))}:
+        torch.testing.assert_close(
+            forced_branch(state, gates, history),
+            reference / (2 ** (events / 2)),
+            atol=3e-11,
+            rtol=0,
+        )
+
+
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_resolved_explicit_entry_precision_preserves_quantization_and_every_branch(
+    adjoint: bool,
+) -> None:
+    from qualtran import DecomposeTypeError
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        ExplicitEntryOracle as SourceEntry,
+    )
+    from sympy import Symbol
+
+    precision = Symbol("k", positive=True, integer=True)
+    data = ((0.0, 0.25), (1 / 3, 0.467))
+    symbolic = SourceEntry(1, data, precision)
+    with pytest.raises(DecomposeTypeError, match="Cannot decompose symbolic"):
+        symbolic.decompose_bloq()
+    resolved = int(precision.subs({precision: 2}))
+    native = ExplicitEntryOracle(1, data, resolved)
+    concrete = SourceEntry(1, data, resolved)
+    locked = concrete.adjoint() if adjoint else concrete
+    assert_source_model(native.resource_model(adjoint=adjoint), locked)
+    work, slots = native.requirements()
+    workspace = tuple(range(3, 3 + work))
+    feedback = tuple(range(slots))
+    actual = native.emit(0, (1,), (2,), workspace, feedback, adjoint=adjoint)
+    from qualtran.bloqs.block_encoding.sparse_matrix import SparseMatrix
+    from qualtran.bloqs.block_encoding.sparse_matrix import (
+        TopLeftRowColumnOracle as SourceTop,
+    )
+
+    # The whole source walker binds both QROM passes to the same caller-owned
+    # event slot; an external snapshot instead retains two historical keys.
+    index = TopLeftRowColumnOracle(1)
+    block = SparseMatrixBlockEncoding(index, index, native)
+    frozen_index = SourceTop(1)
+    original = SparseMatrix(frozen_index, frozen_index, concrete, eps=0)
+    operation = block.make_on(
+        system=(0,),
+        ancilla=(1, 2),
+        workspace=workspace,
+        classical_bits=feedback,
+        adjoint=adjoint,
+    )
+    _assert_locked_sparse_primitive_flow(
+        original.adjoint() if adjoint else original,
+        block,
+        {"system": (0,), "ancilla": (1, 2)},
+        operation.instructions,
+        workspace,
+        feedback,
+    )
+    grid = torch.arange(8, dtype=torch.float64)
+    state = torch.complex(grid + 1, grid % 3 - 1)
+    state /= state.norm()
+    expected = torch.as_tensor(locked.tensor_contract(), dtype=torch.complex128) @ state
+    clean = torch.zeros(1 << work, dtype=torch.complex128)
+    clean[0] = 1
+    events = sum(g.name == "measure" for g in actual)
+    for history in product((0, 1), repeat=events):
+        torch.testing.assert_close(
+            forced_branch(torch.kron(state, clean), actual, history),
+            torch.kron(expected, clean) / (2 ** (events / 2)),
+            atol=3e-12,
+            rtol=0,
         )

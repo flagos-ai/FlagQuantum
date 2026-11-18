@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0296 | `sparse_matrix.ipynb` | `2a85ed895beeee25d508e68a093af307ca9f1826` | Closed by the full native tutorial. |
-| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle composition and the original concrete primitive streams verified. Concrete foreign oracle binding verified; symbolic numerical binding remains open. Complete long-history channel coverage is certified below. |
+| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle composition and the original concrete primitive streams verified. Closed: concrete foreign oracle binding, symbolic declaration resolution and complete long-history channel coverage verified below. |
 | Q-0301 | `sparse_matrix_test.py` | `afcb0771b405ed26bfce7827d70d81c3d7f7a0d8` | Closed with the original stress, random entry, banded index and Vlasov fixtures. |
 
 ## Oracle and block ownership
@@ -46,7 +46,8 @@ reference output. The uniform stream checks the explicit SWAP operands,
 and the explicit entry fixture checks all measured histories. The
 banded fixture checks three representative histories in each direction.
 All tested work bits clear. The source primitive stream replay covers
-these variants in both directions. The symbolic channel certificate below covers the complete banded histories.
+these variants in both directions. The symbolic channel certificate below
+covers the complete banded histories.
 
 The unchanged original non-notebook run has 23 passes, five mode skips
 and seven expected failures. The unchanged 13-cell original and the
@@ -77,7 +78,8 @@ and full coherent outputs at every measurement history in both
 directions. The standalone three-bit banded oracle covers both full
 operators, all 24 valid index/ordinal pairs and every small measurement
 history. The complete enumerations for these bounded cases complement
-the numerical long-history samples above; the channel certificate below covers every long history.
+the numerical long-history samples above; the channel certificate below covers
+every long history.
 
 | Vlasov emission | Locked logical model |
 | --- | --- |
@@ -88,7 +90,8 @@ rotations include those from uniform preparation. No T synthesis cost
 is inferred from the emitted rotation instructions. Both Vlasov
 directions match all 2,096 instructions, including operands, rotation
 angles and feedback for each of the 94 measurements. Branch execution
-covers representative histories, while the symbolic channel certificate covers all histories. The unchanged source slow run passes
+covers representative histories, while the symbolic channel certificate covers
+all histories. The unchanged source slow run passes
 all four tests.
 
 ## Primitive stream replay
@@ -119,7 +122,8 @@ high-order diffusion prefix in its AutoPartition peak. A symbolic index
 width with band size one has peak `Max(n+4, 2*n+1)`.
 
 The source singleton diffusion omits its target register, and its
-AutoPartition refuses the mismatched ports. Numerical symbolic binding remains open. Concrete foreign oracle binding is verified below. The source can also reject
+AutoPartition refuses the mismatched ports. Symbolic declaration resolution and concrete foreign oracle binding are verified
+below. The source can also reject
 some concrete-index counts with unresolved width at oracle construction
 when its sparsity bound comparison has no truth value.
 
@@ -147,8 +151,8 @@ changed port maps are not silently dropped. Controlled rotations retain their
 complete complex phase. Scoped decomposition reservations prevent live-QROM
 aliasing and preserve the prior three-work-wire banded fixture.
 
-Symbolic numerical binding remains open. Q-0297 is not closed by the concrete
-binding and channel evidence.
+Concrete binding, the channel certificate and the resolved-declaration checks
+below complete Q-0297 within the source and optional-import admission boundaries.
 
 ## Complete long-history channel certificate
 
@@ -184,3 +188,58 @@ samples remain samples; their coverage is not relabeled exhaustive.
 The concentrated batch passes 87 tests; strict typing of the certificate,
 architecture boundaries, internal IR and public API checks pass. Primitive
 emission and source resource estimates in the tables above are unchanged.
+
+## Symbolic declarations resolved before execution
+
+The unchanged source `SparseMatrix.build_composite_bloq` explicitly raises
+`DecomposeTypeError` while width or sparsity is symbolic. Banded index and
+explicit precision decomposition have the same concrete-only requirement.
+There is no source automatic substitution or binding method to transplant.
+FlagQuantum keeps symbolic signatures/formulas independent of concrete physical
+operations. The caller evaluates parameter expressions first, then constructs
+the concrete oracle and appends its bound operation. No unresolved symbol enters
+an emitted circuit, and no new symbolic runtime is needed for source parity.
+
+Six original symbolic configurations are resolved in both directions: full
+support, independent count, concrete width/symbolic count, two entries, fixed
+band and symbolic band. The tests compare resolved signatures, the complete
+unchanged-source primitive stream including operands and feedback, concrete
+source models, full complex coherent outputs and clean work. Their channel
+certificates cover every history; two numerical histories independently check
+the common action. Explicit precision resolution additionally checks the original
+NumPy/QROM quantization, both directions and every small measurement branch.
+
+Substituting a number into a symbolic cost formula does not recompute the
+concrete decomposition. For example the symbolic full-support declaration keeps
+generic uniform preparation calls, whereas a concrete power-of-two preparation
+simplifies to H gates. Symbolic fallback peaks likewise remain source formulas.
+These are compared to the same source profile separately; the concrete tests
+query the concrete source rather than relabeling a substituted estimate as an
+emission count.
+
+| Complete source definition | Native owner and evidence |
+| --- | --- |
+| RowColumnOracle / EntryOracle abstract ports | Algorithms protocols; ordered scalar ports validated at optional Ecosystem import; symbolic block signature tests |
+| SparseMatrix constructor, dimensions, alpha, epsilon and signal state | SparseMatrixBlockEncoding and BlackBoxPrepare; original metadata and signature tests |
+| diffusion, six calls and physical composition | UniformPreparation/AutoPartition and original source walker; forward/adjoint, stress/Vlasov and complete-history certificate |
+| SparseMatrix display | Original `B[SparseMatrix]` label, verified with concrete factories |
+| TopLeftRowColumnOracle default count and identity | Native top-left owner, symbolic formula, resolved full/bounded support and source stream |
+| SymmetricBandedRowColumnOracle count, classical map, calls and decomposition | Native banded owner and signed AddK/Add dependencies; complete valid index table, both full operators and all small histories |
+| UniformEntryOracle Ry | Native uniform entry plus actual external snapshots; full matrices and phase-sensitive outputs |
+| ExplicitEntryOracle validation, quantization and load/rotate/unload | Native explicit owner/QROM; original eleven tables, precision resolution and source stream |
+| Four example factories and documentation specification | Full native tutorial with four signatures and call graph, independently executed in prior accepted evidence |
+
+Known source/admission boundaries remain explicit: singleton diffusion has a
+missing target port; unresolved sparsity comparisons may be undecidable; concrete
+native binding requires valid widths, sparsity and clean caller-owned work.
+The optional external importer accepts its documented scalar port shapes and
+supported concrete primitive decompositions, rejects dirty borrowing and unknown
+feedback, and preserves owned output mappings. Closing the source file does not
+claim universal import of arbitrary external gate sets or symbolic execution
+that the source itself refuses. No frozen source was modified.
+
+Final closure validation: 124 concentrated unit cases and the native sparse
+matrix notebook independent kernel pass. Strict typing of the changed
+production module, formatting, team scope, architecture, IR and API checks pass.
+Prior frozen-source, full tutorial and original slow-suite evidence is reused;
+no additional source changes or primitive-count changes were introduced.
