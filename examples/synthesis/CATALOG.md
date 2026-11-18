@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **198/213**.
+Validated local Notebook workflows: **199/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -185,6 +185,7 @@ Validated local Notebook workflows:
 - [overview](applications/chemistry/molecular_energy_curve/overview/README.md)
 - [overview](applications/chemistry/molecule_eigensolver/overview/README.md)
 - [overview](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/README.md)
+- [overview](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/overview/README.md)
 - [overview](applications/chemistry/qpe_for_molecules/overview/README.md)
 - [overview](applications/chemistry/quantum_drude_oscillator/overview/README.md)
 - [quantum_walk_fmo](applications/chemistry/quantum_walk_fmo/README.md)
