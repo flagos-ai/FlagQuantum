@@ -242,3 +242,23 @@ describe a many-to-many block rewrite. Connecting the private CZ pass to that
 workflow requires a reviewed, versioned lineage/equivalence contract first.
 Removing routing annotations or attributing a whole block to one source gate
 would corrupt mapping and source evidence and is not an admissible shortcut.
+
+## Subsequent prerequisite and negative-test verification
+
+Integration PR #1222 passed its complete required CI after retrying an artifact
+download timeout and a cancelled wheel job, and merged as
+`4ba10f67d87fd93d19d86371ff8acdcbabcc600a`. This implementation branch has
+synchronized that main revision. The earlier Linux evidence-origin failure above
+is historical; its resolution does not certify this compiler branch or waive its
+remaining checks.
+
+Review found that the instruction-growth negative test proposed non-native X
+gates, so target-basis rejection could conceal a missing growth check. The test
+now starts from the actual two-CZ reduction, appends native zero-angle RZ gates,
+and independently verifies complete-operator equivalence before injecting that
+over-budget candidate. It requires rejection before residual work. All 36 CZ
+tests pass. A process-local mutation removing only growth admission makes the
+new regression test fail at the forbidden residual check; no production source
+was modified by this diagnostic. Black, Ruff and whitespace checks pass for the
+test change. This strengthens development resource-admission coverage and makes
+no process-isolated SDKBench performance claim.

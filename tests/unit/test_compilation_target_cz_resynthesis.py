@@ -307,11 +307,22 @@ def test_equivalent_non_native_synthesis_is_rejected(
 def test_excessive_instruction_growth_is_rejected(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    candidate = tuple(Instruction("x", (0,)) for _ in range(256))
+    source = CircuitIR(2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))))
+    reduced = resynthesize_cz_blocks(source)
+    assert sum(item.name == "cz" for item in reduced.instructions) == 2
+    candidate = reduced.instructions + tuple(
+        Instruction("rz", (0,), {"theta": 0.0}) for _ in range(100)
+    )
+    assert all(item.name in {"rz", "rx", "cz"} for item in candidate)
+    _assert_equivalent(source, CircuitIR(2, candidate))
     monkeypatch.setattr(
         _cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: candidate
     )
-    source = CircuitIR(2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))))
+
+    def forbidden(*args: object) -> bool:
+        raise AssertionError("over-budget synthesis reached residual admission")
+
+    monkeypatch.setattr(_cz_blocks, "_verified", forbidden)
     assert resynthesize_cz_blocks(source) is source
 
 
