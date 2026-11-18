@@ -110,6 +110,47 @@ reports those operations as distinct categories. The original non-notebook
 suite includes four slow tests, two upstream skips and three expected
 serialization failures.
 
+## External recipe intake and remaining closure
+
+The shared optional component snapshot adapter now invokes the unchanged
+`TwoBitCSwap.to_clifford_t_circuit()` recipe with its explicit `ctrl`, `x`,
+`y` named-wire mapping. This atomic source exposes no standard decomposition;
+the adapter uses its own exact public recipe, not a synthesized matrix or a
+replacement algorithm. Forward and adjoint captures preserve all 17 literal
+instructions, including seven T/T-dagger gates, and the full complex Fredkin
+matrix through native IR JSON roundtrip. The entire source swap file is pinned
+to blob `5c2481f7a1ee0a592d1192999ddf7e6dba8facc3`.
+
+Initial Chebyshev ordinary-direction intake failed at this atomic leaf. With
+the source recipe available, the original unscaled even and odd factories
+capture both directions: respectively 520 instructions/eight reserved wires,
+and five instructions/one wire per direction. Their private workspace and
+classical slot requirements are `(2, 8)` and `(0, 0)`. The original scaled odd
+factory captures 989 instructions/32 wires in each direction with `(14, 34)`
+requirements. These are capture statistics, not independent logical models or
+complete numerical acceptance of those snapshots.
+
+The original scaled even capture now reaches
+`Controlled(SingleQubitCompare)`. Its compute/adjoint partial registers have
+no source-controlled graph or Cirq decomposition. Direct probes test that
+failure unchanged. The adapter does not fabricate a controlled isometry.
+The original even factory protobuf check fails on `SpecializeOnCtrlBit.ONE`;
+both scaled factory deserializations cannot resolve the original class name;
+the unscaled odd factory serialization passes. These distinct outcomes are
+recorded separately from native IR serialization.
+
+Q-0280 remains open. Next requirements are consumer-level external child
+replacement, symbolic declaration/resolution, and complete large-history
+evidence reusing the existing native coefficient and reflection owners.
+Three captured source roots alone do not close the file. In particular, the
+large scaled cases above still have representative numerical histories, not
+an exhaustive numerical history enumeration.
+
+The recipe dependency passes 119 concentrated external-block, shaped-port,
+feedback and sparse-oracle regressions; its final exact recipe and original
+comparator-boundary tests pass separately. Strict mypy, Black, Ruff, owning
+team scope, architecture, multilevel IR and protected API checks pass.
+
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_chebyshev.ipynb
 ```
