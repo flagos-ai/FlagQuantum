@@ -43,8 +43,9 @@ classical consistency, and three circuit diagrams. Existing native scenario
 suites cover the executable/classical/model portions, and the new complete score
 checks cover presentation. Full original autotester replacement and protected
 static foreign conversion remain separate admission work. Q-0177 and Q-0178
-therefore retain those concrete remaining gaps. The missing frozen notebook
-`bitwise.ipynb` is recorded under Q-0176 and is not reconstructed as original.
+therefore retain those concrete remaining gaps. The frozen `bitwise.ipynb` has since been restored from its exact Git blob.
+Its complete native teaching migration is recorded in BITWISE_NOTEBOOK_AUDIT.md
+under Q-0176.
 
 ## Resource accounts
 
