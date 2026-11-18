@@ -6,7 +6,7 @@ Apache-2.0, copyright Google LLC.
 
 | Inventory | Frozen Git blob | Disposition |
 | --- | --- | --- |
-| Q-0273 `qualtran/bloqs/basic_gates/z_basis.py` | `48231b5d507f076ed3ea95a4d8486f375cca7d01` | Open for generic foreign object dispatch, wire-symbol protocols and external physical binding. |
+| Q-0273 `qualtran/bloqs/basic_gates/z_basis.py` | `48231b5d507f076ed3ea95a4d8486f375cca7d01` | Closed. Actual atom binding and complete native wire symbols supplement the accepted numerical, measurement and model owners. |
 | Q-0274 `qualtran/bloqs/basic_gates/z_basis_test.py` | `35de62edcda9ce3230d31012f1fe757c4572bc38` | Closed. All original scenarios map to native evidence, including the two previously migrated notebooks. |
 
 ## Binding and dependencies
@@ -54,3 +54,49 @@ batches. The 929-case concentrated native run and both native notebook reruns pa
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_measurement.ipynb
 ```
+
+## Complete source-interface closure
+
+Drawer now provides `basis_vector_wire_symbol` and `pauli_basis_wire_symbol`.
+The vector callback reuses the existing directional register glyph owner and
+replaces only its text attributes. It preserves integer values and source
+side semantics without constructing foreign register objects. Z retains its
+constant TextBox and CZ retains two filled circles with exact unknown-name
+ValueError. Complete score geometry covers all scalar state/effect factories,
+integer state/effect factories, Z, CZ and the classical output of MeasureZ.
+MeasureZ uses the existing default register-label callback and classical lanes.
+
+Actual Z and CZ sources pass both-direction named capture, concrete JSON,
+exact single-leaf streams and complete complex operators. Reordered physical
+bindings with an entangled spectator pass full-vector execution and inverse
+restoration through `circuit.append(op)`. Existing source/native Cirq and
+PennyLane, all raw measurement branches, zeroed retained slots and independent
+costs remain the evidence for their respective owner boundaries.
+
+| Remaining source definitions | Complete native disposition |
+|---|---|
+| `_ZVector`, hidden-field transformer and four subclasses/factories/DocSpecs | Existing state/effect signatures, complete tensor columns and covectors, classical guards and source constructor limits are reused. All actual factories now also compare complete directional score geometry. |
+| Z/CZ signature, adjoint, tensor, classical phase and control adders | Actual source capture covers atom matrices and directions; existing classical phase and exact controlled recipes cover each model, operands, feedback and clean work. |
+| Z/CZ external conversion and wire symbols | Existing SDK round trips plus actual named captures and complete source score callbacks, including unknown-register behavior |
+| MeasureZ signature, classical callback, copy/discard tensor, factory and DocSpec | Existing full channel, every raw outcome, classical value and physical-slot reuse checks, plus actual factory and complete classical score |
+| `_IntVector` validation, dtype, both composite builders, model, string and callbacks | Existing integer binding tests preserve big-endian Join/Split, all source small/concrete/symbolic and zero-width boundaries, complex tensor effect and independent abstract-Clifford model. Both actual eight-bit factories now supply complete score geometry and value text. |
+
+A source atomic effect deliberately refuses Cirq conversion. For a three-bit
+integer state, the actual source adjoint first returns a wrapper and consumes
+its declared ports, then recursive decomposition raises the original ValueError
+at `<0|`. This exact stage distinction is tested with a properly allocated
+source manager. The existing bidirectional named emitter retains that failure.
+It cannot turn a postselected covector into a unitary inverse. Measurement
+quantum-to-classical ports similarly use the dynamic and tensor owners, while
+the through-port capture boundary rejects them explicitly. These are distinct
+physical boundaries, whose existing complete numerical evidence is reused.
+
+Q-0273 closes. Q-0274 remains closed with its original-test evidence. No source
+file is changed. Emitted X/Z/CZ instructions, basis loads, held-slot cleanup and
+independent logical resource estimates retain the separate table above.
+
+The whole-file batch passed 3,574 concentrated cases without skips. Its 32
+warnings preserve paired source/native NumPy overflow behavior in X and CNOT
+classical callbacks. Both changed Python files passed strict typing, Black
+and Ruff. Compiler scope, architecture, multilevel IR and protected API checks
+passed.
