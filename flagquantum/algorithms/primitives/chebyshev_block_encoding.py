@@ -6,22 +6,76 @@
 """Chebyshev transformation of an identity-signal block encoding."""
 
 from collections.abc import Callable, Mapping
-from dataclasses import dataclass
-from typing import Literal
+from dataclasses import dataclass, fields
+from typing import Literal, cast
 
 from ...circuit import _CircuitOperation
-from ...compiler._component_trace.resource_model import ComponentCost, CostCall
-from ...compiler._component_trace.symbolic_math import SymbolicReal
+from ...compiler._component_trace.resource_model import (
+    ComponentCost,
+    CostCall,
+    GateCost,
+)
+from ...compiler._component_trace.symbolic_math import SymbolicInt, SymbolicReal, smax
 from ...compiler.registers.preparation.prepare_reflection import (
     prepare_reflection_ir,
     prepare_reflection_requirements,
     source_prepare_reflection_cost,
+    source_symbolic_zero_reflection_resource_formula,
+)
+from ...compiler.registers.resources.symbolic_resource_model import (
+    SymbolicResourceFormula,
 )
 from ...core.ir import Instruction
 from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _capture_block, _validate_block_work
 from ._block_metadata import _BlockMetadata, _packed_block_signature
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
+
+
+def source_symbolic_chebyshev_resource_formula(
+    system: SymbolicInt,
+    ancilla: SymbolicInt,
+    resource: SymbolicInt,
+    order: int,
+    forward_child: SymbolicResourceFormula,
+    adjoint_child: SymbolicResourceFormula,
+    *,
+    adjoint: bool = False,
+    legacy_shims: bool = False,
+) -> SymbolicResourceFormula:
+    """Compose the locked fallback when symbolic signal width blocks execution.
+
+    Keep the source's zero-count callee declarations in the peak query. Odd
+    orders retain the source direct-graph reflection undercount; no executable
+    gate stream or concrete allocation is inferred from this model.
+    """
+    if type(order) is not int or order < 0 or type(adjoint) is not bool:
+        raise ValueError("Chebyshev needs a nonnegative order and boolean direction")
+    if type(ancilla) is int:
+        raise ValueError("Symbolic fallback requires an unresolved signal width")
+    signature = _packed_block_signature(system, ancilla, resource)
+    reflection = source_symbolic_zero_reflection_resource_formula(
+        ancilla, legacy_shims=legacy_shims
+    )
+    pairs, tail = divmod(order, 2)
+    counts = (pairs, pairs + tail) if adjoint else (pairs + tail, pairs)
+    calls = (
+        (forward_child, counts[0]),
+        (adjoint_child, counts[1]),
+        (reflection, 2 * pairs),
+    )
+    return SymbolicResourceFormula(
+        **{
+            field.name: sum(
+                getattr(child, field.name) * count for child, count in calls
+            )
+            for field in fields(GateCost)
+        },
+        logical_qubits=cast(
+            SymbolicInt,
+            smax(signature.n_qubits(), *(child.logical_qubits for child, _ in calls)),
+        ),
+    )
 
 
 @dataclass(frozen=True)
