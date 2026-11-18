@@ -75,9 +75,8 @@ def source_branch(
         elif isinstance(gate, cirq.ResetChannel):
             bit = 1 << (len(order) - 1 - order.index(operation.qubits[0]))
             zero, one = state[(indices & bit) == 0], state[(indices & bit) != 0]
-            assert not (np.any(abs(zero) > 1e-14) and np.any(abs(one) > 1e-14)), (
-                "Source reset fixture must be projected"
-            )
+            populated = (np.any(abs(zero) > 1e-14), np.any(abs(one) > 1e-14))
+            assert not all(populated), "Source reset fixture must be projected"
             if np.any(abs(one) > 1e-14):
                 state = state[indices ^ bit]
         else:
@@ -342,3 +341,46 @@ def test_fractional_phase_powers_and_controlled_h_preserve_absolute_phase(
         cirq.ZPowGate(exponent=exponent)(b).controlled_by(a),
     )
     compare_every_branch(source, (a, b, c))
+
+
+@pytest.mark.parametrize("controlled", (False, True))
+def test_declared_dense_matrix_leaf_including_feedback_and_global_phase(
+    controlled: bool,
+) -> None:
+    import cirq
+
+    a, b, c = cirq.LineQubit.range(3)
+    matrix = np.exp(0.29j) * cirq.testing.random_unitary(4, random_state=1234)
+    operation = cirq.MatrixGate(matrix)(a, b)
+    if controlled:
+        operation = operation.controlled_by(c, control_values=(0,))
+    source = cirq.Circuit(
+        cirq.H(c),
+        cirq.measure(c, key="branch"),
+        operation.with_classical_controls("branch"),
+    )
+    compare_every_branch(source, (c, b, a))
+    imported = import_cirq_feedback(source, qubit_order=(c, b, a))
+    leaf = imported.ir.instructions[-1]
+    assert leaf.name == "any" and isinstance(leaf.matrix, torch.Tensor)
+    assert leaf.metadata["conditions"] == ((0, 1),)
+    assert torch.equal(
+        leaf.matrix, torch.as_tensor(cirq.unitary(operation), dtype=torch.complex128)
+    )
+
+
+def test_matrix_leaf_is_copied_and_invalid_matrix_cannot_be_imported() -> None:
+    import cirq
+
+    q = cirq.LineQubit(0)
+    original = np.array([[0, 1j], [1j, 0]], dtype=np.complex128)
+    gate = cirq.MatrixGate(original)
+    imported = import_cirq_feedback(cirq.Circuit(gate(q)), qubit_order=(q,))
+    before = imported.ir.instructions[0].matrix.clone()
+    original[:] = np.eye(2)
+    assert torch.equal(imported.ir.instructions[0].matrix, before)
+    invalid = cirq.MatrixGate(
+        np.array([[1, 1], [0, 1]], dtype=np.complex128), unitary_check=False
+    )
+    with pytest.raises(CirqConversionError, match="not unitary"):
+        import_cirq_feedback(cirq.Circuit(invalid(q)), qubit_order=(q,))

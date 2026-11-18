@@ -10,7 +10,9 @@ from ._component_snapshot import _snapshot
 def import_block_encoding(
     source: object,
     *,
-    models: tuple[ComponentCost, ComponentCost, ComponentCost, ComponentCost],
+    models: (
+        tuple[ComponentCost, ComponentCost, ComponentCost, ComponentCost] | None
+    ) = None,
 ) -> CircuitBlockEncoding:
     """Capture actual forward/adjoint and positive-controlled source operations.
 
@@ -18,6 +20,7 @@ def import_block_encoding(
     preparation are admitted. The original source decides how each control and
     adjoint decomposes; no measurement-containing stream is inverted afterward.
     Logical outputs are restored explicitly and binding swaps counted separately.
+    Missing independent models remain unavailable; emission never implies a cost.
     """
     from qualtran.bloqs.reflections.prepare_identity import PrepareIdentity
 

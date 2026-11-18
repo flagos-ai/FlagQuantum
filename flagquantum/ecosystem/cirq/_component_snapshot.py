@@ -8,7 +8,11 @@ import numpy as np
 
 from ...compiler.registers.primitives.circuit_binding import restore_output_order_ir
 from ...core.ir import CircuitIR
-from ._feedback_import import _lower_feedback_gate, import_cirq_feedback
+from ._feedback_import import (
+    _has_explicit_matrix,
+    _lower_feedback_gate,
+    import_cirq_feedback,
+)
 from ._qubit_manager import InteropQubitManager
 from .conversion import _cirq
 
@@ -88,7 +92,10 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
             bare.gate, (cirq.ResetChannel, cirq.GlobalPhaseGate)
         ):
             return True
-        return _lower_feedback_gate(cirq, bare.gate, [], 0) is not None
+        return (
+            _has_explicit_matrix(cirq, bare.gate)
+            or _lower_feedback_gate(cirq, bare.gate, [], 0) is not None
+        )
 
     decomposition_manager = InteropQubitManager(manager)
     decomposition_manager.manage_qubits(incoming)

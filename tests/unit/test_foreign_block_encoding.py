@@ -1,7 +1,9 @@
 """Actual external blocks are snapshotted before native LCU composition."""
 
 from dataclasses import replace
+from hashlib import sha1
 from itertools import product
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -13,8 +15,26 @@ from flagquantum.ecosystem.cirq._block_encoding import import_block_encoding
 from flagquantum.simulation.unitary import get_unitary
 from tests.unit.measurement_checks import forced_branch
 from tests.unit.test_first_quantization_resource_model import assert_source_model
+from tests.unit.test_linear_combination_catalog import (
+    coefficient_gates as coefficient_gates,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@pytest.fixture(scope="module", autouse=True)
+def frozen_dense_sources() -> None:
+    import qualtran._infra.controlled as controlled
+    from qualtran.bloqs.block_encoding import linear_combination
+    from qualtran.bloqs.for_testing import matrix_gate
+
+    for module, blob in (
+        (controlled, "6fabe760e793f1b39f825d76f80e92b6e5fa5c28"),
+        (matrix_gate, "7665416abde2cc9f8dec35a112758cadcf460658"),
+        (linear_combination, "a3d8aa7fafa7a6f3fcaf095826751209427cd255"),
+    ):
+        raw = Path(module.__file__).read_bytes()
+        assert sha1(b"blob %d\0" % len(raw) + raw).hexdigest() == blob
 
 
 def original_models(
@@ -150,3 +170,114 @@ def test_symbolic_and_nonidentity_signal_objects_fail_before_capture() -> None:
             ),
             models=(model,) * 4,
         )
+
+
+@pytest.mark.parametrize("width", (1, 2))
+def test_original_dense_source_leaf_is_not_synthesized_or_given_fake_cost(
+    width: int,
+) -> None:
+    import numpy as np
+    from qualtran import DecomposeNotImplementedError
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+    from qualtran.bloqs.for_testing.matrix_gate import MatrixGate
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    source = Unitary(MatrixGate.random(width, random_state=np.random.RandomState(1234)))
+    block = import_block_encoding(source)
+    assert block.models is None
+    for controlled, adjoint in product((False, True), repeat=2):
+        original = source.controlled() if controlled else source
+        if adjoint:
+            original = original.adjoint()
+        n = width + int(controlled)
+        assert get_cost_value(original, QubitCount()) == n
+        with pytest.raises(DecomposeNotImplementedError, match="MatrixGate"):
+            get_cost_value(original, QECGatesCost())
+        op = block.make_on(
+            system=tuple(range(int(controlled), n)),
+            control=(0,) if controlled else (),
+            adjoint=adjoint,
+        )
+        gates = Circuit(n).append(op).to_ir().instructions
+        assert len(gates) == 1 and gates[0].matrix is not None
+        expected = torch.as_tensor(original.tensor_contract(), dtype=torch.complex128)
+        torch.testing.assert_close(
+            get_unitary(Circuit(n).append(op).to_ir(), dtype=torch.complex128),
+            expected,
+            atol=2e-12,
+            rtol=0,
+        )
+        with pytest.raises(ValueError, match="No independent resource model"):
+            block.resource_model(controlled=controlled, adjoint=adjoint)
+
+
+@pytest.mark.parametrize("row", range(10))
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_all_original_random_dense_families_replace_native_lcu_leaves(
+    row: int,
+    adjoint: bool,
+    coefficient_gates: Any,
+) -> None:
+    from qualtran.bloqs.block_encoding.unitary import Unitary
+
+    from flagquantum.compiler.registers.control.indexed_component import (
+        indexed_component_workspace,
+    )
+    from tests.unit.sparse_register_execution import execute_sparse_register
+    from tests.unit.test_linear_combination_catalog import _bind_coefficient_fixture
+
+    _, dense = coefficient_gates
+    gates, coefficients = dense[row]
+    native, _, previous, work = _bind_coefficient_fixture(
+        gates, coefficients, 9, inverse=adjoint
+    )
+    blocks = tuple(import_block_encoding(Unitary(gate)) for gate in gates)
+    replacement = replace(native, block_encodings=blocks)
+    n = replacement.system_bitsize
+    end = n + replacement.ancilla_bitsize
+    through = end + replacement.resource_bitsize
+    prep, prep_bits = replacement.coefficient_preparation.workspace_requirements
+    traversal = indexed_component_workspace((replacement.select.selection_bitsize,), 0)
+    operation = replacement.make_on(
+        tuple(block.bind_child for block in blocks),
+        system=tuple(range(n)),
+        ancilla=tuple(range(n, end)),
+        resource=tuple(range(end, through)),
+        prepare_workspace=work[:prep],
+        prepare_classical_bits=tuple(range(prep_bits)),
+        traversal_workspace=work[:traversal],
+        traversal_classical_bits=tuple(range(traversal)),
+        workspaces=((),) * len(blocks),
+        classical_bits=((),) * len(blocks),
+        adjoint=adjoint,
+    )
+    actual = Circuit(previous.n_qubits).append(operation).to_ir()
+    expected = previous.to_ir()
+    assert actual.n_wires == expected.n_wires
+    assert len(actual.instructions) == len(expected.instructions)
+    for left, right in zip(actual.instructions, expected.instructions, strict=True):
+        assert (left.name, left.wires, left.params, left.metadata) == (
+            right.name,
+            right.wires,
+            right.params,
+            right.metadata,
+        )
+        if right.matrix is not None:
+            torch.testing.assert_close(left.matrix, right.matrix, atol=1e-14, rtol=0)
+        else:
+            assert left.matrix is None
+    # Every family is compared instruction by instruction above. Reuse the
+    # accepted catalogue's numerical evidence; keep one coherent directional
+    # replacement check here instead of interpreting every identical stream twice.
+    if row != 0:
+        return
+    initial = {
+        i << (actual.n_wires - n): complex(i + 1, i % 3 - 1) for i in range(1 << n)
+    }
+    norm = sum(abs(value) ** 2 for value in initial.values()) ** 0.5
+    initial = {basis: value / norm for basis, value in initial.items()}
+    for seed in (19, 73):
+        observed = execute_sparse_register(actual, initial.copy(), seed=seed)
+        reference = execute_sparse_register(expected, initial.copy(), seed=seed)
+        assert observed == pytest.approx(reference, abs=2e-12, rel=0)
+        assert all((basis & ((1 << len(work)) - 1)) == 0 for basis in observed)

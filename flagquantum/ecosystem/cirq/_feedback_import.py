@@ -66,6 +66,42 @@ def _lower_feedback_gate(
     return _lower_gate(cirq, gate, issues, index)
 
 
+def _has_explicit_matrix(cirq: Any, gate: Any) -> bool:
+    """Recognize declared matrix leaves without contracting arbitrary components."""
+    while True:
+        if isinstance(gate, cirq.ControlledGate):
+            gate = gate.sub_gate
+        elif (
+            getattr(gate, "ctrl_spec", None) is not None
+            and callable(getattr(gate, "_unitary_", None))
+            and getattr(gate, "subbloq", None) is not None
+        ):
+            # Source control wrappers retain an explicit matrix leaf and expose
+            # its actual controlled unitary protocol. Do not synthesize it.
+            gate = gate.subbloq
+        else:
+            break
+    return isinstance(gate, cirq.MatrixGate) or (
+        getattr(gate, "matrix", None) is not None
+        and callable(getattr(gate, "_unitary_", None))
+    )
+
+
+def _matrix_instruction(cirq: Any, gate: Any, operands: tuple[int, ...]) -> Instruction:
+    import numpy as np
+    import torch
+
+    matrix = np.array(cirq.unitary(gate), dtype=np.complex128, copy=True)
+    size = 1 << len(operands)
+    if matrix.shape != (size, size) or not np.isfinite(matrix).all():
+        raise ValueError(
+            "Explicit unitary matrix must be finite and match its operands"
+        )
+    if not np.allclose(matrix.conj().T @ matrix, np.eye(size), atol=1e-10, rtol=0):
+        raise ValueError("Explicit matrix leaf is not unitary")
+    return Instruction("any", operands, matrix=torch.from_numpy(matrix))
+
+
 class _Feedback:
     """Lower key histories and Boolean predicates to native slot assignments."""
 
@@ -170,9 +206,11 @@ class _Feedback:
                 return False
             return self.conjunction(
                 [
-                    slot
-                    if number >> (len(word) - 1 - i) & 1
-                    else self.xor([slot], True)
+                    (
+                        slot
+                        if number >> (len(word) - 1 - i) & 1
+                        else self.xor([slot], True)
+                    )
                     for i, slot in enumerate(word)
                 ]
             )
@@ -259,7 +297,9 @@ def import_cirq_feedback(
     select any prior record and treat a multibit word as a big-endian integer.
     Sympy conditions support Boolean operators and equality to integer words;
     other arithmetic, confusion maps and conditional measurements are rejected.
-    Global phase requires at least one declared anchor wire. No lossy mode exists.
+    Global phase requires at least one declared anchor wire. Explicit unitary
+    matrix leaves retain copied dense operands; no synthesis is inferred.
+    No lossy mode exists.
     """
     cirq = _cirq()
     if not isinstance(circuit, cirq.Circuit):
@@ -324,6 +364,8 @@ def import_cirq_feedback(
                 emitted = global_phase_ir(
                     float(global_phase_exponent(complex(gate.coefficient))), anchor=0
                 )
+            elif _has_explicit_matrix(cirq, gate):
+                emitted = (_matrix_instruction(cirq, gate, operands),)
             else:
                 lowered = _lower_feedback_gate(cirq, gate, issues, index)
                 if lowered is None:
@@ -333,7 +375,11 @@ def import_cirq_feedback(
             if predicate is not False:
                 feedback.gates.extend(
                     Instruction(
-                        g.name, g.wires, g.params, metadata=dict(g.metadata) | metadata
+                        g.name,
+                        g.wires,
+                        g.params,
+                        matrix=g.matrix,
+                        metadata=dict(g.metadata) | metadata,
                     )
                     for g in emitted
                 )
