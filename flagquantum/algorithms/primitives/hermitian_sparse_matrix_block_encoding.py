@@ -41,6 +41,8 @@ from ...compiler.registers.resources.symbolic_resource_model import (
     SymbolicResourceFormula,
 )
 from ...core.ir import Instruction
+from ...core.ir.program.register_types import opaque_register_type, quantum_bit_type
+from ...core.ir.program.signatures import Signature
 from ._block_binding import _BoundBlockOperation, _validate_block_work
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 from .sparse_matrix_block_encoding import _source_sparse_diffusion_resource_formula
@@ -51,6 +53,27 @@ from .sparse_matrix_oracles import (
     source_top_left_oracle_resource_formula,
     source_uniform_entry_oracle_resource_formula,
 )
+
+
+def source_sqrt_entry_signature(width: SymbolicInt) -> Signature:
+    """Declare the source flag and two ordered scalar index words."""
+    return Signature.build_from_dtypes(
+        q=quantum_bit_type(),
+        i=opaque_register_type(width),
+        j=opaque_register_type(width),
+    )
+
+
+def source_hermitian_sparse_signature(
+    width: SymbolicInt, *, controlled: bool = False
+) -> Signature:
+    """Declare the full source block ports for concrete or symbolic widths."""
+    ports = {"ctrl": quantum_bit_type()} if controlled else {}
+    return Signature.build_from_dtypes(
+        **ports,
+        system=opaque_register_type(width),
+        ancilla=opaque_register_type(width + 2),
+    )
 
 
 class SqrtEntryOracle(EntryOracle, Protocol):
@@ -67,6 +90,10 @@ class UniformSqrtEntryOracle:
     system_bitsize: int
     entry: float
     epsilon: SymbolicReal = 1e-11
+
+    @property
+    def signature(self) -> Signature:
+        return source_sqrt_entry_signature(self.system_bitsize)
 
     def __post_init__(self) -> None:
         if not 0 <= self.entry <= 1:
@@ -117,6 +144,13 @@ class HermitianSparseMatrixBlockEncoding:
     @property
     def system_bitsize(self) -> int:
         return self.entry_oracle.system_bitsize
+
+    @property
+    def signature(self) -> Signature:
+        return source_hermitian_sparse_signature(self.system_bitsize)
+
+    def __str__(self) -> str:
+        return "B[SparseMatrixHermitian]"
 
     @property
     def ancilla_bitsize(self) -> int:
