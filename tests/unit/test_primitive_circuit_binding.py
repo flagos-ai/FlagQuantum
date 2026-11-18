@@ -1,6 +1,6 @@
 """Relocated fragments preserve every branch and occupied caller slots."""
 
-from itertools import product
+from itertools import permutations, product
 
 import pytest
 import torch
@@ -8,6 +8,7 @@ import torch
 from flagquantum import Circuit
 from flagquantum.compiler.registers.primitives.circuit_binding import (
     bind_primitive_circuit,
+    restore_output_order_ir,
 )
 from flagquantum.core.classical_dataflow import ClassicalXor
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode, ObservableNode
@@ -163,3 +164,22 @@ def test_actual_foreign_erasure_import_binds_to_existing_native_primitive() -> N
     assert bind_primitive_circuit(
         snapshot, (5, 2, 7), classical_bits=(9,)
     ) == and_uncompute_ir(5, 2, 7, 9)
+
+
+@pytest.mark.parametrize("order", tuple(permutations(range(3))))
+def test_returned_wire_order_matches_complex_tensor_axis_permutation(
+    order: tuple[int, ...],
+) -> None:
+    values = torch.arange(8, dtype=torch.float64)
+    state = torch.complex(values + 1, values % 3 - 1)
+    state /= state.norm()
+    gates = restore_output_order_ir(order)
+    actual = (
+        Circuit(3, inputs=state, dtype=state.dtype)
+        .compose(CircuitIR(3, gates))
+        .state()
+        .flatten()
+    )
+    torch.testing.assert_close(
+        actual, state.reshape(2, 2, 2).permute(order).flatten(), atol=2e-12, rtol=0
+    )

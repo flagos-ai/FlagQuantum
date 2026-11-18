@@ -6,6 +6,7 @@ from ....core.classical_control import (
 )
 from ....core.classical_dataflow import ClassicalXor, parse_classical_xor
 from ....core.ir import CircuitIR, Instruction
+from .swap import swap_bit_ir
 
 
 def _binding(values: tuple[int, ...], count: int, kind: str) -> None:
@@ -89,3 +90,27 @@ def bind_primitive_circuit(
     instructions = tuple(result)
     validate_classical_control(instructions, n_qubits=max(quantum) + 1)
     return instructions
+
+
+def restore_output_order_ir(output_order: tuple[int, ...]) -> tuple[Instruction, ...]:
+    """Move the old value at output_order[i] to physical wire i.
+
+    The complete permutation includes temporary wires. Its explicit swaps are
+    physical binding overhead, separate from a source's logical wire renaming.
+    """
+    if any(type(value) is not int for value in output_order) or sorted(
+        output_order
+    ) != list(range(len(output_order))):
+        raise ValueError("Output order must be a complete wire permutation")
+    locations = list(range(len(output_order)))
+    positions = locations.copy()
+    gates: list[Instruction] = []
+    for destination, source in enumerate(output_order):
+        current = positions[source]
+        if current == destination:
+            continue
+        displaced = locations[destination]
+        gates.extend(swap_bit_ir(destination, current))
+        locations[destination], locations[current] = source, displaced
+        positions[source], positions[displaced] = destination, current
+    return tuple(gates)

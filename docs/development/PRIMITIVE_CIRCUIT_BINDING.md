@@ -50,3 +50,9 @@ program-level results have explicit rejection evidence.
 ```bash
 pytest -q tests/unit/test_primitive_circuit_binding.py
 ```
+
+`restore_output_order_ir` canonicalizes a complete returned-wire permutation
+through the shared SWAP primitive. It includes temporary output storage, uses
+no new quantum wires and reports its physical binding swaps separately from
+logical source renaming. All three-wire permutations match the corresponding
+complex tensor-axis permutation.
