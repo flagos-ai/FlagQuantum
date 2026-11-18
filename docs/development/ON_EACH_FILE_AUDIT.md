@@ -6,7 +6,7 @@ Google LLC 2023 Apache-2.0 attribution.
 
 | Inventory | Frozen Git blob | Disposition |
 |---|---|---|
-| Q-0246 `on_each.py` | `0d8a190709e5465a7305858a1ba895ab284c28b4` | Concrete owned QBit composition, numeric action and symbolic resource evidence complete for their admitted domains. Generic constructor and drawing equivalence remain open. |
+| Q-0246 `on_each.py` | `0d8a190709e5465a7305858a1ba895ab284c28b4` | Concrete owned QBit composition, numeric action and symbolic resource evidence complete for their admitted domains. Native callback forwarding and concrete S/T dtype captures are verified. Typed Program dtype admission and generic child metadata remain open. |
 | Q-0247 `on_each_test.py` | `7ae02d5013c738e0aaf202c10b3d39b4aec50fb9` | All four original test scenarios now have native counterparts. |
 
 ## Ownership and interfaces
@@ -31,10 +31,27 @@ The typed adapter admits a self-contained child with one scalar QBit THRU
 port named `q` and a concrete quantum target width. The generic source
 constructor admits extra metadata shapes, direction cases and dtype quirks
 that the adapter does not expose. The numerical owner retains its previously
-verified codecs and special width cases. Source `wire_symbol` appends
-`⨂n` to child text and preserves empty text. General forwarding of this
-foreign presentation and its fallback for other glyphs remain open, along
-with those constructor cases. These gaps keep Q-0246 open.
+verified codecs and special width cases. Native `drawer/on_each_symbols.py` now forwards the exact register and index
+through the existing typed score callback. It appends `⨂n` to TextBox and
+nonempty Text, preserves empty Text, and restores Text's default fontsize 10,
+as the source constructs a fresh glyph. Circle, ModPlus and directional boxes
+fall back to the whole operation title or the indexed directional register box.
+Concrete zero/three and symbolic repetition counts match the unchanged callback.
+No foreign glyph or callable enters the native representation.
+
+Concrete QAny, QUInt, QInt, QIntOnesComp and QFxp targets are verified through
+owned Ecosystem snapshots for both S/T leaf directions and each source operation's
+actual adjoint. Native typed Programs admit QAny/QUInt here. Signed,
+ones-complement and fixed-point metadata still fail the protected executable
+register verifier, and this batch preserves those refusals. This keeps Q-0246
+open rather than claiming complete typed dtype parity.
+
+The source admits three-bit OnEach over ZeroState, ZeroEffect, a child whose
+single QBit port has shape `(1,)`, and target QBit. Actual decomposition fails
+with BloqError, AttributeError, IndexError and IndexError respectively. The
+regressions retain these exact source failure classes. Their constructor
+admission does not establish an executable path. General arbitrary child
+metadata remains a separate unsupported boundary.
 
 ## Original test coverage
 
@@ -67,3 +84,31 @@ complex state.
 ```bash
 python -m examples.algorithms.classical_on_each_values
 ```
+
+
+## Concrete presentation and phase dependency closure
+
+`test_on_each_symbols.py` compares all six native glyph classes, empty/nonempty
+labels, source Text fontsize reset, root/LEFT/RIGHT/THRU metadata, indexed ports,
+and zero/concrete/symbolic widths with the frozen source. The owned callback also
+runs through `register_score_data`, retaining its empty connector title.
+
+`test_register_on_each.py` reuses existing X/H/Rz and symbolic evidence and adds
+five concrete target dtypes with S/T. Each actual direction is compared in exact
+wire order and over every full complex operator column. The independently captured
+source adjoint reverses the three wire calls and restores the complete identity.
+No feedback, measurement history or private work is introduced. The measured
+inventory is three S-family or three T-family instructions per direction. The
+independent source model reports three Cliffords or three T gates respectively,
+zero measurements and peak logical width three. Existing numerical value and
+symbolic resource evidence remains applicable.
+
+The protected ordinary SDK inverse export boundaries documented by
+`S_GATE_FILE_AUDIT.md` and `T_GATE_FILE_AUDIT.md` remain open. The owned register
+snapshot adapter used here has its existing inverse-phase support.
+
+The 2026-11-18 focused run passed all 61 cases. The concentrated regression
+passed 1037 cases and skipped the two pre-existing optional PennyLane S/T adapter
+checks because PennyLane is absent in this interpreter. Those adapters gain no
+new acceptance claim. Strict typing of the three changed Python files, formatting,
+lint, Compiler scope, architecture, multilevel IR and public API checks passed.

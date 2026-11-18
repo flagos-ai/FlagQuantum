@@ -251,3 +251,120 @@ def test_on_each_rejects_dynamic_or_overlapping_binding() -> None:
         on_each_ir(Instruction("x", (0,), metadata={"conditions": ((0, 1),)}), (1,))
     with pytest.raises(ValueError, match="nonnegative"):
         OnEachCall(CliffordCall("x", 1), -1)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("kind", ("opaque", "uint", "signed", "ones", "fixed"))
+@pytest.mark.parametrize("opcode", ("s", "t"))
+def test_concrete_dtypes_and_actual_phase_adjoint(
+    kind: str, opcode: Literal["s", "t"]
+) -> None:
+    from qualtran import QAny, QFxp, QInt, QIntOnesComp, QUInt
+    from qualtran.bloqs.basic_gates import OnEach, SGate, TGate
+    from qualtran.resource_counting import QECGatesCost, QubitCount, get_cost_value
+
+    from flagquantum.compiler._component_trace.resource_generalization import PhaseCall
+    from flagquantum.core.ir.program.register_types import (
+        fixed_point_register_type,
+        ones_complement_register_type,
+        opaque_register_type,
+        signed_register_type,
+    )
+    from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+
+    native_types = {
+        "opaque": opaque_register_type(3),
+        "uint": unsigned_register_type(3),
+        "signed": signed_register_type(3),
+        "ones": ones_complement_register_type(3),
+        "fixed": fixed_point_register_type(3, 2),
+    }
+    foreign_types = {
+        "opaque": QAny(3),
+        "uint": QUInt(3),
+        "signed": QInt(3),
+        "ones": QIntOnesComp(3),
+        "fixed": QFxp(3, 2),
+    }
+    leaf = SGate() if opcode == "s" else TGate()
+    for inverse in (False, True):
+        code = opcode + "dg" if inverse else opcode
+        source = OnEach(3, leaf.adjoint() if inverse else leaf, foreign_types[kind])
+        emitter = import_register_emitter(source)
+        assert emitter.requirements() == (0, 0)
+        instructions = emitter.snapshots[0].instructions
+        if kind in {"opaque", "uint"}:
+            program = on_each_word_program(
+                3, bit_child(code), target_dtype=native_types[kind]
+            )
+            assert verify_program_record(program) == ()
+            bound = bind_register_program(program, ((0, 1, 2),))
+            assert bound.circuit.instructions == instructions
+            assert bound.outputs == ((0, 1, 2),) and not bound.events
+        else:
+            with pytest.raises(
+                ValueError, match="unsupported executable register descriptor"
+            ):
+                on_each_word_program(
+                    3, bit_child(code), target_dtype=native_types[kind]
+                )
+        circuit = fq.Circuit(3, dtype=torch.complex128)
+        circuit.append(FieldOperation(3, instructions))
+        torch.testing.assert_close(
+            get_unitary(circuit),
+            torch.as_tensor(source.tensor_contract()),
+            rtol=0,
+            atol=2e-12,
+        )
+        assert instructions == tuple(Instruction(code, (wire,)) for wire in range(3))
+        assert Counter(gate.name for gate in instructions) == {code: 3}
+        actual_inverse = emitter.snapshots[1]
+        expected_inverse = tuple(
+            Instruction(opcode if inverse else opcode + "dg", (wire,))
+            for wire in reversed(range(3))
+        )
+        assert actual_inverse.instructions == expected_inverse
+        source_inverse = torch.as_tensor(source.adjoint().tensor_contract())
+        inverse_circuit = fq.Circuit(3, dtype=torch.complex128)
+        inverse_circuit.append(FieldOperation(3, actual_inverse.instructions))
+        torch.testing.assert_close(
+            get_unitary(inverse_circuit), source_inverse, rtol=0, atol=2e-12
+        )
+        circuit.append(FieldOperation(3, actual_inverse.instructions))
+        torch.testing.assert_close(
+            get_unitary(circuit),
+            torch.eye(8, dtype=torch.complex128),
+            rtol=0,
+            atol=2e-12,
+        )
+        call = OnEachCall(PhaseCall(opcode, adjoint=inverse), 3)
+        modeled = query_qec_gate_cost(call)
+        declared = get_cost_value(source, QECGatesCost())
+        assert modeled.t == declared.t == (3 if opcode == "t" else 0)
+        assert modeled.clifford == declared.clifford == (3 if opcode == "s" else 0)
+        assert get_cost_value(source, QubitCount()) == 3
+
+
+@pytest.mark.ftqc_reference
+def test_constructor_admission_is_distinct_from_executable_body() -> None:
+    from qualtran import Bloq, BloqError, QBit, Register
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import OnEach, SGate, ZeroEffect, ZeroState
+
+    class ShapedChild:
+        @property
+        def signature(self) -> Any:
+            return SourceSignature((Register("q", QBit(), shape=(1,)),))
+
+    shaped_type = type("ShapedChild", (Bloq,), {"signature": ShapedChild.signature})
+
+    # All four pass the unchanged constructor, then fail in its actual body.
+    for gate, dtype, error in (
+        (ZeroState(), None, BloqError),
+        (ZeroEffect(), None, AttributeError),
+        (shaped_type(), None, IndexError),
+        (SGate(), QBit(), IndexError),
+    ):
+        source = OnEach(3, gate, dtype)
+        with pytest.raises(error):
+            source.decompose_bloq()
