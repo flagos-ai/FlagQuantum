@@ -75,6 +75,12 @@ def _lower_feedback_gate(
 
 def _has_explicit_matrix(cirq: Any, gate: Any) -> bool:
     """Recognize declared matrix leaves without contracting arbitrary components."""
+    if type(gate) in (cirq.XPowGate, cirq.YPowGate) and (
+        _lower_feedback_gate(cirq, gate, [], 0) is None
+    ):
+        # These two source rotation atoms expose a 2x2 unitary while their
+        # decomposition hook returns NotImplemented for generic powers.
+        return True
     while True:
         if isinstance(gate, cirq.ControlledGate):
             gate = gate.sub_gate
