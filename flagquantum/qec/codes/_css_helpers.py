@@ -99,9 +99,9 @@ def _minimum_logical_weight(
 
     An operator of the family commutes with every check of the other family, which
     is ``commuting_rows``, and is not a combination of the checks of its own
-    family, which is ``stabilizer_rows``. Qubit subsets are tried in increasing
-    weight, so the first operator found has the least weight there is, and the
-    search stops at ``bound``.
+    family, which is ``stabilizer_rows``. A bounded syndrome trellis gives the
+    exact minimum for eligible self-dual codes. Otherwise qubit subsets are
+    tried in increasing weight. Both searches stop at ``bound``.
 
     The stabilizer span is reduced to its pivots once, because every candidate is
     tested against the same span.
