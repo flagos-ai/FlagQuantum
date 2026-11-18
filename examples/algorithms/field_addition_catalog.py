@@ -52,7 +52,9 @@ def field_addition_examples(*, constant: bool = False) -> tuple[FieldExample, ..
     return tuple(examples)
 
 
-def field_signature_svg(examples: Sequence[FieldExample]) -> bytes:
+def field_signature_svg(
+    examples: Sequence[tuple[str, Signature, object]],
+) -> bytes:
     """Show symbolic and concrete field signatures using native table layout."""
     nodes = []
     for index, (name, signature, _) in enumerate(examples):
