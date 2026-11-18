@@ -7,7 +7,7 @@ Reference: Qualtran v0.7.0 at
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0282 | `lcu_block_encoding.ipynb` | `4f457c91bedc3baaf94f7515242a67fffc4bf4b7` | Closed by the native tutorial. |
-| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Named/packed types and source instruction capture verified. Native external oracle-provider replacement remains open. |
+| Q-0283 | `lcu_block_encoding.py` | `679ac7964baf62288713078a5ec4dbce674cbece` | Named/packed types, source capture and native through-port oracle replacement verified. Preparation-local sided junk execution remains open. |
 | Q-0284 | `lcu_block_encoding_test.py` | `0632799611bbd5ec2b7ca724533d4bbd1bbb7169` | Closed by the original-fixture mapping and existing controlled branch evidence. |
 
 ## Binding and work ownership
@@ -91,8 +91,9 @@ their lowering of modular increment, swaps and multi-control arithmetic.
 The accepted named and packed native streams remain identical. The
 full complex comparison covers the complete resulting support for the
 specified coherent input and four histories in each direction and control
-configuration. Arbitrary input states, exhaustive long histories, and
-foreign oracle object binding remain open.
+configuration. The through-port replacement below adds a full small-input
+operator comparison and long-history certificates. It does not claim enumeration
+of all large input vectors.
 
 ## Emission and source model
 
@@ -163,11 +164,78 @@ the accepted path reuses the same unit-step owner as native Hubbard PREPARE.
 These dependencies pass 166 concentrated feedback, modular, source-root,
 block-snapshot and sparse-oracle regressions. Strict checks cover the three
 production files and shared certificate; format and architecture checks are
-recorded with the publication. Q-0283 remains open: instruction capture and
-history proofs do not replace consumer-level native PREPARE/SELECT providers,
-preserved typed/sided junk ownership, or full source/native state comparisons
-through those providers. The existing signal PREPARE must stay nonidentity
-for SELECT. Its SDK object must not become native metadata.
+recorded with the publication. Instruction capture and history proofs alone do
+not replace native providers. The replacement below closes the concrete
+through-port path. Preparation-local sided junk ownership remains open. The
+existing signal PREPARE must stay nonidentity for SELECT. Its SDK object must
+not become native metadata.
+
+## Owned PREPARE and SELECT provider replacement
+
+`CircuitRegisterEmitter` implements the existing named callback used by both
+PREPARE and SELECT. It owns a layout, two native `CircuitIR` snapshots and
+explicit returned-wire swap counts. No SDK oracle or bound SDK callback survives
+conversion. The optional `import_register_emitter` captures the source forward
+and source adjoint separately. It never reverses a measured instruction stream.
+The shared `_storage` and `_emit` owners validate and bind workspace, classical
+slots and physical output ordering; no second allocation or resource engine is
+introduced. This is a local single-device execution boundary.
+
+The existing `BlackBoxPrepare`, `SelectBlockEncoding` and `LCUBlockEncoding`
+consumers are unchanged. Tests replace their callbacks with the captured owned
+emitters and still append `native.make_on(...)` to an ordinary `Circuit`.
+Logical ports follow the source register order; array elements flatten row-major
+and bits within words remain big-endian. The existing typed declaration/drawing
+path retains dtype and side metadata independently of this physical flat layout.
+Selection, through junk and target remain logical outputs. Scratch starts after
+those ports. Sequential preparation, selection and unpreparation reuse the same
+clean work and result storage. Specialized source control names are read from
+the captured signature: the two activation polarities need not spell their
+control ports identically.
+
+All original named and packed 3 × 3 LCU cases, in both directions and all three
+control modes, pass replacement and every-history cleanup certificates. The
+physical instruction, measurement, T-family and reserved-wire figures remain
+exactly those in the capture table above. SELECT-only replacement has 30 logical
+wires and five private wires; its nonidentity signal PREPARE retains its own two
+logical junk bits and is not executed by SELECT. The LCU has six private wires.
+
+For each small source case, every basis column, arbitrary logical through-junk
+inputs and a complete complex input vector are compared with the unchanged
+source tensor for every measurement history, in both directions and control
+polarities. The original 3 × 3 replacements compare all occupied complex output
+amplitudes, including coherent outer controls, system and selection input, with
+the independently exported source. Two native histories are executed per case;
+the certificate proves branch independence and zero private work for every
+history. These large input vectors are sparse coherent probes, not an exhaustive
+enumeration of the 32/33-bit logical input space. The comparison takes the union
+of both numerical supports so differing interpreter roundoff pruning cannot
+hide an output amplitude. Only individual local native unitaries are converted
+to matrices for the test interpreter; whole blocks are never contracted into a
+matrix as an import fallback.
+
+The emitter deliberately admits matching through-port circuits only. It rejects
+LEFT/RIGHT preparation junk instead of flattening it into exposed logical junk.
+Closing Q-0283 still requires an explicit lifetime binding for preparation-local
+outputs that persist across SELECT and are consumed by the source adjoint, plus
+the corresponding complete branch and work proofs. An unchanged source intake
+with one RIGHT junk bit captures the composed LCU in both directions (five wires,
+31 instructions); replacing it with LEFT junk fails at the original missing
+`local` input in both directions. The former is native integration work, while
+the latter remains a source diagnostic, not an invented executable contract.
+Independent source models remain caller-supplied declarations; a snapshot does
+not manufacture an estimated cost.
+
+Validation: 183 concentrated tests and 60 local CPU/representation integration
+tests pass, without skips. The independent native LCU notebook kernel also
+passes. Strict typing covers both production modules; Black, Ruff, both ownership
+scopes, architecture, multi-level IR and public API checks pass.
+
+Runnable replacement evidence:
+
+```bash
+pytest -q tests/unit/test_lcu_oracle_binding.py
+```
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_lcu_block_encoding.ipynb
