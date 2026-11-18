@@ -2,7 +2,8 @@
 
 The Hermitian sparse matrix operator accepts the existing RowColumnOracle and
 SqrtEntryOracle structural interfaces. Algorithms now provides CircuitColumnOracle
-and CircuitSqrtEntryOracle for user-owned CircuitIR snapshots. They carry separate
+and CircuitEntryOracle for user-owned CircuitIR snapshots. CircuitSqrtEntryOracle
+marks the square-root convention using the same execution implementation. They carry separate
 forward and adjoint circuits and independent ComponentCost declarations. Neither
 provider retains an external dependency object or reverses measured instructions
 to guess an inverse.
@@ -78,3 +79,18 @@ The snapshot contract cannot prove an arbitrary user's oracle is reversible or
 cleans its declared workspace. Those are the same semantic obligations as a
 hand-written native emitter; the reference fixtures verify them explicitly.
 Symbolic source declarations remain resource-only, as in the unchanged source.
+
+
+Ordinary source EntryOracle objects have no epsilon member. The dedicated
+import_entry_oracle accepts their amplitude convention unchanged; it does not
+apply a square root or change the original NumPy/QROM integer quantization.
+Source wrappers expose atomic gates through their own as_cirq_op only when all
+through-port outputs remain unchanged. Canonical positive-controlled Rx/Ry/Rz
+are retained as native controlled rotation primitives, including their phase.
+
+Recursive decomposition reserves a frame's input wires until its descendants
+finish. The reservation is restored on normal and exceptional exit, using the
+existing InteropQubitManager ownership authority. This prevents a QROM
+accumulator from aliasing a live angle word without permanently retaining the
+scratch of completed banded arithmetic. The accepted banded fixture still uses
+three work wires and two recorded-event slots.

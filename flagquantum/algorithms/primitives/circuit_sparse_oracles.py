@@ -139,8 +139,12 @@ class CircuitColumnOracle:
 
 
 @dataclass(frozen=True)
-class CircuitSqrtEntryOracle:
-    """Bind flag, row, column, then clean work through the existing interface."""
+class CircuitEntryOracle:
+    """Bind a declared amplitude snapshot without transforming its coefficients.
+
+    Wire order is flag, row, column, then clean work. Optional precision is
+    metadata; the circuit itself determines the amplitude convention.
+    """
 
     system_bitsize: int
     forward: CircuitIR
@@ -198,3 +202,8 @@ class CircuitSqrtEntryOracle:
             self.requirements(),
             adjoint,
         )
+
+
+@dataclass(frozen=True)
+class CircuitSqrtEntryOracle(CircuitEntryOracle):
+    """Mark a square-root amplitude declaration using the shared execution path."""
