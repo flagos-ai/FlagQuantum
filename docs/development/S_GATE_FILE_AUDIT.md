@@ -40,3 +40,32 @@ and both controlled phases:
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_diagonal_gates.ipynb
 ```
+
+## Complete source capture and presentation follow-up
+
+The actual locked atoms now pass through `import_register_emitter` in both
+directions, followed by owned CircuitIR JSON round trips. The captured provider
+and the existing native `phase_family_ir` provider supply the same single
+instruction and operand to the unchanged append consumer. Full complex operators,
+an entangled spectator state and inverse restoration agree with original tensors.
+The named q port can move to physical wire one. There is no binding swap, borrowed
+work, classical storage or measurement history in either direction.
+
+The complete factory, DocSpec, adjoint toggle, tensor index order and tensor tags
+are checked against the frozen source files. The Drawer-owned shared
+`fixed_phase_wire_symbol` preserves the empty root connector and the directional
+port label. Full musical-score geometry agrees with the original in both
+directions. Arbitrary non-null registers and ignored indices retain the source
+port-label convention.
+
+The concentrated 136-case regression passes without skips or warnings, including
+the installed optional PennyLane adapter checks and the existing control-branch
+evidence. Both changed Python files pass strict typing, Black, Ruff, Compiler
+scope, architecture, multilevel IR and protected API checks. The source files
+and original test blobs remain unchanged.
+
+Each direction emits exactly one phase-family primitive. Independently, the
+source QEC model declares one Clifford for S-family or one T for T-family, and
+one logical qubit. These physical and model accounts remain separate. The public
+Cirq/PennyLane inverse-export contract boundary above remains open, so this
+follow-up does not close the implementation or original-test parent inventory.
