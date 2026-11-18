@@ -90,8 +90,14 @@ class KikuchiMatrixEntry:
             calls[child] = calls.get(child, 0) + 1
         return symbolic_call_graph(root, {root: calls})
 
-    def resource_gates(self, *, controlled: bool = False) -> QECGateCost:
+    def resource_gates(
+        self, *, controlled: bool = False, adjoint: bool = False
+    ) -> QECGateCost:
         """Expand the original direct dependencies and control only the RHS."""
+        if controlled and adjoint:
+            raise NotImplementedError(
+                "Locked source controlled-adjoint matrix cost reaches atomic controlled And"
+            )
         difference = source_symmetric_difference_resource_formula(
             self.ell, self.ell, self.inst.k, self.inst.index_bitsize
         )
@@ -99,7 +105,7 @@ class KikuchiMatrixEntry:
             QECGateCost()
             .plus(difference, 2)
             .plus(self.scope_index.resource_gates(), 2)
-            .plus(self.rhs(controlled=controlled).resource_gates(), 1)
+            .plus(self.rhs(controlled=controlled).resource_gates(adjoint=adjoint), 1)
         )
 
 

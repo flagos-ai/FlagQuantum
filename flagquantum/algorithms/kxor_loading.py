@@ -246,8 +246,10 @@ class PRGAUniqueConstraintRHS:
         assert np.all(signs == np.sort(signs)), "data must be sorted!"
         return int(np.searchsorted(signs, 0))
 
-    def resource_gates(self) -> QECGateCost:
+    def resource_gates(self, *, adjoint: bool = False) -> QECGateCost:
         """Compose original QEC categories independently of physical lookup gates."""
+        if type(adjoint) is not bool:
+            raise ValueError("RHS model adjoint must be boolean")
         table = self.amplitude_qrom
         lookup = (
             table.resource_formula()
@@ -255,12 +257,14 @@ class PRGAUniqueConstraintRHS:
             else estimate_component_resources(table.resource_model()).gates
         )
         rotation = source_controlled_add_or_subtract_resource_formula(
-            self.angle_bitsize, self.angle_bitsize
+            self.angle_bitsize, self.angle_bitsize, add_when_control_is_on=not adjoint
         )
         compare = source_less_than_constant_qec_cost(
             self.m_dtype.num_qubits, self.num_negative
         )
-        sign = query_qec_gate_cost(ControlledRotationCall(PhaseCall("s"), (1,)))
+        sign = query_qec_gate_cost(
+            ControlledRotationCall(PhaseCall("s", adjoint=adjoint), (1,))
+        )
         return (
             QECGateCost(clifford=2)
             .plus(lookup, 2)

@@ -50,3 +50,18 @@ The complete source suite ran independently with its original five passes, six
 skips and two xfails. The concentrated native regression passed 511 tests. Black,
 Ruff, strict mypy for both changed Python files, Algorithms scope, architecture,
 multi-level IR and protected API checks passed.
+
+## Exact adjoint model dependency
+
+The block-encoding closure exercises inverse RHS/matrix entry costs. The RHS
+model now routes the inverse phase-gradient rotation to the existing exact
+controlled-add/subtract polarity and reverses the controlled S declaration.
+All seven categories match untouched concrete/symbolic source queries, including
+the specialized controlled RHS. Inverse RHS and uncontrolled matrix costs have
+two fewer Cliffords than their forward models. Forward callers retain their
+existing results. The generic controlled-adjoint matrix source query reaches an
+atomic controlled And and fails. Native model admission reports that boundary
+explicitly. This dependency adds resource evidence and carries no new physical
+primitive, amplitude or restoration claim. Concentrated regression passed 618
+tests. Strict typing, formatting, lint, scope, architecture, IR and API checks
+passed for the three changed Python files.
