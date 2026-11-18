@@ -66,3 +66,43 @@ The independent source logical peaks are four and three respectively.
 The source can also construct the symbolic Partition–child–Partition
 graph. Direct external objects and symbolic typed decomposition remain
 open.
+
+## Actual source wrappers and measured-child captures
+
+`test_auto_partition_source_binding.py` captures both actual source example
+factories through the existing named emitter. Their DocSpec, child title,
+independent directions, native JSON, reversed packed ports and coherent unused
+slices match complete source matrices through ordinary `circuit.append(op)`.
+The factories need no work or measurements.
+
+The original examples explicitly use generic Controlled(Swap). Their forward
+capture emits three Toffoli atoms. The source adjoint specializes that child
+and emits the seventeen-primitive Fredkin decomposition. Both directional
+streams are asserted independently, including operand order, and the round
+trip restores every complex amplitude. The first witness using seventeen
+primitives for both directions exposed this source asymmetry and was corrected
+to the unmodified source paths. The independent source model reports one CSwap
+in both directions, with logical peaks three and six. Primitive counts and
+modeled categories therefore remain separate.
+
+An actual AutoPartition(Add(QUInt(2), QUInt(3))) wraps the child in reversed
+b/a packed order plus an unused bit. Native layout binding and restoration
+preserve exact slice ownership. Both independently captured directions retain
+the source instruction and feedback order. All four measured histories per
+direction agree with the full unnormalized complex source action. All sixteen
+history pairs per direction restore the entangled input, spectator and idle
+slice, with both work bits zero. Native append-to-IR and JSON retain every
+instruction. Each direction emits 20 CX, 6 H, 4 T, 4 Tdg, 2 S, 2 measurements,
+2 conditional CZ and 2 resets. Existing Add and packed-child models remain
+independent of that executed inventory.
+
+The batch passed 414 concentrated cases without warnings or skips. Formatting,
+lint, strict typing for the changed Python file, Compiler scope, architecture,
+multilevel IR and protected API checks passed. Frozen source blobs remain
+unchanged. Logs are retained under `ftqc-reference-env/g2-auto-partition-binding-*.log`.
+
+Q-0318's concrete external-object capture gap is now covered. Symbolic typed
+Program decomposition and arbitrary one-sided packed executable bindings remain
+open at their recorded admission owners. The source's original left-only
+finalization failure remains separate. No parent closure is inferred from
+finite through-port captures.
