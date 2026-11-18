@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 192
+    assert len(validated) == 193
+    assert (
+        "applications/chemistry/classiq_chemistry_application/classiq_chemistry_application",
+        "examples/synthesis/applications/chemistry/lih_chemistry/overview/main.py",
+    ) in validated
     assert (
         "community/Hackathons/iQuHack_2025/Workshop/WS_iQuHack_2025_final",
         "examples/synthesis/community/hackathons/iquhack_2025/workshop/overview/main.py",
@@ -897,7 +901,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**192/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**193/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

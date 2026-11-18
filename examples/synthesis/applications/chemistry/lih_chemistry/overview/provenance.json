@@ -1,0 +1,151 @@
+{
+  "upstream_path": "applications/chemistry/classiq_chemistry_application/classiq_chemistry_application.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "8676ad0f7f785dd19ac634ecfe2fae6e82c6047c2d9616dfb1f27fd1d04e6a82",
+  "git_blob_sha1": "a7689f54b0b0157d24107451dad1d117663460e5",
+  "scope": "All 23 original stages, fresh LiH STO-3G molecular calculations, the five-orbital frozen-core Hamiltonian, all sixteen symmetry sectors, and the ten-parameter 200-query VQE.",
+  "native_semantic_adaptations": "Use the native interleaved spin convention, canonical fermion/Jordan\u2013Wigner algebra and public stabilizer reduction. Verify each diagonal spectrum independently, and keep the full six-qubit ordered Pauli product. Evaluate the local expectation deterministically with native COBYLA and show actual best and last energies. The source historical hosted energy is separate from this trace.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.lih_chemistry.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/lih_chemistry/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_lih_chemistry_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "stage": "Use the optional local PySCF and Matplotlib environments.",
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "stage": "Use the original neutral singlet LiH geometry and STO-3G basis.",
+      "sha256": "9375695e9e65b2af652285aefef134ec23ff767ab7980baaf657a388841f8e8f"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "stage": "Regenerate RHF, MP2, CISD, CCSD, full FCI and frozen-core CASCI.",
+      "sha256": "44aa014a62ea0d52c286ccab5105732d994d8c4d4e03c98079db82307918887f"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "stage": "Inspect the spatial orbitals and method energies.",
+      "sha256": "86c8152d8fe89b8278f7fb6fdf7d57b51515f0a1571f114f33c6f80bc9be6f56"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "stage": "Keep five active orbitals and one particle of each spin.",
+      "sha256": "35d5f05de5e25b9347a37ccfdad9c40efe372c089015421a3900ba162be62b14"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Inspect the canonical fermionic integral terms.",
+      "sha256": "866ef7e4c159442362015df89a258171d8008ec63fa7a20131e9b7550f1f4d73"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 7,
+      "stage": "Map the fresh operator with the native Jordan\u2013Wigner transform.",
+      "sha256": "4437e30e8ae9deb50e205d3537d83585ffa4fbabc2a083a64b6b0aff14b6684f"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 8,
+      "stage": "Retain the one-per-spin Hartree\u2013Fock occupation before tapering.",
+      "sha256": "a286b7340c9b533a1d6a89fd96d1831979d8549caaf47d88b68b7c9bb3cb5181"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 9,
+      "stage": "Discover four diagonal symmetries in the collected Pauli support.",
+      "sha256": "840fe320bdba09235d087a9680330e0121ffb6b0027e1a6949e4016fa289fc18"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 10,
+      "stage": "Check commutation before constructing the reduced frame.",
+      "sha256": "6be4a415566309eb68c45e1e63df28f475b9f511250d9c643cc47088ba2a11eb"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 11,
+      "stage": "Read the exact dual X locations of each independent generator.",
+      "sha256": "a4565d5d020854579fab20257f2c3d26a17e7c11f5623c413d9903d4a9f52894"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 12,
+      "stage": "Use the paired Pauli generators for the block diagonalizing transform.",
+      "sha256": "93c4165505e20f647d34bfbf68a98b4ee040586f142906a466112d9b0e27d98d"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 13,
+      "stage": "Check the transformed generator and its corresponding X operator.",
+      "sha256": "da2812c1c367c278f741419fd23e6a10e26dd6bd730190fb84e05b4efd21e31b"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 14,
+      "stage": "Inspect the transformed Pauli Hamiltonian.",
+      "sha256": "6db4636bdfd337d2522d1cb41edd5fb050efc1cb3c57f10f09b2e4d9d5db176f"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 15,
+      "stage": "Compare complete spectra of all sixteen symmetry sectors.",
+      "sha256": "c4d9b6cd2afa97a432d8c5be1e59a86596736ca4255c5faf94d1d50b21feff5c"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 16,
+      "stage": "Use native Pauli operators for the VQE objective.",
+      "sha256": "72a51f6c5a643e4650b50b256865b4ea0cfd02653e76d6bb9d4151d04a0e7396"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 17,
+      "stage": "Apply the original 0.001 Ha term filter.",
+      "sha256": "2f853a69af85236332e5c5a0533f248a0685527d1fe8ee09b2e8a0a75f30e3da"
+    },
+    {
+      "index": 50,
+      "native_code_cell": 18,
+      "stage": "Initialize the six-qubit Hartree\u2013Fock state in the reduced frame.",
+      "sha256": "a195d32ad8a6639648f5fa8dcf972510f182b39108b6a158de659bb97883e1e2"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 19,
+      "stage": "Generate the spin-preserving single and double excitation operators.",
+      "sha256": "656854e9c60594946791b32fcfbf9347393b0c44829430066f6ee853d8fe0b2a"
+    },
+    {
+      "index": 55,
+      "native_code_cell": 20,
+      "stage": "Use Matplotlib to display the executed VQE trace.",
+      "sha256": "7be2139462fb6e17fc12feeb8b37f6ccb1688bc311626c7e8c27dd41fea4643e"
+    },
+    {
+      "index": 56,
+      "native_code_cell": 21,
+      "stage": "Inspect the first-order native Circuit for the zero initial parameters.",
+      "sha256": "6df6f62e0c51c8cad9013c5ccf3cf558da5588abad206761a2f68390ac9b6f32"
+    },
+    {
+      "index": 59,
+      "native_code_cell": 22,
+      "stage": "Run the native optimizer and record all actual objective queries.",
+      "sha256": "11b899490b42cea26b63c678cdfad2cc9b7009a956c62f9b7131bb684ffc94b2"
+    },
+    {
+      "index": 60,
+      "native_code_cell": 23,
+      "stage": "Plot the local energy trace and fresh full-space FCI reference.",
+      "sha256": "eefa6291074b64629e9d80c2586fc6ff9eb22a862cabdc7546f4fa8ab4ac1c6c"
+    }
+  ]
+}

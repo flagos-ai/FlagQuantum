@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **192/213**.
+Validated local Notebook workflows: **193/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -221,7 +221,7 @@ Validated local Notebook workflows: **192/213**.
 | `applications/automotive/cooling_systems_optimization/cooling_systems_optimization` | notebook_workflow | [Native program](applications/automotive/cooling_systems_optimization/overview/main.py) | validated |
 | `applications/benchmarking/quantum_volume/quantum_volume` | notebook_workflow | [Native program](applications/benchmarking/quantum_volume/overview/main.py) | validated |
 | `applications/benchmarking/randomized_benchmarking/randomized_benchmarking` | notebook_workflow | [Native program](applications/benchmarking/randomized_benchmarking/overview/main.py) | validated |
-| `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | Pending | pending |
+| `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | [Native program](applications/chemistry/lih_chemistry/overview/main.py) | validated |
 | `applications/chemistry/molecular_energy_curve/molecular_energy_curve` | notebook_workflow | [Native program](applications/chemistry/molecular_energy_curve/overview/main.py) | validated |
 | `applications/chemistry/molecule_eigensolver/molecule_eigensolver` | notebook_workflow | [Native program](applications/chemistry/molecule_eigensolver/overview/main.py) | validated |
 | `applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial` | notebook_workflow | Pending | pending |

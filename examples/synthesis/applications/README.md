@@ -74,6 +74,7 @@ Native FlagQuantum programs currently available:
 - [overview](automotive/cooling_systems_optimization/overview/README.md)
 - [overview](benchmarking/quantum_volume/overview/README.md)
 - [overview](benchmarking/randomized_benchmarking/overview/README.md)
+- [overview](chemistry/lih_chemistry/overview/README.md)
 - [overview](chemistry/molecular_energy_curve/overview/README.md)
 - [overview](chemistry/molecule_eigensolver/overview/README.md)
 - [overview](chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/README.md)
