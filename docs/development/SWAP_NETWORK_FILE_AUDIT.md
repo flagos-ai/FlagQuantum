@@ -112,8 +112,10 @@ instructions.
 - Q-0707 now has executable resolution of the original symbolic factory,
   including actual imported controlled objects. The upstream abstract Clifford
   aggregate cost query for generic controls remains open.
-- Q-0709 retains source singleton and zero-width selection failures and the
-  generic control cases requiring unresolved controlled And leaves.
+- Q-0709 now has actual resolved symbolic-register bindings and native emitter
+  replacement for multiple axes and shaped declared controls. Source singleton
+  and zero-width selection failures, plus specific generic outer-control cases
+  requiring undecomposable controlled And leaves, remain open.
 - Q-0712 now has executable symbolic-field resolution and complete external
   binding. The earlier leading zero-bit axis failure remains. The compiler
   owns the stage permutation and quantum emitter; Simulation owns the in-place
@@ -224,3 +226,76 @@ The current SwapWithZero batch passed five focused cases in 2.14 seconds and
 Strict mypy on the new test, Black, Ruff, Algorithms scope, architecture,
 multilevel IR and protected API checks passed. Existing source notebook and CPU
 acceptance is reused because this batch changes no production behavior.
+
+## Complete MultiplexedCSwap source binding
+
+| Complete original member | Native ownership and acceptance |
+| --- | --- |
+| Selection/word/control fields and tuple converters | `MultiplexedSwapLayout` retains named bounded selectors, opaque target words, scalar selector requirement and scalar/shaped controls. |
+| Control and selection properties | Ordered native layout registers; actual custom `address0`/`address1` and shaped `enable` ports are bound without renaming. |
+| Target-register property | Native layout derives row-major array axes from selection iteration bounds and retains the arbitrary through `output` word. |
+| Circuit diagram method | Native catalogue/drawer conveys controls, indexed input and output words; foreign diagram objects do not enter native algorithm state. |
+| `nth_operation` | Existing exact controlled swap; shared unary traversal owns compute, leaf selection and measured predicate erasure. |
+| Original factory and DOC list | Existing locked five-row/two-bit example, graph, notebook and original test-grid evidence. The original factory is concrete; symbolic register resolution is an explicit constructor case. |
+| Inherited signature, decomposition and call graph | Existing shared unary-iteration owner and independent resource model; existing stage tests preserve gate dependencies, operands and feedback. |
+
+`test_multiplexed_source_binding.py` resolves actual original symbolic selector,
+extent and target-word fields before importing the source. Four complete
+operator cases cover a padded three-row selector with zero, one and two shaped
+control bits, and two selection axes with a shaped control. Both source
+directions are captured independently and restored only through owned native
+IR JSON. The native replacement uses `MultiplexedSwapLayout.bind` and
+`CircuitRegisterEmitter` at the same named `BlackBoxPrepare` consumer.
+`circuit.append(op)` executes either implementation without changing consumers.
+No new traversal, allocator, conversion registry or algorithm implementation is
+introduced.
+
+All logical columns, including arbitrary targets/output, inactive controls and
+padded selectors, agree in full complex amplitude. Actual source inverse
+composition is the identity. A shared raw-history certificate proves every
+measurement history implements the same channel; separate complete-column
+checks prove every private output zero. Both directional instruction histograms
+match. Existing source-model comparisons retain every declared category and
+logical peak separately from primitive counts.
+
+For a three-row, one-bit-word table with a two-bit selector:
+
+| Shaped control count | Instructions, either direction | Explicit T/T-dagger | Measures | Captured wires | Native reserved wires |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 0 | 73 | 25 | 1 | 7 | 7 |
+| 1 | 91 | 29 | 2 | 9 | 9 |
+| 2 | 108 | 33 | 3 | 11 | 11 |
+
+The source model retains three CSwap plus one/two/three And and measurements.
+Its default T-equivalence prices CSwap differently from the emitted seven-T
+exact Fredkin. Tests compare the native independent declaration to the complete
+source model; explicit T counts above are physical instructions, not the default
+model T-equivalence.
+
+Generic `.controlled(...)` is a different source call chain from declared
+`control_regs`. On a two-row, one-bit selector, positive/negative scalar and
+mixed shaped outer controls can be captured; all three now have full logical
+operator, raw-history, inverse, cleanup and JSON checks against the existing
+native generic-control emitter. Both directional histograms match (70, 72 and
+91 instructions for positive, negative and mixed controls respectively).
+
+On the three-row base, the same generic wrappers produce controlled And and
+controlled And-adjoint leaves. Source decomposition of those non-through
+controlled leaves is unavailable. Actual import therefore retains the explicit
+`Foreign oracle primitive cannot be decomposed` error for all three outer
+activation patterns. Declared two-bit controls do work and must not be described
+as this failure. The existing native compiler likewise rejects exactly the
+undecomposable generic-control cases; original singleton/zero-bit-axis failures
+remain covered by the previous source tests.
+
+Q-0709 remains open for those original source boundaries. The complete
+MultiplexedCSwap class/factory is mapped and its previously missing actual
+symbolic-register execution is now covered. No parent or child progress count is
+added merely for the extra evidence.
+
+The current MultiplexedCSwap batch passed ten focused cases in 7.91 seconds and
+138 concentrated typed-layout, source-import, controlled-exchange and erasure
+regression cases in 13.22 seconds. Strict mypy on the new test, Black, Ruff,
+Algorithms scope, architecture, multilevel IR and protected API checks passed.
+Existing notebook and CPU acceptance is reused because production code and
+public contracts are unchanged.
