@@ -150,6 +150,17 @@ class LinearCombinationBlockEncoding:
                     "Custom SELECT must pack system, constituent ancilla and resource as system"
                 )
 
+    @classmethod
+    def of_terms(
+        cls, *terms: tuple[float, _BlockMetadata], coefficient_bits: SymbolicInt = 1
+    ) -> LinearCombinationBlockEncoding:
+        """Construct an ordered LCU from coefficient/block pairs."""
+        return cls(
+            tuple(block for _, block in terms),
+            tuple(coefficient for coefficient, _ in terms),
+            coefficient_bits,
+        )
+
     @cached_property
     def select(self) -> LinearCombinationSelect:
         return LinearCombinationSelect(self.block_encodings, self.coefficients)

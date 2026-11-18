@@ -47,6 +47,13 @@ def test_original_four_term_signature_signal_and_cost() -> None:
     from qualtran.resource_counting.generalizers import ignore_split_join
 
     source = _linear_combination_block_encoding()
+    assert (
+        type(source).of_terms(
+            *zip(source._lambd, source._block_encodings, strict=True),
+            lambd_bits=source.lambd_bits,
+        )
+        == source
+    )
     encoding = linear_combination_example()
     widths = (
         encoding.system_bitsize,
@@ -527,3 +534,39 @@ def test_coefficient_cases_named_primitive_flow_and_resource_profiles(
             name: getattr(expected, name) for name in asdict(report.gates)
         }
         assert report.peak_logical_qubits == get_cost_value(source, QubitCount())
+
+
+@pytest.mark.parametrize(
+    "family,row,coefficients,precision",
+    [
+        (family, index, tuple(row), precision)
+        for family, rows, precision, _ in _COEFFICIENT_CASES
+        for index, row in enumerate(rows)
+    ]
+    + [("dense", row, (), 9) for row in range(10)],
+)
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_complete_catalogue_erasure_history_certificate(
+    family: str,
+    row: int,
+    coefficients: tuple[float, ...],
+    precision: int,
+    adjoint: bool,
+    coefficient_gates: Any,
+) -> None:
+    from tests.unit.measurement_certificate import certify_erasure_histories
+
+    named, dense = coefficient_gates
+    if family == "dense":
+        gates, coefficients = dense[row]
+    else:
+        gates = named[family]
+    scales = (2.0, 4.0) if family == "normalization" else ()
+    _, _, circuit, work = _bind_coefficient_fixture(
+        gates, coefficients, precision, inverse=adjoint, scales=scales
+    )
+    instructions = circuit.to_ir().instructions
+    certified = certify_erasure_histories(
+        instructions, n_wires=circuit.n_qubits, zero_wires=work
+    )
+    assert certified == sum(gate.name == "measure" for gate in instructions)

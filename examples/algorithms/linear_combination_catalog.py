@@ -65,10 +65,12 @@ def _controlled(
 
 def linear_combination_example() -> LinearCombinationBlockEncoding:
     """Construct (T - H + X - Z)/4 at the original coefficient precision."""
-    return LinearCombinationBlockEncoding(
-        tuple(_unitary(label) for label in _GATES),
-        (0.25, -0.25, 0.25, -0.25),
-        1,
+    return LinearCombinationBlockEncoding.of_terms(
+        (0.25, _unitary("t")),
+        (-0.25, _unitary("h")),
+        (0.25, _unitary("x")),
+        (-0.25, _unitary("z")),
+        coefficient_bits=1,
     )
 
 
