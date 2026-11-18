@@ -60,3 +60,45 @@ custom decomposition and resource hooks. The current native interface
 uses caller-owned controlled recipes and explicit work. Source pruning
 is preserved even on padded bit patterns. The original interval contract
 requires the input address to lie in the declared range.
+
+## Prefix-aware custom subclass folding
+
+The complete source base class, call-graph helpers, original test file and direct
+nested traversal were reviewed. The native `append_nested_bounded_unary_tree`
+now passes the retained parent indices to its early-fold callback. The existing
+`indexed_component_ir` exposes that callback while retaining its controlled
+recipe interface, flattened C-order leaf indices, caller-owned work and
+feedback, and independent adjoint traversal. Default callers use their existing
+path. A folded interval requires the same child recipe throughout the interval,
+which is the original source subclass's responsibility.
+
+A custom source subclass selects X or Z leaves on named `(row, column)` axes
+with extents `(2, 4)`. Only row zero folds its column pairs. The actual source
+base-class hook yields retained indices `0, 2, 4, 5, 6, 7`; the native forward
+stream uses that order and the reverse traversal uses its reversal. Both streams
+match source gate dependencies, operands and measurement feedback, including the
+source's actual adjoint. The append entry, JSON roundtrip, every logical operator
+column, all small measurement histories, full complex amplitudes and zero work
+are checked with no control and one positive control.
+
+The independent `indexed_component_cost` accepts the same pure fold callback.
+Its source-style tree planning collects retained calls, split counts and live
+predicate depths without emitting instructions or invoking the child emitter.
+Skipped child models contribute no costs, and each retained call preserves its
+own bystander width. It separately counts the outer multi-control predicate.
+The default cost path is reused directly. Passing an always-false fold is also
+checked against the complete existing call inventory, including uneven child
+costs, padded extents, both directions and zero through three controls.
+
+| Two-axis folded fixture | Emitted inventory | Source model |
+| --- | --- | --- |
+| No control | 16 T/T†, 4 measurements, 6 retained Pauli calls, 6 reserved wires | 4 And, 16 Cliffords, 4 measurements, 6 peak wires |
+| One control | 20 T/T†, 5 measurements, 6 retained Pauli calls, 8 reserved wires | 5 And, 16 Cliffords, 5 measurements, 8 peak wires |
+
+The original source calls `decompose_zero_selection` when the first-axis root
+folds. Its base implementation raises `NotImplementedError`. The native emitter
+and cost model require an explicit zero-selection recipe for that case and
+refuse the ordinary tree route. The tests retain the source base failure.
+Symbolic extent execution, custom zero-selection recipes and additional dynamic
+subclass hooks remain open under Q-0597. Existing notebook, original test-suite,
+interval pruning, nested-axis and reversed-traversal evidence above is reused.
