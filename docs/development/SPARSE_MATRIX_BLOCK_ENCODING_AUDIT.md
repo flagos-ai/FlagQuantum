@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0296 | `sparse_matrix.ipynb` | `2a85ed895beeee25d508e68a093af307ca9f1826` | Closed by the full native tutorial. |
-| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle composition and the original concrete primitive streams verified. Concrete foreign oracle binding verified; symbolic numerical binding and complete long-history coverage remain open. |
+| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle composition and the original concrete primitive streams verified. Concrete foreign oracle binding verified; symbolic numerical binding remains open. Complete long-history channel coverage is certified below. |
 | Q-0301 | `sparse_matrix_test.py` | `afcb0771b405ed26bfce7827d70d81c3d7f7a0d8` | Closed with the original stress, random entry, banded index and Vlasov fixtures. |
 
 ## Oracle and block ownership
@@ -46,7 +46,7 @@ reference output. The uniform stream checks the explicit SWAP operands,
 and the explicit entry fixture checks all measured histories. The
 banded fixture checks three representative histories in each direction.
 All tested work bits clear. The source primitive stream replay covers
-these variants in both directions. Complete banded histories remain open.
+these variants in both directions. The symbolic channel certificate below covers the complete banded histories.
 
 The unchanged original non-notebook run has 23 passes, five mode skips
 and seven expected failures. The unchanged 13-cell original and the
@@ -77,7 +77,7 @@ and full coherent outputs at every measurement history in both
 directions. The standalone three-bit banded oracle covers both full
 operators, all 24 valid index/ordinal pairs and every small measurement
 history. The complete enumerations for these bounded cases complement
-the sampled long histories above.
+the numerical long-history samples above; the channel certificate below covers every long history.
 
 | Vlasov emission | Locked logical model |
 | --- | --- |
@@ -88,7 +88,7 @@ rotations include those from uniform preparation. No T synthesis cost
 is inferred from the emitted rotation instructions. Both Vlasov
 directions match all 2,096 instructions, including operands, rotation
 angles and feedback for each of the 94 measurements. Branch execution
-covers representative histories. The unchanged source slow run passes
+covers representative histories, while the symbolic channel certificate covers all histories. The unchanged source slow run passes
 all four tests.
 
 ## Primitive stream replay
@@ -119,8 +119,7 @@ high-order diffusion prefix in its AutoPartition peak. A symbolic index
 width with band size one has peak `Max(n+4, 2*n+1)`.
 
 The source singleton diffusion omits its target register, and its
-AutoPartition refuses the mismatched ports. Numerical symbolic binding
-and foreign oracle object binding remain open. The source can also reject
+AutoPartition refuses the mismatched ports. Numerical symbolic binding remains open. Concrete foreign oracle binding is verified below. The source can also reject
 some concrete-index counts with unresolved width at oracle construction
 when its sparsity bound comparison has no truth value.
 
@@ -148,6 +147,40 @@ changed port maps are not silently dropped. Controlled rotations retain their
 complete complex phase. Scoped decomposition reservations prevent live-QROM
 aliasing and preserve the prior three-work-wire banded fixture.
 
-The 94-event Vlasov trajectory coverage and symbolic numerical binding remain
-open as recorded above. These changes do not claim exhaustive 2**94 history
-execution and do not close Q-0297.
+Symbolic numerical binding remains open. Q-0297 is not closed by the concrete
+binding and channel evidence.
+
+## Complete long-history channel certificate
+
+The test-owned `measurement_certificate.py` checks all 28 original explicit,
+banded and Vlasov forward/adjoint streams, including the 94 Vlasov erasures.
+It proves every branch has the same coherent operator multiplied by the positive
+scalar `2**(-events/2)`, with all declared workspace restored. This is a
+compositional channel proof, not enumeration of `2**94` numerical trajectories.
+
+Every non-work input starts as an independent Boolean variable. Exact Boolean
+algebra tracks X, Y, CX, CCX and SWAP support; diagonal gates preserve it.
+Non-diagonal rotations and H conservatively replace their target with a fresh
+independent variable. This enlarges support and can cause a valid stream to be
+rejected, but cannot justify a false predicate equality. Each exact four-T And
+compute requires a zero target. Each literal measured erase requires its target
+to equal the current product of both controls. All declared clean wires must
+return to zero. Unsupported instructions, explicit matrices, unrecognized
+feedback, nonliteral fixed gates and nonfinite angles are rejected.
+
+The local compute/erase lemma is independently checked on its complete control
+basis, including the positive complex scalar for both outcomes. A coherent
+entangled rotation example checks phase preservation. Mutated controls, rotated
+predicates, dirty targets, corrupted feedback and leaked work must fail.
+Linearity extends the certified identity to arbitrary complex inputs in the
+admitted clean-work subspace, including external spectators.
+
+The certificate proves outcome independence and workspace cleanup. It does not
+numerically evaluate the common coherent operator. The separate unchanged-source
+primitive-stream comparison checks gates, operands, angles and feedback, and the
+existing full complex reference checks validate the common action. Numerical
+samples remain samples; their coverage is not relabeled exhaustive.
+
+The concentrated batch passes 87 tests; strict typing of the certificate,
+architecture boundaries, internal IR and public API checks pass. Primitive
+emission and source resource estimates in the tables above are unchanged.

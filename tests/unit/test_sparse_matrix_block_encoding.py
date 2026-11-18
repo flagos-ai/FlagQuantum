@@ -345,6 +345,12 @@ def test_locked_explicit_stress_and_vlasov(
         workspace,
         feedback,
     )
+    from tests.unit.measurement_certificate import certify_erasure_histories
+
+    certified = certify_erasure_histories(
+        instructions, n_wires=width, zero_wires=workspace
+    )
+    assert certified == sum(g.name == "measure" for g in instructions)
     count = Counter(g.name for g in instructions)
     gates: list[Instruction] = []
     for gate in instructions:
