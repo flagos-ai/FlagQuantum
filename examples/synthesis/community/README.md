@@ -17,6 +17,7 @@ Native FlagQuantum programs currently available:
 
 ## Validated local Notebook workflows
 
+- [overview](hackathons/qinnovision_2025/advection_equation/second_place/overview/README.md)
 - [overview](hackathons/iquhack_2025/challenge_template/overview/README.md)
 - [overview](hackathons/iquhack_2025/gaussian_reference/overview/README.md)
 - [overview](hackathons/iquhack_2025/winning_gaussian/overview/README.md)
