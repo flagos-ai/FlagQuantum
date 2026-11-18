@@ -13,7 +13,7 @@ source decomposition; their count is not an expanded Clifford+T gate count.
 """
 
 from collections.abc import Sequence
-from math import cos, pi, sin
+from math import cos, isclose, pi, sin
 
 import numpy as np
 from numpy.typing import NDArray
@@ -62,8 +62,17 @@ def _abc(matrix: Matrix) -> tuple[Matrix, Matrix, Matrix, float]:
 
 
 def _phase(wire: int, exponent: float) -> Instruction:
-    fixed = {1.0: "z", 0.5: "s", 1.5: "sdg", 0.25: "t", 1.75: "tdg"}
-    name = fixed.get(exponent % 2)
+    # Match the fixed-leaf admission used at the source/IR boundary. Numerical
+    # determinant phases can approach a Clifford exponent from either side.
+    fixed = {1.0: "z", -1.0: "z", 0.5: "s", -0.5: "sdg", 0.25: "t", -0.25: "tdg"}
+    name = next(
+        (
+            op
+            for value, op in fixed.items()
+            if isclose(exponent, value, rel_tol=0, abs_tol=1e-12)
+        ),
+        None,
+    )
     return (
         Instruction(name, (wire,))
         if name is not None
