@@ -12,7 +12,8 @@ share `CircuitIR` where their entry points require it.
 | Code generation and interchange | [`formats/`](formats/) | OpenQASM, QCIS, or QIR text |
 | Output verification and artifact construction | [`artifacts/`](artifacts/) | Verified executable artifact |
 
-[`pipeline.py`](pipeline.py) composes the native circuit path. `registers/`
+[`pipeline.py`](pipeline.py) exposes the native circuit entries and forwards
+orchestration to [lowering/pipeline.py](lowering/pipeline.py). `registers/`
 provides shared register decompositions. `_torch/` owns the PyTorch frontend
 capture and training compilation. Documented compiler entry modules remain
 importable at their existing paths. Deployment packaging is owned by
@@ -26,6 +27,49 @@ verified path from quantum-classical source to target-legal output.
 Compiler owns program transformations over Core semantics. Runtime chooses
 execution; Simulation supplies numerical kernels; Compute and Remote adapt
 resources. Compiler does not run the program.
+
+## Root modules and implementation ownership
+
+The Compiler team owns the root import paths and their compatibility exports.
+Use the stage implementation for algorithm changes. The root `pipeline.py`
+keeps the `compile` and `optimize` signatures and forwards registry and router
+replacements to their owners. Existing callers can continue importing the root
+modules listed below.
+
+| Root module | Implementation owner |
+| --- | --- |
+| [__init__.py](__init__.py) | Expert exports from the entry and stage modules |
+| [_arithmetic_kernels.py](_arithmetic_kernels.py) | [registers/_arithmetic_kernels.py](registers/_arithmetic_kernels.py) |
+| [_fixed_word.py](_fixed_word.py) | [_construction/_fixed_word.py](_construction/_fixed_word.py) |
+| [_fourier_kernels.py](_fourier_kernels.py) | [registers/_fourier_kernels.py](registers/_fourier_kernels.py) |
+| [_pauli_products.py](_pauli_products.py) | [lowering/_pauli_products.py](lowering/_pauli_products.py) |
+| [_pauli_schedule.py](_pauli_schedule.py) | [lowering/_pauli_schedule.py](lowering/_pauli_schedule.py) |
+| [_phase_factors.py](_phase_factors.py) | [_construction/_phase_factors.py](_construction/_phase_factors.py) |
+| [_phase_polynomial.py](_phase_polynomial.py) | [_construction/_phase_polynomial.py](_construction/_phase_polynomial.py) |
+| [_sparse_predicate.py](_sparse_predicate.py) | [_construction/_sparse_predicate.py](_construction/_sparse_predicate.py) |
+| [angle_synthesis.py](angle_synthesis.py) | [lowering/angle_synthesis.py](lowering/angle_synthesis.py) |
+| [basis_conversion.py](basis_conversion.py) | [lowering/basis_conversion.py](lowering/basis_conversion.py) |
+| [basis_translation.py](basis_translation.py) | [lowering/basis_translation.py](lowering/basis_translation.py) |
+| [layout.py](layout.py) | [topology/layout.py](topology/layout.py) |
+| [layout_planning.py](layout_planning.py) | [topology/layout_planning.py](topology/layout_planning.py) |
+| [module_builder.py](module_builder.py) | [_torch/module_builder.py](_torch/module_builder.py) |
+| [noise.py](noise.py) | [lowering/noise.py](lowering/noise.py) |
+| [openqasm.py](openqasm.py) | [formats/openqasm.py](formats/openqasm.py) |
+| [openqasm_import.py](openqasm_import.py) | [formats/openqasm_import.py](formats/openqasm_import.py) |
+| [operator_lowering.py](operator_lowering.py) | [lowering/operator_lowering.py](lowering/operator_lowering.py) |
+| [pass_manager.py](pass_manager.py) | [optimization/pass_manager.py](optimization/pass_manager.py) |
+| [pipeline.py](pipeline.py) | [optimization/pass_registry.py](optimization/pass_registry.py), [optimization/pipeline.py](optimization/pipeline.py), [lowering/pipeline.py](lowering/pipeline.py) |
+| [qcis.py](qcis.py) | [formats/qcis.py](formats/qcis.py) |
+| [qir.py](qir.py) | [formats/qir.py](formats/qir.py) |
+| [resource_estimation.py](resource_estimation.py) | [optimization/resource_estimation.py](optimization/resource_estimation.py) |
+| [routing.py](routing.py) | [topology/routing.py](topology/routing.py), [topology/sabre.py](topology/sabre.py) |
+| [select_lowering.py](select_lowering.py) | [lowering/select_lowering.py](lowering/select_lowering.py) |
+| [training.py](training.py) | [_torch/training.py](_torch/training.py) |
+| [translate.py](translate.py) | [formats/translate.py](formats/translate.py) |
+
+For local contributor workflows and dependency boundaries, see
+[optimization/README.md](optimization/README.md) and
+[lowering/README.md](lowering/README.md).
 
 ## Reusable Module frontend
 
