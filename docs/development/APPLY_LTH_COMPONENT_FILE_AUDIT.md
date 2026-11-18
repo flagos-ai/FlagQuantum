@@ -118,3 +118,24 @@ CCX remains a captured primitive. Its eventual physical synthesis cost is
 separate from the independent source Toffoli category and from emitted T-family
 instructions. Source constructor and callback objects are used only at the
 Ecosystem boundary. No foreign object enters the consumer's owned layouts or IR.
+
+
+## Whole control wrappers on shaped bit arrays and integer words
+
+The complete source ControlledViaAnd wrapper is captured with two physical
+control bits, using either a shaped QBit array or a QUInt word. All four
+activation words are checked for T/H children and both actual source directions.
+The shared specialized indexed emitter and its independent model are reused.
+Source capture numbers result slots by first measurement. Call-site slots are
+therefore bound inner-first, while work remains outer-predicate-first. This is
+an explicit caller-owned bijection, preserving every feedback condition in
+source/native gate-dependency comparisons.
+
+Every logical operator column and all four measurement histories preserve exact
+phase and clear both work bits. The compiled operation also passes Circuit.append
+and native JSON round trips. Each direction emits eight T-family gates, two
+measurements, one controlled phase and one CH. Independent source and native
+models both report two And, seven Cliffords, three rotations, two measurements
+and six peak wires. Estimated rotations remain distinct from captured atoms.
+The direct single negative-control source defect above remains separately
+recorded. These wrappers have correct activation for the declared two-bit word.

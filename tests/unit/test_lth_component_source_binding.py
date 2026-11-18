@@ -213,3 +213,103 @@ def test_multi_register_array_children_preserve_clean_private_lifetimes(
                     atol=3e-12,
                     rtol=0,
                 )
+
+
+@pytest.mark.parametrize("grouped", (False, True))
+@pytest.mark.parametrize("value", (0, 1, 2, 3))
+def test_complete_word_control_wrapper_matches_shared_native_compilation(
+    source: Any, grouped: bool, value: int
+) -> None:
+    from math import pi
+
+    from qualtran import CtrlSpec, QUInt
+    from qualtran.bloqs.basic_gates import Hadamard, TGate
+
+    from examples.algorithms.binary_field_arithmetic import FieldOperation
+    from flagquantum.compiler.registers.control.control_predicate import ControlRegister
+    from flagquantum.compiler.registers.control.indexed_component_control import (
+        specialized_indexed_component_ir,
+    )
+    from flagquantum.compiler.registers.control.indexed_component_control_resource_model import (
+        specialized_indexed_component_cost,
+    )
+    from flagquantum.core.ir import Instruction
+    from tests.unit.test_relative_controlled_swap import assert_source_dependencies
+
+    values = (value >> 1, value & 1)
+    specification = (
+        CtrlSpec(qdtypes=QUInt(2), cvs=value) if grouped else CtrlSpec(cvs=values)
+    )
+    registers = (
+        ControlRegister(2, (value,)) if grouped else ControlRegister(1, values),
+    )
+    original = source.ApplyLthBloq([TGate(), Hadamard()]).controlled(specification)
+    emitter = import_register_emitter(original)
+    assert emitter.layout == (("ctrl", 2), ("selection", 1), ("q", 1))
+    assert emitter.requirements() == (2, 2)
+    children = (
+        ComponentCost("Controlled T", 2, GateCost(rotation=1)),
+        ComponentCost("Controlled H", 2, GateCost(clifford=4, rotation=2)),
+    )
+    hadamard = torch.tensor([[1, 1], [1, -1]], dtype=torch.complex128) / 2**0.5
+    phase = torch.exp(torch.tensor(1j * pi / 4, dtype=torch.complex128))
+    for adjoint in (False, True):
+
+        def emit(
+            index: int, predicate: int, direction: bool = adjoint
+        ) -> tuple[Instruction, ...]:
+            return (
+                Instruction(
+                    "ch" if index else "cphase",
+                    (predicate, 3),
+                    {} if index else {"theta": (-1 if direction else 1) * pi / 4},
+                ),
+            )
+
+        native_gates = specialized_indexed_component_ir(
+            ((2,),),
+            (2,),
+            emit,
+            ((0, 1),),
+            registers,
+            workspace=(4, 5),
+            # Source capture numbers results by first measurement, inner then outer.
+            classical_bits=(1, 0),
+            adjoint=adjoint,
+        )
+        native_ir = Circuit(6).append(FieldOperation(6, native_gates)).to_ir()
+        assert CircuitIR.from_json(native_ir.to_json()).instructions == native_gates
+        snapshot = emitter.snapshots[int(adjoint)]
+        assert_source_dependencies(native_gates, snapshot.instructions)
+        model = specialized_indexed_component_cost(
+            (1,),
+            (2,),
+            children,
+            registers,
+            target_width=1,
+            adjoint=adjoint,
+        )
+        assert_source_model(model, original.adjoint() if adjoint else original)
+        inventory = Counter(gate.name for gate in native_gates)
+        assert inventory["measure"] == 2
+        assert inventory["t"] + inventory["tdg"] == 8
+        for column in range(16):
+            active = column >> 2 == value
+            initial = torch.zeros(64, dtype=torch.complex128)
+            expected = torch.zeros_like(initial)
+            initial[column << 2] = 1
+            if active and column & 2:
+                first = (column & ~1) << 2
+                expected[first : first + 8 : 4] = hadamard[:, column & 1]
+            else:
+                expected[column << 2] = (
+                    (phase.conj() if adjoint else phase) if active and column & 1 else 1
+                )
+            for history in product((0, 1), repeat=2):
+                for gates in (native_gates, snapshot.instructions):
+                    torch.testing.assert_close(
+                        forced_branch(initial, gates, history),
+                        expected / 2,
+                        atol=3e-12,
+                        rtol=0,
+                    )
