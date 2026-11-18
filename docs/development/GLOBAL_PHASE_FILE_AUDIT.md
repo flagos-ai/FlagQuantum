@@ -6,7 +6,7 @@ The unchanged files retain their source attribution.
 | Inventory | Frozen Git blob | Disposition |
 |---|---|---|
 | Q-0236 `global_phase.ipynb` | `949bbece8c4251de0fb4f544a455512cb5a42b45` | Closed by the native `register_global_phase.ipynb`. |
-| Q-0237 `global_phase.py` | `08e0273e6e62562dd50f6af0fb2f30b04bb9033f` | Concrete execution and resource model verified. Foreign conversion and unbound scalar execution remain open. |
+| Q-0237 `global_phase.py` | `08e0273e6e62562dd50f6af0fb2f30b04bb9033f` | Concrete execution, whole-source scalar capture and independent models verified. Ordinary zero-wire static conversion and unbound physical scalar execution remain open. |
 | Q-0238 `global_phase_test.py` | `561a9510eb8e3f18507a7558e19d0c80b04ad95f` | Scalar, controlled and resource assertions mapped. Native equivalents for the original external round trips and generic factory checks remain open. |
 
 ## Signatures, tensor and execution
@@ -72,3 +72,53 @@ of Qualtran, Quimb and Cirq. The rendered zero-port signature was inspected.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_global_phase.ipynb
 ```
+
+
+## Whole-source scalar and controlled capture
+
+The existing named register emitter now requests the snapshot owner's scalar
+carrier when the foreign signature has no logical ports. This reuses the same
+physical storage convention as block-encoding capture. No new serialized type
+or logical port is introduced. A scalar emitter requires one clean work wire,
+zero classical slots, and retains the source's independently captured adjoint.
+
+`test_global_phase_source_binding.py` captures zero, positive, negative and
+outside-principal-range exponents. The explicit snapshot primitive phases use
+the source coefficient's principal argument. Both original directions agree
+with the full complex scalar, preserve arbitrary coherent carrier values, and
+return an initially clean carrier to zero. The existing SELECT callback accepts
+the zero-port child through `circuit.append(op)` with JSON-restored snapshots.
+Forward then actual source adjoint restores every complex matrix column.
+
+For a nonidentity scalar the measured inventory is two X and two phase gates;
+the identity scalar emits none. The independent source declaration has zero QEC
+categories and zero logical peak width, while physical capture owns one carrier.
+These are different resource accounts, retained explicitly.
+
+All four two-bit QUInt control values are captured in both actual directions.
+The locked source/Cirq dispatch yields a matrix leaf for values zero and two,
+an eight-instruction specialty decomposition for value one, and one cphase for
+value three. Each complete matrix column matches the source, including the
+active row's exact complex phase. These captured paths require no work or
+measurement. The independent declared model still uses a conjunction and its
+measurement inverse with peak width three. Existing source-style measured
+lowering and every-history checks remain the evidence for that separate path.
+
+The original global-phase Cirq operation and source reverse conversion agree.
+The ordinary static importer retains `global_phase_not_represented` for its
+zero-wire circuit. The explicit anchored feedback importer and named scalar
+capture return the same owned primitive body. The source PennyLane adapter at
+exponent one-half remains minus i times identity while its tensor and native
+scalar are plus i. The exact original assertion is executed in the existing
+optional environment. Neither sign convention is silently substituted.
+
+Q-0237 remains open for the ordinary zero-wire SDK contract and unbound physical
+capture. Q-0238 retains the already recorded static adapter gap. The newly
+verified zero-port owned execution is available independently of these gaps.
+
+The final concentrated run passed all 1453 cases with no skips in the existing
+optional environment. Changed-surface strict typing, formatting, lint, Ecosystem
+scope, architecture, multilevel IR and public API checks passed. The pure zero-wire
+static import first raises the existing minimum-one-qubit ValueError; adding an
+identity carrier reaches the separately asserted `global_phase_not_represented`
+refusal. The source's original approximate Cirq equality tolerance is retained.

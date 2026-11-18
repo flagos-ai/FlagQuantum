@@ -16,6 +16,8 @@ def import_register_emitter(
     caller-owned clean storage; these remain live until the captured adjoint
     consumes them. Without that request, one-sided ports are rejected. The
     source's own adjoint is captured independently, including its feedback.
+    A scalar with no logical ports owns one clean physical carrier, as required
+    by the existing CircuitIR. This carrier does not add a source logical port.
     """
     foreign = cast(Any, source)
     registers = tuple(foreign.signature)
@@ -26,9 +28,17 @@ def import_register_emitter(
     # _snapshot validates the original widths and shapes before accepting them.
     ports = tuple((reg.name, reg.total_bits()) for reg in registers)
     forward, fs = _snapshot(
-        foreign, ports, local_ports=local_ports, allow_empty_ports=True
+        foreign,
+        ports,
+        local_ports=local_ports,
+        allow_empty_ports=True,
+        scalar_carrier=not ports,
     )
     backward, bs = _snapshot(
-        foreign.adjoint(), ports, local_ports=local_ports, allow_empty_ports=True
+        foreign.adjoint(),
+        ports,
+        local_ports=local_ports,
+        allow_empty_ports=True,
+        scalar_carrier=not ports,
     )
     return CircuitRegisterEmitter(ports, (forward, backward), (fs, bs))
