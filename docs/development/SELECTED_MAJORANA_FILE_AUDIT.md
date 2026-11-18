@@ -61,3 +61,57 @@ The deferred named entry supports its own multiple-control contract.
 A zero-width selector is rejected by the frozen source and by the
 native bounded binder. The uncontrolled singleton is outside the
 supported bounded traversal.
+
+## Complete external-object and source-adjoint binding
+
+The complete locked implementation, original test file and direct unary
+iteration implementation were read. The existing Ecosystem register emitter
+captures the actual source object in both directions, and the existing native
+`SelectBlockEncoding` consumes restored JSON snapshots. No parallel emitter,
+compiler path or public API is introduced. All external objects stop at capture.
+The native consumer receives owned named layouts and circuit snapshots, with
+control and selector words preceding the row-major target word. Caller-owned
+workspace covers the maximum of both source directions and feedback slots cover
+the maximum measured storage. Captured directions retain their independent
+source decompositions, including the asymmetric controlled-S adjoint.
+
+The additional source objects use H, S and Rz(0.3) target gates and zero, one or
+two control bits in a single named control word. Each direction checks the
+complete complex output vector for every small measurement history. The S cases
+with zero or one control also compare every logical operator column, including
+inactive control sectors. The output comparisons include branch normalization
+and require every reserved work bit, including the accumulator, to be zero.
+A separate two-axis row/column object with two control bits checks the flattened
+row-major Jordan-Wigner target index, all histories and both source directions.
+Each consumer stream equals its captured source primitive stream and survives
+JSON serialization. Existing flat X/Y/Z, padded-address, original test-suite,
+diagram and independent resource evidence above is reused.
+
+| Two-row fixture | Captured primitive inventory | Independent source model |
+| --- | --- | --- |
+| One-control S forward | 4 T/T†, 10 CX, 2 controlled phases, 1 measurement, 6 active wires | 3 And, 11 Cliffords, 3 measurements, 7 peak wires |
+| One-control S adjoint | 12 T/T†, 22 CX, 3 measurements, 7 active wires | 3 And, 11 Cliffords, 3 measurements, 7 peak wires |
+| Two-control H, either direction | 8 T/T†, 15 CX, 1 CCX, 2 controlled H, 2 measurements, 8 active wires | 1 Toffoli, 2 And, 15 Cliffords, 4 rotations, 2 measurements, 8 peak wires |
+
+The captured inventory preserves admitted controlled gates. The model further
+expands those leaves according to the locked source policy, which explains why
+the S forward capture and model have different And/measurement counts. Reserved
+storage uses the larger directional requirement. These inventories do not claim
+that a controlled-H primitive is a single Clifford or that a model rotation is
+an emitted native Rz.
+
+## Source boundaries retained by this binding
+
+Symbolic address widths fail capture until an immutable constructor is explicitly
+resolved. A resolved width object binds to the same consumer. Symbolic iteration
+extents fail in the source `target_registers` property. The source uncontrolled
+singleton raises `IndexError`; this remains outside the bounded native route.
+
+The source's separate-control-register case has a further clean-work defect.
+Its initial accumulator flip reads only `self.control_regs[0]`, while unary
+iteration combines all control registers. With `first=1, second=0`, selection
+zero and a zero target, every measured branch leaves the accumulator nonzero.
+The test retains that raw source result and makes no clean-work acceptance claim
+for that layout. The single two-bit control-word cases above pass the complete
+clean-work checks. Q-0594 remains open for these source-domain boundaries and
+generic arbitrary-gate cases beyond the verified capture admission set.
