@@ -24,8 +24,11 @@ complex amplitudes must agree at absolute tolerance 1e-11; aggregate dirty-work
 probability must remain below 1e-22. A separate test checks this source-free
 reference against the source-derived independent mathematical reference.
 
-The native result uses 24 physical bits, including two clean work bits, 22976
-operations and depth18578. Budgets remain 24 physical bits, two work bits,
+The current native result uses 24 physical bits, including two clean work bits,
+8702 operations and depth 7011. The original native measurement of 22976
+operations and depth 18578 is retained as the historical baseline. Complete-state,
+absolute-phase and clean-workspace checks were repeated for the current result.
+Budgets remain 24 physical bits, two work bits,
 100000 operations and 256 MiB planned-state allocation. Process RSS, which also
 includes Python, numerical libraries and independent reference buffers, is a
 separate measurement. The frozen original uses 4467 operations and depth3359.

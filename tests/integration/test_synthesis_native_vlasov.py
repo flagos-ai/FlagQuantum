@@ -21,8 +21,8 @@ def test_native_vlasov_full_state_absolute_phase_and_clean_workspace() -> None:
     assert isinstance(resources, ResourceEstimate)
     assert resources.n_qubits == 24
     assert program.report["workspace_qubits"] == 2
-    assert resources.n_operations == 22976
-    assert resources.depth == 18578
+    assert resources.n_operations == 8702
+    assert resources.depth == 7011
     assert tuple(program.registers) == (
         "electric",
         "x",
