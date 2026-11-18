@@ -7,11 +7,29 @@
 
 from collections.abc import Sequence
 
+from ..core.ir.program.registers import Register
 from ..core.value_math import SymbolicInt
 
 
 def power_wire_symbols(
-    child_symbols: Sequence[str], repetitions: SymbolicInt
+    child_symbols: Sequence[str] | None,
+    repetitions: SymbolicInt,
+    *,
+    registers: Sequence[Register] = (),
 ) -> tuple[str, ...]:
-    """Append the source exponent suffix to each label in wire order."""
+    """Suffix resolved child labels or derive the source register fallback.
+
+    A missing child diagram uses the ordered concrete register widths and the
+    whole Power title on the first wire. As in the source, an empty fallback
+    signature has no first wire and raises IndexError.
+    """
+    if child_symbols is None:
+        labels: list[str] = []
+        for register in registers:
+            width = register.total_bits()
+            if not isinstance(width, int):
+                raise TypeError("Power diagram fallback needs concrete register widths")
+            labels.extend([register.name] * width)
+        labels[0] = "Power"
+        child_symbols = labels
     return tuple(f"{symbol}^{repetitions}" for symbol in child_symbols)

@@ -178,3 +178,68 @@ def test_power_owners_import_in_fresh_process() -> None:
         check=True,
         timeout=30,
     )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("width,shape", ((1, ()), (2, (2, 2)), (0, ()), (1, (0,))))
+def test_missing_child_diagram_uses_original_register_fallback(
+    width: int, shape: tuple[int, ...]
+) -> None:
+    import cirq
+    from qualtran import Bloq, QAny
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import Power
+
+    def source_signature(self: object) -> object:
+        return SourceSignature(
+            (
+                SourceRegister("word", QAny(width), shape=shape),
+                SourceRegister("tail", QAny(2)),
+            )
+        )
+
+    foreign_type = type(
+        "UndrawnChild", (Bloq,), {"signature": property(source_signature)}
+    )
+    source = Power(foreign_type(), 3)
+    assert cirq.circuit_diagram_info(source.bloq, default=None) is None
+    expected = tuple(cirq.circuit_diagram_info(source).wire_symbols)
+    registers = (
+        Register("word", opaque_register_type(width), shape=shape),
+        Register("tail", opaque_register_type(2)),
+    )
+    assert power_wire_symbols(None, 3, registers=registers) == expected
+    labels = ("custom", "")
+    # A supplied child diagram takes precedence over register fallback.
+    assert power_wire_symbols(labels, 3, registers=registers) == ("custom^3", "^3")
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("symbolic", (False, True))
+def test_empty_and_symbolic_diagram_fallback_retains_source_failures(
+    symbolic: bool,
+) -> None:
+    import cirq
+    from qualtran import Bloq, QAny
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.basic_gates import Power
+    from sympy import Symbol
+
+    width = Symbol("n") if symbolic else 0
+
+    def source_signature(self: object) -> object:
+        return SourceSignature((SourceRegister("q", QAny(width)),))
+
+    foreign_type = type(
+        "UndrawnChild", (Bloq,), {"signature": property(source_signature)}
+    )
+    source = Power(foreign_type(), 2)
+    error = IndexError if width == 0 else TypeError
+    with pytest.raises(error):
+        cirq.circuit_diagram_info(source)
+    with pytest.raises(error):
+        power_wire_symbols(
+            None, 2, registers=(Register("q", opaque_register_type(width)),)
+        )
