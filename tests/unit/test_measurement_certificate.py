@@ -87,3 +87,72 @@ def test_broken_predicates_cleanliness_and_feedback_cannot_be_certified(
         certify_erasure_histories(
             (*prefix, *compute, *middle, *erase, *suffix), n_wires=3, zero_wires=(2,)
         )
+
+
+def test_matrix_support_preserves_control_and_does_not_round_tiny_transitions() -> None:
+    compute, erase = and_compute_ir(0, 1, 2), and_uncompute_ir(0, 1, 2, 0)
+    controlled = torch.block_diag(
+        torch.eye(2, dtype=torch.complex128),
+        torch.tensor([[1, 1], [1, -1]], dtype=torch.complex128) / (2**0.5),
+    )
+    for middle in (
+        Instruction("ch", (2, 3)),
+        Instruction("any", (2, 3), matrix=controlled),
+    ):
+        gates = (*compute, middle, *erase)
+        assert certify_erasure_histories(gates, n_wires=4, zero_wires=(2,)) == 1
+    tiny = torch.tensor([[1, -5e-21j], [-5e-21j, 1]], dtype=torch.complex128)
+    with pytest.raises(AssertionError, match="predicate was not restored"):
+        certify_erasure_histories(
+            (*compute, Instruction("any", (2,), matrix=tiny), *erase),
+            n_wires=3,
+            zero_wires=(2,),
+        )
+    with pytest.raises(AssertionError, match="unitary"):
+        certify_erasure_histories(
+            (Instruction("any", (0,), matrix=torch.ones(2, 2)),),
+            n_wires=1,
+            zero_wires=(),
+        )
+    with pytest.raises(AssertionError, match="cannot override"):
+        certify_erasure_histories(
+            (Instruction("x", (0,), matrix=torch.eye(2)),), n_wires=1, zero_wires=()
+        )
+
+
+def test_literal_seven_t_cswap_has_exact_positive_basis_action_and_support() -> None:
+    from flagquantum.compiler.registers.primitives.controlled_swap import (
+        controlled_swap_bit_ir,
+    )
+    from flagquantum.simulation.unitary import get_unitary
+
+    macro = controlled_swap_bit_ir(0, 1, 2)
+    matrix = get_unitary(CircuitIR(3, macro), dtype=torch.complex128)
+    expected = torch.zeros_like(matrix)
+    for control, left, right in product((0, 1), repeat=3):
+        target = (
+            (control << 2)
+            | ((right if control else left) << 1)
+            | (left if control else right)
+        )
+        expected[target, (control << 2) | (left << 1) | right] = 1
+    torch.testing.assert_close(matrix, expected, atol=2e-14, rtol=0)
+    gates = (Instruction("x", (1,)), *macro, *macro, Instruction("x", (1,)))
+    assert certify_erasure_histories(gates, n_wires=3, zero_wires=(1, 2)) == 0
+
+
+def test_boolean_support_canonical_parity_and_product_match_complete_truth_table() -> (
+    None
+):
+    from tests.unit.measurement_certificate import _BooleanSupport
+
+    support = _BooleanSupport()
+    a, b, c = (support.variable(i) for i in range(3))
+    expression = support.xor(support.multiply(a, b), support.multiply(a, c))
+    assert expression == support.multiply(a, support.xor(b, c))
+    for values in product((0, 1), repeat=3):
+        node = expression
+        while node > 1:
+            variable, low, high = support.nodes[node]
+            node = high if values[variable] else low
+        assert node == (values[0] & (values[1] ^ values[2]))
