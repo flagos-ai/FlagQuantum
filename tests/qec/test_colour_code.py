@@ -73,10 +73,9 @@ also does not compare the derived lattice against another framework's patch
 vertex by vertex: the closed forms in point 1 are what stand in for that, and
 they pin the size and the check count rather than the numbering.
 
-The distance at seven is the largest this file builds, and building it is the
-whole cost of the family: the record searches wire subsets up to the requested
-distance, which measured 3.3 s at distance seven and 0.01 s at five. Distances
-three and five carry every claim that is not about the closed forms.
+The exact trellis is checked against exhaustive small-patch logical cosets and
+also builds every requested odd distance through fifteen. Distances three and
+five carry every claim that is not about the closed forms or distance search.
 """
 
 from __future__ import annotations
@@ -89,6 +88,7 @@ import pytest
 
 from flagquantum.qec import (
     CssCode,
+    StabilizerCode,
     SteaneCode,
     css_code_matrices,
     triangular_colour_code,
@@ -96,9 +96,7 @@ from flagquantum.qec import (
 
 pytestmark = pytest.mark.unit
 
-# The distances this file builds. Seven is included so the closed forms are not
-# checked at the two smallest patches only, and it is the last one the record's
-# distance search reaches in a useful time.
+# The geometric tests include a third patch independently of the search tests.
 _DISTANCES = (3, 5, 7)
 
 
@@ -227,7 +225,7 @@ def test_the_face_incidence_graph_admits_one_three_colouring(distance: int) -> N
 
     code = _colour(distance)
     faces = _z_supports(code)
-    incidence = Counter()
+    incidence: Counter[int] = Counter()
     for support in faces:
         for wire in support:
             incidence[wire] += 1
@@ -295,7 +293,11 @@ def test_a_heavier_logical_representative_does_not_raise_the_distance() -> None:
     """
 
     declared = triangular_colour_code(5)
+    assert declared.distance is not None
+    assert isinstance(declared, StabilizerCode)
     matrices = css_code_matrices(declared)
+    assert matrices.lx is not None
+    assert matrices.hx is not None
     bulk = next(
         tuple(check.stabilizer.z_qubits)
         for check in declared.checks
@@ -392,3 +394,61 @@ def test_the_public_namespace_publishes_the_family() -> None:
     assert hasattr(qec, "triangular_colour_code")
     assert "triangular_colour_code" in qec.__all__
     assert qec.triangular_colour_code is triangular_colour_code
+
+
+@pytest.mark.parametrize("distance", (3, 5))
+def test_trellis_matches_the_complete_logical_coset(distance: int) -> None:
+    """Enumerate stabilizers, independently of the search's parity states."""
+    from flagquantum.qec.codes._css_helpers import _minimum_logical_weight
+
+    code = _colour(distance)
+    assert code.hz is not None and code.lz is not None
+    # Reverse the wires and add a dependent row: neither changes the code.
+    rows = tuple(
+        sum(value << position for position, value in enumerate(reversed(row)))
+        for row in code.hz
+    )
+    logical = sum(
+        value << position for position, value in enumerate(reversed(code.lz[0]))
+    )
+    span = {0}
+    for row in rows:
+        span |= {word ^ row for word in tuple(span)}
+    expected = min((word ^ logical).bit_count() for word in span)
+    assert expected == distance
+    redundant = (*rows, rows[0] ^ rows[1], 0)
+    for bound in range(1, distance + 2):
+        assert _minimum_logical_weight(
+            width=code.num_data_qubits,
+            commuting_rows=redundant,
+            stabilizer_rows=redundant,
+            bound=bound,
+        ) == (expected if expected <= bound else None)
+
+
+@pytest.mark.parametrize("distance", (3, 5, 7, 9, 11, 13, 15))
+def test_requested_colour_distances_have_exact_both_family_distances(
+    distance: int,
+) -> None:
+    code = triangular_colour_code(distance)
+    assert (code.distance, code.x_distance, code.z_distance) == (distance,) * 3
+    assert code.distance_search_weight == distance
+    assert code.num_data_qubits == (3 * distance**2 + 1) // 4
+
+
+def test_wide_frontier_retains_the_existing_exact_search(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.qec.codes import _css_helpers as helpers
+
+    def refuse_trellis(*args: object) -> None:
+        raise AssertionError("an unbounded frontier must not allocate trellis states")
+
+    monkeypatch.setattr(helpers, "_minimum_odd_kernel_weight", refuse_trellis)
+    rows = tuple((1 << index) | (1 << (17 + index)) for index in range(17))
+    assert (
+        helpers._minimum_logical_weight(
+            width=35, commuting_rows=rows, stabilizer_rows=rows, bound=1
+        )
+        == 1
+    )

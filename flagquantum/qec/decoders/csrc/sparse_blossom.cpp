@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <memory>
 #include <stdexcept>
 #include <vector>
@@ -122,7 +123,7 @@ PyObject* create(PyObject*, PyObject* arguments) {
     }
 }
 
-pm::obs_int decode_row(pm::Mwpm& solver, const std::vector<size_t>& events) {
+pm::MatchingResult decode_row(pm::Mwpm& solver, const std::vector<size_t>& events) {
     solver.flooder.queue.cur_time = 0;
     for (size_t detector : events) {
         solver.create_detection_event(&solver.flooder.graph.nodes[detector]);
@@ -146,13 +147,23 @@ pm::obs_int decode_row(pm::Mwpm& solver, const std::vector<size_t>& events) {
             result += solver.shatter_blossom_and_extract_matches(node.region_that_arrived_top);
         }
     }
-    return result.obs_mask;
+    return result;
 }
 
-PyObject* decode_batch_impl(PyObject* arguments, bool packed) {
+PyObject* decode_batch_impl(
+    PyObject* arguments, bool packed_shots, bool packed_predictions, bool with_weights) {
     PyObject* capsule;
     PyObject* input;
-    if (!PyArg_ParseTuple(arguments, "OO!", &capsule, &PyBytes_Type, &input)) {
+    if (with_weights) {
+        int input_packed;
+        int output_packed;
+        if (!PyArg_ParseTuple(arguments, "OO!pp", &capsule, &PyBytes_Type, &input,
+                              &input_packed, &output_packed)) {
+            return nullptr;
+        }
+        packed_shots = input_packed != 0;
+        packed_predictions = output_packed != 0;
+    } else if (!PyArg_ParseTuple(arguments, "OO!", &capsule, &PyBytes_Type, &input)) {
         return nullptr;
     }
     auto* matcher = static_cast<Matcher*>(PyCapsule_GetPointer(capsule, capsule_name));
@@ -164,21 +175,31 @@ PyObject* decode_batch_impl(PyObject* arguments, bool packed) {
     if (PyBytes_AsStringAndSize(input, &data, &size) < 0) {
         return nullptr;
     }
-    const size_t input_width = packed ? (matcher->detectors + 7) / 8 : matcher->detectors;
-    const size_t output_width = packed ? (matcher->observables + 7) / 8 : matcher->observables;
+    const size_t input_width = packed_shots ? (matcher->detectors + 7) / 8 : matcher->detectors;
+    const size_t output_width = packed_predictions ? (matcher->observables + 7) / 8 : matcher->observables;
     if (static_cast<size_t>(size) % input_width != 0) {
         PyErr_SetString(PyExc_ValueError, "Syndrome bytes do not match the graph width.");
         return nullptr;
     }
     const size_t shots = static_cast<size_t>(size) / input_width;
-    if (shots > PY_SSIZE_T_MAX / output_width) {
+    if (shots > PY_SSIZE_T_MAX / output_width ||
+        (with_weights && shots > PY_SSIZE_T_MAX / sizeof(double))) {
         return PyErr_NoMemory();
     }
     PyObject* output = PyBytes_FromStringAndSize(nullptr, shots * output_width);
     if (output == nullptr) {
         return nullptr;
     }
+    PyObject* weights = nullptr;
+    if (with_weights) {
+        weights = PyBytes_FromStringAndSize(nullptr, shots * sizeof(double));
+        if (weights == nullptr) {
+            Py_DECREF(output);
+            return nullptr;
+        }
+    }
     char* predictions = PyBytes_AsString(output);
+    char* weight_data = with_weights ? PyBytes_AsString(weights) : nullptr;
     try {
         std::vector<size_t> events;
         events.reserve(matcher->detectors);
@@ -186,18 +207,25 @@ PyObject* decode_batch_impl(PyObject* arguments, bool packed) {
             events.clear();
             const auto* row = reinterpret_cast<const unsigned char*>(data);
             const size_t remainder = matcher->detectors % 8;
-            if (packed && remainder && (row[input_width - 1] >> remainder)) {
+            if (packed_shots && remainder && (row[input_width - 1] >> remainder)) {
                 throw std::invalid_argument("Unused packed detector padding bits must be zero.");
             }
             for (size_t detector = 0; detector < matcher->detectors; ++detector) {
-                bool fired = packed ? ((row[detector / 8] >> (detector % 8)) & 1) : row[detector] != 0;
+                bool fired = packed_shots ? ((row[detector / 8] >> (detector % 8)) & 1) : row[detector] != 0;
                 if (fired) {
                     events.push_back(detector);
                 }
             }
             data += input_width;
-            auto mask = decode_row(matcher->solver, events);
-            if (packed) {
+            auto result = decode_row(matcher->solver, events);
+            auto mask = result.obs_mask;
+            if (with_weights) {
+                // Match upstream's rescaling of the quantized matching cost.
+                double weight = static_cast<double>(result.weight) /
+                                matcher->solver.flooder.graph.normalising_constant;
+                std::memcpy(weight_data + shot * sizeof(double), &weight, sizeof(double));
+            }
+            if (packed_predictions) {
                 // Extract bytes explicitly to preserve little-endian bit order on every host.
                 for (size_t byte = 0; byte < output_width; ++byte) {
                     *predictions++ = static_cast<char>((mask >> (8 * byte)) & 0xff);
@@ -208,11 +236,19 @@ PyObject* decode_batch_impl(PyObject* arguments, bool packed) {
                 }
             }
         }
-        return output;
+        if (!with_weights) {
+            return output;
+        }
+        PyObject* pair = PyTuple_Pack(2, output, weights);
+        Py_DECREF(output);
+        Py_DECREF(weights);
+        return pair;
     } catch (const std::bad_alloc&) {
+        Py_XDECREF(weights);
         Py_DECREF(output);
         return PyErr_NoMemory();
     } catch (const std::exception& error) {
+        Py_XDECREF(weights);
         Py_DECREF(output);
         PyErr_SetString(PyExc_ValueError, error.what());
         return nullptr;
@@ -220,17 +256,22 @@ PyObject* decode_batch_impl(PyObject* arguments, bool packed) {
 }
 
 PyObject* decode_batch(PyObject*, PyObject* arguments) {
-    return decode_batch_impl(arguments, false);
+    return decode_batch_impl(arguments, false, false, false);
 }
 
 PyObject* decode_packed_batch(PyObject*, PyObject* arguments) {
-    return decode_batch_impl(arguments, true);
+    return decode_batch_impl(arguments, true, true, false);
+}
+
+PyObject* decode_batch_with_weights(PyObject*, PyObject* arguments) {
+    return decode_batch_impl(arguments, false, false, true);
 }
 
 PyMethodDef methods[] = {
     {"create", create, METH_VARARGS, "Compile a graph for sparse blossom matching."},
     {"decode_batch", decode_batch, METH_VARARGS, "Decode dense rows of detector bits."},
     {"decode_packed_batch", decode_packed_batch, METH_VARARGS, "Decode packed rows of detector bits."},
+    {"decode_batch_with_weights", decode_batch_with_weights, METH_VARARGS, "Decode rows and return rescaled matching weights."},
     {nullptr, nullptr, 0, nullptr},
 };
 

@@ -38,6 +38,14 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/colour_distance_acceptance.py`](qec/colour_distance_acceptance.py)
+  checks a triangular 6.6.6 colour patch using original noisy shots, an
+  undecomposed strict DEM, Stim 1.16.0 reference mechanisms and bundled BP/OSD
+  decoding. In an embedded build with the Stim extra, run
+  `python -m examples.qec.colour_distance_acceptance 15 z`; the JSON reports
+  `"status": "passed"`, `"distance": 15` and `"syndrome_reproduced": 64`.
+
+
 - [`qec/code_distance_acceptance.py`](qec/code_distance_acceptance.py)
   accepts the specified Surface and Repetition distances using original noisy
   circuit shots, strict DEM analysis and bundled Sparse Blossom decoding.
