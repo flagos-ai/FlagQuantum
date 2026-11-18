@@ -354,3 +354,13 @@ v4 bundle can already be read, compiled, or deployed. Actual target-artifact
 replacement, routing transition replay, legacy bundle identity fixtures, strict
 v4 parsing, and Runtime/Deployment handoff remain the subsequent delivery gates
 above. The fake does not optimize arbitrary programs or claim performance parity.
+
+`tests/unit/test_compilation_evidence_legacy_identity.py` freezes three synthetic
+pre-v4 bundles from the existing Core test builders at
+`c5f212000392df18a667bf6ac164f08bd8f33942`. The fixtures cover an unallocated
+undirected/no-topology plan, directed-CX reversal, and allocated workspace with
+routing restoration and logical result projection. Tests pin canonical text,
+bundle identities, plan identities, explicit dispatch types, and layout/direction
+semantics. They also require exact rejection of stale source, target, or output
+evidence. These are codec regression fixtures, not hardware or numerical evidence;
+do not regenerate them to accommodate v4 implementation changes.
