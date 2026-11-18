@@ -55,9 +55,59 @@ Clifford counts preserve the original abstract Add anomaly.
 
 ## Remaining source boundaries
 
-Q-0684 and Q-0686 are covered. Q-0685 remains open for generic dtype
-admission at the native binding and symbolic execution. The source Add
+Q-0684 and Q-0686 are covered. Generic dtype bit binding and explicit
+resolution of symbolic widths are now exercised below. The source Add
 validator raises for incomparable symbolic widths, such as angle width
 one with an unconstrained symbolic gradient width. The resource query
-preserves that admission boundary. Q-0666 remains open for the other
-rotation exports.
+preserves that admission boundary. Q-0666's export inventory is accepted.
+
+## Whole-file generic object binding
+
+The entire source class, factory, documentation specification and original test
+file have been read. The two dtype fields feed the source signature and its two
+unsigned-cast properties. Native `RegisterCast` preserves those same raw words;
+`rz_via_phase_gradient_ir` delegates the arithmetic to the existing measured
+controlled-add/subtract owner. The source body has four casts and one arithmetic
+child, while its declared call graph omits the casts. The native example and
+independent symbolic model preserve that distinction. The factory, original
+tensor helper, symbolic cost assertion and notebook map to the previously
+accepted tutorial and file tests.
+
+`test_rz_source_binding.py` creates the original class with symbolic width fields,
+rejects unresolved physical execution, and explicitly resolves its dtypes. Actual
+`QUInt`, `QAny`, mixed fractional `QFxp`, signed `QInt`/`QFxp`, and bounded
+`BQUInt` objects bind in both directions at widths (1,1), (2,2) and (2,3).
+The original casts determine the unsigned bit interpretation. Signed numerical
+values are not reinterpreted as signed arithmetic. Bounded padding columns
+exercise the physical circuit extension; they do not enlarge the bounded
+register's declared value domain. A one-bit signed `QFxp` is invalid in the
+source constructor, so that case uses the valid one-bit `QInt` type.
+
+Imported and native emitters use the same `BlackBoxPrepare` append consumer.
+Owned JSON IR, every logical matrix column, all-history channel identities,
+independent final-zero checks, exact opcode histograms and true adjoint recovery
+agree. Every raw angle and both data values also satisfy the analytic complex
+phase when applied to the negative-exponent Fourier gradient. Each direction's
+independent resource model agrees with the unchanged source. Existing operand,
+dependency and measurement-feedback evidence is reused at the accepted lowering
+depth. Angle width greater than gradient width remains rejected by the original
+arithmetic admission rule.
+
+| Actual source widths (angle, gradient) | Forward / adjoint instructions | T/T† | CX | Measurements | Physical wires |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| (1,1) | 5 / 3 | 0 | 3 | 0 | 3 |
+| (2,2) | 26 / 24 | 4 | 13 | 1 | 6 |
+| (2,3) | 50 / 48 | 8 | 26 | 2 | 8 |
+
+The one-bit abstract Add Clifford anomaly is retained in the source model;
+the physical table is measured separately. Q-0685 therefore retains this
+inherited model boundary and the incomparable symbolic-width admission case.
+The new generic and resolved-symbol binding evidence does not claim execution
+of an unresolved symbolic circuit or close the parent while those boundaries
+remain in its ledger.
+
+The final regression passes 656 cases in 39.25 seconds. Strict typing, Black,
+Ruff, Algorithms scope and diff checks pass. This tests/audit-only batch reuses
+accepted architecture, IR, protected API and independent kernel evidence.
+An initial fixture tried the source-invalid signed one-bit `QFxp`; replacing
+that fixture with the valid `QInt(1)` preserves the source admission rule.
