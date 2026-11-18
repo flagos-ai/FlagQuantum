@@ -53,14 +53,33 @@ EXPORTS = (
 )
 
 
-def test_complete_source_export_order_and_definition_identity() -> None:
-    package = import_module("qualtran.bloqs.arithmetic")
+@pytest.mark.parametrize(
+    "package_name, blob, expected",
+    (
+        (
+            "qualtran.bloqs.arithmetic",
+            "59ca8a5af83c071f824d5c3a7a49d2bb41e97e5c",
+            EXPORTS,
+        ),
+        (
+            "qualtran.bloqs.arithmetic.conversions",
+            "129a9c14487f032c3ce60c7fd4f56cd8f5bf75cd",
+            (
+                "ToContiguousIndex",
+                "SignedIntegerToTwosComplement",
+                "SignExtend",
+                "SignTruncate",
+            ),
+        ),
+    ),
+)
+def test_complete_source_export_order_and_definition_identity(
+    package_name: str, blob: str, expected: tuple[str, ...]
+) -> None:
+    package = import_module(package_name)
     assert package.__file__ is not None
     raw = Path(package.__file__).read_bytes()
-    assert (
-        sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
-        == "59ca8a5af83c071f824d5c3a7a49d2bb41e97e5c"
-    )
+    assert sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest() == blob
     imports = ast.parse(raw).body
     assert all(isinstance(node, ast.ImportFrom) for node in imports)
     observed: list[str] = []
@@ -71,4 +90,4 @@ def test_complete_source_export_order_and_definition_identity() -> None:
             assert alias.asname is None
             observed.append(alias.name)
             assert getattr(package, alias.name) is getattr(module, alias.name)
-    assert tuple(observed) == EXPORTS
+    assert tuple(observed) == expected

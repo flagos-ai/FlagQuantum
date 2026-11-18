@@ -92,8 +92,8 @@ keep their separately recorded source defects and incomplete interfaces.
 Batch logs are `ftqc-reference-env/g2-arithmetic-export-file-*.log`.
 
 The concentrated regression passed 1167 cases. Two existing warnings came from
-NumPy overflow in a controlled-addition diagnostic and a non-interactive
-notebook figure. There were no skips. Formatting, lint, strict typing of the
+an unwritable IPython directory using its temporary-directory fallback and a
+non-interactive notebook figure. There were no skips. Formatting, lint, strict typing of the
 new export test, Compiler scope, architecture, multilevel IR and protected API
 checks passed. This reuses accepted behavioral evidence without asserting that
 source declaration-only roots have executable primitive parity.
