@@ -71,7 +71,7 @@ class SignalBlock:
 
 def main() -> None:
     blocks = (SignalBlock("t"), SignalBlock("h"))
-    root = ProductBlockEncoding(blocks)
+    root = ProductBlockEncoding.of(*blocks)
 
     def factory(
         block: SignalBlock,

@@ -146,6 +146,11 @@ class ProductBlockEncoding:
         ):
             raise ValueError("Product requires identity child signal preparation")
 
+    @classmethod
+    def of(cls, *block_encodings: _BlockMetadata) -> "ProductBlockEncoding":
+        """Construct a product from an ordered sequence of constituent blocks."""
+        return cls(block_encodings)
+
     @property
     def system_bitsize(self) -> int:
         return self.block_encodings[0].system_bitsize
