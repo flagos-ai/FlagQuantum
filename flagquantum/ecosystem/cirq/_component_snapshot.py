@@ -54,6 +54,7 @@ def _snapshot(
     ports: tuple[tuple[str, int], ...],
     *,
     local_ports: tuple[str, ...] = (),
+    scalar_carrier: bool = False,
 ) -> tuple[CircuitIR, int]:
     from qualtran import Bloq
     from qualtran._infra.adjoint import Adjoint
@@ -61,6 +62,8 @@ def _snapshot(
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
 
     cirq = _cirq()
+    if type(scalar_carrier) is not bool or (scalar_carrier and ports):
+        raise ValueError("Scalar carrier capture requires empty logical ports")
     local = set(local_ports)
     if len(local) != len(local_ports) or not local <= {name for name, _ in ports}:
         raise ValueError("Local ports must be distinct declared physical ports")
@@ -287,6 +290,11 @@ def _snapshot(
             and (not local or q in live)
         ),
     )
+    if not order and scalar_carrier:
+        # Explicitly requested storage represents a wire-free source scalar.
+        # The existing IR requires one wire even for an empty identity body.
+        # Phase expansion preserves any state on this carrier.
+        order = tuple(manager.qalloc(1))
     if not (set(primitive.all_qubits()) | set(outgoing)) <= set(order):
         raise ValueError("Foreign oracle used undeclared external quantum inputs")
     imported = import_cirq_feedback(primitive, qubit_order=order).ir

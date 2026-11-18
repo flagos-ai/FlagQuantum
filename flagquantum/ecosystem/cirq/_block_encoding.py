@@ -30,6 +30,9 @@ def import_block_encoding(
     adjoint decomposes; no measurement-containing stream is inverted afterward.
     Logical outputs are restored explicitly and binding swaps counted separately.
     Missing independent models remain unavailable; emission never implies a cost.
+    With no logical ports, ordinary snapshots own one clean physical carrier,
+    even for an empty identity body. Controlled scalars use their control wire.
+    Carrier storage does not change the independent logical resource model.
     Set include_controlled=False to capture only the ordinary directional pair.
     An unavailable source-controlled decomposition is not synthesized or ignored.
     """
@@ -39,17 +42,20 @@ def import_block_encoding(
         raise ValueError("Controlled snapshot request must be Boolean")
     foreign = cast(Any, source)
     widths = (foreign.system_bitsize, foreign.ancilla_bitsize, foreign.resource_bitsize)
-    if any(type(n) is not int or n < 0 for n in widths) or not widths[0]:
+    if any(type(n) is not int or n < 0 for n in widths):
         raise ValueError("External block binding requires concrete nonnegative widths")
-    if foreign.signal_state.prepare != PrepareIdentity.from_bitsizes([widths[1]]):
+    identity = foreign.signal_state.prepare
+    if identity != PrepareIdentity.from_bitsizes([widths[1]]) and not (
+        widths[1] == 0 and identity == PrepareIdentity.from_bitsizes([])
+    ):
         raise ValueError("External block binding requires the identity signal state")
     ports = tuple(
         (name, width)
         for name, width in zip(("system", "ancilla", "resource"), widths, strict=True)
         if width
     )
-    forward, fs = _snapshot(foreign, ports)
-    backward, bs = _snapshot(foreign.adjoint(), ports)
+    forward, fs = _snapshot(foreign, ports, scalar_carrier=not ports)
+    backward, bs = _snapshot(foreign.adjoint(), ports, scalar_carrier=not ports)
     controlled_forward: CircuitIR | None = None
     controlled_backward: CircuitIR | None = None
     cs = ds = 0
