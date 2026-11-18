@@ -88,3 +88,14 @@ See [module acceptance and resource interpretation](../../../docs/development/PO
 With pinned references, run the two focused test files named there. These
 helpers do not synthesize circuits or claim that phase-insensitive distance
 certifies exact amplitude equivalence.
+
+## Optimized and FFT QSP complements
+
+`qsp_optimization.fast_complementary_polynomial` owns the explicit-RNG SciPy
+convolution optimizer. `qsp_fft_complement.fft_complementary_polynomial` owns the
+scaled NumPy FFT method. Both return ascending coefficients consumed by the
+existing `GeneralizedQSP` append operation. Read the
+[optimization acceptance and source precision counterexamples](../../../docs/development/QSP_OPTIMIZATION_FILE_AUDIT.md)
+and [FFT source mapping and approximation boundary](../../../docs/development/QSP_FFT_COMPLEMENT_FILE_AUDIT.md).
+Run `python -m pytest tests/unit/test_qsp_optimization.py tests/unit/test_qsp_fft_complement.py -q`
+in the pinned reference environment.
