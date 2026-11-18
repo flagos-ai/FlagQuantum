@@ -70,9 +70,9 @@ imported primitive stream matches the existing native callback on every wire,
 including the measurement result and feedback, and every branch matches the
 external instrument. This establishes conversion before physical relocation.
 
-This delivers the conversion dependency. Q-0299 still needs the source
-forward/adjoint oracle snapshots bound to the native callback interface, with
-quantum and classical relocation and explicit workspace/output ownership.
+The complete snapshot oracle entry now consumes this dependency; see
+[Circuit sparse oracles](CIRCUIT_SPARSE_ORACLES.md) for forward/adjoint binding,
+quantum/classical relocation and explicit workspace/output ownership.
 
 ```bash
 pytest -q tests/unit/test_cirq_feedback_import.py

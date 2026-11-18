@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0298 | `sparse_matrix_hermitian.ipynb` | `117edcce9169b81c911d40885946e193e829d438` | Closed by the complete native tutorial. |
-| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Symbolic composition, structured controls, padded primitive flow and independent user oracle replacement verified. Automatic conversion of raw foreign oracle objects remains open. |
+| Q-0299 | `sparse_matrix_hermitian.py` | `95b077d8eb6ac7deb814c910276b4a1d9d603bee` | Symbolic composition, structured controls, padded primitive flow and independent user oracle replacement verified. Concrete foreign oracle conversion, forward/adjoint snapshots and returned-wire ownership verified; closed within the declared binary oracle contract. |
 | Q-0300 | `sparse_matrix_hermitian_test.py` | `367de6a3ae0ac011a16a5cc13b63dbb77cd7ba53` | Closed for the original runnable scenarios and their notebook. Source fixture mode limits are recorded below. |
 
 ## Interface and direct dependencies
@@ -68,8 +68,8 @@ every measurement history. The controlled reflection is self-adjoint.
 The padded typed control additionally enumerates all 2,048 histories
 on a correlated complex input with active and inactive control values.
 It matches every output amplitude and returns all five temporary wires
-to zero. Raw foreign oracle objects still need native conversion at the
-optional Ecosystem boundary; native user implementations are covered below.
+to zero. Raw foreign oracle objects are converted at the optional Ecosystem boundary;
+native user implementations and snapshot conversion are covered below.
 
 ## Independent oracle replacement
 
@@ -108,7 +108,7 @@ Cirq importer rejects the original And erasure circuit: it requires line
 qubits and terminal measurements, and rejects its conditional feedback
 and reset operations. That conversion gap belongs to Ecosystem, not to a
 new oracle protocol or an Algorithms dependency on the reference package.
-Q-0299 stays open for that concrete foreign conversion requirement.
+That requirement was the remaining Q-0299 gap before the snapshot conversion batch below.
 
 The explicit optional feedback importer now resolves the conversion dependency
 described above; the static importer retains its original contract. See
@@ -116,8 +116,7 @@ described above; the static importer retains its original contract. See
 imports without changing its four primitive instructions. The decomposed
 foreign square-root oracle also imports with the same per-wire stream as
 the native callback, and every raw measurement branch matches the external
-instrument. Q-0299 still needs automatic forward/adjoint snapshot binding,
-including caller work ownership, classical relocation and returned wire maps.
+instrument. Automatic snapshot binding and returned wire maps are now covered below.
 
 ```bash
 python -m examples.algorithms.custom_sparse_oracles
@@ -157,4 +156,58 @@ rejects reference imports and validates both SVG graphs.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_hermitian_sparse_matrix.ipynb
+```
+
+
+## Concrete foreign conversion and file closure
+
+Q-0299 now has a complete native counterpart and an optional concrete foreign
+oracle entry. Algorithms owns CircuitColumnOracle and CircuitSqrtEntryOracle;
+Compiler owns relocation and returned-wire permutation; Ecosystem owns all SDK
+objects and decomposition. See [snapshot oracle interfaces](CIRCUIT_SPARSE_ORACLES.md).
+
+The two source signature factories now live beside the native operator. Concrete
+and symbolic block signatures, positive control, entry signatures and the source
+root label are compared directly. The native notebook reuses the authoritative
+signature factory instead of defining another signature. Its isolated kernel
+passed with reference imports blocked and both SVGs retained.
+
+| Source definitions | Native mapping and evidence |
+| --- | --- |
+| Abstract SqrtEntryOracle width, epsilon and signature | Existing entry protocol, scalar signature factory and snapshot provider precision |
+| SparseMatrixHermitian constructor and properties | Native constructor, signature, source root string, alpha/error/work metadata and identity signal |
+| Diffusion, eight-call graph and composite | Existing uniform preparation, sequential source models, primitive traversal, controlled exchange and explicit adjoint snapshots |
+| Self-adjoint block and control wrappers | Existing standalone, padded, structured-control and exhaustive branch evidence, reused unchanged |
+| UniformSqrtEntryOracle | Native square-root rotation and actual foreign uniform objects, full complex matrices and independent source models |
+| Two factories and DOC | Original concrete/symbolic tests, native tutorial and resource graph, plus authoritative signature checks |
+| Abstract oracle extension | Independent user oracles and actual foreign objects, full stream and branch tests through the same consumer |
+
+Actual nonuniform objects match the accepted native per-wire stream and source
+costs at widths one and two, ordinary and positive controlled. Every four-history
+single step and sixteen-history round trip matches the source tensor action,
+including nonzero logical ancilla, spectator entanglement, clean work and a prior
+live result slot. Original uniform objects reproduce the complete complex matrix.
+The original two-bit banded column independently matches modular arithmetic in
+both directions on its declared ordinal domain and all four leaf histories.
+It reserves three clean work wires and two retained event slots, versus the
+hand-written emitter's three work wires and one reused slot. Quantum source
+models remain separate from that classical history storage.
+
+Returned aliases and explicitly allocated outputs are restored with owned SWAPs.
+Their binding counts are exposed and priced separately from the source body.
+For the nonuniform fixtures there are no binding swaps: emitted T-family counts
+remain 8 ordinary, 22/29 controlled at widths one/two, with six Ry and two
+measurements. No gate estimate was inferred from this emitted stream.
+
+The unchanged source generic gate wrapper rejects the column's same-name sided
+register. A diagnostic test preserves that error; conversion uses the source's
+Composite exporter for that signature. Symbolic execution remains unavailable
+upstream. Unsupported external primitives, dirty borrows and invalid port/storage
+contracts fail explicitly at the optional boundary. As with a native user emitter,
+a custom oracle must satisfy its declared reversibility and clean-work contract;
+the converter does not claim a universal proof of arbitrary user code.
+
+```bash
+python -m examples.ecosystem.sparse_oracle_import
+pytest -q tests/unit/test_foreign_sparse_oracles.py
 ```
