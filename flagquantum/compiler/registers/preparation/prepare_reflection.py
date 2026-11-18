@@ -6,12 +6,56 @@
 """Reflection conjugated by an already bound preparation and its inverse."""
 
 from cmath import phase
+from dataclasses import fields
 from math import isclose
+from typing import cast
 
 from ....core.ir import Instruction
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
+from ..._component_trace.symbolic_math import SymbolicInt, smax
 from ..bits.bitwise import _validate_wires
+from ..control.control_predicate_resource_model import (
+    control_predicate_resource_formula,
+)
 from ..control.multi_control import multi_control_z_ir
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
+
+
+def source_symbolic_zero_reflection_resource_formula(
+    selection_width: SymbolicInt, *, legacy_shims: bool = False
+) -> SymbolicResourceFormula:
+    """Query the locked zero-reflection graph when signal width is unresolved.
+
+    The unknown control pattern uses the shared predicate declaration. The
+    source peak falls back to callee/signature maxima, not a physical schedule.
+    Concrete widths use source_prepare_reflection_cost instead.
+    """
+    from ..._component_trace.qec_gate_cost import query_qec_gate_cost
+    from ..._component_trace.resource_generalization import (
+        CliffordCall,
+        PredicateControlledCall,
+    )
+
+    if type(selection_width) is int:
+        raise ValueError("Use the concrete reflection model for resolved widths")
+    if selection_width == 0 or selection_width == 1:
+        raise ValueError("Locked symbolic zero/one reflection has no resource query")
+    predicate = control_predicate_resource_formula(
+        selection_width, legacy_shims=legacy_shims
+    )
+    gates = query_qec_gate_cost(
+        PredicateControlledCall(CliffordCall("cz", 2), selection_width),
+        legacy_shims=legacy_shims,
+    )
+    counts = {field.name: getattr(gates, field.name) for field in fields(GateCost)}
+    counts["clifford"] += 2
+    return SymbolicResourceFormula(
+        **counts,
+        logical_qubits=cast(
+            SymbolicInt,
+            smax(selection_width + 1, predicate.logical_qubits),
+        ),
+    )
 
 
 def prepare_reflection_requirements(width: int, *, controlled: bool) -> tuple[int, int]:
