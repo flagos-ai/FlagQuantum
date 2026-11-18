@@ -211,7 +211,18 @@ def certify_erasure_histories(
         elif gate.name == "swap":
             a, b = gate.wires
             values[a], values[b] = values[b], values[a]
-        elif gate.name in {"h", "ch", "rx", "ry", "crx", "cry"}:
+        elif gate.name in {
+            "h",
+            "ch",
+            "rx",
+            "ry",
+            "crx",
+            "cry",
+            "sx",
+            "sxdg",
+            "csx",
+            "csxdg",
+        }:
             # The target becomes an independent support variable. Keeping every
             # old variable in other wires enlarges support and preserves soundness.
             target = gate.wires[-1]

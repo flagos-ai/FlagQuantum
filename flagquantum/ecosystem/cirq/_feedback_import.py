@@ -27,6 +27,11 @@ def _lower_feedback_gate(
     cirq: Any, gate: Any, issues: list[CirqConversionIssue], index: int
 ) -> tuple[str, dict[str, Any]] | None:
     """Retain exact phase powers and canonical singly controlled primitives."""
+    if isinstance(gate, (cirq.XPowGate, cirq.CXPowGate)) and gate.global_shift == 0:
+        exponent = _real_scalar(gate.exponent, issues, index, "X power")
+        if exponent is not None and exponent % 2 in (0.5, 1.5):
+            name = "sx" if exponent % 2 == 0.5 else "sxdg"
+            return ("c" + name if isinstance(gate, cirq.CXPowGate) else name), {}
     if isinstance(gate, (cirq.ZPowGate, cirq.CZPowGate)) and gate.global_shift == 0:
         # A Z power is a phase gate, not Rz: its scalar phase is observable
         # after coherent control. Preserve exact fixed opcodes when available.
@@ -54,6 +59,8 @@ def _lower_feedback_gate(
             "y",
             "z",
             "phase",
+            "sx",
+            "sxdg",
         ):
             return "c" + lowered[0], lowered[1]
         # Fixed S/T have precisely the same diagonal phase convention.

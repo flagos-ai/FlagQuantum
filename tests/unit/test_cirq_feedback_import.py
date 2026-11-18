@@ -384,3 +384,40 @@ def test_matrix_leaf_is_copied_and_invalid_matrix_cannot_be_imported() -> None:
     )
     with pytest.raises(CirqConversionError, match="not unitary"):
         import_cirq_feedback(cirq.Circuit(invalid(q)), qubit_order=(q,))
+
+
+@pytest.mark.parametrize("exponent", (0.5, -0.5, 2.5, -2.5))
+@pytest.mark.parametrize("controlled", (False, True))
+def test_source_half_x_powers_use_native_sqrt_x_with_absolute_phase(
+    exponent: float, controlled: bool
+) -> None:
+    import cirq
+
+    a, b, c = cirq.LineQubit.range(3)
+    gate = cirq.XPowGate(exponent=exponent)
+    op = gate(b).controlled_by(a) if controlled else gate(b)
+    source = cirq.Circuit(
+        cirq.H(c), cirq.measure(c, key="record"), op.with_classical_controls("record")
+    )
+    compare_every_branch(source, (a, b, c))
+    imported = import_cirq_feedback(source, qubit_order=(a, b, c))
+    expected = ("c" if controlled else "") + ("sx" if exponent % 2 == 0.5 else "sxdg")
+    assert imported.ir.instructions[-1].name == expected
+    assert imported.ir.instructions[-1].metadata["conditions"] == ((0, 1),)
+
+
+def test_shifted_half_x_keeps_its_distinct_rotation_phase_convention() -> None:
+    import cirq
+
+    from flagquantum.simulation.unitary import get_unitary
+
+    q = cirq.LineQubit(0)
+    gate = cirq.XPowGate(exponent=0.5, global_shift=-0.5)
+    imported = import_cirq_feedback(cirq.Circuit(gate(q)), qubit_order=(q,))
+    assert imported.ir.instructions[0].name == "rx"
+    torch.testing.assert_close(
+        get_unitary(imported.ir, dtype=torch.complex128),
+        torch.as_tensor(cirq.unitary(gate), dtype=torch.complex128),
+        atol=1e-14,
+        rtol=0,
+    )
