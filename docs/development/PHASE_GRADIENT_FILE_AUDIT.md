@@ -71,14 +71,106 @@ model gives `3*p - 6` Toffoli and peak width `Max(3, 5 + p)`. These estimates
 describe the abstract source declarations. The measured primitive counts
 above come from the previous execution comparison. No emitter changed.
 
+## Complete implementation definition map
+
+| Complete original responsibility | FlagQuantum ownership and acceptance |
+| --- | --- |
+| PhaseGradientUnitary fields, signature and fixed-point dtype | Existing typed unitary declaration retains exponent, precision, optional scalar control and big-endian fraction word. |
+| Unitary decomposition and powers | `phase_gradient_unitary_ir`; inverse negates the exponent and actual source adjoint is captured separately. |
+| Unitary diagram, call graph, concrete/symbolic factories and DOC list | Existing native catalogue, exact typed leaf/epsilon declarations and independent concrete/symbolic cost tests. |
+| PhaseGradientState fields, RIGHT signature and dtype | Existing state declaration plus explicit `local_junk_layout` at the named consumer. Prepared data is local output, not exposed through-junk. |
+| State decomposition, concrete factory and DOC list | `phase_gradient_state_ir` with the source negative default explicitly bound; existing source asset and state-grid acceptance. |
+| AddIntoPhaseGrad dtype/signature, register protocol and display | Existing fixed-point add signature, concrete port admission and catalogue labels. Unsupported dynamic register replacement stays unsupported. |
+| Addition scaled value, apply, classical callback and tensor action | Existing exact fixed-point adder and numerical complete-map/complex-state tests; both control polarities, signs, shifts and truncation are reused from the accepted phase-addition audit. |
+| Addition call graph and adjoint | Independent source model and opposite-sign emission. The original has a value/tensor contract, not a primitive gate decomposition. |
+| `_fxp` and `_mul_via_repeated_add` | Exact integer truncation, saturation/word slicing and per-term modular addition in the existing compiler owners; original numerical callbacks provide an independent oracle. |
+| Scaled-add fields, from-bitsize factory, signature and fixed-point properties | Existing `scaled_phase_add_terms`, native unsigned format arguments and coefficient quantization, with original five-fixture/source-factory evidence reused. |
+| Scaled register protocol, numerical value/apply/callback | Existing exact scaled-add emitter, validation and source numerical grids; new admitted mixed-format cases compare every classical map entry too. |
+| Scaled decomposition, call graph, factory and DOC list | Existing per-term compiler emission and independent declared full-width child costs. Actual source directions and model levels remain distinct. |
+
+## Actual resolved objects and directional ownership
+
+`test_phase_gradient_source_binding.py` resolves the actual original symbolic
+unitary factory at widths two and three, with and without control, at exponent
+-0.375. The source stays unresolved until its constructor fields are explicitly
+bound. Both directions pass through owned IR JSON and the normal named append
+consumer. Every logical input column agrees with the standalone native unitary,
+its analytic diagonal and the true source inverse. Controlled measurement
+histories are certified separately from complete-column private-work cleanup.
+Source/native gate histograms and independent declared costs agree.
+
+The RIGHT state output is bound with `local_ports=("phase_grad",)` and the
+existing `BlackBoxPrepare.local_junk_layout`. It starts at zero, remains live as
+a prepared local word, and is consumed by the actual inverse. It is never
+flattened into arbitrary logical through-junk or required to be zero immediately
+after preparation. Widths two/three and exponents -1, +1 and -0.375 preserve an
+arbitrary coherent spectator, match the analytic complete gradient state and
+return the local word to zero on inverse. The native implementation can replace
+the captured source at the same consumer without changing that ownership.
+
+At exponents +/-1, source capture canonicalizes Z/S/T-family leaves; the native
+state emitter retains parameterized phase instructions. Both have one phase
+operation per gradient bit plus one H per bit, but their raw opcode families
+are different profiles and must not be described as identical instruction
+names or fully synthesized costs. The source-owned declarations preserve the
+corresponding resource categories independently.
+
+## Mixed fixed-point admission and measured resources
+
+For `x=QFxp(5,3)`, a four-bit gradient and coefficient +/-3.25 represented by
+`QFxp(4,2)`, actual source import is admitted. Both directions are compared on
+all 512 logical basis inputs, including arbitrary existing gradient values.
+The native standalone emitter has the same instruction histogram; the complete
+forward operator also equals the immutable source classical callback's exact
+permutation. Every raw history has the same full channel and all carry work is
+zero. These examples cannot be rejected merely because other mixed formats fail.
+
+| Case | Actual instructions | Explicit T/T-dagger | CX | Measures | Actual wires | Source declaration |
+| --- | ---: | ---: | ---: | ---: | ---: | --- |
+| Width-three unitary, no control, -0.375 | 3 | 0 | 0 | 0 | 3 | 3 rotations; peak 3 |
+| Same, controlled | 54 | 12 | 18 | 3 | 5 | 3 And, 3 Clifford, 3 rotations, 3 measurements; peak 5 |
+| Mixed scaled add, either sign/direction | 129 | 24 | 63 | 6 | 12 | 6 Toffoli, no declared measurement; peak 9 |
+
+The independent models price original declarations. Actual scaled carry
+measurements are not added to the source model or relabeled as source Toffoli
+instructions. Captured feedback uses six result records; the standalone emitter
+reuses its three carry slots. Both histories and latest-record semantics are
+verified by their complete channels.
+
 ## Remaining source boundaries
 
-Q-0670 and Q-0672 are covered. Q-0671 remains open for symbolic execution
-and source decomposition boundaries. `AddIntoPhaseGrad` exposes a classical
-permutation and a Toffoli model, with no gate decomposition. Its one-bit model
-may declare a negative Toffoli count. The scaled source Soquet graph rejects
-the existing mixed QFxp cases with inputs `QFxp(5,3)` and `QFxp(3,2)`,
-while its Cirq generator and numeric action can be verified. The native
-arithmetic comparison follows the corresponding Add/CAdd leaves with these
-boundaries recorded explicitly. The initializer and its consumer bindings are
-covered by [the rotations package audit](ROTATIONS_PACKAGE_FILE_AUDIT.md).
+Q-0670 and Q-0672 retain prior accepted source assets/tests. Q-0671 no longer
+lacks actual resolved symbolic execution, local RIGHT-output binding or the
+admitted mixed-format path above. It remains open for the original abstract
+addition and invalid fixed-point boundaries. `AddIntoPhaseGrad(1,1)` still
+declares minus one Toffoli and raises `DecomposeNotImplementedError` on primitive
+decomposition; no source recipe is invented for that declaration.
+
+For `x=QFxp(3,2)`, phase width four, coefficient 0.375 and `QFxp(3,3)` coefficient
+format, actual import still raises the original `BloqError` for inconsistent
+`QFxp(3,2)` versus `QFxp(3,3)` ports. Other source Soquet dtype failures from the
+existing fixtures remain recorded. The source Cirq generator and numerical
+contract can be tested separately from those failed graph bindings. Neither
+blanket mixed-format rejection nor a claim that all dtype failures were fixed
+is supported. No reference code or original assertion is modified, no inherited
+failure is silently normalized, and no new child progress item is added.
+
+Zero-width declaration and execution are also separated. The original zero-width
+unitary has an empty gradient port (only control remains when enabled), an empty
+gate-cost declaration, a `QubitCount` RuntimeError and an actual-import
+`KeyError('phase_grad')`. The zero-width state retains a RIGHT zero-bit port,
+but its source gate-cost/peak queries and physical binding fail. These exact
+original failures are retained separately from positive-width symbolic
+resolution. No zero-qubit Core API or implicit physical carrier is introduced.
+
+## Current batch validation
+
+Thirteen initial resolved/owned-state/mixed-format cases passed in 14.39
+seconds after adding exact histograms. The final concentrated regression,
+including three additional zero-width source-diagnostic cases, passed 233
+cases in 17.35 seconds. Strict mypy on the new test, Black, Ruff, Algorithms
+scope, architecture, multilevel IR and protected API checks passed. Existing
+independent source/native notebook and CPU integration evidence is reused;
+this batch changes tests and this audit only. The whole source file remains
+open for its documented source defects, with no new parent/child completion
+count.
