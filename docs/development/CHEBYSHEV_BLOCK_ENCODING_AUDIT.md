@@ -78,8 +78,9 @@ covering the full odd-block matrix.
 Q-0279 closes with the native tutorial. Both native constructors now expose
 the packed through signature, including zero-width omission. The scaled
 constructor also declares the target, selection and junk registers in source
-order. Q-0280 remains open for symbolic-width binding and the generic source
-object and serialization protocols.
+order. Q-0280 closes with the external binding, symbolic model and complete
+history evidence below. Source export and serialization failures are explicit
+admission boundaries, not successful physical executions.
 
 Q-0281 closes with the original concrete tests and native counterparts.
 All 20 matrices from the original seeded random-Hermitian family compare
@@ -110,7 +111,7 @@ reports those operations as distinct categories. The original non-notebook
 suite includes four slow tests, two upstream skips and three expected
 serialization failures.
 
-## External recipe intake and remaining closure
+## External recipe intake
 
 The shared optional component snapshot adapter now invokes the unchanged
 `TwoBitCSwap.to_clifford_t_circuit()` recipe with its explicit `ctrl`, `x`,
@@ -127,8 +128,8 @@ capture both directions: respectively 520 instructions/eight reserved wires,
 and five instructions/one wire per direction. Their private workspace and
 classical slot requirements are `(2, 8)` and `(0, 0)`. The original scaled odd
 factory captures 989 instructions/32 wires in each direction with `(14, 34)`
-requirements. These are capture statistics, not independent logical models or
-complete numerical acceptance of those snapshots.
+requirements. At recipe intake these were capture statistics. The subsequent
+consumer replacement, numerical and all-history checks are recorded below.
 
 The original scaled even capture now reaches
 `Controlled(SingleQubitCompare)`. Its compute/adjoint partial registers have
@@ -139,17 +140,89 @@ both scaled factory deserializations cannot resolve the original class name;
 the unscaled odd factory serialization passes. These distinct outcomes are
 recorded separately from native IR serialization.
 
-Q-0280 remains open. Next requirements are consumer-level external child
-replacement, symbolic declaration/resolution, and complete large-history
-evidence reusing the existing native coefficient and reflection owners.
-Three captured source roots alone do not close the file. In particular, the
-large scaled cases above still have representative numerical histories, not
-an exhaustive numerical history enumeration.
-
 The recipe dependency passes 119 concentrated external-block, shaped-port,
 feedback and sparse-oracle regressions; its final exact recipe and original
 comparator-boundary tests pass separately. Strict mypy, Black, Ruff, owning
 team scope, architecture, multilevel IR and protected API checks pass.
+
+## Complete definition closure
+
+| Original definition | Native owner and acceptance |
+| --- | --- |
+| Both constructors, metadata, signatures and signal preparation | Existing unscaled/scaled classes, identity-only validation and typed packed signature owners. All four original factories, both order-zero/one shortcuts and the original coefficient transform remain covered. |
+| `reflection_bloq` | Shared Compiler zero-reflection lowering and separate concrete/symbolic models. Source odd-order direct-graph undercount remains separate from executable reflection multiplicity. |
+| `build_call_graph` | Concrete directional child models and `source_symbolic_chebyshev_resource_formula`. The symbolic fallback composes independent child/reflection declarations; no circuits are emitted for estimates. |
+| Both `build_composite_bloq` methods | Native alternating child/reflection binding and the accepted LCU owner. Actual external child snapshots replace the unchanged native consumer. |
+| Scaled `linear_combination` and register selectors | Existing coefficient basis transform, preserved zero coefficients, nested terms and original port order, followed by the shared native LCU binder. |
+| Display and four factories | Original teaching counterparts, four signatures and call graphs in the accepted complete notebook; source/native frozen asset hashes remain checked. |
+
+The actual original even and odd child objects replace the native unscaled
+consumer in both directions. A coherent input occupies every logical flag,
+signal and resource configuration. The whole output vector agrees with the
+unchanged original tensor; all 256 histories of the eight-measurement even
+case are evaluated, with every private work bit zero. The zero-measurement odd
+case and native IR roundtrip are checked through the same append interface.
+
+The source expansion adapter preserves its expanded primitive order using
+one operation per inserted moment. It no longer performs an additional greedy
+scheduling pass during conversion. The reference source is unchanged. This
+retains contiguous source And recipes and permits the existing channel proof
+to certify every history of both captured unscaled roots and the scaled odd
+root directly. Earlier failures of the contiguous-macro certificate on the
+rescheduled stream are not counted as passing evidence.
+
+The scaled odd whole-root external snapshot replaces the native operation in
+both directions. Full sparse complex output on a coherent system input agrees
+in both numerical histories, including all occupied logical auxiliaries and
+zero private work. Every opcode count matches: both contain 989 instructions,
+including 178 T/T-dagger gates and 34 measurements. Private allocation and
+classical slot names are adapter-owned; identical gate totals alone are not
+used as proof of operand or phase equivalence. Reused primitive/call checks,
+the numerical comparison and independent channel proof supply that evidence.
+
+Both original scaled fixtures now compare complete outputs for each system
+basis input in forward and adjoint directions. The native four- and five-order
+streams also pass the channel certificate for all `2**61` and `2**34` histories
+per direction, including IR JSON roundtrip. Their 16 and 14 private work bits
+are proved clean. Logical auxiliaries are retained outputs, not declared clean
+scratch. This is a compositional proof plus numerical reference columns, not
+an exponential numerical enumeration.
+
+## Symbolic declarations and source diagnostics
+
+Eight unscaled/scaled declarations at orders zero through three preserve the
+shared packed signature before substitution. Explicit resolution binds actual
+external children in both directions and checks the native compiled operation,
+all-history cleanup certificate and JSON roundtrip. The source scaled wrapper
+may produce a delegating composite; its unresolved child still refuses physical
+decomposition. No automatic symbolic circuit execution is claimed.
+
+The shared symbolic reflection model uses the existing predicate and QEC query
+owners. The Chebyshev fallback retains both child directions, the source's
+direct reflection multiplicity, and source signature/callee peak maxima.
+Even zero-count callees participate in the source peak query; degree zero must
+not silently drop them. Both QEC profiles match the unchanged source at orders
+zero, one, two, three and five. These are symbolic declarations, not reserved
+physical wire counts.
+
+SymPy integer zero and one signal widths expose original source resource-query
+failures (zero-port Identity and symbolic one-bit CtrlSpec). Native symbolic
+queries explicitly reject them instead of returning negative or invented
+budgets. SymPy integers two and three match the source diagnostic gate and
+peak formulas. Resolved Python integer widths use the separate concrete model.
+The source odd-reflection undercount, unsupported partial controlled comparator
+and three original serialization failures remain unchanged and independently
+tested. They do not authorize replacing the reference or hiding a native gap.
+
+The concentrated Chebyshev, reflection, certificate, feedback, block snapshot
+and Unitary regression passes 163 tests with two workers and no skips. The
+shared external/block/sparse regression passes 114 tests. Final source integer
+diagnostics and symbolic model checks pass 25 cases; both original large
+scaled fixtures pass full-output forward/adjoint comparison in four cases.
+All three touched production files pass strict mypy, Black and Ruff; all
+three ownership scopes, architecture, multilevel IR and protected API checks
+pass. The unchanged complete native notebook passes its independent kernel.
+Earlier frozen original-suite and teaching evidence is reused.
 
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_chebyshev.ipynb
