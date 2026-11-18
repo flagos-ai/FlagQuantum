@@ -332,7 +332,10 @@ def _jacobi_eigh(matrix: RealMatrix) -> tuple[list[float], RealMatrix]:
             for row in range(size)
             for column in range(row + 1, size)
         )
-        if off_diagonal <= 1e-16:
+        # This is a squared norm: 1e-16 would permit entries near 1e-8,
+        # well above the subsequent M2 reconstruction tolerance. Leave room
+        # for reconstruction roundoff without loosening that acceptance gate.
+        if off_diagonal <= (_M2_ATOL * 0.01) ** 2:
             break
         for row in range(size - 1):
             for column in range(row + 1, size):

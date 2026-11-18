@@ -262,6 +262,27 @@ def test_a_random_special_unitary_reconstructs_up_to_one_global_phase(
         assert _entanglers(emitted, entangler) <= 3
 
 
+@pytest.mark.parametrize("angle", [1e-7, 1e-9, 1e-11])
+def test_weyl_diagonalization_resolves_small_off_diagonal_entries(angle: float) -> None:
+    from flagquantum.compiler.optimization.two_qubit_synthesis import _diagonalize_m2
+
+    rotation = torch.eye(4, dtype=torch.complex128)
+    rotation[0, 0] = rotation[1, 1] = math.cos(angle)
+    rotation[0, 1] = -math.sin(angle)
+    rotation[1, 0] = math.sin(angle)
+    diagonal = torch.diag(torch.tensor([1, 1j, -1, -1j], dtype=torch.complex128))
+    source = rotation @ diagonal @ rotation.T
+    vectors, values = _diagonalize_m2(source.tolist())
+    basis = torch.tensor(vectors, dtype=torch.complex128)
+    reconstructed = (
+        basis @ torch.diag(torch.tensor(values, dtype=torch.complex128)) @ basis.T
+    )
+    torch.testing.assert_close(reconstructed, source, atol=1e-13, rtol=0)
+    torch.testing.assert_close(
+        basis.T @ basis, torch.eye(4, dtype=torch.complex128), atol=1e-13, rtol=0
+    )
+
+
 def test_the_global_phase_is_dropped_rather_than_recorded() -> None:
     """The reconstruction is equal up to a phase, not exactly equal.
 

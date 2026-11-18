@@ -143,6 +143,49 @@ def test_shared_wire_closes_blocks_before_different_pair() -> None:
     _assert_equivalent(source, resynthesize_cz_blocks(source))
 
 
+@pytest.mark.parametrize("pair", [(0, 3), (3, 0)])
+def test_numeric_block_with_small_jacobi_remainder_is_compilable(
+    pair: tuple[int, int],
+) -> None:
+    # Reduced from a fixed-seed interleaved circuit that exhausted all 100
+    # decomposition attempts despite containing only supported unitary gates.
+    left, right = pair
+    source = CircuitIR(
+        4,
+        (
+            Instruction("cz", pair),
+            Instruction("rx", (right,), {"theta": 3.1170314977707907}),
+            Instruction("rz", (right,), {"theta": -5.604698437642931}),
+            Instruction("rz", (right,), {"theta": -5.812781023296748}),
+            Instruction("rz", (left,), {"theta": -2.4951990294620146}),
+            Instruction("cx", pair),
+            Instruction("rz", (left,), {"theta": 5.581308392030795}),
+            Instruction("cz", pair),
+            Instruction("ry", (left,), {"theta": 0.7364898886609099}),
+            Instruction("cx", pair),
+        ),
+    )
+    result = resynthesize_cz_blocks(source)
+    assert result is not source
+    assert all(item.name in {"rz", "rx", "cz"} for item in result.instructions)
+    assert sum(item.name == "cz" for item in result.instructions) <= 3
+    _assert_equivalent(source, result)
+
+
+def test_near_identity_controlled_rotation_preserves_the_complete_operator() -> None:
+    source = CircuitIR(
+        2,
+        (
+            Instruction("swap", (0, 1)),
+            Instruction("swap", (1, 0)),
+            Instruction("crx", (0, 1), {"theta": 1e-5}),
+        ),
+    )
+    # A numerically inaccurate synthesis proposal must leave the source intact;
+    # a future accurate proposal may be admitted through the same residual gate.
+    _assert_equivalent(source, resynthesize_cz_blocks(source))
+
+
 def test_disjoint_blocks_can_be_interleaved() -> None:
     source = CircuitIR(
         4,

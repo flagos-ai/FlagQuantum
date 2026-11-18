@@ -262,3 +262,36 @@ new regression test fail at the forbidden residual check; no production source
 was modified by this diagnostic. Black, Ruff and whitespace checks pass for the
 test change. This strengthens development resource-admission coverage and makes
 no process-isolated SDKBench performance claim.
+
+## Numerical convergence regression
+
+A development diagnostic with four-wire interleaved blocks found a supported
+numeric circuit that exhausted all 100 Weyl diagonalization attempts. The Jacobi
+solver compared its sum of squared off-diagonal entries with `1e-16`, allowing
+individual entries near `1e-8` to remain, while M2 reconstruction required
+`1e-13`. The stopping condition now uses `(_M2_ATOL * 0.01) ** 2`; the existing
+reconstruction threshold, 60-sweep bound, and 100-attempt bound are unchanged.
+No exception is caught or converted into a successful optimization.
+
+Three independent symmetric-unitary reconstruction cases exercise the precision
+boundary. The `1e-9` and `1e-11` cases and both operand orders of a reduced
+ten-instruction circuit reproduce the failure before the fix and pass afterward.
+The focused Compiler, native legalization, artifact,
+deployment-evidence and local integration selection passed 2,814 cases. The
+development diagnostic passed all 80 circuits from seeds 71000 through 71079,
+with up to 410 source instructions, maximum full-operator residual
+`5.120605827706243e-14` and maximum global-phase modulus error
+`2.1094237467877974e-15`. These are unisolated correctness checks, not comparative
+performance evidence. The separate Qiskit count-anchor test refused the local
+Qiskit 2.6.2 installation because this repository certifies 2.0/2.5 lanes; its
+failure is retained rather than changing the lane or expected counts.
+
+This repair does not establish accuracy for every near-degenerate unitary.
+A separate direct synthesis probe for CRX with angle `1e-5` still has a
+phase-adjusted maximum entry residual of approximately `3.30e-6`. The CZ block
+pass rejects that proposal through its unchanged `1e-11` residual check and
+retains the original block. An end-to-end regression checks the complete
+operator without requiring the numerical limitation to persist. Improving
+near-degenerate synthesis and floating-point fidelity ties remains follow-up
+work; the direct synthesis helper is not certified to the CZ pass's stricter
+acceptance threshold by this repair.
