@@ -169,8 +169,10 @@ independent variable. This enlarges support and can cause a valid stream to be
 rejected, but cannot justify a false predicate equality. Each exact four-T And
 compute requires a zero target. Each literal measured erase requires its target
 to equal the current product of both controls. All declared clean wires must
-return to zero. Unsupported instructions, explicit matrices, unrecognized
-feedback, nonliteral fixed gates and nonfinite angles are rejected.
+return to zero. Unsupported instructions, unrecognized feedback, nonliteral fixed
+gates and nonfinite angles are rejected. The later LCU closure extends this same
+certificate to validated explicit matrices and exact controlled swaps, without
+changing the admitted sparse streams or their numeric/resource evidence.
 
 The local compute/erase lemma is independently checked on its complete control
 basis, including the positive complex scalar for both outcomes. A coherent
@@ -243,3 +245,10 @@ matrix notebook independent kernel pass. Strict typing of the changed
 production module, formatting, team scope, architecture, IR and API checks pass.
 Prior frozen-source, full tutorial and original slow-suite evidence is reused;
 no additional source changes or primitive-count changes were introduced.
+
+
+The shared support representation now uses a reduced ordered Boolean decision
+graph, replacing expanded ANF monomials for nine-bit comparator scalability.
+Canonical graph identities retain the same exact Boolean support obligations.
+The sparse suite is rerun after this replacement; the original 94-event Vlasov
+certificate continues to cover every history, with unchanged emitted resources.

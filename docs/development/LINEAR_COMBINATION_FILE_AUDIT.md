@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0285 | `linear_combination.ipynb` | `e44e694d55cc4d9524756741665b68b38cfce860` | Closed by the full native tutorial. |
-| Q-0286 | `linear_combination.py` | `a3d8aa7fafa7a6f3fcaf095826751209427cd255` | Concrete external snapshots, dense leaves and symbolic declarations verified. General symbolic resolution and complete catalogue history certification remain open; returned-adder failures are source boundaries. |
+| Q-0286 | `linear_combination.py` | `a3d8aa7fafa7a6f3fcaf095826751209427cd255` | Closed for the complete source definitions: owned execution, external/dense leaves, resolved symbolic declarations and complete catalogue history certificates. Missing source classical bodies and returned-adder failures remain explicit boundaries. |
 | Q-0287 | `linear_combination_test.py` | `bed60bc7ade281fca1e5b13e341e8b4dd07aabd9` | Closed for the original runnable fixture families. Original fixture-mode outcomes and native branch coverage are recorded below. |
 
 ## Binding and decomposition
@@ -80,8 +80,9 @@ up to four measurements for exact fixtures, then use all-zero and alternating
 histories for longer exact streams. The nine-bit cases execute emitted IR
 in the shared sparse branch evaluator at seeds 19 and 73, with each balanced
 measurement verified. The dense fixtures provide controlled matrix leaves;
-generic synthesis into lower-level gates and exhaustive long histories
-remain outside this evidence.
+generic synthesis into lower-level gates remains outside that numerical evidence.
+The complete-history support certificate below supplies the separate long-history
+claim without relabeling sampled numerical trajectories.
 
 Three representative named-gate fixtures at one and nine bits compare the
 locked PREPARE/SELECT/unprepare stream in both directions, including wire
@@ -109,9 +110,9 @@ instructions and any returned-wire binding swaps. See
 [Circuit block snapshots](CIRCUIT_BLOCK_ENCODING.md) for ownership and the append
 workflow.
 
-Q-0286 remains open: complete long-history certificates for the entire
-coefficient catalogue and resolved general symbolic bindings still need closure.
-The original explicit dense matrix families are now converted as described below. The original returned
+The subsequent closure below completes the catalogue history and resolved-symbol
+obligations. The original explicit dense matrix families are converted as described
+below. The original returned
 adder TypeError and grouped extension refusal remain immutable source boundaries;
 valid returned roots and the failing adder are separate claims. This batch does
 not convert these source failures into successful alternate algorithms.
@@ -152,3 +153,79 @@ evidence and was not repeated unchanged.
 The existing native LCU notebook also passes its independent kernel. Both Black
 and Ruff formatting pass after normalizing the shared test helper assertion;
 the final 39 feedback cases pass after that equivalent assertion rewrite.
+
+
+## Complete source closure
+
+The test-owned support proof now uses a reduced ordered Boolean decision graph.
+It replaces the previous expanded ANF representation, which exceeded a 60-second
+bound at the nine-bit comparator. The partial run is not acceptance evidence.
+No quantum source, emitted gate stream or resource model changed in this proof
+replacement. Canonical XOR/AND identities are checked against a complete truth
+table, while all prior phase and tamper checks remain.
+
+The literal seven-T Fredkin stream is recognized only when every instruction and
+operand equals the accepted compiler macro. Its full eight-state positive complex
+permutation is checked independently. Atomic CSwap has the same exact Boolean
+update. CH conservatively freshens only its target. For an explicit matrix, every
+nonzero row/column transition is inspected: an operand bit is retained only when
+all those transitions preserve it. Changed bits become independent variables.
+Structural zero means exactly zero, with no threshold; an off-diagonal amplitude
+of 5e-21 still invalidates a stale predicate. Matrix dimensions, finiteness and
+unitarity (absolute 1e-10) are checked separately. Named opcodes cannot carry
+matrix overrides. These rules enlarge support conservatively and never discard a
+failed equality obligation.
+
+All 59 original coefficient configurations are covered in both directions,
+including every nine-bit approximate and seeded dense configuration: 118 full
+streams. Nine structured quantum-control configurations and eight repeated-root
+activation vectors cover both supplied/default oracle modes, both directions and
+each admitted extra polarity. Every measurement history has the same common
+logical operator times the positive factor `2**(-events/2)`, with private work
+zero for the whole admitted coherent input subspace. Logical coefficient junk,
+signal and external controls remain outputs. Existing unchanged-source gate,
+operand, feedback and numerical reference checks identify that common operator;
+the support proof does not numerically propagate it.
+
+Unresolved symbolic source widths still refuse decomposition and gate pricing.
+The source has no automatic symbol-binding method. Tests resolve system, ancilla
+and resource expressions first and rebuild concrete source/native children. All
+four width combinations, two directions and outer-control modes compare resolved
+ports, independent concrete costs and full complex logical output. Resolved
+normalization and precision produce the exact original rescaled probabilities,
+alt/keep tables and finite coefficient preparation states. Symbolic estimates
+remain estimates, not recomputed physical counts.
+
+| Complete source definition | Native owner / accepted mapping |
+| --- | --- |
+| Constructor and `of_terms` | LinearCombinationBlockEncoding validation and coefficient/block-pair factory; tutorial now uses the paired factory |
+| Signed children and rescaled probabilities | LinearCombinationSelect sign phase and LinearCombinationPreparation; immutable source tables and all original coefficient rows |
+| System, ancilla/resource maxima, alpha, epsilon and signature | Native block metadata, packed signature declaration and resolved symbolic tests |
+| Signal state and default/custom PREPARE | Existing identity BlackBoxPrepare, alias owner and supplied oracle tests; zero and nonzero logical junk kept distinct from work |
+| Padded SELECT and physical composition | Existing AutoPartition/indexed traversal, three ordered PREPARE/SELECT/unprepare stages; complete primitive, operand and feedback comparisons |
+| `get_ctrl_system` and specialized adjoint | Explicit native direction/control binding and existing shared control predicates; structured and repeated roots, full branch/phase evidence and full-history certificate |
+| Classical-only control dispatch | Existing typed CBit signature owner; both source polarities expose ClassicallyControlled but refuse decomposition/QEC pricing; native measured classical wrapper remains explicitly unavailable |
+| String presentation and factory/documentation | Native component graph and complete tutorial retain ordered signed terms and original signature/call graph; native Python object repr is not an upstream compatibility API |
+
+Source-only failures remain failures. The later returned adder raises TypeError
+inside `np.concatenate`; grouped extension routed through it is rejected. The
+classical root has declaration and tensor semantics but no declared physical
+body or QEC price in the pinned source. Its two CBit polarities are probed, and
+native typed declaration is checked separately from the measured wrapper refusal.
+General typed classical-control capabilities belong to Q-0547 and are not newly
+certified here. No fallback from these unavailable source paths is claimed.
+The existing zero-ancilla source partition and generic child-cost refusals remain
+in their owning audits. Dense leaves are explicit matrices with unavailable
+synthesis costs. Arbitrary foreign gate synthesis is not inferred from a tensor.
+
+This closes Q-0286's source-file migration with those stated source/admission
+boundaries, without claiming that the upstream missing bodies have been invented
+or that Q-0547 or G2 is complete.
+
+Final closure validation: all 318 kernel, original catalogue, complete-history,
+resolved-symbol and source-boundary cases pass in 200.87 seconds. The shared
+sparse suite passes 66 cases with the replacement proof engine. The native LCU
+notebook passes its independent kernel. Strict typing covers the proof engine,
+LCU owner and paired-factory example; both formatters, scopes, architecture, IR
+and API checks pass. The final two classical-width checks pass separately.
+No new child checklist IDs or resource-count conventions were introduced.
