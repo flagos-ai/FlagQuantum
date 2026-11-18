@@ -26,6 +26,7 @@ from ...compiler.registers.preparation.prepare_reflection import (
     source_prepare_reflection_cost,
 )
 from ...core.ir import CircuitIR, Instruction
+from ...core.value_math import SymbolicReal
 from .lcu_block_encoding import LCUBlockEncoding
 from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
 
@@ -64,7 +65,7 @@ class QubitizationWalk:
         return tuple((select | signal).items())
 
     @property
-    def alpha(self) -> float:
+    def alpha(self) -> SymbolicReal:
         """Return the L1 normalization of the underlying block."""
         return self.block_encoding.alpha
 

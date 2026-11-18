@@ -68,7 +68,7 @@ class PackedPrepareDeclaration:
         return self.prepare.l1_norm_of_coeffs
 
     def bind(self, emit: PrepareEmitter) -> BlackBoxPrepare:
-        """Bind a native emitter once the named layout and its norm are concrete."""
+        """Bind concrete named ports while preserving a scalar normalization expression."""
         selection = _concrete_layout(self.prepare.selection_registers)
         junk = _concrete_layout(self.prepare.junk_registers)
         try:
@@ -76,7 +76,12 @@ class PackedPrepareDeclaration:
         except NotImplementedError:
             normalization = None
         if normalization is not None and not isinstance(normalization, (int, float)):
-            raise ValueError("PREPARE binding requires a concrete normalization")
+            from sympy import Expr
+
+            if not isinstance(normalization, Expr):
+                raise ValueError(
+                    "PREPARE normalization must be a native scalar expression"
+                )
         return BlackBoxPrepare(selection, junk, emit, normalization)
 
     def __str__(self) -> str:
@@ -97,12 +102,18 @@ def _concrete_layout(registers: tuple[Register, ...]) -> RegisterLayout:
 
 @dataclass(frozen=True)
 class BlackBoxPrepare:
-    """Bind a preparation emitter while preserving the order of its two port groups."""
+    """Bind logical ports and optional preparation-local output storage.
+
+    Local junk occupies the workspace prefix. It starts clean before PREPARE,
+    stays live across SELECT, and is consumed by PREPARE adjoint. It is not
+    exposed as a logical through-junk operand. Remaining workspace is scratch.
+    """
 
     selection_layout: RegisterLayout
     junk_layout: RegisterLayout
     prepare: PrepareEmitter
-    normalization: float | None = None
+    normalization: SymbolicReal | None = None
+    local_junk_layout: RegisterLayout = ()
 
     @property
     def selection_width(self) -> int:
@@ -111,6 +122,10 @@ class BlackBoxPrepare:
     @property
     def junk_width(self) -> int:
         return sum(width for _, width in self.junk_layout)
+
+    @property
+    def local_junk_width(self) -> int:
+        return sum(width for _, width in self.local_junk_layout)
 
     @property
     def selection_registers(self) -> tuple[Register, ...]:
@@ -157,15 +172,28 @@ class BlackBoxPrepare:
             name for name, _ in self.junk_layout
         }:
             raise ValueError("Preparation selection and junk names must be distinct")
+        local_width = self.local_junk_width
+        if len(workspace) < local_width:
+            raise ValueError("Preparation needs its persistent local junk storage")
         ports, _ = AutoPartition(
-            (("selection", self.selection_layout), ("junk", self.junk_layout))
-        ).bind({"selection": selection, "junk": junk})
+            (
+                ("selection", self.selection_layout),
+                ("junk", self.junk_layout),
+                ("local", self.local_junk_layout),
+            )
+        ).bind(
+            {
+                "selection": selection,
+                "junk": junk,
+                "local": workspace[:local_width],
+            }
+        )
         allowed = (*selection, *junk, *workspace)
         if allowed:
             _validate_wires(allowed)
-        if not selection:
+        if not selection and not local_width:
             return ()
-        gates = self.prepare(ports, workspace, classical_bits, adjoint)
+        gates = self.prepare(ports, workspace[local_width:], classical_bits, adjoint)
         qubits = set(allowed)
         if any(q not in qubits for gate in gates for q in gate.wires):
             raise ValueError("Preparation used a qubit outside the bound registers")

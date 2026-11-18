@@ -15,6 +15,7 @@ from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicReal
 from .black_box_prepare import BlackBoxPrepare, _identity_prepare
 from .select_block_encoding import ControlledSelectEmitter, SelectBlockEncoding
 
@@ -66,7 +67,11 @@ class LCUBlockEncoding:
             )
         block = self.select_block
         prepare = block.signal_state
-        prep_layout = (*prepare.selection_layout, *prepare.junk_layout)
+        prep_layout = (
+            *prepare.selection_layout,
+            *prepare.junk_layout,
+            *prepare.local_junk_layout,
+        )
         ports = dict(prep_layout)
         targets = dict(block.target_layout)
         if len(ports) != len(prep_layout) or ports.keys() & targets.keys():
@@ -108,7 +113,7 @@ class LCUBlockEncoding:
         return BlackBoxPrepare(self.selection_layout, (), _identity_prepare)
 
     @property
-    def alpha(self) -> float:
+    def alpha(self) -> SymbolicReal:
         return self.select_block.alpha
 
     @property
@@ -171,14 +176,20 @@ class LCUBlockEncoding:
         ports.update(partition_register(junk, self.junk_layout))
         block = self.select_block
         prepare = block.signal_state
+        local = prepare_workspace[: prepare.local_junk_width]
+        if set(local) & set(select_workspace):
+            raise ValueError(
+                "SELECT scratch cannot overlap persistent preparation junk"
+            )
+        before = prepare.emit(
+            selection, junk, prepare_workspace, prepare_classical_bits
+        )
+        ports.update(partition_register(local, prepare.local_junk_layout))
         select_words = tuple(
             wire for name, _ in block.selection_layout for wire in ports[name]
         )
         if self.control_value is not None and self.controlled_select is not None:
             block = block.with_control(self.control_value, self.controlled_select)
-        before = prepare.emit(
-            selection, junk, prepare_workspace, prepare_classical_bits
-        )
         middle = block.emit(
             (*control, *select_words),
             target,

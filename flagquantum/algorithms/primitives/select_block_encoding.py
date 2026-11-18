@@ -16,6 +16,7 @@ from ...compiler.registers.layout.partition import RegisterLayout, partition_reg
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program.registers import Register
 from ...core.ir.program.signatures import Signature
+from ...core.value_math import SymbolicReal
 from .black_box_prepare import BlackBoxPrepare
 
 SelectEmitter = Callable[
@@ -56,14 +57,14 @@ class SelectBlockEncoding:
 
     @property
     def resource_bitsize(self) -> int:
-        return self.signal_state.junk_width
+        return self.signal_state.junk_width + self.signal_state.local_junk_width
 
     @property
     def system_bitsize(self) -> int:
         return sum(width for _, width in self.target_layout)
 
     @property
-    def alpha(self) -> float:
+    def alpha(self) -> SymbolicReal:
         normalization = self.signal_state.normalization
         if normalization is None:
             raise ValueError("The signal state must declare its L1 normalization")
