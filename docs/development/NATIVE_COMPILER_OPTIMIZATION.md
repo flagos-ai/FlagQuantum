@@ -80,7 +80,10 @@ Two open pairs cannot overlap. A different pair sharing a qubit closes the old
 block. Reversed operands are converted into the same ordered matrix basis.
 
 Each candidate must strictly reduce CZ count relative to recursive native-basis
-translation. Its reconstructed 4 by 4 operator must match the source within
+translation. Already-native instructions contribute their actual cost without
+requesting a rewrite. Both the translated baseline and synthesized candidate
+must contain only target opcodes; an unresolved basis leaf cannot be counted as
+a zero-cost interaction. Its reconstructed 4 by 4 operator must match the source within
 `1e-11` per entry after accounting for one unit-modulus global phase. The
 candidate may add at most 32 instructions relative to the translated baseline.
 This objective can trade single-qubit gates and depth for fewer CZ gates; it
@@ -136,7 +139,10 @@ The tests independently embed Simulation gate matrices into the complete
 register, including reversed operands and disjoint spectators. They also check
 incorrect candidate rejection, instruction-growth rejection, long blocks,
 trainable parameter gradients, ordering boundaries, and the existing explicit
-compiler-pass workflow. Compiler matrix reconstruction is not the test oracle.
+compiler-pass workflow. They require admitted outputs to use the target basis,
+including after per-instruction native legalization, and reject an equivalent
+candidate containing non-target interactions. Compiler matrix reconstruction
+is not the test oracle.
 
 ## Limits and remaining integration
 
@@ -172,7 +178,8 @@ evidence, not SDKBench resource-isolated performance evidence.
 - Compiler unit files (`tests/unit/test_compilation*.py`), Compiler team tests,
   deployment routing evidence, routing candidate contracts, and the optimization,
   weighted-routing, synthesis, target-aware, and artifact-compilation integration
-  golden paths: **2,755 passed** in 78.25 seconds after integrating main's
+  golden paths: **2,759 passed** in 66.85 seconds after correcting target-basis
+  admission and integrating main's
   compiler stage refactor at `2219064cee1e90a19a71239e9f22d1cb2aa36686`.
   Router replacement remains effective through the facade; the native fast path
   still searches SABRE once. The 28 pass-admission contract tests also passed.
@@ -192,6 +199,10 @@ evidence, not SDKBench resource-isolated performance evidence.
 - The checked-in evidence revision gate still fails against the local clone's
   available history/origin declarations. It has not been waived or repaired in
   this compiler change. No full-suite passing claim is made.
+- Authorization PR #1218's Linux `quality` job reported 92 passed and one
+  failure: `artifacts/development/qec_colour_distance_acceptance_20261118.json`
+  records a producing revision without an obtainable reference or an origin
+  declaration. This is a separate observed CI failure, not a waived gate.
 - The broad runtime tier exceeded its earlier 600-second budget and was
   terminated. Targeted local integration checks passed; the full runtime tier
   and Linux SDKBench evaluation remain merge/release qualification work.

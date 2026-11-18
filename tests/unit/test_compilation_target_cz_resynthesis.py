@@ -8,6 +8,7 @@ import pytest
 import torch
 
 from flagquantum.compiler import compile
+from flagquantum.compiler.lowering.basis_translation import translate
 from flagquantum.compiler.optimization import _cz_blocks
 from flagquantum.compiler.optimization._cz_blocks import resynthesize_cz_blocks
 from flagquantum.core.ir import CircuitIR, Instruction
@@ -82,11 +83,49 @@ def test_numeric_blocks_with_reversed_wires_and_spectators(seed: int) -> None:
         )
     source = CircuitIR(3, tuple(instructions))
     result = resynthesize_cz_blocks(source)
+    assert all(item.name in {"rx", "rz", "cz"} for item in result.instructions)
     assert sum(item.name == "cz" for item in result.instructions) <= 3
     assert [item for item in result.instructions if item.wires == (1,)] == [
         item for item in source.instructions if item.wires == (1,)
     ]
     _assert_equivalent(source, result)
+
+
+@pytest.mark.parametrize("pair", [(0, 1), (1, 0)])
+def test_already_native_blocks_are_priced_and_resynthesized(
+    pair: tuple[int, int],
+) -> None:
+    source = CircuitIR(2, (Instruction("swap", pair), Instruction("cx", pair[::-1])))
+    baseline: list[Instruction] = []
+    for instruction in source.instructions:
+        leaves = translate(
+            instruction,
+            can_run=lambda item: item.name in {"rz", "rx", "cz"},
+            z_rotation="rz",
+            pulse_opcode="rx",
+        )
+        assert leaves is not None
+        assert all(item.name in {"rz", "rx", "cz"} for item in leaves)
+        baseline.extend(leaves)
+    native = CircuitIR(2, tuple(baseline))
+    assert sum(item.name == "cz" for item in native.instructions) == 4
+    result = resynthesize_cz_blocks(native)
+    assert all(item.name in {"rz", "rx", "cz"} for item in result.instructions)
+    assert sum(item.name == "cz" for item in result.instructions) == 2
+    _assert_equivalent(native, result)
+    _assert_equivalent(source, result)
+
+
+def test_incomplete_basis_translation_is_not_a_cost_baseline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = CircuitIR(2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))))
+    monkeypatch.setattr(
+        _cz_blocks,
+        "translate",
+        lambda *args, **kwargs: (Instruction("cz", (0, 1)), Instruction("cx", (0, 1))),
+    )
+    assert resynthesize_cz_blocks(source) is source
 
 
 def test_shared_wire_closes_blocks_before_different_pair() -> None:
@@ -181,6 +220,16 @@ def test_symbolic_angles_survive_optimization_on_both_sides(
 def test_incorrect_synthesis_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(_cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: ())
     source = CircuitIR(2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))))
+    assert resynthesize_cz_blocks(source) is source
+
+
+def test_equivalent_non_native_synthesis_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = CircuitIR(2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))))
+    monkeypatch.setattr(
+        _cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: source.instructions
+    )
     assert resynthesize_cz_blocks(source) is source
 
 

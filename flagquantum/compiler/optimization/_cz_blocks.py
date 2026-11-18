@@ -71,13 +71,16 @@ def _candidate(
 ) -> tuple[Instruction, ...] | None:
     baseline: list[Instruction] = []
     for instruction in block:
+        if instruction.name in _BASIS:
+            baseline.append(instruction)
+            continue
         leaves = translate(
             instruction,
             can_run=lambda item: item.name in _BASIS,
             z_rotation="rz",
             pulse_opcode="rx",
         )
-        if leaves is None:
+        if leaves is None or any(item.name not in _BASIS for item in leaves):
             return None
         baseline.extend(leaves)
     cz_count = sum(item.name == "cz" for item in baseline)
@@ -91,6 +94,7 @@ def _candidate(
     )
     if (
         candidate is None
+        or any(item.name not in _BASIS for item in candidate)
         or len(candidate) > len(baseline) + _MAX_ADDITIONAL_OPERATIONS
         or sum(item.name == "cz" for item in candidate) >= cz_count
     ):
