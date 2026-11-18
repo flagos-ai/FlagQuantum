@@ -6,8 +6,8 @@
 """Reflection conjugated by an already bound preparation and its inverse."""
 
 from cmath import phase
-from dataclasses import fields
-from math import isclose
+from dataclasses import fields, replace
+from math import isclose, pi
 from typing import cast
 
 from ....core.ir import Instruction
@@ -195,3 +195,56 @@ def source_prepare_reflection_cost(
         ),
         family="reflection",
     )
+
+
+def source_reflection_declared_cost(
+    selection_width: int,
+    junk_width: int,
+    prepare_cost: ComponentCost,
+    unprepare_cost: ComponentCost,
+    *,
+    control_value: int | None = None,
+    global_phase: complex = 1,
+    precision: float = 1e-11,
+    prepare_is_self_adjoint: bool = False,
+) -> ComponentCost:
+    """Preserve the original direct-graph phase branches and equal-key collapse.
+
+    The open-control, phase-one graph omits the two executed X gates. A
+    self-adjoint PREPARE appears once in the original dictionary. These source
+    declarations are independent from the physical instruction inventory.
+    """
+    from ..._component_trace.compound_control_resource import global_phase_cost_key
+    from ..._component_trace.qec_gate_cost import query_qec_gate_cost
+
+    if control_value is not None and (
+        type(control_value) is not int or control_value not in (0, 1)
+    ):
+        raise ValueError("Reflection control value must be zero or one")
+    if type(prepare_is_self_adjoint) is not bool:
+        raise ValueError("PREPARE equality declaration must be boolean")
+    controlled = control_value is not None
+    model = source_prepare_reflection_cost(
+        selection_width,
+        junk_width,
+        prepare_cost,
+        unprepare_cost,
+        controlled=controlled,
+    )
+    phase_cost = query_qec_gate_cost(
+        global_phase_cost_key(
+            phase(global_phase) / pi, (1,) if controlled else (), precision
+        )
+    )
+    counts = {field.name: getattr(phase_cost, field.name) for field in fields(GateCost)}
+    counts["clifford"] += 2 * int(
+        control_value is None or (control_value == 0 and global_phase != 1)
+    )
+    if global_phase == 1:
+        # The original branch creates no phase callee for coefficient one.
+        counts = {field.name: 0 for field in fields(GateCost)}
+        counts["clifford"] = 2 * int(control_value is None)
+    calls = model.calls
+    if prepare_is_self_adjoint:
+        calls = calls[:-1]
+    return replace(model, gates=GateCost(**counts), calls=calls)
