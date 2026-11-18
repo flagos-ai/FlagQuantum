@@ -50,12 +50,18 @@ declared cost. There is no new registry, compiler pass or numerical backend.
 
 `flagquantum.ecosystem.cirq._block_encoding.import_block_encoding` captures the
 source's four actual operations immediately, using shared `_component_snapshot`.
-The optional source dependency stays at Ecosystem. The caller supplies four
-independent models. Only concrete scalar packed ports and identity signal states
+The optional source dependency stays at Ecosystem. The caller may supply four
+independent models. If no model is available, emission remains usable while
+`resource_model` reports that the independent cost is unavailable. Only concrete
+scalar packed ports and identity signal states
 are admitted, consistent with the existing LCU zero-signal requirement. Unknown
 primitive decompositions, dirty borrowing, unsupported feedback and changed port
-shapes fail explicitly. This path does not claim generic synthesis of dense
-matrix leaves or symbolic physical execution.
+shapes fail explicitly. Explicit dense matrix leaves retain a copied, finite,
+validated unitary tensor,
+including controlled matrices and absolute scalar phase. They remain single
+matrix instructions; no lower-level synthesis or T cost is inferred. Generic
+unitary contraction of arbitrary components and symbolic physical execution
+remain outside this conversion.
 
 Fractional Z/CZ powers retain native phase/cphase semantics, including their
 absolute scalar phase. Positive-controlled H and canonical rotations remain
@@ -78,3 +84,38 @@ Symbolic width and nonidentity signal objects are rejected before capture.
 `test_fractional_phase_powers_and_controlled_h_preserve_absolute_phase` compares
 against Cirq's independent gate matrices and feedback resolution on every branch.
 Existing sparse oracle and LCU suites cover the shared extraction's consumers.
+
+
+## Explicit matrix leaves
+
+The feedback importer accepts Cirq MatrixGate and external gates that explicitly
+provide a matrix and unitary protocol, including their quantum control wrappers.
+It reads the actual controlled unitary rather than reconstructing controls from
+assumed conventions. The tensor is copied, checked for finite values, checked
+against operand dimension and checked for unitarity at absolute tolerance 1e-10.
+Classical feedback retains the matrix operand and each gate's native conditions.
+This also fixes matrix preservation when imported effects are wrapped with their
+feedback metadata. Source data mutation cannot alter the owned native tensor.
+
+The locked MatrixGate provides `QubitCount` but raises `DecomposeNotImplementedError`
+for `QECGatesCost`, for both ordinary and controlled blocks. Those source outcomes
+are recorded separately: physical snapshot width is known, while primitive
+Clifford/T synthesis cost is unavailable. A missing independent native model is
+not represented by an all-zero ComponentCost.
+
+
+The original ten seeded dense coefficient families are converted in both
+directions and compared instruction by instruction with the previously accepted
+explicit-matrix LCU recipe. Gate names, wire operands, parameters, feedback and
+every matrix element are compared. Each source matrix leaf's four interfaces
+also match the full locked complex operator. The complete stream replacement
+reuses the existing catalogue's projection/complex-output evidence; one family
+in both directions additionally checks the occupied complex output support at
+two numerical measurement histories and zero private work.
+
+An initial run redundantly interpreted both complete streams numerically for
+every family and stopped at its 150-second bound before completing all 20 cases.
+It is not passing evidence. The final bounded run retains all 20 stream checks
+and concentrates repeated numerical execution in the representative family.
+Numerical samples are not called exhaustive histories; whole-catalogue channel
+certification remains a separate open Q-0286 obligation.

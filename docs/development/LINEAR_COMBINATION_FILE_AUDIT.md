@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0285 | `linear_combination.ipynb` | `e44e694d55cc4d9524756741665b68b38cfce860` | Closed by the full native tutorial. |
-| Q-0286 | `linear_combination.py` | `a3d8aa7fafa7a6f3fcaf095826751209427cd255` | Symbolic packed widths and logical peak fallback verified. General symbolic and foreign object binding and returned-adder boundaries remain open. |
+| Q-0286 | `linear_combination.py` | `a3d8aa7fafa7a6f3fcaf095826751209427cd255` | Concrete external snapshots, dense leaves and symbolic declarations verified. General symbolic resolution and complete catalogue history certification remain open; returned-adder failures are source boundaries. |
 | Q-0287 | `linear_combination_test.py` | `bed60bc7ade281fca1e5b13e341e8b4dd07aabd9` | Closed for the original runnable fixture families. Original fixture-mode outcomes and native branch coverage are recorded below. |
 
 ## Binding and decomposition
@@ -109,9 +109,9 @@ instructions and any returned-wire binding swaps. See
 [Circuit block snapshots](CIRCUIT_BLOCK_ENCODING.md) for ownership and the append
 workflow.
 
-Q-0286 remains open: dense foreign leaves beyond the admitted concrete primitive
-set, complete long-history certificates for the entire coefficient catalogue,
-and resolved general symbolic bindings still need closure. The original returned
+Q-0286 remains open: complete long-history certificates for the entire
+coefficient catalogue and resolved general symbolic bindings still need closure.
+The original explicit dense matrix families are now converted as described below. The original returned
 adder TypeError and grouped extension refusal remain immutable source boundaries;
 valid returned roots and the failing adder are separate claims. This batch does
 not convert these source failures into successful alternate algorithms.
@@ -122,3 +122,33 @@ LCU replacement passes all nine foreign-block cases. The existing native LCU
 notebook passes its independent kernel. Seven production files pass strict
 typing; formatting, scopes, architecture, IR, API and the documented append
 example pass. Primitive inventories and source models are kept separate.
+
+
+## Declared dense leaf conversion
+
+All ten original seeded MatrixGate families now pass actual optional-boundary
+conversion in both LCU directions. The full emitted streams match the accepted
+native catalogue, including each explicit controlled matrix, operand and
+measurement feedback dependency. Ordinary, adjoint and positive-controlled source
+matrix blocks preserve their complete complex matrices as one native matrix leaf.
+Classically controlled matrices preserve their operands, conditions and absolute
+phase, and the imported tensor owns a copy of external data. Invalid matrices
+fail before canonical IR is returned.
+
+The unchanged source returns QubitCount for these leaves but refuses QECGatesCost
+with DecomposeNotImplementedError. Native snapshot execution therefore permits
+an absent independent model, and resource queries report unavailable instead of
+zero. The emitted matrix leaf count, known physical widths and unavailable
+Clifford/T synthesis costs remain separate. This is explicit matrix preservation,
+not synthesis or contraction of an arbitrary source component into a dense gate.
+
+Dense-leaf validation: 75 focused cases and 281 concentrated cases pass; the
+final immutable-source precondition passes 11 focused cases. The MatrixGate,
+controlled wrapper and LinearCombination Git blobs match the pinned inventory.
+Four changed production files pass strict typing; formatting, scopes, architecture,
+IR and API checks pass. The earlier 150-second partial run remains non-acceptance
+evidence and was not repeated unchanged.
+
+The existing native LCU notebook also passes its independent kernel. Both Black
+and Ruff formatting pass after normalizing the shared test helper assertion;
+the final 39 feedback cases pass after that equivalent assertion rewrite.
