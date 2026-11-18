@@ -64,3 +64,41 @@ Q-0230 closes as a complete teaching asset and Q-0232 closes as a
 complete original test disposition. Q-0231 stays open for generic
 foreign wire/dtype callback and exact foreign interface lifecycle
 admission beyond the tested concrete exports.
+
+## Remaining interface closure
+
+The actual `_cnot` factory is now imported through the existing named emitter.
+Both independently captured directions retain `ctrl, target` ordering, exactly
+one CX, no work, no classical slots and no binding swaps. Concrete native JSON
+restoration preserves the instruction and full four-by-four complex matrix.
+Reversed physical bindings with an entangled spectator preserve the complete
+complex vector through `circuit.append(op)` and its inverse.
+
+Drawer now owns one `controlled_not_wire_symbol` callback shared by CNOT and
+Toffoli. Both frozen sources implement the same empty title, control Circle,
+target ModPlus and exact unknown-register ValueError. The complete scalar CNOT
+and shaped Toffoli source scores are checked independently. The former
+Toffoli-only callback module is replaced by the shared module, with its existing
+consumer updated. Foreign register objects stop at Ecosystem and source tests.
+
+The actual source Cirq CNOT and PennyLane CNOT assertions match native exports
+and both imports. The original two-CX diagram and zero-input round trip pass.
+Original factory/DocSpec identity, atomic refusal, self-adjoint identity,
+one-leaf graph, independent one-Clifford model and peak two are checked together.
+Existing complete COPY/XOR tensor and classical-value evidence is reused.
+Control dispatch remains covered by the actual returned source adders, complete
+small measurement histories, clean work and the independent resource models.
+There are no measurements or work slots in the atom.
+
+Q-0231 closes. The previously closed original tests and notebook remain accepted.
+The original decomposition-dependent autotester skips retain the atomic refusal.
+Concrete snapshot serialization passes, with foreign object serialization left
+to the existing admission boundary. Frozen implementation and test blobs are
+verified before these checks and remain unmodified.
+
+The whole-file batch passed 3,326 concentrated cases with no skips. Its 28
+warnings retain the paired source/native NumPy overflow behavior. Ruff found
+two import-order issues after the shared callback move, which were corrected.
+All three changed Python files then passed Black, Ruff and strict typing.
+Compiler scope, architecture, multilevel IR and protected API checks passed.
+The six CNOT/Toffoli focused checks also passed after that import-only correction.

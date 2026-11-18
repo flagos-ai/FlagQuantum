@@ -7,8 +7,8 @@ Apache-2.0 attribution.
 | Inventory | Frozen Git blob | Disposition |
 |---|---|---|
 | Q-0265 `toffoli.ipynb` | `dc66c9de450ddd86367e983e3342bc5515b44768` | Closed by the complete native tutorial. |
-| Q-0266 `toffoli.py` | `a007be2ef25aa7dc5fda4d793498041a8f6b5a48` | Native atomic and grouped control paths verified. Generic external control-object and drawing protocols remain open. |
-| Q-0267 `toffoli_test.py` | `ff83e793112a8c7503ec526715e76647ce6f2196` | Original suite runs unchanged. Generic source factory and diagram harness equivalence remain open. |
+| Q-0266 `toffoli.py` | `a007be2ef25aa7dc5fda4d793498041a8f6b5a48` | Closed. Atomic capture, shaped drawing, SDK protocols and existing grouped-control adders are verified. |
+| Q-0267 `toffoli_test.py` | `ff83e793112a8c7503ec526715e76647ce6f2196` | Closed. Original suite, actual factory and complete shaped score have native evidence. |
 
 ## Signatures and control binding
 
@@ -61,7 +61,7 @@ jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_t
 ## Whole-file method and original-test closure
 
 The remaining source protocols now terminate at their native owners. Drawer
-owns `toffoli_wire_symbol`, preserving the empty operation title, both indexed
+owns the shared `controlled_not_wire_symbol`, preserving the empty operation title, both indexed
 control circles, target ModPlus and unknown-register ValueError. Its complete
 score geometry is compared against the actual source composite, retaining
 `ctrl` as a QBit array of shape `(2,)` and `target` as a scalar. Ecosystem

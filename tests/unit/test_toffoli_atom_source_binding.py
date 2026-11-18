@@ -130,9 +130,9 @@ def test_complete_shaped_score_and_source_unknown_register() -> None:
 
     from flagquantum.core.ir.program.register_types import opaque_register_type
     from flagquantum.core.ir.program.registers import Register
+    from flagquantum.drawer.controlled_not_symbols import controlled_not_wire_symbol
     from flagquantum.drawer.register_score import RegisterStep, layout_register_score
     from flagquantum.drawer.register_score_data import register_score_data
-    from flagquantum.drawer.toffoli_symbols import toffoli_wire_symbol
     from tests.unit.test_drawer_component_score import assert_source_geometry
     from tests.unit.test_register_tensor import native_signature
 
@@ -147,17 +147,17 @@ def test_complete_shaped_score_and_source_unknown_register() -> None:
     builder, inputs = BloqBuilder.from_signature(source.signature)
     original = builder.finalize(**builder.add_d(source, **inputs))
     assert_source_geometry(
-        register_score_data(score, register_wire_symbol=toffoli_wire_symbol),
+        register_score_data(score, register_wire_symbol=controlled_not_wire_symbol),
         get_musical_score_data(original),
         ordered_ports=True,
     )
     for index in ((0,), (1,)):
-        assert toffoli_wire_symbol(step, registers[0], index) == (
+        assert controlled_not_wire_symbol(step, registers[0], index) == (
             "Circle",
             {"filled": True},
         )
     unknown = Register("unknown", opaque_register_type(1))
     with pytest.raises(ValueError, match="Unknown wire symbol register name: unknown"):
-        toffoli_wire_symbol(step, unknown, ())
+        controlled_not_wire_symbol(step, unknown, ())
     with pytest.raises(ValueError, match="Unknown wire symbol register name: unknown"):
         source.wire_symbol(SourceRegister("unknown", QBit()))
