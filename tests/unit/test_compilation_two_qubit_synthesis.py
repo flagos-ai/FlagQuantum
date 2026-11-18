@@ -283,6 +283,23 @@ def test_weyl_diagonalization_resolves_small_off_diagonal_entries(angle: float) 
     )
 
 
+@pytest.mark.parametrize("angle", [1e-3, 1e-5, 1e-7])
+@pytest.mark.parametrize("pulse_opcode", ["rx", "sx"])
+def test_small_controlled_rotation_retains_local_factor_phases(
+    angle: float, pulse_opcode: str
+) -> None:
+    source = _source("crx", {"theta": angle})
+    emitted = synthesize_two_qubit(
+        source,
+        qubits=(0, 1),
+        entangler="cz",
+        z_rotation="rz",
+        pulse_opcode=pulse_opcode,
+    )
+    assert emitted is not None
+    assert _gap(emitted, source) <= 1e-11
+
+
 def test_the_global_phase_is_dropped_rather_than_recorded() -> None:
     """The reconstruction is equal up to a phase, not exactly equal.
 

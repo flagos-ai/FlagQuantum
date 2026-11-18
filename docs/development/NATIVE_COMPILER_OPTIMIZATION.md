@@ -286,12 +286,47 @@ performance evidence. The separate Qiskit count-anchor test refused the local
 Qiskit 2.6.2 installation because this repository certifies 2.0/2.5 lanes; its
 failure is retained rather than changing the lane or expected counts.
 
-This repair does not establish accuracy for every near-degenerate unitary.
-A separate direct synthesis probe for CRX with angle `1e-5` still has a
-phase-adjusted maximum entry residual of approximately `3.30e-6`. The CZ block
-pass rejects that proposal through its unchanged `1e-11` residual check and
-retains the original block. An end-to-end regression checks the complete
-operator without requiring the numerical limitation to persist. Improving
-near-degenerate synthesis and floating-point fidelity ties remains follow-up
-work; the direct synthesis helper is not certified to the CZ pass's stricter
-acceptance threshold by this repair.
+The convergence repair alone did not establish accuracy for every
+near-degenerate unitary. A separate direct synthesis probe for CRX with angle
+`1e-5` still had a phase-adjusted maximum entry residual of approximately
+`3.30e-6`. The CZ block pass rejected that proposal through its unchanged
+`1e-11` residual check and retained the original block. An end-to-end regression
+checks the complete operator without requiring the numerical limitation to
+persist.
+
+The second diagnosis localized this error to single-qubit Euler phase
+extraction, rather than the Weyl coordinates: the reconstructed KAK operator
+for that source was accurate to approximately `2.88e-16`, but independently
+rounded, nearly zero diagonal entries of a local factor had unreliable relative
+phases. Euler extraction now obtains the diagonal phase relation from the
+determinant instead of the bottom-right entry's phase. This is algebraically
+equivalent on a unitary and avoids amplifying absolute roundoff in a small
+entry into a rotation of a large entry. Existing diagonal and anti-diagonal
+branches, target opcodes and acceptance thresholds are unchanged. Regression
+cases cover perturbed near-anti-diagonal single-qubit matrices and complete CRX
+synthesis with both RX and SX pulses.
+
+Floating-point fidelity ties remain separate follow-up work: a CRX angle of
+`1e-9` can still select zero entanglers and produce a residual near `2.50e-10`.
+The block pass continues to reject a proposal outside its `1e-11` threshold.
+The direct synthesis helper is not certified to that stricter threshold for
+all unitary matrices by these repairs.
+
+With both numerical repairs present, the focused selection passed **2,827
+cases**, and the three direct synthesis/CZ test files passed **125 cases**.
+All six near-anti-diagonal regressions fail when only the previous Euler phase
+expression is restored in a process-local mutation; no production file was
+changed for that check. The same 80-circuit development diagnostic passed again,
+with maximum full-operator residual `4.365542661283488e-14`.
+
+Broad qualification remains incomplete. The smoke/unit attempt for the Jacobi
+repair reached its explicit 600-second limit at 58% without a final summary.
+That invocation incorrectly inherited a checkout-specific `GIT_WORK_TREE`,
+which also broke temporary Git repositories created by evidence tests. Removing
+that environment override in a focused evidence-revision run yielded 57 passed
+and one failure: the local clone's available references disagree with 98
+checked-in origin declarations. Neither the environment-induced setup errors
+nor the remaining origin failure is counted as passing verification. The broad
+runtime attempt has its own 600-second bound; its outcome and required Linux
+CI remain separate qualification requirements. These incomplete broad attempts
+do not certify the subsequent Euler repair.
