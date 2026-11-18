@@ -7,6 +7,7 @@
 
 """Compose indexed child models with per-call live parent predicate widths."""
 
+from collections.abc import Callable
 from math import prod
 
 from ..._component_trace.resource_model import ComponentCost, CostCall, GateCost
@@ -22,6 +23,49 @@ def _prefix_depth(index: int, extent: int) -> int:
     )
 
 
+def _folded_calls(
+    axis_widths: tuple[int, ...],
+    extents: tuple[int, ...],
+    control_count: int,
+    break_early: Callable[[tuple[int, ...], int, int], bool],
+) -> tuple[list[tuple[int, int]], int]:
+    """Plan retained source calls and live predicates without emitting gates."""
+    if break_early((), 0, extents[0]):
+        raise ValueError("Folded first-axis root requires a zero-selection recipe")
+    calls: list[tuple[int, int]] = []
+    ands = -int(control_count == 0)
+
+    def axis(depth: int, indices: tuple[int, ...], flat: int, active: int) -> None:
+        extent = extents[depth]
+
+        def node(left: int, right: int, live: int) -> None:
+            nonlocal ands
+            if left >= extent:
+                return
+            if right <= extent and (
+                right - left == 1 or break_early(indices, left, right)
+            ):
+                index = flat * extent + left
+                if depth + 1 == len(extents):
+                    calls.append((index, live))
+                else:
+                    axis(depth + 1, (*indices, left), index, live)
+                return
+            middle = (left + right) // 2
+            if extent <= middle:
+                node(left, middle, live)
+                return
+            ands += 1
+            node(left, middle, live + 1)
+            node(middle, right, live + 1)
+
+        node(0, 1 << axis_widths[depth], active)
+
+    prefix = max(0, control_count - 1) - int(control_count == 0)
+    axis(0, (), 0, prefix)
+    return calls, ands
+
+
 def indexed_component_cost(
     axis_widths: tuple[int, ...],
     extents: tuple[int, ...],
@@ -32,6 +76,7 @@ def indexed_component_cost(
     child_target_width: int | None = None,
     adjoint: bool = False,
     legacy_shims: bool = False,
+    break_early: Callable[[tuple[int, ...], int, int], bool] | None = None,
 ) -> ComponentCost:
     """Aggregate controlled THRU children without emitting or executing gates.
 
@@ -40,6 +85,8 @@ def indexed_component_cost(
     ports, plus its own declared work. The child direction is caller-owned.
     Parent target ports not used by that child remain bystanders. Preserve
     separate child models even when their costs or gate identities coincide.
+    Early folding retains only the representative child's model and its live
+    predicate depth. The callback has the same contract as the native emitter.
     """
     indexed_component_workspace(axis_widths, control_count)
     if type(legacy_shims) is not bool:
@@ -79,19 +126,27 @@ def indexed_component_cost(
     prefix = max(0, control_count - 1)
     traversal_ands = rows - (1 if control_count else 2)
     peak_work = sum((extent - 1).bit_length() for extent in extents) + control_count - 1
-    calls = []
-    order = reversed(range(rows)) if adjoint else range(rows)
-    for flat_index in order:
-        remaining = flat_index
-        active = prefix - int(control_count == 0)
-        for extent in reversed(extents):
-            remaining, index = divmod(remaining, extent)
-            active += _prefix_depth(index, extent)
-        calls.append(
-            CostCall(
-                children[flat_index], bystander_qubits=signature + active - child_ports
-            )
+    planned_calls = []
+    if break_early is None:
+        for flat_index in range(rows):
+            remaining = flat_index
+            active = prefix - int(control_count == 0)
+            for extent in reversed(extents):
+                remaining, index = divmod(remaining, extent)
+                active += _prefix_depth(index, extent)
+            planned_calls.append((flat_index, active))
+    else:
+        planned_calls, traversal_ands = _folded_calls(
+            axis_widths, extents, control_count, break_early
         )
+        peak_work = max(active for _, active in planned_calls)
+    order = reversed(planned_calls) if adjoint else iter(planned_calls)
+    calls = tuple(
+        CostCall(
+            children[flat_index], bystander_qubits=signature + active - child_ports
+        )
+        for flat_index, active in order
+    )
     # Forward traversal computes (1,0) and erases (1,1); adjoint swaps
     # their directions. The source has one explicit CNOT per split.
     gates = GateCost(clifford=traversal_ands + 2 * int(control_count == 0))
@@ -111,5 +166,5 @@ def indexed_component_cost(
         "IndexedComponent†" if adjoint else "IndexedComponent",
         signature + peak_work,
         gates,
-        tuple(calls),
+        calls,
     )
