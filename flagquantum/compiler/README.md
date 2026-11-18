@@ -102,6 +102,42 @@ fixed two-qubit target `local/offline-line` with 256 shots and its OpenQASM 2
 payload. Both branches start from `synth.synthesize(bell).circuit`. The example
 builds the package locally without credentials or a provider submission.
 
+### Save and reload a routed executable and its evidence
+
+Run [the routed artifact example](../../examples/routed_artifact_preflight.py)
+from the repository root, choosing a directory for the JSON handoff.
+
+```bash
+python -m examples.routed_artifact_preflight --output-dir /tmp/fq-routed-artifact
+```
+
+The example starts with `fq.Circuit(2).rx(...).ry(...).cx(0, 1)`, using
+`complex128`, and places its logical qubits in physical slots `(2, 0)` of a
+synthetic directed target `0 -> 1 -> 2`. Two SWAPs route the nonlocal CX through
+workspace slot 1 and restore the output placement.
+
+The selected directory receives `source.json`, `snapshot.json`, `program.json`,
+and `evidence.json`. The example reloads all four files and passes the
+`ProgramArtifactV3` and compilation evidence to offline deployment preflight.
+It then re-imports the resulting OpenQASM 3 and compares the CPU complex state
+with the source circuit in logical order, checking that workspace slot 1 is
+back in `|0>`.
+
+Expected output includes `Inserted SWAPs 2`, `Logical result slots (2, 0)`,
+and `Offline preflight and CPU state verification passed`. The snapshot
+describes this local exercise and expires one hour after capture. Each run
+creates a fresh snapshot and replaces the four JSON files in the selected
+directory. This contributor example exercises internal compiler, artifact, and
+preflight interfaces alongside the public circuit and execution APIs.
+
+Change the circuit in `run_example` or the declared gate set in
+`_target_snapshot` to explore this path. Run the example and its focused tests
+after editing either.
+
+```bash
+python -m pytest -q tests/integration/test_routed_artifact_preflight_example.py tests/hybrid_compiler/test_physical_resource_allocation.py
+```
+
 ## Change the owning stage
 
 | Change | Entry point |
