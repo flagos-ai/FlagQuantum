@@ -244,10 +244,10 @@ def test_inactive_fold_model_reuses_the_existing_full_call_inventory(
 
 
 @pytest.mark.parametrize("controls", (0, 1, 2))
-@pytest.mark.parametrize("extent", (1, 4))
+@pytest.mark.parametrize("width,extent", ((None, 1), (0, 1), (2, 1), (2, 4)))
 @pytest.mark.parametrize("adjoint", (False, True))
 def test_custom_zero_selection_recipe_replaces_root_execution_and_model(
-    source: Any, controls: int, extent: int, adjoint: bool
+    source: Any, controls: int, width: int | None, extent: int, adjoint: bool
 ) -> None:
     import cirq
     from attrs import frozen
@@ -270,7 +270,11 @@ def test_custom_zero_selection_recipe_replaces_root_execution_and_model(
 
         @property
         def selection_registers(self) -> tuple[Any, ...]:
-            return (Register("selection", BQUInt(2, self.extent)),)
+            return (
+                ()
+                if width is None
+                else (Register("selection", BQUInt(width, self.extent)),)
+            )
 
         @property
         def target_registers(self) -> tuple[Any, ...]:
@@ -279,6 +283,8 @@ def test_custom_zero_selection_recipe_replaces_root_execution_and_model(
         def _break_early(
             self, selection_index_prefix: tuple[int, ...], left: int, right: int
         ) -> bool:
+            if not width:
+                raise AssertionError("Empty selectors must bypass the fold hook")
             return not selection_index_prefix
 
         def nth_operation(self, context: Any, control: Any, **kwargs: Any) -> Any:
@@ -291,26 +297,34 @@ def test_custom_zero_selection_recipe_replaces_root_execution_and_model(
                 yield cirq.S(quregs["target"][0])
 
     original = RootRecipe(controls, extent)
-    logical = controls + 3
-    work = controls + 1
+    physical_width = width or 0
+    axes: tuple[tuple[int, ...], ...] = (
+        () if width is None else (tuple(range(controls, controls + width)),)
+    )
+    extents = () if width is None else (extent,)
+    logical = controls + physical_width + 1
+    work = controls + 1 if width else 0
     source_emitter = import_register_emitter(original)
     assert source_emitter.requirements() == ((1, 1) if controls else (0, 0))
-    ports = {
-        "selection": tuple(range(controls, controls + 2)),
+    ports: dict[str, tuple[int, ...]] = {
         "target": (logical - 1,),
     }
+    if width is not None:
+        ports["selection"] = axes[0]
     if controls:
         ports["enable"] = tuple(range(controls))
     source_work_count, source_bits = source_emitter.requirements()
+    work = max(work, source_work_count)
+    parent_work = controls + 1 if width else 0
     gates = indexed_component_ir(
-        (tuple(range(controls, controls + 2)),),
-        (extent,),
+        axes,
+        extents,
         lambda *_: pytest.fail("Zero-selection recipe invoked an indexed leaf"),
         controls=tuple(range(controls)),
-        workspace=tuple(range(logical, logical + work)),
-        classical_bits=tuple(range(work)),
+        workspace=tuple(range(logical, logical + parent_work)),
+        classical_bits=tuple(range(parent_work)),
         adjoint=adjoint,
-        break_early=lambda *_: True,
+        break_early=(lambda *_: True) if width else None,
         emit_zero_selection=lambda: source_emitter(
             ports,
             tuple(range(logical, logical + source_work_count)),
@@ -349,13 +363,13 @@ def test_custom_zero_selection_recipe_replaces_root_execution_and_model(
             padded_native[:: 1 << work] = expected / 2 ** (events / 2)
             torch.testing.assert_close(actual_native, padded_native, atol=1e-12, rtol=0)
     model = indexed_component_cost(
-        (2,),
-        (extent,),
+        tuple(map(len, axes)),
+        extents,
         (),
         target_width=1,
         control_count=controls,
         adjoint=adjoint,
-        break_early=lambda *_: True,
+        break_early=(lambda *_: True) if width else None,
         zero_selection=ComponentCost(
             "Root controlled phase",
             logical + int(bool(controls)),
@@ -399,3 +413,35 @@ def test_low_level_root_recipe_and_model_width_ownership() -> None:
             break_early=lambda *_: True,
             zero_selection=ComponentCost("Too narrow", 1),
         )
+
+
+@pytest.mark.parametrize("width", (0, -1))
+def test_empty_selection_requires_a_recipe_and_rejects_negative_width(
+    width: int,
+) -> None:
+    with pytest.raises(ValueError):
+        indexed_component_cost((width,), (1,), (), target_width=1)
+    with pytest.raises(ValueError, match="zero-selection recipe"):
+        indexed_component_ir(
+            ((),), (1,), lambda *_: (), workspace=(), classical_bits=()
+        )
+
+
+def test_low_level_empty_selection_bypasses_fold_hook() -> None:
+    from flagquantum.compiler.registers.lookup.unary_iteration import (
+        append_nested_bounded_unary_tree,
+    )
+
+    gates: list[Instruction] = []
+    append_nested_bounded_unary_tree(
+        gates,
+        None,
+        ((),),
+        (1,),
+        (),
+        (),
+        lambda *_: pytest.fail("Empty selector invoked an indexed leaf"),
+        break_early=lambda *_: pytest.fail("Empty selector queried the fold hook"),
+        zero_selection=lambda: gates.append(Instruction("s", (0,))),
+    )
+    assert gates == [Instruction("s", (0,))]

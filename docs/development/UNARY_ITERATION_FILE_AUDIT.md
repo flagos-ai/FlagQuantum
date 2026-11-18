@@ -138,3 +138,30 @@ literal zero-width ports, unresolved symbolic extents and further dynamic
 allocation/borrowing hooks remain open under Q-0597 and the existing interop
 entries. This section supersedes the earlier custom-zero-selection gap for the
 verified positive-width root-fold override.
+
+
+## Literal empty-selection source bindings
+
+The named register emitter admits concrete zero-bit THRU ports through an explicit
+snapshot capture option. Existing snapshot consumers retain their positive-width
+admission rules. Named arrays preserve their empty shape and row-major layout.
+At least one physical target is present in this acceptance batch. Scalar-only
+carriers and dynamic borrowing remain separate interop scopes.
+
+The native indexed emitter, nested traversal and independent model dispatch a
+wholly empty selection signature directly to the explicit zero-selection recipe,
+without querying the fold hook or allocating parent predicates. Child storage
+belongs to the recipe. Mixed empty/nonempty axes remain rejected by the ordinary
+indexed traversal. Negative and symbolic widths remain rejected. The default
+source implementation still raises when no custom recipe is defined.
+
+The same source subclass acceptance now includes a literal BQUInt(0, 1) selector,
+zero through two control bits and both actual source directions. Exact source
+primitive equality, every operator column, all measurement histories, complex
+phase, clean child storage and JSON round trips are checked through
+`Circuit.append(op)`. Independent whole-signature resource models match the
+source call graph. The same checks cover an omitted selection register tuple.
+Primitive inventories retain the S/controlled-S rows above,
+with the zero selector removed from the signature width. This closes the
+literal-zero-port gap recorded in the preceding section. Symbolic execution and
+additional dynamic subclass hooks remain recorded under Q-0597.
