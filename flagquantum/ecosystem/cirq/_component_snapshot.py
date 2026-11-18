@@ -13,6 +13,7 @@ from ._feedback_import import (
     _lower_feedback_gate,
     import_cirq_feedback,
 )
+from ._integer_arithmetic import _square_operations
 from ._modular_arithmetic import _mod_add_operations, _private_modular_keys
 from ._phase_arithmetic import _phase_add_operations
 from ._qubit_manager import InteropQubitManager
@@ -59,6 +60,7 @@ def _snapshot(
 ) -> tuple[CircuitIR, int]:
     from qualtran import Bloq
     from qualtran._infra.adjoint import Adjoint
+    from qualtran.bloqs.arithmetic.multiplication import Square
     from qualtran.bloqs.basic_gates import TwoBitCSwap
     from qualtran.bloqs.mod_arithmetic.mod_addition import ModAddK
     from qualtran.bloqs.rotations.phase_gradient import AddIntoPhaseGrad
@@ -160,14 +162,25 @@ def _snapshot(
     decomposition_manager.manage_qubits(incoming)
     modular_calls = 0
     phase_calls = 0
+    square_calls = 0
     modular_tag = object()
 
     def leaf_operation(op: Any) -> Any:
         """Use a source leaf's concrete operation only with unchanged ports."""
-        nonlocal modular_calls, phase_calls
+        nonlocal modular_calls, phase_calls, square_calls
         if op.tags:
             return NotImplemented
         arithmetic = getattr(op.gate, "bloq", op.gate)
+        square = arithmetic.subbloq if isinstance(arithmetic, Adjoint) else arithmetic
+        if type(square) is Square:
+            square_calls += 1
+            return _square_operations(
+                square,
+                tuple(op.qubits),
+                decomposition_manager,
+                f"square_{square_calls}",
+                modular_tag,
+            )
         if (
             isinstance(arithmetic, Adjoint)
             and type(arithmetic.subbloq) is AddIntoPhaseGrad
@@ -280,7 +293,7 @@ def _snapshot(
     # Preserve the source's expanded operation order. Conversion must not add
     # a second scheduling pass that interleaves atomic compute/erase recipes.
     primitive = cirq.Circuit(operations, strategy=cirq.InsertStrategy.NEW)
-    if modular_calls or phase_calls:
+    if modular_calls or phase_calls or square_calls:
         primitive = _private_modular_keys(cirq, primitive, modular_tag)
     # A fresh RIGHT output can use the caller's unused clean local slot by
     # renaming its entire lifetime. This is bookkeeping, not a physical SWAP.
