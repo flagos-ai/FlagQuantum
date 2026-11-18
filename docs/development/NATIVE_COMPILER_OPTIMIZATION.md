@@ -376,3 +376,73 @@ entangler counts, not compilation speed or identical Euler instructions. Its
 certified-lane requirement and expected counts were not changed. This local
 anchor is separate from the frozen SDKBench comparison cohort and does not
 promote a participant-neutral benchmark result.
+
+## Application checks on 2026-11-19
+
+Six development checks at `f838428114bb183a9f57ada84a844473a123a98d`
+compile the existing four-wire QFT, five-wire four-layer MaxCut, and six-wire
+five-layer Ising examples. Each is checked without topology and on a line,
+using the expert compiler default, recursive RZ/RX/CZ basis translation, and
+the private opt-in block transformation. The complete source and output
+operators are reconstructed by the independent Simulation-matrix embedding
+oracle used in the block tests. These examples were selected during development;
+they are not a preregistered held-out evaluation corpus.
+
+| Application | Topology | Baseline CZ | Output CZ |
+| --- | --- | ---: | ---: |
+| QFT | Absent | 18 | 18 |
+| QFT | Line | 42 | 42 |
+| MaxCut | Absent | 48 | 48 |
+| MaxCut | Line | 102 | 102 |
+| Ising | Absent | 60 | 60 |
+| Ising | Line | 150 | 150 |
+
+All six complete-operator checks pass at `1e-10` absolute tolerance up to one
+operator-wide unit-modulus phase. The largest observed entry residual is
+`4.822014874533835e-15`; the largest phase-modulus residual is
+`7.66053886991358e-15`. Line outputs satisfy adjacency and retain the existing
+identity-final-layout evidence. No CZ reduction is observed in any case.
+The current pass conservatively refuses annotated routing operations; that
+boundary remains in place until the approved many-to-many lineage stage can
+validate and retain their mapping evidence. Annotation refusal explains why
+those operations cannot participate, but does not prove how much a future
+stage will save. The unrestricted cases also show no reduction, so routing
+annotations do not explain every unchanged count.
+
+The new application regression path preserves full operators, target basis,
+CZ non-increase, routing metadata, and line adjacency without pinning these
+counts as optimal or preventing later improvements:
+
+```bash
+python -m pytest tests/integration/test_compiler_application_cz.py -q
+```
+
+This is local macOS CPU correctness evidence with one numerical thread per
+process. Compilation time and memory are not controlled comparison results.
+It does not qualify the automatic target-artifact stage or replace SDKBench's
+Linux resource, independent acceptance, revision-registration, and reporting
+gates. The old benchmark adapters and frozen outcomes remain unchanged.
+
+## Complete tier qualification status on 2026-11-19
+
+The complete smoke/unit selection at `f838428114bb183a9f57ada84a844473a123a98d`
+ran as four official disjoint shards with localhost process-group permission
+and one numerical thread per process. The raw outcome is **20,423 passed,
+3 failed**, with per-shard skips of 250, 242, 229, and 230; module-level
+collection skips can recur across shards. Two failures came from vocabulary
+census operations selecting another checkout through shared Git configuration.
+A correction confined to this worktree's Git configuration restored the intended
+checkout; the 173 vocabulary/census cases then passed. The evidence-origin test
+still reports 98 discrepancies against locally obtainable revisions and origin
+declarations. No origin declaration, historical artifact, or acceptance gate
+was changed to waive those discrepancies. The complete raw run remains failed.
+
+The complete local integration selection was attempted as four official shards,
+selecting 3,026 / 3,029 / 3,036 / 3,021 tests. Each shard reached its explicit
+1,200-second bound and was terminated with return code 124. They were progressing
+through the synthesis application catalog at approximately 18–19%; none reached
+a final pytest summary. This is incomplete qualification, not a passing runtime
+tier or evidence of a diagnosed compiler regression. The runner waited for each
+terminated child. Focused checks and the six application scenarios remain
+separate evidence. Required Linux CI and complete runtime qualification are
+still outstanding.
