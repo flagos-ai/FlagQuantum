@@ -38,6 +38,13 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/code_distance_acceptance.py`](qec/code_distance_acceptance.py)
+  accepts the specified Surface and Repetition distances using original noisy
+  circuit shots, strict DEM analysis and bundled Sparse Blossom decoding.
+  Run `python -m examples.qec.code_distance_acceptance surface 30 z` with the
+  Stim 1.16.0 extra and an embedded build. Expected JSON fields include
+  `"status": "passed"`, `"distance": 30` and `"shots": 64`.
+
 - [`synthesis_offline_deployment.py`](synthesis_offline_deployment.py) uses the
   synthesis, compiler, and deployment namespaces to export OpenQASM and build
   a deployment package for a fixed local target. Run
