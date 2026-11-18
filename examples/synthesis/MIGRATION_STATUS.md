@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **210/213**.
+Validated local Notebook workflows: **211/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -224,7 +224,7 @@ Validated local Notebook workflows: **210/213**.
 | `applications/chemistry/classiq_chemistry_application/classiq_chemistry_application` | notebook_workflow | [Native program](applications/chemistry/lih_chemistry/overview/main.py) | validated |
 | `applications/chemistry/molecular_energy_curve/molecular_energy_curve` | notebook_workflow | [Native program](applications/chemistry/molecular_energy_curve/overview/main.py) | validated |
 | `applications/chemistry/molecule_eigensolver/molecule_eigensolver` | notebook_workflow | [Native program](applications/chemistry/molecule_eigensolver/overview/main.py) | validated |
-| `applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial` | notebook_workflow | Pending | pending |
+| `applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial` | notebook_workflow | [Native program](applications/chemistry/projection_based_embedding/projected_based_embedding_tutorial/overview/main.py) | validated |
 | `applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/main.py) | validated |
 | `applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold` | notebook_workflow | [Native program](applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/overview/main.py) | validated |
 | `applications/chemistry/qpe_for_molecules/qpe_for_molecules` | notebook_workflow | [Native program](applications/chemistry/qpe_for_molecules/overview/main.py) | validated |
