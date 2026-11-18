@@ -37,13 +37,11 @@ def test_default_matches_approved_authorization() -> None:
             / "contracts/compiler-routing-default-v1-candidate.json"
         ).read_text()
     )
-    assert (
-        inspect.signature(compile).parameters["routing_strategy"].default
-        == (authorization["change"]["approved_default"])
+    assert inspect.signature(compile).parameters["routing_strategy"].default == (
+        authorization["change"]["approved_default"]
     )
-    assert (
-        inspect.signature(route_to_topology).parameters["strategy"].default
-        == (authorization["change"]["previous_default"])
+    assert inspect.signature(route_to_topology).parameters["strategy"].default == (
+        authorization["change"]["previous_default"]
     )
 
 

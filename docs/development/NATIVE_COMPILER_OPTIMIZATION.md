@@ -187,6 +187,12 @@ evidence, not SDKBench resource-isolated performance evidence.
   new comment's terminology and selecting this checkout's Git work tree.
 - Public API migration baseline and the target-aware compilation example passed.
   Ruff lint and formatting checks passed for the changed Python files.
+- Implementation PR #1219's next Linux quality and dependency-bounds jobs
+  stopped at Black 26.10.1 formatting in the new default-routing test, before
+  reaching later checks. The formatting was corrected; Black now accepts all
+  eight changed Python files, and the 45 default-routing and CZ-block tests pass.
+  This correction does not resolve the separate evidence-origin failure below
+  or establish that the dependency-version test suites have passed.
 - The earlier full smoke/unit run was **not green**: 20,344 passed, 15 failed,
   6 errors, and 785 skipped. The routing assertion was migrated to the explicit
   approved previous policy and subsequently passed in the compiler suite.
