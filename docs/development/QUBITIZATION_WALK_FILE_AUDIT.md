@@ -8,7 +8,7 @@ Google LLC 2023 Apache-2.0 attribution.
 |---|---|---|
 | Q-0656 `qubitization/__init__.py` | `d259f1657c3ca0e9d3ac08ed554667b9be79cd57` | Its sole relative export maps to native `QubitizationWalk` and ordinary append. |
 | Q-0658 `qubitization_walk_operator.py` | `117515efb1e42c58b0fab451c454fbd756585f74` | All members audited below. Source/admission boundaries remain open. |
-| Q-0659 `qubitization_walk_operator_test.py` | `a9dfd4398e3ec279e9a2a08a99d31c6ca22bc52b` | All original responsibilities mapped. Slow reference cases and native notebook migration remain separately tracked. |
+| Q-0659 `qubitization_walk_operator_test.py` | `a9dfd4398e3ec279e9a2a08a99d31c6ca22bc52b` | All original responsibilities mapped. Slow reference cases remain tracked. The complete native notebook is mapped in QUBITIZATION_WALK_NOTEBOOK_AUDIT.md. |
 
 ## Ownership and complete source mapping
 
@@ -72,7 +72,7 @@ Existing larger fixtures retain their separate physical/model tables.
 | adjoint tensor comparison | The original slow three-site tensor comparison remains unverified after the bounded suite timeout. Native complete small operators and exact inverse are verified independently. |
 | controlled/adjoint T complexity | Original assertion executes, with native walk control/resource cases already accepted. |
 | four diagram scenarios | Original diagrams execute unchanged. Native metadata and shared reflection labels are checked independently. |
-| notebook | Frozen blob a31dafeb427e4d7e13bfb0eb9bc903b38a15a316 is restored. The unchanged original notebook test passes in an isolated kernel. Native migration remains Q-0657. |
+| notebook | Frozen blob a31dafeb427e4d7e13bfb0eb9bc903b38a15a316 is restored. The unchanged original notebook test passes in an isolated kernel. The complete native Q-0657 migration is verified in QUBITIZATION_WALK_NOTEBOOK_AUDIT.md. |
 
 A controlled LCU supplied directly to the source walk omits its control from the
 walk signature and fails. The native existing constructor rejects that case.
