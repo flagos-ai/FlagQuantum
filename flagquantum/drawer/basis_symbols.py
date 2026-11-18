@@ -30,15 +30,21 @@ def pauli_basis_wire_symbol(
     register: Register | None,
     index: tuple[int, ...] | None,
     *,
-    gate: Literal["x", "z", "cz"],
+    gate: Literal["x", "y", "z", "cy", "cz"],
 ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
     """Preserve source Pauli titles, labels and CZ name validation."""
     if register is None:
         return "Text", {"text": "X" if gate == "x" else "", "fontsize": 10}
     if gate == "x":
         return "ModPlus", {}
-    if gate == "z":
-        return "TextBox", {"text": "Z"}
+    if gate in {"y", "z"}:
+        return "TextBox", {"text": gate.upper()}
+    if gate == "cy":
+        if register.name == "ctrl":
+            return "Circle", {"filled": True}
+        if register.name == "target":
+            return "TextBox", {"text": "Y"}
+        raise ValueError(f"Unknown register {register}.")
     if register.name in {"q1", "q2"}:
         return "Circle", {"filled": True}
     raise ValueError(f"Unknown wire symbol register name: {register.name}")

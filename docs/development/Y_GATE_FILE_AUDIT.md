@@ -69,3 +69,38 @@ The native render produces two SVG signatures and two PNG scores.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_y_gate.ipynb
 ```
+
+## Actual atomic source capture and complete presentation
+
+The actual `_y_gate` and `_cy_gate` examples and DocSpecs now terminate at the
+existing named register importer. Both independently captured directions restore
+through native JSON, retain exact operands under reordered physical binding,
+and emit one Y or CY. Full source matrices, entangled-spectator states and
+adjoint recovery match through `circuit.append(op)`. The leaves have no work
+or measurements. Their independent source QEC declarations remain one Clifford,
+with logical peaks one and two, respectively.
+
+The internal feedback importer now recognizes canonical `cirq.CY`, whose Cirq
+class differs from a generic ControlledGate. Previously it expanded this atom
+into SX, CZ and SX-adjoint. Exact CY recognition preserves the declared atomic
+stream. Separate regression cases compare every unnormalized branch of
+classically conditioned CY, in both directions, to Cirq's own gate matrices and
+predicate resolution. Static public conversion continues to enforce its
+existing admission contract.
+
+Drawer reuses the shared Pauli callback in `basis_symbols.py`. Y and CY complete
+score geometry matches source, including empty root, filled control circle and
+Y target. Y accepts an arbitrary named register, as upstream. CY rejects an
+unknown register, retaining the native Register representation in its message.
+
+The source inverse-mapping failure remains directly reproduced. Canonical
+`cirq.Y.controlled()` maps to CirqGateAsBloq, whereas explicit
+`cirq.ControlledGate(cirq.Y)` maps to CYGate. Q-0271 and Q-0272 remain open for
+this original discrepancy and the protected static CY circuit conversion gap.
+The generic concrete source wrapper and display gaps are now covered.
+
+The batch passed 149 concentrated cases without warnings or skips, including
+existing nested-control branch/work evidence and optional PennyLane boundaries.
+Strict typing of the four changed Python files, formatting, lint, Compiler and
+Ecosystem scopes, architecture, multilevel IR and protected API checks passed.
+Source blobs remain unchanged. Retained logs use `ftqc-reference-env/g2-y-atom-*.log`.
