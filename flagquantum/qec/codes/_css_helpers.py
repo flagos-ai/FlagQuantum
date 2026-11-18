@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import itertools
+from collections import deque
 from collections.abc import Sequence
 from numbers import Integral
 
-from ..gf2 import in_span, reduce_rows, reduce_vector
+from ..gf2 import in_span, nullspace, reduce_rows, reduce_vector
 from ..pauli import Pauli
 from ._compat import _retain_module
 
@@ -100,14 +101,18 @@ def _minimum_logical_weight(
     An operator of the family commutes with every check of the other family, which
     is ``commuting_rows``, and is not a combination of the checks of its own
     family, which is ``stabilizer_rows``. A bounded syndrome trellis gives the
-    exact minimum for eligible self-dual codes. Otherwise qubit subsets are
-    tried in increasing weight. Both searches stop at ``bound``.
+    exact minimum for eligible self-dual codes; incidence matrices encoding two
+    logical qubits use a shortest logical-cycle search. Otherwise qubit subsets
+    are tried in increasing weight. All searches stop at ``bound``.
 
     The stabilizer span is reduced to its pivots once, because every candidate is
     tested against the same span.
     """
 
     pivots = reduce_rows(list(stabilizer_rows))
+    cycle_graph = _logical_cycle_graph(width, commuting_rows, stabilizer_rows)
+    if cycle_graph is not None:
+        return _minimum_logical_cycle_weight(cycle_graph, bound)
     # For a self-orthogonal odd-width code encoding one qubit, the stabilizer
     # span is exactly the even-weight part of its kernel. An odd kernel word is
     # therefore precisely a logical operator, independent of its representative.
@@ -150,6 +155,80 @@ def _minimum_logical_weight(
             if reduce_vector(vector, pivots):
                 return weight
     return None
+
+
+def _logical_cycle_graph(
+    width: int, commuting_rows: tuple[int, ...], stabilizer_rows: tuple[int, ...]
+) -> tuple[tuple[tuple[int, int], ...], ...] | None:
+    """Label incidence edges by a complete two-bit logical signature."""
+    endpoints = tuple(
+        tuple(index for index, row in enumerate(commuting_rows) if row >> wire & 1)
+        for wire in range(width)
+    )
+    if any(len(pair) != 2 for pair in endpoints):
+        return None
+    commuting_pivots = reduce_rows(commuting_rows)
+    if width - len(commuting_pivots) - len(reduce_rows(stabilizer_rows)) != 2:
+        return None
+    if any(
+        _odd_overlap(left, right)
+        for left in commuting_rows
+        for right in stabilizer_rows
+    ):
+        return None
+    # ker(stabilizers) / span(commuting checks) is the dual logical space.
+    # Its full basis detects every cycle outside the stabilizer span, regardless
+    # of row order, lattice coordinates or the caller's logical representatives.
+    pivots = list(commuting_pivots)
+    duals: list[int] = []
+    for vector in nullspace(stabilizer_rows, width):
+        reduced = reduce_vector(vector, pivots)
+        if reduced:
+            duals.append(vector)
+            pivots.append(reduced)
+    assert len(duals) == 2
+    adjacency: list[list[tuple[int, int]]] = [[] for _ in commuting_rows]
+    for wire, (left, right) in enumerate(endpoints):
+        signature = sum(
+            ((vector >> wire) & 1) << bit for bit, vector in enumerate(duals)
+        )
+        adjacency[left].append((right, signature))
+        adjacency[right].append((left, signature))
+    return tuple(tuple(neighbors) for neighbors in adjacency)
+
+
+def _minimum_logical_cycle_weight(
+    graph: tuple[tuple[tuple[int, int], ...], ...], bound: int
+) -> int | None:
+    """Find the shortest closed walk with nonzero logical signature, within bound.
+
+    An even subgraph is a union of cycles. If its logical signature is nonzero,
+    one component cycle is nontrivial and no heavier than that subgraph. Thus
+    the shortest such walk gives the exact logical weight. Repeated edges cancel
+    in pairs and cannot make a shorter logical support than this minimum.
+    """
+    best = bound + 1
+    for start in range(len(graph)):
+        # Four signature sheets per vertex; parallel edges remain distinct.
+        distances = [-1] * (4 * len(graph))
+        distances[4 * start] = 0
+        pending = deque([4 * start])
+        while pending:
+            state = pending.popleft()
+            depth = distances[state] + 1
+            if depth >= best:
+                continue
+            vertex, signature = divmod(state, 4)
+            for neighbor, label in graph[vertex]:
+                following = 4 * neighbor + (signature ^ label)
+                if neighbor == start and signature ^ label:
+                    best = depth
+                    pending.clear()
+                    break
+                if distances[following] < 0:
+                    distances[following] = depth
+                    pending.append(following)
+    return best if best <= bound else None
 
 
 def _minimum_odd_kernel_weight(

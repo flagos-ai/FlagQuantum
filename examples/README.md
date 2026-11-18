@@ -38,6 +38,14 @@ Examples driven by the root-level `fq` alias use:
 
 These examples do not use that alias:
 
+- [`qec/toric_distance_acceptance.py`](qec/toric_distance_acceptance.py)
+  checks both logical observables of a periodic square Toric code using original
+  noisy shots, a strict undecomposed DEM, Stim 1.16.0 reference mechanisms and
+  BP/OSD decoding. With an embedded build and the Stim extra, run
+  `python -m examples.qec.toric_distance_acceptance 15 z`.
+  Expected JSON includes `"status": "passed"`, `"observables": 2` and
+  `"syndrome_reproduced": 64`; add `--noise-profile correlated` to include Y faults.
+
 - [`qec/colour_distance_acceptance.py`](qec/colour_distance_acceptance.py)
   checks a triangular 6.6.6 colour patch using original noisy shots, an
   undecomposed strict DEM, Stim 1.16.0 reference mechanisms and bundled BP/OSD
