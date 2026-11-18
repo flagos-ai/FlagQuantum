@@ -7,11 +7,14 @@
 
 from typing import cast
 
+from ....core.value_parameters import is_symbolic_value
+from ..._component_trace.qec_gate_cost import QECGateCost
 from ..._component_trace.resource_model import ComponentCost, GateCost
 from ..._component_trace.symbolic_math import SymbolicInt, smax
 from ..control.control_predicate_resource_model import control_predicate_cost
 from ..resources.symbolic_resource_model import SymbolicResourceFormula
 from .less_equal import less_equal_requirements, source_equal_width_less_equal_cost
+from .less_than import source_less_than_constant_cost
 
 
 def source_less_equal_cost(
@@ -89,4 +92,23 @@ def source_less_equal_resource_formula(
         20 * left_width + 10 + cleanup.gates.clifford * ands,
         ands,
         cast(SymbolicInt, smax(7, left_width + right_width + 1)),
+    )
+
+
+def source_less_than_constant_qec_cost(
+    width: SymbolicInt, threshold: SymbolicInt
+) -> QECGateCost:
+    """Query the source comparator categories for concrete or symbolic fields.
+
+    Symbolic thresholds retain the original worst-case set-bit count of width.
+    Concrete operands reuse the existing prefix-comparator model. This category
+    query carries no logical-workspace estimate.
+    """
+    if not is_symbolic_value(width, threshold):
+        assert isinstance(width, int) and isinstance(threshold, int)
+        gates = source_less_than_constant_cost(width, threshold).gates
+        return QECGateCost().plus(gates, 1)
+    set_bits = width if is_symbolic_value(threshold) else int(threshold).bit_count()
+    return QECGateCost(
+        and_bloq=width, measurement=width, clifford=3 * (width + set_bits) + 2
     )
