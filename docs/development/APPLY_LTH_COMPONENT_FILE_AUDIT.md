@@ -93,3 +93,28 @@ measurement. The independent indexed model checks source QEC categories and peak
 width in both directions. The model prices the controlled T and H as rotations.
 Mixed empty axes, repeated multi-bit control and source object serialization
 retain the documented boundaries above.
+
+## Multi-register children and private clean storage
+
+A decomposable source child now exercises a two-bit word together with a
+two-element QBit array. Its controlled body allocates a private clean bit,
+computes a word predicate, applies T or T adjoint, uncomputes and frees the bit,
+and XORs a separate word bit into the second array element. The source itself
+owns that allocation and both original child directions. Existing register
+capture preserves source named-array packing and converts it into owned IR.
+
+The two-child bank is tested with no outer control and one positive control.
+Both actual source directions pass every operator column and every measurement
+history, exact complex phases, complete clean work and JSON round trips. The
+same SelectBlockEncoding consumer binds the two target ports in source order.
+Independent child and parent models both match the source QEC and peak counts.
+
+| Two-child word/flags bank | Captured primitives, either direction | Independent source model |
+| --- | --- | --- |
+| No outer control | 6 CCX, 2 controlled phases, no measurements, 1 private bit | 6 Toffoli, 2 Cliffords, 2 rotations, 6 peak wires |
+| Positive outer control | 6 CCX, 2 controlled phases, 4 T-family, 1 measurement, 2 reusable work bits | 6 Toffoli, 1 And, 2 Cliffords, 2 rotations, 1 measurement, 8 peak wires |
+
+CCX remains a captured primitive. Its eventual physical synthesis cost is
+separate from the independent source Toffoli category and from emitted T-family
+instructions. Source constructor and callback objects are used only at the
+Ecosystem boundary. No foreign object enters the consumer's owned layouts or IR.
