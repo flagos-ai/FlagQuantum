@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
 import torch
 
+import flagquantum as fq
 from flagquantum.compiler.artifacts.artifact_compilation import (
     compile_circuit_artifact_for_target,
 )
@@ -146,6 +148,99 @@ def _state(program: CircuitIR) -> torch.Tensor:
         device=torch.device("cpu"),
         dtype=torch.complex128,
     )
+
+
+def test_allocated_artifact_preserves_permuted_logical_sample_order() -> None:
+    source = ProgramArtifactV2.from_circuit_ir(
+        CircuitIR(
+            2,
+            (Instruction("ry", (0,), params={"theta": math.pi}),),
+            dtype="complex128",
+            measurements=(MeasurementNode("samples", (0, 1)),),
+        ),
+        producer="permuted-results-source",
+    )
+    snapshot = _snapshot()
+    result = compile_circuit_artifact_for_target(
+        source,
+        backend="qasm",
+        profile="openqasm-3.0",
+        snapshot=snapshot,
+        producer="flagquantum.compiler",
+        evaluated_at=_NOW,
+        coupling_map=DirectedCouplingMap(3, ((0, 1), (1, 2))),
+        initial_layout=(2, 0),
+    )
+    artifact = read_program_artifact_json(result.executable_artifact.to_json())
+    assert isinstance(artifact, ProgramArtifactV3)
+    assert artifact.result_schema["physical_result_slots"] == (2, 0)
+    bundle = build_compilation_evidence_bundle(
+        result, snapshot=snapshot, producer="flagquantum.compiler"
+    )
+    evidence = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert isinstance(evidence, CompilationEvidenceBundleV3)
+    assert evidence.physical_plan.logical_result_physical_slots == (2, 0)
+    prepared = prepare_artifact_deployment(
+        artifact,
+        snapshot=snapshot,
+        source=source,
+        compilation_evidence=evidence,
+        provider=snapshot.target_identity.provider,
+        target_id=snapshot.target_identity.target_id,
+        shots=32,
+        evaluated_at=_NOW,
+    )
+    assert prepared.capability_match.executable
+    assert prepared.physical_result_slots == (2, 0)
+    assert prepared.logical_result_width == 2
+
+    imported = fq.from_openqasm(prepared.program)
+    assert imported.version == 3.0
+    assert imported.n_qubits == 3
+    assert imported.measurement_qubits == (2, 0)
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    circuit = imported.to_circuit()
+    samples = fq.run(
+        circuit,
+        options=options,
+        outputs=fq.samples(qubits=imported.measurement_qubits),
+        shots=prepared.shots,
+    ).samples
+    assert samples is not None
+    assert validate_executable_result_samples(artifact, samples) is samples
+    expected_samples = torch.tensor([1, 0], dtype=samples.dtype).expand(1, 32, 2)
+    torch.testing.assert_close(samples, expected_samples, atol=0, rtol=0)
+
+    state = fq.run(circuit, options=options).statevector()
+    expected_state = torch.zeros(8, dtype=torch.complex128)
+    expected_state[1] = 1  # Physical |001> leaves the workspace slot 1 in |0>.
+    torch.testing.assert_close(state.reshape(-1), expected_state, atol=1e-12, rtol=0)
+
+    wrong_artifact = replace(
+        artifact,
+        result_schema=dict(artifact.result_schema) | {"physical_result_slots": (0, 2)},
+        artifact_identity="",
+    )
+    # Keep output identity consistent to exercise the projection guard itself.
+    wrong_evidence = replace(
+        evidence,
+        output=dict(evidence.output)
+        | {"executable_artifact_identity": wrong_artifact.artifact_identity},
+        bundle_identity="",
+    )
+    with pytest.raises(ExecutionError, match="result projection does not match"):
+        prepare_artifact_deployment(
+            wrong_artifact,
+            snapshot=snapshot,
+            source=source,
+            compilation_evidence=wrong_evidence,
+            provider=snapshot.target_identity.provider,
+            target_id=snapshot.target_identity.target_id,
+            shots=32,
+            evaluated_at=_NOW,
+        )
 
 
 def test_idle_slot_routes_interaction_and_restores_logical_result_slots() -> None:
