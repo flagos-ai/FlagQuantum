@@ -7,6 +7,9 @@
 
 from typing import Literal, TypeAlias, cast
 
+from ....core.ir.program.register_types import quantum_bit_type, unsigned_register_type
+from ....core.ir.program.registers import Register
+from ....core.ir.program.signatures import Signature
 from ..._component_trace.arithmetic_call import ArithmeticCall
 from ..._component_trace.gate_budget import GateCategories
 from ..._component_trace.qec_gate_cost import QECGateCost, query_qec_gate_cost
@@ -48,14 +51,41 @@ def modular_arithmetic_registers(
             raise ValueError(
                 "Modular declaration widths require integer or symbolic expressions"
             )
+    signature = modular_arithmetic_signature(kind, width)
+    return tuple(
+        (
+            register.name,
+            register.shape_symbolic[0] if register.shape_symbolic else register.bitsize,
+        )
+        for register in signature
+    )
+
+
+def modular_arithmetic_signature(
+    kind: ModularDeclaration, width: SymbolicInt
+) -> Signature:
+    """Declare source-shaped ports before physical or resource admission.
+
+    The control vector remains an array of bits. Arithmetic words retain their
+    unsigned dtype, including zero or symbolic widths. This metadata query
+    preserves diagnostic widths that executable binding can reject later.
+    """
+    bit = quantum_bit_type()
+    word = unsigned_register_type(width)
     if kind == "multi_controlled_x":
-        return (("ctrl", width), ("target", 1))
+        return Signature(
+            (Register("ctrl", bit, shape=(width,)), Register("target", bit))
+        )
     if kind == "controlled_subtraction":
-        return (("ctrl", 1), ("x", width), ("y", width))
+        return Signature(
+            (Register("ctrl", bit), Register("x", word), Register("y", word))
+        )
     if kind == "less_than":
-        return (("x", width), ("y", width), ("out", 1))
+        return Signature(
+            (Register("x", word), Register("y", word), Register("out", bit))
+        )
     if kind == "controlled_half":
-        return (("ctrl", 1), ("x", width))
+        return Signature((Register("ctrl", bit), Register("x", word)))
     raise ValueError("Unknown modular arithmetic declaration")
 
 
