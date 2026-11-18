@@ -1123,3 +1123,14 @@ path = "artifacts/development/ascend_910c_20261030"
 value = "3aebd0c888789f35bb281435ddd44d5f1ff8cc55"
 origin = "external_dependency"
 repository = "FlagQuantum/Torch-FL"
+
+# Measured on 2026-11-18: both repository commit endpoints return this producer,
+# but none of the 55 current branch/tag tips reaches it. The QEC acceptance
+# artifact entered main through squash-merged #1212. Numerical evidence is
+# unchanged; see docs/development/QEC_EVIDENCE_REVISION_ORIGIN_20261118.md.
+[[artifact]]
+path = "artifacts/development/qec_colour_distance_acceptance_20261118.json"
+
+[[artifact.revision]]
+value = "dc90ce6622b2e6b014a9ae4bc3bf966df13bf1fa"
+origin = "unreferenced_object"
