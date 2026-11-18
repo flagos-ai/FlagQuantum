@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import platform
 import re
 import struct
 import subprocess
@@ -39,8 +40,13 @@ class _BuildPython(build_py):
 def _embedded_stim_extensions() -> list[Extension]:
     if not _BUILD_EMBEDDED_STIM:
         return []
-    if sys.platform != "darwin" or os.uname().machine != "arm64":
-        raise RuntimeError("The embedded Stim build is admitted on macOS arm64 only")
+    if (sys.platform, platform.machine()) not in (
+        ("darwin", "arm64"),
+        ("linux", "x86_64"),
+    ):
+        raise RuntimeError(
+            "The embedded Stim build is admitted on macOS arm64 and Linux x86_64 only"
+        )
     lock = json.loads(
         (_EMBEDDED_STIM_CSRCDIR / "stim-sampler-source-lock.json").read_text()
     )

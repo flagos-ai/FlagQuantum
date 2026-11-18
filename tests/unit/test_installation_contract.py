@@ -1,5 +1,6 @@
 import contextlib
 import os
+import platform
 import sys
 from pathlib import Path
 from unittest import mock
@@ -272,6 +273,38 @@ def _build_ext_command(
         command.inplace = inplace
         command.finalize_options()
     return command
+
+
+@pytest.mark.parametrize(
+    ("system", "machine", "opt_in", "embedded"),
+    [
+        ("linux", "x86_64", False, False),
+        ("linux", "x86_64", True, True),
+        ("darwin", "arm64", True, True),
+        ("linux", "aarch64", True, None),
+        ("win32", "AMD64", True, None),
+    ],
+)
+def test_embedded_stim_build_is_platform_gated_and_opt_in(
+    monkeypatch: pytest.MonkeyPatch,
+    system: str,
+    machine: str,
+    opt_in: bool,
+    embedded: bool | None,
+) -> None:
+    monkeypatch.chdir(ROOT)
+    monkeypatch.setattr(sys, "platform", system)
+    monkeypatch.setattr(platform, "machine", lambda: machine)
+    monkeypatch.setenv("FQ_BUILD_EMBEDDED_STIM", str(int(opt_in)))
+    if os.name == "nt":
+        monkeypatch.setenv("CL", os.environ.get("CL", ""))
+    if embedded is None:
+        with pytest.raises(RuntimeError, match="macOS arm64 and Linux x86_64 only"):
+            _build_ext_command(False)
+        return
+    command = _build_ext_command(False)
+    native = "flagquantum.simulation.stabilizer._embedded_stim"
+    assert any(extension.name == native for extension in command.extensions) == embedded
 
 
 def _torch_library_rpath() -> str:

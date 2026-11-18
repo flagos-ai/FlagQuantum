@@ -1692,10 +1692,28 @@ Recorded performance predates PR integration and is not release certification.
 
 ## Embedded external Stim text experiments
 
-The opt-in macOS arm64 embedded build can run existing external Stim text
-reports without the Stim Python package. Source and expanded-instruction
-limits, strict DEM conversion, deterministic reference parities, and the
-existing detector and observable requirements apply. The report samples the
+Opt-in macOS arm64 and Linux x86_64 embedded builds can run existing external
+Stim text reports without the Stim Python package. Source and
+expanded-instruction limits, strict DEM conversion, deterministic reference
+parities, and the existing detector and observable requirements apply. The report samples the
 original noisy circuit and decodes its detector records using the selected
 decoder. The SDK remains required for the memory-circuit text exporter and
 for external-text reports in marker-free builds.
+
+Linux x86_64 verification used a local `cp310-abi3-linux_x86_64` wheel built
+with GCC 12.2 and Torch 2.10.0 CPU, then installed under CPython 3.12 and
+Torch 2.13.0 CPU. With neither Stim nor PyMatching installed, both built-in
+matching decoders returned `stim_circuit 35 0` on the same original noisy
+text, with native strict DEM analysis and three sampling batches per report.
+The first local wheel's embedded extension referenced `GLIBC_2.29`.
+A separate offline build using the PyPA `manylinux_2_28` image passed
+`auditwheel repair` with the repository's existing PyTorch library exclusions,
+and the repaired wheel carries the `cp310-abi3-manylinux_2_28_x86_64` tag.
+Its embedded Stim extension tops out at `GLIBC_2.14` and does not link a
+Stim Python extension, PyMatching, or PyTorch. A clean glibc 2.28 environment
+with CPython 3.12 and Torch 2.10.0 CPU ran both no-SDK reports and passed 29
+installed tests, with 18 skips. The identical repaired wheel also passed
+dependency verification and the same installed tests in a clean glibc 2.28
+environment with CPython 3.10.22 and Torch 2.14.1 CPU. Both reports again
+returned `stim_circuit 35 0`. This evidence is for the opt-in wheel built
+from commit `1a4620c6`; the default release workflow remains unchanged.

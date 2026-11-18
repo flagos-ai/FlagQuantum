@@ -7,7 +7,7 @@ CPython bridge uses upstream reference sampling, frame sampling, RNG
 construction and the b8 writer. The Stim Python extension is not linked
 or imported by the embedded measurement route.
 
-The first local embedded build profile targets macOS arm64 and is selected
+Local embedded builds target macOS arm64 and Linux x86_64 and are selected
 with `FQ_BUILD_EMBEDDED_STIM=1`. The generated wheel marker selects the
 private extension. An embedded profile with a missing or broken extension
 fails at preparation. The standard build retains its existing optional
