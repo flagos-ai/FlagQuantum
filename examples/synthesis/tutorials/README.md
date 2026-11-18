@@ -69,6 +69,7 @@ Native FlagQuantum programs currently available:
 - [overview](basics/quantum_programming/qmod_tutorial_part1/overview/README.md)
 - [overview](basics/quantum_programming/qmod_tutorial_part2/overview/README.md)
 - [classiq_overview_tutorial](basics/quantum_programming/classiq_overview_tutorial/README.md)
+- [overview](basics/quantum_programming/execution_tutorial_part2/overview/README.md)
 - [synthesis_tutorial](basics/quantum_programming/synthesis_tutorial/README.md)
 - [overview](technology_demonstrations/QPE/qpe_for_grover_operator/overview/README.md)
 - [overview](technology_demonstrations/QPE/qpe_for_unitary_matrix/overview/README.md)
