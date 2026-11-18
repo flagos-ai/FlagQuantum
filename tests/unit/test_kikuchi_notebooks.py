@@ -1,4 +1,4 @@
-"""Execute complete frozen and native Kikuchi list/matrix notebooks."""
+"""Execute complete frozen and native Kikuchi list/matrix/block notebooks."""
 
 import builtins
 import json
@@ -17,27 +17,34 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 @pytest.mark.parametrize(
-    ("suffix", "blob", "original_cells", "names", "graphs"),
+    ("filename", "blob", "original_cells", "names", "graphs"),
     (
         (
-            "list",
+            "kikuchi_adjacency_list.ipynb",
             "7ed33e384065876e374a0eb63c88676f09c01b0e",
             10,
             ("kikuchi_nonzero_index",),
             2,
         ),
         (
-            "matrix",
+            "kikuchi_adjacency_matrix.ipynb",
             "599e88a21a42bfe9ca32ce7bc08277f7b5aa44f1",
             11,
             ("kikuchi_matrix_entry_symb", "kikuchi_matrix_entry"),
+            3,
+        ),
+        (
+            "kikuchi_block_encoding.ipynb",
+            "78031452acc39de315339e2962f85067473c49a9",
+            11,
+            ("kikuchi_matrix", "kikuchi_matrix_symb"),
             3,
         ),
     ),
 )
 def test_complete_original_and_native_cells_signatures_graphs_and_models(
     monkeypatch: pytest.MonkeyPatch,
-    suffix: str,
+    filename: str,
     blob: str,
     original_cells: int,
     names: tuple[str, ...],
@@ -46,7 +53,6 @@ def test_complete_original_and_native_cells_signatures_graphs_and_models(
     import IPython.display
 
     root = Path(__file__).resolve().parents[2]
-    filename = f"kikuchi_adjacency_{suffix}.ipynb"
     raw = (
         root.parent
         / "ftqc-reference-env/qualtran/bloqs/optimization/k_xor_sat"
@@ -126,4 +132,5 @@ def test_complete_original_and_native_cells_signatures_graphs_and_models(
             child = child.subbloq
         normalized[type(child).__name__ + ("†" if inverse else "")] = count
     assert migrated[graph_name + "_sigma"] == normalized
-    assert migrated["model_categories"] == migrated[names[-1]].resource_gates()
+    model_owner = names[0] if filename == "kikuchi_block_encoding.ipynb" else names[-1]
+    assert migrated["model_categories"] == migrated[model_owner].resource_gates()
