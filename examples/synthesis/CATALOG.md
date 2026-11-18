@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **189/213**.
+Validated local Notebook workflows: **190/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -410,6 +410,7 @@ Validated local Notebook workflows:
 - [entanglement](tutorials/basics/entanglement/README.md)
 - [overview](tutorials/basics/exponentiation/example_exponentiation/overview/README.md)
 - [overview](tutorials/basics/grover_graph_coloring/overview/README.md)
+- [overview](tutorials/basics/mcx/overview/README.md)
 - [overview](tutorials/basics/optimization/learning_optimization/overview/README.md)
 - [prepare_state](tutorials/basics/prepare_state/README.md)
 - [overview](tutorials/basics/qmci_pi_estimation/overview/README.md)
