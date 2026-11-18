@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 SymbolicInt: TypeAlias = "int | Expr"
 SymbolicReal: TypeAlias = "int | float | Expr"
+SymbolicComplex: TypeAlias = "int | float | complex | Expr"
 
 
 def prod(values: Iterable[SymbolicInt]) -> SymbolicInt:
@@ -108,3 +109,91 @@ def bit_length(value: SymbolicReal) -> SymbolicInt:
     if concrete and 0 <= value < 1:
         return 0
     return ceil(log2(floor(value) + 1))
+
+
+def pi(*values: object) -> SymbolicReal:
+    """Select symbolic pi when any declared parameter is symbolic."""
+    if is_symbolic_value(*values):
+        from sympy import pi as symbolic_pi
+
+        return cast("Expr", symbolic_pi)
+    import numpy as np
+
+    return np.pi
+
+
+def ln(value: SymbolicReal) -> SymbolicReal:
+    """Evaluate the natural logarithm with the source scalar dispatch."""
+    if not is_symbolic_value(value):
+        return math.log(value)
+    from sympy.codegen.cfunctions import log
+
+    return cast("Expr", log(value))
+
+
+def sexp(value: SymbolicComplex) -> SymbolicComplex:
+    """Preserve NumPy exponential dispatch and symbolic exact expressions."""
+    if is_symbolic_value(value):
+        from sympy import exp
+
+        return cast("Expr", exp(value))
+    import numpy as np
+
+    return cast(SymbolicComplex, np.exp(value))
+
+
+def sarg(value: SymbolicComplex) -> SymbolicReal:
+    """Return the principal argument with the source concrete float conversion."""
+    if is_symbolic_value(value):
+        from sympy import arg
+
+        return cast("Expr", arg(value))
+    import numpy as np
+
+    return float(np.angle(value))
+
+
+def sabs(value: SymbolicReal) -> SymbolicReal:
+    """Apply the value's absolute-value protocol without conversion."""
+    return cast(SymbolicReal, abs(value))
+
+
+def ssqrt(value: SymbolicReal) -> SymbolicReal:
+    """Preserve exact symbolic square roots and concrete math domain errors."""
+    if is_symbolic_value(value):
+        from sympy import sqrt
+
+        return cast("Expr", sqrt(value))
+    return math.sqrt(value)
+
+
+def acos(value: SymbolicReal) -> SymbolicReal:
+    """Preserve NumPy arccos dtype, warning and symbolic dispatch."""
+    if not is_symbolic_value(value):
+        import numpy as np
+
+        return cast(SymbolicReal, np.arccos(value))
+    from sympy import acos as symbolic_acos
+
+    return cast("Expr", symbolic_acos(value))
+
+
+def sconj(value: SymbolicComplex) -> SymbolicComplex:
+    """Keep the source symbolic or NumPy conjugation protocol."""
+    if is_symbolic_value(value):
+        from sympy import conjugate
+
+        return cast("Expr", conjugate(value))
+    import numpy as np
+
+    return cast(SymbolicComplex, np.conjugate(value))
+
+
+def is_zero(value: SymbolicInt) -> bool | None:
+    """Return the source zero verdict, retaining an undecidable None result."""
+    if is_symbolic_value(value):
+        try:
+            return cast("bool | None", cast("Expr", value).equals(0))
+        except ValueError:
+            return False
+    return value == 0
