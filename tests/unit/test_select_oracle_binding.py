@@ -1,6 +1,7 @@
 """Replace grouped external SELECT objects through the packed native consumer."""
 
 from collections import Counter
+from dataclasses import dataclass
 from hashlib import sha1
 from importlib.metadata import version
 from pathlib import Path
@@ -13,11 +14,39 @@ from sympy import Symbol
 
 from flagquantum import Circuit
 from flagquantum.algorithms.primitives.black_box_select import PackedSelectDeclaration
+from flagquantum.algorithms.primitives.select_oracle import SelectOracle
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.register_types import (
+    opaque_register_type,
+    quantum_bit_type,
+)
+from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.value_math import SymbolicInt
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
 from flagquantum.simulation.unitary import get_unitary
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+
+@dataclass(frozen=True)
+class GroupedDeclaration(SelectOracle):
+    address_width: SymbolicInt
+    target_width: SymbolicInt
+
+    @property
+    def control_registers(self) -> tuple[Register, ...]:
+        return ()
+
+    @property
+    def selection_registers(self) -> tuple[Register, ...]:
+        return (
+            Register("row", quantum_bit_type()),
+            Register("column", opaque_register_type(self.address_width)),
+        )
+
+    @property
+    def target_registers(self) -> tuple[Register, ...]:
+        return (Register("data", opaque_register_type(self.target_width)),)
 
 
 @pytest.fixture(scope="module")
@@ -93,7 +122,9 @@ def test_symbol_resolved_grouped_oracle_replaces_black_box_select(
     address_width = Symbol("n", integer=True, positive=True)
     target_width = Symbol("m", integer=True, positive=True)
     declaration = external_select(address_width, target_width)
-    packed_declaration = PackedSelectDeclaration(declaration)
+    packed_declaration = PackedSelectDeclaration(
+        GroupedDeclaration(address_width, target_width)
+    )
     assert tuple(reg.name for reg in packed_declaration.signature) == (
         "selection",
         "system",
@@ -102,7 +133,7 @@ def test_symbol_resolved_grouped_oracle_replaces_black_box_select(
         import_register_emitter(declaration)
 
     source = evolve(declaration, address_width=widths[1], target_width=widths[0])
-    packed = PackedSelectDeclaration(source)
+    packed = PackedSelectDeclaration(GroupedDeclaration(widths[1], widths[0]))
     source_emitter = import_register_emitter(source)
     native = packed.bind(source_emitter)
     assert source_emitter.requirements() == (0, 0)
@@ -175,7 +206,14 @@ def test_control_metadata_is_preserved_but_locked_packing_defect_is_explicit(
     )
 
     source = source_module[0].BlackBoxSelect(SelectHubbard(2, 2, control_val=1))
-    declaration = PackedSelectDeclaration(source.select)
+
+    @dataclass(frozen=True)
+    class ControlledDeclaration(GroupedDeclaration):
+        @property
+        def control_registers(self) -> tuple[Register, ...]:
+            return (Register("control", quantum_bit_type()),)
+
+    declaration = PackedSelectDeclaration(ControlledDeclaration(1, 1))
     assert tuple(reg.name for reg in declaration.control_registers) == ("control",)
     assert tuple(reg.name for reg in source.signature) == ("selection", "system")
     with pytest.raises(ValueError, match="uncontrolled child"):
@@ -210,3 +248,100 @@ def test_original_select_oracle_abstract_protocol_and_symbolic_metadata(
         "column",
         "data",
     )
+
+
+def test_native_array_declaration_binds_non_self_adjoint_external_child(
+    source_module: tuple[Any, Any],
+) -> None:
+    import cirq
+    import numpy as np
+    from qualtran import QAny
+    from qualtran import Register as SourceRegister
+    from qualtran.bloqs.multiplexers.select_base import SelectOracle as SourceOracle
+
+    @frozen
+    class ArraySelect(SourceOracle):  # type: ignore[misc]
+        @property
+        def control_registers(self) -> tuple[Any, ...]:
+            return ()
+
+        @property
+        def selection_registers(self) -> tuple[Any, ...]:
+            return (SourceRegister("address", QAny(1), shape=(2,)),)
+
+        @property
+        def target_registers(self) -> tuple[Any, ...]:
+            return (SourceRegister("data", QAny(1), shape=(2,)),)
+
+        def decompose_from_registers(self, context: Any, **quregs: Any) -> Any:
+            address = np.asarray(quregs["address"]).reshape(-1)
+            data = np.asarray(quregs["data"]).reshape(-1)
+            yield cirq.CNOT(address[0], data[0])
+            yield cirq.S(data[1])
+
+    @dataclass(frozen=True)
+    class ArrayDeclaration(SelectOracle):
+        @property
+        def control_registers(self) -> tuple[Register, ...]:
+            return ()
+
+        @property
+        def selection_registers(self) -> tuple[Register, ...]:
+            return (Register("address", quantum_bit_type(), shape=(2,)),)
+
+        @property
+        def target_registers(self) -> tuple[Register, ...]:
+            return (Register("data", quantum_bit_type(), shape=(2,)),)
+
+    source = ArraySelect()
+    declaration = ArrayDeclaration()
+    assert declaration.selection_registers[0].shape == (2,)
+    packed = PackedSelectDeclaration(declaration).bind(import_register_emitter(source))
+    expected = import_register_emitter(source_module[0].BlackBoxSelect(source))
+    matrices = []
+    for adjoint in (False, True):
+        ir = (
+            Circuit(4)
+            .append(packed.make_on(selection=(0, 1), target=(2, 3), adjoint=adjoint))
+            .to_ir()
+        )
+        restored = CircuitIR.from_json(ir.to_json())
+        assert restored.instructions == expected.snapshots[int(adjoint)].instructions
+        matrix = get_unitary(restored, dtype=torch.complex128)
+        torch.testing.assert_close(
+            matrix,
+            get_unitary(expected.snapshots[int(adjoint)], dtype=torch.complex128),
+            atol=1e-12,
+            rtol=0,
+        )
+        matrices.append(matrix)
+    assert not torch.equal(matrices[0], matrices[1])
+    torch.testing.assert_close(matrices[1], matrices[0].mH, atol=1e-12, rtol=0)
+
+
+def test_native_packing_rejects_directed_and_classical_ports() -> None:
+    from flagquantum.core.ir.program.registers import RegisterSide, RegisterType
+
+    @dataclass(frozen=True)
+    class DirectedDeclaration(GroupedDeclaration):
+        side: RegisterSide = RegisterSide.RIGHT
+        classical: bool = False
+
+        @property
+        def target_registers(self) -> tuple[Register, ...]:
+            dtype = (
+                RegisterType("classical", 0, 1)
+                if self.classical
+                else quantum_bit_type()
+            )
+            return (Register("data", dtype, side=self.side),)
+
+    for side, classical in ((RegisterSide.RIGHT, False), (RegisterSide.THRU, True)):
+        with pytest.raises(ValueError, match="quantum THRU"):
+            PackedSelectDeclaration(DirectedDeclaration(1, 1, side, classical)).bind(
+                lambda *_: ()
+            )
+    with pytest.raises(ValueError, match="concrete width for column"):
+        PackedSelectDeclaration(GroupedDeclaration(Symbol("n", positive=True), 1)).bind(
+            lambda *_: ()
+        )

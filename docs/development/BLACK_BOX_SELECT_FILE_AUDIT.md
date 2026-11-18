@@ -60,8 +60,7 @@ because the wrapper's graph comes from decomposition, and one expected
 serialization failure. The native audit reads the actual partition
 and compares its executable child.
 
-Q-0588 remains open for controlled packing and arbitrary foreign SELECT
-objects. The locked wrapper exposes child control metadata but omits
+Q-0588 remains open for the locked controlled-packing defect. The locked wrapper exposes child control metadata but omits
 control from its packed signature. A controlled Hubbard child fails with
 `Bloq registers do not match given partitions`. The native packed
 binder diagnoses this before binding. The existing named SELECT path
@@ -84,12 +83,15 @@ reused rather than recounted.
 The native `SelectOracle` declaration preserves control, selection and target
 descriptor order. `PackedSelectDeclaration` keeps the packed source metadata and
 control descriptors, uses `packed_select_layout` for the opaque packed signature,
-and converts concrete quantum through widths at the Algorithms boundary. Arrays
+and requires FlagQuantum-owned concrete quantum through descriptors. The existing
+layout owner validates direction, classical content and unique port names. Arrays
 and named groups flatten in source order. Physical bits within each packed word
 remain big-endian, with address fields ahead of the system word. `bind` hands the
 captured emitter to the existing `SelectBlockEncoding` and identity PREPARE
 consumer. Caller-owned clean work and feedback slots remain with that consumer.
-The external SDK object does not enter native IR. No new package export or public
+The external SDK object is converted to circuit snapshots at the Ecosystem
+boundary. Native declarations and their register types are separate objects,
+including when symbolic dimensions are resolved. No new package export or public
 API was added.
 
 `test_select_oracle_binding.py` resolves a symbolic-width external subclass and
@@ -113,3 +115,16 @@ architecture, multi-level IR and API checks are recorded in the batch handoff.
 Strict typing passes on the new layout, fixture and file audit. The
 shared reference reader retains its baseline dynamic Cirq and metadata
 typing diagnostics.
+
+## Native declaration boundary review
+
+The grouped binding tests construct an actual native `SelectOracle` subclass,
+independently of the foreign source subclass. The packed binder reuses the
+existing layout validator and builds the concrete layouts in one traversal.
+An additional source subclass uses genuine two-element array ports and an S
+phase so its adjoint differs from its forward operation. Both imported
+directions pass through the native declaration, packed consumer, append entry,
+and JSON roundtrip and match the source wrapper's complete complex matrices.
+RIGHT-only and classical target descriptors fail at binding, as do unresolved
+widths. Control metadata remains preserved and controlled packing remains
+refused under the original source defect.

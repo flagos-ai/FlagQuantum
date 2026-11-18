@@ -8,6 +8,7 @@
 from dataclasses import dataclass
 from functools import cached_property
 
+from ...compiler.registers.layout.partition import RegisterLayout
 from ...compiler.registers.layout.select_partition import packed_select_layout
 from ...core.ir.program.register_types import opaque_register_type
 from ...core.ir.program.registers import Register
@@ -50,33 +51,24 @@ class PackedSelectDeclaration:
 
     def bind(self, emit: SelectEmitter) -> SelectBlockEncoding:
         """Bind an uncontrolled quantum THRU child on caller-owned work and slots."""
-        if self.control_registers:
-            raise ValueError("Packed SELECT requires an uncontrolled child")
-        native_groups = []
+        signature, _ = packed_select_layout(
+            self.select.selection_registers,
+            self.select.target_registers,
+            controls=self.control_registers,
+        )
+        assert signature == self.signature
+        layouts: list[RegisterLayout] = []
         for registers in (
             self.select.selection_registers,
             self.select.target_registers,
         ):
-            group = []
-            for register in registers:
-                if register.side.name != "THRU" or register.total_cbits() != 0:
-                    raise ValueError("Packed SELECT requires quantum THRU registers")
-                width = register.total_bits()
-                if not isinstance(width, int):
-                    raise ValueError(
-                        f"SELECT binding requires a concrete width for {register.name}"
-                    )
-                group.append(Register(register.name, opaque_register_type(width)))
-            native_groups.append(tuple(group))
-        selection_registers, target_registers = native_groups
-        signature, _ = packed_select_layout(selection_registers, target_registers)
-        assert signature == self.signature
-        layouts = []
-        for registers in (selection_registers, target_registers):
             layout = []
             for register in registers:
                 width = register.total_bits()
-                assert isinstance(width, int)
+                if type(width) is not int:
+                    raise ValueError(
+                        f"SELECT binding requires a concrete width for {register.name}"
+                    )
                 layout.append((register.name, width))
             layouts.append(tuple(layout))
         selection, target = layouts
