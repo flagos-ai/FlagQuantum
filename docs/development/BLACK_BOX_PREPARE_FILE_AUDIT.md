@@ -77,7 +77,66 @@ own parent items.
 | `SparseStatePreparationAliasSampling` | `algorithms/primitives/alias_preparation.py`, sparse table |
 | `StatePreparationViaRotations` | `algorithms/primitives/rotation_preparation.py`, rotation program |
 
-Q-0690 and Q-0692 are covered. Q-0691 retains importing or serializing
-external oracle objects and execution of unresolved symbolic bindings.
-The native wrapper binds named emitters once their widths and supplied
-normalization are concrete.
+Q-0690 and Q-0692 are covered. Q-0691 retains the original object-serialization
+failure recorded below. External import, owned execution-artifact round trips
+and explicitly resolved symbolic bindings are now exercised. An unresolved
+symbolic width remains declaration-only rather than silently coerced.
+
+## Complete definition and dependency map
+
+| Source member | Native owner and acceptance |
+| --- | --- |
+| `selection_registers`, `junk_registers` | `PackedPrepareDeclaration` preserves opaque packed group descriptors; existing tests cover one-bit top-level encoding and zero-width omission. |
+| `selection_bitsize`, `junk_bitsize` | Ordered sums of descriptor total bits, including array shapes and symbolic dimensions; concrete layouts are resolved before binding. |
+| `l1_norm_of_coeffs` | Original normalization expression passes through; absent source normalization retains its exception and a bound emitter records unavailable normalization. |
+| `signature` | Packed selection followed by junk, distinct from the child's named order; the full frozen Hubbard factory checks 8 selection and 2 logical through-junk bits. |
+| `build_composite_bloq` | Existing AutoPartition mapping and zero-selection early return; the actual external packed source is captured through `import_register_emitter`, not replaced with a dense matrix. |
+| `__str__` | `PackedPrepareDeclaration` and the original return `Prep`. |
+| `_black_box_prepare`, `_BLACK_BOX_PREPARE_DOC` | Actual original Hubbard object, its documented example and child partition mapping are checked directly. |
+
+### Actual external object replacement
+
+`test_original_packed_object_roundtrip_replaces_native_hubbard` captures both
+directions of the original packed object, serializes only owned CircuitIR, and
+rebinds the restored emitter through the existing BlackBoxPrepare callback.
+The user still appends its operation to a Circuit. No SDK object survives in
+the restored execution snapshots. Every one of the eight measurement histories
+is compared with the existing native Hubbard recipe on a coherent arbitrary
+state over all ten logical bits, including arbitrary logical junk. A separate
+all-history certificate proves private workspace restoration.
+
+| Execution route | Wires / private work | Instructions | T/T-dagger | CX | Measurements |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Actual external packed object, either direction | 14 / 4 | 170 | 47 | 66 | 3 |
+| Existing native packed Hubbard | 12 / 2 | Existing recipe | 47 | 66 | 3 |
+| Independent unchanged source model | 12 logical peak | Not a primitive count | 5 CSwap + 2 And, not expanded here | 11 Clifford; 4 rotations | 2 |
+
+Distinct private allocator reservations are not claimed to be identical
+physical widths. No unused source allocation is silently removed to match the
+native count. Full output comparisons include zero amplitude outside clean work.
+
+The accepted PrepareOracle symbolic fixture now also wraps the resolved
+external child in the actual source BlackBoxPrepare/AutoPartition chain.
+Widths 1, 2 and 3 in both directions pass full complex operator comparisons,
+IR JSON restoration, instruction equality and normalization checks. Symbolic
+width and angle are resolved explicitly through immutable constructor values;
+the unbound external packed object is rejected before execution. The existing
+shaped-symbolic descriptor and zero-selection tests remain part of this closure.
+
+### Remaining original serialization failure
+
+The unchanged `_black_box_prepare` serialization check still reports FAIL:
+NumPy raises ValueError for an inhomogeneous array shape `(2, 2)`. This is an
+original object-serialization failure, separate from the successful native
+execution-artifact round trip. It is neither patched in the reference nor
+reported as parity. Under the frozen parent closure criteria Q-0691 remains
+open for that exact boundary; unresolved symbolic execution is no longer
+misreported as a missing concrete implementation.
+
+The focused source/dependency suite passes 25 cases (3.75 s). The concentrated
+packed PREPARE, named/directed LCU and register-import regression passes 107
+cases (43.39 s); the final serialization assertion is included in the focused
+run. Both changed test files pass Black and Ruff and their Algorithms scope.
+No production behavior changes in this batch: the previously accepted 169-file
+strict result, architecture/IR/API checks and 60 CPU/representation cases are
+reused from the immediately preceding scalar dependency batch.

@@ -61,6 +61,84 @@ def source_module() -> Any:
     return black_box_prepare
 
 
+def test_original_object_serialization_failure_is_separate_from_ir_roundtrip(
+    source_module: Any,
+) -> None:
+    from qualtran.testing import BloqCheckResult, check_bloq_example_serializes
+
+    result, diagnostic = check_bloq_example_serializes(source_module._black_box_prepare)
+    assert result is BloqCheckResult.FAIL
+    assert "inhomogeneous shape" in diagnostic
+
+
+@pytest.mark.parametrize("adjoint", (False, True))
+def test_original_packed_object_roundtrip_replaces_native_hubbard(
+    source_module: Any, adjoint: bool
+) -> None:
+    from dataclasses import replace
+
+    from flagquantum import Circuit
+    from flagquantum.core.ir import CircuitIR
+    from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+    from tests.unit.measurement_certificate import certify_erasure_histories
+
+    source = source_module._black_box_prepare.make()
+    assert str(source) == "Prep"
+    assert source_module._BLACK_BOX_PREPARE_DOC.examples == (
+        source_module._black_box_prepare,
+    )
+    emitter = import_register_emitter(source)
+    assert emitter.layout == (("selection", 8), ("junk", 2))
+    assert emitter.requirements() == (4, 3)
+    restored = replace(
+        emitter,
+        snapshots=tuple(CircuitIR.from_json(ir.to_json()) for ir in emitter.snapshots),
+    )
+    native = BlackBoxPrepare(
+        (("selection", 8),), (("junk", 2),), restored, source.l1_norm_of_coeffs
+    )
+    bound = (
+        Circuit(14)
+        .append(
+            native.make_on(
+                selection=tuple(range(8)),
+                junk=(8, 9),
+                workspace=(10, 11, 12, 13),
+                classical_bits=(0, 1, 2),
+                adjoint=adjoint,
+            )
+        )
+        .to_ir()
+    )
+    assert bound.instructions == emitter.snapshots[int(adjoint)].instructions
+    assert (
+        certify_erasure_histories(
+            bound.instructions, n_wires=14, zero_wires=(10, 11, 12, 13)
+        )
+        == 3
+    )
+    reference = hubbard_packed_prepare_circuit(
+        HubbardLCUExample(2, packed=True), adjoint=adjoint
+    ).to_ir()
+    # Distinct private allocation counts do not change the complete logical map.
+    generator = torch.Generator().manual_seed(179 + int(adjoint))
+    logical = torch.randn(1024, dtype=torch.complex128, generator=generator)
+    logical /= logical.norm()
+    external_start = torch.zeros(16384, dtype=torch.complex128)
+    external_start[::16] = logical
+    native_start = torch.zeros(4096, dtype=torch.complex128)
+    native_start[::4] = logical
+    for history in product((0, 1), repeat=3):
+        actual = forced_branch(external_start, bound.instructions, history)
+        expected = torch.zeros_like(actual)
+        expected[::4] = forced_branch(native_start, reference.instructions, history)
+        torch.testing.assert_close(actual, expected, atol=4e-12, rtol=0)
+    literal = count_emitted_instructions(bound)
+    assert literal.t_count == 47 and literal.unconditional["cx"] == 66
+    assert literal.unconditional["measure"] == 3
+    assert len(bound.instructions) == 170
+
+
 def compare_signature(
     native: BlackBoxPrepare | PackedPrepareDeclaration, source: Any
 ) -> None:
