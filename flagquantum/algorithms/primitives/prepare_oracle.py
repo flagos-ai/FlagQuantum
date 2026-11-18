@@ -14,7 +14,7 @@ from ...core.value_math import SymbolicReal
 
 
 class PrepareOracle(ABC):
-    """Declare selection ports, retained logical junk, and optional L1 norm."""
+    """Declare selection ports, directed auxiliary registers, and optional L1 norm."""
 
     @property
     @abstractmethod
@@ -23,7 +23,7 @@ class PrepareOracle(ABC):
 
     @cached_property
     def junk_registers(self) -> tuple[Register, ...]:
-        """Return retained logical outputs, empty by default."""
+        """Return auxiliary descriptors with their original sides, empty by default."""
         return ()
 
     @cached_property
