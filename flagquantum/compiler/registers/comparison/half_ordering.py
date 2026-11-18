@@ -9,7 +9,13 @@
 from typing import Literal
 
 from ....core.ir import Instruction
+from ..._component_trace.qec_gate_cost import QECGateCost
+from ..._component_trace.symbolic_math import SymbolicInt, smax
+from ..arithmetic.out_of_place_add_resource_model import (
+    source_out_of_place_add_resource_formula,
+)
 from ..bits.bitwise import bitwise_not_ir
+from ..resources.symbolic_resource_model import SymbolicResourceFormula
 from .half_comparison import half_greater_ir
 
 
@@ -77,3 +83,37 @@ def half_compare_ir(
     )
     flip = bitwise_not_ir((target,)) if relation in ("ge", "le") else ()
     return (*flip, *inner) if adjoint else (*inner, *flip)
+
+
+def source_half_comparison_gate_cost(
+    width: SymbolicInt, *, signed: bool = False, adjoint: bool = False
+) -> QECGateCost:
+    """Compose the original widened adder, complements and extension calls."""
+    if type(signed) is not bool or type(adjoint) is not bool:
+        raise ValueError("Half comparison model modes must be boolean")
+    addition = source_out_of_place_add_resource_formula(
+        width + 1, include_msb=False, adjoint=adjoint
+    )
+    return QECGateCost(clifford=3 * (width + 1) + 1 + 4 * signed).plus(addition, 1)
+
+
+def source_half_comparison_resource_formula(
+    width: SymbolicInt, *, signed: bool = False, adjoint: bool = False
+) -> SymbolicResourceFormula:
+    """Retain the unsigned fallback and concrete signed extension peak.
+
+    The original signed symbolic width query fails in SignExtend. Its gate
+    counts remain available separately through source_half_comparison_gate_cost.
+    """
+    gates = source_half_comparison_gate_cost(width, signed=signed, adjoint=adjoint)
+    if signed and type(width) is not int:
+        raise ValueError(
+            "Original signed symbolic half-comparison peak fails in SignExtend"
+        )
+    addition = source_out_of_place_add_resource_formula(width + 1, include_msb=False)
+    return SymbolicResourceFormula(
+        gates.and_bloq,
+        gates.clifford,
+        gates.measurement,
+        smax(width + 1, addition.logical_qubits),
+    )
