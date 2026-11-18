@@ -159,7 +159,7 @@ def _minimum_odd_kernel_weight(
 
     A state carries the live check parities and total weight parity. Prefixes
     with the same state have identical possible suffixes, so only their least
-    weight matters. A check must be zero as soon as its last wire is processed.
+    weight matters. A check must be zero as soon as its last data qubit is processed.
     """
     states = {0: 0}
     for wire in range(width):
