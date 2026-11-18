@@ -95,3 +95,30 @@ measurements, with a logical peak of 48.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_linear_combination.ipynb
 ```
+
+## Native and external child snapshots
+
+The existing LCU child factory now accepts the native `CircuitBlockEncoding`
+provider. Actual external H/T blocks, including logical ancilla/resource ports,
+are converted to four owned directional/control snapshots before composition.
+The unchanged LCU consumer replaces its original child factories with imported
+`bind_child` methods and retains its original PREPARE/SELECT stages. Both
+outer-control modes and directions compare full complex logical outputs on every
+small measurement branch. Independent source models remain separate from emitted
+instructions and any returned-wire binding swaps. See
+[Circuit block snapshots](CIRCUIT_BLOCK_ENCODING.md) for ownership and the append
+workflow.
+
+Q-0286 remains open: dense foreign leaves beyond the admitted concrete primitive
+set, complete long-history certificates for the entire coefficient catalogue,
+and resolved general symbolic bindings still need closure. The original returned
+adder TypeError and grouped extension refusal remain immutable source boundaries;
+valid returned roots and the failing adder are separate claims. This batch does
+not convert these source failures into successful alternate algorithms.
+
+Snapshot dependency validation: 255 concentrated cases pass. The final scalar
+admission and negative-object checks pass 50 focused cases; the strengthened H/T
+LCU replacement passes all nine foreign-block cases. The existing native LCU
+notebook passes its independent kernel. Seven production files pass strict
+typing; formatting, scopes, architecture, IR, API and the documented append
+example pass. Primitive inventories and source models are kept separate.
