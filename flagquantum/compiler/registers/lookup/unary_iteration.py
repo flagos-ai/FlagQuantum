@@ -195,12 +195,27 @@ def append_nested_bounded_unary_tree(
     visit_leaf: Callable[[int, int], None],
     *,
     adjoint: bool = False,
+    break_early: Callable[[tuple[int, ...], int, int], bool] | None = None,
 ) -> None:
-    """Visit bounded axes in source component order, flattening only the index."""
+    """Visit bounded axes, preserving parent indices for source early folding.
+
+    The callback sees the retained parent-axis indices and the current node's
+    half-open interval. It must preserve the leaf recipe throughout any folded
+    interval. A folded first-axis root requires a separate zero-selection
+    recipe, as in the source base class, and is refused by this traversal.
+    """
     if type(adjoint) is not bool:
         raise ValueError("Nested traversal direction must be a boolean")
+    if break_early is not None and break_early((), 0, extents[0]):
+        raise ValueError("Folded first-axis root requires a zero-selection recipe")
 
-    def walk(depth: int, prefix: int, predicate: int | None, used: int) -> None:
+    def walk(
+        depth: int,
+        prefix: int,
+        indices: tuple[int, ...],
+        predicate: int | None,
+        used: int,
+    ) -> None:
         word, extent = axes[depth], extents[depth]
         stop = used + unary_iteration_workspace(len(word), predicate)
 
@@ -209,7 +224,7 @@ def append_nested_bounded_unary_tree(
             if depth + 1 == len(axes):
                 visit_leaf(flat_index, active)
             else:
-                walk(depth + 1, flat_index, active, stop)
+                walk(depth + 1, flat_index, (*indices, index), active, stop)
 
         append_bounded_unary_tree(
             gates,
@@ -220,6 +235,11 @@ def append_nested_bounded_unary_tree(
             classical_bits[used:stop],
             leaf,
             adjoint=adjoint,
+            break_early=(
+                None
+                if break_early is None
+                else lambda left, right: break_early(indices, left, right)
+            ),
         )
 
-    walk(0, 0, control, 0)
+    walk(0, 0, (), control, 0)

@@ -38,6 +38,7 @@ def indexed_component_ir(
     workspace: tuple[int, ...],
     classical_bits: tuple[int, ...],
     adjoint: bool = False,
+    break_early: Callable[[tuple[int, ...], int, int], bool] | None = None,
 ) -> tuple[Instruction, ...]:
     """Apply one child per selected tuple, preserving the source bounded tree.
 
@@ -45,6 +46,8 @@ def indexed_component_ir(
     and a positive predicate; it owns child binding and must preserve that
     predicate, the input axes and this parent's workspace. For adjoint traversal,
     it must emit the child adjoint; the parent does not invert child IR.
+    Early folding receives the retained parent-axis indices and node interval.
+    A folded interval must have an identical controlled child recipe throughout.
     """
     required = indexed_component_workspace(tuple(map(len, axes)), len(controls))
     if type(adjoint) is not bool:
@@ -87,6 +90,7 @@ def indexed_component_ir(
         classical_bits[prefix:],
         visit,
         adjoint=adjoint,
+        break_early=break_early,
     )
     if prefix:
         gates.extend(
