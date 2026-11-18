@@ -128,5 +128,6 @@ Native FlagQuantum programs currently available:
 - [overview](telecom/network_traffic_optimization/overview/README.md)
 - [overview](telecom/radio_access_network/radio_access_network_positioning_antennas/overview/README.md)
 - [overview](telecom/resiliency_planning/overview/README.md)
+- [overview](telecom/resiliency_planning/resiliency_planning_amd/overview/README.md)
 
 See the [full migration inventory](../MIGRATION_STATUS.md).

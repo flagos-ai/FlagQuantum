@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 206
+    assert len(validated) == 207
+    assert (
+        "applications/telecom/resiliency_planning/resiliency_planning_AMD",
+        "examples/synthesis/applications/telecom/resiliency_planning/resiliency_planning_amd/overview/main.py",
+    ) in validated
     assert (
         "applications/telecom/resiliency_planning/resiliency_planning",
         "examples/synthesis/applications/telecom/resiliency_planning/overview/main.py",
@@ -953,7 +957,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**206/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**207/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

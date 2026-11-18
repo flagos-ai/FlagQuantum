@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **206/213**.
+Validated local Notebook workflows: **207/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -235,6 +235,7 @@ Validated local Notebook workflows:
 - [overview](applications/telecom/network_traffic_optimization/overview/README.md)
 - [overview](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/overview/README.md)
 - [overview](applications/telecom/resiliency_planning/overview/README.md)
+- [overview](applications/telecom/resiliency_planning/resiliency_planning_amd/overview/README.md)
 
 
 ## Community (12 native programs)

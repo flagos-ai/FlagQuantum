@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **206/213**.
+Validated local Notebook workflows: **207/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -280,7 +280,7 @@ Validated local Notebook workflows: **206/213**.
 | `applications/telecom/network_traffic_optimization/network_traffic_optimization` | notebook_workflow | [Native program](applications/telecom/network_traffic_optimization/overview/main.py) | validated |
 | `applications/telecom/radio_access_network/radio_access_network_positioning_antennas` | notebook_workflow | [Native program](applications/telecom/radio_access_network/radio_access_network_positioning_antennas/overview/main.py) | validated |
 | `applications/telecom/resiliency_planning/resiliency_planning` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/overview/main.py) | validated |
-| `applications/telecom/resiliency_planning/resiliency_planning_AMD` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/resiliency_planning_amd/main.py) | pending |
+| `applications/telecom/resiliency_planning/resiliency_planning_AMD` | notebook_workflow | [Native program](applications/telecom/resiliency_planning/resiliency_planning_amd/overview/main.py) | validated |
 | `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_2nd_place_submission` | notebook_workflow | [Native program](community/hackathons/qinnovision_2025/advection_equation/second_place/overview/main.py) | validated |
 | `community/Hackathons/QInnovision_2025/advection_equation/advection_equation_winning_submission` | notebook_workflow | [Native program](community/hackathons/qinnovision_2025/advection_equation/winning/overview/main.py) | validated |
 | `community/Hackathons/iQuHack_2025/Challenge/classiq_iQuHack_2025_final` | notebook_workflow | [Native program](community/hackathons/iquhack_2025/challenge_template/overview/main.py) | validated |
