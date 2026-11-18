@@ -7,7 +7,7 @@ quantum sources share one row. Python-only groups remain unclassified until
 main cases, helpers, data dependencies and verification criteria are reviewed.
 
 No notebook workflow is certified by a quantum-only counterpart.
-Validated local Notebook workflows: **186/213**.
+Validated local Notebook workflows: **187/213**.
 
 | Upstream group | Kind | Native quantum program | Full workflow |
 | --- | --- | --- | --- |
@@ -300,7 +300,7 @@ Validated local Notebook workflows: **186/213**.
 | `community/paper_implementation_project/block_encoding/select_structures_BE` | notebook_workflow | [Native program](community/paper_implementation_project/block_encoding/select_structures_be/overview/main.py) | validated |
 | `community/paper_implementation_project/block_encoding/toeplitz_BE_N16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/toeplitz/main.py) | pending |
 | `community/paper_implementation_project/block_encoding/tridiagonal_BE_size16` | quantum_program | [Native program](community/paper_implementation_project/block_encoding/tridiagonal/main.py) | pending |
-| `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Native program](community/paper_implementation_project/bpde/main.py) | pending |
+| `community/paper_implementation_project/bpde/bpde` | notebook_workflow | [Native program](community/paper_implementation_project/bpde/overview/main.py) | validated |
 | `community/paper_implementation_project/classical_shadows/classical_shadows` | quantum_program | [Native program](community/paper_implementation_project/classical_shadows/main.py) | pending |
 | `community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding` | notebook_workflow | [Native program](community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview/main.py) | validated |
 | `community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator` | notebook_workflow | [Native program](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/main.py) | validated |

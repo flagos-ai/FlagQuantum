@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 186
+    assert len(validated) == 187
+    assert (
+        "community/paper_implementation_project/bpde/bpde",
+        "examples/synthesis/community/paper_implementation_project/bpde/overview/main.py",
+    ) in validated
     assert (
         "applications/finance/credit_card_fraud/credit_card_fraud",
         "examples/synthesis/applications/finance/credit_card_fraud/overview/main.py",
@@ -873,7 +877,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**186/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**187/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

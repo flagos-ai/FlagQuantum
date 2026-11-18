@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **186/213**.
+Validated local Notebook workflows: **187/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -250,6 +250,7 @@ Validated local Notebook workflows:
 - [overview](community/paper_implementation_project/block_encoding_nd_laplacian/overview/README.md)
 - [overview](community/paper_implementation_project/bb84/bb84_implementation/overview/README.md)
 - [overview](community/paper_implementation_project/block_encoding/select_structures_be/overview/README.md)
+- [overview](community/paper_implementation_project/bpde/overview/README.md)
 - [overview](community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview/README.md)
 - [overview](community/paper_implementation_project/quantum_algo_for_solving_linear_differential_equations/harmonic_oscillator/overview/README.md)
 - [overview](community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/README.md)
