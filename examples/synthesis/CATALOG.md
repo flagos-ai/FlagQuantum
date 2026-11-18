@@ -5,7 +5,7 @@ Original source files and importer launchers are test/development evidence, not 
 
 Recorded native quantum-program counterparts: **216/216**.
 Counts reflect per-batch evidence, not a fresh all-program acceptance or release gate.
-Validated local Notebook workflows: **181/213**.
+Validated local Notebook workflows: **182/213**.
 Expanded inventory: **577** source artifacts in **417** provisional path groups.
 Python groups still require main-case/helper review. A quantum-program counterpart
 does not certify its notebook workflow. Pending entries have no runnable placeholder.
@@ -61,6 +61,7 @@ See [migration status](MIGRATION_STATUS.md) for the complete five-category inven
 Validated local Notebook workflows:
 
 - [overview](algorithms/machine_learning/hybrid_qnn/hybrid_qnn_for_subset_majority/overview/README.md)
+- [overview](algorithms/machine_learning/qsvm/overview/README.md)
 - [overview](algorithms/machine_learning/quantum_autoencoder/overview/README.md)
 - [overview](algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/README.md)
 - [overview](algorithms/amplitude_amplification_and_estimation/qmc_user_defined/overview/README.md)

@@ -242,7 +242,11 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
         and group["workflow_status"] == "validated"
         and group["native_program"]
     }
-    assert len(validated) == 181
+    assert len(validated) == 182
+    assert (
+        "algorithms/QML/qsvm/qsvm",
+        "examples/synthesis/algorithms/machine_learning/qsvm/overview/main.py",
+    ) in validated
     assert (
         "tutorials/technology_demonstrations/oracle_generation/3sat_oracles",
         "examples/synthesis/tutorials/technology_demonstrations/oracle_generation/three_sat_oracles/overview/main.py",
@@ -853,7 +857,7 @@ def test_rendered_workflow_claims_follow_inventory_acceptance() -> None:
     ):
         assert (group, path) in validated
     rendered = render(catalog)
-    assert "**181/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
+    assert "**182/213**" in rendered[ROOT / "examples/synthesis/CATALOG.md"]
     for case in catalog["cases"]:
         if case["native_example"]:
             text = rendered[example_path(case["directory"]) / "README.md"]

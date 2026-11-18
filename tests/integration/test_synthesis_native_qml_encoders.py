@@ -92,4 +92,24 @@ def test_quantum_programs_do_not_certify_complete_training_notebooks() -> None:
             "algorithms/QML/qgan/qgan_bars_and_strips",
         }:
             assert group["native_program"]
-            assert group["workflow_status"] == "pending"
+            validation = group.get("workflow_validation")
+            if validation is None:
+                assert group["workflow_status"] == "pending"
+                assert "/overview/" not in group["native_program"]["path"]
+                continue
+            assert group["workflow_status"] == "validated"
+            entry = ROOT / group["native_program"]["path"]
+            assert entry.parent.name == "overview" and entry.is_file()
+            provenance = json.loads((entry.parent / "provenance.json").read_text())
+            assert validation == provenance
+            source = next(row for row in group["sources"] if row["kind"] == "notebook")
+            assert provenance["upstream_path"] == source["path"]
+            assert provenance["git_blob_sha1"] == source["git_blob_sha1"]
+            assert provenance["reviewed_code_cells"]
+            notebook = json.loads((entry.parent / "walkthrough.ipynb").read_text())
+            assert any(cell["cell_type"] == "code" for cell in notebook["cells"])
+            assert (
+                ROOT / provenance["native_notebook"]
+                == entry.parent / "walkthrough.ipynb"
+            )
+            assert (ROOT / provenance["acceptance_test"]).is_file()
