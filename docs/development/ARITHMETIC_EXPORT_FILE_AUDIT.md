@@ -37,7 +37,7 @@ exports. Physical consumers retain ordinary `circuit.append(op)` binding.
 | `LinearDepthHalfLessThanEqual` | `comparison/half_ordering.half_compare_ir (le)` | half_ordering |
 | `SingleQubitCompare` | `comparison/comparison_tree.single_qubit_compare_ir` | comparison_tree |
 | `CAdd` | `arithmetic/controlled_addition.controlled_add_ir, controlled_add_adjoint_ir` | register_controlled_addition; controlled_addition_adjoint |
-| `SignedIntegerToTwosComplement` | `bits/signed_encoding.sign_magnitude_to_twos_ir` | signed_encoding |
+| `SignedIntegerToTwosComplement` | `bits/signed_encoding.ones_complement_to_twos_ir` | signed_encoding. Original one's-complement signature/model only, no source root decomposition |
 | `SignExtend` | `bits/sign_extension.sign_extend_ir` | sign_extension |
 | `ToContiguousIndex` | `sorting/contiguous_index.contiguous_index_ir` | contiguous_index |
 | `HammingWeightCompute` | `bits/hamming_weight.hamming_weight_ir` | hamming_weight |

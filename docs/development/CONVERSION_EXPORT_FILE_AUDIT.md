@@ -10,7 +10,7 @@ this initializer.
 | Source export | Native owner | Existing consumer and actual contract |
 | --- | --- | --- |
 | ToContiguousIndex | Compiler `registers/sorting/contiguous_index.py` | `test_contiguous_index.py` compares every small input, occupied result, measurement history, coherent append and clean work. The original callback and model are checked separately. The source has no decomposition. |
-| SignedIntegerToTwosComplement | Compiler `registers/bits/signed_encoding.py` | `test_signed_encoding.py` checks original carry gate order, controls and feedback, both encoding directions, coherent spectator amplitudes, all small histories and scratch reset. Original signed-magnitude word conventions and independent model are retained. |
+| SignedIntegerToTwosComplement | Compiler `registers/bits/signed_encoding.py` | `test_signed_encoding.py` checks original carry gate order, controls and feedback, both encoding directions, coherent spectator amplitudes, all small histories and scratch reset. The original one's-complement signature and independent model map to `ones_complement_to_twos_ir`. The separate sign-magnitude construction retains its independent paper contract. The original root has no decomposition. |
 | SignExtend | Compiler `registers/bits/sign_extension.py` | `test_sign_extension.py` binds the original extension/truncation composite and compares its full native gate stream for two's and one's complement. Appending computes prefix+source and preserves the complete coherent input amplitudes. |
 | SignTruncate | Same `sign_extend_ir` owner | The same source fanout clears a correctly redundant prefix. The second append is the actual inverse path and returns prefix to zero. Arbitrary high bits are outside that physical contract. |
 
