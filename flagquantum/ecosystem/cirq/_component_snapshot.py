@@ -49,6 +49,8 @@ class _CleanAllocations:
 
 
 def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitIR, int]:
+    from qualtran.bloqs.basic_gates import TwoBitCSwap
+
     cirq = _cirq()
     shapes: dict[str, tuple[int, ...]] = {}
     for side in (source.signature.lefts(), source.signature.rights()):
@@ -119,6 +121,17 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
         leaf = getattr(op.gate, "bloq", None)
         if leaf is None:
             return NotImplemented
+        if type(leaf) is TwoBitCSwap:
+            # The atomic source exposes its exact recipe outside Cirq's
+            # decomposition protocol. Use that recipe with its named operands.
+            recipe = leaf.to_clifford_t_circuit()
+            return cirq.Circuit(recipe).transform_qubits(
+                dict(
+                    zip(
+                        map(cirq.NamedQubit, ("ctrl", "x", "y")), op.qubits, strict=True
+                    )
+                )
+            )
         registers = tuple(leaf.signature)
         if any(reg.side.value != 3 for reg in registers):
             return NotImplemented
