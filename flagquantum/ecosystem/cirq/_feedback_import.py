@@ -22,6 +22,26 @@ from .models import CirqConversionError, CirqConversionIssue, CirqImportResult
 Bit = int | bool
 
 
+def _lower_feedback_gate(
+    cirq: Any, gate: Any, issues: list[CirqConversionIssue], index: int
+) -> tuple[str, dict[str, Any]] | None:
+    """Retain canonical singly controlled rotations as native primitives."""
+    if (
+        isinstance(gate, cirq.ControlledGate)
+        and gate.num_controls() == 1
+        and tuple(tuple(v) for v in gate.control_values) == ((1,),)
+    ):
+        sub = gate.sub_gate
+        if (
+            isinstance(sub, (cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate))
+            and sub.global_shift == -0.5
+        ):
+            lowered = _lower_gate(cirq, sub, issues, index)
+            if lowered is not None and lowered[0] in ("rx", "ry", "rz"):
+                return "c" + lowered[0], lowered[1]
+    return _lower_gate(cirq, gate, issues, index)
+
+
 class _Feedback:
     """Lower key histories and Boolean predicates to native slot assignments."""
 
@@ -281,7 +301,7 @@ def import_cirq_feedback(
                     float(global_phase_exponent(complex(gate.coefficient))), anchor=0
                 )
             else:
-                lowered = _lower_gate(cirq, gate, issues, index)
+                lowered = _lower_feedback_gate(cirq, gate, issues, index)
                 if lowered is None:
                     raise ValueError(f"Unsupported primitive gate {gate!r}")
                 name, params = lowered

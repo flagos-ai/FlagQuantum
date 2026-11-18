@@ -4,7 +4,8 @@
 
 """Reserve caller-owned Qids around a local Cirq decomposition."""
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
+from contextlib import contextmanager
 from typing import Any
 
 from .conversion import _cirq
@@ -48,6 +49,16 @@ class InteropQubitManager:
 
     def manage_qubits(self, qubits: Iterable[Any]) -> None:
         self._reserved.update(qubits)
+
+    @contextmanager
+    def reserve_qubits(self, qubits: Iterable[Any]) -> Iterator[None]:
+        """Reserve a decomposition frame's inputs until all descendants finish."""
+        previous = self._reserved.copy()
+        self.manage_qubits(qubits)
+        try:
+            yield
+        finally:
+            self._reserved = previous
 
     def qfree(self, qubits: Iterable[Any]) -> None:
         released = tuple(qubits)

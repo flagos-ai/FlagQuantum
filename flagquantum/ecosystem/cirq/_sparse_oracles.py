@@ -4,7 +4,7 @@ The optional dependency ends here. Independent logical models are supplied by
 the caller; emitted primitive gates never manufacture a source cost model.
 """
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from dataclasses import replace
 from typing import Any, cast
 
@@ -12,13 +12,15 @@ import numpy as np
 
 from ...algorithms.primitives.circuit_sparse_oracles import (
     CircuitColumnOracle,
+    CircuitEntryOracle,
     CircuitSqrtEntryOracle,
 )
 from ...compiler._component_trace.resource_model import ComponentCost
 from ...compiler.registers.primitives.circuit_binding import restore_output_order_ir
 from ...core.ir import CircuitIR
-from ._feedback_import import import_cirq_feedback
-from .conversion import _cirq, _lower_gate
+from ._feedback_import import _lower_feedback_gate, import_cirq_feedback
+from ._qubit_manager import InteropQubitManager
+from .conversion import _cirq
 
 
 class _CleanAllocations:
@@ -105,15 +107,60 @@ def _snapshot(source: Any, ports: tuple[tuple[str, int], ...]) -> tuple[CircuitI
             bare.gate, (cirq.ResetChannel, cirq.GlobalPhaseGate)
         ):
             return True
-        return _lower_gate(cirq, bare.gate, [], 0) is not None
+        return _lower_feedback_gate(cirq, bare.gate, [], 0) is not None
 
-    operations = (
-        ()
-        if operation is None
-        else cirq.decompose(
-            operation, keep=admitted, context=cirq.DecompositionContext(manager)
+    decomposition_manager = InteropQubitManager(manager)
+    decomposition_manager.manage_qubits(incoming)
+
+    def leaf_operation(op: Any) -> Any:
+        """Use a source leaf's concrete operation only with unchanged ports."""
+        if op.tags:
+            return NotImplemented
+        leaf = getattr(op.gate, "bloq", None)
+        if leaf is None:
+            return NotImplemented
+        registers = tuple(leaf.signature)
+        if any(reg.side.value != 3 for reg in registers):
+            return NotImplemented
+        quregs: dict[str, Any] = {}
+        offset = 0
+        for reg in registers:
+            count = int(reg.total_bits())
+            quregs[reg.name] = np.asarray(
+                op.qubits[offset : offset + count], dtype=object
+            ).reshape((*reg.shape, int(reg.bitsize)))
+            offset += count
+        replacement, outputs = leaf.as_cirq_op(
+            qubit_manager=decomposition_manager, **quregs
         )
-    )
+        if replacement is None or replacement == op:
+            return NotImplemented
+        if set(outputs) != set(quregs) or any(
+            not np.array_equal(outputs[name], value) for name, value in quregs.items()
+        ):
+            return NotImplemented
+        return replacement
+
+    def expand(tree: Any) -> Iterator[Any]:
+        for op in cirq.flatten_to_ops(tree):
+            if admitted(op):
+                yield op
+                continue
+            with decomposition_manager.reserve_qubits(op.qubits):
+                child = leaf_operation(op)
+                if child is NotImplemented:
+                    child = cirq.decompose_once(
+                        op,
+                        context=cirq.DecompositionContext(decomposition_manager),
+                        default=None,
+                    )
+                if child is None:
+                    raise ValueError(
+                        f"Foreign oracle primitive cannot be decomposed: {op!r}"
+                    )
+                yield from expand(child)
+
+    operations = () if operation is None else expand(operation)
     primitive = cirq.Circuit(operations)
     order = (*incoming, *(q for q in manager.allocated if q not in incoming))
     if not (set(primitive.all_qubits()) | set(outgoing)) <= set(order):
@@ -153,4 +200,22 @@ def import_sqrt_entry_oracle(
     backward, second = _snapshot(foreign.adjoint(), ports)
     return CircuitSqrtEntryOracle(
         width, forward, backward, models, foreign.epsilon, (first, second)
+    )
+
+
+def import_entry_oracle(
+    source: object, *, models: tuple[ComponentCost, ComponentCost]
+) -> CircuitEntryOracle:
+    """Import actual amplitude oracles without requiring a sqrt precision port.
+
+    The source's forward and adjoint define the coefficient convention; no
+    square root, requantization or synthesized inverse is substituted here.
+    """
+    foreign = cast(Any, source)
+    width = _width(foreign)
+    ports = (("q", 1), ("i", width), ("j", width))
+    forward, first = _snapshot(foreign, ports)
+    backward, second = _snapshot(foreign.adjoint(), ports)
+    return CircuitEntryOracle(
+        width, forward, backward, models, binding_swaps=(first, second)
     )

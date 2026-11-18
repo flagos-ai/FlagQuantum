@@ -8,7 +8,7 @@ copyright Google LLC.
 | Item | Source file | Frozen Git blob | Disposition |
 | --- | --- | --- | --- |
 | Q-0296 | `sparse_matrix.ipynb` | `2a85ed895beeee25d508e68a093af307ca9f1826` | Closed by the full native tutorial. |
-| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle composition and the original concrete primitive streams verified. Foreign oracle binding and arbitrary measured inputs remain open. |
+| Q-0297 | `sparse_matrix.py` | `cacbdab733f0be4f0f28bf2a749e1bad79987bfd` | Symbolic oracle composition and the original concrete primitive streams verified. Concrete foreign oracle binding verified; symbolic numerical binding and complete long-history coverage remain open. |
 | Q-0301 | `sparse_matrix_test.py` | `afcb0771b405ed26bfce7827d70d81c3d7f7a0d8` | Closed with the original stress, random entry, banded index and Vlasov fixtures. |
 
 ## Oracle and block ownership
@@ -127,3 +127,27 @@ when its sparsity bound comparison has no truth value.
 ```bash
 jupyter nbconvert --execute --to notebook --stdout examples/notebooks/register_sparse_matrix_block_encoding.ipynb
 ```
+
+
+## Ordinary external entry binding
+
+The optional ordinary-entry importer now consumes the original amplitude
+oracles through the shared CircuitEntryOracle implementation. The square-root
+variant is a semantic subclass and remains independently tested. Original
+uniform objects at widths one and two match both directional full complex
+matrices, the projected entry 0.3/N, and independent source costs. This also
+checks that no square-root convention is substituted and no epsilon field is
+required from the ordinary source interface.
+
+Original explicit entries at two-bit angle precision retain the NumPy arccos
+integer truncation and the original ordered controlled Ry calls. Both directions
+match an independently evaluated quantized matrix on a coherent flag/row/column
+and spectator input for every small measurement history, with work restored.
+Atomic source wrappers are converted through their original concrete operation;
+changed port maps are not silently dropped. Controlled rotations retain their
+complete complex phase. Scoped decomposition reservations prevent live-QROM
+aliasing and preserve the prior three-work-wire banded fixture.
+
+The 94-event Vlasov trajectory coverage and symbolic numerical binding remain
+open as recorded above. These changes do not claim exhaustive 2**94 history
+execution and do not close Q-0297.

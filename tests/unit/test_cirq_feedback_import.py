@@ -287,3 +287,39 @@ def test_decomposed_foreign_sqrt_entry_matches_native_callback_stream() -> None:
     native = ConjunctionSqrtEntry(1).emit(0, (1,), (2,), (3,), (0,))
     assert_source_wire_streams(imported.instructions, native)
     compare_every_branch(primitives, (*ports, *scratch))
+
+
+@pytest.mark.parametrize("axis", ("rx", "ry", "rz"))
+@pytest.mark.parametrize("angle", (0.31, -0.52))
+def test_quantum_controlled_rotations_preserve_full_complex_phase(
+    axis: str, angle: float
+) -> None:
+    import cirq
+
+    a, b, c = cirq.NamedQubit.range(3, prefix="q")
+    gate = getattr(cirq, axis)(angle).controlled().on(a, b)
+    source = cirq.Circuit(cirq.measure(c, key="m"), gate.with_classical_controls("m"))
+    compare_every_branch(source, (b, c, a))
+    result = import_cirq_feedback(source, qubit_order=(b, c, a))
+    assert result.ir.instructions[-1].name == "c" + axis
+
+
+def test_scoped_qubit_reservation_restores_after_nested_exception() -> None:
+    import cirq
+
+    from flagquantum.ecosystem.cirq._qubit_manager import InteropQubitManager
+
+    base = cirq.GreedyQubitManager(prefix="q", maximize_reuse=True)
+    (external,) = base.qalloc(1)
+    base.qfree([external])
+    manager = InteropQubitManager(base)
+    with pytest.raises(RuntimeError, match="probe"), manager.reserve_qubits([external]):
+        (first,) = manager.qalloc(1)
+        assert first != external
+        with manager.reserve_qubits([first]):
+            (second,) = manager.qalloc(1)
+            assert second not in (first, external)
+            raise RuntimeError("probe")
+    (restored,) = manager.qalloc(1)
+    assert restored == external
+    manager.qfree([first, second, restored])
