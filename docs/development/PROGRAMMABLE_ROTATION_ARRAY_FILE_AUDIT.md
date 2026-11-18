@@ -56,9 +56,91 @@ against independently assembled per-address target matrices. The sparse
 comparison includes relative phases between addresses and zero load and
 scratch. Small cases from the existing suite project all raw histories.
 
+## Complete source definition map
+
+| Complete original member | FlagQuantum ownership and evidence |
+| --- | --- |
+| Base constructor and angle/precision properties | Existing unsigned angle rows and load-word binding in `programmable_rotation_array_ir`; original constructor grid and unequal-row rejection are retained. |
+| Cached `rotation_gate(exponent)` | Optional gate conversion resolves the original fractional gate, including its scalar phase, into native local matrix instructions; the compiler callback receives native payloads only. |
+| Selection, load, rotation-target and complete signatures | Existing bounded selector, opaque load/target words and explicit unrelated-target layout. |
+| Abstract interleaver and unrelated-target hooks | Native per-stage instruction callbacks and declared `interleaved_target`, including original custom CNOT/CZ subclass. |
+| Complete base decomposition | Existing XOR delta batches, source-sized QROM calls, ordered controlled bit rotations, boundary interleavers and final unload. |
+| Concrete constructor and default identities | Existing validation, identity-stage callbacks and original factory/parameter-grid comparisons. |
+| Concrete interleaver and empty extra-target property | Native local instructions retain exact target scope; the generic matrix case and original independent-target subclass both execute. |
+| Original factory and DOC list | Existing native catalogue/notebook and fixed source blobs. |
+
+## Actual foreign gates and native replacement
+
+`test_programmable_array_source_binding.py` covers one- and two-target-bit
+external gates, load words of one and two bits, generic interleavers and the
+original independent-target subclass. Seeded external unitaries include explicit
+scalar phases, so comparisons cannot discard relative phases between selection
+sectors. Only local controlled rotations/interleavers become matrix leaves;
+QROM, XOR updates, measurement feedback and cleanup remain ordinary native
+instructions. The source algorithm is never contracted into one matrix to emit
+its implementation.
+
+Both actual source directions are captured separately and JSON-restored as
+owned native IR. The existing named consumer is invoked with `circuit.append`.
+The independent native compiler callback uses only copied local matrix payloads.
+Every logical basis column, including arbitrary initial load words, is compared
+in complete complex amplitude. True source adjoint composition restores the
+input. Raw-history identity is certified independently from complete-column
+private-work cleanup. With zero initial load, separately assembled per-address
+target operators prove angle-load restoration and exact output phases.
+
+A real optional-boundary gap was found for pure Cirq gates that provide only
+`_unitary_` and `__pow__`, without a `matrix` attribute or decomposition. The
+feedback importer now admits that explicit local unitary protocol using its
+existing shape, finite-value and unitarity validation and copied native
+payloads. Scalar/controlled instances work at both target widths. Gates with a
+provider decomposition keep that decomposition; register-component signatures
+and their potentially whole-algorithm unitary protocols are excluded from this
+fallback. A regression supplies an interleaver whose unitary hook raises if
+called, and verifies its declared H decomposition and both directions execute.
+Known primitive gates keep their normal lowering and counts.
+
+For two three-entry angle rows `(1,2,3)` and `(3,0,1)`, with kappa two:
+
+| External local gates | Actual instructions | Explicit T/T-dagger | Measures | Local matrix leaves | Actual wires |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| One-bit rotation and interleaver | 57 | 8 | 2 | 5 | 6 |
+| Two-bit rotation and interleaver | 57 | 8 | 2 | 5 | 7 |
+| One-bit rotation, independent-target CNOT interleaver | 57 | 8 | 2 | 4 | 7 |
+
+The source-capture/native histograms agree. A matrix leaf is not counted as a
+finished Clifford+T synthesis. For the explicit one-bit MatrixGate fixture, the
+source independently reports 10 And, 24 Clifford, 17 rotations, 10 measurements
+and peak six. For the two-bit MatrixGate fixture, source QEC aggregation raises
+`DecomposeTypeError` on atomic controlled And, while its width query reports
+eight. Those declarations describe another proposed decomposition depth and
+are not the actual 57-instruction stream or its seven reserved wires. The
+existing original Z-power resource model remains independently accepted.
+
 ## Remaining source boundaries
 
-Q-0678 and Q-0680 are covered. Q-0679 remains open for general import and
-synthesis of external arbitrary gate objects. The existing native
-callbacks can bind both original custom interleavers and their unrelated
-target. Q-0666 remains open for the other rotation exports.
+Q-0678 and Q-0680 retain their earlier accepted assets and tests. Q-0666 is now
+closed by the subsequent rotations-package audit. Q-0679's actual general
+local-gate import and native callback replacement gap is covered for explicit
+matrices and pure unitary-only gate protocols at the owning boundary. It remains
+open for general Clifford+T synthesis and complete arbitrary-gate source cost
+queries. No synthesized T cost, arbitrary-size runtime bound, or fully universal
+hardware lowering is claimed from these local matrix leaves.
+
+The unchanged upstream 18 eigensolver/reduced-state failures remain in the prior
+source-suite evidence. This batch does not alter reference gates or original
+assertions, rerun that unchanged failure without cause, or add child progress
+items in place of completing a source file.
+
+## Current batch validation
+
+Eight focused cases passed in 2.83 seconds. The expanded source-import,
+rotation, sparse/PREPARE/LCU and erasure regression passed 656 cases in 73.79
+seconds. Strict mypy on the changed importer and new test, Black, Ruff,
+Ecosystem/Algorithms scopes, architecture, multilevel IR and protected API checks
+passed. Serial coverage with 56 cases passed in 8.46 seconds and measured 89%
+for the complete feedback-import module; unrelated existing guards remain
+uncovered, so this is not a 100% claim. Sixty CPU/representation integration
+cases passed in 45.13 seconds, and the SDK-free native rotation-array notebook
+passed in an independent kernel in 2.26 seconds. Existing unchanged-source
+failure evidence is reused.
