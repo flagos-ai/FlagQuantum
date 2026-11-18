@@ -20,7 +20,8 @@ class CircuitBlockEncoding:
     Order is forward, adjoint, positive-controlled forward, positive-controlled
     adjoint. Each snapshot packs optional control, system, ancilla, resource,
     then clean work. Auxiliary logical ports remain through ports; they are not
-    scratch. Models are independent declarations in the same order.
+    scratch. Models, when supplied, are independent declarations in the same
+    order. Missing models cannot be queried as zero costs.
     """
 
     system_bitsize: int
@@ -29,7 +30,9 @@ class CircuitBlockEncoding:
     alpha: SymbolicReal
     epsilon: SymbolicReal
     snapshots: tuple[CircuitIR, CircuitIR, CircuitIR, CircuitIR]
-    models: tuple[ComponentCost, ComponentCost, ComponentCost, ComponentCost]
+    models: tuple[ComponentCost, ComponentCost, ComponentCost, ComponentCost] | None = (
+        None
+    )
     binding_swaps: tuple[int, int, int, int] = (0, 0, 0, 0)
 
     def __post_init__(self) -> None:
@@ -45,14 +48,14 @@ class CircuitBlockEncoding:
         widths = (self.system_bitsize, self.ancilla_bitsize, self.resource_bitsize)
         if any(type(n) is not int or n < 0 for n in widths) or not self.system_bitsize:
             raise ValueError("Block snapshots require concrete nonnegative port widths")
-        if any(
-            len(values) != 4
-            for values in (self.snapshots, self.models, self.binding_swaps)
-        ):
+        if any(len(values) != 4 for values in (self.snapshots, self.binding_swaps)):
             raise ValueError(
                 "Block snapshots require four directional/control variants"
             )
-        if any(not isinstance(model, ComponentCost) for model in self.models):
+        if self.models is not None and (
+            len(self.models) != 4
+            or any(not isinstance(model, ComponentCost) for model in self.models)
+        ):
             raise TypeError(
                 "Block snapshot models must be independent ComponentCost values"
             )
@@ -61,7 +64,9 @@ class CircuitBlockEncoding:
         for controlled in (False, True):
             self.requirements(controlled=controlled)
             for index in (2 * int(controlled), 2 * int(controlled) + 1):
-                if self.models[index].qubits < sum(widths) + int(controlled):
+                if self.models is not None and self.models[index].qubits < sum(
+                    widths
+                ) + int(controlled):
                     raise ValueError("Block model omits its logical ports")
 
     @property
@@ -92,6 +97,10 @@ class CircuitBlockEncoding:
         if type(controlled) is not bool or type(adjoint) is not bool:
             raise ValueError(
                 "Block snapshot direction and control mode must be Boolean"
+            )
+        if self.models is None:
+            raise ValueError(
+                "No independent resource model was supplied for this block"
             )
         index = 2 * int(controlled) + int(adjoint)
         return _model(
