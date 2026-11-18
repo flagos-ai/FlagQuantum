@@ -57,6 +57,7 @@ def _snapshot(
     *,
     local_ports: tuple[str, ...] = (),
     scalar_carrier: bool = False,
+    allow_empty_ports: bool = False,
 ) -> tuple[CircuitIR, int]:
     from qualtran import Bloq
     from qualtran._infra.adjoint import Adjoint
@@ -68,6 +69,8 @@ def _snapshot(
     cirq = _cirq()
     if type(scalar_carrier) is not bool or (scalar_carrier and ports):
         raise ValueError("Scalar carrier capture requires empty logical ports")
+    if type(allow_empty_ports) is not bool:
+        raise ValueError("Empty-port admission must be Boolean")
     local = set(local_ports)
     if len(local) != len(local_ports) or not local <= {name for name, _ in ports}:
         raise ValueError("Local ports must be distinct declared physical ports")
@@ -81,7 +84,7 @@ def _snapshot(
         side = tuple(side)
         if any(
             type(reg.bitsize) is not int
-            or reg.bitsize <= 0
+            or reg.bitsize < (0 if allow_empty_ports and reg.side.value == 3 else 1)
             or any(type(size) is not int or size <= 0 for size in reg.shape)
             for reg in side
         ):

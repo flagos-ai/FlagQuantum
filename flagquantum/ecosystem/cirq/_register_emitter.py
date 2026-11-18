@@ -25,6 +25,10 @@ def import_register_emitter(
         raise ValueError("Forward local ports must be RIGHT outputs")
     # _snapshot validates the original widths and shapes before accepting them.
     ports = tuple((reg.name, reg.total_bits()) for reg in registers)
-    forward, fs = _snapshot(foreign, ports, local_ports=local_ports)
-    backward, bs = _snapshot(foreign.adjoint(), ports, local_ports=local_ports)
+    forward, fs = _snapshot(
+        foreign, ports, local_ports=local_ports, allow_empty_ports=True
+    )
+    backward, bs = _snapshot(
+        foreign.adjoint(), ports, local_ports=local_ports, allow_empty_ports=True
+    )
     return CircuitRegisterEmitter(ports, (forward, backward), (fs, bs))
