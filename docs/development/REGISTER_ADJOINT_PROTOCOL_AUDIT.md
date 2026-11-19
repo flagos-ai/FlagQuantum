@@ -17,14 +17,18 @@ The complete native tutorial is already accepted separately as Q-0138.
 | `Adjoint.decompose_bloq` | Stored-body hierarchy reversal with shared definitions and explicit leaves | Native atomic bodies need a supplied exact inverse; arbitrary Python method discovery is outside the current owned graph interface |
 | `Adjoint._circuit_diagram_info_` | Private Ecosystem `RegisterCirqGate` retains labels and multiplies the diagram exponent by its power | Source missing diagram protocols return `NotImplemented`; native declared registers supply default labels |
 | `Adjoint.adjoint` | Private Cirq inverse returns the exact original object on double inversion; graph reversal has existing structural double-inverse evidence | Program transformations return new immutable graphs |
-| `Adjoint.build_call_graph` | Existing `component_callee_counts` with a supplied inverse-key generalizer, plus `program_component_call_graph` for actual stored calls | No generic wrapper infers arbitrary declared node inverses |
-| `Adjoint.__str__` | Existing caller-selected graph names and Drawer `adjoint_wire_symbol` preserve explicit labels | Automatic generic wrapper display-name derivation remains open |
-| `Adjoint.wire_symbol` | Drawer `adjoint_wire_symbol` has source comparisons for root labels and directional register symbols | Automatic coupling from a generic wrapper to its label supplier remains open |
+| `Adjoint.build_call_graph` | `AdjointCall.callee_counts` wraps arbitrary hashable forward identities by default, applies specialized inverse mappings, and reuses `component_callee_counts`; actual stored calls use `program_component_call_graph` | Declarations and specialized inverses stay with their native owners |
+| `Adjoint.__str__` | `AdjointCall.__str__` appends a dagger to the original display name without changing node identity | Program function names remain stable executable identifiers |
+| `Adjoint.wire_symbol` | Drawer `adjoint_wire_symbol` has source comparisons for root labels and directional register symbols; register callback inversion uses the original direction | Presentation callbacks remain in Drawer or Ecosystem |
 | Classical and tensor decomposition-only semantics | Existing component graph and tensor owners; full complex operator and explicit leaf execution evidence | Generic wrapper admission and dispatch still require explicit owned interfaces |
 
-Q-0147 and Q-0148 remain open. The table records whole-file coverage and the
-remaining interface obligations instead of treating individual passing protocol
-checks as complete generic-wrapper acceptance.
+The source class is distributed across the established native ownership boundaries.
+`AdjointCall` is the lazy resource identity. Core owns signature inversion,
+Compiler owns executable graph derivation, Drawer owns glyph inversion,
+Ecosystem owns SDK diagrams, and Simulation owns decomposition evaluation.
+No foreign class or alternate executable graph is stored in Core. Exact leaf
+inverses remain explicit, including measurement-assisted erasure. The listed
+source failures and API adaptations are retained in the acceptance scope.
 
 ## Ecosystem repair
 
@@ -63,3 +67,55 @@ findings in the changed files. Persistent logs and the exact prior mismatch are 
 `ftqc-reference-env/g2-adjoint-protocol-*` and `g2-adjoint-metadata-gap.json`.
 The prior default-suite public-docstring registry failure remains recorded by
 Q-0138's acceptance run. This batch does not claim a full default-suite pass.
+
+
+## Declared identity and whole-file completion
+
+The native resource module `compiler/_component_trace/adjoint.py` adds the
+missing default wrapper for arbitrary hashable declaration nodes. Names are
+computed from the child, while equality and hashing retain its full identity.
+Two distinct children with the same printed name remain distinct. Calling the
+inverse of this wrapper returns the original child object. The common helper
+also unwraps an already inverse node when traversing declarations.
+
+`callee_counts` first invokes the original forward declaration with the same
+symbol allocator. It delegates accumulation to the existing count engine and
+maps every child to its default or explicitly specialized inverse. Both set and
+dictionary declarations retain symbolic multiplicities. Unsupported direct
+queries propagate their error. The existing resource graph policy may retain a
+capability refusal as a terminal node. No numerical primitive is emitted by
+resource traversal, and declared costs are independent of executable IR counts.
+
+The complete source TestBloqWithCallGraph hierarchy matches every directed edge
+and weighted leaf count, including specialized Split/Join inversion. The native
+H/T executable witness still emits two primitives with one T and one Clifford
+in its independent model. The three-X decomposition witness ignores source
+specialized classical/tensor overrides exactly as the default source wrapper
+does, evaluates both basis values and matches the full complex matrix.
+
+| Original test | Native whole-workflow evidence |
+| --- | --- |
+| `test_serial_combo_adjoint` | Tutorial connection maps and existing reversed serial graph tests |
+| `test_cbloq_adjoint_function` | Existing validated graph, shape, ownership and workspace adjoint tests |
+| `test_adjoint_signature` | Core direction inversion and one-sided Cirq label callback tests |
+| `test_adjoint_adjoint` | Resource original-object unwrap, private gate original-object return and graph double inversion |
+| `test_bloq_counts` | Default and specialized set/dict symbolic declaration tests |
+| `test_call_graph` | Complete TestBloqWithCallGraph edge and weighted-leaf comparison |
+| `test_names` | Arbitrary original labels, trailing daggers, identity/hash separation and existing root glyph tests |
+| `test_wire_symbol` | Existing IntState/IntEffect/T source callback comparisons and both directional sides |
+| `test_notebook` | Complete 17-cell native tutorial and unchanged Jupyter execution |
+
+The original source's empty-array final-output omission, raw CompositeBloq
+wrapped decomposition refusal and static TestAtom inverse-cost refusal retain
+their previously documented source behavior. Native explicit empty-array
+metadata is preserved. Unsupported measured primitive inversion still requires
+its dedicated inverse body. This avoids inferring a unitary inverse for erasure.
+
+Final declared-wrapper acceptance passes 1459 concentrated cases, strict typing
+of both new Python files, Black, Ruff, Compiler scope, architecture and IR
+checks. The resource module has 100% statement coverage. The dependency scan
+retains 689 repository findings with zero changed-file findings. Frozen source
+and test blobs remain unchanged, so the previous nine original test results
+remain applicable. The local integration result is recorded in
+`g2-declared-adjoint-integration.log`. This closes Q-0147 and Q-0148 through
+the complete ownership map above, including explicit source differences.
