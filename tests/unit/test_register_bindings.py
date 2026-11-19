@@ -20,7 +20,17 @@ class SourceContract:
 
     @staticmethod
     def register(register):
-        from qualtran import BQUInt, CBit, QAny, QBit, QInt, QUInt, Side
+        from qualtran import (
+            BQUInt,
+            CBit,
+            QAny,
+            QBit,
+            QInt,
+            QIntOnesComp,
+            QMontgomeryUInt,
+            QUInt,
+            Side,
+        )
         from qualtran import Register as SourceRegister
 
         dtype = register.dtype
@@ -30,10 +40,17 @@ class SourceContract:
             source_dtype = QBit()
         elif "bound" in dict(dtype.parameters):
             source_dtype = BQUInt(dtype.num_qubits, dict(dtype.parameters)["bound"])
+        elif dtype.encoding == "montgomery":
+            source_dtype = QMontgomeryUInt(
+                dtype.num_qubits, dict(dtype.parameters).get("modulus")
+            )
         else:
-            source_dtype = {"opaque": QAny, "uint": QUInt, "signed": QInt}[
-                dtype.encoding
-            ](dtype.num_qubits)
+            source_dtype = {
+                "opaque": QAny,
+                "uint": QUInt,
+                "signed": QInt,
+                "ones_complement": QIntOnesComp,
+            }[dtype.encoding](dtype.num_qubits)
         return SourceRegister(
             register.name,
             source_dtype,

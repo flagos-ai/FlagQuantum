@@ -2088,3 +2088,33 @@ parameter operations or serialized schema. Existing unsupported nonlinear
 expressions and generic symbolic global shifts must retain explicit diagnostics
 and remain recorded as broader source-wrapper gaps. Core and Compiler changes
 land independently of the Ecosystem translator after this contract.
+
+### Integer storage execution prerequisite 1.25
+
+The complete ControlledViaAnd and CtrlSpecAnd source chains require the existing
+ones'-complement, bounded unsigned and Montgomery quantum word descriptors to
+cross the typed Program boundary. Their concrete gate emitters and numerical
+codecs already exist. The finite Program currently refuses these descriptors.
+
+Admit canonical ones'-complement words and canonical bounded unsigned and
+Montgomery parameters through existing logical split/join, call ownership,
+physical binding and finite lowering. Quantum width must be a built-in
+nonnegative integer, classical width built-in zero, and physical parameters
+built-in integers. Preserve the original metadata constructor's canonical
+parameter order and eager validation. A Montgomery modulus may be omitted.
+Logical symbolic widths/parameters retain metadata only until physical binding.
+No value conversion occurs during rebinding. A bounded value is its stored
+unsigned word, and a Montgomery control is its stored residue, as in the source.
+
+This is an additive internal admission slice under the user-authorized G2
+migration. It adds no public export, record field, opcode or serialized
+vocabulary. The protected nonlinear ParameterExpression proposal remains a
+separate pending decision. No owner approval or Stable Core freeze is declared.
+Integration contract witnesses first execute unchanged source split/join and
+single-consumption rules. The same scenarios must then run against the native
+builder. Core implementation must preserve canonical descriptor identity,
+reject malformed profiles, and retain zero-width logical ownership where the
+source constructor admits it. Compiler consumers must reuse the shared
+predicate and exact adjoint, compare ordered operands and feedback, and verify
+all small measurement histories with full complex spectator amplitudes and
+zero work. Primitive counts and independent source QEC models remain separate.
