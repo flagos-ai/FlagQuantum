@@ -1,7 +1,7 @@
 # Bounded Cirq layer lookahead
 
-Status: native implementation and development evidence, pending complete CI and
-integration. This change belongs to Compiler's `single_device_fast_path`.
+Status: integrated in PR #1234 after complete PR CI passed. This change belongs
+to Compiler's `single_device_fast_path`.
 It adds no public API, dependency, result field or serialized schema.
 
 ## Source and adaptation
@@ -95,7 +95,7 @@ assert compiled.metadata["routing"]["mapping_restored"] is True
 
 The ordinary automatic selector can use the improved SABRE candidate. The
 observable contract stays restored output layout. More search does not prove
-a globally minimum CZ count, depth, duration or error. The pending upstream
+a globally minimum CZ count, depth, duration or error. The integrated upstream
 adaptations and remaining gaps are listed in [the audit](COMPILER_UPSTREAM_REUSE.md).
 
 ## Validation status
@@ -105,5 +105,9 @@ the optional Cirq source comparison; strict mypy over 1,134 source files; scoped
 Ruff; architecture, Stable Core API, ownership, English-content and local-link
 checks. The broad parent smoke/unit run previously reported failures, including
 evidence-revision provenance diagnostics, and is not represented as passing.
-Complete CI and resource-qualified prospective SDKBench execution remain required
-before integration or an overall performance claim.
+PR CI passed on `71614dd3935b2c0adfb9336d306e44706f461762`: 239 checks
+passed and three optional checks were skipped. The implementation was integrated
+as `858df9dbd5ba964e8e59b3383304547710a1dee5`, whose installed-wheel smoke
+also passed. This does not convert the earlier incomplete local run into passing
+evidence. Prospective resource-qualified SDKBench execution and independent
+replay remain required before comparative claims.

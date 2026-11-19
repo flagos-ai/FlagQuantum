@@ -120,3 +120,13 @@ CI checks remain required before integration.
 The local timing probe shares a host with other active workloads. Its timing
 samples are diagnostic only, and no speedup estimate is promoted here. A quiet,
 resource-controlled run is required to establish the performance effect.
+
+
+## Integration status
+
+PR #1232 integrated this scorer at
+`15ba2367e70d76ad374297098687fac1b1949259` after its required checks.
+The interrupted local attempts above remain historical non-passing evidence.
+The combined native compiler and prospective qualification scope are recorded
+in [the upstream audit](COMPILER_UPSTREAM_REUSE.md); merging does not establish
+a performance advantage over another SDK.
