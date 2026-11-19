@@ -12,9 +12,9 @@ from flagquantum.compiler.registers.component_graph import copy_component_progra
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.core.ir.program.register_bindings import RegisterBinding
-from flagquantum.core.ir.program.signatures import Signature
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register
+from flagquantum.core.ir.program.signatures import Signature
 
 pytestmark = pytest.mark.unit
 
@@ -61,3 +61,59 @@ def test_matrix_survives_graph_copy_and_append_with_clean_work() -> None:
     rebound = bind_register_program(module, ((0,),), clean=(1,))
     assert rebound.circuit.instructions[0].matrix is not None
     torch.testing.assert_close(rebound.circuit.instructions[0].matrix, matrix)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("polarity", [0, 1])
+def test_matrix_feedback_retains_each_complex_measurement_branch(polarity: int) -> None:
+    import cirq
+    import numpy as np
+
+    from flagquantum.core.ir.program import ProgramRecord
+    from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
+    from flagquantum.ecosystem.cirq._register_gate import RegisterCirqGate
+    from tests.unit.measurement_checks import forced_branch
+    from tests.unit.test_cirq_feedback_import import source_branch
+
+    qubits = tuple(cirq.LineQubit.range(3))
+    matrix = np.array([[0, 1j], [1j, 0]], dtype=np.complex128)
+    operation = (
+        cirq.MatrixGate(matrix)
+        .controlled(control_values=[polarity])
+        .on(qubits[2], qubits[1])
+    )
+    source = cirq.Circuit(
+        cirq.measure(qubits[0], key="branch"),
+        operation.with_classical_controls("branch"),
+        cirq.reset(qubits[0]),
+    )
+    imported = import_cirq_feedback(source, qubit_order=qubits)
+    registers = tuple(Register(f"q{i}", quantum_bit_type()) for i in range(3))
+    function = bit_gate_function("leaf", registers, imported.ir)
+    bound = bind_register_program(
+        ProgramRecord((function,)), ((0,), (1,), (2,)), entry="leaf"
+    )
+    assert bound.circuit.instructions[1].wires == (2, 1)
+    assert bound.circuit.instructions[1].metadata["conditions"] == ((0, 1),)
+    assert sum(op.name == "any" for op in bound.circuit.instructions) == 1
+    exported = cirq.Circuit(
+        cirq.decompose_once(
+            RegisterCirqGate(
+                bound, Signature(registers), feedback_key_prefix="matrix"
+            ).on(*qubits)
+        )
+    )
+    reimported = import_cirq_feedback(exported, qubit_order=qubits)
+    initial = np.arange(1, 9, dtype=np.complex128) * np.exp(0.23j * np.arange(8))
+    initial /= np.linalg.norm(initial)
+    for outcome in (0, 1):
+        actual = forced_branch(
+            torch.from_numpy(initial), bound.circuit.instructions, (outcome,)
+        )
+        expected = torch.from_numpy(source_branch(source, qubits, initial, (outcome,)))
+        torch.testing.assert_close(actual, expected, atol=2e-12, rtol=0)
+        restored = forced_branch(
+            torch.from_numpy(initial), reimported.ir.instructions, (outcome,)
+        )
+        torch.testing.assert_close(restored, expected, atol=2e-12, rtol=0)
+        assert torch.count_nonzero(actual[4:]) == 0
