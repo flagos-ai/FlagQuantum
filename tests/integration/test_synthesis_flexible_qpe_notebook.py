@@ -6,6 +6,10 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("numpy")
+
+import numpy as np
+
 from examples.synthesis.tutorials.advanced_tutorials.high_level_modeling_flexible_qpe.overview.ansatz import (
     build_program,
     exact_matrix,
@@ -17,8 +21,6 @@ from examples.synthesis.tutorials.advanced_tutorials.high_level_modeling_flexibl
     Check,
     verify_and_sample,
 )
-
-np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.integration
 

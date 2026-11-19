@@ -9,11 +9,17 @@ import pytest
 import torch
 
 import flagquantum as fq
+
+pytest.importorskip("numpy")
+
 from examples.synthesis.algorithms.quantum_walks.glued_trees.overview import (
     quantum,
     workflow,
 )
-from examples.synthesis.pauli_evolution import load_terms, reference_circuit
+from examples.synthesis.pauli_evolution import (
+    load_terms,
+    reference_circuit,
+)
 
 pytestmark = pytest.mark.integration
 

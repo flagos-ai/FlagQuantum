@@ -69,7 +69,7 @@ def swap_bits(x:QNum[3,False,3],y:QNum[3,False,3]):
         CX(y[bit],x[bit])
         CX(x[bit],y[bit])
 """
-    definition = program_definition(IMPORTS + helper + """
+    body = """
 @qfunc
 def main(c:Output[QBit],x:Output[QNum[3,False,3]],y:Output[QNum[3,False,3]]):
     allocate(c)
@@ -84,7 +84,8 @@ def main(c:Output[QBit],x:Output[QNum[3,False,3]],y:Output[QNum[3,False,3]]):
         swap_bits(x,y)
     swap_bits(x,y)
     H(c)
-""")
+"""
+    definition = program_definition(IMPORTS + helper + body)
     p = synth.synthesize(definition, max_workspace=0)
     reference = (
         fq.Circuit(7, dtype=torch.complex128).h(0).h(1).h(2).h(3).x(4).x(6).rz(1, 0.29)

@@ -7,6 +7,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+
+pytest.importorskip("matplotlib")
+
 from examples.synthesis.applications.telecom.resiliency_planning.main import (
     build_program,
 )

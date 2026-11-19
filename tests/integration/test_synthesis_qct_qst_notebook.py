@@ -9,15 +9,24 @@ import pytest
 import torch
 
 import flagquantum as fq
+
+pytest.importorskip("numpy")
+
 from examples.synthesis.compare_states import compare_states
-from examples.synthesis.functions.qct_qst.overview import main as transforms
+from examples.synthesis.functions.qct_qst.overview import (
+    main as transforms,
+)
 from examples.synthesis.functions.qct_qst.overview.comparisons.circuit import (
     reference_circuits,
 )
-from examples.synthesis.functions.qct_qst.qct_qst_type1.main import AMPLITUDES
+from examples.synthesis.functions.qct_qst.qct_qst_type1.main import (
+    AMPLITUDES,
+)
 from flagquantum import synth
 from flagquantum.errors import PlanningError
-from tests.integration.synthesis_notebook_support import execute_code_cells
+from tests.integration.synthesis_notebook_support import (
+    execute_code_cells,
+)
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

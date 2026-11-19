@@ -9,6 +9,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+
+pytest.importorskip("matplotlib")
+
 from examples.synthesis.compare_states import compare_states
 from examples.synthesis.tutorials.basics.qml.overview.workflow import (
     Workflow,
@@ -26,7 +29,9 @@ from examples.synthesis.tutorials.basics.qml.overview.workflow import (
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
 from flagquantum.errors import PlanningError
-from tests.integration.synthesis_notebook_support import execute_code_cells
+from tests.integration.synthesis_notebook_support import (
+    execute_code_cells,
+)
 
 pytestmark = pytest.mark.integration
 

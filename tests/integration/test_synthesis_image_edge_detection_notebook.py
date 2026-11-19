@@ -7,6 +7,9 @@ from pathlib import Path
 import pytest
 import torch
 
+pytest.importorskip("numpy")
+pytest.importorskip("matplotlib")
+
 from examples.synthesis.applications.image_processing.quantum_hadamard_edge_detection.overview.quantum import (
     prepare_image,
     walsh_angles,

@@ -9,6 +9,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+
+pytest.importorskip("numpy")
+
 from examples.synthesis.applications.benchmarking.randomized_benchmarking.overview.ansatz import (
     GATES,
     LENGTHS,
@@ -32,7 +35,6 @@ from examples.synthesis.applications.benchmarking.randomized_benchmarking.overvi
     synthesize_all,
 )
 
-np = pytest.importorskip("numpy")
 pytestmark = pytest.mark.integration
 
 

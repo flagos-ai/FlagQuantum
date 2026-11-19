@@ -10,6 +10,11 @@ import pytest
 import torch
 
 import flagquantum as fq
+
+pytest.importorskip("numpy")
+
+import numpy as np
+
 from examples.synthesis.applications.benchmarking.quantum_volume.overview.ansatz import (
     build_program,
     haar_unitary,
@@ -22,8 +27,6 @@ from examples.synthesis.applications.benchmarking.quantum_volume.overview.workfl
     source_round_significant,
     summarize,
 )
-
-np = pytest.importorskip("numpy")
 
 pytestmark = pytest.mark.integration
 

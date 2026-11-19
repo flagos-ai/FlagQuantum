@@ -9,6 +9,9 @@ import pytest
 import torch
 
 import flagquantum as fq
+
+pytest.importorskip("numpy")
+
 from examples.synthesis.tutorials.technology_demonstrations.QPE.qpe_for_unitary_matrix.overview.ansatz import (
     build_program,
 )

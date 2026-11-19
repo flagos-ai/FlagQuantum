@@ -292,10 +292,16 @@ def _zyz_angles(matrix: Matrix) -> tuple[float, float, float]:
             _principal(cmath.phase(bottom_left)),
             _principal(cmath.phase(top_right) - math.pi),
         )
+    # Near an anti-diagonal unitary, the small diagonal entries can acquire
+    # different relative roundoff. Recover their phase sum from the determinant
+    # so an unreliable bottom-right phase cannot rotate the dominant entries.
+    determinant_phase = cmath.phase(top_left * bottom_right - top_right * bottom_left)
     return (
         2.0 * math.atan2(abs(bottom_left), abs(top_left)),
         _principal(cmath.phase(bottom_left) - cmath.phase(top_left)),
-        _principal(cmath.phase(bottom_right) - cmath.phase(bottom_left)),
+        _principal(
+            determinant_phase - cmath.phase(bottom_left) - cmath.phase(top_left)
+        ),
     )
 
 

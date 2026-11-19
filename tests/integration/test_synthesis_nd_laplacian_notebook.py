@@ -5,6 +5,10 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("numpy")
+
+import numpy as np
+
 from examples.synthesis.community.paper_implementation_project.block_encoding_nd_laplacian.overview.model import (
     laplacian_1d,
     laplacian_nd,
@@ -13,7 +17,6 @@ from examples.synthesis.community.paper_implementation_project.block_encoding_nd
     run_case,
 )
 
-np = pytest.importorskip("numpy")
 pytestmark = pytest.mark.integration
 
 
