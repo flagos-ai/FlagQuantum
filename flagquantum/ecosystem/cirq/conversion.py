@@ -34,6 +34,7 @@ _CIRQ_SYMBOL_TO_FLAGQUANTUM = {
     "S": "s",
     "T": "t",
     "ZPowGate": "phase",
+    "CZPowGate": "cphase",
     "rx": "rx",
     "ry": "ry",
     "rz": "rz",
@@ -244,6 +245,78 @@ def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
     raise TypeError(f"unsupported FlagQuantum parameter value {value!r}")
 
 
+def _eigen_phase_operations(cirq: Any, operations: Iterable[Any]) -> Iterable[Any]:
+    """Factor admitted eigen-gates into their canonical gate and scalar phase."""
+    sympy = import_module("sympy")
+    for original in operations:
+        if original.tags:
+            yield original
+            continue
+        operation = original.without_classical_controls()
+        gate = operation.gate
+        controls: tuple[Any, ...] = ()
+        control_values = None
+        if isinstance(gate, cirq.ControlledGate):
+            controls = tuple(operation.qubits[: gate.num_controls()])
+            control_values = gate.control_values
+            gate = gate.sub_gate
+        if (
+            not isinstance(
+                gate,
+                (
+                    cirq.XPowGate,
+                    cirq.YPowGate,
+                    cirq.ZPowGate,
+                    cirq.ZZPowGate,
+                    cirq.CZPowGate,
+                ),
+            )
+            or _lower_gate(cirq, gate, [], 0) is not None
+        ):
+            yield original
+            continue
+        if (
+            isinstance(gate, cirq.XPowGate)
+            and gate.global_shift == 0
+            and not cirq.is_parameterized(gate.exponent)
+            and float(gate.exponent) % 2 in (0.5, 1.5)
+        ):
+            yield original
+            continue
+        if any(qubit.dimension != 2 for qubit in operation.qubits):
+            yield original
+            continue
+        exponent = sympy.sympify(gate.exponent)
+        shift = sympy.sympify(gate.global_shift)
+        try:
+            _flagquantum_parameter_value(cirq, exponent)
+            _flagquantum_parameter_value(cirq, shift)
+        except (TypeError, ValueError):
+            yield original
+            continue
+        if isinstance(gate, (cirq.XPowGate, cirq.YPowGate, cirq.ZZPowGate)):
+            canonical_shift = sympy.Rational(-1, 2)
+        else:
+            canonical_shift = sympy.Integer(0)
+        families = (
+            cirq.XPowGate,
+            cirq.YPowGate,
+            cirq.ZPowGate,
+            cirq.ZZPowGate,
+            cirq.CZPowGate,
+        )
+        family = next(kind for kind in families if isinstance(gate, kind))
+        canonical = family(exponent=gate.exponent, global_shift=float(canonical_shift))
+        angle = sympy.pi * exponent * (shift - canonical_shift)
+        leaves = [canonical.on(*operation.qubits[len(controls) :])]
+        if angle != 0:
+            leaves.append(cirq.global_phase_operation(sympy.exp(sympy.I * angle)))
+        for leaf in leaves:
+            if controls:
+                leaf = leaf.controlled_by(*controls, control_values=control_values)
+            yield leaf.with_classical_controls(*original.classical_controls)
+
+
 def _check_cirq_symbol_identity(cirq: Any, operations: Iterable[Any]) -> None:
     """Reject distinct symbols sharing one owned name across supported leaves."""
     sympy = import_module("sympy")
@@ -285,7 +358,17 @@ def _global_phase_angle(cirq: Any, coefficient: Any) -> Any:
         ) or not math.isclose(abs(value), 1.0, rel_tol=0, abs_tol=1e-12):
             raise ValueError("Global phase coefficient must be finite and unit modulus")
         return math.atan2(value.imag, value.real)
-    symbolic = sympy.simplify(sympy.sympify(coefficient).rewrite(sympy.exp))
+    symbolic = sympy.powsimp(sympy.sympify(coefficient), combine="exp")
+    if isinstance(symbolic, sympy.Pow) and not symbolic.base.free_symbols:
+        base = complex(symbolic.base)
+        if (
+            math.isfinite(base.real)
+            and math.isfinite(base.imag)
+            and math.isclose(abs(base), 1.0, rel_tol=0, abs_tol=1e-12)
+        ):
+            return _flagquantum_parameter_value(
+                cirq, sympy.arg(symbolic.base) * symbolic.exp
+            )
     if symbolic.func != sympy.exp:
         raise ValueError(
             "Symbolic global phase requires a proven exp(i * real_angle) coefficient"
@@ -332,12 +415,12 @@ def _pow_gate(
     if shift is None:
         return None
     if (
-        isinstance(gate, cirq.ZPowGate)
+        isinstance(gate, (cirq.ZPowGate, cirq.CZPowGate))
         and shift == 0
         and cirq.is_parameterized(gate.exponent)
     ):
         try:
-            return "phase", {
+            return ("cphase" if isinstance(gate, cirq.CZPowGate) else "phase"), {
                 "theta": _flagquantum_parameter_value(
                     cirq, gate.exponent, scale_by_pi=True
                 )
@@ -412,6 +495,9 @@ def _pow_gate(
             return "phase", {"theta": math.pi * exponent}
         if _close(shift, -0.5):
             return "rz", {"theta": math.pi * exponent}
+    if isinstance(gate, cirq.CZPowGate) and shift == 0:
+        if not _close(abs(exponent), 1.0):
+            return "cphase", {"theta": math.pi * exponent}
     if isinstance(gate, cirq.ZZPowGate) and _close(shift, -0.5):
         return "rzz", {"theta": math.pi * exponent}
     fixed_types = (
@@ -596,8 +682,11 @@ def _import_static_cirq(
         else {qubit: index for index, qubit in enumerate(wire_order)}
     )
     instructions: list[Instruction] = []
+    _check_cirq_symbol_identity(cirq, circuit.all_operations())
     indexed_operations = tuple(
-        operation for moment in circuit for operation in moment.operations
+        operation
+        for moment in circuit
+        for operation in _eigen_phase_operations(cirq, moment.operations)
     )
     _check_cirq_symbol_identity(cirq, indexed_operations)
     last_non_measurement = max(
@@ -623,7 +712,7 @@ def _import_static_cirq(
                 "Parallel Cirq Moment structure is flattened into stable operation order.",
                 severity="warning",
             )
-        for operation in moment.operations:
+        for operation in _eigen_phase_operations(cirq, moment.operations):
             gate = getattr(operation, "gate", None)
             name = type(gate).__name__ if gate is not None else type(operation).__name__
             if (

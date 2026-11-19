@@ -38,6 +38,7 @@ from ._register_export import _register_shape
 from .conversion import (
     _check_cirq_symbol_identity,
     _cirq,
+    _eigen_phase_operations,
     _global_phase_angle,
     _raise_if_lossy,
     _report,
@@ -66,7 +67,11 @@ def _register_operations(
     context = cirq.DecompositionContext(manager)
 
     def expand(operations: Iterable[Any], ancestors: tuple[Any, ...]) -> Iterator[Any]:
-        frame = tuple(_scalar_control_operations(cirq, operations))
+        original = tuple(operations)
+        _check_cirq_symbol_identity(cirq, original)
+        frame = tuple(
+            _scalar_control_operations(cirq, _eigen_phase_operations(cirq, original))
+        )
         with manager.reserve_qubits(q for op in frame for q in op.qubits):
             for operation in frame:
                 if operation.tags:

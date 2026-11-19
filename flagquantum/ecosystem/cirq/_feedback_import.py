@@ -20,6 +20,7 @@ from ._channel import _channel_instruction
 from .conversion import (
     _check_cirq_symbol_identity,
     _cirq,
+    _eigen_phase_operations,
     _flagquantum_parameter_value,
     _global_phase_angle,
     _lower_gate,
@@ -32,7 +33,7 @@ Bit = int | bool
 
 
 def _scalar_control_operations(cirq: Any, operations: Iterable[Any]) -> Iterator[Any]:
-    """Express binary negative scalar controls in the existing phase basis."""
+    """Express negative phase and rotation controls in the positive basis."""
     for original in operations:
         if original.tags:
             yield original
@@ -40,7 +41,8 @@ def _scalar_control_operations(cirq: Any, operations: Iterable[Any]) -> Iterator
         operation = original.without_classical_controls()
         gate = operation.gate
         if isinstance(gate, cirq.ControlledGate) and isinstance(
-            gate.sub_gate, cirq.GlobalPhaseGate
+            gate.sub_gate,
+            (cirq.GlobalPhaseGate, cirq.XPowGate, cirq.YPowGate, cirq.ZPowGate),
         ):
             values = tuple(tuple(value) for value in gate.control_values)
             if (
@@ -50,7 +52,9 @@ def _scalar_control_operations(cirq: Any, operations: Iterable[Any]) -> Iterator
             ):
                 flips = tuple(
                     cirq.X(qubit)
-                    for qubit, value in zip(operation.qubits, values, strict=True)
+                    for qubit, value in zip(
+                        operation.qubits[: len(values)], values, strict=True
+                    )
                     if value == (0,)
                 )
                 positive = gate.sub_gate.controlled(num_controls=len(values)).on(
@@ -59,6 +63,23 @@ def _scalar_control_operations(cirq: Any, operations: Iterable[Any]) -> Iterator
                 for leaf in (*flips, positive, *reversed(flips)):
                     yield leaf.with_classical_controls(*original.classical_controls)
                 continue
+        if (
+            isinstance(gate, cirq.ControlledGate)
+            and gate.num_controls() == 2
+            and isinstance(gate.sub_gate, cirq.YPowGate)
+        ):
+            # Cirq 1.7 CCYPowGate uses this same S-adjoint/CCX/S basis change.
+            # Apply it directly so Cirq 1.6 need not resolve a symbolic matrix.
+            target = operation.qubits[-1]
+            child = gate.sub_gate
+            equivalent = (
+                cirq.XPowGate(exponent=child.exponent, global_shift=child.global_shift)
+                .controlled(num_controls=2, control_values=gate.control_values)
+                .on(*operation.qubits)
+            )
+            for leaf in (cirq.S(target) ** -1, equivalent, cirq.S(target)):
+                yield leaf.with_classical_controls(*original.classical_controls)
+            continue
         yield original
 
 
@@ -404,7 +425,9 @@ def import_cirq_feedback(
     _check_cirq_symbol_identity(cirq, circuit.all_operations())
     feedback = _Feedback()
     for index, original in enumerate(
-        _scalar_control_operations(cirq, circuit.all_operations())
+        _scalar_control_operations(
+            cirq, _eigen_phase_operations(cirq, circuit.all_operations())
+        )
     ):
         issues: list[CirqConversionIssue] = []
         try:

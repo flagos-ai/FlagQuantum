@@ -552,7 +552,7 @@ def test_unsupported_cirq_parameter_expressions_fail_closed(expression) -> None:
 def test_symbolic_nonrotation_and_malformed_owned_expression_fail_closed() -> None:
     theta = sympy.Symbol("theta")
     with pytest.raises(CirqConversionError, match="unsupported_parameter_expression"):
-        from_cirq(cirq.Circuit((cirq.X**theta)(cirq.LineQubit(0))))
+        from_cirq(cirq.Circuit((cirq.H**theta)(cirq.LineQubit(0))))
 
     malformed = CircuitIR(
         1,
