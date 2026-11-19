@@ -19,6 +19,7 @@ from collections.abc import Mapping
 
 from ..diagnostics import LevelDiagnostic, _diagnostic
 from .call_verifier import call_signature, has_call_profile, verify_call_structure
+from .kraus import kraus_error
 from .matrix import matrix_error
 from .model import (
     CONSTANT_OPCODE,
@@ -243,6 +244,17 @@ def _verify_operations(
         )
         if error is not None:
             diagnostics.append(_diagnostic("program.matrix_invalid", error))
+        channel_error = (
+            kraus_error(operation.kraus, len(operation.operands))
+            if operation.opcode == "kraus"
+            else (
+                "only channel leaves may carry Kraus data"
+                if operation.kraus is not None
+                else None
+            )
+        )
+        if channel_error is not None:
+            diagnostics.append(_diagnostic("program.matrix_invalid", channel_error))
         signature = (
             call_signature(operation, callees)
             if operation.opcode == "call" and callees is not None

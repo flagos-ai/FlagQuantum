@@ -38,6 +38,7 @@ from ...classical_control import (
 from ...classical_dataflow import parse_classical_xor
 from .. import CircuitIR, Instruction, IRSerializationError, IRValidationError
 from ..diagnostics import LEVEL_PROGRAM, PUBLIC_LEVEL, LevelDiagnostic, _diagnostic
+from .kraus import kraus_error
 from .model import (
     CONSTANT_OPCODE,
     INVALID_INPUT,
@@ -223,6 +224,29 @@ def _lower_instructions(
     classical_values: dict[int, ValueRef] = {}
     operations: list[Operation] = []
     for index, instruction in enumerate(circuit.instructions):
+        channel_data = None
+        if instruction.name == "kraus":
+            matrices = instruction.matrix
+            error = None
+            if instruction.metadata.get("is_channel") is not True:
+                error = "materialized channel requires is_channel=True"
+            elif not isinstance(matrices, tuple) or any(
+                getattr(matrix, "ndim", None) != 2 for matrix in matrices
+            ):
+                error = "materialized channel requires a tuple of rank-two tensors"
+            else:
+                channel_data = tuple(
+                    tuple(
+                        tuple(complex(value) for value in row)
+                        for row in matrix.detach().cpu().tolist()
+                    )
+                    for matrix in matrices
+                )
+                error = kraus_error(channel_data, len(instruction.wires))
+            if error is not None:
+                raise _UnmodelledOpcodeError(
+                    _diagnostic("program.matrix_invalid", error)
+                )
         if instruction.name == "classical_xor":
             operation = parse_classical_xor(instruction)
             # Read all old definitions before binding the new destination, so
@@ -281,9 +305,10 @@ def _lower_instructions(
                         tuple(complex(value) for value in row)
                         for row in instruction.matrix.detach().cpu().tolist()
                     )
-                    if instruction.matrix is not None
+                    if instruction.matrix is not None and instruction.name != "kraus"
                     else None
                 ),
+                kraus=channel_data,
                 condition_clauses=_lower_conditions(
                     instruction,
                     classical_values,

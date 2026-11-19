@@ -113,6 +113,7 @@ class Operation:
         register_type: Destination descriptor for a join or allocation.
         workspace_dirty: Explicit borrowing flag for allocation or release.
         matrix: Immutable complex rows owned by an explicit unitary leaf.
+        kraus: Immutable channel matrices for a materialized channel leaf.
     """
 
     opcode: str
@@ -129,6 +130,7 @@ class Operation:
     register_type: RegisterType | None = None
     workspace_dirty: bool | None = None
     matrix: tuple[tuple[complex, ...], ...] | None = None
+    kraus: tuple[tuple[tuple[complex, ...], ...], ...] | None = None
 
     def __hash__(self) -> int:
         previous: tuple[object, ...] = (
@@ -147,7 +149,9 @@ class Operation:
             previous = (*previous, self.register_type)
         if self.workspace_dirty is not None:
             previous = (*previous, self.workspace_dirty)
-        return hash(previous if self.matrix is None else (*previous, self.matrix))
+        if self.matrix is not None:
+            previous = (*previous, self.matrix)
+        return hash(previous if self.kraus is None else (*previous, self.kraus))
 
 
 @dataclass(frozen=True)
@@ -295,7 +299,7 @@ def opcode_signature(
     that vocabulary. Every other opcode outside it has no program-level signature;
     the quantum level owns the extended vocabulary.
     """
-    if opcode == "any" and arity is not None:
+    if opcode in {"any", "kraus"} and arity is not None:
         wires = ("qubit",) * arity
         return OpcodeSignature(opcode, operand_kinds=wires, result_kinds=wires)
     if opcode == CONSTANT_OPCODE:
