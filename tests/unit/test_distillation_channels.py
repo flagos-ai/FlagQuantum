@@ -1,6 +1,5 @@
 """Verify source mixture order, complex operators, and storage wire mapping."""
 
-import numpy as np
 import pytest
 import torch
 
@@ -12,6 +11,8 @@ from flagquantum.qec.resources.distillation_channels import (
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 
 pytestmark = pytest.mark.unit
+
+np = pytest.importorskip("numpy")
 
 
 def test_rotation_channel_executes_through_native_ir() -> None:
@@ -33,6 +34,7 @@ def test_rotation_branches_match_source(
 
     op = noisy_pauli_rotation(word, *errors, tuple(range(len(word))))
     source = cirq.kraus(NoisyPauliRotation(word, *errors))
+    assert op.matrix is not None
     np.testing.assert_allclose(np.asarray(torch.stack(op.matrix)), source, atol=1e-15)
 
 
@@ -52,6 +54,7 @@ def test_storage_channels_match_source(kind: str) -> None:
         storage_error(kind, probabilities, wires), source, strict=True
     ):
         assert op.wires == tuple(q.x for q in upstream.qubits)
+        assert op.matrix is not None
         # Cirq keeps both zero-probability Pauli slots in its asymmetric channel.
         nonzero = [matrix for matrix in cirq.kraus(upstream) if np.any(matrix)]
         actual = [matrix.numpy() for matrix in op.matrix if bool(torch.any(matrix))]

@@ -2,7 +2,6 @@
 
 from dataclasses import asdict
 
-import numpy as np
 import pytest
 import torch
 
@@ -11,6 +10,8 @@ from flagquantum.qec.resources.fifteen_to_one import FifteenToOneFactory
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 
 pytestmark = pytest.mark.unit
+
+np = pytest.importorskip("numpy")
 
 
 def test_factory_paper_example() -> None:
@@ -71,6 +72,7 @@ def test_factory_schedule_and_estimate_match_source(
             assert source_op.gate == cirq.H
         else:
             # Cirq stores all three Pauli error slots, including zero weights.
+            assert op.matrix is not None
             expected = [matrix for matrix in cirq.kraus(source_op) if np.any(matrix)]
             actual = [matrix.numpy() for matrix in op.matrix if bool(torch.any(matrix))]
             np.testing.assert_allclose(actual, expected, rtol=0, atol=1e-15)

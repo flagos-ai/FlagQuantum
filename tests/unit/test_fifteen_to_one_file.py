@@ -6,13 +6,9 @@ from hashlib import sha1
 from importlib import import_module
 from pathlib import Path
 
-import numpy as np
 import pytest
 import sympy
 import torch
-from qualtran.resource_counting import GateCounts
-from qualtran.surface_code import FifteenToOne, QECScheme
-from qualtran.surface_code import LogicalErrorModel as SourceErrorModel
 
 from flagquantum.compiler._component_trace.qec_gate_cost import QECGateCost
 from flagquantum.compiler._component_trace.resource_model import (
@@ -30,6 +26,13 @@ from flagquantum.qec.resources.parallel_factory import ParallelFactory
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+np = pytest.importorskip("numpy")
+_source = pytest.importorskip("qualtran.surface_code")
+GateCounts = pytest.importorskip("qualtran.resource_counting").GateCounts
+FifteenToOne = _source.FifteenToOne
+QECScheme = _source.QECScheme
+SourceErrorModel = _source.LogicalErrorModel
 
 
 def test_frozen_complete_source_and_factory_contract() -> None:
