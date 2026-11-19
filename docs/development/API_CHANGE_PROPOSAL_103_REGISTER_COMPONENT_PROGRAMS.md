@@ -2014,3 +2014,41 @@ Prerequisite 1.21 implementation evidence is recorded in
 work release and both feedback branches. `test_cirq_register_leaf_closure.py`
 checks the source wrapper and native export/reimport. The complete Q-0156
 source file retains the tensor-only and recursive measurement boundaries.
+
+### Materialized channel leaf prerequisite 1.22
+
+The frozen SDK adapter carries arbitrary Cirq channel gates through graph
+construction and Cirq export. Its tensor protocol explicitly refuses nonunitary
+gates. Preserve this distinction in evidence. Native density execution already
+accepts physical Instructions with `is_channel=True` and a Kraus tuple. The
+missing prerequisite is an owned materialized channel in internal Program.
+
+Add optional `kraus` to internal Operation as an immutable tuple of square
+matrices of built-in complex numbers. Preserve old hashes when it is absent.
+Use the internal `kraus` opcode with variable positive qubit arity and one ordered
+quantum successor per input. This does not register a public operator or change
+CircuitIR's schema. The existing custom-channel Instruction representation is
+the physical boundary. Do not reinterpret unitary `any` data as a channel.
+Require a nonempty finite Kraus family with shape 2**arity, and trace preservation
+within absolute tolerance 1e-10, without normalization. Reject this payload on
+other opcodes, reject a simultaneous unitary matrix, and apply existing linearity
+and classical feedback validation. Report malformed channel matrices using the
+existing internal `program.matrix_invalid` diagnostic family.
+
+Core owns immutable copying, verification and canonical-payload tamper detection.
+Compiler reconstructs independent complex128 physical tensors and preserves the
+channel marker, ordered wires, feedback and workspace. Existing graph copy and
+call expansion retain the payload. Ecosystem consults the SDK Kraus protocol
+only after available unitary/decomposition paths decline, and exports the owned
+operators through a native Cirq channel adapter. No foreign gate survives this
+boundary. Source nonunitary tensor refusal remains recorded independently from
+FlagQuantum's existing density capability.
+
+Land this contract with original-source transport and physical-density witnesses
+before implementation. Acceptance covers one- and two-qubit channels, reversed
+operands, entangled spectators, complete complex density matrices, each explicit
+Kraus branch, classical feedback branches, native append and export/reimport,
+owned data and tampered payloads. Count one physical channel atom separately from
+any model estimate or trajectory count. Preserve supported static and dynamic
+unitary callers. This prerequisite declares no Stable Core freeze or new owner
+approval and does not change protected public exports or schemas.
