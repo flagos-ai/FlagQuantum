@@ -32,6 +32,7 @@ from ._feedback_import import (
 )
 from ._gate_metadata import cirq_gate_signature
 from ._qubit_manager import InteropQubitManager
+from ._register_definition import _expand_native_definitions
 from ._register_export import _register_shape
 from .conversion import _cirq, _raise_if_lossy, _report
 from .models import CirqConversionIssue
@@ -45,7 +46,10 @@ class _CleanDecompositionManager(InteropQubitManager):
 
 
 def _register_operations(
-    circuit: Any, declared: Mapping[Hashable, FunctionRecord]
+    circuit: Any,
+    declared: Mapping[Hashable, FunctionRecord],
+    *,
+    native_gates: Iterator[Any] | None = None,
 ) -> Iterator[Any]:
     """Resolve SDK bodies while reserving every live sibling operand."""
     cirq = _cirq()
@@ -84,10 +88,18 @@ def _register_operations(
                     if declared and isinstance(gate, Hashable)
                     else None
                 )
-                if (
+                has_definition = (
                     definition is not None
                     or getattr(gate, "flagquantum_register_definition", None)
                     is not None
+                )
+                if has_definition and native_gates is not None:
+                    yield from expand(
+                        (next(native_gates).on(*operation.qubits),), ancestors
+                    )
+                    continue
+                if (
+                    has_definition
                     or isinstance(gate, (cirq.GlobalPhaseGate, cirq.ResetChannel))
                     or _lower_feedback_gate(cirq, gate, [], 0) is not None
                     or _has_explicit_matrix(cirq, gate)
@@ -254,7 +266,8 @@ def import_cirq_register_optree(
     of 256. Explicit unitary leaves become owned matrix operations. A tensor-only
     unitary fallback is consulted after the SDK decomposition declines.
     Measured bodies retain one shared key history across recursive calls.
-    Explicit definitions in a measured body must first be decomposed.
+    Explicit native definitions retain precedence in measured bodies, with
+    local measurement keys isolated before joining the shared history.
     """
     cirq = _cirq()
     circuit = cirq.Circuit(optree)
@@ -279,13 +292,18 @@ def import_cirq_register_optree(
     gates: list[tuple[object, tuple[Hashable, ...], FunctionRecord | None]] = []
     operations = tuple(_register_operations(circuit, declared))
     if any(op.classical_controls or cirq.is_measurement(op) for op in operations):
-        if any(
-            (declared and isinstance(op.gate, Hashable) and op.gate in declared)
-            or getattr(op.gate, "flagquantum_register_definition", None) is not None
-            for op in operations
-        ):
-            raise ValueError(
-                "Measured SDK import requires explicit definitions to be decomposed"
+        replacements = _expand_native_definitions(operations, declared)
+        native_gates = tuple(
+            replacement.without_classical_controls().gate
+            for original, replacement in zip(operations, replacements, strict=True)
+            if original is not replacement
+        )
+        # Replay the original tree in one allocation context. Re-expanding the
+        # already flattened SDK work would reserve it throughout the whole body
+        # and prevent native calls from reusing a released source work wire.
+        if native_gates:
+            operations = tuple(
+                _register_operations(circuit, declared, native_gates=iter(native_gates))
             )
         # Lower one history so feedback across nested SDK bodies and repeated
         # keys retains its SSA producers. Individual per-gate calls lose them.
