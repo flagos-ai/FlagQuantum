@@ -37,3 +37,19 @@ component-diagram gaps remain independently open.
 All 289 concentrated physical-resource regressions pass. The notebook test and
 extracted script both pass strict mypy, Black and Ruff. Core-team scope,
 architecture, IR and API checks pass. Q-0918 closes as a complete notebook asset.
+
+
+## Optional reference collection repair
+
+The complete notebook test now checks NumPy, Matplotlib and the source package
+before importing its execution helper. The helper transitively imports a
+NumPy-dependent graph module, so delaying that import is required for actual
+optional-free collection. A deliberate missing-NumPy probe confirms the module
+skips at the dependency boundary. In the qualification environment, all 451
+concentrated resource cases run and pass without skips, including the complete
+notebook. The four changed dependency-consumer test files pass strict mypy,
+Black and Ruff. Architecture, IR and protected API checks pass. The batch has
+zero dependency-policy findings, with 706 separate repository findings retained.
+The existing notebook scenario acceptance remains valid for its recorded inputs.
+The newly discovered high-demand factory integer boundary is recorded separately
+in `FIFTEEN_TO_ONE_FILE_AUDIT.md` and reopens the factory parents.

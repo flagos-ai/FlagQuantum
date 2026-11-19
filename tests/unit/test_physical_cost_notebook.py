@@ -7,18 +7,20 @@ from hashlib import sha1
 from pathlib import Path
 from types import ModuleType
 
-import numpy as np
 import pytest
-from matplotlib import pyplot as plt
-
-from tests.unit.test_addition_file_audit import execute
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+np = pytest.importorskip("numpy")
+pytest.importorskip("qualtran.surface_code")
+plt = pytest.importorskip("matplotlib.pyplot")
 
 
 def test_all_native_notebook_cells_and_original_scenario_outputs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from tests.unit.test_addition_file_audit import execute
+
     root = Path(__file__).resolve().parents[2]
     raw = (
         root.parent
