@@ -76,6 +76,8 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
             "FQ_DISTRIBUTED_WORKERS": "1",
             "MAX_JOBS": "2",
             "COVERAGE_CORE": "sysmon",
+            "FQ_COVERAGE_SHARDS": "2",
+            "FQ_COVERAGE_INPUTS": str(temporary / "coverage-inputs"),
         },
         check=True,
         capture_output=True,
@@ -102,6 +104,8 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
     assert "FQ_DISTRIBUTED_WORKERS" in environment
     assert "MAX_JOBS" in environment
     assert "COVERAGE_CORE" in environment
+    assert "FQ_COVERAGE_SHARDS" in environment
+    assert "FQ_COVERAGE_INPUTS" in environment
     assert "GLOO_SOCKET_IFNAME=lo" in environment
     command = actual[actual.index(image) + 1 :]
     expected = [str(private / "venv/bin/python")]
