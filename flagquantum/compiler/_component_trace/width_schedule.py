@@ -27,6 +27,7 @@ class WidthStep:
 
     kind: Literal["component", "input", "output", "allocate", "free"]
     qubits: SymbolicInt = 0
+    symbolic_signature: bool = False
 
 
 @dataclass(frozen=True)
@@ -94,6 +95,8 @@ def schedule_width_steps(
 
     priorities = []
     for index, step in enumerate(steps):
+        if type(step.symbolic_signature) is not bool:
+            raise ValueError("Symbolic signature flag must be a built-in boolean")
         _validate_width(step.qubits)
         if step.kind in {"input", "allocate"} and incoming[index]:
             raise ValueError("Input and allocation steps cannot consume registers")
@@ -153,7 +156,9 @@ def _priority(
         return -_ALLOCATION_PRIORITY
     if step.kind != "component":
         return 0
-    if any(not isinstance(edge.qubits, int) for edge in (*incoming, *outgoing)):
+    if step.symbolic_signature or any(
+        not isinstance(edge.qubits, int) for edge in (*incoming, *outgoing)
+    ):
         return 0
     return cast(
         int,

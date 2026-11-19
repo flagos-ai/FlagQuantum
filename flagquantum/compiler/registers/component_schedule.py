@@ -163,6 +163,12 @@ def _operation_step(
     *,
     logical_graph: bool,
 ) -> WidthStep:
+    symbolic_signature = False
+    if operation.opcode == "call":
+        callee = functions[operation.callee or ""]
+        symbolic_signature = any(
+            register.dtype.is_symbolic() for register in callee.registers or ()
+        )
     # Compiler workspace helpers have an actual single atomic body. Classify
     # those calls as their source leaf. Logical graph traversal inspects one
     # body only, preserving a composite wrapper as a neutral component.
@@ -181,4 +187,4 @@ def _operation_step(
         return WidthStep("allocate")
     if operation.opcode == "free_register":
         return WidthStep("free")
-    return WidthStep("component")
+    return WidthStep("component", symbolic_signature=symbolic_signature)
