@@ -10,9 +10,9 @@ from time import perf_counter
 import flagquantum as fq
 from flagquantum.algorithms.arithmetic import adder_circuit
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.selection import select_arithmetic
-from flagquantum.compiler._construction.target import Target, compile_target
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import select_arithmetic
+from flagquantum.compiler._construction.scheduling.target import Target, compile_target
 from flagquantum.core.ir import CircuitIR
 from tools.synthesis_compiler_examples.selection.main import (
     addition,

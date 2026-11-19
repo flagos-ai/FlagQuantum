@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, replace
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import register_type
+from ...compiler._construction.verification.register_profile import register_type
 from ...compiler._hybrid.model import Operation, Value, ValueId
 from .angles import REAL_LITERAL
 from .phase import expand_phase

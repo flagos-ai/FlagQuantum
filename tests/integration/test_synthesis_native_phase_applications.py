@@ -30,7 +30,7 @@ from examples.synthesis.tutorials.basics.quantum_programming.qmod_tutorial_part1
 )
 from flagquantum import synth
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 
 pytestmark = pytest.mark.integration
 CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod/corpus/original"

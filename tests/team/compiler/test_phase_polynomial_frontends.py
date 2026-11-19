@@ -9,8 +9,11 @@ import torch
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler._construction import frontend_phase
-from flagquantum.compiler._phase_polynomial import Location, Polynomial
+from flagquantum.compiler._construction.frontend import phase as frontend_phase
+from flagquantum.compiler._construction.semantics._phase_polynomial import (
+    Location,
+    Polynomial,
+)
 from flagquantum.ecosystem._qmod import phase as qmod_phase
 from tests.team.compiler.test_construction_python_program import program_definition
 

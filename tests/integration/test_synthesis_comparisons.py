@@ -8,9 +8,9 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import schedule_arithmetic
-from flagquantum.compiler._construction.selection import ConstructionBudget
+from flagquantum.compiler._construction.codegen.arithmetic import schedule_arithmetic
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import ConstructionBudget
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.runtime.execution_plan_contract import plan_execution_program
 from tests.synthesis_workflow_helpers import check_state

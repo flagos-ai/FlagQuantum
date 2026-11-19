@@ -18,7 +18,7 @@ from examples.synthesis.functions.state_preparation.prepare_state_and_amplitudes
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.synth import Const, Output, QBit, QNum, allocate, prepare_state, qfunc
 

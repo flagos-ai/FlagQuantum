@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import register_width
+from ...compiler._construction.verification.register_profile import register_width
 from .syntax import MAX_SCOPE_DEPTH, Expression, Parameter, Statement, Token, reject
 from .unitary_effects import PURE_EFFECTS, emit_inverse
 

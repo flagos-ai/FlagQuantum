@@ -8,7 +8,9 @@ import flagquantum as fq
 from examples.synthesis.tutorials.basics.mcx.comparisons.circuit import (
     reference_circuit,
 )
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.ecosystem._qmod.source import load_qmod
 
 

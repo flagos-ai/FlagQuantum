@@ -2,7 +2,9 @@
 
 import pytest
 
-from flagquantum.compiler._construction.register_profile import register_ports
+from flagquantum.compiler._construction.verification.register_profile import (
+    register_ports,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem._qmod import context
 from flagquantum.ecosystem._qmod.adapter import (

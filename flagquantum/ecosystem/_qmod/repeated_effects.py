@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.reset_cycles import reset_cycle_template
+from ...compiler._construction.semantics.reset_cycles import reset_cycle_template
 from .callback_arrays import capture_effects
 from .syntax import Expression, Statement, reject
 from .unitary_effects import PURE_EFFECTS

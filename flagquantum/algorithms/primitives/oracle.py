@@ -52,7 +52,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from ...circuit import Circuit
-from ...compiler._arithmetic_kernels import comparison_xor
+from ...compiler.registers._arithmetic_kernels import comparison_xor
 from ...core.controlled import _clean_mcx_instructions
 from .types import Predicate
 

@@ -8,18 +8,18 @@ import torch
 
 import flagquantum as fq
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_register_program,
 )
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.scheduling.target import Target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,

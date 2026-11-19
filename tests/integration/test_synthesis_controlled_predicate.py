@@ -14,7 +14,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.lowering import Schedule
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
 from tests.synthesis_workflow_helpers import check_state
 from tests.team.compiler.test_construction_controlled_phase import (
     alias,

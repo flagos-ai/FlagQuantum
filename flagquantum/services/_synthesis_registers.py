@@ -3,12 +3,12 @@
 from collections.abc import Mapping, Sequence
 from typing import Literal
 
-from ..compiler._construction.selection import (
+from ..compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_register_program,
 )
-from ..compiler._construction.target import Target
+from ..compiler._construction.scheduling.target import Target
 from ..compiler._hybrid.model import HybridProgram
 from ..runtime.options import ExecutionOptions
 from ..runtime.planner.estimates import (

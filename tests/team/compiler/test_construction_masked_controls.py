@@ -6,10 +6,12 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.register_profile import verify_register_program
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.register_program_cases import Registers
 

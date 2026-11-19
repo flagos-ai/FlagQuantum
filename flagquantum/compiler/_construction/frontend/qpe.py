@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from ..._hybrid.model import Value
 from ..program_types import phase
-from ..qpe_control import emit_controlled_effect
-from ..register_profile import register_width
+from ..semantics.qpe_control import emit_controlled_effect
+from ..verification.register_profile import register_width
 from .evolution import flush_evolutions
 from .phase import capture_polynomial_phase
 from .python import _error

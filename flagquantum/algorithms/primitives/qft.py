@@ -20,7 +20,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from ...circuit import Circuit
-from ...compiler._fourier_kernels import qft_instructions
+from ...compiler.registers._fourier_kernels import qft_instructions
 
 __all__ = ["append_qft", "qft"]
 

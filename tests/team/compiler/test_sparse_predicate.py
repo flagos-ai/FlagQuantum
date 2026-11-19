@@ -5,9 +5,11 @@ from typing import NoReturn
 
 import pytest
 
-from flagquantum.compiler._construction.profile import uint_type
+from flagquantum.compiler._construction.semantics._sparse_predicate import (
+    sparse_predicate,
+)
+from flagquantum.compiler._construction.verification.profile import uint_type
 from flagquantum.compiler._hybrid.model import Value, ValueId
-from flagquantum.compiler._sparse_predicate import sparse_predicate
 
 pytestmark = pytest.mark.unit
 

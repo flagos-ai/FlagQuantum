@@ -13,7 +13,7 @@ from examples.synthesis.tutorials.basics.qml.main import (
     main,
 )
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.synth import (
     CX,
     PHASE,

@@ -23,7 +23,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.target import (
+from flagquantum.compiler._construction.scheduling.target import (
     PHASE_BASIS,
     Target,
     compile_target,
