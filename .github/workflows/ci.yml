@@ -2362,9 +2362,9 @@ jobs:
     permissions:
       contents: read
       packages: read
-    # Only shards carrying indivisible full-scale optimization tests need
-    # extended finite budgets; all other coverage shards retain 60 minutes.
-    timeout-minutes: ${{ matrix.timeout-minutes }}
+    # PRs always retain the 60-minute limit and exclude slow acceptance tests.
+    # Manual full acceptance gives only its long-test shards more time.
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 60 || matrix.timeout-minutes }}
     env:
       # Python 3.12 line coverage: retain the same measured lines without
       # tracing every repeated optimizer instruction through CTracer.

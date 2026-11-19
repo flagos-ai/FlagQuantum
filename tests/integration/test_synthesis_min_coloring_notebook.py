@@ -180,6 +180,7 @@ def workflow() -> Workflow:
     return result
 
 
+@pytest.mark.slow
 def test_actual_hundred_iteration_optimization_and_sampling(workflow: Workflow) -> None:
     assert workflow.optimizer.iterations == 100 or workflow.optimizer.converged
     assert workflow.optimizer.evaluations == len(workflow.trace)
