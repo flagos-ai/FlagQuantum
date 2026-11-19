@@ -12,6 +12,8 @@ from collections.abc import Mapping
 from ..diagnostics import LevelDiagnostic, _diagnostic
 from .model import FunctionRecord, OpcodeSignature, Operation, ProgramRecord
 from .physical import is_physical_record
+from .register_verifier import register_port_types
+from .registers import RegisterSide
 
 
 def has_call_profile(record: ProgramRecord) -> bool:
@@ -47,7 +49,20 @@ def call_signature(
 ) -> OpcodeSignature | None:
     """Resolve types from the callee's actual entry and explicit return values."""
     callee = functions.get(operation.callee or "")
-    if callee is None or len(callee.blocks) != 1:
+    if callee is None:
+        return None
+    if not callee.blocks and callee.registers is not None:
+        try:
+            left = register_port_types(callee, RegisterSide.LEFT)
+            right = register_port_types(callee, RegisterSide.RIGHT)
+        except (ValueError, TypeError):
+            return None
+        return OpcodeSignature(
+            "call",
+            operand_kinds=("register",) * len(left),
+            result_kinds=("register",) * len(right),
+        )
+    if len(callee.blocks) != 1:
         return None
     block = callee.blocks[0]
     if block.return_values is None:
@@ -77,6 +92,8 @@ def verify_call_structure(record: ProgramRecord) -> list[LevelDiagnostic]:
         )
     dependencies: dict[str, set[str]] = {name: set() for name in functions}
     for function in record.functions:
+        if not function.blocks and function.registers is not None:
+            continue
         if len(function.blocks) != 1:
             diagnostics.append(
                 _diagnostic(

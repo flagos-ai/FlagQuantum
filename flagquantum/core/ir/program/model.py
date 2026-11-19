@@ -180,7 +180,11 @@ class BlockRecord:
 
 @dataclass(frozen=True)
 class FunctionRecord:
-    """One function, with optional ordered ports for owned register elements."""
+    """One function, with optional ordered ports for owned register elements.
+
+    Empty blocks with declared registers represent a signature-only component.
+    Such a declaration supplies no execution body, unlike an empty identity block.
+    """
 
     name: str
     blocks: tuple[BlockRecord, ...]

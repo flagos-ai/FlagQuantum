@@ -33,7 +33,8 @@ from .model import (
     ValueRef,
     opcode_signature,
 )
-from .register_verifier import verify_register_block
+from .register_verifier import register_port_types, verify_register_block
+from .registers import RegisterSide
 
 __all__ = ("verify_program_record",)
 
@@ -77,6 +78,20 @@ def _verify_function(
     function: FunctionRecord, callees: Mapping[str, FunctionRecord] | None = None
 ) -> list[LevelDiagnostic]:
     diagnostics: list[LevelDiagnostic] = []
+    if not function.blocks and function.registers is not None:
+        if function.entry != "entry":
+            diagnostics.append(
+                _diagnostic(
+                    "program.entry_missing",
+                    "a declaration requires the default entry name",
+                )
+            )
+        try:
+            register_port_types(function, RegisterSide.LEFT)
+            register_port_types(function, RegisterSide.RIGHT)
+        except (ValueError, TypeError) as exc:
+            diagnostics.append(_diagnostic("program.register_type", str(exc)))
+        return diagnostics
     if not function.blocks:
         diagnostics.append(
             _diagnostic(
