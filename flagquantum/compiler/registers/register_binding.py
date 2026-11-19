@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Literal
 
+import torch
+
 from ...core.classical_control import validate_classical_control
 from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import CircuitIR, Instruction
@@ -363,6 +365,11 @@ class _PhysicalBinding:
                     name: self.scalars[value] for name, value in operation.parameters
                 },
                 metadata=metadata,
+                matrix=(
+                    torch.tensor(operation.matrix, dtype=torch.complex128)
+                    if operation.matrix is not None
+                    else None
+                ),
             )
         )
         quantum_results = tuple(
