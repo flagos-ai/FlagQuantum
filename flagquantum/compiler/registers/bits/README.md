@@ -70,3 +70,11 @@ Run `python -m pytest tests/unit/test_hamming_weight_resource_width.py tests/uni
 BitwiseNot child calls. It specializes X to CNOT and threads controls unchanged
 through Split/Join. Conditional arithmetic and controlled constant loading share
 this owner. Arithmetic constants arrive as already encoded word patterns.
+
+`fanout_component.py` stores the existing `fanout_ir` tree as typed CNOT calls.
+It keeps a through QBit control and opaque target word, supports dirty targets,
+and owns no workspace. Signed subtraction prefixes share this owner. Source QEC
+charges one logical Clifford for the entire fanout, whereas the expanded
+primitive count is `2 * width - 1` CNOTs. Run
+`python -m pytest tests/unit/test_fanout_component.py -q` for source gate order,
+complex dirty-target amplitudes, restoration, ownership and separate costs.
