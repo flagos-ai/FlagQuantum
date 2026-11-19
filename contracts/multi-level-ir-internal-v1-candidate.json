@@ -225,6 +225,11 @@
       "meaning": "a program record holds no function"
     },
     {
+      "code": "program.matrix_invalid",
+      "level": "program",
+      "meaning": "an explicit unitary leaf has missing, mutable, nonfinite, mismatched or nonunitary matrix data, or another opcode carries matrix data"
+    },
+    {
       "code": "program.opcode_unknown",
       "level": "program",
       "meaning": "an operation uses an opcode outside the canonical operator vocabulary this level types"
