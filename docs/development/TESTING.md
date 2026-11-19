@@ -1078,6 +1078,14 @@ node list. Keeping bounded file batches together avoids full-repository collecti
 worker while allowing a large test module to use several runners. The final coverage gate requires exactly the planned number of valid
 SQLite inputs; failed or missing shards remain failures.
 
+Python 3.12 coverage shards use coverage.py's `sysmon` core. In the locked
+coverage image (coverage.py 7.17.2), the same 62 one-/two-qubit synthesis tests
+recorded identical executed-line sets with `ctrace` and `sysmon`: 1,064 measured
+files and 11,577 executed lines. This changes line-event collection, not the
+selected tests, source scope, exclusions, or coverage floors. The configuration
+does not request branch coverage or dynamic contexts. Older interpreter and SDK
+lanes retain their own coverage configuration.
+
 The offline action measures the runner service before entering Docker. Containers
 inherit that CPU and memory budget and receive explicit CPU, memory, and affinity
 limits, including on shared Docker daemons. Recognized MC550, BW1100, and A800 CPU

@@ -2366,6 +2366,9 @@ jobs:
     # coverage/artifact finalization; full-state catalog partitions need longer.
     timeout-minutes: 60
     env:
+      # Python 3.12 line coverage: retain the same measured lines without
+      # tracing every repeated optimizer instruction through CTracer.
+      COVERAGE_CORE: sysmon
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"
