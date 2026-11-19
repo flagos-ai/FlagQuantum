@@ -2,7 +2,7 @@
 
 This private stage owns no routing decisions or serialized physical plan. Until
 routing provenance has been validated by its owning stage, annotated operations
-remain boundaries. The target workflow wires this stage in with v4 lineage.
+remain boundaries. The target workflow connects this stage with v4 lineage.
 """
 
 from __future__ import annotations
