@@ -44,7 +44,7 @@
   "base_commit": "45468b934a18e552a2a69dcc0b8f1db0d8fa16f9",
   "observed_run": 44487669516,
   "observed_job": 135479850494,
-  "observed_source_commit": "abde94db5cef007495cc1bce41ce36f673747cff",
+  "source_commit": "abde94db5cef007495cc1bce41ce36f673747cff",
   "collection_environment": "macOS ARM64, Python 3.12.14; optional-dependency skips differ from Linux CI",
   "interpretation": "Sums of 50 known test call/setup durations reassigned to a local collection; not elapsed-time predictions or complete CI performance results.",
   "collection_log_sha256": "4f70b321f9da68266748525b4a3f59124a13f37c1e72b00c23b01aa9c9cd8a86"
