@@ -82,7 +82,9 @@ def test_benchmark_contract_tests_are_release_gate_marked():
 
 def test_runtime_tier_uses_integration_marker_after_migration():
     runtime_tier = CI_TIERS["pr-runtime"]
-    assert runtime_tier.command_lines() == ("python -m pytest -m integration and not slow -q",)
+    assert runtime_tier.command_lines() == (
+        "python -m pytest -m integration and not slow -q",
+    )
     assert "Local cross-module runtime/API behavior" in runtime_tier.proves
     assert "scalability claims" in runtime_tier.does_not_prove
 
