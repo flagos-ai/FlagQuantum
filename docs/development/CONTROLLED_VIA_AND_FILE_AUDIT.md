@@ -65,21 +65,28 @@ calls. The tutorial consumes that shared implementation. Original root and
 ladder connection traces match in both directions. Physical primitive order,
 operands, feedback and allocation lifetimes remain independently checked.
 
-The concrete execution dependencies of Q-0550 now pass. The complete source
-file remains open for the symbolic typed graph boundary below.
+All twelve definitions and their direct dependencies now pass the complete
+source-file audit, including unknown-activation graph composition and the
+actual returned extension callback.
 The source default refuses non-THRU child decompositions. A specialized child
 with incompatible renamed directional output order fails source finalization;
 the native wrapper diagnoses this before the callback. These failures are
 preserved witnesses in `test_left_only_control_fallback.py`. The source also
 fails singleton shape `(1, 1)` decomposition although its direct tensor works;
 that distinction is retained in `SINGLE_BIT_CONTROL_METADATA_AUDIT.md`.
-Unresolved symbolic counts and activations have metadata/resource support.
-With a concrete width and unknown activation, the source can additionally build
-a graph containing symbolic And calls, whereas the native predicate currently
-requires concrete activation values. This is a real missing typed graph path,
-recorded in `g2-integer-storage-symbolic-boundary.json`. It prevents full-file
-acceptance even though neither side supplies a finite physical stream for the
-unknown values. Wider symbolic Program work remains tracked separately.
+Unknown binary activation retains two explicit directional conjunction
+declarations around the unchanged positive child callback. The existing
+FunctionRecord declaration contract supplies their graph identity and ports.
+Callers bind resource identities and numerical actions explicitly. Replacing
+both declarations with concrete conjunctions preserves the outer consumers,
+exact primitive stream, all four binary measurement histories and clean work.
+
+For concrete widths of at least three, the source MultiAnd constructor turns
+HasLength into positive controls. Native composition follows this exact rule,
+including mixed known/unknown groups through the actual extension callback.
+The one-bit unknown activation and symbolic-width composite construction retain
+source refusals. The binary symbolic And tensor and physical circuit disagree
+upstream, as documented by the predicate audit and an executable witness.
 
 The current receipts are `g2-integer-storage-resources.json`,
 `g2-integer-storage-regression.log`, `g2-predicate-root-traces.log` and
@@ -89,3 +96,10 @@ The changed storage widths emit zero gates. Small controlled fixtures enumerate
 all measurement histories, check complete complex spectator states and clear
 all work. Larger original fixtures retain exact streams and resource evidence
 without claiming exhaustive statevector enumeration.
+
+The symbolic graph batch passes 977 concentrated cases and 96 SDK integration
+cases. Strict typing, Black, Ruff, scope, architecture and IR checks pass.
+Whole-repository dependency diagnostics retain 687 existing findings, with zero
+in changed paths. Earlier complete source suites and unchanged numerical
+fixtures remain the evidence for their original ranges. The new resource
+receipt separates actual resolved primitives from source model estimates.

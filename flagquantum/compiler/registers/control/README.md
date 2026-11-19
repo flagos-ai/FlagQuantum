@@ -120,3 +120,12 @@ semantics and workspace responsibilities. Run
 `python -m pytest tests/unit/test_default_component_control.py -q` for source
 routing and real attachment-to-execution consumers. General classical stored
 child graphs and symbolic execution remain separate acceptance gaps.
+
+Unknown activation in `control_predicate_program` and
+`control_component_via_predicate` uses `patterns=None`. Two controls retain an
+explicit conjunction declaration. Supply its existing resource identity or
+replace it with a concrete body before execution. For three or more concrete
+control bits, the pinned source converts its unknown-length activation marker
+to all-positive controls. Extension composition preserves that whole-spec rule.
+`tests/unit/test_symbolic_predicate_program.py` compares the source connections
+and exercises replacement through the same physical consumers.

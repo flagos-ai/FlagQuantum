@@ -59,8 +59,8 @@ symbols. Symbolic widths and polarities have metadata and resource formulas.
 | `build_call_graph` | Existing ControlPredicateCall/QEC authority selects binary And or MultiAnd. |
 | Seven `_ctrl_on_*` factories | Original tutorial and source test fixtures, including symbolic metadata models. |
 
-All eighteen definitions in the frozen file are mapped. Q-0553 remains open
-for symbolic activation graph construction.
+All eighteen definitions in the frozen file and their direct dependencies are
+accepted, including symbolic activation graph construction.
 The shared typed conjunction owner retains each And call and directional target
 ownership. Its primitive leaves reuse the existing physical emitter. The
 previous tutorial-local graph construction is removed in favor of this owner.
@@ -71,14 +71,28 @@ No codec or physical gate sequence is duplicated.
 The unchanged upstream suites complete with 45 passes, three source skips and
 three expected source failures. Their notebook runs in the existing reference
 kernel environment. Its unregistered notebook-marker warning is retained.
-Symbolic counts/activations have source-matching metadata and QEC models.
-For concrete widths with unknown activations the original additionally builds
-a symbolic And/MultiAnd graph. The native typed predicate still rejects those
-values before graph construction. `g2-integer-storage-symbolic-boundary.json`
-records this remaining implementation gap. No finite physical stream is
-claimed for unresolved activation values. The original symbolic serialization failures remain
-visible. Physical counts and model counts are separate in
-`g2-integer-storage-resources.json`.
+Symbolic counts and activations retain the existing metadata and QEC models.
+Concrete-width unknown binary activation now builds the same Partition, Split,
+And declaration, Join and Partition graph. The declaration uses the existing
+FunctionRecord with no blocks. Resource callers explicitly bind its existing
+ConjunctionCall identity, including cv1 and cv2. Gate lowering requires an
+explicit concrete replacement with the same directional signature.
+
+The locked MultiAnd constructor converts HasLength with a concrete count into
+all-positive controls. Thus an unknown activation with three or more bits
+builds the ordinary positive ladder, including when a combined specification
+has both known and unknown groups. The source and native root connections,
+resource models and width queries agree. Symbolic widths retain the original
+composite-construction refusal.
+
+The original binary symbolic And has incompatible numerical protocols. Its
+atomic tensor sends every input to target zero, while its Clifford+T method
+uses the positive-control circuit. This difference is an explicit regression.
+The native declaration requires a supplied numerical action or concrete
+resolution. It does not infer one of these conflicting protocols from a name.
+Single unknown control retains the source refusal. Existing serialization
+failures remain visible. New evidence is in test_symbolic_predicate_program.py
+and g2-symbolic-predicate-resources.json in the reference workspace.
 
 Original and native root connections match for every supported encoding in
 both directions. Full primitive ordering and feedback, small complete complex
