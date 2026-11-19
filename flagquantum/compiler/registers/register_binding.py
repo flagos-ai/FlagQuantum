@@ -334,6 +334,8 @@ class _PhysicalBinding:
         metadata: dict[str, object] = {}
         if operation.opcode in {"measure", "reset"}:
             metadata["is_dynamic"] = True
+        if operation.kraus is not None:
+            metadata["is_channel"] = True
         if operation.opcode == "measure":
             metadata["classical_bit"] = self.next_bit
             self.bits[operation.results[-1]] = self.next_bit
@@ -366,9 +368,16 @@ class _PhysicalBinding:
                 },
                 metadata=metadata,
                 matrix=(
-                    torch.tensor(operation.matrix, dtype=torch.complex128)
-                    if operation.matrix is not None
-                    else None
+                    tuple(
+                        torch.tensor(matrix, dtype=torch.complex128)
+                        for matrix in operation.kraus
+                    )
+                    if operation.kraus is not None
+                    else (
+                        torch.tensor(operation.matrix, dtype=torch.complex128)
+                        if operation.matrix is not None
+                        else None
+                    )
                 ),
             )
         )
