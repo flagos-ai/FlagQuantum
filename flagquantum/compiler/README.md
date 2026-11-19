@@ -132,6 +132,13 @@ admits a transformation this repository does not ship; see
 `synthesize_state_preparation` for basis rewriting; they are not stable
 `fq.compiler` exports, so reach them by module path.
 
+With a topology, `compile` defaults to `routing_strategy="auto"` and records its
+choice among deployable strategies. It preserves final layout restoration and
+calibration restrictions. To retain the earlier implicit policy, pass
+`routing_strategy="restore_after_each_gate"`. Without a topology no routing
+search runs. Automatic selection may cost additional compilation time; minimum
+estimated routing cost is not a runtime or target-CZ optimality claim.
+
 ### Export a synthesized circuit and prepare an offline deployment
 
 Run [the Bell-state `@qfunc` example](../../examples/synthesis_offline_deployment.py)

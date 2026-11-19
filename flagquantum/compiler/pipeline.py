@@ -181,7 +181,7 @@ def compile(
         | Iterable[tuple[int, int]]
         | None
     ) = None,
-    routing_strategy: str = "restore_after_each_gate",
+    routing_strategy: str = "auto",
     optimize: bool = True,
     optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
     config: RuntimeConfig | None = None,
@@ -193,6 +193,10 @@ def compile(
     couples and can therefore be routed by hop count only; a `LinkErrorRates` says
     that and what each coupling costs to use, so the route choice, the price the
     estimate reports, and the routing metadata all read the calibration.
+
+    Automatic routing selects among existing deployable strategies, honoring
+    calibration restrictions and restoring logical output placement. Request
+    ``routing_strategy="restore_after_each_gate"`` to retain the previous policy.
 
     `optimization_level` is forwarded to `optimize` at both points this function
     optimizes -- before routing and again after it, because routing inserts SWAPs

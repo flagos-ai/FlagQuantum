@@ -42,12 +42,14 @@ def test_unknown_routing_strategy_is_rejected() -> None:
         )
 
 
-def test_reverse_direction_and_multiple_routed_gates_preserve_state() -> None:
+def test_explicit_restore_reverse_direction_and_multiple_gates_preserve_state() -> None:
     circuit = fq.Circuit(4)
     circuit.x(3).h(1).cx(3, 0).ry(2, theta=0.31).cx(0, 2)
     coupling = CouplingMap.line(4)
 
-    compiled = circuit.compile(coupling_map=coupling)
+    compiled = circuit.compile(
+        coupling_map=coupling, routing_strategy="restore_after_each_gate"
+    )
 
     for instruction in compiled.to_ir():
         if len(instruction.wires) == 2:
