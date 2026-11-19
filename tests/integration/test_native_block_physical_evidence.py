@@ -288,7 +288,7 @@ def test_automatic_stage_cannot_rescue_native_budget_exhaustion(budget: int) -> 
 
 @pytest.mark.parametrize("pair", [(0, 1), (1, 0)])
 def test_collective_ownership_keeps_disjoint_spectator_and_original_sources(
-    pair: tuple[int, int]
+    pair: tuple[int, int],
 ) -> None:
     source = CircuitIR(
         3,
