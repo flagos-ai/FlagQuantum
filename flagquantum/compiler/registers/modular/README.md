@@ -26,3 +26,14 @@ for residue-range moduli. The original composite full-ring refusal remains becau
 source loader cannot encode that modulus. ModAddK retains its independently
 implemented full-ring permutation. Read `docs/development/MODULAR_ADDITION_FILE_AUDIT.md` for interfaces,
 ownership, source failures and separate primitive/model evidence.
+
+Concrete negation and subtraction graphs live in `modular_negation_component`,
+`controlled_modular_negation_component`, `modular_subtraction_component` and
+`controlled_modular_subtraction_component`. They reuse the shared modular
+addition, exact constant adjoint, zero-control, fanout and measured conjunction
+owners. `ModularSubtractionExample` binds forward graphs through
+`circuit.append(op)` and retains the independently verified explicit inverse
+emitters for `adjoint=True`. Read
+`docs/development/MODULAR_SUBTRACTION_FILE_AUDIT.md` for residue-domain promises,
+source failures, complete definition ownership and separate primitive/model
+resource evidence.
