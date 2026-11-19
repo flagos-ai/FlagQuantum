@@ -60,8 +60,12 @@ def test_complete_bound_error_model_and_parallel_composition(
         rtol=0,
         atol=2e-15,
     )
-    assert actual.p_fail(model) == pytest.approx(expected.p_fail(reference), abs=2e-14)
-    assert actual.p_out(model) == pytest.approx(expected.p_out(reference), abs=2e-14)
+    assert actual.p_fail(model) == pytest.approx(
+        expected.p_fail(reference), rel=0, abs=2e-14
+    )
+    assert actual.p_out(model) == pytest.approx(
+        expected.p_out(reference), rel=0, abs=2e-14
+    )
     for gates in (
         GateCost(),
         GateCost(t=1),
@@ -73,7 +77,7 @@ def test_complete_bound_error_model_and_parallel_composition(
             original_gates, reference
         )
         assert actual.factory_error(gates, model) == pytest.approx(
-            expected.factory_error(original_gates, reference), abs=4e-12
+            expected.factory_error(original_gates, reference), rel=0, abs=4e-12
         )
         assert ParallelFactory(actual, 3).n_cycles(gates, model) == MultiFactory(
             expected, 3
@@ -82,7 +86,7 @@ def test_complete_bound_error_model_and_parallel_composition(
     actual_symbolic = actual.factory_error(QECGateCost(t=count), model)
     expected_symbolic = expected.factory_error(GateCounts(t=count), reference)
     assert float((actual_symbolic - expected_symbolic).subs(count, 1)) == pytest.approx(
-        0, abs=2e-14
+        0, rel=0, abs=2e-14
     )
     with pytest.raises(TypeError):
         expected.n_cycles(GateCounts(t=count), reference)
@@ -149,4 +153,4 @@ def test_actual_consumer_accepts_a_source_density_implementation() -> None:
         logical, data_distance=7, factory=ReferenceFactory(9, 3, 3)
     )
     assert calls == [9]
-    assert asdict(actual) == pytest.approx(asdict(expected), abs=4e-12)
+    assert asdict(actual) == pytest.approx(asdict(expected), rel=0, abs=4e-12)

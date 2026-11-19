@@ -6,14 +6,19 @@
 
 """Physical costs for catalyzed CCZ-to-T factories and a surface-code data block."""
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
-from ...compiler._component_trace.gate_budget import t_and_ccz_budget
-from ...compiler._component_trace.resource_model import GateCost, ModeledResources
+from ...compiler._component_trace.resource_model import ModeledResources
 from .ccz_to_t_factory import CCZToTFactory
 from .data_block import DataBlock, DataLayout
-from .error_model import LogicalErrorModel, SurfaceCodeScheme
-from .physical_cost import PhysicalResourceEstimate, validate_logical_counts
+from .error_model import SurfaceCodeScheme
+from .magic_state_factory import MagicStateFactory
+from .parallel_factory import ParallelFactory
+from .physical_cost import (
+    PhysicalCostModel,
+    PhysicalResourceEstimate,
+    validate_logical_counts,
+)
 from .physical_parameters import PhysicalParameters
 
 
@@ -52,19 +57,17 @@ def estimate_gidney_fowler_resources(
     hardware = PhysicalParameters(physical_error, cycle_time_us)
     data_block = DataBlock(data_layout, data_distance)
     validate_logical_counts(logical)
-    budget = t_and_ccz_budget(logical.gates)
-    factory_gates = GateCost(t=int(budget["n_t"]), toffoli=int(budget["n_ccz"]))
-    logical_error = LogicalErrorModel(physical_error, SurfaceCodeScheme.gidney_fowler())
-    factory = CCZToTFactory(distillation_l1_distance, distillation_l2_distance)
-    factory_error = factory.factory_error(factory_gates, logical_error)
-    assert isinstance(factory_error, float)
-    return GidneyFowlerEstimate._from_components(
-        logical,
-        data_block,
-        hardware,
-        error_rate_scaler=0.1,
-        factory_cycles=factory.n_cycles(factory_gates, logical_error),
-        factory_qubits=factory.n_physical_qubits(),
-        factory_error=factory_error,
-        factory_count=factory_count,
+    if type(factory_count) is not int or factory_count < 1:
+        raise ValueError("Factory count must be a positive integer")
+    factory: MagicStateFactory = CCZToTFactory(
+        distillation_l1_distance, distillation_l2_distance
     )
+    if factory_count > 1:
+        factory = ParallelFactory(factory, factory_count)
+    model = PhysicalCostModel(
+        hardware,
+        data_block._data_layout(),
+        factory,
+        SurfaceCodeScheme.gidney_fowler(),
+    )
+    return GidneyFowlerEstimate(**asdict(model.estimate(logical)))

@@ -7,15 +7,16 @@
 """Combine a data layout and magic-state production into physical costs."""
 
 from dataclasses import dataclass
-from math import ceil
-from typing import TypeVar
+from functools import cached_property, lru_cache
 
 from ...compiler._component_trace.resource_model import ModeledResources
-from .data_block import DataBlock
-from .error_model import SurfaceCodeScheme
+from .ccz_to_t_factory import CCZToTFactory
+from .data_block import DataBlock, DataLayout
+from .data_layout import RoutingDataLayout, SurfaceCodeDataLayout
+from .error_model import LogicalErrorModel, SurfaceCodeScheme
+from .fifteen_to_one import FifteenToOneFactory
+from .magic_state_factory import MagicStateFactory
 from .physical_parameters import PhysicalParameters
-
-_Estimate = TypeVar("_Estimate", bound="PhysicalResourceEstimate")
 
 
 @dataclass(frozen=True)
@@ -42,35 +43,85 @@ class PhysicalResourceEstimate:
     def qubit_hours(self) -> float:
         return self.physical_qubits * self.duration_hours
 
-    @classmethod
-    def _from_components(
-        cls: type[_Estimate],
-        logical: ModeledResources,
-        block: DataBlock,
-        hardware: PhysicalParameters,
-        *,
-        error_rate_scaler: float,
-        factory_cycles: int,
-        factory_qubits: int,
-        factory_error: float,
-        factory_count: int,
-    ) -> _Estimate:
-        if type(factory_count) is not int or factory_count < 1:
-            raise ValueError("Factory count must be a positive integer")
-        if factory_count > 1:
-            factory_cycles = ceil(factory_cycles / factory_count)
-        cycles = max(factory_cycles, block.consumption_cycles(logical.gates))
-        width = logical.peak_logical_qubits
-        logical_error = SurfaceCodeScheme(error_rate_scaler, 0.01).logical_error_rate(
-            block.distance, hardware.physical_error
+
+@dataclass(frozen=True)
+class PhysicalCostModel:
+    """Compose hardware, data layout, factory and code-suppression assumptions."""
+
+    physical_params: PhysicalParameters
+    data_block: SurfaceCodeDataLayout
+    factory: MagicStateFactory
+    qec_scheme: SurfaceCodeScheme
+
+    @cached_property
+    def logical_error_model(self) -> LogicalErrorModel:
+        """Bind the declared physical error to the selected QEC scheme."""
+        return LogicalErrorModel(self.physical_params.physical_error, self.qec_scheme)
+
+    @lru_cache
+    def estimate(self, logical: ModeledResources) -> PhysicalResourceEstimate:
+        """Aggregate complete physical costs for the declared logical workload."""
+        generation_cycles = self.factory.n_cycles(
+            logical.gates, self.logical_error_model
         )
-        return cls(
+        consumption_cycles = self.data_block.consumption_cycles(logical.gates)
+        cycles = int(max(generation_cycles, consumption_cycles))
+        factory_qubits = self.factory.n_physical_qubits()
+        data_qubits = self.data_block.physical_qubits(logical.peak_logical_qubits)
+        factory_error = float(
+            self.factory.factory_error(logical.gates, self.logical_error_model)
+        )
+        data_error = self.data_block.storage_error(
+            logical.peak_logical_qubits, cycles, self.logical_error_model
+        )
+        return PhysicalResourceEstimate(
             cycles=cycles,
-            duration_hours=hardware.cycle_time_us * cycles / (1_000_000 * 60 * 60),
-            data_block_physical_qubits=block.physical_qubits(width),
-            factory_physical_qubits=factory_count * factory_qubits,
-            data_error=block.storage_error(width, cycles, logical_error),
+            duration_hours=self.physical_params.cycle_time_us
+            * cycles
+            / (1_000_000 * 60 * 60),
+            data_block_physical_qubits=data_qubits,
+            factory_physical_qubits=factory_qubits,
+            data_error=data_error,
             factory_error=factory_error,
+        )
+
+    def n_cycles(self, logical: ModeledResources) -> int:
+        return self.estimate(logical).cycles
+
+    def duration_hours(self, logical: ModeledResources) -> float:
+        return self.estimate(logical).duration_hours
+
+    def n_physical_qubits(self, logical: ModeledResources) -> int:
+        return self.estimate(logical).physical_qubits
+
+    def error(self, logical: ModeledResources) -> float:
+        return self.estimate(logical).failure_probability
+
+    @classmethod
+    def gidney_fowler(cls, data_distance: int) -> "PhysicalCostModel":
+        """Construct the complete source Gidney-Fowler defaults."""
+        return cls(
+            PhysicalParameters.gidney_fowler(),
+            RoutingDataLayout(data_distance),
+            CCZToTFactory(),
+            SurfaceCodeScheme.gidney_fowler(),
+        )
+
+    @classmethod
+    def beverland(
+        cls,
+        data_distance: int,
+        data_layout: DataLayout = "compact",
+        factory_distances: tuple[int, int, int] = (9, 3, 3),
+    ) -> "PhysicalCostModel":
+        """Construct the three supported source data layouts and 15-to-1 factory."""
+        if data_layout not in ("fast", "compact", "intermediate"):
+            raise ValueError(f"Unknown data block {data_layout!r}")
+        return cls(
+            PhysicalParameters.beverland(),
+            DataBlock(data_layout, data_distance)._data_layout(),
+            FifteenToOneFactory(*factory_distances),
+            SurfaceCodeScheme.beverland(),
         )
 
 

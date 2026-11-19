@@ -17,6 +17,7 @@ from flagquantum.qec.resources.beverland_physical import (
 from flagquantum.qec.resources.error_model import LogicalErrorModel, SurfaceCodeScheme
 from flagquantum.qec.resources.fifteen_to_one import FifteenToOneFactory
 from flagquantum.qec.resources.gidney_fowler import estimate_gidney_fowler_resources
+from flagquantum.qec.resources.physical_cost import PhysicalCostModel
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
@@ -159,6 +160,7 @@ def test_real_consumers_use_replaceable_shared_formulas(
     monkeypatch.setattr(
         SurfaceCodeScheme, "code_distance_from_budget", reference_distance
     )
+    PhysicalCostModel.estimate.cache_clear()
     assert scenarios() == expected
     assert rates == {0.03, 0.1}
     assert len(inversions) == 1

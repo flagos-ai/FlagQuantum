@@ -7,11 +7,17 @@
 
 from ...compiler._component_trace.resource_model import ModeledResources
 from .data_block import DataBlock, DataLayout
+from .error_model import SurfaceCodeScheme
 from .fifteen_to_one import FifteenToOneFactory
-from .physical_cost import PhysicalResourceEstimate, validate_logical_counts
+from .magic_state_factory import MagicStateFactory
+from .parallel_factory import ParallelFactory
+from .physical_cost import (
+    PhysicalCostModel,
+    PhysicalResourceEstimate,
+    validate_logical_counts,
+)
 from .physical_parameters import PhysicalParameters
 
-_BEVERLAND_ERROR_SCALER = 0.03
 _DEFAULT_FACTORY = FifteenToOneFactory(9, 3, 3)
 _DEFAULT_HARDWARE = PhysicalParameters.beverland()
 
@@ -32,18 +38,14 @@ def estimate_beverland_physical_resources(
     """
     block = DataBlock(data_layout, data_distance)
     validate_logical_counts(logical)
-    estimate = factory.estimate(
-        logical.gates,
-        physical_error=hardware.physical_error,
-        error_rate_scaler=_BEVERLAND_ERROR_SCALER,
-    )
-    return PhysicalResourceEstimate._from_components(
-        logical,
-        block,
+    if type(factory_count) is not int or factory_count < 1:
+        raise ValueError("Factory count must be a positive integer")
+    production: MagicStateFactory = factory
+    if factory_count > 1:
+        production = ParallelFactory(production, factory_count)
+    return PhysicalCostModel(
         hardware,
-        error_rate_scaler=_BEVERLAND_ERROR_SCALER,
-        factory_cycles=estimate.cycles,
-        factory_qubits=estimate.physical_qubits,
-        factory_error=estimate.factory_error,
-        factory_count=factory_count,
-    )
+        block._data_layout(),
+        production,
+        SurfaceCodeScheme.beverland(),
+    ).estimate(logical)
