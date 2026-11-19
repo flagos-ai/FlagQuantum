@@ -1876,3 +1876,14 @@ profile refusal. Existing gate/opaque/unsigned/field execution remains covered
 by concentrated regression. Pure signed split/join emits zero gates and uses
 zero work. The complete tutorial separately validates four emitted SWAP gates
 and its independent Clifford/width model.
+
+Prerequisite 1.18 native evidence on 2026-11-19 passes all 160 concentrated
+signed, binary-field, rebinding and lowering cases, including the unchanged
+source stand-in and native replacement. Full complex spectator states are exact
+for widths 1, 3 and 8. Zero-width ownership verifies and lowers without gates.
+The existing physical binder refuses a completely empty physical layout and
+accepts a zero-width word with an unused supplied wire. Strict typing of the
+changed verifier and new native scenarios, architecture, 74 IR/API cases and the
+machine contract pass. The repository dependency scan retains 706 pre-existing
+findings and reports none in these changed paths. Tutorial acceptance remains
+separate. No whole-repository green-test or dependency-policy claim is made.

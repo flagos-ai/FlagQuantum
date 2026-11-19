@@ -300,7 +300,13 @@ def test_rebinding_guards_fail_before_reserving_calls(failure):
             builder.join([word])
         elif failure == "bad_type":
             builder.split(
-                replace(word, register=Register("word", RegisterType("signed", 3)))
+                replace(
+                    word,
+                    register=Register(
+                        "word",
+                        RegisterType("signed", 3, parameters=(("unresolved", 1),)),
+                    ),
+                )
             )
         else:
             builder.join([[word]])

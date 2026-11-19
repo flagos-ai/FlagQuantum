@@ -153,7 +153,7 @@ def test_rebindings_refuse_primitive_and_call_metadata(metadata, operation_index
         RegisterType("uint", 1.5),
         RegisterType("uint", True),
         RegisterType("bit", 2),
-        RegisterType("signed", 3),
+        RegisterType("signed", 3, parameters=(("unresolved", 1),)),
         RegisterType("uint", 3, 1),
         RegisterType("uint", 3, parameters=(("bound", 4),)),
     ],
@@ -320,7 +320,11 @@ def test_unadmitted_nominal_objects_and_invalid_callees_report_diagnostics(case)
         invalid = replace(
             function,
             name="invalid",
-            registers=(Register("word", RegisterType("signed", 1)),),
+            registers=(
+                Register(
+                    "word", RegisterType("signed", 1, parameters=(("unresolved", 1),))
+                ),
+            ),
         )
         module = (main, invalid)
     assert "program.register_type" in codes(*module)

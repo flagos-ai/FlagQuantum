@@ -20,7 +20,7 @@ def executable_register_width(dtype: RegisterType) -> int:
     """Return the concrete width admitted for a packed quantum word.
 
     Metadata constructors have wider support. Execution admits unparameterized
-    bit, opaque and unsigned quantum encodings and resolved binary fields.
+    bit, opaque, unsigned and signed quantum encodings and resolved binary fields.
     """
     if not isinstance(dtype, RegisterType):
         raise ValueError("an executable word needs a neutral RegisterType")
@@ -50,7 +50,7 @@ def executable_register_width(dtype: RegisterType) -> int:
             return width
         raise ValueError(f"unsupported executable register descriptor {dtype!r}")
     if (
-        dtype.encoding not in {"bit", "opaque", "uint"}
+        dtype.encoding not in {"bit", "opaque", "uint", "signed"}
         or type(width) is not int
         or width < 0
         or type(dtype.classical_bits) is not int

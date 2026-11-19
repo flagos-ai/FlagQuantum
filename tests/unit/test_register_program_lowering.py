@@ -189,7 +189,9 @@ def test_invalid_zero_width_ownership_and_unreachable_types_fail_before_erasure(
         lower_register_program(ProgramRecord((changed,)))
     bad = replace(
         word_function(1, "unreachable"),
-        registers=(Register("x", RegisterType("signed", 1)),),
+        registers=(
+            Register("x", RegisterType("signed", 1, parameters=(("unresolved", 1),))),
+        ),
     )
     with pytest.raises(ValueError, match="register_type"):
         lower_register_program(ProgramRecord((function, bad)))
