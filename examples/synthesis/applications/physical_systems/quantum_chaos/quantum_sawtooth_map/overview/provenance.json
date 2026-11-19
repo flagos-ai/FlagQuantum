@@ -1,0 +1,162 @@
+{
+  "upstream_path": "applications/physical_systems/quantum_chaos/quantum_sawtooth_map.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "e0c808fea40248dfa95ee609e9928f2a6f83af246a7065886402aa987a53a65d",
+  "git_blob_sha1": "5f550ae9a412288230d3f02fa75e8f31d42ab77b",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "sha256": "925e620b844e89b24e71d75ec16dafccf9ab7be50fb882c9e16cb0a70545a7a8"
+    },
+    {
+      "index": 12,
+      "sha256": "1d902178759064703ca5e1d86a316c0f966a986f74b30be3f96e386427098952"
+    },
+    {
+      "index": 14,
+      "sha256": "51a2b92032dee87e1b80ff8a5a930a4414a62e70b8a4d61c30d98f68ed98a663"
+    },
+    {
+      "index": 16,
+      "sha256": "1292891d790e3165a03b7fab8290ca7f9cb6c26fc20f5c74b0507d5fbbf86c38"
+    },
+    {
+      "index": 18,
+      "sha256": "ac2ce7c00805a45a10693a9758dfc791df77ab7e1e377da541a99fbc142cdda6"
+    },
+    {
+      "index": 19,
+      "sha256": "ffcf9b4f92348880bb1397d18cb7eac777d57f3b1910df41f57c9b05e4b1bffc"
+    },
+    {
+      "index": 21,
+      "sha256": "44c1c50d36c40f783edfec7d3ab0e8a4692063e74f9b4ccd8459ba1eac9e2581"
+    },
+    {
+      "index": 22,
+      "sha256": "02b000aa16ba60cb844b9691ea7236e1ad296a3f8a775e8efea157913745599d"
+    },
+    {
+      "index": 24,
+      "sha256": "925d3c4e896c71fd5b11a8645f3a0b71def43b47354c65841629a7038375e95f"
+    },
+    {
+      "index": 25,
+      "sha256": "fec09c96179175a152c2c4d89b03c987d1a6c85670c0b6272a262868d94c6ae3"
+    },
+    {
+      "index": 27,
+      "sha256": "42e833b87c36494921888134d7f53aea927a1a6b7e570f64d40519c6b3b1615f"
+    },
+    {
+      "index": 28,
+      "sha256": "4c9944c75f218c4b11f97114084bc687536e2022e8188016f48b0f7590df67fa"
+    },
+    {
+      "index": 29,
+      "sha256": "6e72315839ec62f15bedf25d911395374fc70a0478aeb14146df02f390b0f2fb"
+    },
+    {
+      "index": 30,
+      "sha256": "92336938430e59af9e00b0157fe7b19d94acf8bb59cfa05281c869fbe00c1576"
+    }
+  ],
+  "scope": "Complete original signed quantum sawtooth-map workflow: three bits, kick strength 0.1, initial momentum -2, timesteps 2/4/6/8 and 1,000 actual samples each; exact CX/U3 resource counts, original extrapolation explicitly labeled, and comparison with hash-pinned historical upstream IonQ measurements.",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.quantum_chaos.quantum_sawtooth_map.overview.main",
+  "native_notebook": "examples/synthesis/applications/physical_systems/quantum_chaos/quantum_sawtooth_map/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_sawtooth_notebook.py",
+  "frozen_quantum_entry_sha256": "04ca1405d7817bb2de2ded2c3422fb3df947175d0b6d79554f11a7a98b113055",
+  "historical_assets": [
+    {
+      "path": "historical_ionq/df_2kicks.csv",
+      "upstream_path": "applications/physical_systems/quantum_chaos/data_qpu.forte-1_1000_jobID_20260209_150802/df_2kicks.csv",
+      "sha256": "205c4a53a4525a46c37ef57541f67b8cdf6af1faa56c43df7c7aad39eb841df2",
+      "kind": "historical_upstream_hardware_measurement",
+      "backend": "qpu.forte-1",
+      "shots": 1000
+    },
+    {
+      "path": "historical_ionq/df_4kicks.csv",
+      "upstream_path": "applications/physical_systems/quantum_chaos/data_qpu.forte-1_1000_jobID_20260209_150802/df_4kicks.csv",
+      "sha256": "81a410cc7506898de4388c65095b4b2609dd2a53030306932681e768ef8947f1",
+      "kind": "historical_upstream_hardware_measurement",
+      "backend": "qpu.forte-1",
+      "shots": 1000
+    },
+    {
+      "path": "historical_ionq/df_6kicks.csv",
+      "upstream_path": "applications/physical_systems/quantum_chaos/data_qpu.forte-1_1000_jobID_20260209_150802/df_6kicks.csv",
+      "sha256": "2673cb7296106b3fd2230223ebc941f3a4fd8bcb0bfaf1976e47405245f68091",
+      "kind": "historical_upstream_hardware_measurement",
+      "backend": "qpu.forte-1",
+      "shots": 1000
+    },
+    {
+      "path": "historical_ionq/df_8kicks.csv",
+      "upstream_path": "applications/physical_systems/quantum_chaos/data_qpu.forte-1_1000_jobID_20260209_150802/df_8kicks.csv",
+      "sha256": "ec3a338c3d680e4cfe438bf1971ba1bfe5864e71b085f1b814dc9440e6063aeb",
+      "kind": "historical_upstream_hardware_measurement",
+      "backend": "qpu.forte-1",
+      "shots": 1000
+    }
+  ],
+  "native_semantic_adaptations": "Reuse the unchanged native quantum parent and exact compiler rule extension used by accepted native examples; do not relax the synth phase-basis guard. Count the actual converted CX/U3 sequence and compare its absolute complex amplitudes with both native evolution and independent dense-Fourier Circuit. Source one-step depth extrapolation is labeled separately from actual full-circuit depth. Sample each original timestep with 1,000 actual seeded draws and named signed numeric readout. Retain the source display range -4..4; +4 is an out-of-domain zero-padding point, not a ninth state. Hardware submission/status cells remain disabled as in the source RUN_ON_HARDWARE=False configuration. Load only hash-pinned original CSV measurements and label them historical upstream IonQ data; no FlagQuantum hardware execution or job is claimed. Native local CPU execution only; no release, scalability or advantage claim.",
+  "cell_mapping": [
+    {
+      "source_index": 7,
+      "native_code_cell": 1
+    },
+    {
+      "source_index": 12,
+      "native_code_cell": 2
+    },
+    {
+      "source_index": 14,
+      "native_code_cell": 3
+    },
+    {
+      "source_index": 16,
+      "native_code_cell": 4
+    },
+    {
+      "source_index": 18,
+      "native_code_cell": 5
+    },
+    {
+      "source_index": 19,
+      "native_code_cell": 6
+    },
+    {
+      "source_index": 21,
+      "native_code_cell": 7
+    },
+    {
+      "source_index": 22,
+      "native_code_cell": 8
+    },
+    {
+      "source_index": 24,
+      "native_code_cell": 9
+    },
+    {
+      "source_index": 25,
+      "native_code_cell": 10
+    },
+    {
+      "source_index": 27,
+      "native_code_cell": 11
+    },
+    {
+      "source_index": 28,
+      "native_code_cell": 12
+    },
+    {
+      "source_index": 29,
+      "native_code_cell": 13
+    },
+    {
+      "source_index": 30,
+      "native_code_cell": 14
+    }
+  ]
+}

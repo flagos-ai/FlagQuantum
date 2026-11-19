@@ -1,0 +1,61 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/mcx/mcx.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "67a310aab0787c7240d54b68efabbc24bd8d7dff72fdc37397522af3af95d325",
+  "git_blob_sha1": "2fc1eb3537dc388c062208d75b07f481c077b053",
+  "scope": "All eight source stages, the original 14 and 50 controls, the 20/21/17-qubit constraints, the pinned Boston target, and the CX/U basis scenario.",
+  "native_semantic_adaptations": "Use public qfunc synthesis, verified bounded candidate search and official FakeBoston 0.49.0 offline topology. Check the routed state up to common global phase. Execute full-width local exact MPS witnesses and verify reversible basis action and scratch.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.mcx.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/mcx/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_mcx_tutorial_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Import the native tutorial and its source qfunc.",
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "stage": "Use the same quantum control function at both source sizes.",
+      "sha256": "f051791e9c8d011944c112833fcf502d7c3bc0d5e731031d2da0c13a92b153f6"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "stage": "Bind the original fourteen-control instance.",
+      "sha256": "aa6843894d86ceff071b39c0b1890eb87e4a6b4d27bd0722ea0b8ca3686e198b"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Synthesize under the original 20-qubit depth budget.",
+      "sha256": "a5033adf6f13e401056e47d3ac55103da770854a13189c365e6e9f738c55c983"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "stage": "Report the emitted depth, phase and clean workspace.",
+      "sha256": "49047fe8c42038b527809d8c2f0eaa79c1ace1d9db1d3a932621c2f00fafa6f6"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Apply the 21-qubit ceiling to the pinned Boston hardware snapshot.",
+      "sha256": "9e123595f2317969ae92df540d8e3d4a0262662500543297551acfeeb0d3d76e"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "stage": "Compare the emitted CX counts under the 17-qubit ceiling.",
+      "sha256": "6b47df65a1affbd8a3d88a7bccc2f5a010478bd9e1cb18fd7ac3cad793e51b3d"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "stage": "Synthesize and check the full 50-control circuit.",
+      "sha256": "b7d0306a498aa0770c845ea889eba28574b5b2dc3a1d53f46675d6b86b3ffac4"
+    }
+  ]
+}

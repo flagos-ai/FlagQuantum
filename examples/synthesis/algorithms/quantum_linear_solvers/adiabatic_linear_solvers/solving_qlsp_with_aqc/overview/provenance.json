@@ -1,0 +1,133 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "93d57ff7287de223372efd0c6360b934bc871fb6",
+  "original_sha256": "d7a795e22fd6df18be888664b35935ee1307053a1c959e0b28be3fb3358da841",
+  "scope": "Both original 4 by 4 systems and all three three-qubit evolutions. Generate H0 and H1 from the model, retain the 7/50, 7/50 and 10/100 time schedules, and compare all eight amplitudes and direct-solve overlaps.",
+  "native_semantic_adaptations": "The native first-order formula preserves the Pauli mask order recorded in the retained program. The historical transpiler order and basis are unpinned, so the Notebook reports actual native amplitudes, overlap and static instruction depth. H1 uses the original matrix scale, while the direct solve uses its normalized inputs. The reported overlap includes population in both ancilla sectors.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_linear_solvers.adiabatic_linear_solvers.solving_qlsp_with_aqc.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_linear_solvers/adiabatic_linear_solvers/solving_qlsp_with_aqc/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_adiabatic_linear_solver_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "sha256": "7f05472b5b4f8e0d5f48bb9a9be4fb371e5d9a54ebac227b04fa8a3d6402847c"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "sha256": "a3ce2a5da2aba60abd7e4f258ad60834ded7aa9a22c9402309ff646225aa7bf1"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "sha256": "d28e015779c1293c635a07e08e1d507410695e7b6c16e0da58381b4108d03b47"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "sha256": "97c8c916a95607566d5c81de58b48e7186d726d34cdc94d487e9638b64fb6d83"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "4de9d38fd40c0465100ae58417bbd1fdebbbfc7a49886f67efccdc368d6d726b"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "sha256": "3a8339e83835eb759e8b127dc7493d42d500c338b596e709b1112f6cfc8e615e"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "sha256": "ea88b9f48cf6e802222c57738be29a92eeca7227e9184bfe69501b7532c652ff"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "sha256": "de6b4fa5eeac809452ad88a8402c99d4564e04f70d34daa14bd010d6834bc182"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 9,
+      "sha256": "eab381fc42006ae79bcaacf2e6e472bdde44ba3725e77f6c7643758455cf677c"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 10,
+      "sha256": "9f07f89057b5ffdf178106957785d1e368c4dac8ff3b2641d6c4d6dcba902f90"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 11,
+      "sha256": "490e55ca093c745a1927ba3f696e81054f06a6a2433ab17f6bfb9cdfdfd94299"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 12,
+      "sha256": "97ad1a89c2354a6027543a32db9e6ee31ae54a124d88bcf1dc19629b187ec715"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 13,
+      "sha256": "996743fd620ee949973e7a6e36e10f3afc9cccc408ba9f588af5c8f281634b92"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 14,
+      "sha256": "f2a6d93c9f2e1c2bd0edb682781f380d66fe72b6c2068b600a9d315ca1ba5717"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 15,
+      "sha256": "dbe3644e5d4770c32ba1f29de7a56b02fdb5def3e1e29e0162661f2961107106"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 16,
+      "sha256": "cdd89e82d70dbeed8a56e2605911ccb5995580aff6f3ccb1c9c9c2a5e14bbda5"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 17,
+      "sha256": "ea88b9f48cf6e802222c57738be29a92eeca7227e9184bfe69501b7532c652ff"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 18,
+      "sha256": "c74c417c09cbf3a012b1852f665595e99ccbb9e277fbbf5bf050c71c82d8218f"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 19,
+      "sha256": "d11653a680a4539cf073edf843be3bc62acd6c6b9baa94aa0096450c1c51dc18"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 20,
+      "sha256": "b951e04d1ed3e5b2ae3ff668972c7f1c533858807b39b4023821ba4b1288d567"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 21,
+      "sha256": "cf7321de31bc74613bbf06ab6c6710cb8f1831c2c35c6b4a467138a23c9505c0"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 22,
+      "sha256": "3358b22a6c84723663437eb130b9b2ca6d880396cb5e14ce222487a698b5de02"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 23,
+      "sha256": "c4f259c18a714238b27349f83ae9e4c2ddb46fbbdb435c7e6610ef819d2fc26e"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 24,
+      "sha256": "58d9434432c98d082105a4df7b1c82026f735342ee17a8076201c8624c09b897"
+    }
+  ]
+}

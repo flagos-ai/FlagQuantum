@@ -103,7 +103,7 @@ def test_root_offset_binding_and_inverse(operator: str) -> None:
         ("x:Output[QNum[3]]", "x += 0", "", "uninitialized"),
         ("x:Output[QNum[3]]", "allocate(x)\nx += 257", "", "-256"),
         ("x:Output[QNum[3]]", "allocate(x)\nx += 1.0", "", "integer"),
-        ("x:Output[QNum[3]]", "allocate(x)\nx += x", "", "integer"),
+        ("x:Output[QNum[3]]", "allocate(x)\nx += x", "", "disjoint"),
         ("x:Output[QNum[3,True,0]]", "allocate(x)\nx += 1", "", "raw unsigned"),
         ("x:Output[QArray[QBit]]", "allocate(3,x)\nx += 1", "", "raw unsigned"),
         (

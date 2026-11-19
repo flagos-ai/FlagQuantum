@@ -1,0 +1,83 @@
+{
+  "upstream_path": "applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "fb58d954e1a3dcf2e37c801a43773482cade8cb2",
+  "original_sha256": "c77554766b67567e63b24a4c80aec5b3a80d595485cb54f858d52f706e8c687f",
+  "scope": "All 14 source stages, the original six-residue chain, six direction bits and one contact bit, five QAOA layers, 70 lower-70-percent objective queries, and 2048 shots per query and final comparison.",
+  "native_semantic_adaptations": "Regenerate the original objective and synthesize its exact commuting Pauli phases. Use local seeded COBYLA and 2048 shots as indicated by the source sample frequencies. Retain the last evaluated binding and compare the observed fold with independent finite enumeration of all 128 assignments. Render both lattice paths with Matplotlib.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.protein_folding.protein_folding_with_qaoa.protein_folding.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/protein_folding/protein_folding_with_qaoa/protein_folding/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_protein_folding_qaoa_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "sha256": "3ca5e94734406e9158c62e10578ad47c53fc2c87a32b330d7a984d19cc521550"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "17b3721d6a00500500922d8270d2b4dca21fab9a7063e08fe349b50f8b02143a"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "sha256": "546891823ccd81e12adedd2583874d4dfc101337d740ef515c8d8e6a1808760b"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "sha256": "270ce9b8965c550a5ba94bbe8928a5a2d7258f9cd9091aa9b0879a7449eb1cb3"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "sha256": "6149149a8116c9a0e6f1a3ac5f28bd1a57f3a93f1a9f3988d711f40d10ff2a98"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "sha256": "31e4ef9bfb2baabe0d8b759518ad5ce2c9b57e494e7d895682856764d78da0bd"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 9,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 10,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 11,
+      "sha256": "d51c269c50391a8a91acd25014d60389ef540fcf8f15774af44ec5fbdd194280"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 12,
+      "sha256": "381e9a4432b92cf1878ad4d162b0e07f988c50c376be5e71d0cee15bd1d3919d"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 13,
+      "sha256": "e9f8366eefc9d132e91905f7898f42a25e9cf95b83c5bdfc4f92dd274130375d"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 14,
+      "sha256": "6750672afae1d4712036c86118682adb4e521647421b8831359f1d07be509c31"
+    }
+  ]
+}

@@ -246,6 +246,24 @@ def test_real_emitted_resource_budgets_are_enforced(
         )
 
 
+@pytest.mark.parametrize("width,workspace", [(22, 1), (21, 0)])
+def test_constrained_work_schedules_preserve_every_coherent_amplitude(
+    width: int, workspace: int
+) -> None:
+    program = synth.synthesize(main, max_qubits=width, max_workspace=workspace)
+    result = fq.run(program)
+    actual = result.statevector().reshape(-1)
+    expected = fq.run(reference_circuit()).statevector().reshape(1 << width, -1)
+    assert program.circuit.n_wires == width
+    assert program.report["workspace_qubits"] == workspace
+    torch.testing.assert_close(actual, expected[:, 0], atol=1e-12, rtol=0)
+    torch.testing.assert_close(
+        expected[:, 1:], torch.zeros_like(expected[:, 1:]), atol=1e-12, rtol=0
+    )
+    if workspace:
+        assert float(actual.reshape(-1, 2)[:, 1].abs().square().sum()) < 1e-24
+
+
 def test_default_public_builder_preserves_original_limits() -> None:
     program = build_program()
     assert program.circuit.n_wires == 23

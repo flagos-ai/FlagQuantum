@@ -1,0 +1,73 @@
+{
+  "upstream_path": "community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/quantum_compression_algorithm_for_symmetric_states.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "aadbd906268ae69fbd2d4ed1350b760393356732",
+  "original_sha256": "5138a22d08c6174cfed87bf97815a7875da49bf8e4914a11d443ee737b4efd05",
+  "scope": "All twelve original source stages, five-qubit uniform input, three-qubit single-excitation input, three-qubit nonsymmetric input and 2048 actual native samples per case.",
+  "native_semantic_adaptations": "The single-excitation source lists three equal amplitudes of 1/3. Their squared norm is 1/3, so the native workflow explicitly normalizes those amplitude ratios before preparation. Full absolute complex vectors are compared with an independent Circuit. Native shot seeds are local, with no claim of matching earlier hosted counts.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.quantum_compression_algorithm_for_symmetric_states.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/quantum_compression_algorithm_for_symmetric_states/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_symmetric_compression_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "sha256": "d50e6f0d6a408941296e041379d35ed6ffa80d809fd0d90ab472b884898011ff"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "sha256": "dc7365649532644de4ff81475601bdda1fac45c019e9feac67666d5c7a27d20b"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "sha256": "8e1626d71a2be8e54ab1e9b5c26df5559ddc2437b8bd7957e6d0c3127f3570a6"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "8065847abab9485d3d610194b55126a4c8a66d53d922679f141650505eaf74ff"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "3dbcfcc9687f5a3d497955bb67103622c7d94bc409b44777183c5e733747cd63"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "sha256": "9e8b6b6a9dd32453719fbd04b7aa33745091896108dfd8b6193f1897ff4fc750"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "sha256": "17715ff5632bb9522789ecb26b7cda2ff09daf42d2aa07373a2edb027ed37117"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "sha256": "cecb8d9249795e5a9994aa947f978a6385e0c6cecdf7162a393540ec0e1f873b"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 9,
+      "sha256": "6e6b5c65bff6f36280de1d447893460993a4577ca9cfd35458131faf6db6870c"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 10,
+      "sha256": "163c8957095bf15b83b08cef16447485704abd0d20c37074a241278dc0c89373"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 11,
+      "sha256": "c0963047cc24c067a7af402a33eb567df363fe6fe4f9d2d060ed63e4fd805e85"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 12,
+      "sha256": "789e287da3887758bf5020a59cf2f8cd40adae8a0e5086079298f3f92d015de1"
+    }
+  ]
+}

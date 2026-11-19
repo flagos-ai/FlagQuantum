@@ -21,5 +21,6 @@
       "index": 5,
       "sha256": "2263ed105a80429fe9c920ce9362dea665c440173f5c51e72b79f40a56e86281"
     }
-  ]
+  ],
+  "native_notebook": "examples/synthesis/functions/arithmetic/modular_exp/modular_exp_example/walkthrough.ipynb"
 }

@@ -27,7 +27,7 @@ def expand_native_phase(
     owner: _Body,
     expression: ast.expr,
     coefficient: float,
-    statement: ast.Call,
+    statement: ast.Call | ast.AugAssign,
     *,
     condition: ast.expr | None = None,
 ) -> tuple[Polynomial, tuple[Location, ...], tuple[tuple[Cube, Value], ...]] | None:
@@ -192,6 +192,8 @@ def expand_native_phase(
             fraction_bits=lambda node: numeric_format(node)[1],
         )
     except HybridVerificationError as error:
+        if not isinstance(statement, ast.Call):
+            raise
         budget_refusal = all(
             diagnostic.code == "construction.python.budget.phase"
             for diagnostic in error.diagnostics

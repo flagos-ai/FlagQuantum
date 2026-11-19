@@ -209,6 +209,15 @@ def merge_self_inverse(
         previous = None if position is None else program[position]
         if (
             instruction.name in self_inverse
+            and not (
+                instruction.name == "cx"
+                and instruction.metadata.get("routing_phase") is not None
+            )
+            and not (
+                previous is not None
+                and previous.name == "cx"
+                and previous.metadata.get("routing_phase") is not None
+            )
             and previous is not None
             and previous.name == instruction.name
             and previous.wires == instruction.wires

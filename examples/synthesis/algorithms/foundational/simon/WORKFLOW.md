@@ -29,3 +29,6 @@ and memory ceilings refuse before execution.
 Both programs use ten qubits, zero work bits, fifteen operations and depth four.
 This is the original quantum wrapper only. Classical secret recovery and the
 complete associated Notebook workflow remain pending.
+
+See the [complete native Notebook workflow](overview/README.md) for retained
+classical postprocessing, sampling, plots and acceptance criteria.

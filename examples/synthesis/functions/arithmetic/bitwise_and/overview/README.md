@@ -10,3 +10,5 @@ linked here:
 
 - [two-register AND](../bitwise_and_2vars_example/README.md)
 - [literal-mask AND](../bitwise_and_integer_example/README.md)
+
+Run [the native Notebook](walkthrough.ipynb) to edit the quantum functions, execute the complete local workflow, and check every complex amplitude against an independent Circuit.

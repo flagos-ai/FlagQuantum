@@ -1,0 +1,134 @@
+{
+  "upstream_path": "community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "93ebc2350b0e41dc45f7d2588cdb13cffc7e6ff58a8f77b30e76a353089f2260",
+  "git_blob_sha1": "87a6d03fa2de15b334705e422589d80f85824e4c",
+  "scope": "All17 source stages, original RandomState12 identical three-bit inputs, seven-bit SWAP test, RX0.1 approximation study, original distance31 case, all105 original physical configurations and1070000 actual finite draws.",
+  "native_semantic_adaptations": "Use an example-local H/T/Tdg Solovay-Kitaev implementation with measured operator error, explicit two-iteration default/grid and three-iteration demonstration. It does not claim vendor compiler word or depth equivalence. Use pinned official Apache-2.0 analytical repetition-cat formulas, independently audited at all106 original physical configurations. Apply preparation, readout and idle correction in an explicit all-to-all ASAP unit-cycle schedule. Native channels exactly compose every physical clock between entanglers into bounded CPTP nodes; retain physical instruction, clock and43008-noise-location counts separately from merged execution nodes. Independently verify all16384 original density entries against an unmerged gate-and-error-location oracle. Reuse the same compiled discrete program across the physical grid, whose parameters affect noise and gate-cycle duration, then make10000 actual draws per point. Preserve the source0..0.5 display range without repairing observed rates. No vendor SDK, cloud job or synthetic measurements.",
+  "native_entrypoint": "examples.synthesis.community.basic_examples.logical_qubits.logical_qubits_by_alice_and_bob.overview.main",
+  "native_notebook": "examples/synthesis/community/basic_examples/logical_qubits/logical_qubits_by_alice_and_bob/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_logical_cat_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Use native public Circuit, synthesis, analytical channels and plotting helpers.",
+      "sha256": "1ecc46a2ba364714ae67174d8131600b150774e33734995d28a6423d767a3b30"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "stage": "Keep the original RX(0.1) one-bit program.",
+      "sha256": "09f53522354adc04e84d14cf301e716025921abb1128bfd76a3a0aced663ce2e"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "stage": "Use explicit native Clifford+T approximation and report its measured error.",
+      "sha256": "7a2a71aa97de00c911a1868fa07902e97fea7e5396a87e54cbe854b13e66d1cd"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 4,
+      "stage": "Retain the three-iteration accuracy/depth demonstration.",
+      "sha256": "44bafcf28ecd816727165fe88b2ab43da56b3ceb3f9a507f47a8e7553b2f0bb8"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 5,
+      "stage": "Freshly generate both identical normalized three-bit input states with source RandomState12.",
+      "sha256": "8b83cd5ea252efddeaf0a4c4b567b479a9f4fdd70d82658405c2b684c130b787"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 6,
+      "stage": "Prepare the complete seven-bit native SWAP test with both full input registers.",
+      "sha256": "1dcfa409dd002a2f28ac1e59745bfc3b8ec2c9942beada8d1e3ae59f4096212c"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 7,
+      "stage": "Execute the complete native experiment once; following stages inspect actual measured records.",
+      "sha256": "1c6fc336c0c0206919bdf9edfe1d2c311bb053e464d667e460c98452f0dd7f60"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 8,
+      "stage": "Retain the original10000 noiseless draws.",
+      "sha256": "ae63b581c314d0909ab8ac7e4e2b016d16d2c52cf666ac532141429e166af15c"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 9,
+      "stage": "Read actual noiseless counts.",
+      "sha256": "59b0798cddfb3d282abeb6942acba1c784c81556b1eb8cc22c43bfc95f744a51"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 10,
+      "stage": "Compute error rates from actual finite observations.",
+      "sha256": "e37a3f70cd2c458384e8e8a54161b26b7235216d17e90c44d07c22ce20613225"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 11,
+      "stage": "Report the executed noiseless SWAP error rate.",
+      "sha256": "d49ba79f94b5805a96e8e0d486a6bb9c7fe1f71d35484f5deca4e98211ae0299"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 12,
+      "stage": "Keep distance31, photons19, kappa1=100 and kappa2=10000.",
+      "sha256": "fc088f9cc8fab28425091933440d03f0bcafeb618d2dae81fd16e5050190af6c"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 13,
+      "stage": "Retain all original seven distances, three loss scales and five photon numbers.",
+      "sha256": "4001aa3f0de76e00b4faffe9b58f6439ab20fc512819d719b71cdf92b5d1ee79"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 14,
+      "stage": "Keep a separate measured result for every physical configuration.",
+      "sha256": "b03a4c2fa05f5b874c5918de2dbe39594747766f1169e914ac7aa22c2e34e441"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 15,
+      "stage": "Verify all105 original grid cases and1050000 actual grid draws.",
+      "sha256": "6657a67103b7a2031610250fc9b21e4eb18620ead9f75e545ce557d5b534b736"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 16,
+      "stage": "Render actual finite-sample rates using the original color limits.",
+      "sha256": "664aa9e6d53fff6f9fbcbbeea83ab8d2accf2316494f478cc3f8e72af0248813"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 17,
+      "stage": "Display all five original photon-number heatmaps and save the full measured study.",
+      "sha256": "413a64ede193b4d175a9aba7578d9aeae1c66c65e3940df23f5d8f084b541ec2"
+    }
+  ],
+  "noise_reference": {
+    "commit": "9ad0893cf9d70555f68cd71a7d1773b743811177",
+    "license": "Apache-2.0",
+    "files": {
+      "qiskit_alice_bob_provider/processor/logical_cat.py": {
+        "url": "https://raw.githubusercontent.com/Alice-Bob-SW/qiskit-alice-bob-provider/9ad0893cf9d70555f68cd71a7d1773b743811177/qiskit_alice_bob_provider/processor/logical_cat.py",
+        "sha256": "22c38355b22e7b2491fa397a8420ff2768021e51df151f57c9fb2a4d4fd5be06"
+      },
+      "qiskit_alice_bob_provider/processor/utils.py": {
+        "url": "https://raw.githubusercontent.com/Alice-Bob-SW/qiskit-alice-bob-provider/9ad0893cf9d70555f68cd71a7d1773b743811177/qiskit_alice_bob_provider/processor/utils.py",
+        "sha256": "dcb7788811e2d93740da4a1363d2a3a2c993f417061fccbf0c034814cbd3c189"
+      },
+      "LICENSE": {
+        "url": "https://raw.githubusercontent.com/Alice-Bob-SW/qiskit-alice-bob-provider/9ad0893cf9d70555f68cd71a7d1773b743811177/LICENSE",
+        "sha256": "0381eb95648fb340f126f6e6128743e9b84a52318835efef4ef7ad39a5012e37"
+      }
+    },
+    "purpose": "Read-only analytical noise formula review; no vendor package import, user example dependency, authentication or cloud job."
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/qpe/qpe.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "5c22c70327da54330e056ce8505332d6f645842859bbb4f204dd9d83f3f28a04",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "eea989686f00ae0f87c553861bed6187580c284503e830b0a22410e30eaa48dd"
+    },
+    {
+      "index": 4,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 6,
+      "sha256": "a0428501e8f8d9227b7f3c546e9573db2e544b19c68ebd49432670521d9fdfcc"
+    },
+    {
+      "index": 8,
+      "sha256": "9e642271cea6db906f9ab1405b0a946c038ad9df509227ee3f87f0139c895ce1"
+    },
+    {
+      "index": 9,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 11,
+      "sha256": "a0428501e8f8d9227b7f3c546e9573db2e544b19c68ebd49432670521d9fdfcc"
+    }
+  ],
+  "scope": "Retain both source stages: CRZ(pi) on |11> and the two-bit fractional counter; then the complete commuting IZ/ZI/II Hamiltonian with coefficients -0.125/-0.25/0.375. A qpe callback with one Suzuki step exactly replaces the original power callback because all terms commute; retain identity phase. Use exact typed phase semantics for CRZ. Original shot count is unspecified; label 1000 local demonstration samples per stage.",
+  "native_entrypoint": "examples.synthesis.functions.qpe.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_interference_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/qpe/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Retain both source stages: CRZ(pi) on |11> and the two-bit fractional counter; then the complete commuting IZ/ZI/II Hamiltonian with coefficients -0.125/-0.25/0.375. A qpe callback with one Suzuki step exactly replaces the original power callback because all terms commute; retain identity phase. Use exact typed phase semantics for CRZ. Original shot count is unspecified; label 1000 local demonstration samples per stage.",
+  "git_blob_sha1": "110d82533f1adeeef785cfbdaf8dd335d3ceeb2e"
+}

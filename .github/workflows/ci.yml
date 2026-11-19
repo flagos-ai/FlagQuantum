@@ -2362,10 +2362,13 @@ jobs:
     permissions:
       contents: read
       packages: read
-    # Run 43187409331 needed 28m53s for a passing QSVT partition before
-    # coverage/artifact finalization; full-state catalog partitions need longer.
-    timeout-minutes: 60
+    # PRs always retain the 60-minute limit and exclude slow acceptance tests.
+    # Manual full acceptance gives only its long-test shards more time.
+    timeout-minutes: ${{ github.event_name == 'pull_request' && 60 || matrix.timeout-minutes }}
     env:
+      # Python 3.12 line coverage: retain the same measured lines without
+      # tracing every repeated optimizer instruction through CTracer.
+      COVERAGE_CORE: sysmon
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
       OPENBLAS_NUM_THREADS: "1"

@@ -43,3 +43,7 @@ complex one-qubit target states, conditional global-phase interference and inver
 preparation. Alias, Const, nested Output escape, allocation and budget refusals
 are checked. Measured feedforward, ownership-changing callbacks and arbitrary
 scratch-producing callbacks are not admitted by this profile.
+
+The [complete local Notebook](overview/walkthrough.ipynb) also retains graph generation,
+local sampling and archived four/eight-node hardware data, with explicit source
+label corrections. See [workflow acceptance](overview/WORKFLOW.md).

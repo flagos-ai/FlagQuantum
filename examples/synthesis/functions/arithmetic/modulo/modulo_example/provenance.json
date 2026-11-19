@@ -17,5 +17,6 @@
       "index": 3,
       "sha256": "50a976632f63282450edf0ac5a16877d3072bbe0a52e2942775369d4b83f0ef6"
     }
-  ]
+  ],
+  "native_notebook": "examples/synthesis/functions/arithmetic/modulo/modulo_example/walkthrough.ipynb"
 }

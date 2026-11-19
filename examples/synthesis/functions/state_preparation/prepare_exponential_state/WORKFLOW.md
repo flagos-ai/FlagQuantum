@@ -1,5 +1,7 @@
 # Declare an exponential probability distribution
 
+The complete local [native Notebook workflow](overview/README.md) includes all retained computational stages and separately labeled supplements.
+
 The native example computes the normalized classical probabilities proportional
 to exp(-0.1 * value), then prepares their positive real square-root amplitudes.
 The bound probability array is explicit high-level input to the captured program.

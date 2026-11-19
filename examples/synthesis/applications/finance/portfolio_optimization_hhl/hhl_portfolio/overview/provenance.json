@@ -1,0 +1,165 @@
+{
+  "upstream_path": "applications/finance/portfolio_optimization_hhl/HHL_portfolio.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "d75e481f275f054128e22c80f595487661c061ad",
+  "original_sha256": "a390bb056eeaa32effb2a9406458a2d24192e2aa239050a8074eafe8d5c00bac",
+  "scope": "All 28 source stages, all 251 original price rows and four assets, eight-dimensional padded operator, 16-dimensional Hermitian embedding, six phase bits and all 64 reciprocal rotations.",
+  "native_semantic_adaptations": "Retain the source historical price input, original left-padded normalized vector and bilinear solution fit. Regenerate all derived matrices, amplitudes and angles. Use local exact simulation and an independent Circuit. Replace incorrect source plot tickers with the actual input column order and retain the source value normalization.",
+  "native_entrypoint": "examples.synthesis.applications.finance.portfolio_optimization_hhl.hhl_portfolio.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/portfolio_optimization_hhl/hhl_portfolio/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_hhl_portfolio_notebook.py",
+  "input_data": {
+    "source": "stock_data literal in source cell 6",
+    "rows": 251,
+    "columns": [
+      "Date",
+      "AAPL",
+      "AMZN",
+      "NVDA",
+      "TSLA"
+    ],
+    "sha256": "635d5f8805dfe7ceca5cbe8c13599c6d517c8ef98b242318997ae15cd4edb6ec"
+  },
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "sha256": "b0fbea1bcede5e4a28293265ace81a526d386ed1f3432695a3c59ebaf43d5d89"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "sha256": "96cba83d974613110f434af1203085a0cf875f57b6cf622bdbca01e002774ac3"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "sha256": "7d64d2cccbe069068d0f44318532a457c173dfacf9e2a7651101e9b649a440a1"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "sha256": "59909940f098d4ae238f182db4efaa02798b1ae9c259af8d7b9282870030d9ac"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 5,
+      "sha256": "ff6986747c878f0230d13b437c0da30b8103baeff576a156887cdfe939568018"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 6,
+      "sha256": "6bd9ec82f80d031bcbe0789376c57904688c8a3a903d7165a23be46188e16231"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "sha256": "480ef44fada180cf67803087ee57ee97792323b56c3ce189edd0be6dff78a0fb"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 8,
+      "sha256": "6f7c42cad0e8a95c487abd82dd7b8deda5254e6d8f5f2b77066f9d732b8adb81"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 9,
+      "sha256": "48266053facf338ea058f97e0b565a904df1cfb5262edc26b088724a4e753475"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 10,
+      "sha256": "0ef7e934efe3463d37aab6c07b75bdcd305f5b133306ce718ca4a42d6549678c"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 11,
+      "sha256": "47445941efd02282af55bde0f7aac3de0885850185d79072c12ea52952fa8c49"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 12,
+      "sha256": "61484353551e046513a0a499695c658dc33ac3a587379055791d6fa34c72b035"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 13,
+      "sha256": "f61a4ad011b97feaad759465cbf6489cfb0e57ff0243a9ed2dbc2853e9fd1d95"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 14,
+      "sha256": "d521e6ecbd0092d4bda85e512ac95d81f145f701fdc62054d9994b6fcf5a609d"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 15,
+      "sha256": "13f09638b6e9c0fa3d2b834fbc213ea00a3b8f72490759c78b9a058606b9f322"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 16,
+      "sha256": "ad801b65fedd52e3b3401e8ec8bca35bccfa5a6303d51d9a8d868a0b18d5a304"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 17,
+      "sha256": "fc2eb6d490f8477e2c67b4f8d2f1822df10f45913a50bba458e742e757932351"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 18,
+      "sha256": "14d2b1b83115875169538b5d66226f08e6bacbe92772a04681aeb6647d8a534b"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 19,
+      "sha256": "658f14a76313f54b9a9dd30ea9b2ec9d561a2366f609b7beded79e9c55fa1369"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 20,
+      "sha256": "ec016c72d6977e721748989ea8b08adbe10bd52923df8bb9aaf500905a13cffa"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 21,
+      "sha256": "0ae489011a5bc54ed1ff50e8989e041713e0ab6a17b6e9012aad990f36e4ef62"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 22,
+      "sha256": "6e3e1fb44062043a9c49963019339539c771d70442b7594a1e3687c9d293e771"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 23,
+      "sha256": "ec2a17abea45a4fc85d1c24ecedb2f96f17f129066ba92724000fd92d8383f3b"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 24,
+      "sha256": "437c84c0934bf746414277d4d3f4b3de6325355f4f5c6557f01347a0b260d8cc"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 25,
+      "sha256": "e04008219b53054ce242ea179c2614041fe10150a4cf47f053e3a9d56cb57fa7"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 26,
+      "sha256": "9280ff9e5eac5a593c19e4a687fccd1d5944879cd4327514a620b07731b05cf6"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 27,
+      "sha256": "36d73b285b520bd981e7aa5ec7c6e46624d9961cf8a58931614f7b7d36b16528"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 28,
+      "sha256": "6561a5433aad70ebbe44d50ec350c3a66acc81d5e2425282d4b6bf4685218523"
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "upstream_path": "applications/chemistry/qpe_for_molecules/qpe_for_molecules.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "205cbf86480dbbe5c8b4e6220172283a32f0caa0cf61a1326bdb65854a917fe5",
+  "git_blob_sha1": "f53a866ab50de044f3e338130e919e8f1006cede",
+  "scope": "All 19 source stages, the selected LiH/STO-3G geometry, one frozen core orbital, the six-bit symmetry sector, 49 retained ordered Pauli terms, and seven phase bits with power-specific second-order product formulas.",
+  "native_semantic_adaptations": "Regenerate RHF, full CI and active CI with FlagQuantum. Encode the Hartree\u2013Fock parity sector into the original basis and retain the original product order. Run the native circuit locally and sample 1,000 outcomes with a fixed reproducibility seed. Use local peak detection with the same minimum height, and display both plots. The install cell becomes an environment import check.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.qpe_for_molecules.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/qpe_for_molecules/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_lih_qpe_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "sha256": "ea5532d56d0141c67a25cdc6a09f771a08bb4ab61fbff5800bae171836f49274"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "94936d6137cb0a7366460f5d5d2e8d3eb23a2d35fe549e0d9783bfbc82021c44"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "sha256": "192b3e1340ee5df15e3d5e8b94d2c64a79439c91bd2c57e572b68b9cde0cb018"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "sha256": "574138c6ea00dd59bf17e3e5c0df8e9f49766aef50721da1bece58f220db377c"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 6,
+      "sha256": "6331ddd03db7f549dbbb9e57c8d8a6487d68fe27a51ecda7b48d663f8afa515c"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "sha256": "ce3b56fedb72e20e0f941392127c42dafd3bb864fac84f27e1a20ba7305e6545"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 8,
+      "sha256": "62039d77fdc44600056e4c3728bbf8bdc75749dca034fa9c0b130285d3894167"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 9,
+      "sha256": "018ec1cda71f58673b02fa7474073c6968c18f92c43c2f308ae85b1b12a71fca"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 10,
+      "sha256": "33665558095cf33e52eaab51789ff037dfe195bfbdf33c8b96a83c1c8540f4bc"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 11,
+      "sha256": "581be13361c4f393ef0cd9a68c08b9eadef343dc5c22edd333dbfe68efb47f58"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 12,
+      "sha256": "c50af9472a7e77a67dd30d043ebbe00b19c5fbd55571d751a8fa85474d11d217"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 13,
+      "sha256": "d1c55ad0956f5ee86ef08546adb704a246e5a78078d33cf3404801656b750b2d"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 14,
+      "sha256": "865afa76d71e76e1923925e3caa984696731161d7bb665eb182e5758cc52ea5e"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 15,
+      "sha256": "87bca43fc2a8687276b808b93602b4686acbcb2c6802f2ee569c6749b4395b70"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 16,
+      "sha256": "e7f853a293371b8dedf1d5470dded194cc2bfef0d362027cffdbb359f38d8c93"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 17,
+      "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 18,
+      "sha256": "e6e500d6b515b2382af96eef11840d62ee09ab6986942b814ff1755842dbb34d"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 19,
+      "sha256": "e1b326ca6d44c9787013d0e94b25d66218b671afc2a06c5c1fb71390294361f5"
+    }
+  ]
+}

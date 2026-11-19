@@ -1,0 +1,160 @@
+{
+  "upstream_path": "tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "af0c370da519879838e9657617d55b03c669ef0cedc99698736b5627b1b35ece",
+  "git_blob_sha1": "727834f754eada53c19b40abaffcfb6050f9eed3",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "14703ac32ed22508f781c6644cfcd76b3fd9c5743e7f3a1f4477ee2cd386c1c3"
+    },
+    {
+      "index": 6,
+      "sha256": "b5b0945330e4732da8c02d270ae8460283dc5a2b2b2ae3e274b9710d8cc3f913"
+    },
+    {
+      "index": 8,
+      "sha256": "e4fa27f658e13916851eac54bd623b30c366d9c1140300280070e830e5bd257c"
+    },
+    {
+      "index": 10,
+      "sha256": "1889e2396ec6c841ddf599068e9e074d803787220f4b08391255c1298beb097d"
+    },
+    {
+      "index": 12,
+      "sha256": "bb180472bbf42ed41561367f7abe3edb1c20bf640b022825aa6c5dc541b47133"
+    },
+    {
+      "index": 14,
+      "sha256": "4743fc0e4a7a3db40f9971ea5f4c94b0a374eeed1ee829451d37c9ec3d46a3f7"
+    },
+    {
+      "index": 16,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 18,
+      "sha256": "683a46a971f9b6482d6fc8d53b75d351a8f132a329ad953362b33af7b847579d"
+    },
+    {
+      "index": 20,
+      "sha256": "ae1f58e575c530fb784c4dfe3a390f325f40b4eda83f0ef37623680f78cb202a"
+    },
+    {
+      "index": 22,
+      "sha256": "cf266a8bb1d8490c594e59672b86727de3bf5d1ed8969ff6f02a7bf17ff5f43e"
+    },
+    {
+      "index": 24,
+      "sha256": "a4e18e8645820f77296a283f7f70dc3f4e44a4899f807c81d70676bef3d99e7f"
+    },
+    {
+      "index": 26,
+      "sha256": "a5fcf17ad2e31ab388bed939a374ff5c5f692c952a878f73b738bc432e0c5c2b"
+    },
+    {
+      "index": 29,
+      "sha256": "162008d80fb2f2e3b6af85b378505151419ab4c28d9aa9a1efe3bbad9db0b84b"
+    },
+    {
+      "index": 31,
+      "sha256": "570554e4413143b4bb0eb813a39210b0241bc6b4a3af3c55a884736e32ca70b3"
+    },
+    {
+      "index": 33,
+      "sha256": "e33b21bbcf7d517484c88d4459c7f777b1a98adc5a3122bf2f74acb47bd186c9"
+    },
+    {
+      "index": 34,
+      "sha256": "2886d98a8d19d4fa620a6f468be6ed8634ac0801fe2525396e12cef47c60fea2"
+    },
+    {
+      "index": 36,
+      "sha256": "475c21f8bd69ba164c1037b4fcbe67c6954189958addd4033f3223099c04bd28"
+    },
+    {
+      "index": 38,
+      "sha256": "3d4901fbb5b2966c43569d6541f314d682b7a040d9467f8c092aed697a61e660"
+    }
+  ],
+  "scope": "Complete original eighteen-cell MaxCut Workshop: five vertices, six edges, four QAOA layers, all eight angles, original 0..1-radian schedule, forty actual objective executions, actual 1,000 draws, observed maximum cut and original/solution graph views.",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.combinatorial_workshop.combinatorial_qmod_workshop_for_maxcut.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/combinatorial_workshop/combinatorial_qmod_workshop_for_maxcut/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_maxcut_workshop_notebook.py",
+  "frozen_quantum_entry_sha256": "6a88f7e3c92302324d75331d7a44a0a4260238f67b0ebf6be0ea2651186c1ec6",
+  "native_semantic_adaptations": "Use the unchanged native quantum function and its composable RX mixer.\nAll four negative-cut phase layers and positive RX(beta) mixers remain intact.\nThe original linear schedule spans zero to one radian, without pi scaling.\nNative COBYLA counts trust-region iterations whereas source SciPy maxiter=40\ncounts function evaluations. Stop the callback before a forty-first execution,\nselect only actually evaluated parameters and report evaluation_budget and\nnonconvergence. Do not fabricate an optimizer result or claim trajectory equality.\nExact local mean probabilities replace provider shot-noisy cost estimation;\nfinal 1,000 seeded samples are actual draws outside the objective budget.\nNamed array readout replaces manual bitstring decoding. Independent full Circuit\nstates include absolute phase, bit order and clean workspace. Enumerated classical\noptima are only comparison labels, never inserted into samples. Preserve native\nlocal CPU execution; no remote, release, hardware or advantage claim.\n",
+  "cell_mapping": [
+    {
+      "source_index": 4,
+      "native_code_cell": 1
+    },
+    {
+      "source_index": 6,
+      "native_code_cell": 2
+    },
+    {
+      "source_index": 8,
+      "native_code_cell": 3
+    },
+    {
+      "source_index": 10,
+      "native_code_cell": 4
+    },
+    {
+      "source_index": 12,
+      "native_code_cell": 5
+    },
+    {
+      "source_index": 14,
+      "native_code_cell": 6
+    },
+    {
+      "source_index": 16,
+      "native_code_cell": 7
+    },
+    {
+      "source_index": 18,
+      "native_code_cell": 8
+    },
+    {
+      "source_index": 20,
+      "native_code_cell": 9
+    },
+    {
+      "source_index": 22,
+      "native_code_cell": 10
+    },
+    {
+      "source_index": 24,
+      "native_code_cell": 11
+    },
+    {
+      "source_index": 26,
+      "native_code_cell": 12
+    },
+    {
+      "source_index": 29,
+      "native_code_cell": 13
+    },
+    {
+      "source_index": 31,
+      "native_code_cell": 14
+    },
+    {
+      "source_index": 33,
+      "native_code_cell": 15
+    },
+    {
+      "source_index": 34,
+      "native_code_cell": 16
+    },
+    {
+      "source_index": 36,
+      "native_code_cell": 17
+    },
+    {
+      "source_index": 38,
+      "native_code_cell": 18
+    }
+  ]
+}

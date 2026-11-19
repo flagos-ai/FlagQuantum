@@ -80,6 +80,16 @@ For local contributor workflows and dependency boundaries, see
 [optimization/README.md](optimization/README.md) and
 [lowering/README.md](lowering/README.md).
 
+Compiler implementations import their owning stage modules directly. Root
+forwarding files provide the documented expert import paths. The construction
+target scheduler deliberately calls `pipeline.compile` to share orchestration
+and preserve its registry and router replacement hooks. The import boundary is
+checked by `tests/team/compiler/test_implementation_import_boundaries.py`.
+
+Additional contributor workflows are documented in
+[formats/README.md](formats/README.md), [topology/README.md](topology/README.md),
+[registers/README.md](registers/README.md), and [_torch/README.md](_torch/README.md).
+
 ## Reusable Module frontend
 
 [Module capture](_torch/module_builder.py) owns the private entry approved in
@@ -147,6 +157,13 @@ calibration restrictions. To retain the earlier implicit policy, pass
 `routing_strategy="restore_after_each_gate"`. Without a topology no routing
 search runs. Automatic selection may cost additional compilation time; minimum
 estimated routing cost is not a runtime or target-CZ optimality claim.
+
+SABRE search recovers from repeated layouts or an exhausted speculation budget
+by undoing its unused SWAP suffix and forcing one front-layer operation onto an
+edge. This adapts Qiskit's release valve and Cirq's repeated-search guard to FQ
+IR. See the [upstream reuse audit](../../docs/development/COMPILER_UPSTREAM_REUSE.md)
+for pinned sources, license notices, implementation differences and remaining
+gaps. It is a progress guarantee for connected operands, not an optimality claim.
 
 ### Export a synthesized circuit and prepare an offline deployment
 
