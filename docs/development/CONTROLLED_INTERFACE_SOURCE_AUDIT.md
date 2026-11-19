@@ -50,8 +50,8 @@ no whole-file acceptance.
 | `CtrlSpec.__cvs_tuple` | 223–231 | Immutable Core register and Compiler pattern tuples provide shape/type/value identity. Foreign CtrlSpec object equality is kept at the reference boundary. |
 | `CtrlSpec.__eq__` | 233–241 | Immutable Core register and Compiler pattern tuples provide shape/type/value identity. Foreign CtrlSpec object equality is kept at the reference boundary. |
 | `CtrlSpec.__hash__` | 243–244 | Immutable Core register and Compiler pattern tuples provide shape/type/value identity. Foreign CtrlSpec object equality is kept at the reference boundary. |
-| `CtrlSpec.to_cirq_cv` | 246–262 | Ecosystem typed single-clause transport remains open. Multi-register source decoder defect is recorded below. |
-| `CtrlSpec.from_cirq_cv` | 265–297 | Ecosystem typed single-clause transport remains open. Multi-register source decoder defect is recorded below. |
+| `CtrlSpec.to_cirq_cv` | 246–262 | Ecosystem `_control_values.py` provides typed single-clause transport. The multi-register decoder repair and source defect are explicit in `REGISTER_CONTROL_VALUES_AUDIT.md`. |
+| `CtrlSpec.from_cirq_cv` | 265–297 | Ecosystem `_control_values.py` provides typed single-clause transport. The multi-register decoder repair and source defect are explicit in `REGISTER_CONTROL_VALUES_AUDIT.md`. |
 | `CtrlSpec.get_single_ctrl_val` | 299–312 | `compiler/registers/control/component_control_selection.py`; physical typed single-bit descriptor coverage remains open. |
 | `AddControlledT` | 315–334 | `compiler/registers/component_control.py` ControlAdder and builder handle/output ordering. |
 | `AddControlledT.__call__` | 332–334 | `compiler/registers/component_control.py` ControlAdder and builder handle/output ordering. |
@@ -125,12 +125,13 @@ alone as evidence of native capability.
 
 ## Concrete remaining gaps
 
-- Typed single-clause control values need an Ecosystem to/from Cirq transport
-  that retains all register metadata and explicit supported encodings.
+- Typed single-clause control values now have an Ecosystem to/from Cirq transport
+  retaining register metadata and supported numerical encodings. See
+  `REGISTER_CONTROL_VALUES_AUDIT.md`. Direct controlled SDK wrappers remain open.
 - Frozen `CtrlSpec.from_cirq_cv` initializes `idx = 0` and never advances it
   between registers. Two scalar QBit clauses `(0, 1)` decode to `(0, 0)` and
   reencode as `(0, 0)`. `g2-controlled-source-roundtrip-boundary.json` records
-  the untouched source result. The native disposition requires explicit evidence.
+  the untouched source result. Native decoding advances each slice, verified for all 64 mixed unsigned/signed cases. This repair is explicitly distinguished from parity with the defective source.
 - Typed physical single-control selection admits scalar or shape `(1,)` QBit.
   Other one-bit word metadata represented by source needs a dedicated audit.
 - One's-complement, bounded and Montgomery descriptors have flat physical
