@@ -54,8 +54,10 @@ Replay repeats the selected routing strategy; its compile-time and memory cost
 must be included in subsequent performance measurements.
 
 The implementation currently remains private and is not connected to automatic
-target compilation. Enabling it in that workflow still requires v4 physical-plan
-generation and the subsequent Runtime/Deployment handoff work from the approved proposal.
+target compilation. A private [physical-evidence builder](../artifacts/README.md)
+now generates v4 records from its retained stages. Enabling the automatic workflow
+still requires physical-plan/artifact integration and the subsequent
+Runtime/Deployment handoff work from the approved proposal.
 No new execution or deployment support is claimed by this stage alone.
 
 Run its focused offline checks with:
