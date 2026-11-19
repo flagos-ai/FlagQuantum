@@ -236,6 +236,26 @@ def terminate_group(process: subprocess.Popen[str]) -> bool:
 def trial(
     workload: Workload, mode: Mode, *, warmups: int = 2, seconds: float = 30
 ) -> dict[str, object]:
+    command = [
+        sys.executable,
+        "-m",
+        __spec__.name if __spec__ else "benchmarks.synthesis.performance",
+        "--worker",
+        json.dumps(asdict(workload)),
+        "--mode",
+        mode,
+        "--warmups",
+        str(warmups),
+        "--deadline",
+        str(seconds),
+    ]
+    return observe_worker(command, mode, warmups=warmups, seconds=seconds)
+
+
+def observe_worker(
+    command: list[str], mode: Mode, *, warmups: int, seconds: float
+) -> dict[str, object]:
+    """Observe a phase-reporting worker with the existing PF-00 isolation rules."""
     env = os.environ.copy()
     env.update(dict.fromkeys(THREADS, "1"))
     env["PYTHONHASHSEED"] = "0"
@@ -249,19 +269,7 @@ def trial(
     transitions: list[dict[str, object]] = []
     with tempfile.TemporaryFile(mode="w+t") as errors:
         process = subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                __spec__.name if __spec__ else "benchmarks.synthesis.performance",
-                "--worker",
-                json.dumps(asdict(workload)),
-                "--mode",
-                mode,
-                "--warmups",
-                str(warmups),
-                "--deadline",
-                str(seconds),
-            ],
+            command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=errors,
@@ -329,6 +337,18 @@ def trial(
                                     **point,
                                 }
                             )
+                        if phase in {"execution", "execution_end"} and mode in {
+                            "memory",
+                            "diagnostic",
+                        }:
+                            points.append(
+                                {
+                                    "timestamp_ns": time.perf_counter_ns(),
+                                    "phase": "execution",
+                                    "stage": "unattributed",
+                                    **process_rss(process.pid),
+                                }
+                            )
                         process.stdin.write("continue\n")
                         process.stdin.flush()
                     elif event == "result":
@@ -336,7 +356,7 @@ def trial(
                         break
                 if (
                     mode in {"memory", "diagnostic"}
-                    and phase in {"startup", "warmup", "compile"}
+                    and phase in {"startup", "warmup", "compile", "execution"}
                     and process.poll() is None
                     and time.perf_counter_ns() >= next_sample_ns
                 ):
@@ -417,6 +437,16 @@ def trial(
             ],
             "limit": "sampled peaks are lower-bound observations; tree RSS can double-count shared pages; diagnostic stage peaks include profiler overhead; primary memory mode is unprofiled",
         }
+        execution = [p for p in points if p["phase"] == "execution"]
+        if execution:
+            samples["execution_memory"] = {
+                "window_start_rss_bytes": execution[0]["parent_rss_bytes"],
+                "window_end_rss_bytes": execution[-1]["parent_rss_bytes"],
+                "window_sampled_peak_rss_bytes": max(
+                    integer(p["parent_rss_bytes"]) for p in execution
+                ),
+                "scope": "execution-only sampled RSS; includes retained compiled program",
+            }
     return samples
 
 
