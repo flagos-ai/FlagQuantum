@@ -259,3 +259,56 @@ Q-0156 remains open for arbitrary SDK nonunitary channels. The existing admissio
 rules for dirty SDK borrowing, conditional measurement, tagged semantics,
 nonfinite or symbolic physical definitions and external CBit ports remain in
 force. This batch changes private lowering without a public API or schema change.
+
+
+## Materialized SDK channels and register composition
+
+Contract 1.22 in API_CHANGE_PROPOSAL_103_REGISTER_COMPONENT_PROGRAMS.md landed
+as 5fded8f2d before domain implementation. Core 5ac11cc8f owns immutable complex
+Kraus rows, finite positive-arity channel validation and trace preservation
+within absolute 1e-10. Matrix and channel payloads are exclusive. Physical
+lowering rejects missing markers, malformed ranks, empty operators, nonfinite
+values, overflowing completeness sums and non-trace-preserving channels with
+program.matrix_invalid. Old operation hashes retain their previous values.
+Public CircuitIR serialization and exported API contracts remain unchanged.
+
+Compiler d61a51292 reuses register binding and copies owned channel rows into
+fresh physical tensors. Ecosystem 1cba986bf admits channel protocols only after
+available decomposition and unitary protocols. Reversed operands, an entangled
+spectator, two-qubit depolarization and custom complex Kraus operators retain
+exact operator entries through import, binding, export and reimport. Native
+component graph copying and existing physical serialization retain data ownership.
+The SDK objects terminate at Ecosystem. Simulation 8ce47336f applies channels
+only to ensemble branches whose canonical classical predicates hold, retaining
+the inactive density and weight. The existing Kraus density kernel is reused.
+
+Unchanged Qualtran channel construction and Cirq export pass for amplitude and
+one/two-qubit depolarizing channels. Its tensor contraction explicitly refuses
+nonunitary gates, and an arbitrary Cirq KrausChannel fails source dictionary
+lookup because it is unhashable. These source boundaries are retained as tests.
+Native density execution is separately compared with Cirq and independently
+summed instrument branches, without claiming a source tensor execution result.
+Every applicable measurement/Kraus branch matches full unnormalized complex
+amplitudes, including feedback and reset. Export/reimport density matches the
+same branch sum. A typed composite leases and frees one clean private bit,
+with all rows and columns for nonzero work remaining zero after normal append.
+
+A channel leaf emits one Kraus instruction. The measured feedback fixture emits
+five primitive instructions, including one channel and one measurement. The
+private-work fixture emits two channels with one allocation and one release.
+These are measured instruction counts. These fixtures have no independent
+source QEC resource estimate, so no model estimate is inferred from them.
+The conditional-density test supplies a float64 probability explicitly because
+the existing channel factory admits a plain Python float through float32 first.
+That existing probability-admission boundary remains outside this batch.
+
+The 39-file concentrated regression passes 1,072 cases without skips and Cirq
+integration/conformance passes 96 cases. Fifteen changed Python files pass
+strict typing, Black, Ruff, classified scope, architecture and internal IR
+checks. Default smoke/unit retains the pre-existing example-registry failure
+after 434 passes and 51 skips. Logs use g2-channel-. Optional-dependency guards
+in the touched feedback witness are repaired and included in the dependency
+receipt with 689 global findings and zero batch findings, down from 706.
+Q-0156 remains open pending complete parent re-audit of broader
+symbolic graphs and declared SDK boundaries. Q-0149/Q-0154 and the dashboard
+numerical discrepancy also remain open.
