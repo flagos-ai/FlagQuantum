@@ -1124,11 +1124,10 @@ value = "3aebd0c888789f35bb281435ddd44d5f1ff8cc55"
 origin = "external_dependency"
 repository = "FlagQuantum/Torch-FL"
 
-
-# Verified on 2026-11-19: #1212 squash-merged the measured Color code branch
-# as 305b58f5f1d862cdad0770ffdd35dfaf1713ee67. The old branch ref now returns
-# HTTP 404, while this repository's Git commit API still returns the original
-# measured commit below. Preserve that pin and all numerical evidence.
+# Measured on 2026-11-18: both repository commit endpoints return this producer,
+# but none of the 55 current branch/tag tips reaches it. The QEC acceptance
+# artifact entered main through squash-merged #1212. Numerical evidence is
+# unchanged; see docs/development/QEC_EVIDENCE_REVISION_ORIGIN_20261118.md.
 [[artifact]]
 path = "artifacts/development/qec_colour_distance_acceptance_20261118.json"
 

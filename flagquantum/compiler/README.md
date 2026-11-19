@@ -15,7 +15,11 @@ share `CircuitIR` where their entry points require it.
 [`pipeline.py`](pipeline.py) exposes the native circuit entries and forwards
 orchestration to [lowering/pipeline.py](lowering/pipeline.py). `registers/`
 provides shared register decompositions. `_torch/` owns the PyTorch frontend
-capture and training compilation. Documented compiler entry modules remain
+capture and training compilation. Python source capture is grouped in
+[`_construction/frontend/`](_construction/frontend/README.md), with the retained
+`_construction/frontend_*.py` paths mapped in the
+[construction README](_construction/README.md#python-frontend-implementation).
+Documented compiler entry modules remain
 importable at their existing paths. Deployment packaging is owned by
 [`flagquantum.deployment`](../deployment/). Bounded Pauli products and
 product-formula schedules are implemented in [`lowering/`](lowering/).
@@ -131,6 +135,13 @@ admits a transformation this repository does not ship; see
 `synthesize_one_qubit`, `synthesize_two_qubit`, and
 `synthesize_state_preparation` for basis rewriting; they are not stable
 `fq.compiler` exports, so reach them by module path.
+
+With a topology, `compile` defaults to `routing_strategy="auto"` and records its
+choice among deployable strategies. It preserves final layout restoration and
+calibration restrictions. To retain the earlier implicit policy, pass
+`routing_strategy="restore_after_each_gate"`. Without a topology no routing
+search runs. Automatic selection may cost additional compilation time; minimum
+estimated routing cost is not a runtime or target-CZ optimality claim.
 
 ### Export a synthesized circuit and prepare an offline deployment
 

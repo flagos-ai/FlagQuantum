@@ -1,0 +1,170 @@
+{
+  "schema": "flagquantum.compiler_cz_block_lineage_candidate",
+  "status": "approved_pending_implementation",
+  "proposal": "docs/api-changes/FQ-COMPILER-CZ-BLOCK-LINEAGE-20261118.md",
+  "implementation_authorized": true,
+  "classification": "single_device_fast_path",
+  "owner_sequence": [
+    "integration",
+    "core",
+    "compiler",
+    "runtime",
+    "deployment"
+  ],
+  "versions": {
+    "new_evidence": "4.0",
+    "new_physical_plan": "4.0",
+    "preserved_readers_and_identities": [
+      "1.0",
+      "2.0",
+      "3.0"
+    ],
+    "legacy_downgrade_allowed": false
+  },
+  "approved_scope_if_accepted": {
+    "automatic_stage": "after_per_instruction_native_legalization_before_schedule",
+    "entry_points": [
+      "flagquantum.compiler.lowering.target_legalization.legalize_circuit_for_target",
+      "flagquantum.compiler.artifacts.artifact_compilation.compile_circuit_artifact_for_target"
+    ],
+    "required_native_gates": [
+      "rz",
+      "rx",
+      "cz"
+    ],
+    "only_native_two_qubit_entangler": "cz",
+    "topology_modes": [
+      "absent",
+      "undirected_without_allocated_workspace"
+    ],
+    "root_native_target_admission": false,
+    "free_final_layout": false,
+    "global_phase_writer": false,
+    "new_production_dependency": false,
+    "program_artifact_envelope_changes": false
+  },
+  "target_result_append": {
+    "native_block_optimization": {
+      "type": "NativeBlockOptimizationResult | None",
+      "default": null
+    }
+  },
+  "block_stage_result_fields": [
+    "source_program",
+    "program",
+    "source_content_hash",
+    "target_snapshot_id",
+    "rewrites",
+    "rejection_counts",
+    "optimization_identity"
+  ],
+  "rejection_counter_keys": [
+    "not_lower_cz_cost",
+    "synthesis_unavailable",
+    "residual_rejected",
+    "instruction_growth_rejected"
+  ],
+  "physical_plan_fields": [
+    "plan_identity",
+    "source_circuit_hash",
+    "physical_circuit_hash",
+    "topology_identity",
+    "coupling",
+    "initial_logical_to_physical",
+    "pre_restore_logical_to_physical",
+    "final_logical_to_physical",
+    "mapping_transitions",
+    "instructions",
+    "topology_legalization_identity",
+    "native_gate_legalization_identity",
+    "schedule_identity",
+    "schedule_depth",
+    "maximum_parallel_width",
+    "critical_path",
+    "native_input_circuit_hash",
+    "native_input_instructions",
+    "block_rewrites",
+    "native_block_optimization_identity",
+    "mapping_transition_space"
+  ],
+  "mapping_transition_space": "topology_program",
+  "native_input_instruction_fields": [
+    "instruction_index",
+    "source_instruction_index",
+    "topology_instruction_index",
+    "native_replacement_ordinal",
+    "origin",
+    "opcode",
+    "source_logical_qubits",
+    "physical_qubits"
+  ],
+  "block_rewrite_fields": [
+    "input_instruction_indices",
+    "output_instruction_indices",
+    "physical_qubits",
+    "baseline_cz_count",
+    "replacement_cz_count",
+    "equivalence",
+    "phase_real",
+    "phase_imag",
+    "max_abs_residual"
+  ],
+  "instruction_fields": [
+    "instruction_index",
+    "native_input_instruction_index",
+    "block_rewrite_index",
+    "block_replacement_ordinal",
+    "opcode",
+    "physical_qubits",
+    "layer",
+    "predecessors",
+    "dependency_kinds"
+  ],
+  "equivalence": "unitary_up_to_global_phase",
+  "limits": {
+    "block_input_operations": 64,
+    "block_additional_output_operations": 32,
+    "maximum_absolute_entry_residual": 1e-11,
+    "maximum_phase_modulus_residual": 1e-11,
+    "strict_cz_reduction_required": true,
+    "preserve_existing_native_baseline_admission": true,
+    "combined_native_growth_budget": "existing caller max_native_added_operations",
+    "serialized_limits": "reuse existing bundle byte/record limits including nested memberships"
+  },
+  "invariants": [
+    "source_hash_and_actual_topology_program_retained",
+    "native_baseline_instance_retained",
+    "source_ancestry_derived_through_native_input_lineage",
+    "original_mapping_transitions_replayed_in_topology_index_space",
+    "each_native_input_covered_exactly_once",
+    "each_output_covered_exactly_once",
+    "disjoint_rewrite_input_and_output_memberships",
+    "identity_cancellation_retains_empty_output_record",
+    "reordering_only_across_disjoint_dependency_free_operations",
+    "candidate_opcodes_and_parameters_legal_for_same_target",
+    "identity_final_logical_layout",
+    "operator_cost_and_residual_recomputed_from_actual_programs",
+    "core_parsing_is_not_independent_quantum_equivalence_proof",
+    "runtime_and_deployment_remain_read_only"
+  ],
+  "example": "docs/api-changes/examples/compiler-cz-block-lineage-v4.json",
+  "required_acceptance": [
+    "integration_contract_fake_and_conformance",
+    "legacy_v1_v2_v3_identity_fixtures",
+    "strict_v4_reader_and_nested_limits",
+    "block_implementation_replacement_without_consumer_changes",
+    "target_artifact_cpu_vertical_workflow",
+    "reverse_operands_and_routing_swap_blocks",
+    "independent_complete_operator_reference",
+    "symbols_gradients_and_ordering_boundaries",
+    "tamper_and_resource_rejection",
+    "unchanged_linux_sdkbench_acceptance_with_registered_revision"
+  ],
+  "claim": {
+    "parity_established": false,
+    "superiority_established": false,
+    "sdkbench_resource_evaluation_complete": false
+  },
+  "approved_on": "2026-11-18",
+  "approval_scope": "PR #1221 proposal scope approved explicitly by the user; release qualification remains pending"
+}
