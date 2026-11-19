@@ -660,8 +660,14 @@ def synthesize_one_qubit_matrix(
     target = _as_complex_matrix(matrix, 2, what="matrix")
     if not _is_unitary(target):
         raise ValueError("matrix must be a 2x2 unitary")
+    theta, phi, lam = _zyz_angles(target)
+    # KAK factors with a polar angle of pi/2 may recover
+    # one or two ulps away from pi/2 on a different BLAS/libm platform. Only
+    # canonicalize this matrix-derived angle, never a user's declared rotation.
+    if abs(theta - _HALF_PI) <= 4 * math.ulp(_HALF_PI):
+        theta = _HALF_PI
     return _emit_leaves(
-        _leaves(*_zyz_angles(target), z_rotation=z_rotation, pulse_opcode=pulse_opcode),
+        _leaves(theta, phi, lam, z_rotation=z_rotation, pulse_opcode=pulse_opcode),
         qubits=(qubit,),
         metadata={} if metadata is None else metadata,
         z_rotation=z_rotation,

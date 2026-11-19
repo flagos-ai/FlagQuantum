@@ -180,8 +180,28 @@ def test_complete_complex_states_and_actual_resources(
 
 @pytest.fixture(scope="module")
 def workflow() -> Workflow:
-    pytest.importorskip("networkx")
-    return run_workflow()
+    pytest.importorskip("matplotlib")
+    pytest.importorskip("numpy")
+    path = DIRECTORY / "walkthrough.ipynb"
+    notebook = json.loads(path.read_text())
+    assert all(
+        cell.get("execution_count") is None and not cell.get("outputs")
+        for cell in notebook["cells"]
+        if cell["cell_type"] == "code"
+    )
+    namespace, count = execute_code_cells(path)
+    assert count == 5
+    result = namespace["workflow"]
+    assert isinstance(result, Workflow) and result.best_feasible is not None
+    assert result.best_feasible.uncovered == 1
+    initial = namespace["initial_program"]
+    assert isinstance(initial, synth.Program)
+    assert read_distribution(initial, 10) == pytest.approx(
+        read_distribution(build_program(), 10), abs=1e-11
+    )
+    assert namespace["exact_uncovered"] == 1 and namespace["exact_feasible"] is True
+
+    return result
 
 
 def test_actual_optimizer_and_samples_against_independent_reference(
@@ -236,15 +256,20 @@ def test_actual_optimizer_and_samples_against_independent_reference(
             lower_tail_cost(probabilities, independent_costs, 0.7), abs=1e-10
         )
 
+    # Keep the full optimizer, missing-result, and plot checks in one test so
+    # xdist does not repeat this module fixture in several worker processes.
+    _check_missing_feasible_observation_stays_missing(workflow)
+    _check_actual_figure_roles_and_missing_observation(workflow)
 
-def test_missing_feasible_observation_stays_missing(workflow: Workflow) -> None:
+
+def _check_missing_feasible_observation_stays_missing(workflow: Workflow) -> None:
     forced = sample_distribution((1.0,) + (0.0,) * 1023, shots=10, seed=1)
     assert forced[0].word == 0 and forced[0].penalized_cost == 271
     assert replace(workflow, samples=forced).best_feasible is None
     assert model_table()[workflow.exact_reference_word][0] == 1
 
 
-def test_actual_figure_roles_and_missing_observation(workflow: Workflow) -> None:
+def _check_actual_figure_roles_and_missing_observation(workflow: Workflow) -> None:
     pytest.importorskip("matplotlib")
     np = pytest.importorskip("numpy")
     import matplotlib.pyplot as plt
@@ -280,29 +305,6 @@ def test_actual_figure_roles_and_missing_observation(workflow: Workflow) -> None
         assert "uncovered=1" in missing.axes[4].get_title()
     finally:
         plt.close(missing)
-
-
-def test_clean_notebook_executes_complete_source_workflow() -> None:
-    pytest.importorskip("matplotlib")
-    pytest.importorskip("numpy")
-    path = DIRECTORY / "walkthrough.ipynb"
-    notebook = json.loads(path.read_text())
-    assert all(
-        cell.get("execution_count") is None and not cell.get("outputs")
-        for cell in notebook["cells"]
-        if cell["cell_type"] == "code"
-    )
-    namespace, count = execute_code_cells(path)
-    assert count == 5
-    result = namespace["workflow"]
-    assert isinstance(result, Workflow) and result.best_feasible is not None
-    assert result.best_feasible.uncovered == 1
-    initial = namespace["initial_program"]
-    assert isinstance(initial, synth.Program)
-    assert read_distribution(initial, 10) == pytest.approx(
-        read_distribution(build_program(), 10), abs=1e-11
-    )
-    assert namespace["exact_uncovered"] == 1 and namespace["exact_feasible"] is True
 
 
 @pytest.mark.parametrize("parameters", ((0.1,), (math.nan,) * 6, (math.inf,) * 6))

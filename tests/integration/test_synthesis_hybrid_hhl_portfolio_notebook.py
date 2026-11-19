@@ -93,10 +93,12 @@ def test_complete_finite_workflow_and_resource_basis() -> None:
     assert depth.overlap == pytest.approx(0.9569688990161648)
     assert basic.overlap == pytest.approx(0.9028433144351062)
     assert tuple(row.resources.n_qubits for row in profiles) == (9, 9, 10)
+    # The formal snapshot recorded (636, 636, 856). Canonical matrix-derived
+    # half-pi pulses remove redundant controlled pulses on both CPU platforms.
     assert tuple(row.resources.operation_counts["cx"] for row in profiles) == (
-        636,
-        636,
-        856,
+        612,
+        612,
+        824,
     )
     for row in profiles:
         assert sum(row.counts) == model.SHOTS

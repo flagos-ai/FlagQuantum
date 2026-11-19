@@ -224,8 +224,13 @@ def test_actual_hundred_iteration_optimization_and_sampling(workflow: Workflow) 
     assert sample_distribution(probabilities, shots=1000, seed=2718) == workflow.samples
     assert sample_distribution(probabilities, shots=1000, seed=2719) != workflow.samples
 
+    # Keep the full optimizer, missing-result, and plot checks in one test so
+    # xdist does not repeat this module fixture in several worker processes.
+    _check_missing_feasible_observation_stays_missing(workflow)
+    _check_figures_use_actual_trace_and_observations(workflow)
 
-def test_missing_feasible_observation_stays_missing(workflow: Workflow) -> None:
+
+def _check_missing_feasible_observation_stays_missing(workflow: Workflow) -> None:
     forced = sample_distribution(
         tuple(1.0 if key == (32767,) else 0.0 for key in DOMAIN), shots=10, seed=1
     )
@@ -234,7 +239,7 @@ def test_missing_feasible_observation_stays_missing(workflow: Workflow) -> None:
     assert model_row(workflow.exact_reference).objective == 3
 
 
-def test_figures_use_actual_trace_and_observations(workflow: Workflow) -> None:
+def _check_figures_use_actual_trace_and_observations(workflow: Workflow) -> None:
     pytest.importorskip("matplotlib")
     import matplotlib.pyplot as plt
     import numpy as np
