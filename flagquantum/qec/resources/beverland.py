@@ -6,14 +6,14 @@
 """Beverland resource estimates from declared logical component costs."""
 
 from dataclasses import dataclass, replace
-from math import ceil, isfinite, log, log2
+from math import ceil, isfinite, log2
 
 from ...compiler._component_trace.gate_budget import beverland_gate_budget
 from ...compiler._component_trace.resource_model import GateCost, ModeledResources
 from .data_block import fast_data_block_tiles
+from .error_model import SurfaceCodeScheme
 
-_ERROR_RATE_SCALER = 0.03
-_ERROR_RATE_THRESHOLD = 0.01
+_SCHEME = SurfaceCodeScheme.beverland()
 
 
 @dataclass(frozen=True)
@@ -46,7 +46,7 @@ def estimate_beverland_resources(
     """
     if not 0 < error_budget <= 1:
         raise ValueError("Error budget must lie in (0, 1]")
-    if not 0 < physical_error < _ERROR_RATE_THRESHOLD:
+    if not 0 < physical_error < _SCHEME.error_rate_threshold:
         raise ValueError("Physical error must lie in (0, 0.01)")
     if rotation_layers is not None and (
         type(rotation_layers) is not int or rotation_layers < 0
@@ -82,13 +82,12 @@ def estimate_beverland_resources(
     physical_qubits: int | None = None
     if budget_steps:
         error_per_tile_step = error_budget / (3 * tiles * budget_steps)
-        if error_per_tile_step / _ERROR_RATE_SCALER == 0:
+        if error_per_tile_step / _SCHEME.error_rate_scaler == 0:
             raise ValueError("Error budget per tile and time step underflowed")
-        rounds = log(error_per_tile_step / _ERROR_RATE_SCALER) / log(
-            physical_error / _ERROR_RATE_THRESHOLD
+        distance = _SCHEME.code_distance_from_budget(
+            physical_error, error_per_tile_step
         )
-        distance = max(3, 2 * ceil(rounds) - 1)
-        physical_qubits = tiles * 2 * distance**2
+        physical_qubits = tiles * _SCHEME.physical_qubits(distance)
 
     return BeverlandEstimate(
         minimum,

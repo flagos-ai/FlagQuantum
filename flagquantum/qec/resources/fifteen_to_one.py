@@ -6,7 +6,7 @@
 """Five-qubit noisy circuit and postselection for 15-to-1 distillation."""
 
 from dataclasses import dataclass
-from math import ceil, pow, sqrt
+from math import ceil, sqrt
 
 import torch
 
@@ -14,6 +14,7 @@ from ...compiler._component_trace.resource_model import GateCost
 from ...core.ir import CircuitIR, Instruction
 from ...simulation.density_matrix import density_matrix_from_ir
 from .distillation_channels import noisy_pauli_rotation, storage_error
+from .error_model import LogicalErrorModel, SurfaceCodeScheme
 
 _WIRES = (0, 1, 2, 3, 4)
 
@@ -60,10 +61,10 @@ class FifteenToOneFactory:
                 "Invalid distillation physical error or logical error scaler"
             )
         dx, dz, dm = self.x_distance, self.z_distance, self.measurement_distance
-        px, pz, pm = (
-            error_rate_scaler * pow(physical_error / 0.01, (distance + 1) / 2)
-            for distance in (dx, dz, dm)
+        logical_error = LogicalErrorModel(
+            physical_error, SurfaceCodeScheme(error_rate_scaler, 0.01)
         )
+        px, pz, pm = (logical_error(distance) for distance in (dx, dz, dm))
         injection = physical_error / 3
         storage_x = 0.5 * (dz / dx) * px * dm
         storage_z = 0.5 * (dx / dz) * pz * dm

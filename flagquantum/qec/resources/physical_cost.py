@@ -7,11 +7,12 @@
 """Combine a data layout and magic-state production into physical costs."""
 
 from dataclasses import dataclass
-from math import ceil, pow
+from math import ceil
 from typing import TypeVar
 
 from ...compiler._component_trace.resource_model import ModeledResources
 from .data_block import DataBlock
+from .error_model import SurfaceCodeScheme
 from .physical_parameters import PhysicalParameters
 
 _Estimate = TypeVar("_Estimate", bound="PhysicalResourceEstimate")
@@ -60,8 +61,8 @@ class PhysicalResourceEstimate:
             factory_cycles = ceil(factory_cycles / factory_count)
         cycles = max(factory_cycles, block.consumption_cycles(logical.gates))
         width = logical.peak_logical_qubits
-        logical_error = error_rate_scaler * pow(
-            hardware.physical_error / 0.01, (block.distance + 1) / 2
+        logical_error = SurfaceCodeScheme(error_rate_scaler, 0.01).logical_error_rate(
+            block.distance, hardware.physical_error
         )
         return cls(
             cycles=cycles,

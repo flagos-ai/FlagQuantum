@@ -7,11 +7,12 @@
 """Physical costs for catalyzed CCZ-to-T factories and a surface-code data block."""
 
 from dataclasses import dataclass
-from math import ceil, pow
+from math import ceil
 
 from ...compiler._component_trace.gate_budget import t_and_ccz_budget
 from ...compiler._component_trace.resource_model import ModeledResources
 from .data_block import DataBlock, DataLayout
+from .error_model import LogicalErrorModel, SurfaceCodeScheme
 from .physical_cost import PhysicalResourceEstimate, validate_logical_counts
 from .physical_parameters import PhysicalParameters
 
@@ -55,8 +56,7 @@ def estimate_gidney_fowler_resources(
     pairs = ceil(int(budget["n_t"]) / 2)
     ccz_states = int(budget["n_ccz"]) + pairs
 
-    def logical_error(distance: int) -> float:
-        return 0.1 * pow(physical_error / 0.01, (distance + 1) / 2)
+    logical_error = LogicalErrorModel(physical_error, SurfaceCodeScheme.gidney_fowler())
 
     l1, l2 = distillation_l1_distance, distillation_l2_distance
     l0_error = physical_error + 100 * logical_error(l1 // 2)
