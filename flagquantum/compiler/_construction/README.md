@@ -4,6 +4,72 @@ Python qfunc and adapted Qmod programs share the existing HybridProgram model.
 Compiler owns semantic verification, lifetime analysis, constrained candidate
 selection and lowering to CircuitIR.
 
+## Python frontend implementation
+
+[`frontend/`](frontend/README.md) owns Python source capture. The `frontend_*.py`
+files in this directory are compatibility aliases. Each old import resolves to
+the same module object as its implementation, so existing private symbol imports
+and module-level replacements continue to affect capture. Compiler owns these
+aliases. Their scope is the existing construction frontend imports, and their
+target review version is 0.5.0. Removal requires migrating repository consumers
+and explicit approval to retire the retained paths.
+
+| Existing module | Implementation |
+| --- | --- |
+| `frontend_borrowed_expression.py` | [`frontend/borrowed_expression.py`](frontend/borrowed_expression.py) |
+| `frontend_callback_controls.py` | [`frontend/callback_controls.py`](frontend/callback_controls.py) |
+| `frontend_callback_effects.py` | [`frontend/callback_effects.py`](frontend/callback_effects.py) |
+| `frontend_calls.py` | [`frontend/calls.py`](frontend/calls.py) |
+| `frontend_classical.py` | [`frontend/classical.py`](frontend/classical.py) |
+| `frontend_cnf.py` | [`frontend/cnf.py`](frontend/cnf.py) |
+| `frontend_control.py` | [`frontend/control.py`](frontend/control.py) |
+| `frontend_controlled_effects.py` | [`frontend/controlled_effects.py`](frontend/controlled_effects.py) |
+| `frontend_evolution.py` | [`frontend/evolution.py`](frontend/evolution.py) |
+| `frontend_fixed_xor.py` | [`frontend/fixed_xor.py`](frontend/fixed_xor.py) |
+| `frontend_increment.py` | [`frontend/increment.py`](frontend/increment.py) |
+| `frontend_matrix.py` | [`frontend/matrix.py`](frontend/matrix.py) |
+| `frontend_numeric.py` | [`frontend/numeric.py`](frontend/numeric.py) |
+| `frontend_phase.py` | [`frontend/phase.py`](frontend/phase.py) |
+| `frontend_phase_factors.py` | [`frontend/phase_factors.py`](frontend/phase_factors.py) |
+| `frontend_ports.py` | [`frontend/ports.py`](frontend/ports.py) |
+| `frontend_predicate_views.py` | [`frontend/predicate_views.py`](frontend/predicate_views.py) |
+| `frontend_preparation.py` | [`frontend/preparation.py`](frontend/preparation.py) |
+| `frontend_program.py` | [`frontend/program.py`](frontend/program.py) |
+| `frontend_python.py` | [`frontend/python.py`](frontend/python.py) |
+| `frontend_qpe.py` | [`frontend/qpe.py`](frontend/qpe.py) |
+| `frontend_quantized.py` | [`frontend/quantized.py`](frontend/quantized.py) |
+| `frontend_regions.py` | [`frontend/regions.py`](frontend/regions.py) |
+| `frontend_repeated_effects.py` | [`frontend/repeated_effects.py`](frontend/repeated_effects.py) |
+| `frontend_rotation_table.py` | [`frontend/rotation_table.py`](frontend/rotation_table.py) |
+| `frontend_statements.py` | [`frontend/statements.py`](frontend/statements.py) |
+| `frontend_storage.py` | [`frontend/storage.py`](frontend/storage.py) |
+| `frontend_transforms.py` | [`frontend/transforms.py`](frontend/transforms.py) |
+| `frontend_views.py` | [`frontend/views.py`](frontend/views.py) |
+| `frontend_xor.py` | [`frontend/xor.py`](frontend/xor.py) |
+
+## Circuit generation implementation
+
+[`codegen/`](codegen/README.md) owns arithmetic, Boolean and register gate
+emission, including reversible workspace scheduling. Compiler owns the retained
+module aliases below. Each old path resolves to its implementation module, so
+existing imports and module-level replacements use the same state. Their scope
+is existing construction lowering consumers and private replacement hooks. The
+target review version is 0.5.0. Removal requires migrating repository consumers
+and explicit approval to retire these paths.
+
+| Existing module | Implementation |
+| --- | --- |
+| `lowering.py` | [`codegen/arithmetic.py`](codegen/arithmetic.py) |
+| `register_lowering.py` | [`codegen/registers.py`](codegen/registers.py) |
+| `boolean_lowering.py` | [`codegen/boolean.py`](codegen/boolean.py) |
+| `gate_tape.py` | [`codegen/gate_tape.py`](codegen/gate_tape.py) |
+
+Register emission delegates uniform interval preparation to `codegen/preparation.py`,
+controlled operations to `codegen/controls.py`, and real transforms to
+`codegen/transforms.py`. Their existing private helper names remain importable
+from `register_lowering`. Extracted helpers report their owning codegen module
+through `__module__`; their internal dependencies are resolved in that module.
+
 ## Module ownership
 
 | Module | Responsibility |
@@ -13,22 +79,24 @@ selection and lowering to CircuitIR.
 | `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
 | `fixed_point.py` | Bounded quantized scalar arithmetic, shared prepared-selector rows and actual-value discard-environment proofs |
 | `fixed_point_program.py` | Shared fresh bindings, read/drop ownership facts and reversible output-column lowering |
-| `frontend_quantized.py` | Resolve the explicit native quantization marker and closed Python numeric/helper bindings |
-| `frontend_numeric.py` | Exact native numeric assignment, typed extrema and explicit scalar format admission |
-| `frontend_program.py` | Capture source-retaining Python qfunc programs |
-| `frontend_classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
-| `frontend_statements.py` | Dispatch captured statements and specialize bounded classical branches |
-| `frontend_ports.py` | Resolve annotation identities, quantum roles and bounded port types |
-| `frontend_regions.py` | Capture pure unitary regions and retain arithmetic/Const-only inverse boundaries |
-| `frontend_phase.py` | Read native real phase arithmetic and checked views for shared sparse expansion |
-| `frontend_preparation.py` | Capture bounded literal native preparation calls into existing register effects |
-| `frontend_views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
-| `frontend_python.py` | Capture the supported scalar Python expression profile |
+| `frontend/quantized.py` | Resolve the explicit native quantization marker and closed Python numeric/helper bindings |
+| `frontend/numeric.py` | Exact native numeric assignment, typed extrema and explicit scalar format admission |
+| `frontend/program.py` | Capture source-retaining Python qfunc programs |
+| `frontend/classical.py` | Snapshot typed classical integer/real bindings and interpret closed numeric expressions |
+| `frontend/statements.py` | Dispatch captured statements and specialize bounded classical branches |
+| `frontend/ports.py` | Resolve annotation identities, quantum roles and bounded port types |
+| `frontend/regions.py` | Capture pure unitary regions and retain arithmetic/Const-only inverse boundaries |
+| `frontend/phase.py` | Read native real phase arithmetic and checked views for shared sparse expansion |
+| `frontend/preparation.py` | Capture bounded literal native preparation calls into existing register effects |
+| `frontend/views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
+| `frontend/python.py` | Capture the supported scalar Python expression profile |
 | `register_profile.py` | Register types, operation attribute admission, preparation and publication shapes |
 | `register_verifier.py` | Ordered effects, initialized storage, ownership, aliases and lifetime checks |
 | `register_expansion.py` | Expand verified static register calls and inverse composition |
-| `register_lowering.py` | Lower admitted register effects to existing gate kernels |
-| `lifetimes.py`, `lowering.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
+| `codegen/registers.py` | Lower admitted register effects and schedule reversible workspace |
+| `lifetimes.py`, `codegen/arithmetic.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
+| `codegen/boolean.py`, `codegen/gate_tape.py` | Boolean synthesis and checked gate-tape expansion |
+| `codegen/preparation.py`, `codegen/controls.py`, `codegen/transforms.py` | State preparation, controlled gates and real-transform emission |
 | `selection.py`, `target.py` | Evaluate supported schedules and verify target constraints |
 
 `verify_operation_attributes` checks the operation's exact permitted attributes
@@ -64,7 +132,7 @@ Qmod lexical recognition, helper roles and lifetime checks; Compiler owns this
 source-independent arithmetic and proof. The independent Python-AST consumer in
 `tests/unit/test_synth_fixed_point.py` and the complete original-source Circuit
 comparison in `tests/integration/test_synthesis_qmod_brownian_quantized.py` exercise
-the shared implementation. `frontend_quantized.py` now captures explicit native
+the shared implementation. `frontend/quantized.py` now captures explicit native
 `quantize` markers with the same scalar, binding, selector and output-table
 authorities. It reuses native annotation/symbol resolution and `_Body` effect
 construction; the existing register verifier checks the emitted HybridProgram.
@@ -87,7 +155,7 @@ It verifies coherent integer expression definitions and physical binding
 preconditions. Binding validation checks the complete definition graph before
 checking physical ports; an unchecked function cannot bypass profile verification.
 Arithmetic lowering emits existing Core gates through a shared pure arithmetic
-kernel. `frontend_python.py` captures a restricted Python integer expression
+kernel. `frontend/python.py` captures a restricted Python integer expression
 without running its body. This package does not run circuits or export a public
 `synth` API. Its private CS06-B selector checks the two existing schedules.
 
@@ -102,7 +170,7 @@ nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qi
 `qint.subtract_mod` for raw word subtraction modulo the declared result width.
 The shared `numeric_expression.py` owns exact sign extension and binary-point
 alignment before this operation; the source adapter supplies syntax accessors
-and retains its diagnostics. Native numeric admission uses `frontend_numeric.py` and checked scalar
+and retains its diagnostics. Native numeric admission uses `frontend/numeric.py` and checked scalar
 `qreg.declare.numeric_format` metadata; raw storage widths retain their meaning.
 `tests/team/compiler/test_construction_numeric_expression.py` checks a second
 syntax consumer against independent full-domain rational/word oracles and
@@ -745,7 +813,7 @@ encoding. General/nonliteral/quantum divisors remain rejected. Run
 `python -m pytest tests/integration/test_synthesis_native_modulo.py -q` for
 independent XOR-permutation full states, input domains and ownership refusals.
 
-`frontend_matrix.py` reads bounded static built-in matrix data and translates
+`frontend/matrix.py` reads bounded static built-in matrix data and translates
 native unitary calls to existing indexed `qreg.unitary` effects. Shared profile
 validation owns matrix shape/unitarity and storage legality; shared lowering owns
 the gate decomposition and absolute phase. No numerical matrix code is duplicated
@@ -766,7 +834,7 @@ lowering owns permutations and scratch accounting. Run
 `tests/integration/test_synthesis_native_modular_exp.py` for independent modular
 truth tables, coherent amplitudes, helper borrowing and budget refusals.
 
-Native `suzuki_trotter` capture in `frontend_evolution.py` snapshots existing
+Native `suzuki_trotter` capture in `frontend/evolution.py` snapshots existing
 immutable Observable terms, validates logical target indices and emits existing
 Pauli rotations through the shared ordered product-formula schedule. It owns
 neither numerical execution nor a new Hamiltonian representation. Complete

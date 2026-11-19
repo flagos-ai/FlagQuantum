@@ -27,3 +27,53 @@ The example checks legal target edges, restored mappings, and CPU numerical
 equivalence. Artifact compilation enters through
 `artifacts/artifact_compilation.py` and uses `target_legalization.py` for its
 verified snapshot-driven path.
+
+## Native CZ block stage
+
+`native_block_optimization.py` retains the exact per-instruction native baseline
+and records collective RX/RZ/CZ rewrites with the Core block evidence type. It
+reuses the existing bounded collector and KAK synthesis. Its verifier replays
+native legalization, checks exclusive memberships and unchanged instructions,
+and recomputes the 4x4 operators, phase witness, CZ costs and combined budget.
+Dependency validation scans the source once; it does not compare every block
+against every spectator.
+
+Native target declarations of ProgramIR measurement and reset capabilities do
+not count as additional entanglers. They do not enable dynamic instructions in
+this CircuitIR stage. Terminal measurement requests are retained, while noise
+channels and unknown annotations remain global collection boundaries.
+
+Routing annotations are admitted only with the retained undirected topology
+result and its coupling map. The stage replays the existing router with the
+recorded selected strategy, compares the complete retained result and program
+hash, and replays native legalization before deriving eligible native leaves.
+It never strips annotations from the retained IR. Original source annotations
+remain boundaries, including source metadata that imitates reserved router keys.
+Directed routing and allocated workspace remain outside this stage's admission.
+Replay repeats the selected routing strategy; its compile-time and memory cost
+must be included in subsequent performance measurements.
+
+The stage is automatic in `legalize_circuit_for_target` for full-CZ targets with
+absent or undirected, unallocated topology and identity initial placement.
+`TargetLegalizationResult.native_block_optimization` retains the native baseline,
+output and rejection counters. Final scheduling uses the accepted output.
+An accepted rewrite enters the [v4 artifact evidence workflow](../artifacts/README.md).
+When no rewrite is accepted, existing identities and encodings are preserved.
+Runtime and Deployment accept the v4 handoff through their existing read-only
+identity checks and offline preparation; no remote execution is certified here.
+
+Run its focused offline checks with:
+
+```bash
+python -m pytest -q tests/unit/test_native_block_optimization.py tests/unit/test_compilation_target_cz_resynthesis.py
+```
+
+They exercise the existing SWAP/reversed-CX workflow, reducing its retained
+28-instruction baseline from four CZ gates to two, plus cancellation, spectators,
+parameter boundaries, tampering and resource refusals. Independent simulation
+matrices verify the complete operator, including both operand orders and all
+five routing selections. Nonidentity initial placements are applied explicitly
+to every input basis state; final layouts remain restored. Rehashed mutations
+of routing parameters, ordering, ancestry, coverage and restoration are rejected
+before annotations can enter a block. The existing user-facing target workflow
+above retains its prior behavior for targets outside the admitted CZ profile.

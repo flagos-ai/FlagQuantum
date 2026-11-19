@@ -14,7 +14,7 @@ from .._hybrid.model import (
     ValueId,
 )
 from .borrowed_unitary import unitary_template_parts
-from .gate_tape import check_gate_tape
+from .codegen.gate_tape import check_gate_tape
 from .pauli_rotation import checked_support
 from .profile import _fail, _width
 from .register_profile import (

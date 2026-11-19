@@ -1,0 +1,1273 @@
+{
+  "commit": "7f89948efd1d6dc63b29d00934cc6738cd440829",
+  "base_commit": "305b58f5f1d862cdad0770ffdd35dfaf1713ee67",
+  "classification": "single_device_fast_path",
+  "environment": {
+    "python": "3.12.16",
+    "torch": "2.13.0+cpu",
+    "stim_reference": "1.16.0",
+    "image": "sha256:b12e3004927655651e3589bc9c263a7277574d66779d3c7713071959a7fd328e",
+    "platform": "Linux x86_64"
+  },
+  "build": {
+    "flagquantum-0.4.0-cp310-abi3-linux_x86_64.whl": "03ac2d8a894ceb837b6320f36c525c59e4df0a430963d3d9bac551bb265af0b7",
+    "flagquantum-0.4.0.tar.gz": "0a10956f569ef9463de811a8702bfe739d2be08db0dd31da15e6aab107e7fd8f"
+  },
+  "binding": {
+    "package_python_files": 1124,
+    "source_sha256": {
+      "flagquantum/qec/codes/_css_helpers.py": "5f51f78745e418db1e16482eacfa18517f52b6fee279d3b9ce1eba3bba4679c4",
+      "flagquantum/qec/codes/toric.py": "e9ac65a7453201f4ee28c9601646cf0d4b55df193f6d72b7dc743e51ac10ab27",
+      "examples/qec/toric_distance_acceptance.py": "ea6f0f703cc57cfc5adaf870516b277eca3548c66d97d764f6a72d68ae54f1a5"
+    },
+    "all_wheel_package_python_bytes_equal_source": true
+  },
+  "sdk": {
+    "mode": "sdk",
+    "records": [
+      {
+        "distance": 3,
+        "basis": "z",
+        "noise_profile": "independent",
+        "data_qubits": 18,
+        "ancilla_qubits": 18,
+        "detectors": 54,
+        "observables": 2,
+        "mechanisms": 144,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121206,
+        "logical_residual_shots": 0,
+        "logical_residuals": [
+          0,
+          0
+        ],
+        "detector_events": 122,
+        "osd_fallback_shots": 2,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.03201446868479252,
+        "seconds": 0.31276410818099976,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 3,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "data_qubits": 18,
+        "ancilla_qubits": 18,
+        "detectors": 54,
+        "observables": 2,
+        "mechanisms": 180,
+        "hyperedges": 36,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121206,
+        "logical_residual_shots": 3,
+        "logical_residuals": [
+          3,
+          0
+        ],
+        "detector_events": 126,
+        "osd_fallback_shots": 4,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.0012023281306028366,
+        "seconds": 0.4723699130117893,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 3,
+        "basis": "x",
+        "noise_profile": "independent",
+        "data_qubits": 18,
+        "ancilla_qubits": 18,
+        "detectors": 54,
+        "observables": 2,
+        "mechanisms": 144,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121207,
+        "logical_residual_shots": 0,
+        "logical_residuals": [
+          0,
+          0
+        ],
+        "detector_events": 137,
+        "osd_fallback_shots": 4,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.0012342967092990875,
+        "seconds": 0.36896684393286705,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 3,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "data_qubits": 18,
+        "ancilla_qubits": 18,
+        "detectors": 54,
+        "observables": 2,
+        "mechanisms": 180,
+        "hyperedges": 36,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121207,
+        "logical_residual_shots": 1,
+        "logical_residuals": [
+          1,
+          0
+        ],
+        "detector_events": 213,
+        "osd_fallback_shots": 3,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.001171160489320755,
+        "seconds": 0.5246226023882627,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "z",
+        "noise_profile": "independent",
+        "data_qubits": 50,
+        "ancilla_qubits": 50,
+        "detectors": 150,
+        "observables": 2,
+        "mechanisms": 400,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121210,
+        "logical_residual_shots": 0,
+        "logical_residuals": [
+          0,
+          0
+        ],
+        "detector_events": 318,
+        "osd_fallback_shots": 2,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.005922174081206322,
+        "seconds": 0.9093247763812542,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "data_qubits": 50,
+        "ancilla_qubits": 50,
+        "detectors": 150,
+        "observables": 2,
+        "mechanisms": 500,
+        "hyperedges": 100,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121210,
+        "logical_residual_shots": 5,
+        "logical_residuals": [
+          3,
+          4
+        ],
+        "detector_events": 395,
+        "osd_fallback_shots": 6,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.005821023136377335,
+        "seconds": 1.8354068864136934,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "x",
+        "noise_profile": "independent",
+        "data_qubits": 50,
+        "ancilla_qubits": 50,
+        "detectors": 150,
+        "observables": 2,
+        "mechanisms": 400,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121211,
+        "logical_residual_shots": 1,
+        "logical_residuals": [
+          0,
+          1
+        ],
+        "detector_events": 309,
+        "osd_fallback_shots": 3,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.005880406126379967,
+        "seconds": 1.060997212305665,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "data_qubits": 50,
+        "ancilla_qubits": 50,
+        "detectors": 150,
+        "observables": 2,
+        "mechanisms": 500,
+        "hyperedges": 100,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121211,
+        "logical_residual_shots": 1,
+        "logical_residuals": [
+          1,
+          1
+        ],
+        "detector_events": 425,
+        "osd_fallback_shots": 3,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.005919566377997398,
+        "seconds": 1.4622579757124186,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "z",
+        "noise_profile": "independent",
+        "data_qubits": 98,
+        "ancilla_qubits": 98,
+        "detectors": 294,
+        "observables": 2,
+        "mechanisms": 784,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121214,
+        "logical_residual_shots": 3,
+        "logical_residuals": [
+          2,
+          2
+        ],
+        "detector_events": 670,
+        "osd_fallback_shots": 9,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.02001737616956234,
+        "seconds": 3.4029131047427654,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "data_qubits": 98,
+        "ancilla_qubits": 98,
+        "detectors": 294,
+        "observables": 2,
+        "mechanisms": 980,
+        "hyperedges": 196,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121214,
+        "logical_residual_shots": 9,
+        "logical_residuals": [
+          7,
+          7
+        ],
+        "detector_events": 784,
+        "osd_fallback_shots": 13,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.020213231444358826,
+        "seconds": 6.170701295137405,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "x",
+        "noise_profile": "independent",
+        "data_qubits": 98,
+        "ancilla_qubits": 98,
+        "detectors": 294,
+        "observables": 2,
+        "mechanisms": 784,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121215,
+        "logical_residual_shots": 3,
+        "logical_residuals": [
+          2,
+          2
+        ],
+        "detector_events": 661,
+        "osd_fallback_shots": 8,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.020236952230334282,
+        "seconds": 3.3267950918525457,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "data_qubits": 98,
+        "ancilla_qubits": 98,
+        "detectors": 294,
+        "observables": 2,
+        "mechanisms": 980,
+        "hyperedges": 196,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121215,
+        "logical_residual_shots": 10,
+        "logical_residuals": [
+          5,
+          8
+        ],
+        "detector_events": 790,
+        "osd_fallback_shots": 13,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.020087797194719315,
+        "seconds": 6.63262308947742,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "z",
+        "noise_profile": "independent",
+        "data_qubits": 162,
+        "ancilla_qubits": 162,
+        "detectors": 486,
+        "observables": 2,
+        "mechanisms": 1296,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121218,
+        "logical_residual_shots": 1,
+        "logical_residuals": [
+          1,
+          1
+        ],
+        "detector_events": 1026,
+        "osd_fallback_shots": 15,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.05337587930262089,
+        "seconds": 7.927117543295026,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "data_qubits": 162,
+        "ancilla_qubits": 162,
+        "detectors": 486,
+        "observables": 2,
+        "mechanisms": 1620,
+        "hyperedges": 324,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121218,
+        "logical_residual_shots": 13,
+        "logical_residuals": [
+          8,
+          10
+        ],
+        "detector_events": 1242,
+        "osd_fallback_shots": 18,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.0534247811883688,
+        "seconds": 13.641198877245188,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "x",
+        "noise_profile": "independent",
+        "data_qubits": 162,
+        "ancilla_qubits": 162,
+        "detectors": 486,
+        "observables": 2,
+        "mechanisms": 1296,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121219,
+        "logical_residual_shots": 10,
+        "logical_residuals": [
+          7,
+          6
+        ],
+        "detector_events": 1155,
+        "osd_fallback_shots": 19,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.05376656353473663,
+        "seconds": 9.630800312384963,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "data_qubits": 162,
+        "ancilla_qubits": 162,
+        "detectors": 486,
+        "observables": 2,
+        "mechanisms": 1620,
+        "hyperedges": 324,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121219,
+        "logical_residual_shots": 16,
+        "logical_residuals": [
+          11,
+          12
+        ],
+        "detector_events": 1357,
+        "osd_fallback_shots": 18,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.05325964838266373,
+        "seconds": 14.242066973820329,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "z",
+        "noise_profile": "independent",
+        "data_qubits": 242,
+        "ancilla_qubits": 242,
+        "detectors": 726,
+        "observables": 2,
+        "mechanisms": 1936,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121222,
+        "logical_residual_shots": 3,
+        "logical_residuals": [
+          2,
+          2
+        ],
+        "detector_events": 1523,
+        "osd_fallback_shots": 21,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.1181267760694027,
+        "seconds": 16.456328915432096,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "data_qubits": 242,
+        "ancilla_qubits": 242,
+        "detectors": 726,
+        "observables": 2,
+        "mechanisms": 2420,
+        "hyperedges": 484,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121222,
+        "logical_residual_shots": 19,
+        "logical_residuals": [
+          13,
+          11
+        ],
+        "detector_events": 2003,
+        "osd_fallback_shots": 21,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.11869473569095135,
+        "seconds": 24.606468245387077,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "x",
+        "noise_profile": "independent",
+        "data_qubits": 242,
+        "ancilla_qubits": 242,
+        "detectors": 726,
+        "observables": 2,
+        "mechanisms": 1936,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121223,
+        "logical_residual_shots": 15,
+        "logical_residuals": [
+          11,
+          9
+        ],
+        "detector_events": 1608,
+        "osd_fallback_shots": 23,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.11783104203641415,
+        "seconds": 18.217927392572165,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "data_qubits": 242,
+        "ancilla_qubits": 242,
+        "detectors": 726,
+        "observables": 2,
+        "mechanisms": 2420,
+        "hyperedges": 484,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121223,
+        "logical_residual_shots": 21,
+        "logical_residuals": [
+          12,
+          16
+        ],
+        "detector_events": 1952,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.11873382702469826,
+        "seconds": 30.021047657355666,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "z",
+        "noise_profile": "independent",
+        "data_qubits": 338,
+        "ancilla_qubits": 338,
+        "detectors": 1014,
+        "observables": 2,
+        "mechanisms": 2704,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121226,
+        "logical_residual_shots": 7,
+        "logical_residuals": [
+          4,
+          4
+        ],
+        "detector_events": 2274,
+        "osd_fallback_shots": 28,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.23247894272208214,
+        "seconds": 31.77529893256724,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "data_qubits": 338,
+        "ancilla_qubits": 338,
+        "detectors": 1014,
+        "observables": 2,
+        "mechanisms": 3380,
+        "hyperedges": 676,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121226,
+        "logical_residual_shots": 29,
+        "logical_residuals": [
+          19,
+          15
+        ],
+        "detector_events": 2788,
+        "osd_fallback_shots": 32,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.23340515606105328,
+        "seconds": 51.164362696930766,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "x",
+        "noise_profile": "independent",
+        "data_qubits": 338,
+        "ancilla_qubits": 338,
+        "detectors": 1014,
+        "observables": 2,
+        "mechanisms": 2704,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121227,
+        "logical_residual_shots": 12,
+        "logical_residuals": [
+          9,
+          8
+        ],
+        "detector_events": 2246,
+        "osd_fallback_shots": 25,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.23149757087230682,
+        "seconds": 29.53392689116299,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "data_qubits": 338,
+        "ancilla_qubits": 338,
+        "detectors": 1014,
+        "observables": 2,
+        "mechanisms": 3380,
+        "hyperedges": 676,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121227,
+        "logical_residual_shots": 20,
+        "logical_residuals": [
+          14,
+          12
+        ],
+        "detector_events": 2838,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.2325647696852684,
+        "seconds": 45.70254395529628,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "z",
+        "noise_profile": "independent",
+        "data_qubits": 450,
+        "ancilla_qubits": 450,
+        "detectors": 1350,
+        "observables": 2,
+        "mechanisms": 3600,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121230,
+        "logical_residual_shots": 13,
+        "logical_residuals": [
+          9,
+          9
+        ],
+        "detector_events": 2971,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.4155661314725876,
+        "seconds": 45.7582117523998,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "data_qubits": 450,
+        "ancilla_qubits": 450,
+        "detectors": 1350,
+        "observables": 2,
+        "mechanisms": 4500,
+        "hyperedges": 900,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121230,
+        "logical_residual_shots": 28,
+        "logical_residuals": [
+          20,
+          16
+        ],
+        "detector_events": 3696,
+        "osd_fallback_shots": 42,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.41416534408926964,
+        "seconds": 92.66677403450012,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "x",
+        "noise_profile": "independent",
+        "data_qubits": 450,
+        "ancilla_qubits": 450,
+        "detectors": 1350,
+        "observables": 2,
+        "mechanisms": 3600,
+        "hyperedges": 0,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121231,
+        "logical_residual_shots": 15,
+        "logical_residuals": [
+          10,
+          11
+        ],
+        "detector_events": 2957,
+        "osd_fallback_shots": 30,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.41448437236249447,
+        "seconds": 51.67560791783035,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "data_qubits": 450,
+        "ancilla_qubits": 450,
+        "detectors": 1350,
+        "observables": 2,
+        "mechanisms": 4500,
+        "hyperedges": 900,
+        "rounds": 3,
+        "shots": 64,
+        "seed": 121231,
+        "logical_residual_shots": 18,
+        "logical_residuals": [
+          16,
+          9
+        ],
+        "detector_events": 3689,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "constructor_seconds": 0.4139055833220482,
+        "seconds": 67.09675732813776,
+        "approximate_disjoint_errors": false,
+        "stim_version": "1.16.0",
+        "status": "passed"
+      }
+    ],
+    "native_calls": {
+      "prepare_text_experiment": 28,
+      "sample_detectors": 112,
+      "text_experiment_dem": 56
+    },
+    "native_sha256": "f894e9a20b9ac4004497663317b1c45dcdbade9d35ede1db69d32a7f7ebb3405",
+    "package": "/verify/installed-sdk/lib/python3.12/site-packages/flagquantum/__init__.py",
+    "status": "passed"
+  },
+  "no_sdk": {
+    "mode": "no-sdk",
+    "records": [
+      {
+        "distance": 3,
+        "basis": "z",
+        "noise_profile": "independent",
+        "detector_events": 122,
+        "osd_fallback_shots": 2,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          0,
+          0
+        ],
+        "logical_residual_shots": 0,
+        "status": "passed"
+      },
+      {
+        "distance": 3,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "detector_events": 126,
+        "osd_fallback_shots": 4,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          3,
+          0
+        ],
+        "logical_residual_shots": 3,
+        "status": "passed"
+      },
+      {
+        "distance": 3,
+        "basis": "x",
+        "noise_profile": "independent",
+        "detector_events": 137,
+        "osd_fallback_shots": 4,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          0,
+          0
+        ],
+        "logical_residual_shots": 0,
+        "status": "passed"
+      },
+      {
+        "distance": 3,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "detector_events": 213,
+        "osd_fallback_shots": 3,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          1,
+          0
+        ],
+        "logical_residual_shots": 1,
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "z",
+        "noise_profile": "independent",
+        "detector_events": 318,
+        "osd_fallback_shots": 2,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          0,
+          0
+        ],
+        "logical_residual_shots": 0,
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "detector_events": 395,
+        "osd_fallback_shots": 6,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          3,
+          4
+        ],
+        "logical_residual_shots": 5,
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "x",
+        "noise_profile": "independent",
+        "detector_events": 309,
+        "osd_fallback_shots": 3,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          0,
+          1
+        ],
+        "logical_residual_shots": 1,
+        "status": "passed"
+      },
+      {
+        "distance": 5,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "detector_events": 425,
+        "osd_fallback_shots": 3,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          1,
+          1
+        ],
+        "logical_residual_shots": 1,
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "z",
+        "noise_profile": "independent",
+        "detector_events": 670,
+        "osd_fallback_shots": 9,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          2,
+          2
+        ],
+        "logical_residual_shots": 3,
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "detector_events": 784,
+        "osd_fallback_shots": 13,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          7,
+          7
+        ],
+        "logical_residual_shots": 9,
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "x",
+        "noise_profile": "independent",
+        "detector_events": 661,
+        "osd_fallback_shots": 8,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          2,
+          2
+        ],
+        "logical_residual_shots": 3,
+        "status": "passed"
+      },
+      {
+        "distance": 7,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "detector_events": 790,
+        "osd_fallback_shots": 13,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          5,
+          8
+        ],
+        "logical_residual_shots": 10,
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "z",
+        "noise_profile": "independent",
+        "detector_events": 1026,
+        "osd_fallback_shots": 15,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          1,
+          1
+        ],
+        "logical_residual_shots": 1,
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "detector_events": 1242,
+        "osd_fallback_shots": 18,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          8,
+          10
+        ],
+        "logical_residual_shots": 13,
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "x",
+        "noise_profile": "independent",
+        "detector_events": 1155,
+        "osd_fallback_shots": 19,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          7,
+          6
+        ],
+        "logical_residual_shots": 10,
+        "status": "passed"
+      },
+      {
+        "distance": 9,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "detector_events": 1357,
+        "osd_fallback_shots": 18,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          11,
+          12
+        ],
+        "logical_residual_shots": 16,
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "z",
+        "noise_profile": "independent",
+        "detector_events": 1523,
+        "osd_fallback_shots": 21,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          2,
+          2
+        ],
+        "logical_residual_shots": 3,
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "detector_events": 2003,
+        "osd_fallback_shots": 21,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          13,
+          11
+        ],
+        "logical_residual_shots": 19,
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "x",
+        "noise_profile": "independent",
+        "detector_events": 1608,
+        "osd_fallback_shots": 23,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          11,
+          9
+        ],
+        "logical_residual_shots": 15,
+        "status": "passed"
+      },
+      {
+        "distance": 11,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "detector_events": 1952,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          12,
+          16
+        ],
+        "logical_residual_shots": 21,
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "z",
+        "noise_profile": "independent",
+        "detector_events": 2274,
+        "osd_fallback_shots": 28,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          4,
+          4
+        ],
+        "logical_residual_shots": 7,
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "detector_events": 2788,
+        "osd_fallback_shots": 32,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          19,
+          15
+        ],
+        "logical_residual_shots": 29,
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "x",
+        "noise_profile": "independent",
+        "detector_events": 2246,
+        "osd_fallback_shots": 25,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          9,
+          8
+        ],
+        "logical_residual_shots": 12,
+        "status": "passed"
+      },
+      {
+        "distance": 13,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "detector_events": 2838,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          14,
+          12
+        ],
+        "logical_residual_shots": 20,
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "z",
+        "noise_profile": "independent",
+        "detector_events": 2971,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          9,
+          9
+        ],
+        "logical_residual_shots": 13,
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "z",
+        "noise_profile": "correlated",
+        "detector_events": 3696,
+        "osd_fallback_shots": 42,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          20,
+          16
+        ],
+        "logical_residual_shots": 28,
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "x",
+        "noise_profile": "independent",
+        "detector_events": 2957,
+        "osd_fallback_shots": 30,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          10,
+          11
+        ],
+        "logical_residual_shots": 15,
+        "status": "passed"
+      },
+      {
+        "distance": 15,
+        "basis": "x",
+        "noise_profile": "correlated",
+        "detector_events": 3689,
+        "osd_fallback_shots": 27,
+        "syndrome_reproduced": 64,
+        "logical_residuals": [
+          16,
+          9
+        ],
+        "logical_residual_shots": 18,
+        "status": "passed"
+      }
+    ],
+    "native_calls": {
+      "prepare_text_experiment": 28,
+      "sample_detectors": 112,
+      "text_experiment_dem": 28
+    },
+    "native_sha256": "f894e9a20b9ac4004497663317b1c45dcdbade9d35ede1db69d32a7f7ebb3405",
+    "package": "/verify/installed-no-sdk/lib/python3.12/site-packages/flagquantum/__init__.py",
+    "status": "passed"
+  },
+  "scope": {
+    "distances": [
+      3,
+      5,
+      7,
+      9,
+      11,
+      13,
+      15
+    ],
+    "bases": [
+      "x",
+      "z"
+    ],
+    "noise_profiles": [
+      "independent",
+      "correlated"
+    ],
+    "rounds": 3,
+    "shots_per_configuration": 64,
+    "configurations_per_installation": 28,
+    "total_shots": 3584,
+    "decoder": "belief_propagation_osd0",
+    "strict_dem": true,
+    "approximate_disjoint_errors": false,
+    "text_export_requires_sdk": true,
+    "no_sdk_input": "Captured identical original noisy Stim text, not DEM-resampled shots.",
+    "limitations": [
+      "Finite seeded development evidence; no threshold, suppression or decoder-optimality claim.",
+      "No arbitrary-distance timing, hardware or distributed scalability claim.",
+      "Final-head regression and automatic CI are separate gates."
+    ]
+  },
+  "full_regression": {
+    "smoke_or_unit": {
+      "selection": "all collected nodes matching smoke or unit",
+      "unique_nodes": 21361,
+      "passed": 21184,
+      "skipped": 177,
+      "initial_run": {
+        "passed": 21100,
+        "skipped": 177,
+        "failed": 1,
+        "failure": "tests/unit/test_evidence_revisions.py::test_checked_in_evidence_accounts_for_every_recorded_revision"
+      },
+      "diagnosis": "The remote detached checkout contained the candidate commit as an object but had no ref pointing to the candidate branch. The evidence-revision test correctly rejected it as unaccounted.",
+      "recovery": "Created the local branch ref at the tested head without source changes. The existing smoke-remaining.xml records 84 passed: the 83 absent nodes plus the initially failed node. Set reconciliation proves no missing selected node; unique totals count each node once. Additional 58-test evidence checks pass on the publication tree.",
+      "raw_evidence": {
+        "junit": "smoke-unit.xml",
+        "stdout": "smoke-unit.stdout",
+        "stderr": "smoke-unit.stderr",
+        "focused_recovery": "evidence-unit.stdout",
+        "remaining_junit": "smoke-remaining.xml",
+        "combined_receipt": "SMOKE_COMBINED_PASSED.json"
+      },
+      "selected_test_nodes": 21334,
+      "collection_skips": 27,
+      "manifest_reconciliation": "The complete marker collection has 21,334 test nodes. Initial JUnit accounts for 21,251, plus 27 collection skips. The 83 initially absent nodes comprise five evidence tests included in the 58-test recovery and 78 disjoint remaining tests."
+    },
+    "integration": {
+      "passed": 12496,
+      "skipped": 269,
+      "failed": 0,
+      "seconds": 3430.53,
+      "workers": 32,
+      "raw_evidence": {
+        "junit": "integration.xml",
+        "stdout": "integration.stdout",
+        "stderr": "integration.stderr"
+      },
+      "native_extension_cleanup_verified": true
+    },
+    "commit": "29aa778ab5604059c5a4337f9b250c6c4b606d9c"
+  }
+}
