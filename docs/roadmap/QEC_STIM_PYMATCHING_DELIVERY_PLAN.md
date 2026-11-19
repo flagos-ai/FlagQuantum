@@ -1,5 +1,22 @@
 # QEC Stim and PyMatching delivery plan
 
+## Toric distance implementation candidate — 2026-11-18
+
+The existing Toric constructor now uses an exact matrix-derived logical-cycle
+search for eligible two-logical-qubit incidence codes. Public APIs, bounded
+refusals, the 98 upstream Stim files and 37 translation units are unchanged.
+The candidate qualifies d=3,5,7,9,11,13,15 with both logical observables,
+X/Z readout and independent/correlated noise: 28 configurations in each of
+SDK and no-SDK embedded installed profiles, 64 shots and three rounds each.
+Strict DEM comparison uses Stim 1.16.0 without disjoint-error approximation;
+bundled BP/OSD decoding must reproduce every sampled syndrome. No-SDK runs
+consume captured original noisy text; exporting that text still requires the
+SDK. Recorded logical residuals are observations, not suppression or threshold
+claims. Final-head regressions and automatic CI remain publication gates;
+actual-main acceptance requires a separately authorized merge.
+See [the configuration records](../../artifacts/development/qec_toric_distance_acceptance_20261118.json).
+
+
 Status: phase one accepted; continuing compatibility/performance delivery,
 updated 2026-10-26 (Asia/Shanghai). Core owns QEC composition and adapters;
 Simulation owns numerical execution; Runtime owns execution policy and lifecycle.
