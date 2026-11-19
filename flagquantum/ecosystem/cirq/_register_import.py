@@ -152,7 +152,10 @@ def _port_arrays(
         shape = _register_shape(reg)
         if shape[-1] == 0:
             raise ValueError("Cirq register import requires positive word widths")
-        values = np.asarray(quregs[reg.name], dtype=object)
+        supplied = quregs[reg.name]
+        values = np.asarray(
+            [supplied] if isinstance(supplied, cirq.Qid) else supplied, dtype=object
+        )
         if values.shape != shape:
             raise ValueError(f"Cirq register {reg.name!r} requires qureg shape {shape}")
         for qubit in values.flat:

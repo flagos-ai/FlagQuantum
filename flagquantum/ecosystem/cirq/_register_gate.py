@@ -46,6 +46,7 @@ class RegisterCirqGate(Gate):
         signature: Signature,
         *,
         wire_symbol: _WireSymbol | None = None,
+        gate_label: str | None = None,
         feedback_key_prefix: str | None = None,
         guarded_measurement_work: int | None = None,
     ) -> None:
@@ -76,6 +77,10 @@ class RegisterCirqGate(Gate):
                 labels.extend([label] * width)
             if register.side == RegisterSide.RIGHT:
                 output_groups.append(tuple(range(first_bit, len(labels))))
+        if gate_label is not None:
+            if not isinstance(gate_label, str) or not gate_label or not labels:
+                raise ValueError("Cirq gate label requires text and a physical operand")
+            labels[0] = gate_label
         bound = body if isinstance(body, BoundRegisterProgram) else None
         ir = body if isinstance(body, CircuitIR) else body.circuit
         if bound is None and len(labels) != ir.n_wires:
@@ -140,6 +145,7 @@ class RegisterCirqGate(Gate):
         self._guarded_measurement_work = guarded_measurement_work
         self._signature = signature
         self._wire_symbol = wire_symbol
+        self._gate_label = gate_label
         self._labels = tuple(labels)
         self._diagram_exponent = 1
         self._inverse_of: RegisterCirqGate | None = None
@@ -314,6 +320,7 @@ class RegisterCirqGate(Gate):
             replace(self._body, instructions=instructions),
             signature,
             wire_symbol=wire_symbol,
+            gate_label=self._gate_label,
         )
         # Preserve the original label while applying the source's diagram power.
         result._diagram_exponent = self._diagram_exponent * power

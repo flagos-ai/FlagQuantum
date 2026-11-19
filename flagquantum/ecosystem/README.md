@@ -90,11 +90,20 @@ when modifying this internal adapter. Run
 
 The register importer recursively resolves concrete SDK decompositions while
 reserving sibling operands through the shared interop qubit manager. Native
-typed definitions take precedence. Decompositions require clean work. Explicit
-matrix leaves still require a typed definition because the Program vocabulary
-does not carry matrix payloads. Run `tests/unit/test_cirq_register_leaf_closure.py`
+typed definitions take precedence. Decompositions require clean work. Concrete matrix leaves use the existing owned matrix payload and remain atomic
+unless a physical decomposition is supplied. Run `tests/unit/test_cirq_register_leaf_closure.py`
 with the frozen reference environment to check wrapper, lifetime and append
 round trips.
+
+Private `RegisterCirqGate` accepts an optional first-operand `gate_label` and
+preserves it under power and adjoint. Named register import accepts scalar Qids
+for scalar one-bit ports while retaining shape and alias checks. The complete
+native tutorial is `examples/notebooks/register_gates.ipynb`; its reusable
+operation is `examples/algorithms/register_gates.py`. Run
+`tests/unit/test_register_gate_tutorial.py` for source stream, complex operator,
+lease, diagram and append comparisons. See
+[the source audit](../../docs/development/REGISTER_GATE_SOURCE_AUDIT.md) for
+zero-width and wider typed-control boundaries.
 
 ### Real parameter expressions and scalar phases
 
