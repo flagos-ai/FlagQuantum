@@ -16,3 +16,19 @@ python -m pytest tests/unit/test_register_comparison.py -q
 
 The [register package guide](../README.md) provides executable consumer examples,
 source-parity requirements, resource-counting boundaries and the relocation map.
+
+Stored executable graphs live in `constant_component.py`, `equality_component.py`,
+`ordering_component.py`, `linear_component.py`, `controlled_component.py` and
+`half_component.py`. Shared widening/cast/restore sequencing belongs to
+`_linear_words.py`; sign extension belongs to the bits package. Each graph uses
+MSB-first inputs and returns actual physical bindings after lowering. Half
+comparisons transfer owned difference/flag outputs to their consumer, which
+supplies that exact image for measured erasure. Source ge/lt inverse output
+aliases and signed linear overflow semantics are preserved explicitly.
+
+Run `python -m examples.algorithms.register_half_comparison` for the normal
+`circuit.append(op)` path. Run
+`python -m pytest tests/unit/test_comparison_component.py -q` for source call
+connections, gates, feedback, full complex amplitudes, clean work and resources.
+[The complete source audit](../../../../docs/development/COMPARISON_FILE_AUDIT.md)
+records all frozen definitions and retained admission/source boundaries.
