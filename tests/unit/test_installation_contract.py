@@ -2,6 +2,7 @@ import contextlib
 import os
 import sys
 from pathlib import Path
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -19,11 +20,13 @@ ROOT = Path(__file__).resolve().parents[2]
 CPU_TORCH_INDEX = "https://download.pytorch.org/whl/cpu"
 
 
-def _workflow(path: str) -> dict[str, object]:
-    return yaml.safe_load((ROOT / path).read_text(encoding="utf-8"))
+def _workflow(path: str) -> dict[str, Any]:
+    document = yaml.safe_load((ROOT / path).read_text(encoding="utf-8"))
+    assert isinstance(document, dict)
+    return document
 
 
-def _run_commands(job: dict[str, object]) -> list[str]:
+def _run_commands(job: dict[str, Any]) -> list[str]:
     commands = []
     for step in job["steps"]:
         if not isinstance(step, dict):
@@ -211,11 +214,18 @@ def test_one_wheel_is_loaded_on_the_older_runtime_minors() -> None:
 
 def test_build_backend_supports_spdx_license_metadata() -> None:
     project = load_toml(ROOT / "pyproject.toml")
-    assert project["project"]["license"] == "Apache-2.0 AND MIT AND LPPL-1.3c"
+    assert (
+        project["project"]["license"] == "Apache-2.0 AND MIT AND LPPL-1.3c AND CDDL-1.0"
+    )
     assert project["project"]["license-files"] == [
         "LICENSE",
         "flagquantum/drawer/tex/licenses/*.txt",
+        "flagquantum/drawer/_assets/licenses/*.txt",
     ]
+    package_data = project["tool"]["setuptools"]["package-data"]["flagquantum"]
+    assert "drawer/_assets/*.pl" in package_data
+    assert "drawer/_assets/*.metadata" in package_data
+    assert "drawer/_assets/licenses/*.txt" in package_data
     assert "setuptools>=77.0.3" in project["build-system"]["requires"]
 
 
@@ -228,7 +238,7 @@ def test_native_extension_avoids_compiler_specific_bit_builtins() -> None:
     assert "trailing_zero_count" in source
 
 
-def _build_ext_command(inplace: bool, torch_file: Path | None = None):
+def _build_ext_command(inplace: bool, torch_file: Path | None = None) -> BuildExtension:
     """Return a configured `build_ext` command without running a build.
 
     `setup.py` cannot be imported, so it is executed with `setuptools.setup`
@@ -238,7 +248,7 @@ def _build_ext_command(inplace: bool, torch_file: Path | None = None):
     other than this one can be described without installing it.
     """
 
-    captured: dict[str, object] = {}
+    captured: dict[str, Any] = {}
     source = (ROOT / "setup.py").read_text(encoding="utf-8")
     namespace: dict[str, object] = {"__name__": "fq_setup_probe"}
     patched = (
@@ -253,7 +263,7 @@ def _build_ext_command(inplace: bool, torch_file: Path | None = None):
         patched,
     ):
         exec(compile(source, "setup.py", "exec"), namespace)
-        command = captured["cmdclass"]["build_ext"](
+        command: BuildExtension = captured["cmdclass"]["build_ext"](
             Distribution({"ext_modules": captured["ext_modules"]})
         )
         command.initialize_options()
@@ -351,7 +361,9 @@ def test_an_isolated_wheel_build_still_records_only_the_relocatable_rpath(
     assert str(build_environment.parent / "lib") not in " ".join(link_args)
 
 
-def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:
+def test_the_load_check_follows_the_inplace_flag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """The delivered artifact is opened only after an in-place build.
 
     setuptools clears `inplace` while the extensions are built and copies them
@@ -374,7 +386,7 @@ def test_the_load_check_follows_the_inplace_flag(monkeypatch) -> None:
 
 
 def test_an_inplace_build_relinks_an_artifact_linked_by_an_earlier_build(
-    monkeypatch, tmp_path
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """A staged artifact newer than its sources is reused, not relinked.
 
@@ -400,7 +412,7 @@ def test_an_inplace_build_relinks_an_artifact_linked_by_an_earlier_build(
 
 
 def test_an_inplace_build_fails_when_the_linked_artifact_cannot_load(
-    tmp_path,
+    tmp_path: Path,
 ) -> None:
     """A build that reports success while `dlopen` fails is the defect.
 

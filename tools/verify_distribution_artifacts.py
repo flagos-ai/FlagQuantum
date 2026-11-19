@@ -62,6 +62,9 @@ RELEASE_PLATFORMS = (
 NATIVE_EXTENSION_DIRECTORY = "flagquantum/simulation/native_cpu/"
 NATIVE_EXTENSION_SUFFIXES = (".so", ".pyd")
 REQUIRED_MEMBER_SUFFIXES = (
+    "flagquantum/drawer/_assets/resource_flame_graph.pl",
+    "flagquantum/drawer/_assets/resource_flame_graph.metadata",
+    "flagquantum/drawer/_assets/licenses/cddl-1.0.txt",
     "flagquantum/services/research_capabilities.py",
     "flagquantum/services/research_execution.py",
     "flagquantum/services/research_evidence_shape.py",
