@@ -4,15 +4,8 @@ from hashlib import sha1
 from itertools import product
 from pathlib import Path
 
-import cirq
-import numpy as np
 import pytest
 import torch
-from qualtran.surface_code.t_factory_utils import (
-    NoisyPauliRotation,
-    _rotation_unitary,
-)
-from qualtran.surface_code.t_factory_utils import storage_error as source_storage
 
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.qec.resources.distillation_channels import (
@@ -22,6 +15,13 @@ from flagquantum.qec.resources.distillation_channels import (
 from flagquantum.simulation.density_matrix import density_matrix_from_ir
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+cirq = pytest.importorskip("cirq")
+np = pytest.importorskip("numpy")
+_source = pytest.importorskip("qualtran.surface_code.t_factory_utils")
+NoisyPauliRotation = _source.NoisyPauliRotation
+_rotation_unitary = _source._rotation_unitary
+source_storage = _source.storage_error
 
 
 def test_frozen_complete_source_and_original_test_assets() -> None:

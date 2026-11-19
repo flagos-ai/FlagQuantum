@@ -19,6 +19,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 def test_complete_thc_notebook_and_optimal_physical_configuration(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    pytest.importorskip("qualtran")
     root = Path(__file__).resolve().parents[2]
     raw = (
         root.parent / "ftqc-reference-env/qualtran/surface_code/thc_compilation.ipynb"

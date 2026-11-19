@@ -5,7 +5,6 @@ from hashlib import sha1
 from pathlib import Path
 
 import pytest
-from qualtran.surface_code.physical_cost_summary import PhysicalCostsSummary
 
 from flagquantum.compiler._component_trace.resource_model import (
     GateCost,
@@ -17,6 +16,10 @@ from flagquantum.qec.resources.physical_cost import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+PhysicalCostsSummary = pytest.importorskip(
+    "qualtran.surface_code.physical_cost_summary"
+).PhysicalCostsSummary
 
 
 def test_frozen_source_summary() -> None:

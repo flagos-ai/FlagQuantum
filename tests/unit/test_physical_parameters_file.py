@@ -5,9 +5,6 @@ from hashlib import sha1
 from pathlib import Path
 
 import pytest
-from qualtran.surface_code.physical_parameters import (
-    PhysicalParameters as SourceParameters,
-)
 
 from flagquantum.qec.resources.physical_parameters import (
     PhysicalParameters,
@@ -15,6 +12,10 @@ from flagquantum.qec.resources.physical_parameters import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+SourceParameters = pytest.importorskip(
+    "qualtran.surface_code.physical_parameters"
+).PhysicalParameters
 
 
 def test_frozen_source_hardware() -> None:

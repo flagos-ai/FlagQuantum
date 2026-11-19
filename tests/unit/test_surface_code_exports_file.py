@@ -7,10 +7,11 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 
 
 def test_complete_surface_code_export_disposition() -> None:
+    pytest.importorskip("qualtran")
     source = (
         Path(__file__).resolve().parents[3]
         / "ftqc-reference-env/qualtran/surface_code/__init__.py"
