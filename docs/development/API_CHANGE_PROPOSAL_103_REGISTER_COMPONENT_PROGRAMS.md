@@ -1967,3 +1967,41 @@ physical entry's refusal. Reuse prior complex-amplitude, measurement and
 primitive parity evidence for executable descriptor families. This prerequisite
 adds structural behavior and emits no new primitive gates. No owner approval
 or Stable Core freeze is declared by this document.
+
+### Explicit unitary leaf prerequisite 1.21
+
+Q-0156's frozen SDK conversion accepts explicit unitary leaves, including
+controlled leaves with either control polarity. The physical Instruction already
+owns an `any` matrix payload, but internal Program Operation cannot represent it.
+Extend that existing record with optional `matrix` data, represented by an owned
+immutable tuple of rows of built-in complex numbers. Retain each entry's full
+phase and the operand order. No SDK, NumPy or Torch object enters this semantic
+record. Preserve old record hashes when this optional field is absent.
+
+Only `any` operations may carry this data. Require a finite square unitary matrix
+of dimension 2**arity with at least one qubit operand and the same ordered qubit
+successors. Validate unitarity with absolute tolerance 1e-10 and zero relative
+tolerance, matching the existing Ecosystem leaf admission. No normalization,
+synthesis, approximation or global-phase removal is permitted. Invalid matrices,
+missing payloads and payloads attached to another opcode produce typed Program
+validation diagnostics. Existing def-use, linearity and classical conditions
+apply unchanged. Canonical payload roundtrips must detect edited matrix entries.
+
+Core owns immutable semantic data, validation and CircuitIR-to-Program copying.
+Compiler materializes a fresh complex128 physical matrix when binding, preserving
+conditions and work ownership. Existing dataclass replacement retains the data
+through graph transformations. Ecosystem reuses its explicit-leaf recognizer and
+matrix admission before constructing a native bit-gate definition. Pure tensor
+fallbacks and recursive measurement-key transfer remain separate open boundaries.
+The public CircuitIR schema, stable exports and operator manifest do not change.
+
+Integration lands this contract with source and existing physical-IR witnesses
+before Core implementation. Witnesses cover both control polarities, reversed
+operands, an entangled spectator, nontrivial global phase and one- and two-qubit
+leaves. Implementation acceptance additionally requires source/native complete
+complex operators, append execution, clean-work zero, export/reimport, immutable
+ownership, invalid data rejection, tampered payload detection and preservation
+through existing graph transformations. Count each emitted `any` atom as one
+measured primitive and record source model estimates independently. No Clifford/T
+synthesis count is inferred for a dense leaf. This internal prerequisite declares
+no owner approval or Stable Core freeze.
