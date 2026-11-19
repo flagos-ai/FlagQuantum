@@ -177,3 +177,40 @@ internal IR checks pass. Dependency policy records 706 repository findings
 and zero changed-path findings. Default smoke/unit repeats the existing
 example-registry failure after 434 passes and 51 skips. Persistent evidence
 uses the `g2-tensor-leaf-` prefix. Implementation commit is `c00ab7cea`.
+
+
+## Recursive SDK measurement-history closure
+
+Commit `95bf52007` extends recursive SDK import through the existing Ecosystem
+feedback translator. Expanded leaves share one measurement history before they
+enter a typed bit-gate function. Register binding owns the clean work lease and
+returns it after the complete body. External measurement keys terminate at the
+adapter and native classical slots preserve old and latest records. Classical
+controls expand with their original predicates. Tagged operations are rejected
+before removing controls because the SDK otherwise discards the tags. Shared
+primitive lowering now handles ISWAP and its adjoint in measured and static bodies.
+
+The unchanged source CompositeBloq-to-Cirq call chain runs two And/And-adjoint
+cycles for all four control-value combinations. Primitive instructions, operands
+and feedback match exactly. There are 34, 42 or 50 measured primitive instructions
+as zero-valued controls increase. The source QEC model reports two ANDs, two
+Cliffords and two measurements for every combination. Its negative-control X
+omission remains recorded separately from measured primitive counts. One clean
+work bit has one enclosing allocation/release pair and is zero in every branch.
+All four histories match unnormalized full complex amplitudes with an entangled
+spectator. Export/reimport and normal dynamic `circuit.append(op)` execution pass.
+Additional cases retain inverted, old and latest repeated records, and verify
+ISWAP/adjoint phases with reversed operands in both measurement branches.
+
+The 33-file concentrated regression passes 1,032 cases without skips. Cirq
+integration/conformance passes 96 cases. Strict typing of three changed files,
+Black, Ruff, scope, architecture and internal IR checks pass. Dependency policy
+records 706 global findings and zero batch findings. The default smoke/unit
+suite retains its pre-existing example-registry failure after 434 passes and
+51 skips. Logs use `g2-recursive-feedback-`. Prior original-source whole-file
+execution and pinned source hashes are reused from the tensor-leaf batch.
+
+The complete Q-0156 parent remains open. A measured SDK body containing an
+explicit native FunctionRecord is currently rejected with a precise error. Its
+native-definition precedence must be retained when composing classical history.
+Arbitrary channels also remain outside this adapter's admitted scope.
