@@ -1928,3 +1928,42 @@ architecture, machine contract and 74 IR/API cases pass. The full dependency
 scan retains 706 existing findings, with none in the changed paths. This is a
 prerequisite for Q-0144; the complete tutorial remains unaccepted until its
 remaining source cells and direct dependencies have independent evidence.
+
+### Logical register graph prerequisite 1.20
+
+The complete frozen `composite_bloq_test.py::test_type_error` constructs calls
+with BQUInt and signed/unsigned QFxp registers. The existing Program entry
+incorrectly applies physical executable width admission during logical graph
+construction. The source also permits symbolic element widths when the number
+of indexed array elements is concrete. Separate these two decisions using the
+existing RegisterType and Program records. Do not add another graph, opcode,
+public schema, numerical cast or execution fallback.
+
+The logical graph admits canonical quantum bit, opaque, unsigned and signed
+metadata with nonnegative built-in widths or symbolic widths. Unsigned bound
+and fixed-point parameters retain their existing constructor rules and exact
+metadata, including signedness. Fixed-point and bounded-unsigned calls use the
+existing source-ordered loose type consistency predicate. Existing resolved
+binary fields and canonical CBit admission are preserved. Symbolic array extents
+remain unindexable and reject before allocating bindings. Broader field and
+classical descriptor families remain separately tracked.
+
+Register signatures, call arguments and returns must still pass def-use,
+linearity, type consistency and declared-port validation. Existing physical
+binding, gate lowering and numerical width providers must explicitly apply
+executable_register_width; structural acceptance never asserts executability.
+Logical graph traversal uses declared widths, including symbolic expressions.
+Concrete split/join graph arity uses a concrete logical width and may preserve
+fixed-point metadata. Symbolic-width splitting is refused because the number
+of produced bit values is unknown. Allocation/free graph records can preserve
+logical metadata; physical pool scheduling still requires executable widths.
+
+Integration lands this contract and source witnesses before implementation.
+Core owns descriptor/graph validation. Compiler owns logical traversal and
+construction consumers, retaining explicit physical admission. Validate the
+original multi-typed call and both signedness failures, output metadata,
+shaped symbolic identity/copy/expansion, malformed metadata and every affected
+physical entry's refusal. Reuse prior complex-amplitude, measurement and
+primitive parity evidence for executable descriptor families. This prerequisite
+adds structural behavior and emits no new primitive gates. No owner approval
+or Stable Core freeze is declared by this document.

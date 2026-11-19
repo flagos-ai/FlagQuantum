@@ -923,3 +923,38 @@ def test_register_workspace_requires_explicit_dirty_flags():
         )
     }
     assert "program.register_structure" in codes
+
+
+def _fixed_point_identity_program():
+    from flagquantum.core.ir.program.register_types import fixed_point_register_type
+    from flagquantum.core.ir.program.registers import Register
+
+    dtype = fixed_point_register_type(8, 6, signed=True)
+    word = level_boundary.ValueRef("entry", 0, "register")
+    function = level_boundary.FunctionRecord(
+        "main",
+        (level_boundary.BlockRecord("entry", (word,), return_values=(word,)),),
+        registers=(Register("q", dtype),),
+    )
+    return level_boundary.ProgramRecord((function,))
+
+
+def test_logical_register_calls_keep_fixed_point_metadata():
+    record = _fixed_point_identity_program()
+    assert level_boundary.verify_program_record(record) == ()
+    assert record.functions[0].registers[0].dtype.parameters == (
+        ("fractional_width", 6),
+        ("signed", True),
+    )
+
+
+def test_logical_register_admission_does_not_authorize_physical_lowering():
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+    from flagquantum.compiler.registers.register_programs import lower_register_program
+
+    record = _fixed_point_identity_program()
+    assert level_boundary.verify_program_record(record) == ()
+    with pytest.raises(ValueError, match="unsupported executable"):
+        lower_register_program(record)
+    with pytest.raises(ValueError, match="unsupported executable"):
+        bind_register_program(record, (tuple(range(8)),))
