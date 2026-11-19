@@ -14,6 +14,7 @@ from ...core.ir.program import Operation, ProgramRecord, ValueRef, verify_progra
 from ...core.ir.program.register_verifier import (
     executable_register_width,
 )
+from ...core.parameters import Parameter, ParameterExpression
 from .component_schedule import local_operation_order
 from .entry_bindings import entry_input_layout, validate_executable_registers
 from .layout.workspace import RegisterWorkspace, WorkspaceLease
@@ -207,7 +208,7 @@ class _PhysicalBinding:
         self.pool = pool
         self.measured_workspace = measured_workspace
         self.wires: dict[ValueRef, tuple[int, ...]] = {}
-        self.scalars: dict[ValueRef, float] = {}
+        self.scalars: dict[ValueRef, float | Parameter | ParameterExpression] = {}
         self.bits: dict[ValueRef, int] = {}
         self.instructions: list[Instruction] = []
         self.events: list[WorkspaceEvent] = []
