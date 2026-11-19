@@ -14,7 +14,7 @@ from flagquantum.compiler.lowering.native_gate_legalization import (
     legalize_native_gates,
 )
 from flagquantum.compiler.optimization import _cz_blocks
-from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.parameters import Parameter
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
@@ -202,6 +202,7 @@ def test_unknown_spectator_annotation_is_global_collection_boundary() -> None:
         ("rx", "rz", "cx"),
         ("rx", "rz", "cz", "cx"),
         ("rx", "rz", "cz", "ccx"),
+        ("rx", "rz", "cz", "unknown_operation"),
         ({"name": "rx", "parameters": ()}, "rz", "cz"),
     ],
 )
@@ -215,6 +216,44 @@ def test_nonqualifying_targets_do_not_have_a_block_stage(
     assert (
         blocks.optimize_native_blocks(native, snapshot=snapshot, evaluated_at=_NOW)
         is None
+    )
+
+
+@pytest.mark.parametrize("extra", [("measure",), ("reset",), ("measure", "reset")])
+def test_nonunitary_target_operations_do_not_disable_cz_optimization(
+    extra: tuple[str, ...],
+) -> None:
+    snapshot = _snapshot(("rx", "rz", "cz", *extra))
+    source = replace(
+        _source(), measurements=(MeasurementNode("samples", (0, 1), shots=100),)
+    )
+    native = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
+    result = blocks.optimize_native_blocks(native, snapshot=snapshot, evaluated_at=_NOW)
+    assert result is not None
+    blocks.verify_native_block_optimization(
+        result, native, snapshot=snapshot, evaluated_at=_NOW
+    )
+    assert sum(item.name == "cz" for item in result.program.instructions) == 2
+    assert result.program.measurements == source.measurements
+    _equivalent(_source(), result.program)
+
+
+@pytest.mark.parametrize("opcode", ["bit_flip", "depolarizing"])
+@pytest.mark.parametrize("qubit", [0, 2])
+def test_nonunitary_operations_remain_boundaries_on_any_qubit(
+    opcode: str, qubit: int
+) -> None:
+    held = Instruction(opcode, (qubit,), {"probability": 0.1})
+    source = CircuitIR(3, (Instruction("cz", (0, 1)), held, Instruction("cz", (1, 0))))
+    snapshot = _snapshot(("rx", "rz", "cz", opcode))
+    native = legalize_native_gates(source, snapshot=snapshot, evaluated_at=_NOW)
+    result = blocks.optimize_native_blocks(native, snapshot=snapshot, evaluated_at=_NOW)
+    assert result is not None
+    assert result.program is native.program
+    assert result.program.instructions[1] is held
+    assert result.rewrites == ()
+    blocks.verify_native_block_optimization(
+        result, native, snapshot=snapshot, evaluated_at=_NOW
     )
 
 
