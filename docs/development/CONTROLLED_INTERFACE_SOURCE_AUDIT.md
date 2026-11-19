@@ -147,8 +147,10 @@ alone as evidence of native capability.
   with complete source graph edge comparison. Whole symbolic typed control
   metadata ownership and source lifetime defects are now audited in
   `CONTROL_DESCRIPTOR_METADATA_AUDIT.md`. Symbolic physical execution remains open. Default routing is now covered through existing
-  owners and their actual returned callbacks. Generic classical stored-child
-  control and additional physical admission remain open.
+  owners and their actual returned callbacks. Stored-child CBit controls now
+  compose existing conditions and clean work through native calls, audited in
+  `CLASSICAL_COMPONENT_CONTROL_AUDIT.md`. Wider classical-word reads and other
+  physical admission remain open.
 
 The source notebook's signed QInt(8) value 255 draws but fails physical encoding.
 Its prose also predates the direct tensor and Cirq controlled-operation methods

@@ -41,6 +41,9 @@ The concentrated regression passes 529 tests.
 Q-0547 remains open for typed Program execution with wider classical
 data types. Wider-word metadata and existing flat IR guards remain
 available. The current typed feedback read accepts owned CBit
-elements. The new adapter takes an unconditional coherent gate body.
-The separate flat IR path still composes existing guards. The flat IR rejects conditional
+elements. The leaf adapter retains its original admission. Stored CBit child graphs now
+forward controls through calls and conjoin existing DNF guards. Complete
+complex-state, measurement-branch and clean-work evidence is recorded in
+`CLASSICAL_COMPONENT_CONTROL_AUDIT.md`. Wider-word typed reads remain open.
+The separate flat IR path also composes existing guards. The flat IR rejects conditional
 measurement, reset, and classical writes.
