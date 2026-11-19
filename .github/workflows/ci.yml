@@ -2501,6 +2501,9 @@ jobs:
 
   coverage:
     needs: [prepare-source, coverage-plan, coverage-shard]
+    permissions:
+      contents: read
+      packages: read
     env:
       FQ_COVERAGE_SHARDS: ${{ needs.coverage-plan.outputs.count }}
     if: ${{ !cancelled() }}
@@ -2574,11 +2577,13 @@ jobs:
           git checkout --force --detach "$sha"
           git clean -ffdx
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-      - uses: actions/setup-python@v5
+      - uses: ./.github/actions/offline-cpu
         with:
-          python-version: "3.12"
-      - uses: ./.github/actions/isolated-python
-      - run: python -m pip install 'pytest-cov>=4.0.0,<8'
+          profile: coverage-py3.12
+          registry-token: ${{ github.token }}
+          require-cached: ${{ runner.environment == 'self-hosted' }}
+      - name: Verify the locked coverage tool
+        run: python -c "from coverage import Coverage; print(Coverage.__module__)"
       - uses: ./.github/actions/download-artifact
         id: coverage-data
         timeout-minutes: 6

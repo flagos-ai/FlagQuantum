@@ -412,3 +412,26 @@ test-command = "python smoke.py"
     assert result.returncode == expected_exit, result.stderr
     if expected_exit:
         assert "differs from the locked CPU image manifest" in result.stderr
+
+
+def test_coverage_aggregation_uses_the_producers_locked_environment() -> None:
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    for name in ("coverage-plan", "coverage-shard", "coverage"):
+        steps = jobs[name]["steps"]
+        environment = [
+            step
+            for step in steps
+            if step.get("uses") == "./.github/actions/offline-cpu"
+        ]
+        assert len(environment) == 1
+        assert environment[0]["with"]["profile"] == "coverage-py3.12"
+        assert environment[0]["with"]["require-cached"] == (
+            "${{ runner.environment == 'self-hosted' }}"
+        )
+        assert not any("pip install" in step.get("run", "") for step in steps)
+    aggregate = jobs["coverage"]
+    assert aggregate["needs"] == ["prepare-source", "coverage-plan", "coverage-shard"]
+    assert aggregate["timeout-minutes"] == 20
+    commands = [step.get("run", "") for step in aggregate["steps"]]
+    assert "test '${{ needs.coverage-shard.result }}' = success" in commands
+    assert "python tools/check_coverage.py" in commands
