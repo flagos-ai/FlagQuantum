@@ -262,6 +262,23 @@ single-card harness now collects provisioner-attested P0-P5 execution candidates
 no domestic capability is promoted until a real-card result is reviewed and
 checked in.
 
+## Native target-CZ block compilation development status
+
+`compiler_native_cz_blocks` has local CPU `development_evidence` for the automatic
+target-to-artifact path and its offline Runtime/Deployment handoff. The native
+baseline, verified rewrites, topology-space mapping transitions and final
+schedule remain separately inspectable. Accepted rewrites emit v4 evidence;
+without a rewrite, existing version 1–3 identities and encodings remain intact.
+The scope and runnable checks are documented in
+[Compiler artifacts](../../flagquantum/compiler/artifacts/README.md).
+
+This does not promote depth, compilation time, memory or hardware performance,
+nor does it change the maturity of other compiler capabilities. Unchanged
+SDKBench protocols and held-out workload qualification remain pending. Directed
+or allocated topology, nonidentity initial placement in artifacts, free final
+layout, a global-phase writer and root native-target admission remain outside
+this profile.
+
 ## Private training compilation development status
 
 The approved #936 boundary has a reusable CPU Torch training candidate behind a
