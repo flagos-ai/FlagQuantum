@@ -37,7 +37,7 @@ EXPECTED_SYMBOLIC_PARAMETER_CONTRACT = {
     "implementation_status": "implemented",
     "public_api_change": False,
     "source_protocol": "cirq_parameter_protocol_with_sympy_expressions",
-    "symbol_discovery": "cirq.parameter_symbols",
+    "symbol_discovery": "cirq.parameter_symbols_with_original_sympy_identity",
     "binding_reference": "cirq.resolve_parameters",
     "target_representation": "flagquantum_parameter_or_parameter_expression",
     "parameter_identity": "unique_name",
