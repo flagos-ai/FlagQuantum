@@ -13,11 +13,18 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler.registers.bits.bitwise import xor_ir
+from flagquantum.compiler.registers.comparison.half_component import (
+    half_comparison_program,
+)
 from flagquantum.compiler.registers.comparison.half_ordering import (
-    half_compare_ir,
     half_compare_outputs,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.register_types import (
+    signed_register_type,
+    unsigned_register_type,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
@@ -30,16 +37,30 @@ class HalfComparison:
     signed: bool
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        args = ((0, 1), (2, 3), (5, 6, 7), 4, (8, 9))
-        compute = half_compare_ir(*args, relation=self.relation, signed=self.signed)
-        erase = half_compare_ir(
-            *args,
-            relation=self.relation,
-            signed=self.signed,
-            adjoint=True,
-            classical_bits=(0, 1),
+        dtype = signed_register_type(2) if self.signed else unsigned_register_type(2)
+        forward = bind_register_program(
+            half_comparison_program(dtype, self.relation),
+            ((0, 1), (2, 3)),
+            clean=(8, 9, 7, 6, 5, 4),
+            allow_workspace_outputs=True,
         )
-        gates = (*compute, *xor_ir((4,), (10,)), *erase)
+        inverse = bind_register_program(
+            half_comparison_program(dtype, self.relation, adjoint=True),
+            forward.outputs,
+            clean=tuple(
+                w
+                for w in (8, 9, 7, 6, 5, 4)
+                if all(w not in word for word in forward.outputs)
+            ),
+            input_ownership=tuple(
+                (w, False) for word in forward.outputs[2:] for w in word
+            ),
+        )
+        gates = (
+            *forward.circuit.instructions,
+            *xor_ir(forward.outputs[3], (10,)),
+            *inverse.circuit.instructions,
+        )
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
@@ -69,9 +90,8 @@ def main() -> None:
         for relation in relations:
             expected = torch.zeros_like(state)
             expected[(data << 7) | predicates[relation].to(torch.int64)] = amps
-            circuit = DynamicCircuit(11, inputs=state, dtype=torch.complex128).append(
-                HalfComparison(relation, signed)
-            )
+            circuit = DynamicCircuit(11, inputs=state, dtype=torch.complex128)
+            circuit.append(HalfComparison(relation, signed))
             actual = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
             torch.testing.assert_close(
                 actual.final_states.reshape(32, -1),
