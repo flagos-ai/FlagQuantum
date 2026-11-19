@@ -39,7 +39,8 @@ def test_complete_matrix_preserves_control_phase_and_clean_workspace(
     gates = unitary_instructions(
         matrix, tuple(range(width)), Operation("qreg.unitary"), control, scratch
     )
-    for enabled in ([0, 1] if controlled else [0]):
+    control_values = (0, 1) if controlled else (0,)
+    for enabled in control_values:
         for column in range(size):
             word = column << (total - width)
             if enabled:
