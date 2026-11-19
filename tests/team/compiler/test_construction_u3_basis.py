@@ -64,3 +64,27 @@ def test_rz_scalar_compensation_preserves_gradient() -> None:
     expected_gradient = torch.autograd.grad(expected_loss, angle)[0]
     torch.testing.assert_close(actual, expected, atol=1e-12, rtol=0)
     torch.testing.assert_close(actual_gradient, expected_gradient, atol=1e-12, rtol=0)
+
+
+@pytest.mark.parametrize("mixed_vocabulary", [False, True])
+def test_u3_vocabulary_preservation_follows_the_complete_program(
+    mixed_vocabulary: bool,
+) -> None:
+    from flagquantum.compiler.optimization.one_qubit_optimization import (
+        collapse_one_qubit_runs,
+    )
+
+    instructions = (
+        Instruction("u3", (0,), params={"theta": 0.0, "phi": 0.0, "lbd": 0.3}),
+        Instruction("u3", (0,), params={"theta": 0.0, "phi": 0.0, "lbd": 0.4}),
+    )
+    if mixed_vocabulary:
+        instructions += (Instruction("h", (1,)),)
+    instructions += (Instruction("cx", (0, 1)),)
+    source = CircuitIR(2, instructions, dtype="complex128")
+    folded = collapse_one_qubit_runs(source)
+    assert len(folded.instructions) == len(instructions) - 1
+    assert folded.instructions[0].name == ("phase" if mixed_vocabulary else "u3")
+    torch.testing.assert_close(
+        get_unitary(folded), get_unitary(source), atol=1e-12, rtol=0
+    )
