@@ -48,13 +48,43 @@ installed-wheel smoke run
 also passed. These are source and CI integration facts, not a package-release
 or comparative-performance claim. Original failed attempts remain in their PRs.
 
-Prospective SDKBench runs
+The prospective SDKBench runs
 [ordinary](https://github.com/sdkbench-org/sdkbench/actions/runs/44587635615) and
 [target-artifact](https://github.com/sdkbench-org/sdkbench/actions/runs/44587642527)
-were dispatched once each with this compiler and harness commit
-`9e3992d14342601662443b6720dd6757905c3f3b`. Their independent draws, raw failures,
-resource enforcement and replay determine what conclusions are admissible.
-Dispatch alone establishes no successful campaign or advantage over another SDK.
+completed on attempt 1 with this compiler and harness commit
+`9e3992d14342601662443b6720dd6757905c3f3b`. Each retained 30 application cases,
+90 accepted complete case/participant outcomes, 900 independently replayed blocks
+and 2,700 measured compilations. The immutable
+[ordinary report](https://github.com/sdkbench-org/sdkbench/blob/89c1448fedc75b785080ccfc9be5f7f145020133/docs/analysis/COMPILER_ORDINARY_RESULTS_20261120.md)
+and
+[target-artifact report](https://github.com/sdkbench-org/sdkbench/blob/89c1448fedc75b785080ccfc9be5f7f145020133/docs/analysis/COMPILER_TARGET_ARTIFACT_RESULTS_20261120.md)
+retain every case and participant pairing, raw archives, source/build identities,
+resource evidence and local replay checks. Both reports were integrated through
+SDKBench PR #9 after its 14 exact-head CI checks passed.
+
+These are bounded CPU engineering observations, not release certification or a
+global SDK ranking. Some cases use fewer FlagQuantum CZ gates; others use more.
+The reports also retain compilation-time and process-memory losses to Qiskit.
+The ordinary profile does not invoke target-CZ block resynthesis. Target-artifact
+time includes FlagQuantum target validation, provenance, artifact construction
+and serialization, while the other participants retain compiler workflows.
+Final identity placement is required throughout, but the target-artifact profile
+uses native restoration for FlagQuantum and the common external restoration for
+Qiskit/Cirq. These are complete delivered workflows, not identical internal
+algorithms or isolated synthesis timings.
+
+The two profiles use distinct draws and hosts: do not divide their metrics or
+attribute between-profile differences to a compiler pass. Six-qubit cases have
+complete-operator acceptance; widths 8/12 retain three-probe scope. Neither study
+contains an old-FlagQuantum source control. Host/build attestation and publication
+qualification remain separate; publication eligibility is false.
+
+The same-revision default-versus-explicit routing-policy control has a separate
+[declaration](https://github.com/sdkbench-org/sdkbench/blob/9ce37f85bef327603bc64f63eec7e0fddc9436ef/docs/analysis/COMPILER_ROUTING_POLICY_DECLARATION_20261120.md)
+and [retained execution](https://github.com/sdkbench-org/sdkbench/actions/runs/44623673659).
+The cross-SDK reports above do not supply that control. The approved default
+proposal's original before-merge time/memory requirement was unmet; subsequent
+qualification cannot retroactively establish it.
 
 The implementation still lacks several important upstream mechanisms. The
 presence of SABRE or KAK alone does not establish equivalent compilation quality.
