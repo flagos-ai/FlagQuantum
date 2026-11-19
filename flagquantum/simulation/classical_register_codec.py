@@ -11,11 +11,17 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ..core.ir.program.registers import Register
-from .bit_encoding import bit_array_from_bits, bit_array_to_bits, bit_from_bits
+from .bit_encoding import (
+    bit_array_from_bits,
+    bit_array_to_bits,
+    bit_from_bits,
+    bit_to_bits,
+)
 from .bounded_integer_encoding import (
     bounded_integer_array_from_bits,
     bounded_integer_array_to_bits,
     bounded_integer_from_bits,
+    bounded_integer_to_bits,
 )
 from .classical_register_metadata import concrete_register_metadata
 from .finite_field_metadata import resolve_finite_field_encoding
@@ -24,11 +30,13 @@ from .fixed_point_encoding import (
     fixed_point_array_from_bits,
     fixed_point_array_to_bits,
     fixed_point_from_bits,
+    fixed_point_to_bits,
 )
 from .integer_encoding import (
     integer_array_from_bits,
     integer_array_to_bits,
     integer_from_bits,
+    integer_to_bits,
     vectorized_integer_array_from_bits,
     vectorized_integer_array_to_bits,
 )
@@ -36,6 +44,7 @@ from .ones_complement_encoding import (
     ones_complement_array_from_bits,
     ones_complement_array_to_bits,
     ones_complement_from_bits,
+    ones_complement_to_bits,
 )
 
 
@@ -126,3 +135,33 @@ def encode_register_bits(register: Register, values: NDArray[Any]) -> NDArray[np
     if kind in {"uint", "signed", "opaque"}:
         return integer_array_to_bits(values, width, signed=kind == "signed")
     raise ValueError(f"no native classical bit codec for {kind!r}")
+
+
+def encode_register_value(register: Register, value: object) -> list[int]:
+    """Encode one stored value using the register's original scalar codec.
+
+    Shape belongs to the caller's traversal. Scalar checks intentionally differ
+    from the unsigned array fast path. This does not admit a physical IR type.
+    """
+    kind = register.dtype.encoding
+    if kind == "finite_field_polynomial":
+        return resolve_finite_field_polynomial_encoding(register.dtype).to_bits(value)
+    if kind == "finite_field":
+        return resolve_finite_field_encoding(register.dtype).to_bits(value)
+    width, parameters = concrete_register_metadata(register)
+    if kind == "bit":
+        return bit_to_bits(value)
+    if kind == "uint" and "bound" in parameters:
+        return bounded_integer_to_bits(value, width, parameters["bound"])
+    if kind == "fixed_point":
+        return fixed_point_to_bits(
+            value,
+            width,
+            parameters["fractional_width"],
+            signed=bool(parameters["signed"]),
+        )
+    if kind == "ones_complement":
+        return ones_complement_to_bits(value, width)
+    if kind in {"uint", "signed", "opaque", "montgomery"}:
+        return integer_to_bits(value, width, signed=kind == "signed")
+    raise ValueError(f"no native scalar bit codec for {kind!r}")
