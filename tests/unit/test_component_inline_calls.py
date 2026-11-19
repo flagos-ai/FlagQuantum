@@ -122,7 +122,8 @@ def test_repeated_inline_reuses_or_isolates_definitions_and_executes(
     assert repr(record) == initial_record
     calls = list(iter_component_calls(final))
     assert len(calls) == 10
-    assert len(final.functions) == (8 if conflict else 4)
+    # Repeated imports share the same isolated definitions.
+    assert len(final.functions) == (5 if conflict else 4)
     bound = bind_register_program(final, ((0, 1, 2),))
     assert bound.events == ()
     assert [gate.name for gate in bound.circuit.instructions] == ["x"] * 6

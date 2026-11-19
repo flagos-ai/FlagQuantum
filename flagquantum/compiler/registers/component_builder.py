@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
 from dataclasses import replace
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
@@ -30,9 +31,13 @@ from .component_bindings import (
     create_register_bindings,
     process_register_bindings,
 )
+from .component_imports import prepare_component_import
 from .component_rebindings import join_word_function, split_word_function
 from .component_signature import infer_output_registers
 from .layout.component_workspace import allocate_word_function, free_word_function
+
+if TYPE_CHECKING:
+    from .layout.auto_partition import AutoPartition
 
 BindingCollection = RegisterBinding | NDArray[np.object_]
 
@@ -220,29 +225,12 @@ class ComponentProgramBuilder:
             _defined_bindings,
             _elements,
             _iter_calls,
-            _namespace_helpers,
         )
 
+        record, entry = prepare_component_import(
+            record, entry, self._functions, self._name, include_entry=False
+        )
         function = _call_entry(record, entry)
-        if any(
-            f.name != entry
-            and (
-                f.name == self._name
-                or f.name in self._functions
-                and self._functions[f.name] != f
-            )
-            for f in record.functions
-        ):
-            index = 0
-            reserved = {*self._functions, self._name}
-            while any(
-                f"__fq_inline_{index}_{f.name}" in reserved for f in record.functions
-            ):
-                index += 1
-            prefix = f"__fq_inline_{index}"
-            record = _namespace_helpers(record, prefix)
-            entry = f"{prefix}_{entry}"
-            function = _call_entry(record, entry)
         assert function.registers is not None
         signature = Signature(function.registers)
         block = function.blocks[0]
@@ -275,6 +263,43 @@ class ComponentProgramBuilder:
             signature.rights(), (known[value] for value in block.return_values)
         )
         return map_register_bindings(returned, replacements)
+
+    def call_program(
+        self,
+        record: ProgramRecord,
+        bindings: Mapping[str, object],
+        *,
+        entry: str = "main",
+    ) -> dict[str, BindingCollection]:
+        """Insert one nested call, importing and sharing its typed definitions."""
+        record, entry = prepare_component_import(
+            record, entry, self._functions, self._name, include_entry=True
+        )
+        for definition in record.functions:
+            if definition.name not in self._functions:
+                self.define(definition)
+        return self.call_dict(entry, bindings)
+
+    def call_partitioned(
+        self,
+        record: ProgramRecord,
+        layout: AutoPartition,
+        bindings: Mapping[str, object],
+        *,
+        entry: str = "main",
+        packed_ports: tuple[Register, ...] | None = None,
+    ) -> dict[str, BindingCollection]:
+        """Call an existing component through the shared AutoPartition layout."""
+        from .layout.component_auto_partition import auto_partition_component_program
+
+        name = "__fq_packed"
+        names = {function.name for function in record.functions}
+        while name in names:
+            name += "_packed"
+        packed = auto_partition_component_program(
+            record, layout, entry=entry, name=name, packed_ports=packed_ports
+        )
+        return self.call_program(packed, bindings, entry=name)
 
     def finalize(self, bindings: Mapping[str, object]) -> ProgramRecord:
         """Consume declared returns and verify the complete finite module.
