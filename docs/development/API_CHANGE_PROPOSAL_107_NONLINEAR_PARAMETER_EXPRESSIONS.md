@@ -121,3 +121,20 @@ Ecosystem nonlinear import/export and symbolic global phase remain pending.
 Full Proposal 107 and Q-0156 acceptance await those consumers and the complete
 source audit. The Core batch does not imply that SDK conversion accepts the new
 expressions yet.
+
+## Adapter delivery boundary
+
+Cirq static, register and measured-feedback import derive an owned real angle
+from a coefficient written as exp(i * angle), including equivalent exponential
+products reduced by SymPy. The supported real expression domain is enforced at
+binding. Numeric coefficients must be finite and unit modulus. An arbitrary
+symbolic complex coefficient remains rejected. Static circuits require an
+existing declared wire. Register programs may allocate their existing clean
+scalar carrier. The existing Compiler scalar_phase_ir primitive emitter accepts
+owned Parameter and ParameterExpression angles after structural validation,
+retaining the exact X/phase/X/phase order and existing numeric behavior.
+
+Static Cirq phase export/import admits the existing phase opcode. Symbolic
+Qiskit global phase becomes the same physical primitive sequence on wire zero,
+with no duplicate phase metadata. Numeric Qiskit phase metadata retains its
+previous representation. No SDK objects enter Core or Compiler.

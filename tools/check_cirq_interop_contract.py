@@ -24,6 +24,7 @@ POLICY = ROOT / "dependency-policy.toml"
 CONVERSION = ROOT / "flagquantum/ecosystem/cirq/conversion.py"
 EXPECTED_VERSIONS = ["1.6.1", "1.7.0"]
 EXPECTED_SEMANTICS = {
+    "global_phase": "existing_phase_primitives_with_declared_anchor",
     "artifact": "cirq.Circuit",
     "qubit_mapping": "contiguous_line_qubit_index_equals_flagquantum_wire",
     "operation_order": "stable_moment_then_operation_order",
