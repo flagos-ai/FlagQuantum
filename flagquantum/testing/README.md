@@ -59,3 +59,17 @@ test. Keep numerical reference calculations in Simulation and execution or
 evidence production in Runtime/Benchmarking. Changes to public exports or an
 accepted evidence schema require the repository's API and contract review
 process.
+
+## Component example metadata
+
+`component_examples.py` owns lazy example factories and documentation metadata.
+It records the inferred name, declared return class, original docstring and
+optional resource generalizers. `ComponentDocumentation` captures an iterable
+of examples once and selects the first graph example by default. An explicit
+`call_graph_example=None` omits the graph. This metadata never decides execution
+semantics and does not replace the Compiler or Drawer.
+
+Run `python -m examples.algorithms.component_example_catalog` to create a
+documented three-bit swap and verify its nine CX gates and complete complex
+state through `circuit.append(op)`. Run its source-differential checks with
+`python -m pytest tests/unit/test_component_examples.py -q`.
