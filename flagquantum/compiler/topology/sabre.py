@@ -21,8 +21,10 @@ term over a bounded extended layer.
 The plan is one persistent layout for the whole circuit, so a materializer
 replays the forward SWAPs in reverse at the end to restore the logical output
 layout. The planner is deterministic: ties between equal-cost SWAP candidates
-resolve to the lexicographically smallest physical pair, so the same program and
-coupling map always produce the same plan without a seed.
+first use the lexicographically smallest physical pair. Three additional fixed-seed
+trials explore equal-cost choices, retaining a trial only when its complete route,
+including final restoration, uses fewer SWAPs. The same input always produces the
+same result without a user seed.
 
 Unlike the shortest-path strategies, this planner moves the layout before an
 operation rather than immediately before it, which is what makes it effective on
@@ -58,7 +60,9 @@ re-read nor re-written stays free to move past an operation on other qubits.
 from __future__ import annotations
 
 import math
+import random
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
@@ -235,6 +239,8 @@ def _relative_score_swap(
     extended: list[int],
     layout: list[int],
     distances: tuple[tuple[float, ...], ...],
+    *,
+    tie_rng: random.Random | None = None,
 ) -> tuple[int, int] | None:
     """Score only interactions incident on either endpoint of a proposed SWAP."""
 
@@ -255,6 +261,8 @@ def _relative_score_swap(
         return score
 
     ordered = sorted(candidates)
+    if tie_rng is not None:
+        tie_rng.shuffle(ordered)
     if not ordered:
         return None
     terms: list[tuple[int, int, float]] = []
@@ -327,6 +335,52 @@ def plan_sabre_swaps(
             circuit does not own, if an instruction states its classical condition
             in a malformed or ambiguous way.
     """
+
+    baseline = _plan_sabre_trial(program, coupling, initial_layout=initial_layout)
+    if baseline is None:
+        raise RuntimeError("unbounded SABRE trial did not produce a plan")
+    return _select_sabre_trials(program, coupling, baseline)
+
+
+def _select_sabre_trials(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    baseline: SabrePlan,
+    *,
+    cost: Callable[[SabrePlan], int] | None = None,
+) -> SabrePlan:
+    """Retain the single-trial route unless a bounded trial is strictly cheaper."""
+    best = baseline
+    if not best.swaps:
+        return best
+    score = (
+        cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)
+    )
+    best_cost = score(best)
+    for seed in (0, 1, 2):
+        candidate = _plan_sabre_trial(
+            program,
+            coupling,
+            initial_layout=baseline.initial_logical_to_physical,
+            tie_rng=random.Random(seed),
+            committed_swap_limit=best_cost,
+        )
+        if candidate is not None:
+            candidate_cost = score(candidate)
+            if candidate_cost < best_cost:
+                best, best_cost = candidate, candidate_cost
+    return best
+
+
+def _plan_sabre_trial(
+    program: CircuitIR,
+    coupling: CouplingMap,
+    *,
+    initial_layout: tuple[int, ...] | None = None,
+    tie_rng: random.Random | None = None,
+    committed_swap_limit: int | None = None,
+) -> SabrePlan | None:
+    """Run one search; prune only committed SWAPs that cannot beat the incumbent."""
 
     n_wires = program.n_wires
     if coupling.n_qubits < n_wires:
@@ -507,13 +561,16 @@ def plan_sabre_swaps(
                 extended_layer(blocked_front),
                 logical_to_physical,
                 distances,
+                tie_rng=tie_rng,
             )
         # Preserve the lower-overhead full scoring path on small devices.
         extended = extended_layer(blocked_front)
         best: tuple[int, int] | None = None
         best_score = 0.0
-        # Sorted iteration makes an equal-cost tie deterministic.
-        for left, right in sorted(candidates):
+        ordered = sorted(candidates)
+        if tie_rng is not None:
+            tie_rng.shuffle(ordered)
+        for left, right in ordered:
             front_total = 0.0
             for index in blocked_front:
                 front_total += _shifted_distance(
@@ -536,6 +593,14 @@ def plan_sabre_swaps(
 
     stalled_limit = STALLED_SWAP_LIMIT_PER_WIRE * n_wires
     while front:
+        # A speculative suffix may still be rolled back by progress recovery.
+        # Only the prefix committed by an executed instruction is a lower bound
+        # on the final cost; using len(swaps) here would incorrectly prune it.
+        if (
+            committed_swap_limit is not None
+            and progress_swap_start >= committed_swap_limit
+        ):
+            return None
         executable = [
             index for index in front if not blocks[index] or separation(index) == 1
         ]
@@ -836,23 +901,39 @@ def plan_sabre_layout(
     reversed_program = CircuitIR(n_wires, tuple(reversed(program.instructions)))
     candidate = identity
     best_layout = identity
-    forward = plan_sabre_swaps(program, coupling, initial_layout=candidate)
-    best_cost = _restored_swap_count(forward, coupling)
+    # Keep the original deterministic forward/backward trajectory as candidate
+    # generation. Substituting a better forward route here can lead the reverse
+    # pass away from a valuable old layout. Evaluate each old candidate with the
+    # multi-trial planner, while retaining identity as a candidate throughout.
+    forward = _plan_sabre_trial(program, coupling, initial_layout=candidate)
+    if forward is None:
+        raise RuntimeError("unbounded SABRE trial did not produce a plan")
+    trajectory_cost = _restored_swap_count(forward, coupling)
+    best_cost = _restored_swap_count(
+        _select_sabre_trials(program, coupling, forward), coupling
+    )
     for _ in range(rounds):
-        backward = plan_sabre_swaps(
+        backward = _plan_sabre_trial(
             reversed_program,
             coupling,
             initial_layout=forward.final_logical_to_physical,
         )
+        if backward is None:
+            raise RuntimeError("unbounded SABRE trial did not produce a plan")
         trial = backward.final_logical_to_physical
         if trial == candidate:
             break
-        trial_forward = plan_sabre_swaps(program, coupling, initial_layout=trial)
+        trial_forward = _plan_sabre_trial(program, coupling, initial_layout=trial)
+        if trial_forward is None:
+            raise RuntimeError("unbounded SABRE trial did not produce a plan")
         trial_cost = _restored_swap_count(trial_forward, coupling)
-        if trial_cost >= best_cost:
+        improved = _select_sabre_trials(program, coupling, trial_forward)
+        improved_cost = _restored_swap_count(improved, coupling)
+        if improved_cost < best_cost:
+            best_layout, best_cost = trial, improved_cost
+        if trial_cost >= trajectory_cost:
             break
-        best_layout = trial
-        best_cost = trial_cost
+        trajectory_cost = trial_cost
         candidate = trial
         forward = trial_forward
     return best_layout

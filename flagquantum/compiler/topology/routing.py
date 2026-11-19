@@ -33,7 +33,14 @@ from .routing_cost import (
     emitted_link_faults,
     require_weight_reading_strategy,
 )
-from .sabre import SabrePlan, plan_restore_swaps, plan_sabre_layout, plan_sabre_swaps
+from .sabre import (
+    SabrePlan,
+    _plan_sabre_trial,
+    _select_sabre_trials,
+    plan_restore_swaps,
+    plan_sabre_layout,
+    plan_sabre_swaps,
+)
 
 # The routing strategies a caller may request. This is the authoritative
 # vocabulary: the `program_compilation` limitations in `capability-maturity.toml`
@@ -351,6 +358,31 @@ def estimate_routing_cost(
     return estimate
 
 
+def _plan_sabre_for_topology(
+    ir: CircuitIR,
+    topology: _TopologyCostModel,
+    initial_layout: tuple[int, ...],
+) -> SabrePlan:
+    if not topology.is_ordered:
+        return plan_sabre_swaps(
+            ir, topology.weak_coupling, initial_layout=initial_layout
+        )
+    baseline = _plan_sabre_trial(
+        ir, topology.weak_coupling, initial_layout=initial_layout
+    )
+    if baseline is None:
+        raise RuntimeError("unbounded SABRE trial did not produce a plan")
+
+    def cost(plan: SabrePlan) -> int:
+        return (
+            len(plan.swaps)
+            + len(plan_restore_swaps(plan, topology.weak_coupling))
+            + 2 * _count_sabre_orientation_swaps(ir, topology, plan.placements)
+        )
+
+    return _select_sabre_trials(ir, topology.weak_coupling, baseline, cost=cost)
+
+
 def _estimate_routing_cost(
     ir: CircuitIR,
     topology: _TopologyCostModel,
@@ -380,7 +412,7 @@ def _estimate_routing_cost(
             if strategy == "sabre_layout"
             else identity_layout
         )
-        plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
+        plan = _plan_sabre_for_topology(ir, topology, initial_layout)
         direction_swap_count = _count_sabre_orientation_swaps(
             ir,
             topology,
@@ -820,13 +852,14 @@ def _route_sabre(
     """
 
     coupling = topology.weak_coupling
-    initial_layout = (
-        plan_sabre_layout(ir, coupling)
-        if strategy == "sabre_layout"
-        else tuple(range(ir.n_wires))
-    )
     if plan is None:
-        plan = plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
+        initial_layout = (
+            plan_sabre_layout(ir, coupling)
+            if strategy == "sabre_layout"
+            else tuple(range(ir.n_wires))
+        )
+        plan = _plan_sabre_for_topology(ir, topology, initial_layout)
+    initial_layout = plan.initial_logical_to_physical
     routed: list[Instruction] = []
     # Counted against the source qubits rather than the placed ones, exactly as the
     # shortest-path strategies and the cost estimate count them, so the number
