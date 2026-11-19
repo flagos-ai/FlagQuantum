@@ -1,0 +1,715 @@
+{
+  "scope": "local CPU single-thread sequential before/after cohorts; no randomized-pair or release claim",
+  "raw_receipts": {
+    "baseline.json.gz": "4666c7359ce245d052d56d0b6e12dd1649290d05b804f1d25117e6f240fb5406",
+    "qdrift-corrective.json.gz": "b2e84b6bb8ae8e1cc3034bff9db618ba77da17c6899f729715b4a688b3d78350",
+    "candidate.json.gz": "b567c3b14c7cc84c5a8d89ff37069f6643283951ad80de3d4215516c3c7eba40"
+  },
+  "before_selection": "Five complete original cohorts plus the full corrective qDRIFT cohort. Original qDRIFT cohort retained, including one process-cleanup failure; no individual sample replaced.",
+  "original_attempt_statuses": {
+    "verified": 53,
+    "measurement_failed": 1
+  },
+  "rows": {
+    "arithmetic": {
+      "before_receipt": "baseline.json.gz",
+      "source_changes": [
+        "benchmarks/synthesis/performance.py",
+        "flagquantum/services/_synthesis_execution.py",
+        "flagquantum/services/synthesis.py"
+      ],
+      "resources": {
+        "kind": "flagquantum.resource_estimate",
+        "estimate_basis": "static_instruction_sequence",
+        "conversion_identity": null,
+        "n_qubits": 9,
+        "used_qubits": 9,
+        "n_operations": 14,
+        "operation_counts": {
+          "h": 4,
+          "cx": 4,
+          "ccx": 6
+        },
+        "max_operation_width": 3,
+        "depth": 9,
+        "per_qubit_depth": [
+          9,
+          9,
+          7,
+          8,
+          9,
+          7,
+          5,
+          3,
+          8
+        ],
+        "t_count": 0,
+        "t_depth": 0,
+        "channel_count": 0
+      },
+      "circuit_hash": "41145b1939ec1081034c3e32c6ca06bbe4d836c41367a248af79a63745962157",
+      "metrics": {
+        "e0_ns": {
+          "before_median": 10592917,
+          "after_median": 11940084,
+          "before_range": [
+            9991125,
+            11868875
+          ],
+          "after_range": [
+            10812750,
+            11993792
+          ],
+          "reduction_percent": -12.717620651610883,
+          "absolute_reduction": -1347167
+        },
+        "execution_ns": {
+          "before_median": 1541792,
+          "after_median": 1707917,
+          "before_range": [
+            1498333,
+            1794167
+          ],
+          "after_range": [
+            1388291,
+            1776916
+          ],
+          "reduction_percent": -10.774799713580041,
+          "absolute_reduction": -166125
+        },
+        "compile_plus_execution_ns": {
+          "before_median": 12234792,
+          "after_median": 13588500,
+          "before_range": [
+            11532917,
+            13367208
+          ],
+          "after_range": [
+            12201041,
+            13770708
+          ],
+          "reduction_percent": -11.064413681899946,
+          "absolute_reduction": -1353708
+        },
+        "compile_rss": {
+          "before_median": 218955776,
+          "after_median": 219037696,
+          "before_range": [
+            218644480,
+            218955776
+          ],
+          "after_range": [
+            210944000,
+            219529216
+          ],
+          "reduction_percent": -0.037413947919784495,
+          "absolute_reduction": -81920
+        },
+        "execution_rss": {
+          "before_median": 222740480,
+          "after_median": 222871552,
+          "before_range": [
+            222576640,
+            222756864
+          ],
+          "after_range": [
+            214876160,
+            223330304
+          ],
+          "reduction_percent": -0.05884516366311144,
+          "absolute_reduction": -131072
+        }
+      },
+      "inspection_calls": [
+        3,
+        2
+      ],
+      "meets_time_review_threshold": false,
+      "maximum_amplitude_error": 8.326672684688674e-17
+    },
+    "qaoa": {
+      "before_receipt": "baseline.json.gz",
+      "source_changes": [
+        "benchmarks/synthesis/performance.py",
+        "flagquantum/services/_synthesis_execution.py",
+        "flagquantum/services/synthesis.py"
+      ],
+      "resources": {
+        "kind": "flagquantum.resource_estimate",
+        "estimate_basis": "static_instruction_sequence",
+        "conversion_identity": null,
+        "n_qubits": 5,
+        "used_qubits": 5,
+        "n_operations": 64,
+        "operation_counts": {
+          "u3": 5,
+          "cphase": 24,
+          "rx": 20,
+          "phase": 15
+        },
+        "max_operation_width": 2,
+        "depth": 25,
+        "per_qubit_depth": [
+          25,
+          25,
+          24,
+          24,
+          22
+        ],
+        "t_count": 0,
+        "t_depth": 0,
+        "channel_count": 0
+      },
+      "circuit_hash": "7081d9520873cecf6ff4a7784af4a674cee57b6126900d87396917e68fd01354",
+      "metrics": {
+        "e0_ns": {
+          "before_median": 26231334,
+          "after_median": 27468750,
+          "before_range": [
+            23655208,
+            34499500
+          ],
+          "after_range": [
+            26296375,
+            33360166
+          ],
+          "reduction_percent": -4.7173201332421755,
+          "absolute_reduction": -1237416
+        },
+        "execution_ns": {
+          "before_median": 6712125,
+          "after_median": 7795125,
+          "before_range": [
+            6579833,
+            9120292
+          ],
+          "after_range": [
+            7250833,
+            9111167
+          ],
+          "reduction_percent": -16.13497960779932,
+          "absolute_reduction": -1083000
+        },
+        "compile_plus_execution_ns": {
+          "before_median": 32811167,
+          "after_median": 35263875,
+          "before_range": [
+            30367333,
+            41831208
+          ],
+          "after_range": [
+            33547208,
+            41286458
+          ],
+          "reduction_percent": -7.475223298214294,
+          "absolute_reduction": -2452708
+        },
+        "compile_rss": {
+          "before_median": 218447872,
+          "after_median": 219512832,
+          "before_range": [
+            218431488,
+            219365376
+          ],
+          "after_range": [
+            207994880,
+            219840512
+          ],
+          "reduction_percent": -0.48751218780469513,
+          "absolute_reduction": -1064960
+        },
+        "execution_rss": {
+          "before_median": 224264192,
+          "after_median": 225329152,
+          "before_range": [
+            224198656,
+            225165312
+          ],
+          "after_range": [
+            213876736,
+            225673216
+          ],
+          "reduction_percent": -0.4748684979544126,
+          "absolute_reduction": -1064960
+        }
+      },
+      "inspection_calls": [
+        3,
+        2
+      ],
+      "meets_time_review_threshold": false,
+      "maximum_amplitude_error": 2.5018537765542007e-16
+    },
+    "qpe": {
+      "before_receipt": "baseline.json.gz",
+      "source_changes": [
+        "benchmarks/synthesis/performance.py",
+        "flagquantum/services/_synthesis_execution.py",
+        "flagquantum/services/synthesis.py"
+      ],
+      "resources": {
+        "kind": "flagquantum.resource_estimate",
+        "estimate_basis": "static_instruction_sequence",
+        "conversion_identity": null,
+        "n_qubits": 11,
+        "used_qubits": 11,
+        "n_operations": 26898,
+        "operation_counts": {
+          "h": 9516,
+          "cx": 2610,
+          "cphase": 13680,
+          "u3": 768,
+          "x": 256,
+          "phase": 64,
+          "swap": 4
+        },
+        "max_operation_width": 2,
+        "depth": 23711,
+        "per_qubit_depth": [
+          23711,
+          23710,
+          23709,
+          23708,
+          23707,
+          23706,
+          23705,
+          23704,
+          23694,
+          23695,
+          23688
+        ],
+        "t_count": 0,
+        "t_depth": 0,
+        "channel_count": 0
+      },
+      "circuit_hash": "cfbfd8d6629a8012b7b118615eddea6aae11665be427f21db782142827020736",
+      "metrics": {
+        "e0_ns": {
+          "before_median": 8754106000,
+          "after_median": 7332714417,
+          "before_range": [
+            8294082000,
+            10310640916
+          ],
+          "after_range": [
+            6682223834,
+            9056312916
+          ],
+          "reduction_percent": 16.23685597364254,
+          "absolute_reduction": 1421391583
+        },
+        "execution_ns": {
+          "before_median": 3159437292,
+          "after_median": 3003146041,
+          "before_range": [
+            3062629250,
+            3903465750
+          ],
+          "after_range": [
+            2791633625,
+            3495397084
+          ],
+          "reduction_percent": 4.9468065530448895,
+          "absolute_reduction": 156291251
+        },
+        "compile_plus_execution_ns": {
+          "before_median": 11864631667,
+          "after_median": 10504657876,
+          "before_range": [
+            11708915375,
+            14214106666
+          ],
+          "after_range": [
+            9541429001,
+            12551710000
+          ],
+          "reduction_percent": 11.46241897068409,
+          "absolute_reduction": 1359973791
+        },
+        "compile_rss": {
+          "before_median": 353206272,
+          "after_median": 351289344,
+          "before_range": [
+            347947008,
+            386596864
+          ],
+          "after_range": [
+            273137664,
+            406749184
+          ],
+          "reduction_percent": 0.5427219593654328,
+          "absolute_reduction": 1916928
+        },
+        "execution_rss": {
+          "before_median": 351289344,
+          "after_median": 335364096,
+          "before_range": [
+            320651264,
+            373276672
+          ],
+          "after_range": [
+            301563904,
+            426131456
+          ],
+          "reduction_percent": 4.533370645025885,
+          "absolute_reduction": 15925248
+        }
+      },
+      "inspection_calls": [
+        3,
+        2
+      ],
+      "meets_time_review_threshold": true,
+      "maximum_amplitude_error": 3.341964988165317e-13
+    },
+    "pauli": {
+      "before_receipt": "baseline.json.gz",
+      "source_changes": [
+        "benchmarks/synthesis/performance.py",
+        "flagquantum/services/_synthesis_execution.py",
+        "flagquantum/services/synthesis.py"
+      ],
+      "resources": {
+        "kind": "flagquantum.resource_estimate",
+        "estimate_basis": "static_instruction_sequence",
+        "conversion_identity": null,
+        "n_qubits": 3,
+        "used_qubits": 3,
+        "n_operations": 16,
+        "operation_counts": {
+          "h": 4,
+          "cx": 8,
+          "rz": 2,
+          "rx": 2
+        },
+        "max_operation_width": 2,
+        "depth": 14,
+        "per_qubit_depth": [
+          12,
+          14,
+          14
+        ],
+        "t_count": 0,
+        "t_depth": 0,
+        "channel_count": 0
+      },
+      "circuit_hash": "98f4f4bc015e92ad7e5759d4f395e2758d826a9af44438d7e2a95e09c2eb467a",
+      "metrics": {
+        "e0_ns": {
+          "before_median": 5307167,
+          "after_median": 4771292,
+          "before_range": [
+            4867042,
+            6899750
+          ],
+          "after_range": [
+            4435500,
+            4947625
+          ],
+          "reduction_percent": 10.097194981804794,
+          "absolute_reduction": 535875
+        },
+        "execution_ns": {
+          "before_median": 1690459,
+          "after_median": 1536875,
+          "before_range": [
+            1458000,
+            5461083
+          ],
+          "after_range": [
+            1502292,
+            1876042
+          ],
+          "reduction_percent": 9.08534309320723,
+          "absolute_reduction": 153584
+        },
+        "compile_plus_execution_ns": {
+          "before_median": 7060792,
+          "after_median": 6311542,
+          "before_range": [
+            6325042,
+            12360833
+          ],
+          "after_range": [
+            6237876,
+            6484500
+          ],
+          "reduction_percent": 10.611415829838919,
+          "absolute_reduction": 749250
+        },
+        "compile_rss": {
+          "before_median": 218169344,
+          "after_median": 218710016,
+          "before_range": [
+            217989120,
+            218431488
+          ],
+          "after_range": [
+            218431488,
+            218742784
+          ],
+          "reduction_percent": -0.2478221688194653,
+          "absolute_reduction": -540672
+        },
+        "execution_rss": {
+          "before_median": 222838784,
+          "after_median": 223428608,
+          "before_range": [
+            222724096,
+            223182848
+          ],
+          "after_range": [
+            223100928,
+            223494144
+          ],
+          "reduction_percent": -0.26468642011616794,
+          "absolute_reduction": -589824
+        }
+      },
+      "inspection_calls": [
+        3,
+        2
+      ],
+      "meets_time_review_threshold": false,
+      "maximum_amplitude_error": 2.3714374201337736e-16
+    },
+    "qdrift": {
+      "before_receipt": "qdrift-corrective.json.gz",
+      "source_changes": [
+        "flagquantum/services/_synthesis_execution.py",
+        "flagquantum/services/synthesis.py"
+      ],
+      "resources": {
+        "kind": "flagquantum.resource_estimate",
+        "estimate_basis": "static_instruction_sequence",
+        "conversion_identity": null,
+        "n_qubits": 12,
+        "used_qubits": 12,
+        "n_operations": 3623,
+        "operation_counts": {
+          "rx": 385,
+          "h": 359,
+          "cx": 1950,
+          "rz": 587,
+          "u3": 63,
+          "phase": 153,
+          "x": 126
+        },
+        "max_operation_width": 2,
+        "depth": 2038,
+        "per_qubit_depth": [
+          2029,
+          2028,
+          2037,
+          2037,
+          2038,
+          2034,
+          2034,
+          2035,
+          2017,
+          2018,
+          2019,
+          2020
+        ],
+        "t_count": 0,
+        "t_depth": 0,
+        "channel_count": 0
+      },
+      "circuit_hash": "331b2cc05c61211ac16c79106058f78cc9ad4001c9f87961f2482b70db1eb49f",
+      "metrics": {
+        "e0_ns": {
+          "before_median": 1201190083,
+          "after_median": 966655084,
+          "before_range": [
+            1155299250,
+            1360481666
+          ],
+          "after_range": [
+            944919666,
+            1032561167
+          ],
+          "reduction_percent": 19.525219390276966,
+          "absolute_reduction": 234534999
+        },
+        "execution_ns": {
+          "before_median": 385929125,
+          "after_median": 314603416,
+          "before_range": [
+            372051167,
+            415830583
+          ],
+          "after_range": [
+            308799583,
+            346576917
+          ],
+          "reduction_percent": 18.4815564256779,
+          "absolute_reduction": 71325709
+        },
+        "compile_plus_execution_ns": {
+          "before_median": 1587119208,
+          "after_median": 1277941834,
+          "before_range": [
+            1544759167,
+            1776312249
+          ],
+          "after_range": [
+            1253719249,
+            1379138084
+          ],
+          "reduction_percent": 19.480412841175824,
+          "absolute_reduction": 309177374
+        },
+        "compile_rss": {
+          "before_median": 235520000,
+          "after_median": 235700224,
+          "before_range": [
+            235175936,
+            236126208
+          ],
+          "after_range": [
+            235356160,
+            236044288
+          ],
+          "reduction_percent": -0.07652173913043478,
+          "absolute_reduction": -180224
+        },
+        "execution_rss": {
+          "before_median": 244645888,
+          "after_median": 244449280,
+          "before_range": [
+            199802880,
+            245366784
+          ],
+          "after_range": [
+            244318208,
+            244940800
+          ],
+          "reduction_percent": 0.08036431824270024,
+          "absolute_reduction": 196608
+        }
+      },
+      "inspection_calls": [
+        3,
+        2
+      ],
+      "meets_time_review_threshold": true,
+      "maximum_amplitude_error": 1.6559847298493787e-14
+    },
+    "block_encoding": {
+      "before_receipt": "baseline.json.gz",
+      "source_changes": [
+        "benchmarks/synthesis/performance.py",
+        "flagquantum/services/_synthesis_execution.py",
+        "flagquantum/services/synthesis.py"
+      ],
+      "resources": {
+        "kind": "flagquantum.resource_estimate",
+        "estimate_basis": "static_instruction_sequence",
+        "conversion_identity": null,
+        "n_qubits": 7,
+        "used_qubits": 7,
+        "n_operations": 16,
+        "operation_counts": {
+          "h": 11,
+          "rx": 1,
+          "swap": 2,
+          "cx": 1,
+          "crz": 1
+        },
+        "max_operation_width": 2,
+        "depth": 4,
+        "per_qubit_depth": [
+          4,
+          3,
+          3,
+          4,
+          2,
+          2,
+          2
+        ],
+        "t_count": 0,
+        "t_depth": 0,
+        "channel_count": 0
+      },
+      "circuit_hash": "2073c0e16b95ba624635b183b47cb707c64034a52f9854e5462c5d98ad593f6b",
+      "metrics": {
+        "e0_ns": {
+          "before_median": 5920167,
+          "after_median": 5166041,
+          "before_range": [
+            5641125,
+            7722958
+          ],
+          "after_range": [
+            4888500,
+            7123375
+          ],
+          "reduction_percent": 12.738255525562032,
+          "absolute_reduction": 754126
+        },
+        "execution_ns": {
+          "before_median": 1491792,
+          "after_median": 1375459,
+          "before_range": [
+            1477500,
+            1637875
+          ],
+          "after_range": [
+            1363541,
+            1397334
+          ],
+          "reduction_percent": 7.798205111704581,
+          "absolute_reduction": 116333
+        },
+        "compile_plus_execution_ns": {
+          "before_median": 7411959,
+          "after_median": 6541500,
+          "before_range": [
+            7272500,
+            9202958
+          ],
+          "after_range": [
+            6252041,
+            8520709
+          ],
+          "reduction_percent": 11.743980235184788,
+          "absolute_reduction": 870459
+        },
+        "compile_rss": {
+          "before_median": 218185728,
+          "after_median": 218644480,
+          "before_range": [
+            175341568,
+            218316800
+          ],
+          "after_range": [
+            218136576,
+            218873856
+          ],
+          "reduction_percent": -0.21025756551775926,
+          "absolute_reduction": -458752
+        },
+        "execution_rss": {
+          "before_median": 222822400,
+          "after_median": 223379456,
+          "before_range": [
+            171524096,
+            222904320
+          ],
+          "after_range": [
+            222806016,
+            223444992
+          ],
+          "reduction_percent": -0.25,
+          "absolute_reduction": -557056
+        }
+      },
+      "inspection_calls": [
+        3,
+        2
+      ],
+      "meets_time_review_threshold": false,
+      "maximum_amplitude_error": 5.572760650034482e-17
+    }
+  }
+}
