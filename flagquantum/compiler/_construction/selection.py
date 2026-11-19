@@ -14,12 +14,12 @@ from .._hybrid.model import HybridProgram
 from .._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..resource_estimation import ResourceEstimate, estimate_resources
 from .bindings import OutputMode
-from .boolean_lowering import BooleanCandidateError
+from .codegen.arithmetic import ArithmeticCandidate, BoundArithmetic, Schedule
+from .codegen.boolean import BooleanCandidateError
+from .codegen.registers import RegisterCandidate, schedule_register_program
 from .constraints import CircuitLimits
-from .lowering import ArithmeticCandidate, BoundArithmetic, Schedule
 from .profile import verify_construction
 from .register_expansion import expand_register_calls
-from .register_lowering import RegisterCandidate, schedule_register_program
 from .register_profile import (
     register_ports,
     semantic_hidden_width,

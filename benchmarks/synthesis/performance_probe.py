@@ -19,7 +19,10 @@ def stage_of(module: str, function: str) -> Stage | None:
         leaf = module.rsplit(".", 1)[-1]
         if leaf in {"arithmetic_rewrites", "ranges", "dependencies", "lifetimes"}:
             return "C2"
-        if leaf in {"lowering", "register_lowering"}:
+        if module.startswith("flagquantum.compiler._construction.codegen.") or leaf in {
+            "lowering",
+            "register_lowering",
+        }:
             return "C3"
         if leaf == "target":
             return "C4"

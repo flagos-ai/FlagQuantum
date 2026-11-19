@@ -6,7 +6,7 @@ share `CircuitIR` where their entry points require it.
 | Stage | Implementation | Output |
 | --- | --- | --- |
 | Source capture and adaptation | [`_construction/`](_construction/) and [`_hybrid/`](_hybrid/) | Internal `HybridProgram` |
-| Circuit construction and lowering | [`_construction/`](_construction/) and [`_hybrid/`](_hybrid/) | `CircuitIR` or a template with bindings |
+| Circuit construction and lowering | [`_construction/codegen/`](_construction/codegen/README.md) and [`_hybrid/`](_hybrid/) | `CircuitIR` or a template with bindings |
 | Circuit optimization | [`optimization/`](optimization/) | Optimized `CircuitIR` |
 | Target adaptation | [`lowering/`](lowering/) and [`topology/`](topology/) | Target-legal circuit and scheduling evidence, as required by the selected path |
 | Code generation and interchange | [`formats/`](formats/) | OpenQASM, QCIS, or QIR text |
@@ -19,6 +19,9 @@ capture and training compilation. Python source capture is grouped in
 [`_construction/frontend/`](_construction/frontend/README.md), with the retained
 `_construction/frontend_*.py` paths mapped in the
 [construction README](_construction/README.md#python-frontend-implementation).
+Construction gate emission is grouped in
+[`_construction/codegen/`](_construction/codegen/README.md), with retained lowering
+paths mapped in the [construction README](_construction/README.md#circuit-generation-implementation).
 Documented compiler entry modules remain
 importable at their existing paths. Deployment packaging is owned by
 [`flagquantum.deployment`](../deployment/). Bounded Pauli products and

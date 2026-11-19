@@ -6,7 +6,7 @@ import ast
 from typing import TYPE_CHECKING
 
 from .._phase_polynomial import MAX_PHASE_DEGREE, Location
-from ..boolean_lowering import BooleanCandidateError, _disjoint_cubes
+from ..codegen.boolean import BooleanCandidateError, _disjoint_cubes
 from .phase import expand_native_phase
 from .python import _error
 from .views import gate_target, locations
