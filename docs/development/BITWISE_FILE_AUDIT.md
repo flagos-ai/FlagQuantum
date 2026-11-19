@@ -139,3 +139,17 @@ The required default run reaches the established public docstring coverage
 failure after 434 passes and 51 skips. All nine reported modules and the failed
 policy test are byte-identical to the batch baseline. Whole-repository dependency
 policy still has 688 findings, with zero findings in the changed paths.
+
+## Existing factory-check integration
+
+The following batch reuses `tests/unit/register_example_checks.py` for the
+actual three concrete source factories. Each native factory now passes all
+five existing make, decompose, counts, serialize and qtyping modes. Counts use
+the independently queried source QEC declaration and compare it with bound
+native instructions. Serialization uses the existing circuit codec. The
+original source wrapper's XOR counts xfail remains recorded separately.
+The full family regression passes 2,682 cases with the same eight overflow
+warnings. The original native fixture is reused without another framework.
+The two symbolic factories still have only metadata/model owners and explicit
+physical refusal. Generic symbolic foreign-object conversion and roundtrip
+remain open, including their shared source-testing dependency Q-0937.

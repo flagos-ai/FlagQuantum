@@ -13,12 +13,59 @@ from flagquantum.compiler._component_trace.program_call_graph import (
 )
 from flagquantum.compiler.registers.bits.bitwise_component import bitwise_word_program
 from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.core.ir.program import verify_program_record
+from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program import ProgramRecord, verify_program_record
 from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.ecosystem.cirq._register_emitter import import_register_emitter
+from tests.unit.register_example_checks import (
+    CHECKS,
+    CheckKind,
+    CheckStatus,
+    RegisterExample,
+    check_example,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
 Operation = Literal["xor", "xor_constant", "bitwise_not"]
+
+
+@pytest.mark.parametrize("kind", CHECKS)
+@pytest.mark.parametrize("name", ("_xor", "_xork", "_bitwise_not"))
+def test_actual_concrete_factories_use_all_existing_native_check_modes(
+    name: str, kind: CheckKind
+) -> None:
+    from qualtran.bloqs.arithmetic import bitwise
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    source = getattr(bitwise, name).make()
+    width = int(source.dtype.num_qubits)
+    dtype = RegisterType("opaque" if name == "_xor" else "uint", width)
+    operations: dict[str, Operation] = {
+        "_xor": "xor",
+        "_xork": "xor_constant",
+        "_bitwise_not": "bitwise_not",
+    }
+
+    def make() -> ProgramRecord:
+        return bitwise_word_program(
+            dtype, operations[name], pattern=87 if name == "_xork" else None
+        )
+
+    def lower(record: ProgramRecord) -> CircuitIR:
+        inputs = (
+            (tuple(range(width)), tuple(range(width, 2 * width)))
+            if name == "_xor"
+            else (tuple(range(width)),)
+        )
+        return bind_register_program(record, inputs).circuit
+
+    model = get_cost_value(source, QECGatesCost())
+    opcode = "cx" if name == "_xor" else "x"
+    example = RegisterExample(
+        make, lower, lambda: {opcode: int(model.clifford)}, ((dtype, dtype),)
+    )
+    result = check_example(example, kind)
+    assert result.status is CheckStatus.PASS, result.message
 
 
 @pytest.mark.parametrize("encoding", ("opaque", "uint", "signed", "montgomery"))
