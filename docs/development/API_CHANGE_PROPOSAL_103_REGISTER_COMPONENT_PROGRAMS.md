@@ -2052,3 +2052,16 @@ owned data and tampered payloads. Count one physical channel atom separately fro
 any model estimate or trajectory count. Preserve supported static and dynamic
 unitary callers. This prerequisite declares no Stable Core freeze or new owner
 approval and does not change protected public exports or schemas.
+
+### Prerequisite 1.23 — symbolic signature priority in logical scheduling
+
+The complete frozen binst_graph_iterators.py assigns zero priority whenever any
+register dtype is symbolic, including symbolic fractional width with a concrete
+qubit width. The existing queue only sees numeric edge widths and loses that
+classification. Retain a boolean symbolic-signature flag on the private
+WidthStep record, defaulting to false. Compiler logical graph construction derives
+it from the declared register types before lowering them to edge widths. Allocation
+and release priorities continue to take precedence. Concrete scheduling and
+physical admission retain their current semantics. No public API or IR schema
+changes are introduced. Validate the flag and compare complete visitation order
+with the unchanged source for symbolic metadata, numeric widths, sides and ties.
