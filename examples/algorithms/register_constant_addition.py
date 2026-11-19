@@ -13,17 +13,16 @@ import flagquantum as fq
 from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
-from flagquantum.compiler.registers.arithmetic.addition import (
-    negate_ir,
-)
 from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
     source_constant_add_cost,
 )
 from flagquantum.compiler.registers.arithmetic.constant_addition_component import (
     constant_addition_program,
 )
+from flagquantum.compiler.registers.arithmetic.negation_component import (
+    negation_program,
+)
 from flagquantum.compiler.registers.register_binding import bind_register_program
-from flagquantum.core.ir import CircuitIR
 from flagquantum.core.ir.program.registers import RegisterType
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -41,12 +40,22 @@ class ConstantAddition:
         return circuit.compose(bound.circuit)
 
 
+@dataclass(frozen=True)
 class Negation:
-    """Use the same clean work allocation for two's-complement negation."""
+    """Use typed complement/increment and optional through control on wire eight."""
+
+    control_value: int | None = None
+    adjoint: bool = False
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        gates = negate_ir((0, 1, 2), (3, 4, 5), (6, 7), (0, 1))
-        return circuit.compose(CircuitIR(8, gates))
+        program = negation_program(
+            RegisterType("uint", 3),
+            adjoint=self.adjoint,
+            control_value=self.control_value,
+        )
+        inputs = ((0, 1, 2),) if self.control_value is None else ((8,), (0, 1, 2))
+        bound = bind_register_program(program, inputs, clean=(3, 4, 5, 6, 7))
+        return circuit.compose(bound.circuit)
 
 
 def main() -> None:
@@ -87,6 +96,28 @@ def main() -> None:
         restored.final_states.reshape(16, -1), state.expand(16, -1), rtol=0, atol=1e-12
     )
     print("A second negation restores the input and clean workspace")
+
+    controlled_state = torch.zeros(512, dtype=torch.complex128)
+    controlled_state[2 << 6] = 1 / 2**0.5
+    controlled_state[(2 << 6) | 1] = torch.tensor(1j / 2**0.5, dtype=torch.complex128)
+    circuit = DynamicCircuit(9, inputs=controlled_state, dtype=torch.complex128)
+    circuit.append(Negation(control_value=0))
+    expected = torch.zeros_like(controlled_state)
+    expected[6 << 6] = 1 / 2**0.5
+    expected[(2 << 6) | 1] = torch.tensor(1j / 2**0.5, dtype=torch.complex128)
+    result = run_dynamic(circuit, shots=16, seed=31, strategy="trajectory")
+    torch.testing.assert_close(
+        result.final_states.reshape(16, -1), expected.expand(16, -1), rtol=0, atol=2e-12
+    )
+    circuit.append(Negation(control_value=0, adjoint=True))
+    restored = run_dynamic(circuit, shots=16, seed=31, strategy="trajectory")
+    torch.testing.assert_close(
+        restored.final_states.reshape(16, -1),
+        controlled_state.expand(16, -1),
+        rtol=0,
+        atol=2e-12,
+    )
+    print("Negative coherent control and exact adjoint restore both sectors and work")
 
 
 if __name__ == "__main__":

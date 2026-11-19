@@ -26,7 +26,7 @@ control work is allocated.
 |---|---|
 | Negate dtype and cached signature | Preserve x and both signed factory widths in neutral metadata. The established compiler accepts concrete signed, unsigned and Montgomery bit patterns. |
 | Composite build | Existing plain compiler chain and Simulation callback reuse complement and AddK. The original operation order and x binding also match at symbolic width. |
-| Generic control of Negate | Both concrete single-control polarities follow the locked wrapper and child order. Generic multi-register control and symbolic primitive lowering remain outside this batch. |
+| Generic control of Negate | Both concrete single-control polarities follow the locked wrapper and child order. Concrete grouped controls are covered by the native graph batch below. Symbolic primitive lowering retains its admission boundary. |
 | Two factories and documentation specification | Both signatures and complete one-level graphs match. The asset preserves the original topics and adds coherent negative-control execution through ordinary `circuit.append(op)`. |
 
 The source's one-bit signed AddK leaf cannot load +1. The existing source
@@ -71,5 +71,56 @@ independent kernels. The native kernel blocks reference imports. The native
 asset retains both original instances, the graphical signatures and the
 concrete one-level graph. It adds an executable coherent control example.
 Q-0210 closes. Q-0211 and Q-0212 retain the original signed one-bit gate
-failure, generic symbolic/multi-register control and the original skipped
+failure, generic symbolic/foreign execution and the original skipped
 count-mode boundary.
+
+## Native component graph interface and acceptance
+
+Compiler arithmetic composes the existing typed BitwiseNot and AddK owners
+in `negation_component.py`. The input/output is one MSB-first integer THRU word.
+Constant and Add carry workspace belongs to AddK and returns clean. Optional
+single-bit control preserves its through wire and affects complement and constant
+loading. Zero control keeps one outer X/positive-body/X wrapper. The explicit
+adjoint reverses the source child calls and uses the existing exact AddK-adjoint;
+this graph is kept distinct from merely executing the forward involution twice.
+Simulation and dtype value encoding retain their existing ownership.
+
+The native encoded one-bit signed permutation remains executable, while the
+original signed AddK(+1) fails its value encoding. Its source failure is recorded
+separately from successful unsigned/source and native signed physical evidence.
+No modified reference, symbolic physical claim or new numerical kernel is used.
+
+
+The exact adjoint is explicit AddK-adjoint followed by BitwiseNot. The scalar
+control cases and grouped QBit arrays, mixed integer/QBit registers and negative
+signed activation values retain source hierarchy, operand connections and
+measurement feedback. Unknown two-bit activation retains an unresolved source
+conjunction and refuses physical binding. Unknown three-bit activation follows
+the source HasLength-to-positive-MultiAnd conversion. This is recorded as source
+behavior, with the shared predicate owner's evidence reused.
+
+The final native batch passes 123 focused and 4269 concentrated checks without
+skips. Ten pre-existing paired NumPy overflow warnings and two notebook/environment
+warnings remain visible. Strict typing for all three touched Python files,
+Black, Ruff, compiler scope, architecture, IR and public API checks pass. Five
+local integration cases pass, including grouped coherent control and its exact
+inverse through ordinary append. Small full source tensors, entangled spectator,
+every raw measurement branch and every inverse history pair preserve full complex
+amplitudes and zero constant/carry/predicate work. The actual eight-bit source
+factory passes all five existing example checks.
+
+For two data bits and a QBit[2] control active at (0, 1), the emitted circuit has
+19 CX, 4 X, 8 T/TDG, 2 measurements and 2 resets. The independent source model
+has 2 And, 9 Clifford, 2 measurements and a peak of 8 logical qubits. The complete
+forward/adjoint, plain/scalar and grouped resource tables are stored in
+`g2-negation-native-resources.json` outside the repository with the verification
+receipts. Primitive counts and source model categories remain separate.
+
+The default suite reaches 434 passes and 51 skips before the established
+`test_every_module_with_examples_is_covered` failure. Its nine reported modules
+and the failed test are byte-identical to base 9d16ee53a. Dependency policy has
+688 whole-repository findings and zero findings in the touched batch. Frozen
+source blobs, Qualtran 0.7.0 and Kickmix 0.1 Simulator are verified. Receipt prefix
+`g2-negation-native-*` records this batch. Q-0211/Q-0212 remain open for the
+original signed one-bit failure, symbolic physical/generic foreign admission
+and original skipped count-mode boundary. Proposal 108 remains pending.

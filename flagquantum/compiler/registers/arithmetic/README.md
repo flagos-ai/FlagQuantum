@@ -135,3 +135,22 @@ python -m pytest tests/unit/test_subtraction_component.py tests/unit/test_fanout
 
 See [the complete subtraction audit](../../../../docs/development/SUBTRACTION_FILE_AUDIT.md)
 for original tests, source declarations and remaining generic admission gaps.
+
+`negation_component.py` composes BitwiseNot/AddK(1) over one typed integer word.
+The explicit adjoint reverses the actual child calls and uses the measured
+AddK-adjoint, while a second forward negation also restores the logical input.
+Single-control polarities and multi-register predicates share the existing
+control hierarchy. `controlled_negation_program` accepts the same Register and
+ControlRegister descriptors as the predicate owner, including row-major arrays
+and signed activation words. Predicate and AddK workspace have separate owners.
+All work is measurement-erased and returns clean. The encoded native one-bit
+signed permutation remains distinct from the source signed +1 load failure.
+
+```bash
+python -m examples.algorithms.register_constant_addition
+python -m pytest tests/unit/test_negation_component.py -q
+```
+
+The append example checks plain negation, coherent negative control and the
+exact adjoint. [The complete negation audit](../../../../docs/development/NEGATION_FILE_AUDIT.md)
+records the source defect, separate model/primitive counts and remaining gaps.
