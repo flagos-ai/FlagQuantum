@@ -137,3 +137,16 @@ links, compiler ownership and the protected public API snapshot passed.
 These checks do not replace the complete smoke/unit and runtime CI tiers. The
 branch includes the relative-scoring and progress-recovery prerequisites; its
 full review and integration depend on those changes passing their own gates.
+
+The complete local smoke/unit run at `338f9bb50` finished with 20,734 passed,
+786 skipped, 15 failed and six fixture errors. Eight architecture failures
+identified this change exceeding the existing routing-module size ceiling;
+reusing the coupling-map reference removed repeated property expressions and
+restored the ceiling without changing it. The 84 affected architecture,
+interop-boundary and routing checks then passed. Six launch-test failures and
+six Gloo fixture errors came from denied loopback access; all 103 tests in those
+two files passed with the required local socket access. The remaining evidence
+revision test reported 98 differences. The checker, declarations and evidence
+files are unchanged from the main baseline in this worktree; this is still an
+unresolved local qualification failure, not a waived gate. The original full
+run remains failed and complete CI remains required.

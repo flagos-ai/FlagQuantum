@@ -363,24 +363,21 @@ def _plan_sabre_for_topology(
     topology: _TopologyCostModel,
     initial_layout: tuple[int, ...],
 ) -> SabrePlan:
+    coupling = topology.weak_coupling
     if not topology.is_ordered:
-        return plan_sabre_swaps(
-            ir, topology.weak_coupling, initial_layout=initial_layout
-        )
-    baseline = _plan_sabre_trial(
-        ir, topology.weak_coupling, initial_layout=initial_layout
-    )
+        return plan_sabre_swaps(ir, coupling, initial_layout=initial_layout)
+    baseline = _plan_sabre_trial(ir, coupling, initial_layout=initial_layout)
     if baseline is None:
         raise RuntimeError("unbounded SABRE trial did not produce a plan")
 
     def cost(plan: SabrePlan) -> int:
         return (
             len(plan.swaps)
-            + len(plan_restore_swaps(plan, topology.weak_coupling))
+            + len(plan_restore_swaps(plan, coupling))
             + 2 * _count_sabre_orientation_swaps(ir, topology, plan.placements)
         )
 
-    return _select_sabre_trials(ir, topology.weak_coupling, baseline, cost=cost)
+    return _select_sabre_trials(ir, coupling, baseline, cost=cost)
 
 
 def _estimate_routing_cost(
