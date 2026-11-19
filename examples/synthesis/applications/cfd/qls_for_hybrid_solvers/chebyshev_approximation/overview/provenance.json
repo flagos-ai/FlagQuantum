@@ -1,0 +1,70 @@
+{
+  "upstream_path": "applications/CFD/QLS_for_hybrid_solvers/chebyshev_approximation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "918f80ba51d711a3c5768322b77baca8068ced391b707943a2c9377b02dbcb2d",
+  "git_blob_sha1": "eb70aa8ced11a4ba84b099d049f2c12b5ac9f8d6",
+  "scope": "All ten source stages, original 16 by 16 nozzle matrix with 45 entries, four degree-127/255 reciprocal fits, 128 inverse LCU coefficients, and native exact and bounded approximate preparation.",
+  "native_semantic_adaptations": "Recreate the relative minimax residual analytically and fit the uniform absolute error by Lawson iteration. Preserve the CKS truncation, original endpoint taper, singular-value interval and RY reduction assertion. Test the amplitude error of the factored group approximation directly against the exact fitted vector. Native assembly implements uniform low bits with Hadamards.",
+  "native_entrypoint": "examples.synthesis.applications.cfd.qls_for_hybrid_solvers.chebyshev_approximation.overview.main",
+  "native_notebook": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_cfd_chebyshev_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "sha256": "32d98808ca516f7809551b031f3e2b1aa8e2dd88bf0c2a266a72bd98fac488b7"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "sha256": "3db3f4b38612329ef718865572a0bf960ba4690ad1499c1122861a1c49f8f866"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "sha256": "dd707e1e913560f61eda11d38e97575ec5b6b7e7161680a01a52a9a9d8725d30"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "sha256": "b1c60328af44ba0ac869f2c35dab3e31e489038f2b88dd96709652b54d100bdb"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "sha256": "5673534a81a7750702458aa94340ce86a6a812a3fc245ea41ad722b6542a509b"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "sha256": "b0333fa4e3ffe8031403a9e557ef607e8cb3b2b9fb883085c4fa2aa6ff1e5245"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "sha256": "535614816ec7c28c8284a4bd38fa1da917a7379fc1295449a53aa7a59b61b3c3"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 8,
+      "sha256": "978fdc8b4c8ee67927f0b519f69dd56e039d2f01fdae602835edd5473c6f01bc"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 9,
+      "sha256": "fc4d54de6fa66b09c0ca97a1832a8a1fd112b5d1ca81cc3c3788dce190bc2818"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 10,
+      "sha256": "62a2a1c38f0adea6d41352c2e1eeb3939c0335e76c92da23ec5e1e42fba910e7"
+    }
+  ],
+  "data_resource": {
+    "upstream_path": "applications/CFD/QLS_for_hybrid_solvers/matrices/nozzle_008_mat.npz",
+    "original_sha256": "c42ce63bd5da9e8f66f894d6d9424cd37caac7fb89c04646474b665cab0abf40",
+    "native_path": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/chebyshev_approximation/overview/nozzle_008_csr.json",
+    "native_sha256": "39c6ed98fc5e8971ba07c692f7ecc40578d420baed846c806a77b0fb72c8badb",
+    "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0"
+  }
+}

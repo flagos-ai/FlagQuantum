@@ -10,8 +10,11 @@ from dataclasses import asdict, dataclass, replace
 from itertools import product
 from pathlib import Path
 
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import Schedule, schedule_arithmetic
+from flagquantum.compiler._construction.codegen.arithmetic import (
+    Schedule,
+    schedule_arithmetic,
+)
+from flagquantum.compiler._construction.frontend.python import capture
 
 from .arithmetic_baseline import Costs, costs, revision
 from .expressions import EDGES, EXPRESSIONS, Case, Expression

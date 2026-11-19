@@ -31,5 +31,6 @@
     }
   ],
   "quantum_program_acceptance_test": "tests/integration/test_synthesis_native_approximate_preparation.py",
-  "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep"
+  "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.approximated_state_preparation.bound_sweep",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/approximated_state_preparation/walkthrough.ipynb"
 }

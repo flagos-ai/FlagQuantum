@@ -6,7 +6,7 @@ import ast
 from typing import TYPE_CHECKING
 
 from ..._hybrid.model import Value
-from ..register_profile import _verify_borrowed_effects
+from ..verification.register_profile import _verify_borrowed_effects, register_width
 from .callback_effects import emit_callback_effects
 from .classical import bind_helper
 from .ports import program_ports
@@ -47,8 +47,16 @@ def capture_controlled_effects(
         )
         for position, argument in enumerate(arguments)
     )
+    # A raw scalar control borrows one location; computed predicates retain
+    # whole dependency registers until their compute/uncompute region closes.
+    raw_scalar = inputs == (predicate,)
+    protected = (
+        {(predicate, index)}
+        if raw_scalar
+        else {(value, bit) for value in inputs for bit in range(register_width(value))}
+    )
     if any(
-        any(value in inputs for value, _ in view)
+        any(location in protected for location in view)
         and (not formal or formal[position].role != "const")
         for position, view in enumerate(views)
     ):
@@ -69,15 +77,32 @@ def capture_controlled_effects(
             "program.control",
             "controlled callbacks require pure effects on existing storage without ownership changes or escaping scratch",
         )
+    mutable_values = {
+        value
+        for position, view in enumerate(views)
+        if not formal or formal[position].role != "const"
+        for value, _ in view
+    }
+    readonly = tuple(
+        value
+        for value in inputs
+        if not (raw_scalar and value == predicate and value in mutable_values)
+    )
+    # The exact view admission above excludes selector writes. A disjoint
+    # writable view may share its backing Value with that scalar selector;
+    # model the mixed backing register as initialized mutable storage in the
+    # existing lifecycle envelope. Normal indexed control verification still
+    # applies after emission, including all expanded helper effects.
     writable = tuple(
         dict.fromkeys(
-            value for view in views for value, _ in view if value not in inputs
+            value for view in views for value, _ in view if value not in readonly
         )
     )
-    # The shared verifier proves that controls and their dependency registers
-    # cannot be written, including through nested arithmetic and helper calls.
+    # Retain authoritative Const and lifecycle checks after exact view admission.
+    # Computed dependencies stay read-only; a raw selector may share its backing
+    # register with independently writable bit locations.
     _verify_borrowed_effects(
-        effects, owner.owner.functions, tuple(dict.fromkeys(inputs)), writable
+        effects, owner.owner.functions, tuple(dict.fromkeys(readonly)), writable
     )
     try:
         emit_callback_effects(owner, callback, effects, predicate, index)

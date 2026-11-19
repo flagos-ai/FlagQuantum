@@ -8,7 +8,7 @@ import torch
 import flagquantum as fq
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_program import capture_program
+from flagquantum.compiler._construction.frontend.program import capture_program
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from flagquantum.synth import Output, QBit, QNum, allocate, drop, qfunc

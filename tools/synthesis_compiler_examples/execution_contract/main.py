@@ -10,7 +10,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler._construction.constraints import CircuitLimits
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.services._synthesis_execution import (

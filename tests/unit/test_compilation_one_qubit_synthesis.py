@@ -314,3 +314,32 @@ def test_the_matrix_entry_point_refuses_what_it_cannot_express() -> None:
     for wire in (-1, 1.5, True):
         with pytest.raises(ValueError):
             synthesize_one_qubit_matrix(identity, qubit=wire, z_rotation="rz")
+
+
+@pytest.mark.parametrize("offset", [-2, -1, 0, 1, 2])
+def test_matrix_half_pi_roundoff_uses_one_pulse(offset: int) -> None:
+    angle = math.pi / 2 + offset * math.ulp(math.pi / 2)
+    source = Instruction("u3", (0,), {"theta": angle, "phi": 0.31, "lbd": -0.72})
+    matrix = _unitary(source)
+    leaves = synthesize_one_qubit_matrix(matrix, qubit=0, z_rotation="rz")
+    assert leaves is not None
+    assert sum(leaf.name == "sx" for leaf in leaves) == 1
+    product = _product(leaves) @ matrix.conj().mT
+    torch.testing.assert_close(
+        product,
+        product[0, 0] * torch.eye(2, dtype=torch.complex128),
+        rtol=0.0,
+        atol=1e-14,
+    )
+
+
+def test_declared_near_half_pi_and_resolved_matrix_offsets_keep_two_pulses() -> None:
+    for offset in (2, 32):
+        angle = math.pi / 2 + offset * math.ulp(math.pi / 2)
+        source = Instruction("u3", (0,), {"theta": angle, "phi": 0.31, "lbd": -0.72})
+        declared = synthesize_one_qubit(source, z_rotation="rz")
+        assert declared is not None
+        assert sum(leaf.name == "sx" for leaf in declared) == 2
+    resolved = synthesize_one_qubit_matrix(_unitary(source), qubit=0, z_rotation="rz")
+    assert resolved is not None
+    assert sum(leaf.name == "sx" for leaf in resolved) == 2

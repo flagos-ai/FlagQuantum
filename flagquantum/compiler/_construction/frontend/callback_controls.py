@@ -5,8 +5,8 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from .._phase_polynomial import MAX_PHASE_DEGREE, Location
-from ..boolean_lowering import BooleanCandidateError, _disjoint_cubes
+from ..codegen.boolean import BooleanCandidateError, _disjoint_cubes
+from ..semantics._phase_polynomial import MAX_PHASE_DEGREE, Location
 from .phase import expand_native_phase
 from .python import _error
 from .views import gate_target, locations
@@ -29,15 +29,18 @@ def scalar_comparison(owner: _Body, condition: ast.expr) -> tuple[ast.expr, bool
         left, right = right, left
     ports = owner.alias_ports if owner.aliases is not None else owner.ports
     assert ports is not None
+    base = left
+    while isinstance(base, ast.Subscript):
+        base = base.value
     if not (
-        isinstance(left, ast.Name)
-        and left.id in ports
+        isinstance(base, ast.Name)
+        and base.id in ports
         and isinstance(right, ast.Constant)
         and type(right.value) is int
         and right.value in (0, 1)
     ):
         return condition, False
-    port = ports[left.id]
+    port = ports[base.id]
     if port.kind not in {"qbit", "qnum"} or port.signed or port.fractional_bits:
         return condition, False
     view = locations(owner, left)

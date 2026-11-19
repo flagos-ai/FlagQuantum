@@ -6,9 +6,9 @@ import ast
 from fractions import Fraction
 from typing import TYPE_CHECKING, NoReturn
 
-from .._fixed_word import exact_expression, fixed_xor_table, truth_cubes
-from .._phase_polynomial import Location
-from ..register_profile import register_width
+from ..semantics._fixed_word import exact_expression, fixed_xor_table, truth_cubes
+from ..semantics._phase_polynomial import Location
+from ..verification.register_profile import register_width
 from .python import _error, _QuantumFunction
 from .views import locations
 

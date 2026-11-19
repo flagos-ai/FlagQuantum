@@ -1,0 +1,29 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/subtraction/subtraction_example.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "f4817dd5185295af56627901338b9e51a66c982d",
+  "original_sha256": "ad60c5faaf5309a3cf6ae5d8fdb3f3a9ba4e6089aa1a3e612e552641c49ddc4f",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "b714df8dfcacb6cece2a3f0f009ff506900b31d48f0b45c5849ea188e5c10884"
+    },
+    {
+      "index": 3,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    },
+    {
+      "index": 5,
+      "sha256": "b499082a21250b0309ae7f79ec3dea98d3446e06e8e2bf10f9b1e737dba0e742"
+    },
+    {
+      "index": 6,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.subtraction.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_arithmetic_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/arithmetic/subtraction/overview/walkthrough.ipynb",
+  "scope": "Complete local computational Notebook workflow: both original quantum definitions, exact integer/fixed-point domains, synthesis, CPU execution and named readout. Seeded 1000-shot host samples replace cloud sampling; independent full-state and clean-workspace checks are separate.",
+  "native_semantic_adaptations": "Native qfunc definitions preserve both examples and input domains. Typed widths use Annotated. Signed and binary-scaled results use exact numeric readout. Seeded sampling from local exact probabilities replaces cloud calls; no hardware claim."
+}

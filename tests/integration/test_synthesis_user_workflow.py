@@ -222,9 +222,27 @@ def test_compiler_prediction_is_bound_to_actual_runtime_even_if_fake_claims_succ
         _program()
 
 
+def test_u3_cx_basis_preserves_arithmetic_state() -> None:
+    reference = _program()
+    lowered = _program(basis=("u3", "cx"))
+    assert {
+        instruction.name
+        for instruction in lowered.selection.selected.target.executable.instructions
+    } <= {
+        "u3",
+        "cx",
+    }
+    torch.testing.assert_close(
+        fq.run(lowered).statevector(),
+        fq.run(reference).statevector(),
+        rtol=0,
+        atol=1e-12,
+    )
+
+
 def test_unsupported_basis_topology_and_target_fail_without_execution() -> None:
     with pytest.raises(synth.SynthesisError) as caught:
-        _program(basis=("u3", "cx"))
+        _program(basis=("x", "cx"))
     assert (
         not caught.value.repairs
         and caught.value.selection.diagnostics[0].code == "selection.unsupported_target"

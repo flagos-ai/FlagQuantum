@@ -39,7 +39,7 @@ def test_default_pr_stays_fast_and_local():
 
 def test_runtime_pr_tier_uses_seeded_integration_marker():
     lines = CI_TIERS["pr-runtime"].command_lines()
-    assert lines == ("python -m pytest -m integration -q",)
+    assert lines == ("python -m pytest -m integration and not slow -q",)
     assert "integration marker" in CI_TIERS["pr-runtime"].proves
 
 

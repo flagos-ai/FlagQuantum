@@ -41,5 +41,6 @@
       "index": 14,
       "sha256": "36fa4299e6e42cd060ab8a67a1a7db92d37ee70238056067e94ee8debcca1068"
     }
-  ]
+  ],
+  "native_notebook": "examples/synthesis/applications/chemistry/quantum_walk_fmo/walkthrough.ipynb"
 }

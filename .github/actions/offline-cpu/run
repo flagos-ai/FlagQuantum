@@ -83,7 +83,7 @@ docker run --rm --pull never --cidfile "$cidfile" \
   --env GITHUB_ENV --env GITHUB_OUTPUT --env GITHUB_RUN_ID --env GITHUB_RUN_ATTEMPT --env GITHUB_JOB --env GITHUB_SHA --env GITHUB_STEP_SUMMARY --env RUNNER_TEMP --env RUNNER_NAME --env RUNNER_ENVIRONMENT \
   --env PET_LOCAL_ADDR=127.0.0.1 --env GLOO_SOCKET_IFNAME=lo \
   --env OMP_NUM_THREADS --env MKL_NUM_THREADS --env OPENBLAS_NUM_THREADS \
-  --env CUDA_VISIBLE_DEVICES --env JAX_PLATFORMS --env COVERAGE_FILE --env PYTEST_ADDOPTS \
+  --env CUDA_VISIBLE_DEVICES --env JAX_PLATFORMS --env COVERAGE_FILE --env COVERAGE_CORE --env PYTEST_ADDOPTS \
   "$FQ_CI_IMAGE" "${command[@]}" &
 docker_pid=$!
 status=0

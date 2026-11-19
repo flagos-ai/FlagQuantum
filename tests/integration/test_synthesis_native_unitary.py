@@ -12,8 +12,8 @@ import torch
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
-from flagquantum.compiler._construction.unitary import _pattern_block
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
+from flagquantum.compiler._construction.semantics.unitary import _pattern_block
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.errors import PlanningError
@@ -291,7 +291,13 @@ def test_notebook_scope_separates_static_matrix_workflow_from_quantum_volume_stu
         if g["id"] == "applications/benchmarking/quantum_volume/quantum_volume"
     )
     assert volume["native_program"]
-    assert volume["workflow_status"] == "pending"
+    assert volume["workflow_status"] == "validated"
+    assert volume["workflow_validation"]["acceptance_test"] == (
+        "tests/integration/test_synthesis_quantum_volume_notebook.py"
+    )
+    assert [
+        cell["index"] for cell in volume["workflow_validation"]["reviewed_code_cells"]
+    ] == [2, 4, 6, 7, 8, 10, 13, 16, 18, 19, 20]
 
 
 @pytest.mark.parametrize("pattern", [0, 6, 14])

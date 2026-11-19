@@ -4,11 +4,13 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.pauli_rotation import Support
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.register_profile import verify_register_program
+from flagquantum.compiler._construction.semantics.pauli_rotation import Support
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.model import Block, HybridProgram, Region
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.register_program_cases import Registers
@@ -124,7 +126,7 @@ def test_pauli_control_alias_and_uninitialized_target_are_rejected() -> None:
     q = p.declare("q", 2)
     p.emit("qreg.allocate", q)
     p.emit(
-        "qreg.pauli_rotation", q, q, support=((0, "X"),), angle=0.37, control_index=1
+        "qreg.pauli_rotation", q, q, support=((0, "X"),), angle=0.37, control_index=0
     )
     with pytest.raises(HybridVerificationError, match="disjoint"):
         verify_register_program(p.finish())
@@ -162,3 +164,56 @@ def test_compact_rotation_does_not_bypass_the_owned_node_cap() -> None:
         p.emit("qreg.pauli_rotation", q, support=(), angle=0.0)
     with pytest.raises(HybridVerificationError, match="node budget"):
         verify_register_program(p.finish())
+
+
+@pytest.mark.parametrize(
+    "support", [(), ((0, "X"),), ((0, "Y"),), ((0, "Z"),), ((0, "X"), (1, "Y"))]
+)
+@pytest.mark.parametrize("angle", [0.0, 0.37, -0.81])
+def test_same_backing_control_outside_support_matches_independent_operator(
+    support: Support, angle: float
+) -> None:
+    matrices = {
+        "I": torch.eye(2, dtype=DTYPE),
+        "X": torch.tensor([[0, 1], [1, 0]], dtype=DTYPE),
+        "Y": torch.tensor([[0, -1j], [1j, 0]], dtype=DTYPE),
+        "Z": torch.diag(torch.tensor([1, -1], dtype=DTYPE)),
+    }
+    axes = dict(support)
+    pauli = torch.ones((1, 1), dtype=DTYPE)
+    for index in reversed(range(3)):
+        pauli = torch.kron(pauli, matrices[axes.get(index, "I")])
+    projector = torch.diag(
+        torch.tensor([(word >> 2) & 1 for word in range(8)], dtype=DTYPE)
+    )
+    identity = torch.eye(8, dtype=DTYPE)
+    expected_operator = (
+        identity - projector + projector @ torch.matrix_exp(-1j * angle * pauli)
+    )
+    for word in (*range(8), None):
+        p = Registers()
+        q = p.declare("q", 3)
+        p.emit("qreg.allocate", q)
+        reference = fq.Circuit(3, dtype=DTYPE)
+        for index in range(3):
+            physical = 2 - index
+            if word is None:
+                p.emit("qreg.gate", q, gate="h", index=index)
+                p.emit(
+                    "qreg.gate", q, gate="rz", index=index, angle=0.217 * (index + 1)
+                )
+                reference.h(physical).rz(physical, 0.217 * (index + 1))
+            elif word & (1 << index):
+                p.emit("qreg.gate", q, gate="x", index=index)
+                reference.x(physical)
+        p.emit(
+            "qreg.pauli_rotation", q, q, support=support, angle=angle, control_index=2
+        )
+        model = verify_register_program(p.finish())
+        candidate = schedule_register_program(model, (), n_qubits=3)
+        reference.any(*range(3), matrix=expected_operator)
+        actual = fq.run(candidate.circuit).statevector().flatten()
+        torch.testing.assert_close(
+            actual, fq.run(reference).statevector().flatten(), atol=1e-12, rtol=0
+        )
+        assert candidate.peak_workspace == 0

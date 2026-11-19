@@ -5,9 +5,9 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from ...compiler._construction import cnf_phase
-from ...compiler._construction.cnf_phase import Clause
-from ...compiler._construction.register_profile import register_type
+from ...compiler._construction.semantics import cnf_phase
+from ...compiler._construction.semantics.cnf_phase import Clause
+from ...compiler._construction.verification.register_profile import register_type
 from ...compiler._hybrid.model import Operation, Value, ValueId
 from .syntax import Expression, Statement, reject
 

@@ -1,0 +1,73 @@
+{
+  "upstream_path": "community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "8bed4a28f1cd898b807882d354930a26df768244b1d89650d4b5bea39a1119c9",
+  "git_blob_sha1": "60d6b0d06b23cd38ed167d53b8f139ffbac5f815",
+  "scope": "All twelve source stages, original eight-bit resolution, fresh degree-28/27 coefficients and 29/28 phases, original sine block, two exact amplification rounds, and all 256 probabilities.",
+  "native_semantic_adaptations": "Retain and report the original analytic continuum success amplitude. Measure and independently verify the discrete circuit success amplitude and use that value to calibrate the two exact amplification rounds, consistent with the previously approved correction for the frozen original. Use fresh coefficients and phases and verify both complete states. Report native resources and named CX/U3 counts separately.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.quantum_state_preparation_without_coherent_arithmetic.stateprep_guassian_using_qsvt.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/quantum_state_preparation_without_coherent_arithmetic/stateprep_guassian_using_qsvt/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_gaussian_qsvt_workflow_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "sha256": "1a1f738e242040d9262249cf25cf829f2635969939834855a9aa94e7a7b2466c"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "sha256": "07809692838774bfd6d7bfe233316ac799c3dba9c1fb9bd0bf6d688dac7f3204"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "643d3df7424ab994bd8b0146a599b31b38076636d122463f55950516427176c3"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "sha256": "0f4f00de0dfe67db0c4a7ab44d94286baba5b9fefc6fa9b06d69d7dacb5ab1f3"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 5,
+      "sha256": "9cfd55fe1db26a6f3bc044857d1d3ca1f17f6e41ad910c803b0b1a3aea685211"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 6,
+      "sha256": "23234c1588f972da83ee03ffc880ed4ec461f8d6e23db2dfa75f6ed8b5eb6871"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 7,
+      "sha256": "0ce5f0e250786252d7bd2126c50f150eb73a45e97c2cf3aeea7bb381e4b18ed6"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 8,
+      "sha256": "8e39dce06932a11ea1fe465d9fb8b9952d68aaa3d41ed40acfe7502226bf5978"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 9,
+      "sha256": "037117ccb591017910102d66b3db5f8f992309b25826bc6c50205be8a8c6842d"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 10,
+      "sha256": "1899836263d63a589a9a4d08e80cf4cdf5d978c2e01e0c6a77616811423d7805"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 11,
+      "sha256": "7503b04e82f01980d06dd0e1f660c1226e4ff515258819f0e419e063ba95bb0d"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 12,
+      "sha256": "e10780cff1799bb96ef18a9861262ae0a72aa12854bb0d2649681609bd028e69"
+    }
+  ]
+}

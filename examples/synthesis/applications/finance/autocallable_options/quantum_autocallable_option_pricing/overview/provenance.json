@@ -1,0 +1,229 @@
+{
+  "upstream_path": "applications/finance/autocallable_options/quantum_autocallable_option_pricing.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "8dde335f6f1809da5c7946139232fc04b9cd084baaef1ecb5049f770235661f8",
+  "git_blob_sha1": "20bd5751e56e63bf7cf0bf4480a7fbf38cc44884",
+  "scope": "All 36 code stages, original three periods, four Gaussian bins per period, every discounted path payoff, and both complete quantum states. Source-disabled adaptive IQAE remains disabled.",
+  "native_semantic_adaptations": "Reuse the native finite preparation with freshly regenerated model inputs. Preserve the strict signed boundaries and exponential comparison. Use local static Grover synthesis in place of the hosted model display. Report the exact decoded quantum probability and label the recorded IQAE value and interval as historical.",
+  "native_entrypoint": "examples.synthesis.applications.finance.autocallable_options.quantum_autocallable_option_pricing.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/autocallable_options/quantum_autocallable_option_pricing/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_autocallable_option_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Set the original financial contract and annualize the input statistics.",
+      "sha256": "0e72d006580c2e80c44bba7e92297f00e75825c3aa57fb3f9f77085c168a96e3"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "stage": "Use the original two fractional bits.",
+      "sha256": "7a3dc32a9613fb65d63a743df6c261e9091b710373e4332ea03098e98c511b7e"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "stage": "Integrate the Gaussian mass of each two-bit bin.",
+      "sha256": "36f947e87dcccd4212ba07ceab7ad9a790b71f19dd62541fd7add0797d68d870"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Bound the log return and the call payoff normalization.",
+      "sha256": "6697baa9966031f9ce6cf57026a5a5d5d42d32e0db2cd371d50bbdd97a20819d"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "stage": "Set the fixed-point step.",
+      "sha256": "54a158d957fcd66a7a88ff819a47527e157eec9bec82ba19141c36e02ccfb170"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "stage": "Size the signed integer part.",
+      "sha256": "829816188ceece9b561c85613d08e7b24f05e813bd7fd88671226e910f344168"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "stage": "Derive the exponential normalization factors.",
+      "sha256": "3fcefbff98b133f0b52979ddbdfe4289acf96ce9ca20f45d50173f8871f182f9"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "stage": "Calculate the financial scale of the probability encoding.",
+      "sha256": "32e1a6769a4b1df3b56bc594b86a8b6b009ba9757f26a5380e39b672cb14dc01"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 9,
+      "stage": "Generate the three constant marker rotations.",
+      "sha256": "adadc12ea40de83dada6b26be3ea605a2b4adf652566969973301045f064e871"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 10,
+      "stage": "Check that all constant rotations are in range.",
+      "sha256": "b21f35737955cd93ab8c05fd7d70125b2db70a23c94e87946eeb13eea89da48d"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 11,
+      "stage": "Decode an amplitude probability into a discounted payoff.",
+      "sha256": "9bda9f6ad26c331f5794328ee9395b5442137c63941de531341dc995ba8f25c1"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 12,
+      "stage": "Inspect the first discounted call payment.",
+      "sha256": "a794d9d3ee4961d4f77b8879e953a41dfe0112fa034479936fcd8b97e6676aeb"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 13,
+      "stage": "Round-trip the first call payment through its rotation.",
+      "sha256": "8c81dd660feba1cc723b5411d0ba56636d87ef8006b1664d24c34bbc8e9928c2"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 14,
+      "stage": "Inspect the second discounted call payment.",
+      "sha256": "26c0c95579ae9d5c724cf703a674cbadcf5815ceda8cb4c4b8f81762e7edbe0a"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 15,
+      "stage": "Round-trip the second call payment.",
+      "sha256": "0d6f7a275ba60262c3f618896845d6df5157c33e5a2c4a4429008482c00afa76"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 16,
+      "stage": "Round-trip the zero payoff.",
+      "sha256": "42aa884efa9657ab6856e84d49f98644aeb5bd6c45dbc365e42a9f1758f0cb78"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 17,
+      "stage": "Take the original log barriers and strike.",
+      "sha256": "b172cf3ef2b34e687400c5832eff547bbc58c1fd08ca8b30ad3de7ccc455d094"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 18,
+      "stage": "Enumerate all paths through the four bins over three years.",
+      "sha256": "d17c6ed297db834355919a927fbd0695e87fc3c03790754774fe3b30308bc31b"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 19,
+      "stage": "Express the fixed-point resolution in raw units.",
+      "sha256": "f100e85faf4fdfe8626da743bf8eed49943f47878662046f0dccac72a4a2797a"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 20,
+      "stage": "Match source coefficient truncation toward zero.",
+      "sha256": "4a1f6b61fa198097c0364d47d45b077d31d43a176ce3842a550ec4a95d36ca2e"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 21,
+      "stage": "Accumulate the returns for the three periods.",
+      "sha256": "766482e78b2965e749e47101a79a2dcfd907ce5a0f4c294992952bdedc53606a"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 22,
+      "stage": "Check the mass of the joint path distribution.",
+      "sha256": "72968c26b23108d1daec256e780f405e405520f66c6b0b6e2bf374961d1ca6e3"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 23,
+      "stage": "Check the payoff priority and strict barriers.",
+      "sha256": "a359789744732614f76e104a0246074ca09a7df65d1ba1d1dae79cb6024c77bc"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 24,
+      "stage": "Weight each payoff by its path probability.",
+      "sha256": "d81887b562e8d0de3282f7ed7538955ad1f07dd3b1c10d82953437d3215f1229"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 25,
+      "stage": "Report the classical finite-grid price.",
+      "sha256": "9e51444c6f3236e61d5587d44a5791873ec99b866cc843ea5d79966aa8622c78"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 26,
+      "stage": "Generate the normalized exponential reference distribution.",
+      "sha256": "791c5ba11b3101dff2c77942c63cbd70634a8986e300db7f4ce3c64537b5a20d"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 27,
+      "stage": "Check the four coefficient-quantized increments.",
+      "sha256": "a7ef7c9bf001645792674ea82d1a3c701fde7214395613bcd86242ae91cbec94"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 28,
+      "stage": "Translate the signed terminal return into the unsigned reference register.",
+      "sha256": "db649cafd44a903dab508400b0970bbac7f0f1add6a8a912b47eced43d3bdaed"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 29,
+      "stage": "Use strict unsigned equivalents of the signed source comparisons.",
+      "sha256": "3fbba6dc8a849499496135ce4a5456cfa5624f9155f033e6ad673a65a9f66947"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 30,
+      "stage": "Bind fresh distributions to the native coherent payoff and reflection.",
+      "sha256": "7f8f8fad49afa4e148797624e99adbd86d6ae288ad078a60cba599d00d1a7c76"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 31,
+      "stage": "Account for all persistent registers of the native preparation.",
+      "sha256": "ce1a10b450c2ed144de0f470c54fab77d34b486ba828adc8511917b379192dbc"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 32,
+      "stage": "Synthesize and execute the preparation and one static Grover iterate locally.",
+      "sha256": "c8a8a6186ce3ef0dfac53c391c8756413c2bc11a739911c881342b4cc469ba7b"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 33,
+      "stage": "Report width and check every physical amplitude against the independent construction.",
+      "sha256": "2dba16db7e71e5ff7cdfd83f18906e1bdbca698525933e5d5663c646f3ed9e5e"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 34,
+      "stage": "Keep the source's long adaptive IQAE experiment disabled.",
+      "sha256": "edcb75bc5deeb625111d944732dc4a57d750f6106da87428d9da0a42827c5cb6"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 35,
+      "stage": "Keep the disabled adaptive estimator's output and timings separate from the executed local result.",
+      "sha256": "84c1aad6be77c9accc240e1ac3a4c8206f7b980ed6b2021951a14944d069f5d0"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 36,
+      "stage": "Report the calculated price, executed quantum checks and source-reported historical comparison.",
+      "sha256": "fff7453c9e0c5efde53030a86597b9cc456841fcb2d5c75bfaf548b8089c3cfd"
+    }
+  ]
+}

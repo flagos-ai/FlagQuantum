@@ -11,7 +11,9 @@ pytestmark = pytest.mark.integration
 
 
 def test_original_local_phase_evaluator_keeps_eight_bit_cap() -> None:
-    from flagquantum.compiler._construction.register_profile import register_type
+    from flagquantum.compiler._construction.verification.register_profile import (
+        register_type,
+    )
     from flagquantum.compiler._hybrid.model import Value, ValueId
     from flagquantum.ecosystem._qmod.phase import expand_phase
     from flagquantum.ecosystem._qmod.syntax import Parser, tokenize

@@ -14,3 +14,5 @@ See [the workflow guide](WORKFLOW.md) for scope and independent acceptance, and
 [provenance](provenance.json) for the pinned source and reviewed code cells.
 
 [Third-party license](../../../CLASSIQ_LICENSE.txt)
+
+Run [the native Notebook](walkthrough.ipynb) to edit the quantum functions, execute the complete local workflow, and check every complex amplitude against an independent Circuit.

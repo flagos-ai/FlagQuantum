@@ -13,7 +13,9 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.core.ir import Instruction
 from flagquantum.ecosystem._qmod.adapter import QmodImport
 from flagquantum.ecosystem._qmod.source import load_qmod

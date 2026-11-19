@@ -1,0 +1,93 @@
+{
+  "upstream_path": "algorithms/metrology/classical_shadow_tomography.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "8e4eea58106c6579813281bc83ed905257e899c4ba4e4785b382b83f4b921f11",
+  "git_blob_sha1": "84b376f5c5d631e7b5143597f4c267fae16ffb28",
+  "reviewed_code_cells": [
+    {
+      "index": 13,
+      "sha256": "ff7923cde8f21034ab143db739a20539da6cd77befd1e34fb5effa5f5fa78500"
+    },
+    {
+      "index": 14,
+      "sha256": "66d469526d2fb3c550bf2a5c98ebb0bd70a4c80ad0cc364a726a8a825da30152"
+    },
+    {
+      "index": 17,
+      "sha256": "d9fc4447f3838a775d4185bfbf5b7897dcf4fad1c8d284cd099a7342bd777598"
+    },
+    {
+      "index": 18,
+      "sha256": "97a67937b6d15cabe630074f32bd1d82057383eedca1c2fb1f7b542a7345484f"
+    },
+    {
+      "index": 19,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 21,
+      "sha256": "de1da76d3c03f16a077554fe4ee91b69ff21b5335ab84d60121874bd22213150"
+    },
+    {
+      "index": 22,
+      "sha256": "de2006dce41da435d2d8a6d273da3e62d0ab2e85f7c007de7895922577fce5e4"
+    },
+    {
+      "index": 27,
+      "sha256": "d6b2e759c372122888e7608fa25fd011ca9fd2154fe092bf18f0cecd5af9c884"
+    },
+    {
+      "index": 28,
+      "sha256": "de594d1edfd008fbffb8d11ec369b9e4421e91d305b0bb3b4b67b9fcad7edb41"
+    },
+    {
+      "index": 29,
+      "sha256": "2c776118f3124426099e82379f97cab86fb16f59e10707223653ab86863ed4df"
+    },
+    {
+      "index": 31,
+      "sha256": "ef18ce087e63051851a163828ce33cde417fb10849584e51656252fe9e35fda6"
+    },
+    {
+      "index": 36,
+      "sha256": "da2d67c00925d5a137df90e0f0dee572eaa6d8253fb8c46b8b91d3ef7cd9b95a"
+    },
+    {
+      "index": 38,
+      "sha256": "896b9d949f69835082aeab5d8d9129b9c1e96b8a0849eec61d74a5b1d2ad5d5e"
+    },
+    {
+      "index": 41,
+      "sha256": "ca6e6e60c760c3ea6e17f1b2b2ded58d7d093a130ca0cf9f747637ea59236cc6"
+    },
+    {
+      "index": 42,
+      "sha256": "81c4cc19902d6738bfeb318aa563bde51ea5e0b726e5f7fd6f20f0ca89d97ce8"
+    },
+    {
+      "index": 45,
+      "sha256": "eaa52562b1117eb66416fcf1d72b45e130ba690657ca27b19ac6f9906f2c273c"
+    },
+    {
+      "index": 46,
+      "sha256": "13a345a91765b13013769ff2b499df95b306d71e5fd29e790d3e1ff722c31df8"
+    },
+    {
+      "index": 48,
+      "sha256": "1390d3f874d396bcff32219b5664830520fd71f78823cb5e51bd83c77bcaa6f9"
+    },
+    {
+      "index": 51,
+      "sha256": "ed523ef1fa6af3d12e2483693ccc7ccc9d4d1f5d30a0a63f359f5ef4d5767af0"
+    },
+    {
+      "index": 54,
+      "sha256": "45a750ab3e81d434c45e856f8b5e2b7ec030757e2d1e58c42f40163d83ae8984"
+    }
+  ],
+  "scope": "Complete two-bit classical-shadow workflow:400 Pauli single-shot snapshots,50 depth20 H/S/CX Clifford single-shot snapshots,seed552,fullmatrixlinear-inversion reconstruction,ZZ medianofmeans2/10blocks,andboth source sample-bound formulas.",
+  "native_entrypoint": "examples.synthesis.algorithms.metrology.classical_shadow_tomography.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/metrology/classical_shadow_tomography/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_shadow_notebook.py",
+  "native_semantic_adaptations": "NumPy RandomState preserves source seed552 basis/gate/executionseed stream. Static qfuncfloatbinding replaces remoteparameterizedtemplate calls;actual Torch single-shot draws replace remote sampler. Source remote shotoutcomes not asserted. Matrixbasis logicalindex0 first;packed q integer bit0 is logicalindex0. No eigenvalueclipping. Ideal-Clifford errorbudget is illustrative for finite-depth20 approximatewalk;81065/108086 calculated,notexecuted. Native visualization added for measured matrices/ZZ."
+}

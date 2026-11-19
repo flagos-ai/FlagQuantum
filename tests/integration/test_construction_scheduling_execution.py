@@ -11,12 +11,12 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     schedule_arithmetic,
 )
+from flagquantum.compiler._construction.frontend.python import capture
 
 pytestmark = pytest.mark.integration
 

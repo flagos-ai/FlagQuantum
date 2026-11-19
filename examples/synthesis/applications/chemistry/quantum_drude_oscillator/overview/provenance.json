@@ -1,0 +1,153 @@
+{
+  "upstream_path": "applications/chemistry/quantum_drude_oscillator/quantum_drude_oscillator.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "044fcedc09159c2b584be5db7884a1cadb3676c008a9b628bde2fa6f36b2c29b",
+  "git_blob_sha1": "f90e0929a5ac8bb426fd8e0d393dda1c37fa6f87",
+  "scope": "All 28 source stages, all eleven variational runs with the original widths and iteration budgets, and all four finite-basis dimensions.",
+  "native_semantic_adaptations": "Train the source gate schedule with a differentiable public FlagQuantum Circuit and Adam at learning rate 0.04. Synthesize and compare each final qfunc binding. Regenerate all Hamiltonians and classical comparison curves.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.quantum_drude_oscillator.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/quantum_drude_oscillator/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_drude_oscillator_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "sha256": "c15c0d669cf8d8843c446defeb76479485c855a26a9eac782ec2115a8bc3426f"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "sha256": "1f2ab5c0b1049064b0e2136f2d2dc94e2786394162132f95907658dfc5ecaf90"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 4,
+      "sha256": "1690cc317b9f0941746cdb1e5cd739bd7814fde8a9baf0f16e79ab166ad8de5e"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 5,
+      "sha256": "a08c491b30aefcee7bf33bb7a88ae3233e4203ef2bb4e766c780b237d9ae5b96"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 6,
+      "sha256": "0e486b5792a37d884dc42fb4ea76dfa00155e09e2c17dbb75e2bca9e9860f665"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 7,
+      "sha256": "3e232e16eb909a66742be25e24838b2dcfc04e277762625f814f017a9d411910"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 8,
+      "sha256": "bcc787b30d977502609bc62ca492a6cb59c3cf0dee0b0615d72d6ffc8a6cf96f"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 9,
+      "sha256": "18710db48a5c07034c9bbfc596b32ca5f0b4895f5476edc1072a2c2cd7130448"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 10,
+      "sha256": "de1352f0c8153f58873f34d61c8ac054d22ca999c760a52380ec36e9e3203fbb"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 11,
+      "sha256": "ec0df85286ffd4e72b4aea7af881a69877baeab33034ce7dc7afd2fd9d53939b"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 12,
+      "sha256": "237e78cb4b673c9fb9f448e8831e0ef29411889e068b732e6fe4226c37246c67"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 13,
+      "sha256": "3e1491dcd4cf5e54ce720a59485a67d755629fe79295b9b863ed47e30f780189"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 14,
+      "sha256": "454cd05551a8ac5743ba0c4d40a069e9b9bf28f3ef5d056e3c30efb72dbb9ba5"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 15,
+      "sha256": "648164e783cb16b51f3665aa7fa7e0f4d497e2ec5fdd4fbab665e93ccec99fe7"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 16,
+      "sha256": "13caf2d4437ec988aaeb86c539b3e8b0e714181f9c8e4d5491daeedcfd06665e"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 17,
+      "sha256": "3909aaa755ac907e28b0430bb4b995564cefeab40e1fc5b4fbd6df90f2463551"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 18,
+      "sha256": "6a46fd2d226e9585071c234d9a36dc017add037672b4f9ff4f84e707b98a7130"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 19,
+      "sha256": "c96ba755e5ac4e546e826d6b9d3c1998ae9d4375bb706b10f7e58811cb38e725"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 20,
+      "sha256": "405c41b8283e3999f971ab5cf05c0698295c33771bc93142f73b4152da977096"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 21,
+      "sha256": "f94c8d96fbacfe0943f664f2c4f63cde324514394712a6e5098c29fd71716642"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 22,
+      "sha256": "4fd283f2dfeb006f03006891e24685b9d222a9613c13b28cbed577d2b26b4ca4"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 23,
+      "sha256": "6c9753c5c56b672c28cd60b9520954fd7fccc4f98ea65f127c6339df017a9b58"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 24,
+      "sha256": "c9212932d84882aa5e6f768f0ef9388f30655ea864fee6497f384a6935032068"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 25,
+      "sha256": "0b18f8d296df9aa8fc394eb600e3c5544a87c9a7aa75a2f6b421e04ff87a22c9"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 26,
+      "sha256": "a2f3f690a663d86f9ffff3448dd8803f88b1b5de5d1062d58da12eb189143291"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 27,
+      "sha256": "33aee42f7127ed3a57b01ec5d8e2dab7b9d297c37577280b0aa218119a6f0f33"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 28,
+      "sha256": "4057f5e690c4fffa714c573650920f2bbf53b5bc9629b45943b82941388a2fed"
+    }
+  ]
+}

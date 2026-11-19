@@ -262,6 +262,31 @@ single-card harness now collects provisioner-attested P0-P5 execution candidates
 no domestic capability is promoted until a real-card result is reviewed and
 checked in.
 
+## Native target-CZ block compilation development status
+
+`compiler_native_cz_blocks` has local CPU `development_evidence` for the automatic
+target-to-artifact path and its offline Runtime/Deployment handoff. The native
+baseline, verified rewrites, topology-space mapping transitions and final
+schedule remain separately inspectable. Accepted rewrites emit v4 evidence;
+without a rewrite, existing version 1–3 identities and encodings remain intact.
+The scope and runnable checks are documented in
+[Compiler artifacts](../../flagquantum/compiler/artifacts/README.md).
+
+This does not promote depth, compilation time, memory or hardware performance,
+nor does it change the maturity of other compiler capabilities. Unchanged
+SDKBench protocols and held-out workload qualification remain pending. Directed
+or allocated topology, nonidentity initial placement in artifacts, free final
+layout, a global-phase writer and root native-target admission remain outside
+this profile.
+
+SABRE search recovery has local CPU development coverage for a previously failing
+connected 11-wire circuit, complete permutation-operator preservation, rollback
+attribution, symbolic parameters and classical dependencies. The
+[upstream reuse audit](../development/COMPILER_UPSTREAM_REUSE.md) records the
+Qiskit and Cirq adaptations and outstanding algorithm gaps. This refines
+implementation robustness without promoting compiler maturity, hardware support,
+cross-SDK performance or gate-count claims.
+
 ## Private training compilation development status
 
 The approved #936 boundary has a reusable CPU Torch training candidate behind a
@@ -739,3 +764,63 @@ matrix powers and Fourier references cover quantum counting, Grover-operator
 QPE and nonzero coherent inputs. Nested phase-only helpers and adjoints have
 separate complex-state tests. This does not admit general QPE scratch, change
 the 4096 expanded-effect ceiling or establish native Vlasov acceptance.
+
+## Scalar-view modular control borrowing
+
+Maturity: `development_evidence`, local `single_device_fast_path`. Direct raw
+scalar controls borrow one physical bit rather than the entire owning Value
+while a single-update modular helper mutates disjoint target locations. One-bit
+zero/one comparisons are recognized before predicate-view expansion. Computed
+predicates preserve conservative whole-register borrowing.
+`tests/integration/test_synthesis_native_disjoint_increment.py` checks 3,072
+basis cases, 96 independent complex coherent states, hidden-work cleanup,
+nested aliases and five overlap refusals. No complete Notebook, original-corpus
+coverage increase, resource optimality or hardware claim follows from this slice.
+
+## Experimental native QPE unitary families
+
+The native QPE frontend admits a bounded static one-parameter lambda for a
+power-dependent unitary family, alongside unchanged zero-argument callbacks.
+It reuses shared controlled effects and inverse Fourier without new IR or
+numerical kernels. Independent complete-state tests cover nonlinear powers,
+conditional scalar phase, matrix no-double-power behavior, lexical scope,
+alias/escape rejection and resource budgets. This is local CPU correctness;
+no release, hardware, optimality or scalability promotion is implied.
+
+## Checked native allocation sizes
+
+Maturity: `development_evidence`, local `single_device_fast_path`. The approved
+[bound-allocation admission](../api-changes/FQ-SYNTH-NATIVE-BOUND-ALLOCATION-20261113.md)
+allows existing `allocate(bits, q)` to specialize a checked synthesis-time integer
+before ordinary register construction. It reuses the static integer evaluator,
+width validation, ownership and resource checks; no export, signature, physical
+IR or execution kernel changes. Independent states cover widths 1..4, helper
+bindings, phase interference and interleaved/concurrent specialization. Width
+256 is capture-only evidence, not a dense-execution capacity claim. Numeric
+annotations remain literal-only. Complete QMCI Notebook acceptance is tracked
+separately in the example inventory.
+
+## Constrained native wide MCX
+
+The unreleased native all-ones `control(array, lambda: X(target))` path can use
+one proven-clean bit when existing lower-depth workspace schedules do not fit.
+Dirty borrowed controls are restored coherently. The15-control hardware-aware
+workflow fits a width ceiling of18 under both all-to-all and line connectivity
+with CX/U leaves. Costs are actual static executable counts, without an
+optimality or hardware performance claim. Exact U conversion preserves scalar
+phase and gradients; line routing validates complete decomposed SWAP witnesses.
+The [workflow](../../examples/synthesis/tutorials/technology_demonstrations/hardware_aware_mcx/overview/README.md)
+uses independent truth-permutation states, nonzero-target XOR and clean-work
+checks. General symbolic controls, arbitrary dirty workspace allocation and
+unsupported named bases remain outside this increment.
+
+## Native unsigned register updates
+
+Maturity: `development_evidence`. Disjoint initialized raw QNum sources can be
+added to or subtracted from writable accumulators modulo their declared width.
+Static slices preserve logical low-bit ordering; source Const borrows retain
+their values. Independent full-domain permutation and complex-state tests live
+in `tests/integration/test_synthesis_register_addition.py`. Existing compiler
+MCX workspace and budget checks remain authoritative. Signed/fractional words,
+compound addends, aliasing and two-register controlled helpers remain outside
+this profile. This primitive does not itself credit a complete Notebook.

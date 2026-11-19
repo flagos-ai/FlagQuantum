@@ -12,7 +12,13 @@ pytestmark = pytest.mark.unit
 def test_construction_profile_has_no_execution_or_algorithm_imports() -> None:
     package = importlib.import_module("flagquantum.compiler._construction")
     root = Path(package.__file__).parent
-    for source in (*root.glob("*.py"), root.parent / "_arithmetic_kernels.py"):
+    sources = tuple(root.rglob("*.py")) + (
+        root.parent / "registers" / "_arithmetic_kernels.py",
+        root.parent / "registers" / "_fourier_kernels.py",
+        root.parent / "lowering" / "_pauli_products.py",
+        root.parent / "lowering" / "_pauli_schedule.py",
+    )
+    for source in sources:
         for node in ast.walk(ast.parse(source.read_text())):
             if isinstance(node, ast.ImportFrom):
                 module = node.module or ""
@@ -28,7 +34,9 @@ def test_construction_profile_has_no_execution_or_algorithm_imports() -> None:
 
 def test_existing_algorithm_can_import_the_shared_compiler_boundary() -> None:
     arithmetic = importlib.import_module("flagquantum.algorithms.arithmetic")
-    profile = importlib.import_module("flagquantum.compiler._construction.profile")
+    profile = importlib.import_module(
+        "flagquantum.compiler._construction.verification.profile"
+    )
     ir = arithmetic.adder_circuit(1).to_ir().validate()
     assert profile.uint_type(1).kind == "quantum.uint"
     assert ir.n_wires == arithmetic.adder_qubits(1).n_qubits == 4

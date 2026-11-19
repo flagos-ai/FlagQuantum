@@ -5,12 +5,13 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..._hybrid.model import Value
+from ..._hybrid.model import Operation, Value
 from ..program_types import phase
-from ..qpe_control import emit_controlled_effect
-from ..register_profile import register_width
+from ..semantics.qpe_control import emit_controlled_effect
+from ..verification.register_profile import register_width
 from .evolution import flush_evolutions
 from .phase import capture_polynomial_phase
+from .ports import _resolve
 from .python import _error
 from .storage import require_root_storage
 
@@ -31,12 +32,14 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
             owner.source,
             callback,
             "program.qpe",
-            "use a static zero-argument lambda containing one static quantum call",
+            "use a static zero- or one-argument lambda containing one quantum call",
         )
     args, body = callback.args, callback.body
     if (
         args.posonlyargs
-        or args.args
+        or len(args.args) > 1
+        or args.defaults
+        or args.kw_defaults
         or args.kwonlyargs
         or args.vararg
         or args.kwarg
@@ -48,7 +51,7 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
             owner.source,
             callback,
             "program.qpe",
-            "use one positional quantum call in a zero-argument lambda",
+            "use one positional quantum call in a zero- or one-argument lambda",
         )
     if not isinstance(counter_node, ast.Name) or counter_node.id not in owner.ports:
         _error(
@@ -83,54 +86,23 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
             "program.qpe",
             "phase counter must be initialized by allocate and unused",
         )
-    storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
-
-    def capture_callback() -> None:
-        if (
-            owner.resolve_callable(body.func) is phase
-            and len(body.args) == 2
-            and owner.phase_number(body.args[0]) is None
-            and (angle := owner.phase_number(body.args[1])) is not None
-        ):
-            capture_polynomial_phase(owner, body.args[0], angle, body)
-        else:
-            owner.call(body)
-
-    effects = owner.capture_effects(capture_callback, expanded_callback=True)
-    allowed = {
-        "qreg.gate",
-        "qreg.pair_gate",
-        "qreg.phase",
-        "qreg.control_phase",
-        "qreg.control_x",
-        "qreg.array_phase_flip",
-        "qreg.pauli_rotation",
-        "qreg.unitary",
-        "qreg.inplace_prepare_amplitudes",
-    }
-    if (
-        not effects
-        or storage != (owner.registers, owner.ports, owner.widths)
-        or any(
-            op.name not in allowed
-            or op.name == "qreg.phase"
-            and "callee" in op.attributes
-            for op in effects
-        )
+    power_name = args.args[0].arg if args.args else None
+    if power_name is not None and (
+        power_name in owner.ports
+        or power_name in owner.classical
+        or power_name in owner.loop_variables
+        or power_name in (owner.aliases or {})
+        or _resolve(owner.definition, ast.Name(id=power_name)) is not None
     ):
         _error(
             owner.source,
-            body,
+            callback,
             "program.qpe",
-            "callback requires nonempty pure quantum effects without allocation,ownership changes or Output publication",
+            "power parameter cannot shadow captured bindings",
         )
-    if any(counter in op.operands[1:] for op in effects):
-        _error(
-            owner.source,
-            body,
-            "program.qpe",
-            "phase counter and callback data must be disjoint",
-        )
+    ordinary_effects = (
+        _capture_effects(owner, body, counter, None, 1) if power_name is None else None
+    )
 
     def emit(
         name: str, values: tuple[Value, ...], attributes: dict[str, object]
@@ -140,6 +112,12 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
     for bit in range(width):
         owner.emit("qreg.gate", node, (counter,), gate="h", index=bit)
     for bit in range(width):
+        effects = (
+            _capture_effects(owner, body, counter, power_name, 1 << bit)
+            if ordinary_effects is None
+            else ordinary_effects
+        )
+        repetitions = 1 << bit if power_name is None else 1
         if (
             len(effects) == 1
             and effects[0].name == "qreg.unitary"
@@ -152,13 +130,84 @@ def capture_qpe(owner: _Body, node: ast.Call) -> None:
                 (*operation.operands[1:], counter),
                 **dict(operation.attributes),
                 control_index=bit,
-                power=1 << bit,
+                power=repetitions,
             )
         else:
             try:
-                for _ in range(1 << bit):
+                for _ in range(repetitions):
                     for operation in effects:
                         emit_controlled_effect(counter, bit, operation, emit)
             except ValueError as error:
                 _error(owner.source, body, "program.qpe", str(error))
     owner.emit("qreg.inverse_qft", node, (counter,))
+
+
+def _capture_effects(
+    owner: _Body,
+    body: ast.Call,
+    counter: Value,
+    power_name: str | None,
+    power: int,
+) -> tuple[Operation, ...]:
+    if power_name is not None:
+        owner.loop_variables[power_name] = power
+    try:
+        storage = dict(owner.registers), dict(owner.ports), dict(owner.widths)
+        start, effect = len(owner.operations), owner.effect
+        owner.region_depth += 1
+        owner.owner.expanded_callbacks += 1
+        try:
+            if (
+                owner.resolve_callable(body.func) is phase
+                and len(body.args) == 2
+                and owner.phase_number(body.args[0]) is None
+                and (angle := owner.phase_number(body.args[1])) is not None
+            ):
+                capture_polynomial_phase(owner, body.args[0], angle, body)
+            else:
+                owner.call(body)
+            flush_evolutions(owner)
+        finally:
+            owner.owner.expanded_callbacks -= 1
+            owner.region_depth -= 1
+        effects = tuple(owner.operations[start:])
+        del owner.operations[start:]
+        owner.effect = effect
+        allowed = {
+            "qreg.gate",
+            "qreg.pair_gate",
+            "qreg.phase",
+            "qreg.control_phase",
+            "qreg.control_x",
+            "qreg.array_phase_flip",
+            "qreg.pauli_rotation",
+            "qreg.unitary",
+            "qreg.inplace_prepare_amplitudes",
+        }
+        if (
+            not effects
+            or storage != (owner.registers, owner.ports, owner.widths)
+            or any(
+                op.name not in allowed
+                or op.name == "qreg.phase"
+                and "callee" in op.attributes
+                for op in effects
+            )
+        ):
+            _error(
+                owner.source,
+                body,
+                "program.qpe",
+                "callback requires nonempty pure quantum effects without allocation,ownership changes or Output publication",
+            )
+        if any(counter in op.operands[1:] for op in effects):
+            _error(
+                owner.source,
+                body,
+                "program.qpe",
+                "phase counter and callback data must be disjoint",
+            )
+        return effects
+    finally:
+        if power_name is not None:
+            del owner.loop_variables[power_name]

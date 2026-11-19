@@ -10,7 +10,9 @@ import torch
 import flagquantum as fq
 from examples.synthesis.tutorials.basics.mcx.main import build_program
 from flagquantum import synth
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.ecosystem._qmod.source import load_qmod
 from flagquantum.runtime.execution_plan_contract import plan_from_dict, plan_to_dict
@@ -30,7 +32,9 @@ class _Limits(TypedDict, total=False):
     memory_limit_bytes: int
 
 
-def definition(enabled: int, target: int = 0) -> synth.Program:
+def definition(
+    enabled: int, target: int = 0, *, limits: _Limits | None = None
+) -> synth.Program:
     prep = "\n".join(f"    X(c[{bit}])" for bit in range(enabled))
     prep += "\n    X(t)" if target else ""
     entry = program_definition(
@@ -38,7 +42,9 @@ def definition(enabled: int, target: int = 0) -> synth.Program:
         + prep
         + "\n    control(c,lambda:X(t))\n"
     )
-    return synth.synthesize(entry, memory_limit_bytes=2048, max_workspace=13)
+    return synth.synthesize(
+        entry, **({"memory_limit_bytes": 2048, "max_workspace": 13} | (limits or {}))
+    )
 
 
 def forbid_dense(*args: object, **kwargs: object) -> NoReturn:
@@ -175,8 +181,8 @@ def test_absolute_negative_sign_is_retained(monkeypatch: pytest.MonkeyPatch) -> 
     "budget",
     [
         {"memory_limit_bytes": 2047},
-        {"max_qubits": 63},
-        {"max_workspace": 12},
+        {"max_qubits": 63, "max_operations": 169},
+        {"max_workspace": 12, "max_operations": 169},
         {"max_operations": 168},
         {"max_depth": 166},
     ],
@@ -186,6 +192,29 @@ def test_actual_budgets_reject(budget: _Limits) -> None:
 
     with pytest.raises(ValueError, match="budget|memory|limit|candidate|workspace"):
         synth.synthesize(main, **budget)
+
+
+@pytest.mark.parametrize("limits", ({"max_qubits": 63}, {"max_workspace": 12}))
+@pytest.mark.parametrize("enabled", (49, 50))
+def test_constrained_candidate_trades_gates_for_clean_workspace(
+    limits: _Limits, enabled: int, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(MPSState, "to_statevector", forbid_dense)
+    program = definition(enabled, limits=limits)
+    assert program.circuit.n_wires == 52
+    assert program.report["workspace_qubits"] == 1
+    actual = native_mps(fq.run(program))
+    assert actual and actual.max_bond == 1 and not actual.truncation_records
+    occupied = set(program.registers["c"][-enabled:])
+    if enabled == 50:
+        occupied.update(program.registers["t"])
+    phase = 1 + 0j
+    for index, site in enumerate(actual.tensors):
+        amplitudes = site.reshape(2)
+        bit = int(index in occupied)
+        assert abs(complex(amplitudes[1 - bit])) < 1e-12
+        phase *= complex(amplitudes[bit])
+    assert phase == pytest.approx(1 + 0j, abs=1e-12)
 
 
 def test_native_coherent_program_keeps_dense_budget_rejection() -> None:

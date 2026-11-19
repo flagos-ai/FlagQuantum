@@ -9,7 +9,7 @@ from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING
 
 from ..._hybrid.model import Value
-from ..register_profile import _verify_borrowed_effects, register_width
+from ..verification.register_profile import _verify_borrowed_effects, register_width
 from .classical import bind_helper
 from .ports import _Port, _resolve
 from .python import _error, _QuantumFunction
@@ -139,7 +139,7 @@ def packed_locations(owner: _Body, node: ast.expr) -> tuple[tuple[Value, int], .
 
 
 def locations(
-    owner: _Body, node: ast.expr, depth: int = 0
+    owner: _Body, node: ast.expr, depth: int = 0, *, raw_bit_access: bool = False
 ) -> tuple[tuple[Value, int], ...]:
     """Resolve an ordered array view; element zero is the least-significant bit."""
     if depth >= 32:
@@ -177,7 +177,7 @@ def locations(
         if numeric:
             assert isinstance(base, ast.Name)
             port = ports[base.id]
-            if port.signed or port.fractional_bits:
+            if (port.signed or port.fractional_bits) and not raw_bit_access:
                 _error(
                     owner.source,
                     node,
@@ -193,7 +193,7 @@ def locations(
                 "program.view",
                 "index or slice a declared QArray[QBit] or unsigned integer QNum",
             )
-        view = locations(owner, node.value, depth + 1)
+        view = locations(owner, node.value, depth + 1, raw_bit_access=raw_bit_access)
         if isinstance(node.slice, ast.Slice):
             bounds = node.slice
             start = 0 if bounds.lower is None else static_integer(owner, bounds.lower)
@@ -230,7 +230,7 @@ def locations(
 
 def gate_target(owner: _Body, node: ast.expr) -> tuple[Value, int]:
     """Resolve one scalar gate target without allocating or copying storage."""
-    view = locations(owner, node)
+    view = locations(owner, node, raw_bit_access=True)
     if len(view) != 1:
         _error(
             owner.source,
@@ -560,7 +560,7 @@ def inline_mutable(
             and len(owner.owner.unitary_templates) < 32
         ):
             from ..._hybrid.unitary_effects import unitary_regions
-            from ..register_profile import _borrowed_program
+            from ..verification.register_profile import _borrowed_program
 
             # Channel/ownership effects stay on the existing expanded path.
             # Only a successful closed-unitary proof permits sharing the body.

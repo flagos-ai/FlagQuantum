@@ -8,14 +8,14 @@ from typing import NoReturn
 
 import pytest
 
-from flagquantum.compiler._construction.fixed_point import (
+from flagquantum.compiler._construction.semantics.fixed_point import (
     FixedPointBranches,
     FixedPointExpression,
     FixedPointScalar,
     fixed_point_number,
     fixed_point_scalar,
 )
-from flagquantum.compiler._construction.fixed_point_program import (
+from flagquantum.compiler._construction.semantics.fixed_point_program import (
     FixedPointScope,
     emit_fixed_point_tables,
 )

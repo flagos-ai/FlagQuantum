@@ -1,0 +1,128 @@
+{
+  "upstream_path": "applications/physical_systems/hhl_lanchester/hhl_lanchester.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "53a77217ce110bc28de466fdd07f9ae8883efeb716fd0be60c34a59695bbc07a",
+  "git_blob_sha1": "e733e0701b40aa99ac7ba8afe9960167070ef196",
+  "scope": "All 23 source stages, eight original population steps, 32-dimensional Hermitian embedding, six phase bits, 64 reciprocal rotations, and 30000 actual SWAP observations.",
+  "native_semantic_adaptations": "Regenerate the model, unitary and angles. Execute native qfunc for HHL, then pass its complete logical output to a public Circuit for coherent comparison after checking exact workspace cleanup. Report the original two distinct postselection readouts and use local seeded sampling.",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.hhl_lanchester.overview.main",
+  "native_notebook": "examples/synthesis/applications/physical_systems/hhl_lanchester/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_lanchester_hhl_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "sha256": "8e6b3a98340833333e21f61231074aeb1046d651db37f6bc8298659433b228c7"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "sha256": "0e247af42099a1d27a4de476c69dc25c6121812c8ef4542bc4df3bd807120a46"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "sha256": "97b34439802c66f6cdb82de5bb904dab2a389d6dc0a7f736907352df06c13bba"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "sha256": "0bd6a2a8e6687478edfdfcb97d8ebc67a78f6d04fb6b5ce3122f65a97c7ebe4d"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "sha256": "b62b85a4b34afc74ccb41c79233df276c01d7cb9229bf238c22d3a03624ff2fe"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "sha256": "6664ca8008774aa0d9e5bfb81776804d65ba9d829a3a7ee25c8b164300044f1f"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "sha256": "ead1c1cdbd4ef131a8ddb3dd09ab4b697570c7b453b45c3a373730016cf5fdef"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "sha256": "80dfddd1d977b6f6fecc5894da47065969f9dc4fe3280d9d9f7519f7d8e3e243"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 9,
+      "sha256": "f7b1161ae8975a82d72231b86c4c5a2be81aecc8b67ab049b3fcec1ab543c365"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 10,
+      "sha256": "ad801b65fedd52e3b3401e8ec8bca35bccfa5a6303d51d9a8d868a0b18d5a304"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 11,
+      "sha256": "bb4b82bad855245804e0689b86edf16869a7ca8b870bef64ddabf11d8f5ae90d"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 12,
+      "sha256": "afe356114f8d92e8ead86c2120ced1a5a828d4bc268b5c96312ea21be38eb04b"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 13,
+      "sha256": "534aac47ca181a1cebe752232d3e2c5990699f447f7a20f0b2ae12d74f8a45bf"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 14,
+      "sha256": "a860b60a7c802ed7d19f68de3d46e5461ff5eb7a35528402f84e555c13516668"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 15,
+      "sha256": "f581f03dad5d7ba66947c9479d9316d002a4d47dae3f1e6bd58faa2b8fc7aab9"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 16,
+      "sha256": "6a182085864ad0a86ebb5281f3c22984001f62c6a05f96c22c007e690f545efb"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 17,
+      "sha256": "c3964aafb69acb029b7d23078476d80d764df18bbac0bfaeffa04f0404e5005a"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 18,
+      "sha256": "5eba2baab2b464174719b99bb55604e74d4b7bade9850667037d6e0fdc266cec"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 19,
+      "sha256": "a34ad18f0ef58d62e70ff595f76809ca887d2558a35a9f8d5e5487bdddbbe3f5"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 20,
+      "sha256": "e81cff0b21fc5d69da329677f0bfaac0dc1b3b8abcccd958a945de39f5c95f86"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 21,
+      "sha256": "1376b1b27978c6641b9f0718570e7569d9aaec428dad1aafea904189e3378aac"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 22,
+      "sha256": "c8282138df697c1239407437f190f4c551d0a2809098180be6527eb7cb70037b"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 23,
+      "sha256": "cb2aacd04e6ff461ef87ccce99d07d8662e2f07e25315e3d2562fc7763f7f896"
+    }
+  ]
+}

@@ -1,0 +1,93 @@
+{
+  "upstream_path": "algorithms/search_and_optimization/QAOA/qaoa.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "1378fc17025fee580aa837602c3ec732639a3e75",
+  "original_sha256": "88d318a01cb752cd04c627fd18d52893a0476f2054e1e3f89d6352b84232242c",
+  "reviewed_code_cells": [
+    {
+      "index": 15,
+      "sha256": "6053c9c6a9355eb7c111caf0b56aecc235cc49c2583cd992b3309c5bef1a5f57"
+    },
+    {
+      "index": 16,
+      "sha256": "030266c9e9dcbfbd5ad136ccb7c3d151fc0e6621af84b359f6d4a0d044a04b81"
+    },
+    {
+      "index": 18,
+      "sha256": "8474a8996e0ade147c6269c3f0466198b180ce4370ba1e17829a040fd12b40ee"
+    },
+    {
+      "index": 22,
+      "sha256": "24be0d55870bd8d84af28a017a826ec59510c6918d36b22d48d543c3c73cb65c"
+    },
+    {
+      "index": 24,
+      "sha256": "ae27eb66a42642230486da752915a4dec4fd02de1a9f5f847bfe52c303f62837"
+    },
+    {
+      "index": 27,
+      "sha256": "0316ab04d6e5484605e2f321336760f9ab1a6f0c55054939f53386e0db0e0cd8"
+    },
+    {
+      "index": 30,
+      "sha256": "05c7be93c5918d42e840e0aa117a42026f32252e3cb799a2581e338cc32ad940"
+    },
+    {
+      "index": 33,
+      "sha256": "75562e109b60803685d12201104ab5e3ab256f5dae522c7aa9ff95d4175ad454"
+    },
+    {
+      "index": 35,
+      "sha256": "0958b26f1c406683920f4ca3e4f600378b6b43f4890c4e25a31582abbae14084"
+    },
+    {
+      "index": 39,
+      "sha256": "fe84a6c17c7c1145f225b6cb0d3d9a488fdb662fda7b15d80d0184a5b30b075e"
+    },
+    {
+      "index": 41,
+      "sha256": "d17ee31ea78fcb55949f979449a9d2ab1da4a1b7eac40feddfd33da1ffc93ea0"
+    },
+    {
+      "index": 43,
+      "sha256": "eb0d6e3410c0a37ebc4af60e378d96d2de053b5257dbedb31bf4cc618e8cd45b"
+    },
+    {
+      "index": 46,
+      "sha256": "41d1c9231c30de959a697680de88fb496f42856b1cc6b7290492bdf5fe732599"
+    },
+    {
+      "index": 48,
+      "sha256": "d2d5687d515a1e498832efcc85302aba66ace1a81aad8092f68de5af8a4d1e44"
+    },
+    {
+      "index": 56,
+      "sha256": "9095274e8ab83e18c51d78f23e44968f4bc65034dc1b1d0ba6b3927b3f173f7f"
+    },
+    {
+      "index": 58,
+      "sha256": "450f92206ccdd960b8e100dcbe176e0ce6710ee8c4c7eb011b29fa66caa7dd64"
+    },
+    {
+      "index": 60,
+      "sha256": "a0dae27db254bf21feea8ae47fb78c4cb0933208c1129337f97bfa2f78fafd7d"
+    },
+    {
+      "index": 62,
+      "sha256": "a96d75979cc1124f7a5105eb60d63357f3fb0d73189ed9141d9256819affac31"
+    },
+    {
+      "index": 64,
+      "sha256": "c8892d52207428d7b767914b0bd318d742fd1da314b6f7b8d373f78cc6d49a07"
+    },
+    {
+      "index": 66,
+      "sha256": "15d043859abb310429f561724b10be4db0250aba1a63e192b6fb57222e4af613"
+    }
+  ],
+  "scope": "Complete two-section local QAOA workflow: original five-node four-layer MaxCut and five-bit three-layer constrained Knapsack. Native synthesis,actual bounded optimization,1000seeded samples per section,cost traces,all best sampled cut graphs and Knapsack readout. Explicit optimizer/expected-cost replacements; no foreign trajectory or hardware parity.",
+  "native_entrypoint": "examples.synthesis.algorithms.search_and_optimization.qaoa.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/search_and_optimization/qaoa/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qaoa_optimization_notebook.py",
+  "native_semantic_adaptations": "Reuse unchanged native quantum programs and independent Circuit references. Preserve source graph,domains,cost signs,four/three layers,initial linear/pi-linear schedules,60-iteration setting and1000final samples. Public Nelder-Mead step0.07 replaces COBYLA;exact local expected cost replaces shot estimator during optimization. Every evaluation synthesizes/runs. CPU sampling seed2718;report nonconvergence and observed feasibility. Seeded spring layout replaces unseeded spring layout;all best observed cuts shown by descending count. Exact32assignment references after optimization only. Node i is bit i of named v;QNum a/b read as named integers. No optimizer trajectory equivalence."
+}

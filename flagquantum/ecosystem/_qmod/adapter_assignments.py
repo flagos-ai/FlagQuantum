@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.ranges import unsigned_width
-from ...compiler._construction.register_profile import (
+from ...compiler._construction.analysis.ranges import unsigned_width
+from ...compiler._construction.verification.register_profile import (
     register_width,
 )
 from .adapter_model import (

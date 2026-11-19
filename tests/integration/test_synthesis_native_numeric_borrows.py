@@ -8,7 +8,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.integration.test_synthesis_native_exact_numbers import definition
 from tests.integration.test_synthesis_native_inplace_preparation import (
@@ -124,7 +124,7 @@ def test_coherent_control_and_adjoint_preserve_absolute_phase(inverse: bool) -> 
         "increment([flag,flag])",
         "increment([x,x[1:3]])",
         "increment([x[1:3],x[2]])",
-        "control(x[0],lambda:increment([flag,x[1:3]]))",
+        "control(x[0],lambda:increment([flag,x[0:2]]))",
         "increment(x[3:4])",
     ],
 )

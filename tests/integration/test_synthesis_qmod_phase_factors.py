@@ -6,7 +6,7 @@ import torch
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
 from flagquantum import synth
-from flagquantum.compiler._construction.boolean_lowering import lower_boolean_value
+from flagquantum.compiler._construction.codegen.boolean import lower_boolean_value
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.ecosystem._qmod.syntax import Parser, tokenize
 from flagquantum.services.synthesis import _synthesize

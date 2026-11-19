@@ -1,0 +1,58 @@
+{
+  "upstream_path": "applications/optimization/kidney_exchange/kidney_exchange_problem.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "ddf959ee5919b30f04a54b1cc8aa115af215e867",
+  "original_sha256": "602a625efc46d6a3c4bd4cd9852110e3331b7ccdde92e71bab460c6cef56d95c",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "1bf440f201dc3ae5591169eb07f6334fc2fcdcd9877ae5cead0d0098ec261504",
+      "native_code_cell": 1
+    },
+    {
+      "index": 3,
+      "sha256": "e312422ada7f275078321d707c66bb5527c77bacfb762d771dd07fc7dd3b125b",
+      "native_code_cell": 2
+    },
+    {
+      "index": 5,
+      "sha256": "8403e021ba14d5251088d469d065e0855bb7174e91df44a5b8ce74230aa4695e",
+      "native_code_cell": 3
+    },
+    {
+      "index": 8,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa",
+      "native_code_cell": 4
+    },
+    {
+      "index": 10,
+      "sha256": "22e211f866c526498cc890f1f039f0574175af822dc82f3feb06ea08c5fd8a13",
+      "native_code_cell": 5
+    },
+    {
+      "index": 12,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f",
+      "native_code_cell": 6
+    },
+    {
+      "index": 15,
+      "sha256": "6128c5934e22f4d7d8eaf21cf7820447ea15a06e68c3319d917ccc9f8510eb6f",
+      "native_code_cell": 7
+    },
+    {
+      "index": 17,
+      "sha256": "1da46ed8d4ffccf68e01622d8d75030b8ee2cbeeef223b4abca6aa11297a0c79",
+      "native_code_cell": 8
+    },
+    {
+      "index": 19,
+      "sha256": "28b9f4e5ad891bb67960838373e732ab647f646907260d4d970518126acf2fde",
+      "native_code_cell": 9
+    }
+  ],
+  "native_semantic_adaptations": "Fresh explicit matching model replaces Pyomo modeling/printing; source solver is commented out and remains unsolved. Existing native nine-bit five-layer qfunc retains the exact pair-conflict penalty and width objective. Public Nelder-Mead, explicit SDK-reviewed initial schedule and exact local CVaR0.7 replace private optimizer/shot estimates. Each angle tuple is synthesized; no runtime-binding claim. Final1000seededCPUshots, sampledtopten,trace/histogram/table/bipartitegraph; separate rawscore,penalty,feasibilityand source -cost diagnostic. Exhaustive reference calculated after sampling, never repairs observations.",
+  "scope": "All nine source stages at the original three-donor/three-patient size, nine assignment bits, five QAOA layers, penalty factor two, width objective, 100-iteration limit and CVaR 0.7. Fresh all-512-assignment model audit and SDK-reviewed pair-conflict penalty; public native optimization with exact local CVaR, actual finite final samples, sampled top ten, trace/histogram/matching table/bipartite graph, and separate score/penalty/feasibility/source-score diagnostics. Independent full complex-state Circuit checks for two nonzero parameter tuples. Exhaustive legal matching reference is evaluated after sampling and never repairs observations. No frozen quantum counterpart, API or dependency changes, runtime-binding equivalence, cloud, hardware, speedup or scalability claim.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.kidney_exchange.kidney_exchange_problem.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/kidney_exchange/kidney_exchange_problem/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_kidney_exchange_notebook.py"
+}

@@ -15,6 +15,15 @@ SCHEMA = "flagquantum_coverage_plan_v1"
 MAX_SHARDS = 192
 MAX_FILE_BATCH_TESTS = 16
 MAX_FILE_BATCH_SECONDS = 60.0
+DEFAULT_TIMEOUT_MINUTES = 60
+# Original optimization workloads remain indivisible. These are finite job
+# budgets, not measured duration hints; reserve separate slots when available.
+LONG_TEST_TIMEOUT_MINUTES = {
+    "tests/integration/test_synthesis_induced_color_notebook.py::"
+    "test_actual_fifty_iteration_optimization_and_sampling": 120,
+    "tests/integration/test_synthesis_min_coloring_notebook.py::"
+    "test_actual_hundred_iteration_optimization_and_sampling": 120,
+}
 
 
 def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int:
@@ -39,7 +48,9 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
         seconds = 0.0
         batch_index = 0
         for node in nodes:
-            weight = hints.get(node, default)
+            weight = max(
+                hints.get(node, default), LONG_TEST_TIMEOUT_MINUTES.get(node, 0) * 60
+            )
             if batch and (
                 len(batch) >= MAX_FILE_BATCH_TESTS
                 or seconds + weight > MAX_FILE_BATCH_SECONDS
@@ -53,7 +64,10 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
         if batch:
             batches[f"{filename}::batch-{batch_index}"] = batch
     weights = {
-        name: sum(hints.get(node, default) for node in nodes)
+        name: sum(
+            max(hints.get(node, default), LONG_TEST_TIMEOUT_MINUTES.get(node, 0) * 60)
+            for node in nodes
+        )
         for name, nodes in batches.items()
     }
     count = min(requested, len(batches))
@@ -83,7 +97,19 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
         ],
     }
     (directory / "plan.json").write_text(json.dumps(payload, indent=2) + "\n")
-    matrix = {"include": [{"shard": i, "hosted-bucket": i % 8} for i in range(count)]}
+    matrix = {
+        "include": [
+            {
+                "shard": i,
+                "hosted-bucket": i % 8,
+                "timeout-minutes": max(
+                    DEFAULT_TIMEOUT_MINUTES,
+                    sum(LONG_TEST_TIMEOUT_MINUTES.get(node, 0) for node in nodes),
+                ),
+            }
+            for i, nodes in enumerate(shards)
+        ]
+    }
     if output := os.environ.get("GITHUB_OUTPUT"):
         with Path(output).open("a") as stream:
             stream.write(

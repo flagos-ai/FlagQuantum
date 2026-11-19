@@ -518,7 +518,7 @@ def candidate_tape(
 
 
 def emit_compact_region(owner: _Adapt, tape: Tape) -> None:
-    from ...compiler._construction.gate_tape import pack_gate_templates
+    from ...compiler._construction.codegen.gate_tape import pack_gate_templates
 
     token = owner.syntax.name
     ports = tuple(

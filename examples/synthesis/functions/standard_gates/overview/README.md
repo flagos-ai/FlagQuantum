@@ -14,3 +14,5 @@ independent Circuit command.
 This workflow does not load external quantum source text.
 
 [Third-party license](../../../CLASSIQ_LICENSE.txt)
+
+Run [the native Notebook](walkthrough.ipynb) to edit the quantum functions, execute the complete local workflow, and check every complex amplitude against an independent Circuit.

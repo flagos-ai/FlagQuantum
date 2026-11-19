@@ -1,0 +1,144 @@
+{
+  "upstream_path": "tutorials/workshops/finance_workshops/combi_workshop_Inequality_constriants_PO.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "f64de74ae9db3e93ed21e73cce7e9f791802aaa31e059bd610cac1243b4057f3",
+  "git_blob_sha1": "b441bea5e1766240a5b0570b0d7ccf72c8b871cd",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "02653ec710e9e3a19d37b15e393ec0cd3a07138697a79e4dea32c3f4a8c892f7"
+    },
+    {
+      "index": 6,
+      "sha256": "5c83b9cef2146feac5423cf4b8607752d18b0848adcef5011bf9a47a3d089766"
+    },
+    {
+      "index": 8,
+      "sha256": "01dc0999c3b5c0a62dff74e912535ddb73efb1f2e3945e477dd6a626bbe06a70"
+    },
+    {
+      "index": 10,
+      "sha256": "ebbf9c1336c055abed2bfe377a0e62fe020eb56c0a7c81872380596ffef81a2f"
+    },
+    {
+      "index": 12,
+      "sha256": "cdf7ba4c36b5580025ed74e961f8aec08fcaa8313a3d0b14805b33741a8b99ee"
+    },
+    {
+      "index": 14,
+      "sha256": "9cc18a0fea36d7cbc8e12157332382506be224dbcc4d0c814d8e99dda9b634e6"
+    },
+    {
+      "index": 16,
+      "sha256": "11d7aa5ef782cd403d1ca553bbb23433be8cc918f126b6ea6ff5dbf743adf4d9"
+    },
+    {
+      "index": 17,
+      "sha256": "c3aa9264bacdfa6b40e954daa0fc262a5a2c09d0e580df81254226b673f675da"
+    },
+    {
+      "index": 19,
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 21,
+      "sha256": "0409f74d6045aa1078e463e4c31b6d15b2b14f1a4c63bc815b2c1a3732ed29b6"
+    },
+    {
+      "index": 23,
+      "sha256": "79040297ed443184a8276b880bfc1cdfcf133fd1f5157c8ea73eeaad05ae1a57"
+    },
+    {
+      "index": 25,
+      "sha256": "3eaf8e3fbe8f64ece440a278807e0289e6cf41193a4793af3b893ed9af7e94a8"
+    },
+    {
+      "index": 27,
+      "sha256": "43fb98c01ae75a9a0b0255a675eea0744acb59b047bb6d54fc437e4285969b01"
+    },
+    {
+      "index": 29,
+      "sha256": "4e87f4ad0303294e08c2b6a342589e4d0c6a46707c8e41cc89da8154ae19d241"
+    },
+    {
+      "index": 31,
+      "sha256": "1e99b3421ee946fdabf5445575c9ddee27c209d11cf6b81dcd0ab32a7c5a0ea2"
+    },
+    {
+      "index": 33,
+      "sha256": "9444ef8c5be511a3702066ab6a5d64a0215c759e86a78e27f8e1634f16106aad"
+    }
+  ],
+  "scope": "Complete original 16-cell native portfolio inequality workshop; all source scenarios, costs, encodings, objective-call caps, actual 1000 samples each, traces, cost plots, classical minima and independent absolute Circuit verification.",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.finance_workshops.combi_workshop_inequality_constriants_po.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/finance_workshops/combi_workshop_inequality_constriants_po/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_portfolio_workshops.py",
+  "frozen_quantum_entry_sha256": "ccdacf045813a5d57ce94f6435df68ef620d3cadaa2bdcb926363171001ba23c",
+  "native_semantic_adaptations": "Retain 4 layers / scale 1.4 / penalty 1.3 / 20 calls and 3 layers / scale 10 / penalty 30.5 / 20 calls. All assets remain unsigned 2-bit values and the numeric slack is 3 bits (0..7), with weights 1/2/4. There are 512 joint assignments. Cost must include slack before any marginalization; sum(assets)<=6 and sum(assets)+slack==6 are distinct diagnostics. Preserve every original scenario and problem size. Users supply high-level\ncosts and classical parameters; the native qfunc prepares uniform registers,\napplies positive cost phases, and mixes with RX(beta). No physical wires or bit\ndecoding are required in the workflow. The companion portfolio_programs.py shows\nthe complete native quantum functions.\n\nThe source uses SciPy COBYLA, whose maxiter limits objective evaluations. Native\nCOBYLA counts trust-region iterations, so this workflow stops BEFORE an extra\nobjective execution at the source cap, selects the best actually evaluated\nparameters, and reports evaluation_budget and nonconvergence. It does not invent\nan optimizer return value or claim the same optimization trajectory. Exact local\nmean probabilities replace provider shot-noisy estimates; final 1,000 seeded\nsamples are actual draws. Sampling/readout and independent verification are\noutside the objective-call cap. Classical exhaustive minima are comparison labels,\nnever substituted for quantum observations. Penalties stay soft; results retain\ninfeasible assignments. No remote service, hardware or advantage claim.\n",
+  "cell_mapping": [
+    {
+      "source_index": 3,
+      "native_code_cell": 1
+    },
+    {
+      "source_index": 6,
+      "native_code_cell": 2
+    },
+    {
+      "source_index": 8,
+      "native_code_cell": 3
+    },
+    {
+      "source_index": 10,
+      "native_code_cell": 4
+    },
+    {
+      "source_index": 12,
+      "native_code_cell": 5
+    },
+    {
+      "source_index": 14,
+      "native_code_cell": 6
+    },
+    {
+      "source_index": 16,
+      "native_code_cell": 7
+    },
+    {
+      "source_index": 17,
+      "native_code_cell": 8
+    },
+    {
+      "source_index": 19,
+      "native_code_cell": 9
+    },
+    {
+      "source_index": 21,
+      "native_code_cell": 10
+    },
+    {
+      "source_index": 23,
+      "native_code_cell": 11
+    },
+    {
+      "source_index": 25,
+      "native_code_cell": 12
+    },
+    {
+      "source_index": 27,
+      "native_code_cell": 13
+    },
+    {
+      "source_index": 29,
+      "native_code_cell": 14
+    },
+    {
+      "source_index": 31,
+      "native_code_cell": 15
+    },
+    {
+      "source_index": 33,
+      "native_code_cell": 16
+    }
+  ]
+}

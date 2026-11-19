@@ -7,9 +7,9 @@ import math
 from typing import TYPE_CHECKING
 
 from ..._hybrid.model import Operation, Value, ValueId
-from .. import cnf_phase
-from ..cnf_phase import Clause, Location
-from ..register_profile import register_type
+from ..semantics import cnf_phase
+from ..semantics.cnf_phase import Clause, Location
+from ..verification.register_profile import register_type
 from .phase import capture_polynomial_phase
 from .python import _error
 from .views import gate_target

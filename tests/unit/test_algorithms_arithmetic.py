@@ -398,7 +398,7 @@ def test_public_wrapper_uses_the_replaceable_shared_kernel(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     from flagquantum.algorithms import arithmetic
-    from flagquantum.compiler import _arithmetic_kernels
+    from flagquantum.compiler.registers import _arithmetic_kernels
     from flagquantum.core.ir import Instruction
 
     assert arithmetic.ripple_add is _arithmetic_kernels.ripple_add

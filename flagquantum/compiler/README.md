@@ -6,7 +6,7 @@ share `CircuitIR` where their entry points require it.
 | Stage | Implementation | Output |
 | --- | --- | --- |
 | Source capture and adaptation | [`_construction/`](_construction/) and [`_hybrid/`](_hybrid/) | Internal `HybridProgram` |
-| Circuit construction and lowering | [`_construction/`](_construction/) and [`_hybrid/`](_hybrid/) | `CircuitIR` or a template with bindings |
+| Circuit construction and lowering | [`_construction/codegen/`](_construction/codegen/README.md) and [`_hybrid/`](_hybrid/) | `CircuitIR` or a template with bindings |
 | Circuit optimization | [`optimization/`](optimization/) | Optimized `CircuitIR` |
 | Target adaptation | [`lowering/`](lowering/) and [`topology/`](topology/) | Target-legal circuit and scheduling evidence, as required by the selected path |
 | Code generation and interchange | [`formats/`](formats/) | OpenQASM, QCIS, or QIR text |
@@ -15,10 +15,11 @@ share `CircuitIR` where their entry points require it.
 [`pipeline.py`](pipeline.py) exposes the native circuit entries and forwards
 orchestration to [lowering/pipeline.py](lowering/pipeline.py). `registers/`
 provides shared register decompositions. `_torch/` owns the PyTorch frontend
-capture and training compilation. Python source capture is grouped in
-[`_construction/frontend/`](_construction/frontend/README.md), with the retained
-`_construction/frontend_*.py` paths mapped in the
-[construction README](_construction/README.md#python-frontend-implementation).
+capture and training compilation. Python source capture, verification, analysis,
+semantics, scheduling and gate emission are organized under
+[`_construction/`](_construction/README.md#responsibility-directories). Retired
+private imports and their authoritative replacements are listed in the
+[construction migration](_construction/README.md#retired-private-imports).
 Documented compiler entry modules remain
 importable at their existing paths. Deployment packaging is owned by
 [`flagquantum.deployment`](../deployment/). Bounded Pauli products and
@@ -34,23 +35,14 @@ resources. Compiler does not run the program.
 
 ## Root modules and implementation ownership
 
-The Compiler team owns the root import paths and their compatibility exports.
-Use the stage implementation for algorithm changes. The root `pipeline.py`
-keeps the `compile` and `optimize` signatures and forwards registry and router
-replacements to their owners. Existing callers can continue importing the root
-modules listed below.
+Compiler owns the documented expert import paths in this table. Use the stage
+implementation for algorithm changes. The root `pipeline.py` keeps the `compile`
+and `optimize` signatures and forwards registry and router replacements to their
+owners.
 
 | Root module | Implementation owner |
 | --- | --- |
 | [__init__.py](__init__.py) | Expert exports from the entry and stage modules |
-| [_arithmetic_kernels.py](_arithmetic_kernels.py) | [registers/_arithmetic_kernels.py](registers/_arithmetic_kernels.py) |
-| [_fixed_word.py](_fixed_word.py) | [_construction/_fixed_word.py](_construction/_fixed_word.py) |
-| [_fourier_kernels.py](_fourier_kernels.py) | [registers/_fourier_kernels.py](registers/_fourier_kernels.py) |
-| [_pauli_products.py](_pauli_products.py) | [lowering/_pauli_products.py](lowering/_pauli_products.py) |
-| [_pauli_schedule.py](_pauli_schedule.py) | [lowering/_pauli_schedule.py](lowering/_pauli_schedule.py) |
-| [_phase_factors.py](_phase_factors.py) | [_construction/_phase_factors.py](_construction/_phase_factors.py) |
-| [_phase_polynomial.py](_phase_polynomial.py) | [_construction/_phase_polynomial.py](_construction/_phase_polynomial.py) |
-| [_sparse_predicate.py](_sparse_predicate.py) | [_construction/_sparse_predicate.py](_construction/_sparse_predicate.py) |
 | [angle_synthesis.py](angle_synthesis.py) | [lowering/angle_synthesis.py](lowering/angle_synthesis.py) |
 | [basis_conversion.py](basis_conversion.py) | [lowering/basis_conversion.py](lowering/basis_conversion.py) |
 | [basis_translation.py](basis_translation.py) | [lowering/basis_translation.py](lowering/basis_translation.py) |
@@ -71,9 +63,32 @@ modules listed below.
 | [training.py](training.py) | [_torch/training.py](_torch/training.py) |
 | [translate.py](translate.py) | [formats/translate.py](formats/translate.py) |
 
+The 18 forwarding modules in this table preserve documented expert imports.
+`pipeline.py` also preserves the existing entry signatures and replacement hooks.
+Compiler owns their compatibility scope. Retirement requires an approved public
+import migration and its declared target version.
+
+Private root imports have been retired after repository consumers migrated.
+
+| Retired root modules | Authoritative implementation |
+| --- | --- |
+| `_arithmetic_kernels.py`, `_fourier_kernels.py` | Same filenames under `registers/` |
+| `_pauli_products.py`, `_pauli_schedule.py` | Same filenames under `lowering/` |
+| `_fixed_word.py`, `_phase_factors.py`, `_phase_polynomial.py`, `_sparse_predicate.py` | Same filenames under `_construction/semantics/` |
+
 For local contributor workflows and dependency boundaries, see
 [optimization/README.md](optimization/README.md) and
 [lowering/README.md](lowering/README.md).
+
+Compiler implementations import their owning stage modules directly. Root
+forwarding files provide the documented expert import paths. The construction
+target scheduler deliberately calls `pipeline.compile` to share orchestration
+and preserve its registry and router replacement hooks. The import boundary is
+checked by `tests/team/compiler/test_implementation_import_boundaries.py`.
+
+Additional contributor workflows are documented in
+[formats/README.md](formats/README.md), [topology/README.md](topology/README.md),
+[registers/README.md](registers/README.md), and [_torch/README.md](_torch/README.md).
 
 ## Reusable Module frontend
 
@@ -142,6 +157,13 @@ calibration restrictions. To retain the earlier implicit policy, pass
 `routing_strategy="restore_after_each_gate"`. Without a topology no routing
 search runs. Automatic selection may cost additional compilation time; minimum
 estimated routing cost is not a runtime or target-CZ optimality claim.
+
+SABRE search recovers from repeated layouts or an exhausted speculation budget
+by undoing its unused SWAP suffix and forcing one front-layer operation onto an
+edge. This adapts Qiskit's release valve and Cirq's repeated-search guard to FQ
+IR. See the [upstream reuse audit](../../docs/development/COMPILER_UPSTREAM_REUSE.md)
+for pinned sources, license notices, implementation differences and remaining
+gaps. It is a progress guarantee for connected operands, not an optimality claim.
 
 ### Export a synthesized circuit and prepare an offline deployment
 
@@ -1273,8 +1295,8 @@ and each two-level global phase is conditioned once on the other bits. This
 avoids controlling pulse decompositions and their phase repairs repeatedly.
 For four/five-qubit blocks with clean helper storage, a rotation and its global
 phase reuse the same computed control flag; the phase is applied to that flag
-before it is uncomputed. Without enough helper storage, registered controlled
-gates retain the phase on the target. No phase tolerance or resource limit is
+before it is uncomputed. Without enough helper storage, the existing
+separate phase decomposition is retained. No phase tolerance or resource limit is
 relaxed. `tests/integration/test_synthesis_native_unitary.py` checks coherent
 positive/negative controls and helper cleanup; the Lanchester integration test
 also retains its original operation and depth ceilings.
@@ -1290,7 +1312,7 @@ matrix/conformance tests when modifying that grouping.
 
 ## Shared Pauli product-formula schedule
 
-`_pauli_schedule.py` owns the private ordered Lie/Strang term schedule used by
+`lowering/_pauli_schedule.py` owns the private ordered Lie/Strang term schedule used by
 algorithm Circuit construction, Qmod adaptation and native qfunc capture. It
 streams term indices and per-term times; it does not own Hamiltonian objects,
 coefficient tensors, external syntax, commutation optimization or gate kernels.
@@ -1305,7 +1327,7 @@ Trotter, controlled/large-Pauli tests and frozen-source replays cover the full
 consumers. Native capture uses the same schedule and existing Pauli effects;
 it adds no alternate Hamiltonian representation or execution kernel.
 
-`_pauli_products.py` owns bounded compile-time composition in owner registers
+`lowering/_pauli_products.py` owns bounded compile-time composition in owner registers
 of at most three logical qubits. Native Pauli calls also accept nonempty static
 slices or lists/tuples of distinct mutable bits within one owner. Observable
 indices address the view order; capture embeds each factor in the owner space,
@@ -1332,13 +1354,13 @@ no terms, repetitions or time literals are removed.
 
 ## Shared Boolean phase factors
 
-`_phase_factors.py` owns the former Qmod cube-selection algorithm. It accepts
+`_construction/semantics/_phase_factors.py` owns the former Qmod cube-selection algorithm. It accepts
 syntax access/rewrite callbacks and resolved logical locations; the Qmod adapter
 and native phase capture both reuse it. Three-to-six distinct signed bit literals
 form a cube, and at most eight unique cubes are shared. It does not own syntax,
 allocate physical storage, execute states or select Runtime backends.
 
-Native `frontend_phase_factors.py` adapts AST nodes and emits predicate graphs
+Native `_construction/frontend/phase_factors.py` adapts AST nodes and emits predicate graphs
 through the existing exact WordExpression compiler. Existing checked locals,
 compute, phase, uncompute and release effects own lifetime verification. Only a
 phase-expansion budget refusal admits this alternative. Small expressions retain

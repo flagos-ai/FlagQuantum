@@ -55,7 +55,7 @@ for `benchmarks/results/scalability/`.
 | Situation | Command | What It Proves | What It Does Not Prove |
 | --- | --- | --- | --- |
 | Daily development or any issue baseline | `python tools/ci_tier.py pr-default` | Fast smoke/unit health for imports, minimal circuits, autograd, pure planner/audit helpers. | Runtime integration, distributed behavior, performance, or release readiness. |
-| Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
+| Local API/runtime/planner/compiler changes | `python tools/ci_tier.py pr-runtime` | Seeded `integration and not slow` coverage for local runtime/API behavior. | Multi-process transport, GPU execution, or scalability claims. |
 | Distributed planner/audit/benchmark contract changes | `python tools/ci_tier.py pr-distributed` | CPU distributed semantics, fail-closed gates, benchmark JSON contracts, release-gate validation. | Real multi-GPU or multi-node capacity expansion. |
 | Real multi-GPU or accelerator testing | `python tools/ci_tier.py gpu-scheduled` | Accelerator-backed tests selected by `distributed_accel and gpu`, plus the device-bound Triton kernels selected by `triton and gpu`. | Multi-node transport or release scalability by itself. |
 | Multi-node transport testing | `python tools/ci_tier.py multinode-scheduled` | Three workloads (statevector, MPS, tensor network), each partitioned across two nodes on one revision, driven by `tools/multinode_launch_plan.py`. | Release claims unless produced payloads also pass release validation. |
@@ -99,7 +99,7 @@ performance measurements or a guaranteed total time for the full CI workflow.
 
 ```bash
 python -m pytest -m "smoke or unit" -q
-python -m pytest -m "integration" -q
+python -m pytest -m "integration and not slow" -q
 python -m pytest -m "distributed_cpu" -q
 python -m pytest -m "distributed_cpu or release_gate or benchmark_contract" -q
 python -m pytest -m "benchmark_contract or release_gate" -q
@@ -305,7 +305,7 @@ single-process API boundaries.
 ```bash
 python tools/ci_tier.py pr-runtime
 # direct:
-python -m pytest -m "integration" -q
+python -m pytest -m "integration and not slow" -q
 ```
 
 This tier is seeded by `tests/test_native_circuit.py` and
@@ -1081,6 +1081,35 @@ source tree copied by mutation tests. Shards verify the source SHA and content d
 node list. Keeping bounded file batches together avoids full-repository collection on every
 worker while allowing a large test module to use several runners. The final coverage gate requires exactly the planned number of valid
 SQLite inputs; failed or missing shards remain failures.
+
+Python 3.12 coverage shards use coverage.py's `sysmon` core. In the locked
+coverage image (coverage.py 7.17.2), the same 62 one-/two-qubit synthesis tests
+recorded identical executed-line sets with `ctrace` and `sysmon`: 1,064 measured
+files and 11,577 executed lines. This changes line-event collection, not the
+selected tests, source scope, exclusions, or coverage floors. The configuration
+does not request branch coverage or dynamic contexts. Older interpreter and SDK
+lanes retain their own coverage configuration.
+
+Ordinary PR coverage excludes `slow`. The original 50-iteration induced-color
+and 100-iteration minimum-coloring Notebook acceptances carry that marker; their
+problem sizes, optimizer budgets and complete numerical assertions are retained.
+PR coverage keeps the two nonzero-parameter complete-state Circuit comparisons,
+bit-order and phase checks, model constraints, sampling and rejection tests. A
+two-iteration optimizer orchestration check uses an explicit probability-reader
+test double; it is not evidence of a complete quantum optimization run.
+
+Run the original-size acceptances explicitly with:
+
+```sh
+python -m pytest tests/integration/test_synthesis_induced_color_notebook.py \
+  tests/integration/test_synthesis_min_coloring_notebook.py -m slow -q
+```
+
+The `nightly` tier and manual dispatch of `ci.yml` include these full tests. PR
+shards retain a 60-minute budget. In a full-acceptance plan only shards containing
+these two tests receive 120 minutes and separate slots; a one-shard plan sums the
+two finite budgets. These are scheduling limits, not measured completion times.
+No coverage floor or numerical tolerance is lowered.
 
 The offline action measures the runner service before entering Docker. Containers
 inherit that CPU and memory budget and receive explicit CPU, memory, and affinity

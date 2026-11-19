@@ -5,7 +5,7 @@ search Qiskit ships, Jandura's lookahead beam search, as another routing
 strategy? The recorded answer is no, and these tests hold the evidence for that
 answer in place. They fail if the reference search stops being a faithful
 replacement for the shipped planner, if the published objective starts or stops
-being partial, or if any objective starts beating ``sabre_layout``.
+being partial, or if the historical comparison is confused with current production routing.
 
 Only a small seeded basis is measured here, so this stays a fast
 ``benchmark_contract`` test. The basis is chosen to contain the failure mode the
@@ -35,6 +35,8 @@ _BASIS_CASE_COUNT = 24
 _CONFIGURATIONS = (
     Configuration("sabre", "sabre"),
     Configuration("sabre_layout", "sabre_layout"),
+    Configuration("sabre/single-trial", "sabre", "single_trial"),
+    Configuration("layout/single-trial", "sabre_layout", "single_trial"),
     Configuration("sabre/d1w1", "sabre", "sabre", 1, 1),
     Configuration("published/d4w4", "sabre", "published", 4, 4),
     Configuration("published/d4w4+repair", "sabre", "published", 4, 4, repair=True),
@@ -102,6 +104,7 @@ def test_reference_search_reproduces_the_shipped_planner_at_depth_and_width_one(
 ) -> None:
     anchor = payload["fidelity_anchor"]
     assert anchor["configuration"] == "sabre/d1w1"
+    assert anchor["baseline"] == "sabre/single-trial"
     assert anchor["case_count"] == _BASIS_CASE_COUNT
     # Non-vacuity: the anchor compares two planners, so a basis the search cannot
     # plan at all would show up as a shortfall here rather than as agreement.
@@ -162,16 +165,33 @@ def test_repairing_the_published_objective_costs_more_than_the_shipped_strategy(
 
 
 def test_no_objective_beats_the_shipped_layout_search(payload: dict) -> None:
-    # Searching SABRE's own cost does improve on the greedy SWAP SABRE takes, and
-    # still loses to the layout search the product selects.
+    # Searching the historical greedy score improves on the single-trial
+    # control, and still loses to the current layout search.
     searched = _row(payload, "sabre/d3w2")
-    assert searched["ratio_to_sabre"] <= 1.0
+    assert (
+        searched["retained_inserted_swap_count"]
+        <= _row(payload, "sabre/single-trial")["retained_inserted_swap_count"]
+    )
     assert searched["ratio_to_sabre_layout"] > 1.05
-    # The closest the port comes is inside the layout search, and the margin is
-    # bounded well below the shipped strategy.
+    # Preserve the original 1.03 threshold against its original deterministic
+    # control. Production trial selection can improve the denominator; it must
+    # not turn an improvement into a failure of a historical ratio assertion.
     substituted = _row(payload, "layout/sabre/d4w2")
     assert substituted["failed_case_count"] == 0
-    assert substituted["ratio_to_sabre_layout"] < 1.03
+    control = _row(payload, "layout/single-trial")
+    assert (
+        substituted["retained_inserted_swap_count"]
+        / control["retained_inserted_swap_count"]
+        < 1.03
+    )
+    assert (
+        _row(payload, "sabre_layout")["planned_inserted_swap_count"]
+        <= control["planned_inserted_swap_count"]
+    )
+    assert (
+        _row(payload, "sabre")["planned_inserted_swap_count"]
+        <= _row(payload, "sabre/single-trial")["planned_inserted_swap_count"]
+    )
 
 
 def test_measurement_reports_no_off_device_two_wire_instruction(payload: dict) -> None:

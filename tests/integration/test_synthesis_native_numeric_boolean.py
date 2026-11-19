@@ -10,8 +10,8 @@ import pytest
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
 from flagquantum import synth
-from flagquantum.compiler._construction.boolean_lowering import lower_boolean_value
-from flagquantum.compiler._construction.frontend_program import capture_program
+from flagquantum.compiler._construction.codegen.boolean import lower_boolean_value
+from flagquantum.compiler._construction.frontend.program import capture_program
 from tests.integration.test_synthesis_native_exact_numbers import definition
 from tests.synthesis_workflow_helpers import check_state
 

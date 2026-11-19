@@ -10,7 +10,8 @@ import torch
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler import ResourceEstimate
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from tests.team.compiler.test_construction_python_program import program_definition
 from tools.synthesis_catalog import load_catalog
 
@@ -182,6 +183,40 @@ def test_invalid_control_views_and_callbacks_refuse(body: str, diagnostic: str) 
 def test_actual_resource_budgets_refuse(budget: _Limits) -> None:
     with pytest.raises(ValueError, match="budget|workspace|memory|limit|candidate"):
         synth.synthesize(definition("control(c,lambda:X(t))", 7), **budget)
+
+
+@pytest.mark.parametrize(
+    "budget",
+    [
+        {"max_workspace": 3},
+        {"max_qubits": 11},
+        {"max_workspace": 0},
+        {"max_qubits": 8},
+    ],
+)
+def test_feasible_tighter_budgets_select_an_equivalent_mcx(budget: _Limits) -> None:
+    program = synth.synthesize(
+        definition(
+            "hadamard_transform(c)\nS(c[0])\nH(t)\nRZ(0.73,t)\n"
+            "control(c,lambda:X(t))",
+            7,
+        ),
+        **budget,
+    )
+    reference = fq.Circuit(8, dtype=torch.complex128)
+    for bit in range(7):
+        reference.h(bit)
+    reference.s(6).h(7).rz(7, theta=0.73)
+    reference.any(*range(8), matrix=permutation(7))
+    compare_states(program, reference, ("c", "t"))
+    workspace = program.report["workspace_qubits"]
+    resources = program.report["resources"]
+    assert isinstance(workspace, int)
+    assert isinstance(resources, ResourceEstimate)
+    if "max_workspace" in budget:
+        assert workspace <= budget["max_workspace"]
+    if "max_qubits" in budget:
+        assert resources.n_qubits <= budget["max_qubits"]
 
 
 def test_uninitialized_target_and_control_refuse() -> None:

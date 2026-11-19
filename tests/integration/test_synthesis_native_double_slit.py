@@ -40,8 +40,13 @@ def test_native_double_slit_matches_complete_independent_state(cycles: int) -> N
         "direction": (13,),
         "aux": (14,),
     }
-    result = fq.run(program)
-    actual = result.statevector().reshape(1 << 15, 1 << 8)
+    resources = program.report["resources"]
+    assert isinstance(resources, ResourceEstimate)
+    assert resources.n_qubits == 23
+    assert resources.n_operations <= 100_000
+    state = fq.run(program).statevector()
+    assert state.numel() * state.element_size() == 128 * 1024**2
+    actual = state.reshape(1 << 15, 1 << (resources.n_qubits - 15))
     if cycles == 1:
         source = source.replace("-598.477076962426", "-0.271")
     expected = reference(source, cycles)
@@ -52,7 +57,3 @@ def test_native_double_slit_matches_complete_independent_state(cycles: int) -> N
     )
     torch.testing.assert_close(independent[:, 0], expected, atol=1e-10, rtol=0)
     assert torch.count_nonzero(independent[:, 1:]) == 0
-    resources = program.report["resources"]
-    assert isinstance(resources, ResourceEstimate)
-    assert resources.n_operations <= 100_000
-    assert result.plan.state_bytes == 128 * 1024**2

@@ -1,0 +1,98 @@
+{
+  "upstream_path": "applications/logistics/facility_location/facility_location.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "a9bb98bbd4b10c68a91d3ea122183924dac10d0a",
+  "original_sha256": "46cfb7980573d31b15fa099608db819a8165e85d7f8ab50fd06dee78a55391f7",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "sha256": "58668b31255d02fc151ad93eef080e60e0a3c22914ff06ae32a022ab67ef499c",
+      "native_code_cell": 1
+    },
+    {
+      "index": 8,
+      "sha256": "f38a85b07a341cf68d887f05c24ecccd7b368e90fec8714ed9a63d4e4d1ef664",
+      "native_code_cell": 2
+    },
+    {
+      "index": 9,
+      "sha256": "36836fde60c36bfda7fa6c8a58099f716c84f7e6f881e775d886f699cc520049",
+      "native_code_cell": 3
+    },
+    {
+      "index": 12,
+      "sha256": "c318017ce742b5969b955b50e6e1f2e8d22e70ae715659290691cea0ca93982a",
+      "native_code_cell": 4
+    },
+    {
+      "index": 14,
+      "sha256": "2698077b5ba29c896c5af4e2afd5a6d478c92ee2cf2eef0def646b1566721b02",
+      "native_code_cell": 5
+    },
+    {
+      "index": 16,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa",
+      "native_code_cell": 6
+    },
+    {
+      "index": 18,
+      "sha256": "c5171e3b0fde234e3215c4de538cebcda79a462d77df2203ae7a78457f4d6456",
+      "native_code_cell": 7
+    },
+    {
+      "index": 20,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f",
+      "native_code_cell": 8
+    },
+    {
+      "index": 23,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373",
+      "native_code_cell": 9
+    },
+    {
+      "index": 25,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042",
+      "native_code_cell": 10
+    },
+    {
+      "index": 27,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b",
+      "native_code_cell": 11
+    },
+    {
+      "index": 29,
+      "sha256": "d51c269c50391a8a91acd25014d60389ef540fcf8f15774af44ec5fbdd194280",
+      "native_code_cell": 12
+    },
+    {
+      "index": 31,
+      "sha256": "a822426f5381f3cd779ec344734dbf2234cbaea0ee6c4ad25cdfcd80e121f237",
+      "native_code_cell": 13
+    },
+    {
+      "index": 34,
+      "sha256": "5cd3fae8675d3611c3d7002cc4a6b26cd58b6f813c5c54b37e2dfcb9cb2fc3df",
+      "native_code_cell": 14
+    },
+    {
+      "index": 35,
+      "sha256": "df7fd394d4867a54e726de76321328e4209531285dc4eaec875b3f627898df00",
+      "native_code_cell": 15
+    },
+    {
+      "index": 37,
+      "sha256": "2d9e9a94b87fe78fc96d320fed8e87fa70578c78a0ad08faf7c991794bb26738",
+      "native_code_cell": 16
+    },
+    {
+      "index": 38,
+      "sha256": "b6cc990b3f24d0d217d5b3afe677327cf23fbf4fe7cc5ea52575521e5dbd6e53",
+      "native_code_cell": 17
+    }
+  ],
+  "native_semantic_adaptations": "Explicit classical model replaces Pyomo modeling. Public native exact mean and Nelder-Mead replace proprietary shot-based optimization; source omitted quantile and current reviewedSDK1.35.0default1.0 does not prove historical version. Every parameter tuple is synthesized. Actual1000seededCPUoptimized and zero-angleuniform samples, fullcosts/feasibility/tables/graphs retained. Fresh exhaustive constrained solver replaces externalCouenne only after sampling and retains ties; never repairs quantumobservations.",
+  "scope": "All seventeen source stages at original three facilities/four customers/exactly two used facilities, twelve decisions and five clean temporary work bits (seventeen physical bits), five QAOA layers, penalty10 and50iteration budget. Full nonlinear empty-facility residual retained; native exact mean explicitly substitutes unpinned source optimizer default, with no historical SDK version or trajectory claim. Actual optimized and zero-angle uniform samples, topfive, all network/trace/histogram/observedtable/graph and fresh constrained exhaustive classicaltable/graph. All4096cost and two nonzero full complex-state Circuit references required. No frozen quantum counterpart changes, production API/dependency changes, runtimebinding, optimum guarantee, cloud, hardware, speedup or scalability claim.",
+  "native_entrypoint": "examples.synthesis.applications.logistics.facility_location.overview.main",
+  "native_notebook": "examples/synthesis/applications/logistics/facility_location/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_facility_location_notebook.py"
+}

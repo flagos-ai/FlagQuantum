@@ -1,0 +1,65 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/qmc_user_defined/qmc_user_defined.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "921ea644df0524d2e33dc84d3c766735c5b31a8f1045839285370817701bd4db",
+  "git_blob_sha1": "749741f9639d314f4e17f7612be80f60b9037ce2",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "7385d1a736a6b6f2385b5db66300a5ac6565378778ba13b71bde5e9d17e7a642"
+    },
+    {
+      "index": 8,
+      "sha256": "a6e5ad1ea9e47b3a26a6cbf04fd2ba1c49e772daf7020a2300c1091f015c1e77"
+    },
+    {
+      "index": 10,
+      "sha256": "03323509b42a4829883bbb9f7771495139aeb64a64c463214c9f40d425657460"
+    },
+    {
+      "index": 12,
+      "sha256": "a214ee1c7a99f584264d7c8136ddcb5efe11b591e1d9cf725ba21cf87c5b0249"
+    },
+    {
+      "index": 14,
+      "sha256": "d87bdbcb31cabeafaad162785c713aeed0fdcb0508ac976853b61717aadd7c11"
+    },
+    {
+      "index": 17,
+      "sha256": "0716963256f34ad8ab128a1614e70a14c10e4ec6da6ccfb5e116f32ffffcefc3"
+    },
+    {
+      "index": 19,
+      "sha256": "12197075da10ddce8e4d751ab363a437fa7662b8ec5c3fbed3b5db44d01d7e84"
+    },
+    {
+      "index": 23,
+      "sha256": "0b3b0de373175fea85f78de1da81e01723eae50e43ea943da210fb86a69c9e13"
+    },
+    {
+      "index": 27,
+      "sha256": "dfe0c2b928bd46ee94f76df760fe07e25a1e0b243602176a5fe86188f0a5c533"
+    },
+    {
+      "index": 28,
+      "sha256": "521c611f6866e8e6e875c9a8ab901790a2b04506df5aefe5ee368515ea8d486e"
+    },
+    {
+      "index": 30,
+      "sha256": "c236ee77689c5162b5a62d79e45ae0188cfaa598eda29615367d2f91a8125a44"
+    },
+    {
+      "index": 32,
+      "sha256": "eb0ba3f36d8ab5c3a76ea92490101947282c5c7581fe60b276c1f373c6a7424e"
+    },
+    {
+      "index": 33,
+      "sha256": "56a871721fe6b6291a1c9c71cfb918874a42b64d3e4e155c1eb9d9c033594cf1"
+    }
+  ],
+  "scope": "Complete native QMCI Notebook: preserve source full-precisioni/28probabilities,slope0.5,offset0.4,three preparation/Grover/QPE programs,three signed fractional phase bits,seven-qubit budget,resource reports,2048seed123local samples,signed histogram and amplitude error<0.1. Full source-precision states compared with independent Circuit; frozen roundedQmod constants remain unchanged and separate. All16loadercolumns checked. Dropped data retained,zero work. No production API,hardware,statisticalconfidence,speedup or release claim.",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification_and_estimation.qmc_user_defined.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/amplitude_amplification_and_estimation/qmc_user_defined/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qmc_notebook.py",
+  "native_semantic_adaptations": "Complete native QMCI Notebook: preserve source full-precisioni/28probabilities,slope0.5,offset0.4,three preparation/Grover/QPE programs,three signed fractional phase bits,seven-qubit budget,resource reports,2048seed123local samples,signed histogram and amplitude error<0.1. Full source-precision states compared with independent Circuit; frozen roundedQmod constants remain unchanged and separate. All16loadercolumns checked. Dropped data retained,zero work. No production API,hardware,statisticalconfidence,speedup or release claim."
+}

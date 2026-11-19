@@ -5,8 +5,10 @@ admitted by this dependency slice; ordinary Python synthesis remains unchanged.
 """
 
 import flagquantum as fq
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.register_profile import register_type
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.verification.register_profile import (
+    register_type,
+)
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,

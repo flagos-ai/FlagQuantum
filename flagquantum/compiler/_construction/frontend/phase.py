@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, NoReturn
 
 from ..._hybrid.model import Value
 from ..._hybrid.verifier import HybridVerificationError
-from .._phase_factors import Cube
-from .._phase_polynomial import Location, Polynomial, expand_phase
+from ..semantics._phase_factors import Cube
+from ..semantics._phase_polynomial import Location, Polynomial, expand_phase
 from .numeric import has_numeric_reads
 from .phase_factors import (
     capture_sparse_predicate_phase,
@@ -27,7 +27,7 @@ def expand_native_phase(
     owner: _Body,
     expression: ast.expr,
     coefficient: float,
-    statement: ast.Call,
+    statement: ast.Call | ast.AugAssign,
     *,
     condition: ast.expr | None = None,
 ) -> tuple[Polynomial, tuple[Location, ...], tuple[tuple[Cube, Value], ...]] | None:
@@ -192,6 +192,8 @@ def expand_native_phase(
             fraction_bits=lambda node: numeric_format(node)[1],
         )
     except HybridVerificationError as error:
+        if not isinstance(statement, ast.Call):
+            raise
         budget_refusal = all(
             diagnostic.code == "construction.python.budget.phase"
             for diagnostic in error.diagnostics

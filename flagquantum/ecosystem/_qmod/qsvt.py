@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import register_width
+from ...compiler._construction.verification.register_profile import register_width
 from .callback_arrays import capture_effects
 from .masked_selection import emit_selected
 from .quantum_callbacks import Lambda

@@ -4,13 +4,17 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.register_expansion import expand_register_calls
-from flagquantum.compiler._construction.register_profile import (
+from flagquantum.compiler._construction.codegen.register_expansion import (
+    expand_register_calls,
+)
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
+from flagquantum.compiler._construction.verification.register_profile import (
     register_type,
     verify_register_program,
 )
-from flagquantum.compiler._construction.selection import select_register_program
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,

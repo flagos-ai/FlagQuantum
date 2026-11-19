@@ -6,7 +6,7 @@ import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import (
+from ...compiler._construction.verification.register_profile import (
     MAX_PREPARED_AMPLITUDES,
     register_width,
 )

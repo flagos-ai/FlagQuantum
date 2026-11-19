@@ -21,10 +21,41 @@ from benchmarks.synthesis.performance import (
     terminate_group,
     trial,
 )
+from benchmarks.synthesis.performance_probe import stage_of
 from benchmarks.synthesis.performance_results import read, validate, validate_sample
 from benchmarks.synthesis.performance_workloads import Prepared, Workload, workloads
 
 pytestmark = pytest.mark.benchmark_contract
+
+
+@pytest.mark.parametrize(
+    ("module", "stage"),
+    [
+        ("frontend.python", "C1"),
+        ("frontend.program", "C1"),
+        ("verification.profile", "C1"),
+        ("verification.register_profile", "C1"),
+        ("verification.register_verifier", "C1"),
+        ("verification.bindings", "C1"),
+        ("analysis.arithmetic_rewrites", "C2"),
+        ("analysis.ranges", "C2"),
+        ("analysis.lifetimes", "C2"),
+        ("codegen.register_expansion", "C1"),
+        ("codegen.arithmetic", "C3"),
+        ("codegen.registers", "C3"),
+        ("codegen.boolean", "C3"),
+        ("codegen.gate_tape", "C3"),
+        ("codegen.preparation", "C3"),
+        ("codegen.controls", "C3"),
+        ("codegen.transforms", "C3"),
+        ("scheduling.target", "C4"),
+        ("scheduling.selection", "C5"),
+    ],
+)
+def test_construction_modules_retain_the_diagnostic_stage(
+    module: str, stage: str
+) -> None:
+    assert stage_of(f"flagquantum.compiler._construction.{module}", "emit") == stage
 
 
 @pytest.mark.parametrize(
@@ -203,6 +234,11 @@ def test_actual_timing_memory_and_diagnostic_workers_are_separate(
     )
     spans = diagnostic["diagnostic"]["spans"]
     assert {s["stage"] for s in spans} == {"C1", "C2", "C3", "C4", "C5", "C6"}
+    assert any(
+        s["stage"] == "C3"
+        and s["function"].startswith("flagquantum.compiler._construction.codegen.")
+        for s in spans
+    )
     assert {v for s in spans for k, v in s["context"] if k == "scheduling"} >= {
         "retain",
         "recompute",

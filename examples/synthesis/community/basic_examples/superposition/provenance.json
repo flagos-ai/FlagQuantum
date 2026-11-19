@@ -10,5 +10,6 @@
   ],
   "native_entrypoint": "examples.synthesis.community.basic_examples.superposition.main",
   "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
-  "scope": "Complete local tutorial workflow: composed preparation, synthesis and visualization. Text circuit drawing replaces the upstream cloud viewer. Native execution, analytical state and independent Circuit additionally verify the quantum result."
+  "scope": "Complete local tutorial workflow: composed preparation, synthesis and visualization. Text circuit drawing replaces the upstream cloud viewer. Native execution, analytical state and independent Circuit additionally verify the quantum result.",
+  "native_notebook": "examples/synthesis/community/basic_examples/superposition/walkthrough.ipynb"
 }
