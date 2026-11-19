@@ -138,6 +138,8 @@ python -m pytest tests/unit/test_compilation_evidence_v4.py \
 The shared `read_compilation_evidence_bundle_json` entry dispatches exactly by
 version. Never regenerate the v1-v3 fixtures, downgrade collective records into
 single-source records, add numerical imports to Core, or treat successful codec
-reading as permission to execute the artifact. No production writer or automatic
+reading as permission to execute the artifact. The experimental read-only
+`load_compilation_evidence` view preserves the v4 identity and canonical JSON;
+it does not add execution admission. No production writer or automatic
 block stage is enabled by the reader alone. The current support boundary remains
 codec-only until those separately owned consumers pass their handoff tests.

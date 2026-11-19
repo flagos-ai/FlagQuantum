@@ -570,7 +570,7 @@ class PhysicalPlanEvidenceV4:
                         "block output must use the native basis on its pair"
                     )
         # Each output has a source position. Nondecreasing positions on every
-        # touched wire permit moving a block only across disjoint operations.
+        # touched qubit permit moving a block only across disjoint operations.
         last_source_position: dict[int, int] = {}
         for index, item in enumerate(output):
             if item.instruction_index != index:

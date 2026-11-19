@@ -18,6 +18,10 @@ from flagquantum.core._compilation_evidence import (
     _coupling_identity,
     read_compilation_evidence_bundle_json,
 )
+from flagquantum.experimental.artifacts import (
+    dump_compilation_evidence,
+    load_compilation_evidence,
+)
 
 pytestmark = pytest.mark.unit
 _DIGEST = "1" * 64
@@ -91,6 +95,28 @@ def _unsealed() -> dict[str, Any]:
     payload["bundle_identity"] = ""
     payload["physical_plan"]["plan_identity"] = ""
     return payload
+
+
+@pytest.mark.parametrize("empty_output", [False, True])
+def test_read_only_artifact_view_preserves_v4_identity_and_canonical_json(
+    empty_output: bool,
+) -> None:
+    original = _bundle(empty_output=empty_output)
+    encoded = original.to_json()
+    view = load_compilation_evidence(encoded)
+    assert view.version == "4.0"
+    assert view.producer == original.producer
+    assert view.identity == original.bundle_identity
+    assert view.to_dict() == original.to_dict()
+    assert view.to_json() == encoded
+    assert dump_compilation_evidence(view) == encoded
+
+
+def test_read_only_artifact_view_rejects_tampered_v4_identity() -> None:
+    payload = _bundle().to_dict()
+    payload["producer"] = "tampered-producer"
+    with pytest.raises(ValueError, match="identity"):
+        load_compilation_evidence(json.dumps(payload))
 
 
 def _read(payload: dict[str, Any]) -> v4.CompilationEvidenceBundleV4:
