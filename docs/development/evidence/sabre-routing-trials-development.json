@@ -1,0 +1,1691 @@
+{
+  "evidence_class": "development",
+  "python": "3.12.14 (main, Sep  1 2026, 14:09:38) [Clang 22.1.3 ]",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "source_sha256": "4ae94a7ccdee25b2f41cd75f35fd095876b23c49146d0567994388fd56b7efcb",
+  "acceptance": "exact complete GF(2) operator, restored layout, every interaction on a coupling edge",
+  "timing_limit": "shared host, one sample, no warmup; diagnostic only",
+  "depth_definition": "dependency depth counting each logical CX and SWAP as one; not target CZ depth",
+  "rows": [
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 19,
+          "restore_swaps": 7,
+          "total_swaps": 26,
+          "logical_two_qubit_depth": 38,
+          "seconds": 0.0005660839997290168
+        },
+        "trials": {
+          "forward_swaps": 19,
+          "restore_swaps": 7,
+          "total_swaps": 26,
+          "logical_two_qubit_depth": 38,
+          "seconds": 0.0006846250034868717
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 20,
+          "restore_swaps": 4,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 35,
+          "seconds": 0.0006983750026847702
+        },
+        "baseline": {
+          "forward_swaps": 20,
+          "restore_swaps": 4,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 35,
+          "seconds": 0.0002584169997135177
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 28,
+          "restore_swaps": 2,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 38,
+          "seconds": 0.00027762500030803494
+        },
+        "trials": {
+          "forward_swaps": 28,
+          "restore_swaps": 2,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 38,
+          "seconds": 0.0008290000005217735
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 14,
+          "restore_swaps": 6,
+          "total_swaps": 20,
+          "logical_two_qubit_depth": 30,
+          "seconds": 0.0016852500011736993
+        },
+        "baseline": {
+          "forward_swaps": 14,
+          "restore_swaps": 8,
+          "total_swaps": 22,
+          "logical_two_qubit_depth": 31,
+          "seconds": 0.000799624998762738
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 17,
+          "restore_swaps": 9,
+          "total_swaps": 26,
+          "logical_two_qubit_depth": 35,
+          "seconds": 0.00021754100089310668
+        },
+        "trials": {
+          "forward_swaps": 17,
+          "restore_swaps": 9,
+          "total_swaps": 26,
+          "logical_two_qubit_depth": 35,
+          "seconds": 0.0010974580000038259
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 18,
+          "restore_swaps": 6,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.0017399589996784925
+        },
+        "baseline": {
+          "forward_swaps": 18,
+          "restore_swaps": 6,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.0004481670002860483
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 23,
+          "restore_swaps": 7,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 37,
+          "seconds": 0.0005151250006747432
+        },
+        "trials": {
+          "forward_swaps": 23,
+          "restore_swaps": 7,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 37,
+          "seconds": 0.0017399590033164714
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 15,
+          "restore_swaps": 5,
+          "total_swaps": 20,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.0014276670008257497
+        },
+        "baseline": {
+          "forward_swaps": 15,
+          "restore_swaps": 5,
+          "total_swaps": 20,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.0006676250013697427
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 19,
+          "restore_swaps": 5,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 34,
+          "seconds": 0.00024533300165785477
+        },
+        "trials": {
+          "forward_swaps": 19,
+          "restore_swaps": 5,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 34,
+          "seconds": 0.0007129160003387369
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "line",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 20,
+          "restore_swaps": 4,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.0010729999994509853
+        },
+        "baseline": {
+          "forward_swaps": 20,
+          "restore_swaps": 4,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.0005274579998513218
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 10,
+          "restore_swaps": 8,
+          "total_swaps": 18,
+          "logical_two_qubit_depth": 28,
+          "seconds": 0.0005474169993249234
+        },
+        "trials": {
+          "forward_swaps": 10,
+          "restore_swaps": 8,
+          "total_swaps": 18,
+          "logical_two_qubit_depth": 28,
+          "seconds": 0.0009654999994381797
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 9,
+          "restore_swaps": 9,
+          "total_swaps": 18,
+          "logical_two_qubit_depth": 31,
+          "seconds": 0.0010115419972862583
+        },
+        "baseline": {
+          "forward_swaps": 9,
+          "restore_swaps": 9,
+          "total_swaps": 18,
+          "logical_two_qubit_depth": 31,
+          "seconds": 0.00019587499991757795
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 14,
+          "restore_swaps": 6,
+          "total_swaps": 20,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.00018187499881605618
+        },
+        "trials": {
+          "forward_swaps": 14,
+          "restore_swaps": 6,
+          "total_swaps": 20,
+          "logical_two_qubit_depth": 33,
+          "seconds": 0.0006394159972842317
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 9,
+          "restore_swaps": 7,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 31,
+          "seconds": 0.0005032500012021046
+        },
+        "baseline": {
+          "forward_swaps": 9,
+          "restore_swaps": 7,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 31,
+          "seconds": 0.00014437500067288056
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 9,
+          "restore_swaps": 7,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 27,
+          "seconds": 0.00014737500168848783
+        },
+        "trials": {
+          "forward_swaps": 9,
+          "restore_swaps": 3,
+          "total_swaps": 12,
+          "logical_two_qubit_depth": 24,
+          "seconds": 0.0007770000011078082
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 8,
+          "restore_swaps": 8,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 30,
+          "seconds": 0.001271707998967031
+        },
+        "baseline": {
+          "forward_swaps": 8,
+          "restore_swaps": 8,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 30,
+          "seconds": 0.00037479200182133354
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 10,
+          "restore_swaps": 8,
+          "total_swaps": 18,
+          "logical_two_qubit_depth": 29,
+          "seconds": 0.00041295800110674463
+        },
+        "trials": {
+          "forward_swaps": 10,
+          "restore_swaps": 6,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 28,
+          "seconds": 0.0012832079992222134
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 8,
+          "restore_swaps": 2,
+          "total_swaps": 10,
+          "logical_two_qubit_depth": 27,
+          "seconds": 0.001153500001237262
+        },
+        "baseline": {
+          "forward_swaps": 8,
+          "restore_swaps": 4,
+          "total_swaps": 12,
+          "logical_two_qubit_depth": 29,
+          "seconds": 0.0004367500005173497
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 9,
+          "restore_swaps": 3,
+          "total_swaps": 12,
+          "logical_two_qubit_depth": 28,
+          "seconds": 0.00036416700095287524
+        },
+        "trials": {
+          "forward_swaps": 9,
+          "restore_swaps": 3,
+          "total_swaps": 12,
+          "logical_two_qubit_depth": 28,
+          "seconds": 0.0008316670027852524
+        }
+      }
+    },
+    {
+      "width": 6,
+      "topology": "grid",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 8,
+          "restore_swaps": 8,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 27,
+          "seconds": 0.0005027909974160139
+        },
+        "baseline": {
+          "forward_swaps": 8,
+          "restore_swaps": 8,
+          "total_swaps": 16,
+          "logical_two_qubit_depth": 27,
+          "seconds": 0.00015891699877101928
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 39,
+          "restore_swaps": 17,
+          "total_swaps": 56,
+          "logical_two_qubit_depth": 49,
+          "seconds": 0.0004164159981883131
+        },
+        "trials": {
+          "forward_swaps": 39,
+          "restore_swaps": 15,
+          "total_swaps": 54,
+          "logical_two_qubit_depth": 50,
+          "seconds": 0.0016358330030925572
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 36,
+          "restore_swaps": 8,
+          "total_swaps": 44,
+          "logical_two_qubit_depth": 45,
+          "seconds": 0.001508416000433499
+        },
+        "baseline": {
+          "forward_swaps": 36,
+          "restore_swaps": 10,
+          "total_swaps": 46,
+          "logical_two_qubit_depth": 45,
+          "seconds": 0.00042320899956393987
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 35,
+          "restore_swaps": 9,
+          "total_swaps": 44,
+          "logical_two_qubit_depth": 47,
+          "seconds": 0.0004861659981543198
+        },
+        "trials": {
+          "forward_swaps": 35,
+          "restore_swaps": 9,
+          "total_swaps": 44,
+          "logical_two_qubit_depth": 47,
+          "seconds": 0.004832624999835389
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 39,
+          "restore_swaps": 13,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 41,
+          "seconds": 0.004336624999268679
+        },
+        "baseline": {
+          "forward_swaps": 39,
+          "restore_swaps": 13,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 41,
+          "seconds": 0.0007484589987143409
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 34,
+          "restore_swaps": 18,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 45,
+          "seconds": 0.00036720800198963843
+        },
+        "trials": {
+          "forward_swaps": 34,
+          "restore_swaps": 16,
+          "total_swaps": 50,
+          "logical_two_qubit_depth": 45,
+          "seconds": 0.0016073330007202458
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 37,
+          "restore_swaps": 13,
+          "total_swaps": 50,
+          "logical_two_qubit_depth": 43,
+          "seconds": 0.003102667000348447
+        },
+        "baseline": {
+          "forward_swaps": 36,
+          "restore_swaps": 18,
+          "total_swaps": 54,
+          "logical_two_qubit_depth": 41,
+          "seconds": 0.0008441249992756639
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 42,
+          "restore_swaps": 12,
+          "total_swaps": 54,
+          "logical_two_qubit_depth": 50,
+          "seconds": 0.0007342080025409814
+        },
+        "trials": {
+          "forward_swaps": 42,
+          "restore_swaps": 10,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 48,
+          "seconds": 0.0019511249993229285
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 50,
+          "restore_swaps": 12,
+          "total_swaps": 62,
+          "logical_two_qubit_depth": 54,
+          "seconds": 0.0033178750018123537
+        },
+        "baseline": {
+          "forward_swaps": 50,
+          "restore_swaps": 12,
+          "total_swaps": 62,
+          "logical_two_qubit_depth": 54,
+          "seconds": 0.0006118750025052577
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 47,
+          "restore_swaps": 13,
+          "total_swaps": 60,
+          "logical_two_qubit_depth": 57,
+          "seconds": 0.001419958000042243
+        },
+        "trials": {
+          "forward_swaps": 47,
+          "restore_swaps": 13,
+          "total_swaps": 60,
+          "logical_two_qubit_depth": 57,
+          "seconds": 0.0031482910017075483
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "line",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 33,
+          "restore_swaps": 17,
+          "total_swaps": 50,
+          "logical_two_qubit_depth": 52,
+          "seconds": 0.001562333000038052
+        },
+        "baseline": {
+          "forward_swaps": 33,
+          "restore_swaps": 17,
+          "total_swaps": 50,
+          "logical_two_qubit_depth": 52,
+          "seconds": 0.000838167001347756
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 21,
+          "restore_swaps": 15,
+          "total_swaps": 36,
+          "logical_two_qubit_depth": 40,
+          "seconds": 0.0008699169993633404
+        },
+        "trials": {
+          "forward_swaps": 21,
+          "restore_swaps": 15,
+          "total_swaps": 36,
+          "logical_two_qubit_depth": 40,
+          "seconds": 0.002854250000382308
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 19,
+          "restore_swaps": 11,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 42,
+          "seconds": 0.0022144169997773133
+        },
+        "baseline": {
+          "forward_swaps": 19,
+          "restore_swaps": 11,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 42,
+          "seconds": 0.00038625000161118805
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 19,
+          "restore_swaps": 15,
+          "total_swaps": 34,
+          "logical_two_qubit_depth": 46,
+          "seconds": 0.00036458300019148737
+        },
+        "trials": {
+          "forward_swaps": 19,
+          "restore_swaps": 13,
+          "total_swaps": 32,
+          "logical_two_qubit_depth": 44,
+          "seconds": 0.002981416000693571
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 23,
+          "restore_swaps": 9,
+          "total_swaps": 32,
+          "logical_two_qubit_depth": 37,
+          "seconds": 0.0020891659987682942
+        },
+        "baseline": {
+          "forward_swaps": 23,
+          "restore_swaps": 9,
+          "total_swaps": 32,
+          "logical_two_qubit_depth": 37,
+          "seconds": 0.0004495409993978683
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 16,
+          "restore_swaps": 8,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 31,
+          "seconds": 0.0003447500021138694
+        },
+        "trials": {
+          "forward_swaps": 16,
+          "restore_swaps": 8,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 31,
+          "seconds": 0.0012652499972318765
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 18,
+          "restore_swaps": 4,
+          "total_swaps": 22,
+          "logical_two_qubit_depth": 34,
+          "seconds": 0.0012759169985656627
+        },
+        "baseline": {
+          "forward_swaps": 18,
+          "restore_swaps": 10,
+          "total_swaps": 28,
+          "logical_two_qubit_depth": 39,
+          "seconds": 0.0007573749971925281
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 21,
+          "restore_swaps": 3,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 28,
+          "seconds": 0.0006860000030428637
+        },
+        "trials": {
+          "forward_swaps": 21,
+          "restore_swaps": 3,
+          "total_swaps": 24,
+          "logical_two_qubit_depth": 28,
+          "seconds": 0.002804332998493919
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 20,
+          "restore_swaps": 8,
+          "total_swaps": 28,
+          "logical_two_qubit_depth": 39,
+          "seconds": 0.001411833000020124
+        },
+        "baseline": {
+          "forward_swaps": 20,
+          "restore_swaps": 8,
+          "total_swaps": 28,
+          "logical_two_qubit_depth": 39,
+          "seconds": 0.0003562079982657451
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 21,
+          "restore_swaps": 9,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 34,
+          "seconds": 0.001114458002120955
+        },
+        "trials": {
+          "forward_swaps": 21,
+          "restore_swaps": 9,
+          "total_swaps": 30,
+          "logical_two_qubit_depth": 34,
+          "seconds": 0.0011950840016652364
+        }
+      }
+    },
+    {
+      "width": 8,
+      "topology": "grid",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 17,
+          "restore_swaps": 11,
+          "total_swaps": 28,
+          "logical_two_qubit_depth": 39,
+          "seconds": 0.0010734580027929042
+        },
+        "baseline": {
+          "forward_swaps": 17,
+          "restore_swaps": 11,
+          "total_swaps": 28,
+          "logical_two_qubit_depth": 39,
+          "seconds": 0.00032087500221678056
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 88,
+          "restore_swaps": 20,
+          "total_swaps": 108,
+          "logical_two_qubit_depth": 71,
+          "seconds": 0.0013251670025056228
+        },
+        "trials": {
+          "forward_swaps": 88,
+          "restore_swaps": 20,
+          "total_swaps": 108,
+          "logical_two_qubit_depth": 71,
+          "seconds": 0.006820124999649124
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 82,
+          "restore_swaps": 18,
+          "total_swaps": 100,
+          "logical_two_qubit_depth": 68,
+          "seconds": 0.006159541997476481
+        },
+        "baseline": {
+          "forward_swaps": 82,
+          "restore_swaps": 18,
+          "total_swaps": 100,
+          "logical_two_qubit_depth": 68,
+          "seconds": 0.0019611249990703072
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 95,
+          "restore_swaps": 31,
+          "total_swaps": 126,
+          "logical_two_qubit_depth": 72,
+          "seconds": 0.00202670799990301
+        },
+        "trials": {
+          "forward_swaps": 95,
+          "restore_swaps": 31,
+          "total_swaps": 126,
+          "logical_two_qubit_depth": 72,
+          "seconds": 0.010126875000423752
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 109,
+          "restore_swaps": 33,
+          "total_swaps": 142,
+          "logical_two_qubit_depth": 83,
+          "seconds": 0.00829087500096648
+        },
+        "baseline": {
+          "forward_swaps": 109,
+          "restore_swaps": 33,
+          "total_swaps": 142,
+          "logical_two_qubit_depth": 83,
+          "seconds": 0.002615708999655908
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 101,
+          "restore_swaps": 33,
+          "total_swaps": 134,
+          "logical_two_qubit_depth": 77,
+          "seconds": 0.0033112079981947318
+        },
+        "trials": {
+          "forward_swaps": 101,
+          "restore_swaps": 29,
+          "total_swaps": 130,
+          "logical_two_qubit_depth": 74,
+          "seconds": 0.009972541000024648
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 97,
+          "restore_swaps": 25,
+          "total_swaps": 122,
+          "logical_two_qubit_depth": 70,
+          "seconds": 0.010846916000446072
+        },
+        "baseline": {
+          "forward_swaps": 97,
+          "restore_swaps": 25,
+          "total_swaps": 122,
+          "logical_two_qubit_depth": 70,
+          "seconds": 0.0014947499985282775
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 107,
+          "restore_swaps": 41,
+          "total_swaps": 148,
+          "logical_two_qubit_depth": 78,
+          "seconds": 0.002167417002056027
+        },
+        "trials": {
+          "forward_swaps": 107,
+          "restore_swaps": 39,
+          "total_swaps": 146,
+          "logical_two_qubit_depth": 74,
+          "seconds": 0.014493667000351707
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 91,
+          "restore_swaps": 35,
+          "total_swaps": 126,
+          "logical_two_qubit_depth": 66,
+          "seconds": 0.009653416000219295
+        },
+        "baseline": {
+          "forward_swaps": 91,
+          "restore_swaps": 37,
+          "total_swaps": 128,
+          "logical_two_qubit_depth": 72,
+          "seconds": 0.0030876249984430615
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 107,
+          "restore_swaps": 29,
+          "total_swaps": 136,
+          "logical_two_qubit_depth": 74,
+          "seconds": 0.002593666999018751
+        },
+        "trials": {
+          "forward_swaps": 107,
+          "restore_swaps": 29,
+          "total_swaps": 136,
+          "logical_two_qubit_depth": 74,
+          "seconds": 0.006087708999984898
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "line",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 90,
+          "restore_swaps": 26,
+          "total_swaps": 116,
+          "logical_two_qubit_depth": 69,
+          "seconds": 0.00527920899912715
+        },
+        "baseline": {
+          "forward_swaps": 90,
+          "restore_swaps": 28,
+          "total_swaps": 118,
+          "logical_two_qubit_depth": 70,
+          "seconds": 0.001306374997511739
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 53,
+          "restore_swaps": 27,
+          "total_swaps": 80,
+          "logical_two_qubit_depth": 65,
+          "seconds": 0.000989542000752408
+        },
+        "trials": {
+          "forward_swaps": 53,
+          "restore_swaps": 23,
+          "total_swaps": 76,
+          "logical_two_qubit_depth": 62,
+          "seconds": 0.0048237080009130295
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 39,
+          "restore_swaps": 21,
+          "total_swaps": 60,
+          "logical_two_qubit_depth": 49,
+          "seconds": 0.006313165999017656
+        },
+        "baseline": {
+          "forward_swaps": 39,
+          "restore_swaps": 29,
+          "total_swaps": 68,
+          "logical_two_qubit_depth": 53,
+          "seconds": 0.002116667001246242
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 51,
+          "restore_swaps": 21,
+          "total_swaps": 72,
+          "logical_two_qubit_depth": 64,
+          "seconds": 0.0014386250004463363
+        },
+        "trials": {
+          "forward_swaps": 51,
+          "restore_swaps": 19,
+          "total_swaps": 70,
+          "logical_two_qubit_depth": 63,
+          "seconds": 0.008229291997849941
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 40,
+          "restore_swaps": 12,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 55,
+          "seconds": 0.007867917000112357
+        },
+        "baseline": {
+          "forward_swaps": 40,
+          "restore_swaps": 12,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 55,
+          "seconds": 0.0011743750001187436
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 36,
+          "restore_swaps": 16,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 50,
+          "seconds": 0.0007525000000896398
+        },
+        "trials": {
+          "forward_swaps": 36,
+          "restore_swaps": 16,
+          "total_swaps": 52,
+          "logical_two_qubit_depth": 50,
+          "seconds": 0.003063666998059489
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 43,
+          "restore_swaps": 25,
+          "total_swaps": 68,
+          "logical_two_qubit_depth": 55,
+          "seconds": 0.007418375000270316
+        },
+        "baseline": {
+          "forward_swaps": 43,
+          "restore_swaps": 25,
+          "total_swaps": 68,
+          "logical_two_qubit_depth": 55,
+          "seconds": 0.0009939580013451632
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 50,
+          "restore_swaps": 26,
+          "total_swaps": 76,
+          "logical_two_qubit_depth": 63,
+          "seconds": 0.0009064589976333082
+        },
+        "trials": {
+          "forward_swaps": 50,
+          "restore_swaps": 22,
+          "total_swaps": 72,
+          "logical_two_qubit_depth": 58,
+          "seconds": 0.003717207997397054
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 48,
+          "restore_swaps": 16,
+          "total_swaps": 64,
+          "logical_two_qubit_depth": 49,
+          "seconds": 0.006983791001403006
+        },
+        "baseline": {
+          "forward_swaps": 48,
+          "restore_swaps": 24,
+          "total_swaps": 72,
+          "logical_two_qubit_depth": 56,
+          "seconds": 0.0020100420006201603
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 44,
+          "restore_swaps": 18,
+          "total_swaps": 62,
+          "logical_two_qubit_depth": 58,
+          "seconds": 0.0008962499996414408
+        },
+        "trials": {
+          "forward_swaps": 44,
+          "restore_swaps": 18,
+          "total_swaps": 62,
+          "logical_two_qubit_depth": 58,
+          "seconds": 0.005062915999587858
+        }
+      }
+    },
+    {
+      "width": 12,
+      "topology": "grid",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 39,
+          "restore_swaps": 19,
+          "total_swaps": 58,
+          "logical_two_qubit_depth": 56,
+          "seconds": 0.003662209001049632
+        },
+        "baseline": {
+          "forward_swaps": 39,
+          "restore_swaps": 21,
+          "total_swaps": 60,
+          "logical_two_qubit_depth": 58,
+          "seconds": 0.0013710830025956966
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 208,
+          "restore_swaps": 40,
+          "total_swaps": 248,
+          "logical_two_qubit_depth": 100,
+          "seconds": 0.005281292000290705
+        },
+        "trials": {
+          "forward_swaps": 209,
+          "restore_swaps": 35,
+          "total_swaps": 244,
+          "logical_two_qubit_depth": 100,
+          "seconds": 0.015493875001993729
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 189,
+          "restore_swaps": 41,
+          "total_swaps": 230,
+          "logical_two_qubit_depth": 115,
+          "seconds": 0.015236250001180451
+        },
+        "baseline": {
+          "forward_swaps": 189,
+          "restore_swaps": 41,
+          "total_swaps": 230,
+          "logical_two_qubit_depth": 115,
+          "seconds": 0.0043359160008549225
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 185,
+          "restore_swaps": 49,
+          "total_swaps": 234,
+          "logical_two_qubit_depth": 100,
+          "seconds": 0.004486417001317022
+        },
+        "trials": {
+          "forward_swaps": 185,
+          "restore_swaps": 49,
+          "total_swaps": 234,
+          "logical_two_qubit_depth": 100,
+          "seconds": 0.017996083999605617
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 192,
+          "restore_swaps": 54,
+          "total_swaps": 246,
+          "logical_two_qubit_depth": 109,
+          "seconds": 0.013932500001828885
+        },
+        "baseline": {
+          "forward_swaps": 192,
+          "restore_swaps": 54,
+          "total_swaps": 246,
+          "logical_two_qubit_depth": 109,
+          "seconds": 0.003985958002886036
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 166,
+          "restore_swaps": 72,
+          "total_swaps": 238,
+          "logical_two_qubit_depth": 95,
+          "seconds": 0.002874874997360166
+        },
+        "trials": {
+          "forward_swaps": 166,
+          "restore_swaps": 68,
+          "total_swaps": 234,
+          "logical_two_qubit_depth": 94,
+          "seconds": 0.012543249998998363
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 185,
+          "restore_swaps": 49,
+          "total_swaps": 234,
+          "logical_two_qubit_depth": 100,
+          "seconds": 0.016574540997680742
+        },
+        "baseline": {
+          "forward_swaps": 185,
+          "restore_swaps": 53,
+          "total_swaps": 238,
+          "logical_two_qubit_depth": 108,
+          "seconds": 0.0032538330015086103
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 195,
+          "restore_swaps": 57,
+          "total_swaps": 252,
+          "logical_two_qubit_depth": 118,
+          "seconds": 0.0035992500015709084
+        },
+        "trials": {
+          "forward_swaps": 195,
+          "restore_swaps": 57,
+          "total_swaps": 252,
+          "logical_two_qubit_depth": 118,
+          "seconds": 0.015735042001324473
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 216,
+          "restore_swaps": 66,
+          "total_swaps": 282,
+          "logical_two_qubit_depth": 109,
+          "seconds": 0.01716520800255239
+        },
+        "baseline": {
+          "forward_swaps": 216,
+          "restore_swaps": 70,
+          "total_swaps": 286,
+          "logical_two_qubit_depth": 111,
+          "seconds": 0.0035489159999997355
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 194,
+          "restore_swaps": 56,
+          "total_swaps": 250,
+          "logical_two_qubit_depth": 113,
+          "seconds": 0.0043417080014478415
+        },
+        "trials": {
+          "forward_swaps": 194,
+          "restore_swaps": 56,
+          "total_swaps": 250,
+          "logical_two_qubit_depth": 113,
+          "seconds": 0.01879541599919321
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "line",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 179,
+          "restore_swaps": 63,
+          "total_swaps": 242,
+          "logical_two_qubit_depth": 116,
+          "seconds": 0.012451374997908715
+        },
+        "baseline": {
+          "forward_swaps": 179,
+          "restore_swaps": 65,
+          "total_swaps": 244,
+          "logical_two_qubit_depth": 116,
+          "seconds": 0.0028162499984318856
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 0,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 104,
+          "restore_swaps": 32,
+          "total_swaps": 136,
+          "logical_two_qubit_depth": 89,
+          "seconds": 0.004615207999449922
+        },
+        "trials": {
+          "forward_swaps": 104,
+          "restore_swaps": 24,
+          "total_swaps": 128,
+          "logical_two_qubit_depth": 81,
+          "seconds": 0.010553165997407632
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 1,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 92,
+          "restore_swaps": 42,
+          "total_swaps": 134,
+          "logical_two_qubit_depth": 75,
+          "seconds": 0.00898645800043596
+        },
+        "baseline": {
+          "forward_swaps": 92,
+          "restore_swaps": 42,
+          "total_swaps": 134,
+          "logical_two_qubit_depth": 75,
+          "seconds": 0.0020450420015549753
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 2,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 85,
+          "restore_swaps": 47,
+          "total_swaps": 132,
+          "logical_two_qubit_depth": 82,
+          "seconds": 0.00247500000114087
+        },
+        "trials": {
+          "forward_swaps": 85,
+          "restore_swaps": 47,
+          "total_swaps": 132,
+          "logical_two_qubit_depth": 82,
+          "seconds": 0.010175167000852525
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 3,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 95,
+          "restore_swaps": 35,
+          "total_swaps": 130,
+          "logical_two_qubit_depth": 78,
+          "seconds": 0.010368833998654736
+        },
+        "baseline": {
+          "forward_swaps": 95,
+          "restore_swaps": 39,
+          "total_swaps": 134,
+          "logical_two_qubit_depth": 82,
+          "seconds": 0.0038395839983422775
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 4,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 74,
+          "restore_swaps": 38,
+          "total_swaps": 112,
+          "logical_two_qubit_depth": 79,
+          "seconds": 0.0035673750026035123
+        },
+        "trials": {
+          "forward_swaps": 75,
+          "restore_swaps": 33,
+          "total_swaps": 108,
+          "logical_two_qubit_depth": 74,
+          "seconds": 0.013911082998674829
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 5,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 92,
+          "restore_swaps": 28,
+          "total_swaps": 120,
+          "logical_two_qubit_depth": 74,
+          "seconds": 0.018432625001878478
+        },
+        "baseline": {
+          "forward_swaps": 92,
+          "restore_swaps": 32,
+          "total_swaps": 124,
+          "logical_two_qubit_depth": 78,
+          "seconds": 0.0060051250002288725
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 6,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 90,
+          "restore_swaps": 34,
+          "total_swaps": 124,
+          "logical_two_qubit_depth": 91,
+          "seconds": 0.061090374998457264
+        },
+        "trials": {
+          "forward_swaps": 90,
+          "restore_swaps": 32,
+          "total_swaps": 122,
+          "logical_two_qubit_depth": 86,
+          "seconds": 0.010064833997603273
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 7,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 96,
+          "restore_swaps": 42,
+          "total_swaps": 138,
+          "logical_two_qubit_depth": 95,
+          "seconds": 0.015662040997995064
+        },
+        "baseline": {
+          "forward_swaps": 96,
+          "restore_swaps": 42,
+          "total_swaps": 138,
+          "logical_two_qubit_depth": 95,
+          "seconds": 0.003511874998366693
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 8,
+      "measurements": {
+        "baseline": {
+          "forward_swaps": 77,
+          "restore_swaps": 39,
+          "total_swaps": 116,
+          "logical_two_qubit_depth": 78,
+          "seconds": 0.0017537080020701978
+        },
+        "trials": {
+          "forward_swaps": 77,
+          "restore_swaps": 29,
+          "total_swaps": 106,
+          "logical_two_qubit_depth": 68,
+          "seconds": 0.008998917001008522
+        }
+      }
+    },
+    {
+      "width": 16,
+      "topology": "grid",
+      "seed": 9,
+      "measurements": {
+        "trials": {
+          "forward_swaps": 67,
+          "restore_swaps": 43,
+          "total_swaps": 110,
+          "logical_two_qubit_depth": 82,
+          "seconds": 0.016305250002915272
+        },
+        "baseline": {
+          "forward_swaps": 67,
+          "restore_swaps": 45,
+          "total_swaps": 112,
+          "logical_two_qubit_depth": 86,
+          "seconds": 0.0022798329991928767
+        }
+      }
+    }
+  ]
+}
