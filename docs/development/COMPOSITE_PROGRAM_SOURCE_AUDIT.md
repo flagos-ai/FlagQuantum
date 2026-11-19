@@ -17,9 +17,9 @@ owns presentation. Source Python objects are confined to reference tests.
 | --- | --- | --- |
 | `_to_tuple`, `_to_set`, `CompositeBloq` | Core immutable tuples and typed Program validation replace attrs converter storage. | Logical typed graph admission and scheduling are accepted under Q-0149. Source object equality is represented through native records, not source Python classes. |
 | `CompositeBloq._default_bloq_instances`, `all_soquets`, `_binst_graph` | Existing operations/results/arguments and `component_graph` / `component_schedule` derive nodes, values and dependencies. `test_component_graph.py` checks metadata, array shape, ownership and copy. | A portable ordering for source frozenset-only isolated nodes is unavailable. Native stored order is explicit. |
-| `CompositeBloq.as_cirq_op`, `to_cirq_circuit_and_quregs`, `to_cirq_circuit` | `_register_program_export.export_bound_register_cirq` composes Compiler-bound Program traversal with external manager lifetime replay and returns final shaped Qids. Source/native tests cover clean/borrowed reuse, LEFT release and RIGHT transfer, reordered ports, primitive order and every repeated measured-child branch. See CIRQ_REGISTER_PROGRAM_EXPORT.md. | Finite executable Programs use consecutive input binding explicitly. Arbitrary SDK-backed leaf wrappers and symbolic graphs remain open. The gate wrapper and direct returned-output conversion have separate ownership semantics. |
-| `CompositeBloq.from_cirq_circuit` | `_register_import.import_cirq_register_optree` builds native typed Programs. `test_cirq_register_import.py` checks default sorted qubits, directional/shaped ports, phase, resets, custom definitions and six-wire full unitary. | Source permits arbitrary Cirq wrappers; native admission is finite and explicit. Audit unsupported operation classes before full conversion closure. |
-| `CompositeBloq.on_classical_vals` | `component_classical_state.ComponentClassicalState` and pure/phased component traversal compose registered numerical actions. Tests cover shaped values, phase, RNG, failures and all small measurement branches. | Symbolic typed graph admission and arbitrary source Python callbacks remain outside finite Program construction. |
+| `CompositeBloq.as_cirq_op`, `to_cirq_circuit_and_quregs`, `to_cirq_circuit` | `_register_program_export.export_bound_register_cirq` composes Compiler-bound Program traversal with external manager lifetime replay and returns final shaped Qids. Source/native tests cover clean/borrowed reuse, LEFT release and RIGHT transfer, reordered ports, primitive order and every repeated measured-child branch. See CIRQ_REGISTER_PROGRAM_EXPORT.md. | Finite executable Programs use consecutive input binding explicitly. SDK decomposition, explicit matrix and channel leaves, tensor fallback and recursive feedback are accepted in the follow-ups below. Nonlinear parameters and symbolic global phase remain open. The gate wrapper and direct returned-output conversion retain separate ownership semantics. |
+| `CompositeBloq.from_cirq_circuit` | `_register_import.import_cirq_register_optree` builds native typed Programs. `test_cirq_register_import.py` checks default sorted qubits, directional/shaped ports, phase, resets, custom definitions and six-wire full unitary. | The accepted recursive SDK importer covers finite decomposition, matrices, tensor fallback, channels and feedback. Nonlinear parameters and generic symbolic global phase remain concrete gaps. Foreign objects terminate at Ecosystem. |
+| `CompositeBloq.on_classical_vals` | `component_classical_state.ComponentClassicalState` and pure/phased component traversal compose registered numerical actions. Tests cover shaped values, phase, RNG, failures and all small measurement branches. | Logical typed graphs are admitted under Q-0149. Numerical execution requires a declared native provider for each child action. Arbitrary source Python callbacks terminate at the reference boundary. |
 | `CompositeBloq.as_composite_bloq`, `decompose_bloq` | A native stored Program already is the composite. Root wrapping and decomposition use `component_tensor_expansion` and `component_expansion`; no redundant wrapper is required for an existing composite. | Source refusal to decompose an already-composite value must stay distinct from selective child expansion. Existing root tensor tests document the distinction. |
 | `CompositeBloq.build_call_graph` | `_component_trace.program_call_graph.program_component_call_graph`, backed by the shared symbolic call graph. `test_program_component_call_graph.py` covers hierarchy, direct counts, specialized adjoints, depth and keep policies. | Stored component multiplicities and source models remain separate from measured emitted instructions. |
 | `CompositeBloq.iter_bloqnections`, `iter_bloqsoqs`, `final_soqs` | `component_graph.iter_component_calls`, SSA endpoints and the final return tuple. Graph and construction notebook tests cover every immediate connection and final permutation. | Native has no public connection-object class, intentionally using Core SSA. Empty-shaped source final output omission remains a recorded source defect. |
@@ -44,12 +44,11 @@ owns presentation. Source Python objects are confined to reference tests.
 
 ## Next complete workflow
 
-The direct finite Program export is now implemented and covered by the connected
-source/native workflow described in CIRQ_REGISTER_PROGRAM_EXPORT.md. Reuse that
-evidence when evaluating the three Cirq methods. The source `as_cirq_op` includes
-a wrapper fallback for source components whose direct Cirq conversion refuses;
-its arbitrary SDK-backed leaves and symbolic declaration semantics still need
-explicit disposition. The source summary method is owned by Drawer and compared directly with native
+The direct finite Program export and SDK-backed leaf follow-ups below cover
+decomposition, matrix, tensor-only, channel and measured native/SDK composition.
+Reuse their connected source/native workflows. Remaining nonlinear parameter
+transport and symbolic global phase require the shared parameter contract
+proposed in Proposal 107 before implementation. The source summary method is owned by Drawer and compared directly with native
 immediate-layer counts, including nested shared definitions.
 
 The frozen source file's own tests currently pass 39 cases and its original
@@ -334,3 +333,38 @@ wrappers omit parameter protocols, and source CZPow graph export decomposes into
 measurement-assisted And erasure. Their protocol and granularity differences
 are explicit in tests. Q-0149 and Q-0154 remain accepted, and source symbolic
 array-element counts remain a shared refusal. This batch does not close Q-0156.
+
+
+## Complete definition re-audit and nonlinear dependency
+
+The original source has 64 top-level definitions and direct class methods,
+including its overload declarations. The unchanged Git blob is
+`b0317f675c96f9cce1581fcbb7030c48ab32a529`. Exact source names and line ranges
+are retained in `g2-composite-final-definition-intake.json`. The full owner
+inventory above remains the acceptance map. Live `inline_calls` already
+implements `BloqBuilder.add_from`, including actual call-time insertion, shaped
+remapping, output order, namespace conflicts and source consumption prefixes.
+That implementation is reused.
+
+A direct dependency probe now compares sin, cos, exp, log, square, reciprocal
+and square-root Rz angles. The unchanged source converts each graph, retains
+its parameter and resolves it at theta=0.37. Each complete resolved complex
+operator equals the corresponding SDK operator exactly in this probe. Native
+import rejects each with `unsupported_parameter_expression`. These observations
+prove the remaining gap, without constituting native execution acceptance.
+The probe uses a plain symbol matching existing name-based parameter resolution.
+A same-name symbol carrying additional assumptions requires separate mapping
+evidence because source string-based resolution can leave it unresolved.
+
+Proposal 103 prerequisite 1.24 explicitly keeps nonlinear rejection. Core
+parameters also belong to the protected API and expression serialization
+vocabulary. Proposal 107 is a review draft for a shared owned representation,
+structural validation, real tensor-aware binding and SDK roundtrip. It requires
+explicit approval before production implementation. A preliminary implementation
+was removed after this boundary review. Production remains at the accepted
+arithmetic contract. Full Q-0156 acceptance remains open.
+
+The source-intake receipt is `g2-nonlinear-parameter-intake.json`. This audit
+changes documentation only and reuses the previous 4099 concentrated and 96
+integration results for unchanged production. No new native acceptance or
+resource count is inferred from the intake.
