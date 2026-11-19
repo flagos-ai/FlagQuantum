@@ -16,7 +16,7 @@ import torch
 
 from ...core.ir import CircuitIR
 from ...core.parameters import is_parameterized_value, parameter_names_in_value
-from ..operator_lowering import require_static_gate_program, validate_lowering
+from ..lowering.operator_lowering import require_static_gate_program, validate_lowering
 
 _PI = round(math.pi, 6)
 

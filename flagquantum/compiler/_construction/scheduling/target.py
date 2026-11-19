@@ -7,16 +7,21 @@ from time import perf_counter
 from ....core.ir import CircuitIR
 from ....core.runtime_config import RuntimeConfig
 from ....errors import CompilationError
-from ...basis_conversion import (
+from ...lowering.basis_conversion import (
     BasisConversionError,
     BasisConversionResult,
     convert_basis,
     require_basis,
 )
-from ...layout import Layout, _routing_swap_phases, final_layout, remove_layout_restore
 from ...lowering.schedule_legalization import schedule_layers
 from ...pipeline import compile
 from ...topology.coupling import CouplingMap
+from ...topology.layout import (
+    Layout,
+    _routing_swap_phases,
+    final_layout,
+    remove_layout_restore,
+)
 
 
 class TargetError(ValueError):

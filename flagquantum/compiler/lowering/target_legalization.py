@@ -21,7 +21,7 @@ from ...core.target_capabilities import (
     match_target_capabilities,
 )
 from ...errors import CompilationError
-from ..routing import CouplingMap
+from ..topology.coupling import CouplingMap
 from ..topology.directed_topology import DirectedCouplingMap
 from ..topology.direction_legalization import (
     DirectionLegalizationError,
