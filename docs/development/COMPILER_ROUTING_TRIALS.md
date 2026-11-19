@@ -150,3 +150,28 @@ revision test reported 98 differences. The checker, declarations and evidence
 files are unchanged from the main baseline in this worktree; this is still an
 unresolved local qualification failure, not a waived gate. The original full
 run remains failed and complete CI remains required.
+
+## Historical lookahead experiment and production trials
+
+The W7-04 LookaheadSwap experiment compared a beam search to the deterministic
+single-trial planner. Its smallest depth/width anchor cannot reproduce a
+multi-trial selection by definition. The live benchmark now measures explicit
+`sabre/single-trial` and `layout/single-trial` controls alongside production
+`sabre` and `sabre_layout`. Reference layout trials also retain the single-trial
+control, so the historical comparison does not silently change its algorithm.
+
+The original 1.03 ratio bound remains against its original deterministic layout
+control. Tests additionally require current production planned totals to be no
+worse than their deterministic controls. All configurations retain numerical
+and topology checks. Historical JSON is unchanged; current ratios to production
+are still reported and may differ when production improves. This repairs the
+comparison identity rather than raising a threshold or forcing production to
+emit an older, more expensive route.
+
+The earlier 98 local evidence-origin errors were checked in isolated complete
+object stores containing only the selected published branch ref. Both main
+`45468b934a18e552a2a69dcc0b8f1db0d8fa16f9` and the synchronized candidate
+`a8901e23635a753972d68ddb1ab59cb9b35fd7d8` passed the unmodified evidence-origin
+checker. The producing workspace retains additional historical refs that change
+the checker's reachability answer. No origin declaration or checker was changed.
+The earlier full smoke/unit run remains a failed run, not a passing certificate.
