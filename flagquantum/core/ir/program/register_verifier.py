@@ -7,11 +7,19 @@ This module supplies register port compatibility and typed lifetime signatures.
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import cast
 
+from ...value_math import SymbolicInt
+from ...value_parameters import is_symbolic_value
 from ..diagnostics import LevelDiagnostic, _diagnostic
 from .model import BlockRecord, FunctionRecord, OpcodeSignature, ValueRef
 from .register_compatibility import check_register_types_consistent
-from .register_types import classical_bit_type, quantum_bit_type
+from .register_types import (
+    bounded_unsigned_register_type,
+    classical_bit_type,
+    fixed_point_register_type,
+    quantum_bit_type,
+)
 from .registers import Register, RegisterSide, RegisterType
 from .signatures import Signature
 
@@ -62,6 +70,64 @@ def executable_register_width(dtype: RegisterType) -> int:
     return width
 
 
+def logical_register_width(dtype: RegisterType) -> SymbolicInt:
+    """Validate a logical quantum descriptor without claiming physical support."""
+    if not isinstance(dtype, RegisterType):
+        raise ValueError("a logical word needs a neutral RegisterType")
+    if dtype.encoding == "finite_field":
+        return executable_register_width(dtype)
+    width = dtype.quantum_bits
+    if (
+        (not is_symbolic_value(width) and (type(width) is not int or width < 0))
+        or type(dtype.classical_bits) is not int
+        or dtype.classical_bits != 0
+        or not isinstance(dtype.parameters, tuple)
+        or any(
+            not isinstance(pair, tuple)
+            or len(pair) != 2
+            or not isinstance(pair[0], str)
+            for pair in dtype.parameters
+        )
+    ):
+        raise ValueError(f"unsupported logical register descriptor {dtype!r}")
+    if dtype.encoding in {"bit", "opaque", "uint", "signed"} and not dtype.parameters:
+        if dtype.encoding == "bit" and (type(width) is not int or width != 1):
+            raise ValueError("a logical quantum bit requires width one")
+        return width
+    names = tuple(name for name, _ in dtype.parameters)
+    parameters = dict(dtype.parameters)
+    if dtype.encoding == "uint" and names == ("bound",):
+        bound = parameters["bound"]
+        if not is_symbolic_value(bound) and type(bound) is not int:
+            raise ValueError("a logical unsigned bound must be integral or symbolic")
+        expected = bounded_unsigned_register_type(width, cast(SymbolicInt, bound))
+    elif dtype.encoding == "fixed_point" and names == ("fractional_width", "signed"):
+        fractional = parameters["fractional_width"]
+        signed = parameters["signed"]
+        if (not is_symbolic_value(fractional) and type(fractional) is not int) or type(
+            signed
+        ) is not bool:
+            raise ValueError(
+                "logical fixed-point parameters require a width and boolean sign"
+            )
+        expected = fixed_point_register_type(
+            width, cast(SymbolicInt, fractional), signed
+        )
+    else:
+        raise ValueError(f"unsupported logical register descriptor {dtype!r}")
+    if dtype != expected:
+        raise ValueError(f"noncanonical logical register descriptor {dtype!r}")
+    return width
+
+
+def concrete_logical_register_width(dtype: RegisterType) -> int:
+    """Resolve logical bit arity for split/join without physical admission."""
+    width = logical_register_width(dtype)
+    if type(width) is not int:
+        raise ValueError("split/join requires a concrete logical register width")
+    return width
+
+
 def register_port_types(
     function: FunctionRecord, side: RegisterSide
 ) -> tuple[RegisterType, ...]:
@@ -79,7 +145,7 @@ def register_port_types(
             and type(dtype.classical_bits) is int
             and dtype == classical_bit_type()
         ):
-            executable_register_width(dtype)
+            logical_register_width(dtype)
         if register.side not in (
             RegisterSide.LEFT,
             RegisterSide.RIGHT,
@@ -210,7 +276,7 @@ def verify_register_block(
             try:
                 if dtype is None:
                     raise ValueError("split needs a producer-defined word type")
-                width = executable_register_width(dtype)
+                width = concrete_logical_register_width(dtype)
             except ValueError as exc:
                 diagnostics.append(_diagnostic("program.register_type", str(exc)))
             else:
@@ -226,7 +292,12 @@ def verify_register_block(
                     raise ValueError(
                         "join/allocation requires an explicit destination descriptor"
                     )
-                width = executable_register_width(dtype)
+                logical_register_width(dtype)
+                width = (
+                    concrete_logical_register_width(dtype)
+                    if operation.opcode == "join_register"
+                    else 0
+                )
             except ValueError as exc:
                 diagnostics.append(_diagnostic("program.register_type", str(exc)))
             else:
@@ -248,7 +319,7 @@ def verify_register_block(
             try:
                 if dtype is None:
                     raise ValueError("free needs a producer-defined word type")
-                executable_register_width(dtype)
+                logical_register_width(dtype)
             except ValueError as exc:
                 diagnostics.append(_diagnostic("program.register_type", str(exc)))
         workspace = operation.opcode in {"allocate_register", "free_register"}

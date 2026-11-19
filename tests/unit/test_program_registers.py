@@ -155,7 +155,6 @@ def test_rebindings_refuse_primitive_and_call_metadata(metadata, operation_index
         RegisterType("bit", 2),
         RegisterType("signed", 3, parameters=(("unresolved", 1),)),
         RegisterType("uint", 3, 1),
-        RegisterType("uint", 3, parameters=(("bound", 4),)),
     ],
 )
 def test_metadata_type_support_does_not_imply_executable_admission(dtype):

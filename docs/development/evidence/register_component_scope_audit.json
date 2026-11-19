@@ -1,14 +1,14 @@
 {
   "basis": "observed_internal_program_scope",
-  "contract_version": "0.8",
+  "contract_version": "0.9",
   "contract_status": "implementation_authorized",
   "sha256": {
-    "contracts/multi-level-ir-internal-v1-candidate.json": "77fbb670533bd6d80cfc16f7a734eb19201822b7c00b3a6317918bdd9612efab",
+    "contracts/multi-level-ir-internal-v1-candidate.json": "4728e01120fe783e7a06039a52ed5e82d94d4bd22e76e8a5783c05e325b28ddb",
     "docs/public_api_v1.json": "e85c03a07c45554d87660a3ed9806be6bb1532325554e1aa21fdfe22ea4d9add",
-    "flagquantum/core/ir/program/model.py": "2c35940f7e16464212fddadbe710408f74a103a50b5e2c4957a674e7f74f3465",
-    "flagquantum/core/ir/program/verifier.py": "ce94b5eb0e1d2030c257fb9b8f5b22d2cbd4a46eeb213dca82bcbefbedda7bb9",
-    "flagquantum/core/ir/program/call_verifier.py": "035dd1076d691f6fe67a5255ba89664906e5b844c9897a138b63b7e986fca5db",
-    "flagquantum/core/ir/program/register_verifier.py": "57757bc289be371222358bfcf9c3bf3aa3532d2dbc2096ea62af7a5aed85eb6f",
+    "flagquantum/core/ir/program/model.py": "4424fe3bbe156fc32922d0943ddfd82775c90e22879ee9ed8b6a77470ac5b093",
+    "flagquantum/core/ir/program/verifier.py": "19cdc3826b4d2dd20d15d3a5dea664acf6af3566656e78283ff6f43765934902",
+    "flagquantum/core/ir/program/call_verifier.py": "f43d40d186cb60613d8c91d916725080994f21f6b4a9660981b948bef28b888f",
+    "flagquantum/core/ir/program/register_verifier.py": "70f29b3d1d6aca70efc5d2fff8d8cd76d3c93b8601ce660ae74a0772e831494a",
     "flagquantum/core/ir/program/lowering.py": "b11aca3d530d566a01728abf15760fdcca23e43eaade9f85690f444240f2ef1d",
     "flagquantum/core/ir/program/physical_codec.py": "9f13dbacbe9aefff73db78aba691b4d40d4f3ec2fe71e3493a50fe74778ebd88",
     "flagquantum/core/operator_schema.py": "13edca5093d311a5315eda54795e7c3a730178d6aa6972f4987e388ce4ce4b13"
