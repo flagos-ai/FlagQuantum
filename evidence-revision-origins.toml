@@ -1134,3 +1134,17 @@ path = "artifacts/development/qec_colour_distance_acceptance_20261118.json"
 [[artifact.revision]]
 value = "dc90ce6622b2e6b014a9ae4bc3bf966df13bf1fa"
 origin = "unreferenced_object"
+
+# Verified on 2026-11-19: the repository commit API and exact-SHA Git fetch
+# both serve the producer and full-regression revisions. No fetched remote
+# branch or tag reaches either revision after the toric acceptance was merged.
+[[artifact]]
+path = "artifacts/development/qec_toric_distance_acceptance_20261118.json"
+
+[[artifact.revision]]
+value = "7f89948efd1d6dc63b29d00934cc6738cd440829"
+origin = "unreferenced_object"
+
+[[artifact.revision]]
+value = "29aa778ab5604059c5a4337f9b250c6c4b606d9c"
+origin = "unreferenced_object"

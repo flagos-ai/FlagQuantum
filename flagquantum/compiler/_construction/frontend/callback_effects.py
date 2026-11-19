@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING
 
 from ..._hybrid.model import Operation, Value, ValueId
 from ..._hybrid.unitary_effects import unitary_regions
-from ..qpe_control import emit_controlled_effect
-from ..register_profile import register_type, register_width
+from ..semantics.qpe_control import emit_controlled_effect
+from ..verification.register_profile import register_type, register_width
 
 if TYPE_CHECKING:
     from .program import _Body

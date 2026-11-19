@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
-from flagquantum.compiler._arithmetic_kernels import (
+from flagquantum.compiler.registers._arithmetic_kernels import (
     constant_multiply_accumulate,
     square_accumulate,
     xor_add_parts,

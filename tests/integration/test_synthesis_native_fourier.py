@@ -14,8 +14,8 @@ from examples.synthesis.functions.qft.comparisons.circuit import (
 from examples.synthesis.functions.qft.main import build_program
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition

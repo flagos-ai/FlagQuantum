@@ -9,7 +9,7 @@ from types import FunctionType, ModuleType
 from typing import TYPE_CHECKING
 
 from ..._hybrid.model import Value
-from ..register_profile import _verify_borrowed_effects, register_width
+from ..verification.register_profile import _verify_borrowed_effects, register_width
 from .classical import bind_helper
 from .ports import _Port, _resolve
 from .python import _error, _QuantumFunction
@@ -560,7 +560,7 @@ def inline_mutable(
             and len(owner.owner.unitary_templates) < 32
         ):
             from ..._hybrid.unitary_effects import unitary_regions
-            from ..register_profile import _borrowed_program
+            from ..verification.register_profile import _borrowed_program
 
             # Channel/ownership effects stay on the existing expanded path.
             # Only a successful closed-unitary proof permits sharing the body.

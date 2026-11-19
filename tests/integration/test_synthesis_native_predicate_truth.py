@@ -9,18 +9,18 @@ import torch
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
 from flagquantum import synth
-from flagquantum.compiler._construction.boolean_lowering import (
+from flagquantum.compiler._construction.codegen.boolean import (
     BooleanCandidateError,
     lower_boolean_value,
 )
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction, capture
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction, capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_register_program,
 )
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from tests.team.compiler.test_construction_python_program import program_definition
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..register_profile import register_width
+from ..verification.register_profile import register_width
 from .fixed_xor import capture_fixed_xor
 from .numeric import has_numeric, has_numeric_reads, reject_numeric_reads
 from .python import _error

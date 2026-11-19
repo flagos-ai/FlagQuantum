@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from ..._hybrid.unitary_effects import PURE_EFFECTS
 from ..._hybrid.verifier import HybridVerificationError
 from ..program_types import reset
-from ..reset_cycles import reset_cycle_template
+from ..semantics.reset_cycles import reset_cycle_template
 from .evolution import flush_evolutions
 from .ports import _resolve
 from .python import _error, _QuantumFunction

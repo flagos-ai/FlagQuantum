@@ -26,7 +26,7 @@ from examples.synthesis.tutorials.workshops.combinatorial_workshop.combinatorial
 )
 from flagquantum import synth
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition

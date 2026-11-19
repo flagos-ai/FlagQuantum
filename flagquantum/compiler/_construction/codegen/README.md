@@ -5,6 +5,7 @@ The Compiler team owns conversion of verified construction programs into
 
 | Module | Responsibility |
 | --- | --- |
+| `register_expansion.py` | Static register call expansion and inverse composition |
 | `arithmetic.py` | Arithmetic gate emission and retain/recompute scheduling |
 | `registers.py` | Register-effect composition, allocation and segment cleanup evidence |
 | `boolean.py` | Boolean truth-table lowering |
@@ -14,7 +15,7 @@ The Compiler team owns conversion of verified construction programs into
 | `transforms.py` | Pattern gates and real-transform decomposition |
 
 Source capture belongs to `../frontend/`. Semantic verification and candidate
-selection belong to the parent construction package. This package must not
+selection belong to `../verification/` and `../scheduling/`. This package must not
 select runtime backends, execute circuits, submit jobs or define another IR.
 Allowed dependencies are existing Core circuit semantics, construction models,
 verification and lifetime helpers, Compiler gate kernels and optimization
@@ -26,10 +27,8 @@ The public workflow uses `flagquantum.synth.qfunc` and
 `flagquantum.synth.synthesize`. Internal entries include
 `arithmetic.schedule_arithmetic`, `registers.schedule_register_program`,
 `boolean.lower_boolean_value` and `gate_tape.expand_gate_tape`.
-The parent lowering modules alias these implementations. Existing private helper
-imports remain available through the register module. See the
-[parent mapping](../README.md#circuit-generation-implementation) for compatibility
-ownership, scope and retirement conditions. Make implementation changes here.
+Consumers import the authoritative modules directly. Former private lowering
+aliases were retired under the [parent migration](../README.md#retired-private-imports).
 
 ## Make and verify a small change
 
@@ -50,7 +49,7 @@ It also produces an OpenQASM 2 deployment package. No credentials are required.
 The integration test reads the output back and checks the Bell state.
 
 ```bash
-python -m pytest -q tests/team/compiler/test_construction_registers.py tests/team/compiler/test_construction_scheduling.py tests/team/compiler/test_construction_boolean_lowering.py tests/team/compiler/test_construction_codegen_compatibility.py
+python -m pytest -q tests/team/compiler/test_construction_registers.py tests/team/compiler/test_construction_scheduling.py tests/team/compiler/test_construction_boolean_lowering.py tests/team/compiler/test_construction_codegen_hooks.py
 python -m pytest -q tests/integration/test_synthesis_offline_deployment.py
 ```
 

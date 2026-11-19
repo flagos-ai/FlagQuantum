@@ -5,7 +5,7 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from ..register_profile import MAX_MATRIX_QUBITS
+from ..verification.register_profile import MAX_MATRIX_QUBITS
 from .ports import _resolve
 from .python import _error
 from .views import gate_target, packed_locations

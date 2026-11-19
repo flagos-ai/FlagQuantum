@@ -5,10 +5,15 @@ for contributors; the public high-level predicate entry remains unchanged.
 """
 
 import flagquantum as fq
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.register_profile import register_type
-from flagquantum.compiler._construction.selection import Constraints, ConstructionBudget
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
+    Constraints,
+    ConstructionBudget,
+)
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
+from flagquantum.compiler._construction.verification.register_profile import (
+    register_type,
+)
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,

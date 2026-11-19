@@ -10,11 +10,13 @@ import torch
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
 from flagquantum import synth
-from flagquantum.compiler._construction import register_lowering
-from flagquantum.compiler._construction.boolean_lowering import BooleanCandidateError
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.codegen import registers as register_lowering
+from flagquantum.compiler._construction.codegen.boolean import BooleanCandidateError
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition

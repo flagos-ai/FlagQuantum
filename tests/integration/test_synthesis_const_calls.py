@@ -6,10 +6,12 @@ import pytest
 
 import flagquantum as fq
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.register_profile import register_type
-from flagquantum.compiler._construction.selection import ConstructionBudget
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import ConstructionBudget
+from flagquantum.compiler._construction.scheduling.target import Target
+from flagquantum.compiler._construction.verification.register_profile import (
+    register_type,
+)
 from flagquantum.compiler._hybrid.model import (
     QUANTUM_EFFECT,
     Block,
@@ -231,7 +233,9 @@ def test_nested_phase_cannot_bypass_target_guard_and_unused_phase_does_not_restr
     p.emit("qreg.allocate", x)
     p.emit("qreg.allocate", y)
     p.emit("qreg.call", x, y, out, callee="value_call")
-    from flagquantum.compiler._construction.selection import select_register_program
+    from flagquantum.compiler._construction.scheduling.selection import (
+        select_register_program,
+    )
 
     assert select_register_program(
         p.finish(), functions, target=target

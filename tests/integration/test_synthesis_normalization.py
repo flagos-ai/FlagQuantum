@@ -10,12 +10,12 @@ import pytest
 import flagquantum as fq
 from examples.synthesis.tutorials.arithmetic.normalization.main import main
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     _logical_cost,
     schedule_arithmetic,
 )
-from flagquantum.compiler._construction.register_lowering import RegisterCandidate
+from flagquantum.compiler._construction.codegen.registers import RegisterCandidate
+from flagquantum.compiler._construction.frontend.python import capture
 from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
@@ -176,7 +176,7 @@ def test_independent_circuit_reference_matches_all_targets_and_complete_state() 
 
 def test_wide_declared_return_preserves_all_256_nonzero_xor_targets() -> None:
     from benchmarks.synthesis.verification import classical_apply, encode
-    from flagquantum.compiler._construction.profile import uint_type
+    from flagquantum.compiler._construction.verification.profile import uint_type
     from flagquantum.compiler._hybrid.model import (
         INDEX,
         Block,

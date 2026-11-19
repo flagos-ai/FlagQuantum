@@ -7,7 +7,7 @@ from collections.abc import Iterable
 
 from ....core.ir import Instruction
 from ..._hybrid.model import Operation
-from ..profile import _fail
+from ..verification.profile import _fail
 
 _MAX_OPERATIONS = 100_000
 _ARITY = {

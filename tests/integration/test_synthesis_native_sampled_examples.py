@@ -11,7 +11,7 @@ import pytest
 from examples.synthesis.compare_states import compare_states
 from examples.synthesis.pauli_evolution import load_terms, reference_sequence
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_program import capture_program
+from flagquantum.compiler._construction.frontend.program import capture_program
 from tools.synthesis_catalog import load_catalog
 from tools.validate_qmod_large_pauli import original_terms
 

@@ -5,14 +5,14 @@ from dataclasses import replace
 import pytest
 
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_arithmetic,
 )
-from flagquantum.compiler._construction.target import Target, compile_target
+from flagquantum.compiler._construction.scheduling.target import Target, compile_target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.basis_conversion import BasisConversionError
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
@@ -94,7 +94,7 @@ def test_constraints_and_objectives_select_real_different_schedules() -> None:
 
 
 def test_determinism_ignores_elapsed_observations(monkeypatch) -> None:
-    import flagquantum.compiler._construction.selection as selection
+    import flagquantum.compiler._construction.scheduling.selection as selection
 
     first = _select()
     monkeypatch.setattr(selection, "perf_counter", lambda: 1e9)
@@ -220,7 +220,7 @@ def test_explicit_topologies_are_not_resized_or_substituted() -> None:
 
 
 def test_target_transform_replacement_uses_same_consumer(monkeypatch) -> None:
-    import flagquantum.compiler._construction.selection as selection
+    import flagquantum.compiler._construction.scheduling.selection as selection
 
     recorded = {}
 
@@ -262,8 +262,8 @@ def test_routed_request_is_deterministic_even_after_topology_cache_use() -> None
 
 
 def test_stale_candidate_stage_is_refused_without_recompiling(monkeypatch) -> None:
-    import flagquantum.compiler._construction.target as target_module
-    from flagquantum.compiler._construction.target import TargetError
+    import flagquantum.compiler._construction.scheduling.target as target_module
+    from flagquantum.compiler._construction.scheduling.target import TargetError
 
     report = _select()
     product = report.selected.target
@@ -290,7 +290,7 @@ def test_intermediate_conversion_budget_is_not_reported_as_infeasibility() -> No
 def test_conditioned_and_symbolic_preparations_fail_before_candidate_construction() -> (
     None
 ):
-    from flagquantum.compiler._construction.target import TargetError
+    from flagquantum.compiler._construction.scheduling.target import TargetError
     from flagquantum.core.parameters import Parameter
 
     for instruction in (
@@ -357,7 +357,7 @@ def test_discrete_controls_and_unadmitted_preparation_shapes_fail_early() -> Non
 def test_one_qubit_double_cost_advisory_includes_blocked_alternative(
     monkeypatch,
 ) -> None:
-    import flagquantum.compiler._construction.selection as selection
+    import flagquantum.compiler._construction.scheduling.selection as selection
 
     # Synthetic estimator fixture exercises policy only, not numerical evidence
     # or a claim that these inflated costs are a real Runtime execution.
@@ -382,7 +382,7 @@ def test_one_qubit_double_cost_advisory_includes_blocked_alternative(
 
 
 def test_internal_ssa_scopes_are_not_parameter_names() -> None:
-    from flagquantum.compiler._construction.profile import uint_type
+    from flagquantum.compiler._construction.verification.profile import uint_type
     from flagquantum.compiler._hybrid.model import (
         Block,
         HybridProgram,

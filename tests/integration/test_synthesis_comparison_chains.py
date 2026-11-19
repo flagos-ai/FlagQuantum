@@ -13,12 +13,12 @@ import torch
 
 import flagquantum as fq
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.frontend_python import Definition, capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     schedule_arithmetic,
 )
+from flagquantum.compiler._construction.frontend.python import Definition, capture
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.synthesis_workflow_helpers import check_state

@@ -14,10 +14,10 @@ from typing import Literal
 from ....core.controlled import _clean_mcx_instructions
 from ....core.ir import CircuitIR, Instruction
 from ..._hybrid.model import HybridProgram, ValueId
-from ..arithmetic_rewrites import normalize_arithmetic
-from ..bindings import verify_bindings
-from ..lifetimes import LifetimeAnalysis, analyze_lifetimes
-from ..profile import _positive_integer
+from ..analysis.arithmetic_rewrites import normalize_arithmetic
+from ..analysis.lifetimes import LifetimeAnalysis, analyze_lifetimes
+from ..verification.bindings import verify_bindings
+from ..verification.profile import _positive_integer
 
 _Poly = frozenset[int]
 _Bits = tuple[_Poly, ...]

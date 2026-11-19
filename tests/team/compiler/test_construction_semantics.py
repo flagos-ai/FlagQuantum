@@ -4,8 +4,11 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.bindings import verify_bindings
-from flagquantum.compiler._construction.profile import uint_type, verify_construction
+from flagquantum.compiler._construction.verification.bindings import verify_bindings
+from flagquantum.compiler._construction.verification.profile import (
+    uint_type,
+    verify_construction,
+)
 from flagquantum.compiler._hybrid.model import (
     Block,
     HybridProgram,

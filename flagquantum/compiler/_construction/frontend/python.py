@@ -21,8 +21,8 @@ from ..._hybrid.model import (
     ValueId,
 )
 from ..._hybrid.verifier import Diagnostic, HybridVerificationError
-from ..profile import _positive_integer, uint_type, verify_construction
-from ..ranges import bitwise_width, unsigned_width
+from ..analysis.ranges import bitwise_width, unsigned_width
+from ..verification.profile import _positive_integer, uint_type, verify_construction
 
 
 @dataclass(frozen=True)

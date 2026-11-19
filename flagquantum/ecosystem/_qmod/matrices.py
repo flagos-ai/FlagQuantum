@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import MAX_MATRIX_QUBITS
+from ...compiler._construction.verification.register_profile import MAX_MATRIX_QUBITS
 from .phase import Location
 from .syntax import Expression, Token, reject
 

@@ -8,7 +8,9 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.register_profile import verify_register_program
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod

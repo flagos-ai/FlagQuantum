@@ -10,10 +10,12 @@ import torch
 
 import flagquantum as fq
 from flagquantum import _api, synth
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.selection import select_register_program
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
+from flagquantum.compiler._construction.scheduling.target import Target
 from flagquantum.ecosystem import InteropConversionError
 from flagquantum.errors import PlanningError
 from flagquantum.services._synthesis_registers import synthesize_registers

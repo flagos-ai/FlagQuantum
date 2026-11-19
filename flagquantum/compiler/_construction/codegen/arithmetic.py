@@ -13,7 +13,9 @@ from dataclasses import dataclass, field, replace
 from typing import Literal
 
 from ....core.ir import CircuitIR, Instruction
-from ..._arithmetic_kernels import (
+from ..._hybrid.model import INDEX, HybridProgram, Operation, ValueId
+from ..._hybrid.verifier import Diagnostic, HybridVerificationError
+from ...registers._arithmetic_kernels import (
     borrowed_less_xor,
     comparison_xor,
     constant_multiply_accumulate,
@@ -23,14 +25,12 @@ from ..._arithmetic_kernels import (
     square_accumulate,
     xor_add_parts,
 )
-from ..._hybrid.model import INDEX, HybridProgram, Operation, ValueId
-from ..._hybrid.verifier import Diagnostic, HybridVerificationError
 from ...resource_estimation import estimate_resources
-from ..arithmetic_rewrites import ArithmeticNormalization, normalize_arithmetic
-from ..bindings import OutputMode, verify_bindings
-from ..lifetimes import LifetimeAnalysis, analyze_lifetimes
-from ..profile import _fail, _positive_integer, uint_type
-from ..ranges import unsigned_width
+from ..analysis.arithmetic_rewrites import ArithmeticNormalization, normalize_arithmetic
+from ..analysis.lifetimes import LifetimeAnalysis, analyze_lifetimes
+from ..analysis.ranges import unsigned_width
+from ..verification.bindings import OutputMode, verify_bindings
+from ..verification.profile import _fail, _positive_integer, uint_type
 
 _WireValue = tuple[int, ...] | int
 Schedule = Literal["retain", "recompute"]

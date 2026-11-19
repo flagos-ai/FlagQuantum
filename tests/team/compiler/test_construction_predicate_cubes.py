@@ -9,12 +9,12 @@ import torch
 
 import flagquantum as fq
 from benchmarks.synthesis.verification import classical_apply, encode
-from flagquantum.compiler._construction.boolean_lowering import (
+from flagquantum.compiler._construction.codegen.boolean import (
     BooleanCandidateError,
     _disjoint_cubes,
     lower_boolean_value,
 )
-from flagquantum.compiler._construction.frontend_python import capture
+from flagquantum.compiler._construction.frontend.python import capture
 
 pytestmark = pytest.mark.unit
 

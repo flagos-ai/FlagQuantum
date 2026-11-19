@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from types import MappingProxyType
 
-from ...compiler._construction.register_profile import (
+from ...compiler._construction.verification.register_profile import (
     verify_register_program,
 )
 from ...compiler._hybrid.model import (

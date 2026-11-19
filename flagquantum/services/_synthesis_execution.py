@@ -7,7 +7,7 @@ from types import MappingProxyType
 import torch
 
 from ..compiler import ResourceEstimate, estimate_resources
-from ..compiler._construction.constraints import CircuitLimits
+from ..compiler._construction.verification.constraints import CircuitLimits
 from ..compiler.basis_conversion import require_basis
 from ..compiler.layout import Layout, _routing_swap_phases, final_layout
 from ..compiler.pipeline import schedule_layers
