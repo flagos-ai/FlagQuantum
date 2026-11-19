@@ -8,11 +8,14 @@ from copy import deepcopy
 from unittest.mock import patch
 
 import pytest
+import torch
 
-from flagquantum.compiler import CouplingMap
+import flagquantum as fq
+from flagquantum.compiler import CouplingMap, route_to_topology
 from flagquantum.compiler.topology import sabre
 from flagquantum.compiler.topology._layer_lookahead import choose_layer_swaps
 from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core.parameters import Parameter
 
 pytestmark = pytest.mark.unit
 
@@ -203,3 +206,96 @@ def test_selection_matches_cirq_source_on_small_dependency_graphs() -> None:
             )
             assert actual == expected, (width, seed)
             assert manager.layout == layout
+
+
+def _layer_trial(
+    source: CircuitIR,
+    coupling: CouplingMap,
+    baseline: sabre.SabrePlan,
+) -> sabre.SabrePlan:
+    plan = sabre._plan_sabre_trial(
+        source,
+        coupling,
+        initial_layout=baseline.initial_logical_to_physical,
+        layer_lookahead=True,
+    )
+    assert plan is not None
+    return plan
+
+
+def test_layer_trial_preserves_complex_state_and_shared_parameter_gradient() -> None:
+    def source(theta: torch.Tensor) -> fq.Circuit:
+        return (
+            fq.Circuit(4, dtype=torch.complex128)
+            .h(0)
+            .ry(2, theta=theta)
+            .cx(0, 3)
+            .rz(3, theta=2 * theta)
+            .cx(2, 0)
+            .rxx(1, 3, theta=-theta)
+            .ry(0, theta=theta + 0.13)
+            .cx(3, 1)
+        )
+
+    theta = torch.tensor(0.31, dtype=torch.float64, requires_grad=True)
+    reference = source(theta).state()
+    with (
+        patch.object(sabre, "_select_sabre_trials", side_effect=_layer_trial),
+        patch.object(
+            sabre, "choose_layer_swaps", wraps=choose_layer_swaps
+        ) as proposals,
+    ):
+        routed = route_to_topology(source(theta), CouplingMap.line(4), strategy="sabre")
+    assert proposals.call_count > 0
+    observed = fq.Circuit.from_ir(routed).state()
+    torch.testing.assert_close(observed, reference, atol=1e-12, rtol=1e-12)
+    weights = torch.arange(reference.numel(), dtype=torch.float64).reshape(
+        reference.shape
+    )
+    expected_loss = (weights * reference.real + weights.flip(-1) * reference.imag).sum()
+    observed_loss = (weights * observed.real + weights.flip(-1) * observed.imag).sum()
+    (expected_gradient,) = torch.autograd.grad(expected_loss, theta, retain_graph=True)
+    (actual_gradient,) = torch.autograd.grad(observed_loss, theta)
+    assert abs(float(expected_gradient)) > 1e-5
+    torch.testing.assert_close(
+        actual_gradient, expected_gradient, atol=1e-12, rtol=1e-12
+    )
+    assert routed.metadata["routing"]["mapping_restored"] is True
+
+
+def test_layer_trial_preserves_symbols_and_classical_dependency_order() -> None:
+    theta = Parameter("theta")
+    source = CircuitIR(
+        6,
+        (
+            Instruction("cx", (1, 5)),
+            Instruction(
+                "measure", (0,), metadata={"classical_bit": 0, "is_dynamic": True}
+            ),
+            Instruction(
+                "rz",
+                (4,),
+                {"theta": theta},
+                metadata={"conditions": ((0, 1),), "is_dynamic": True},
+            ),
+            Instruction("cx", (5, 0)),
+            Instruction("cx", (1, 4)),
+        ),
+    )
+    with (
+        patch.object(sabre, "_select_sabre_trials", side_effect=_layer_trial),
+        patch.object(
+            sabre, "choose_layer_swaps", wraps=choose_layer_swaps
+        ) as proposals,
+    ):
+        routed = route_to_topology(source, CouplingMap.line(6), strategy="sabre")
+    assert proposals.call_count > 0
+    original = [op for op in routed if op.metadata.get("routing_phase") is None]
+    conditional = next(op for op in original if op.name == "rz")
+    assert conditional.params["theta"] is theta
+    assert conditional.metadata["conditions"] == ((0, 1),)
+    assert [op.name for op in original].index("measure") < original.index(conditional)
+    assert sorted(op.metadata["source_instruction_index"] for op in original) == list(
+        range(len(source))
+    )
+    assert routed.metadata["routing"]["mapping_restored"] is True
