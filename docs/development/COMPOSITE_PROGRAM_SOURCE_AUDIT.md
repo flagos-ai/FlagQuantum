@@ -214,3 +214,48 @@ The complete Q-0156 parent remains open. A measured SDK body containing an
 explicit native FunctionRecord is currently rejected with a precise error. Its
 native-definition precedence must be retained when composing classical history.
 Arbitrary channels also remain outside this adapter's admitted scope.
+
+
+## Explicit native definitions inside SDK feedback
+
+Compiler commit `5a0020d76` introduces private local component binding through
+existing Program validation, physical binding and workspace ownership. The sum
+of finite call-tree allocations provides a conservative pool capacity. Final
+bindings compact unused wires, including the state shape. This capacity is an
+internal construction bound, not a resource-model estimate. Actual allocation
+and release events remain authoritative. Clean and borrowed pools, repeated
+work reuse, consumed LEFT inputs and transferred RIGHT outputs are covered.
+Invalid forward references retain Core rejection. Empty components retain a
+scalar carrier without emitting a work lease.
+
+Ecosystem commit `87aaf8bad` translates explicitly selected native definitions
+through that Compiler owner and the existing register-gate exporter. Definitions
+retain precedence over SDK decomposition. Local measurement names avoid both
+external measurement names and external control references, so generated names
+cannot accidentally satisfy an undefined external key. Repeated native calls
+have separate local histories while sharing the outer SDK history.
+
+The second expansion replays the original SDK tree in one manager context.
+Re-expanding a flattened tree would reserve old SDK workspace for the entire
+body and prevent subsequent native calls from reusing it. The mixed SDK/native
+controlled fixture matches the independent original decomposition instruction
+for instruction, including operands and conditions: nine actual primitives and
+one clean work bit, returned to zero in both measurement branches. Export and
+reimport retain full complex amplitudes; dynamic append execution also passes.
+Two repeated measured native calls with a deliberately colliding external key
+produce twelve actual primitives and three measurements. All eight branches
+match full unnormalized source amplitudes and restore private work. These SDK
+fixtures provide no independent resource model; no model is inferred from
+measured primitive totals.
+
+The 34-file concentrated regression passes 1,043 cases without skips. Cirq
+integration/conformance passes 96 cases, and five changed Python files pass
+strict typing, Black, Ruff, classified scope, architecture and internal IR
+checks. Dependency policy records 706 whole-repository findings and zero batch
+findings. Default smoke/unit retains the existing example-registry failure after
+434 passes and 51 skips. Persistent evidence uses `g2-native-feedback-`.
+
+Q-0156 remains open for arbitrary SDK nonunitary channels. The existing admission
+rules for dirty SDK borrowing, conditional measurement, tagged semantics,
+nonfinite or symbolic physical definitions and external CBit ports remain in
+force. This batch changes private lowering without a public API or schema change.
