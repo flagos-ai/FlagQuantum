@@ -7,9 +7,13 @@ from dataclasses import replace
 from itertools import product
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.importorskip("numpy")
 
 from flagquantum.compiler._component_trace.program_call_graph import (
     program_component_call_graph,
@@ -59,8 +63,13 @@ SINGLE: tuple[ControlCase, ...] = tuple(
     (("QBit", 1, shape, (value,), "unsigned"),)
     for shape, value in product(((), (1,)), (0, 1))
 )
+SIGNED: tuple[ControlCase, ...] = (
+    (("QInt", 2, (), (-1,), "twos_complement"),),
+    (("QInt", 2, (2,), (-2, 1), "twos_complement"),),
+)
 MULTI: tuple[ControlCase, ...] = (
-    *CASES[:3],
+    *CASES[:4],
+    *SIGNED,
     (("QUInt", 3, (), (5,), "unsigned"), ("QAny", 2, (), (2,), "unsigned")),
 )
 
@@ -262,6 +271,7 @@ def test_directional_predicate_ports_match_original(case: ControlCase) -> None:
         "shape",
         "width",
         "encoding",
+        "signed_encoding",
         "classical",
         "side",
         "names",
@@ -285,6 +295,9 @@ def test_invalid_control_descriptors_fail_without_modifying_program(
         patterns = (ControlRegister(2, (0,)),)
     elif failure == "encoding":
         controls = (Register("ctrl", RegisterType("fixed", 1)),)
+    elif failure == "signed_encoding":
+        controls = (Register("ctrl", RegisterType("signed", 2)),)
+        patterns = (ControlRegister(2, (0,)),)
     elif failure == "classical":
         controls = (Register("ctrl", RegisterType("bit", 1, 1)),)
     elif failure == "side":
@@ -323,7 +336,7 @@ def test_generated_prefix_collision_and_canonical_payload() -> None:
     assert any(f.name == "__fq_predicate_1_positive" for f in module.functions)
 
 
-@pytest.mark.parametrize("case", CASES[3:])
+@pytest.mark.parametrize("case", CASES[4:])
 def test_typed_boundary_rejects_descriptors_outside_core_admission(
     case: ControlCase,
 ) -> None:
@@ -333,7 +346,7 @@ def test_typed_boundary_rejects_descriptors_outside_core_admission(
         control_predicate_program(controls, patterns)
 
 
-@pytest.mark.parametrize("case", (SINGLE[0], MULTI[0], MULTI[2]))
+@pytest.mark.parametrize("case", (SINGLE[0], MULTI[0], MULTI[2], SIGNED[0]))
 @pytest.mark.parametrize("expanded", (False, True))
 def test_exact_adjoint_body_restores_all_forward_inverse_histories(
     case: ControlCase, expanded: bool

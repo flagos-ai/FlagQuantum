@@ -37,6 +37,7 @@ def validate_control_ports(
             "bit": "unsigned",
             "opaque": "unsigned",
             "uint": "unsigned",
+            "signed": "twos_complement",
         }.get(register.dtype.encoding)
         if (
             register.side != RegisterSide.THRU
@@ -87,7 +88,8 @@ def control_predicate_program(
     correct computed values, measures in reverse ladder order and releases them
     after clearing. These logical outputs remain live across an intervening
     controlled call. The current Program admission permits unparameterized bit,
-    opaque and unsigned quantum words. Other descriptors raise ValueError.
+    opaque, unsigned and two's-complement quantum words. Other descriptors raise
+    ValueError.
     """
     count = validate_control_ports(controls, patterns)
     signature = control_predicate_signature(controls, uncompute=uncompute)
