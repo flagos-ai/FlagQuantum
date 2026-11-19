@@ -119,3 +119,10 @@ can allocate its clean scalar carrier. One- and two-control binary patterns
 preserve exact phase and operand order. Generic X/Y/Z/ZZ/CZ eigen-gate shifts preserve both symbolic fields and the
 exact scalar phase through the existing primitives. Run tests/unit/test_nonlinear_sdk_parameters.py
 and tests/unit/test_symbolic_global_phase.py for the shortest executable examples.
+
+## Fixed-point external values
+
+`fixed_point.py` owns optional real-object conversion to the existing native
+integer and bit representation. Its lazy dependency and source-conformance
+boundary are documented in
+[the conversion guide](../../docs/development/FIXED_POINT_REAL_CONVERSION.md).

@@ -25,9 +25,10 @@ scalar checks. Source numeric types, zero/negative or symbolic shape diagnostics
 and evaluation order must remain observable.
 
 The external `fxpmath.Fxp` template, real quantization and real-value domain are
-separate, unaccepted paths. They must not be replaced by guessed float rounding
-or described as delivered by this stored-integer slice. No production dependency
-is added here.
+now implemented by the Ecosystem boundary described in
+[Fixed-point real conversion](FIXED_POINT_REAL_CONVERSION.md). This stored-integer
+module continues to own raw words. The optional external dependency is imported
+only at the Ecosystem conversion boundary.
 
 ## Delivered numerical paths
 
