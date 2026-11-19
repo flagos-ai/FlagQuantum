@@ -2,11 +2,17 @@
 
 from collections.abc import Sequence
 
-import cirq
-import numpy as np
 import pytest
 import torch
-from numpy.typing import NDArray
+
+try:
+    import cirq
+    import numpy as np
+    from numpy.typing import NDArray
+except ModuleNotFoundError:
+    pytest.skip(
+        "Cirq reference dependencies are not installed", allow_module_level=True
+    )
 
 from examples.algorithms.binary_field_arithmetic import FieldOperation
 from flagquantum.circuit import Circuit

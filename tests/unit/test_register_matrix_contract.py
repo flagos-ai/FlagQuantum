@@ -1,9 +1,15 @@
 """Source and existing physical-IR witnesses for explicit unitary Program leaves."""
 
-import cirq
-import numpy as np
 import pytest
 import torch
+
+try:
+    import cirq
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.skip(
+        "Cirq reference dependencies are not installed", allow_module_level=True
+    )
 
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.simulation.unitary import get_unitary

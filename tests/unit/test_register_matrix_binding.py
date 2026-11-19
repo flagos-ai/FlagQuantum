@@ -66,8 +66,11 @@ def test_matrix_survives_graph_copy_and_append_with_clean_work() -> None:
 @pytest.mark.ftqc_reference
 @pytest.mark.parametrize("polarity", [0, 1])
 def test_matrix_feedback_retains_each_complex_measurement_branch(polarity: int) -> None:
-    import cirq
-    import numpy as np
+    try:
+        import cirq
+        import numpy as np
+    except ModuleNotFoundError:
+        pytest.skip("Cirq reference dependencies are not installed")
 
     from flagquantum.core.ir.program import ProgramRecord
     from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
