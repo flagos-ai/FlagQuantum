@@ -76,6 +76,8 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
             "FQ_DISTRIBUTED_WORKERS": "1",
             "MAX_JOBS": "2",
             "COVERAGE_CORE": "sysmon",
+            "FQ_COVERAGE_SHARDS": "2",
+            "FQ_COVERAGE_INPUTS": str(temporary / "coverage-inputs"),
         },
         check=True,
         capture_output=True,
@@ -102,6 +104,8 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
     assert "FQ_DISTRIBUTED_WORKERS" in environment
     assert "MAX_JOBS" in environment
     assert "COVERAGE_CORE" in environment
+    assert "FQ_COVERAGE_SHARDS" in environment
+    assert "FQ_COVERAGE_INPUTS" in environment
     assert "GLOO_SOCKET_IFNAME=lo" in environment
     command = actual[actual.index(image) + 1 :]
     expected = [str(private / "venv/bin/python")]
@@ -412,3 +416,26 @@ test-command = "python smoke.py"
     assert result.returncode == expected_exit, result.stderr
     if expected_exit:
         assert "differs from the locked CPU image manifest" in result.stderr
+
+
+def test_coverage_aggregation_uses_the_producers_locked_environment() -> None:
+    jobs = yaml.safe_load((ROOT / ".github/workflows/ci.yml").read_text())["jobs"]
+    for name in ("coverage-plan", "coverage-shard", "coverage"):
+        steps = jobs[name]["steps"]
+        environment = [
+            step
+            for step in steps
+            if step.get("uses") == "./.github/actions/offline-cpu"
+        ]
+        assert len(environment) == 1
+        assert environment[0]["with"]["profile"] == "coverage-py3.12"
+        assert environment[0]["with"]["require-cached"] == (
+            "${{ runner.environment == 'self-hosted' }}"
+        )
+        assert not any("pip install" in step.get("run", "") for step in steps)
+    aggregate = jobs["coverage"]
+    assert aggregate["needs"] == ["prepare-source", "coverage-plan", "coverage-shard"]
+    assert aggregate["timeout-minutes"] == 20
+    commands = [step.get("run", "") for step in aggregate["steps"]]
+    assert "test '${{ needs.coverage-shard.result }}' = success" in commands
+    assert "python tools/check_coverage.py" in commands
