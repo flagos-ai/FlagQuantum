@@ -54,40 +54,40 @@ consistency.
 
 | Definition | Native owner or existing evidence |
 |---|---|
-| `LessThanConstant`, `LessThanConstant.signature`, `LessThanConstant.wire_symbol`, `LessThanConstant.registers`, `LessThanConstant.with_registers`, `LessThanConstant.apply`, `LessThanConstant.on_classical_vals`, `LessThanConstant._circuit_diagram_info_`, `LessThanConstant.__pow__`, `LessThanConstant.decompose_from_registers`, `LessThanConstant._has_unitary_`, `LessThanConstant.build_call_graph` | constant_component; less_than; classical_comparison; comparison_resource_model |
-| `_lt_k` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `_lt_k_symb` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `BiQubitsMixer`, `BiQubitsMixer.signature`, `BiQubitsMixer.decompose_from_registers`, `BiQubitsMixer.adjoint`, `BiQubitsMixer.__pow__`, `BiQubitsMixer.build_call_graph`, `BiQubitsMixer._has_unitary_` | tree_component; comparison_tree; comparison_resource_model |
-| `_bi_qubits_mixer` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `SingleQubitCompare`, `SingleQubitCompare.signature`, `SingleQubitCompare.decompose_from_registers`, `SingleQubitCompare.adjoint`, `SingleQubitCompare.__pow__`, `SingleQubitCompare.build_call_graph` | tree_component; comparison_tree; comparison_resource_model |
-| `_sq_cmp` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
+| `LessThanConstant`, `LessThanConstant.signature`, `LessThanConstant.wire_symbol`, `LessThanConstant.registers`, `LessThanConstant.with_registers`, `LessThanConstant.apply`, `LessThanConstant.on_classical_vals`, `LessThanConstant._circuit_diagram_info_`, `LessThanConstant.__pow__`, `LessThanConstant.decompose_from_registers`, `LessThanConstant._has_unitary_`, `LessThanConstant.build_call_graph` | constant_component, less_than, classical_comparison, comparison_resource_model |
+| `_lt_k` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `_lt_k_symb` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `BiQubitsMixer`, `BiQubitsMixer.signature`, `BiQubitsMixer.decompose_from_registers`, `BiQubitsMixer.adjoint`, `BiQubitsMixer.__pow__`, `BiQubitsMixer.build_call_graph`, `BiQubitsMixer._has_unitary_` | tree_component, comparison_tree, comparison_resource_model |
+| `_bi_qubits_mixer` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `SingleQubitCompare`, `SingleQubitCompare.signature`, `SingleQubitCompare.decompose_from_registers`, `SingleQubitCompare.adjoint`, `SingleQubitCompare.__pow__`, `SingleQubitCompare.build_call_graph` | tree_component, comparison_tree, comparison_resource_model |
+| `_sq_cmp` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
 | `_equality_with_zero` | prefix_zero_program and shared conjunction |
-| `LessThanEqual`, `LessThanEqual.signature`, `LessThanEqual.registers`, `LessThanEqual.with_registers`, `LessThanEqual.apply`, `LessThanEqual.wire_symbol`, `LessThanEqual.on_classical_vals`, `LessThanEqual._circuit_diagram_info_`, `LessThanEqual.__pow__`, `LessThanEqual._decompose_via_tree`, `LessThanEqual.decompose_from_registers`, `LessThanEqual.build_call_graph`, `LessThanEqual._has_unitary_`, `LessThanEqual.adjoint` | ordering_component; less_equal; classical_comparison; comparison_resource_model |
-| `_leq_symb` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `_leq` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `GreaterThan`, `GreaterThan.signature`, `GreaterThan.wire_symbol`, `GreaterThan.build_composite_bloq`, `GreaterThan.build_call_graph` | ordering_component; ordering; comparison_resource_model |
-| `_greater_than` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `LinearDepthGreaterThan`, `LinearDepthGreaterThan.signature`, `LinearDepthGreaterThan.on_classical_vals`, `LinearDepthGreaterThan.build_composite_bloq`, `LinearDepthGreaterThan.wire_symbol`, `LinearDepthGreaterThan.build_call_graph` | linear_component; linear_comparison; classical_greater_comparison; existing primitive resource owner |
-| `GreaterThanConstant`, `GreaterThanConstant.signature`, `GreaterThanConstant.wire_symbol`, `GreaterThanConstant.build_call_graph` | declaration/signature and source_less_than_constant_qec_cost same-threshold model; original no-decomposition boundary |
-| `_gt_k` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `Equals`, `Equals.signature`, `Equals.bitsize`, `Equals.is_symbolic`, `Equals.wire_symbol`, `Equals.build_composite_bloq`, `Equals.build_call_graph`, `Equals.on_classical_vals` | equality_component; equality; classical_comparison; existing MCX model |
-| `_equals` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `EqualsAConstant`, `EqualsAConstant.signature`, `EqualsAConstant.wire_symbol`, `EqualsAConstant.is_symbolic`, `EqualsAConstant.bits_k`, `EqualsAConstant.build_composite_bloq`, `EqualsAConstant.build_call_graph` | equality_component; equality; existing MCX model |
-| `_make_equals_a_constant` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `_eq_k` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `CLinearDepthGreaterThan`, `CLinearDepthGreaterThan.signature`, `CLinearDepthGreaterThan.wire_symbol`, `CLinearDepthGreaterThan.build_composite_bloq`, `CLinearDepthGreaterThan.on_classical_vals`, `CLinearDepthGreaterThan.build_call_graph` | controlled_component; controlled_comparison; classical_greater_comparison; existing primitive resource owner |
-| `_clineardepthgreaterthan_example` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `_HalfLinearDepthGreaterThan`, `_HalfLinearDepthGreaterThan.signature`, `_HalfLinearDepthGreaterThan.adjoint`, `_HalfLinearDepthGreaterThan._compute`, `_HalfLinearDepthGreaterThan._uncompute`, `_HalfLinearDepthGreaterThan.build_composite_bloq`, `_HalfLinearDepthGreaterThan.build_call_graph` | half_component; half_comparison; classical_half_comparison; existing primitive resource owner |
-| `_HalfComparisonBase`, `_HalfComparisonBase.signature`, `_HalfComparisonBase.adjoint`, `_HalfComparisonBase._half_greater_than_bloq`, `_HalfComparisonBase._classical_comparison`, `_HalfComparisonBase.on_classical_vals`, `_HalfComparisonBase._compute`, `_HalfComparisonBase._uncompute`, `_HalfComparisonBase.build_composite_bloq`, `_HalfComparisonBase.build_call_graph` | half_component; half_ordering; classical_half_comparison; existing primitive resource owner |
-| `_LinearDepthHalfComparisonBase`, `_LinearDepthHalfComparisonBase._half_greater_than_bloq` | half_component; half_ordering; classical_half_comparison |
-| `LinearDepthHalfGreaterThan` | half_component relation gt; half_ordering |
-| `LinearDepthHalfGreaterThanEqual` | half_component relation ge; half_ordering |
-| `LinearDepthHalfLessThan` | half_component relation lt; half_ordering |
-| `LinearDepthHalfLessThanEqual` | half_component relation le; half_ordering |
-| `_lineardepthhalfgreaterthan_small` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `_lineardepthhalflessthan_small` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `_lineardepthhalfgreaterthanequal_small` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
-| `_lineardepthhalflessthanequal_small` | Q-0179 complete source factory/notebook catalogue; concrete native factory checks where executable |
+| `LessThanEqual`, `LessThanEqual.signature`, `LessThanEqual.registers`, `LessThanEqual.with_registers`, `LessThanEqual.apply`, `LessThanEqual.wire_symbol`, `LessThanEqual.on_classical_vals`, `LessThanEqual._circuit_diagram_info_`, `LessThanEqual.__pow__`, `LessThanEqual._decompose_via_tree`, `LessThanEqual.decompose_from_registers`, `LessThanEqual.build_call_graph`, `LessThanEqual._has_unitary_`, `LessThanEqual.adjoint` | ordering_component, less_equal, classical_comparison, comparison_resource_model |
+| `_leq_symb` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `_leq` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `GreaterThan`, `GreaterThan.signature`, `GreaterThan.wire_symbol`, `GreaterThan.build_composite_bloq`, `GreaterThan.build_call_graph` | ordering_component, ordering, comparison_resource_model |
+| `_greater_than` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `LinearDepthGreaterThan`, `LinearDepthGreaterThan.signature`, `LinearDepthGreaterThan.on_classical_vals`, `LinearDepthGreaterThan.build_composite_bloq`, `LinearDepthGreaterThan.wire_symbol`, `LinearDepthGreaterThan.build_call_graph` | linear_component, linear_comparison, classical_greater_comparison, existing primitive resource owner |
+| `GreaterThanConstant`, `GreaterThanConstant.signature`, `GreaterThanConstant.wire_symbol`, `GreaterThanConstant.build_call_graph` | declaration/signature and source_less_than_constant_qec_cost same-threshold model, original no-decomposition boundary |
+| `_gt_k` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `Equals`, `Equals.signature`, `Equals.bitsize`, `Equals.is_symbolic`, `Equals.wire_symbol`, `Equals.build_composite_bloq`, `Equals.build_call_graph`, `Equals.on_classical_vals` | equality_component, equality, classical_comparison, existing MCX model |
+| `_equals` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `EqualsAConstant`, `EqualsAConstant.signature`, `EqualsAConstant.wire_symbol`, `EqualsAConstant.is_symbolic`, `EqualsAConstant.bits_k`, `EqualsAConstant.build_composite_bloq`, `EqualsAConstant.build_call_graph` | equality_component, equality, existing MCX model |
+| `_make_equals_a_constant` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `_eq_k` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `CLinearDepthGreaterThan`, `CLinearDepthGreaterThan.signature`, `CLinearDepthGreaterThan.wire_symbol`, `CLinearDepthGreaterThan.build_composite_bloq`, `CLinearDepthGreaterThan.on_classical_vals`, `CLinearDepthGreaterThan.build_call_graph` | controlled_component, controlled_comparison, classical_greater_comparison, existing primitive resource owner |
+| `_clineardepthgreaterthan_example` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `_HalfLinearDepthGreaterThan`, `_HalfLinearDepthGreaterThan.signature`, `_HalfLinearDepthGreaterThan.adjoint`, `_HalfLinearDepthGreaterThan._compute`, `_HalfLinearDepthGreaterThan._uncompute`, `_HalfLinearDepthGreaterThan.build_composite_bloq`, `_HalfLinearDepthGreaterThan.build_call_graph` | half_component, half_comparison, classical_half_comparison, existing primitive resource owner |
+| `_HalfComparisonBase`, `_HalfComparisonBase.signature`, `_HalfComparisonBase.adjoint`, `_HalfComparisonBase._half_greater_than_bloq`, `_HalfComparisonBase._classical_comparison`, `_HalfComparisonBase.on_classical_vals`, `_HalfComparisonBase._compute`, `_HalfComparisonBase._uncompute`, `_HalfComparisonBase.build_composite_bloq`, `_HalfComparisonBase.build_call_graph` | half_component, half_ordering, classical_half_comparison, existing primitive resource owner |
+| `_LinearDepthHalfComparisonBase`, `_LinearDepthHalfComparisonBase._half_greater_than_bloq` | half_component, half_ordering, classical_half_comparison |
+| `LinearDepthHalfGreaterThan` | half_component relation gt, half_ordering |
+| `LinearDepthHalfGreaterThanEqual` | half_component relation ge, half_ordering |
+| `LinearDepthHalfLessThan` | half_component relation lt, half_ordering |
+| `LinearDepthHalfLessThanEqual` | half_component relation le, half_ordering |
+| `_lineardepthhalfgreaterthan_small` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `_lineardepthhalflessthan_small` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `_lineardepthhalfgreaterthanequal_small` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
+| `_lineardepthhalflessthanequal_small` | Q-0179 complete source factory/notebook catalogue, concrete native factory checks where executable |
 
 Frozen comparison source Git blob `ae1f0275d081eae99fcf7786659dd33873083f18`.
 

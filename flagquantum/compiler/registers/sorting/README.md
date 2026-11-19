@@ -16,3 +16,13 @@ python -m pytest tests/unit/test_bitonic_sort.py -q
 
 The [register package guide](../README.md) provides executable consumer examples,
 source-parity requirements, resource-counting boundaries and the relocation map.
+
+`sorted_duplicates_component.py` stores the original HasDuplicates call graph
+using shared half-LT and MCX owners. It propagates the source inverse's returned
+physical aliases. Source lists of three or more can violate later erasure
+preconditions, and the uncontrolled singleton has no source decomposition.
+`sorted_duplicates_ir` retains its separately accepted physical-order-preserving
+execution route. See
+[the complete source audit](../../../../docs/development/SORTED_DUPLICATES_FILE_AUDIT.md).
+Run `python -m pytest tests/unit/test_sorted_duplicates_component.py -q` for
+source graph/branch conformance, valid two-word clean channels and defect witnesses.
