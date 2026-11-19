@@ -64,3 +64,24 @@ four-qubit case exposed approximately `2.2e-12` inactive-branch simulator drift;
 that separate fallback precision issue is tracked in
 [issue #1240](https://github.com/flagos-ai/FlagQuantum/issues/1240) and is not
 claimed fixed here.
+
+### Harmonic oscillator resource regression
+
+Aligning the residual floor also removes roundoff-generated rotations from the
+native harmonic oscillator. A controlled replay on macOS ARM64 / Torch 2.14.0
+changed only the elimination floor: `1e-16` produced 7 qubits, 387 operations and
+depth 335; `1e-15` produced 7 qubits, 203 operations and depth 173. Both used two
+workspace qubits and passed all 32 input columns against the independent
+reference, including absolute phase and clean workspace at the existing bounds.
+Linux job `135633176038` also reported 203 operations and depth 173, passing those
+semantic checks before failing the old exact resource assertion.
+
+The regression test now pins the improved exact resource tuple `(7, 203, 173)`;
+it does not widen a tolerance or replace equality with a looser resource ceiling.
+The historical counts in the example provenance remain unchanged. The complete
+harmonic suite additionally exercises nonzero bindings, resource refusal and
+invalid-input rejection.
+
+```bash
+python -m pytest -q tests/integration/test_synthesis_native_harmonic.py
+```
