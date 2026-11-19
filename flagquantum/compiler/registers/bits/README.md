@@ -72,9 +72,18 @@ through Split/Join. Conditional arithmetic and controlled constant loading share
 this owner. Arithmetic constants arrive as already encoded word patterns.
 
 `fanout_component.py` stores the existing `fanout_ir` tree as typed CNOT calls.
-It keeps a through QBit control and opaque target word, supports dirty targets,
+It keeps a through QBit control and target storage, supports dirty targets,
 and owns no workspace. Signed subtraction prefixes share this owner. Source QEC
 charges one logical Clifford for the entire fanout, whereas the expanded
 primitive count is `2 * width - 1` CNOTs. Run
 `python -m pytest tests/unit/test_fanout_component.py -q` for source gate order,
 complex dirty-target amplitudes, restoration, ownership and separate costs.
+
+`sign_extension_component.py` consumes one signed word and returns its widened
+view with an owned redundant sign prefix. Its inverse consumes the correct
+extended image, clears/frees the prefix and returns the narrow word. Both
+arguments describe the forward widths. Two's-complement and ones-complement
+words reuse the same fanout owner. Fanout uses a QBit target at width one and an
+opaque word at larger widths, following the frozen source signature. Run
+`python -m pytest tests/unit/test_sign_extension_component.py -q` for both
+encodings, source call order, complex states, spectator coherence and cleanup.

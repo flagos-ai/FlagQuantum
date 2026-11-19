@@ -24,7 +24,8 @@ def fanout_component_program(width: int) -> ProgramRecord:
     """
     if type(width) is not int or width < 1:
         raise ValueError("Fanout requires a positive concrete integer width")
-    bit, word = quantum_bit_type(), RegisterType("opaque", width)
+    bit = quantum_bit_type()
+    word = bit if width == 1 else RegisterType("opaque", width)
     cx = bit_gate_function(
         "fanout_cx",
         (Register("ctrl", bit), Register("target", bit)),
