@@ -112,6 +112,7 @@ def test_actual_postselection_rounding_fidelity_and_retained_phase_leakage() -> 
 def test_final_plot_contains_actual_classical_and_quantum_components(
     tmp_path: Path,
 ) -> None:
+    pytest.importorskip("matplotlib")
     p = plot_solution(extract_solution(build_program()), tmp_path)
     assert p.read_bytes().startswith(b"\x89PNG\r\n\x1a\n") and p.stat().st_size > 10000
 

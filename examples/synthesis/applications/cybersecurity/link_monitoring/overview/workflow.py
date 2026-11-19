@@ -192,12 +192,12 @@ def run_workflow(*, maxiter: int = 60, shots: int = 1000, seed: int = 1960) -> W
 
 
 def plot_graph(nodes: tuple[int, ...] = ()) -> "Figure":
-    from matplotlib import pyplot as plt
-
     if len(set(nodes)) != len(nodes) or any(
         type(v) is not int or not 1 <= v <= 12 for v in nodes
     ):
         raise ValueError("selected resources must be distinct nodes in 1..12")
+    from matplotlib import pyplot as plt
+
     graph = source_graph()
     figure, axis = plt.subplots(figsize=(7, 5), constrained_layout=True)
     nx.draw_networkx(

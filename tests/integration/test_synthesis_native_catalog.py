@@ -49,6 +49,13 @@ SOURCE_COMPARISONS = sorted(
     "path", NATIVE_COMPARISONS, ids=lambda path: str(path.relative_to(ROOT))
 )
 def test_native_and_independent_circuit(path: Path) -> None:
+    if path.relative_to(ROOT).as_posix() in {
+        "examples/synthesis/algorithms/quantum_primitives/gqsp/overview/comparisons/circuit.py",
+        "examples/synthesis/functions/qct_qst/overview/comparisons/circuit.py",
+        "examples/synthesis/functions/qsvt/overview/comparisons/circuit.py",
+        "examples/synthesis/algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/comparisons/circuit.py",
+    }:
+        pytest.importorskip("numpy")
     # Match the documented `python -m ...comparisons.circuit` invocation so
     # package-relative imports retain their normal Python meaning.
     module = ".".join(path.relative_to(ROOT).with_suffix("").parts)

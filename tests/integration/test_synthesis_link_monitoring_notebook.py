@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import sys
 from pathlib import Path
 
 import pytest
@@ -166,7 +167,10 @@ def test_invalid_sampling_controls(shots: int, seed: int) -> None:
 
 
 @pytest.mark.parametrize("nodes", ((1, 1), (0,), (13,), (True,)))
-def test_invalid_solution_graph_nodes(nodes: tuple[int, ...]) -> None:
+def test_invalid_solution_graph_nodes(
+    nodes: tuple[int, ...], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setitem(sys.modules, "matplotlib", None)
     with pytest.raises(ValueError, match="distinct nodes"):
         plot_graph(nodes)
 

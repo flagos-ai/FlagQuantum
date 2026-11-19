@@ -216,12 +216,23 @@ def test_target_conversion_budget_and_missing_exact_rule_refuse(
         exact_rules as walk_rules,
     )
 
+    converted = convert_basis(
+        workflow.program.circuit,
+        gates=("cx", "u3"),
+        rules=walk_rules(),
+        max_added_operations=200_000,
+    )
+    torch.testing.assert_close(
+        logical_state(converted.program, workflow.program),
+        logical_state(workflow.program.circuit, workflow.program),
+        atol=1e-10,
+        rtol=0,
+    )
     with pytest.raises(BasisConversionError, match="rz"):
         convert_basis(
-            workflow.program.circuit,
-            gates=("cx", "u3"),
-            rules=walk_rules(),
-            max_added_operations=200_000,
+            fq.Circuit(1).rz(0, theta=0.37),
+            gates=("cx", "x"),
+            rules={},
         )
 
 
