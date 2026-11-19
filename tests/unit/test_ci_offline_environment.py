@@ -75,6 +75,7 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
             "FQ_CI_WHEEL_DIRECTORY": str(wheels) if cached_wheels else "",
             "FQ_DISTRIBUTED_WORKERS": "1",
             "MAX_JOBS": "2",
+            "COVERAGE_CORE": "sysmon",
         },
         check=True,
         capture_output=True,
@@ -100,6 +101,7 @@ def test_container_wrapper_preserves_offline_runtime_and_read_only_wheels(
     environment = [actual[i + 1] for i, value in enumerate(actual) if value == "--env"]
     assert "FQ_DISTRIBUTED_WORKERS" in environment
     assert "MAX_JOBS" in environment
+    assert "COVERAGE_CORE" in environment
     assert "GLOO_SOCKET_IFNAME=lo" in environment
     command = actual[actual.index(image) + 1 :]
     expected = [str(private / "venv/bin/python")]
