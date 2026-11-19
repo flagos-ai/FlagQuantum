@@ -7,9 +7,6 @@
 
 from math import prod
 
-import numpy as np
-
-from ....core.ir import CircuitIR
 from ....core.ir.program import ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
@@ -19,10 +16,10 @@ from ....core.ir.program.signatures import Signature
 from ....core.value_math import ssum
 from ....core.value_parameters import is_symbolic_value
 from ..component_builder import BindingCollection, ComponentProgramBuilder
-from ..component_gate_function import bit_gate_function
 from ..component_graph import _namespace_helpers
+from ..layout.component_partition import partition_component_program
+from .conjunction_program import conjunction_program
 from .control_predicate import ControlRegister
-from .multi_control import multi_and_ir
 
 
 def validate_control_ports(
@@ -95,60 +92,36 @@ def control_predicate_program(
     """
     count = validate_control_ports(controls, patterns)
     signature = control_predicate_signature(controls, uncompute=uncompute)
-    gates = multi_and_ir(
-        tuple(range(count)),
+    combine = partition_component_program(controls, "combine", True)
+    partition = partition_component_program(controls, "partition", False)
+    conjunction = conjunction_program(
         tuple(bit for pattern in patterns for bit in pattern.bits()),
-        tuple(range(count, 2 * count - 1)),
-        classical_bits=tuple(range(count - 1)) if uncompute else (),
+        name="conjunction",
         uncompute=uncompute,
     )
-    leaf = bit_gate_function(
-        "gates",
-        (Register("bits", quantum_bit_type(), (2 * count - 1,)),),
-        CircuitIR(2 * count - 1, gates),
+    builder = ComponentProgramBuilder(
+        signature,
+        (*combine.functions, *partition.functions, *conjunction.functions),
+        name=name,
     )
-    builder = ComponentProgramBuilder(signature, (leaf,), name=name)
-    flat = [
-        bit
-        for register in controls
-        for word in np.asarray(builder.inputs[register.name]).flat
-        for bit in builder.split(word)
-    ]
-    if uncompute:
-        junk_input = builder.inputs.get("junk")
-        if count > 2:
-            assert isinstance(junk_input, RegisterBinding)
-            work = list(builder.split(junk_input))
-        else:
-            work = []
-        work.append(builder.inputs["target"])
-    else:
-        work = list(builder.split(builder.allocate(count - 1)))
-    returned = np.asarray(
-        builder.call_dict("gates", {"bits": np.array([*flat, *work], dtype=object)})[
-            "bits"
-        ]
-    )
-    outputs: dict[str, BindingCollection] = {}
-    cursor = 0
-    for register in controls:
-        array = np.empty(register.shape, dtype=object)
-        width = executable_register_width(register.dtype)
-        for index in register.all_idxs():
-            array[index] = builder.join(
-                returned[cursor : cursor + width], dtype=register.dtype
-            )
-            cursor += width
-        outputs[register.name] = array if register.shape else array[()]
-    prefix = returned[count:-1]
-    target = returned[-1]
-    assert isinstance(target, RegisterBinding)
+    inputs: dict[str, BindingCollection] = {}
     if uncompute:
         if count > 2:
-            builder.free(builder.join(prefix))
-        builder.free(target)
-    else:
+            junk = builder.inputs["junk"]
+            assert isinstance(junk, RegisterBinding)
+            inputs["junk"] = builder.split(junk)
+        inputs["target"] = builder.inputs["target"]
+    packed = builder.call_dict(
+        "combine",
+        {register.name: builder.inputs[register.name] for register in controls},
+    )["x"]
+    assert isinstance(packed, RegisterBinding)
+    inputs["ctrl"] = builder.split(packed)
+    result = builder.call_dict("conjunction", inputs)
+    packed = builder.join(result.pop("ctrl"))
+    outputs = builder.call_dict("partition", {"x": packed})
+    if not uncompute:
         if count > 2:
-            outputs["junk"] = builder.join(prefix)
-        outputs["target"] = target
+            outputs["junk"] = builder.join(result["junk"])
+        outputs["target"] = result["target"]
     return _namespace_helpers(builder.finalize(outputs), name)
