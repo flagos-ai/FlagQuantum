@@ -15,7 +15,11 @@ share `CircuitIR` where their entry points require it.
 [`pipeline.py`](pipeline.py) exposes the native circuit entries and forwards
 orchestration to [lowering/pipeline.py](lowering/pipeline.py). `registers/`
 provides shared register decompositions. `_torch/` owns the PyTorch frontend
-capture and training compilation. Documented compiler entry modules remain
+capture and training compilation. Python source capture is grouped in
+[`_construction/frontend/`](_construction/frontend/README.md), with the retained
+`_construction/frontend_*.py` paths mapped in the
+[construction README](_construction/README.md#python-frontend-implementation).
+Documented compiler entry modules remain
 importable at their existing paths. Deployment packaging is owned by
 [`flagquantum.deployment`](../deployment/). Bounded Pauli products and
 product-formula schedules are implemented in [`lowering/`](lowering/).
