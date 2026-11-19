@@ -8,7 +8,7 @@
 import numpy as np
 
 from ....core.ir import CircuitIR
-from ....core.ir.program import ProgramRecord
+from ....core.ir.program import FunctionRecord, ProgramRecord
 from ....core.ir.program.register_bindings import RegisterBinding
 from ....core.ir.program.register_types import quantum_bit_type
 from ....core.ir.program.registers import Register, RegisterSide
@@ -55,13 +55,45 @@ def and_component_program(
     return _namespace_helpers(builder.finalize(outputs), name)
 
 
+def conjunction_declaration(
+    count: int, *, name: str = "conjunction", uncompute: bool = False
+) -> ProgramRecord:
+    """Declare unknown activation values without synthesizing a gate body.
+
+    The caller supplies the declaration's existing ConjunctionCall resource
+    identity and any classical or tensor action explicitly. Resolving its
+    activation replaces this declaration with a matching conjunction_program.
+    """
+    if type(count) is not int or count < 2 or type(uncompute) is not bool:
+        raise ValueError(
+            "conjunction requires at least two bits and a boolean direction"
+        )
+    return ProgramRecord(
+        (
+            FunctionRecord(
+                name, (), registers=tuple(_conjunction_signature(count, uncompute))
+            ),
+        )
+    )
+
+
+def _conjunction_signature(count: int, uncompute: bool) -> Signature:
+    bit = quantum_bit_type()
+    side = RegisterSide.LEFT if uncompute else RegisterSide.RIGHT
+    return Signature(
+        (
+            Register("ctrl", bit, (count,)),
+            *((Register("junk", bit, (count - 2,), side=side),) if count > 2 else ()),
+            Register("target", bit, side=side),
+        )
+    )
+
+
 def conjunction_program(
     values: tuple[int, ...], *, name: str = "multi_and", uncompute: bool = False
 ) -> ProgramRecord:
     """Retain each And call and the live prefix ports in the source ladder."""
     stages = tuple(multi_and_stages(values))
-    bit = quantum_bit_type()
-    side = RegisterSide.LEFT if uncompute else RegisterSide.RIGHT
     patterns = tuple(dict.fromkeys(stage[3] for stage in stages))
     leaves = {
         pattern: and_component_program(
@@ -70,13 +102,7 @@ def conjunction_program(
         for pattern in patterns
     }
     n = len(values)
-    signature = Signature(
-        (
-            Register("ctrl", bit, (n,)),
-            *((Register("junk", bit, (n - 2,), side=side),) if n > 2 else ()),
-            Register("target", bit, side=side),
-        )
-    )
+    signature = _conjunction_signature(n, uncompute)
     builder = ComponentProgramBuilder(
         signature, (f for leaf in leaves.values() for f in leaf.functions), name=name
     )

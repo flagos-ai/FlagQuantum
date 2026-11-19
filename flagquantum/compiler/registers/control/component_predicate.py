@@ -18,18 +18,19 @@ from ....core.value_parameters import is_symbolic_value
 from ..component_builder import BindingCollection, ComponentProgramBuilder
 from ..component_graph import _namespace_helpers
 from ..layout.component_partition import partition_component_program
-from .conjunction_program import conjunction_program
+from .conjunction_program import conjunction_declaration, conjunction_program
 from .control_predicate import ControlRegister
 
 
 def validate_control_ports(
-    controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...]
+    controls: tuple[Register, ...], patterns: tuple[ControlRegister, ...] | None
 ) -> int:
-    """Validate finite integer clauses and return their physical bit count."""
-    if not controls or len(controls) != len(patterns):
+    """Validate finite integer ports and optional concrete activation clauses."""
+    if not controls or (patterns is not None and len(controls) != len(patterns)):
         raise ValueError("control ports require one activation pattern per register")
     Signature(controls)
-    for register, pattern in zip(controls, patterns, strict=True):
+    count = 0
+    for index, register in enumerate(controls):
         encoding = {
             "bit": "unsigned",
             "opaque": "unsigned",
@@ -38,16 +39,23 @@ def validate_control_ports(
             "ones_complement": "ones_complement",
             "montgomery": "unsigned",
         }.get(register.dtype.encoding)
+        width = executable_register_width(register.dtype)
+        count += width * prod(register.shape)
         if (
             register.side != RegisterSide.THRU
             or register.dtype.classical_bits != 0
-            or encoding != pattern.encoding
-            or executable_register_width(register.dtype) != pattern.width
-            or prod(register.shape) != len(pattern.values)
+            or encoding is None
         ):
             raise ValueError("control port dtype, shape and activation must agree")
-        pattern.bits()
-    count = sum(len(pattern.bits()) for pattern in patterns)
+        if patterns is not None:
+            pattern = patterns[index]
+            if (
+                encoding != pattern.encoding
+                or width != pattern.width
+                or prod(register.shape) != len(pattern.values)
+            ):
+                raise ValueError("control port dtype, shape and activation must agree")
+            pattern.bits()
     if not count:
         raise ValueError("structured control requires a nonempty activation")
     return count
@@ -76,7 +84,7 @@ def control_predicate_signature(
 
 def control_predicate_program(
     controls: tuple[Register, ...],
-    patterns: tuple[ControlRegister, ...],
+    patterns: tuple[ControlRegister, ...] | None,
     *,
     name: str = "predicate",
     uncompute: bool = False,
@@ -89,15 +97,28 @@ def control_predicate_program(
     controlled call. Canonical integer storage retains its descriptor across
     split/join. Montgomery controls use stored residues and bounded unsigned
     controls use their stored bit values. Unsupported descriptors raise ValueError.
+
+    With patterns=None binary activation retains a declaration requiring explicit
+    resource/numerical bindings. For three or more controls, the locked source
+    converts HasLength(count) into positive controls. This graph follows that
+    documented constructor rule and emits the existing positive ladder.
     """
     count = validate_control_ports(controls, patterns)
     signature = control_predicate_signature(controls, uncompute=uncompute)
     combine = partition_component_program(controls, "combine", True)
     partition = partition_component_program(controls, "partition", False)
-    conjunction = conjunction_program(
-        tuple(bit for pattern in patterns for bit in pattern.bits()),
-        name="conjunction",
-        uncompute=uncompute,
+    conjunction = (
+        conjunction_declaration(count, uncompute=uncompute)
+        if patterns is None and count == 2
+        else conjunction_program(
+            (
+                (1,) * count
+                if patterns is None
+                else tuple(bit for pattern in patterns for bit in pattern.bits())
+            ),
+            name="conjunction",
+            uncompute=uncompute,
+        )
     )
     builder = ComponentProgramBuilder(
         signature,
