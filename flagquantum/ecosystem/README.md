@@ -56,3 +56,23 @@ register another framework. Compiler retains lowering/selection and Runtime
 retains execution. See its [contributor guide](_qmod/README.md) and
 [separate compatibility counts](../../docs/roadmap/CS07_QMOD_PARSER_DELIVERY.md).
 No public native-source execution entry is admitted by this private work.
+
+## Logical-resource estimator export
+
+`resource_estimator.py` converts existing declared logical resources to the
+four-field Microsoft known-count schema. It imports no optional SDK and performs
+no physical estimation. The declared width controls whether the exported count
+includes work qubits.
+
+```python
+from flagquantum.compiler._component_trace.resource_model import GateCost, ModeledResources
+from flagquantum.ecosystem.resource_estimator import microsoft_logical_counts
+
+counts = microsoft_logical_counts(ModeledResources(GateCost(t=100), 17))
+assert counts == {"numQubits": 17, "tCount": 100, "rotationCount": 0, "rotationDepth": 0}
+```
+
+The complete optional local-estimator workflow is in
+`examples/notebooks/physical_resource_interop.ipynb`. SDK result and widget objects
+remain inside that interoperability example. Test a conversion change with
+`python -m pytest tests/unit/test_resource_estimator_counts.py -q`.
