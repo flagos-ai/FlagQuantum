@@ -326,6 +326,20 @@ def _execute_density_ensemble(
                 for item, record in ensemble
             ]
             continue
+        if metadata.get("is_channel"):
+            operators = _channel_operators(instruction)
+            ensemble = [
+                (
+                    (
+                        apply_kraus_density(item, operators, instruction.wires, n_wires)
+                        if _condition_holds(record, clauses)
+                        else item
+                    ),
+                    record,
+                )
+                for item, record in ensemble
+            ]
+            continue
         if clauses:
             matrix = gate_matrix(
                 instruction, bsz=rho.shape[0], device=device, dtype=dtype
@@ -338,16 +352,6 @@ def _execute_density_ensemble(
                     )
                     if _condition_holds(record, clauses)
                     else (item, record)
-                )
-                for item, record in ensemble
-            ]
-            continue
-        if metadata.get("is_channel"):
-            operators = _channel_operators(instruction)
-            ensemble = [
-                (
-                    apply_kraus_density(item, operators, instruction.wires, n_wires),
-                    record,
                 )
                 for item, record in ensemble
             ]
