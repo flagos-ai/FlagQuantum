@@ -7,7 +7,7 @@ The reference is Qualtran v0.7.0 revision `bcb17bb25360ed68ce3bc084645db3e929799
 | Parent | Complete file | Git blob | Disposition |
 |---|---|---|---|
 | Q-0162 | `qualtran/_infra/gate_with_registers.ipynb` | `108c73c15f07476d976e0777c4b916bb466670f7` | Accepted native replacement of all 17 cells, preserving cell types and source-cell metadata. |
-| Q-0163 | `qualtran/_infra/gate_with_registers.py` | `df21c8cc00ae7cac7a8bfcd4d769f76daac5515f` | Open pending zero-width ownership and wider typed/control dependency closure. |
+| Q-0163 | `qualtran/_infra/gate_with_registers.py` | `df21c8cc00ae7cac7a8bfcd4d769f76daac5515f` | Zero-width ownership accepted. Open pending wider typed/control dependency closure. |
 | Q-0164 | `qualtran/_infra/gate_with_registers_test.py` | `31fd6f8635cec0b18b1c1f3487d4db9c8fabacf3` | Original five tests pass, with native counterparts for every original scenario. |
 
 ## Complete definition mapping
@@ -66,7 +66,7 @@ A stored matrix leaf is counted at its storage granularity. Physical primitive s
 
 The original scalar `r3=Qid` placement exposed a native shape refusal before this batch. `_port_arrays` now wraps a scalar Qid using the same normalization as frozen `merge_qubits`. The failure and passing original scenario are retained in the reference receipt directory. Optional private `gate_label` preserves the original first-operand class title and survives integer powers and adjoint. Existing unlabelled behavior remains covered.
 
-Zero-width words and empty register arrays succeed in source layout/unitary paths, but original `decompose_bloq()` raises `ValueError` because an iteration dimension is zero. Native register import still requires positive widths. Multiple empty words also collide under the current empty-tuple word binding key. This remains an explicit ownership boundary under Q-0163. Wider classical words and control admission remain under Q-0158 and pending Proposal 108. Proposal 107 approval covers nonlinear parameters and scalar phases.
+Zero-width words and empty register arrays succeed in source layout/unitary paths. Original `decompose_bloq()` raises `ValueError` through empty-tuple identity collisions for scalar and positive-shaped empty words, or zero iteration dimensions for zero-sized arrays. Native register import now retains independent zero-width identities as detailed below. Wider classical words and control admission remain under Q-0158 and pending Proposal 108. Proposal 107 approval covers nonlinear parameters and scalar phases.
 
 ## Reproducible checks
 
@@ -75,3 +75,56 @@ Use the locked reference environment and `tests/unit/test_register_gate_tutorial
 Final batch results are 478 concentrated checks passed with two existing optional skips, 172 local integration checks passed, five files passed strict typing, and format, scope, architecture and IR checks passed. The additional Cirq 1.6 lane passed 70 cases with 669 NumPy deprecation warnings. The dependency scan reports zero findings on changed paths and 688 whole-repository findings.
 
 The default tier selected 74,391 cases and reached its 480-second bound before completion. Its log contains failures in the existing example policy and circuit composition contract suites. The example policy failure was isolated and reproduced, with baseline source inspection recorded in `g2-register-gate-baseline-comparison.json`. The new example and notebook contain no matching forbidden runtime import. This default run is incomplete and failed. It supplies no all-repository passing claim.
+
+## Zero-width SDK binding continuation
+
+The importer's physical-qubit map continues to own nonempty words. Empty scalar
+words and indexed zero-width elements use a separate `(register name, index)`
+map at this external boundary. Each value is an existing RegisterBinding with
+its own SSA identity. Empty arrays have no elements. Calls and outer ports match
+empty words by the declared name and row-major index because a flattened SDK
+operand carries no address for those words. Unmatched names create independent
+clean logical values. A live empty output cannot overwrite another value.
+This explicit naming convention is a native ownership decision. Source empty
+qubit tuples do not provide a unique physical identity.
+
+The existing builder owns consumption, split/join type rebinding, allocation and
+freeing. The adapter adds no new Core record or physical primitive. Cleanup
+consumes all remaining nonempty and empty handles independently. Scalar phase
+carrier selection continues to see only physical words. Quantum zero-width
+admission is already covered by Proposal 103. Wider classical-word admission
+remains independent under pending Proposal 108.
+
+
+The continuation passes 19 focused cases and all 484 concentrated register,
+SDK, graph, binding and feedback cases. Both frozen source blobs are checked
+inside the test fixture. Six attached/declared definition cases cover LEFT,
+THRU and RIGHT ownership. Five width/shape layouts include zero-sized arrays.
+Type rebinding, unmatched names, repeated calls, live-output collisions and
+scalar phase carrier allocation are explicit cases. Four original gate fixtures
+preserve their actual upstream decomposition failures while their SDK unitary
+and primitive behavior remain comparable.
+
+The And compute/erase consumer emits 3 H, 2 T, 2 T-dagger, 6 CX, 1 S,
+1 measurement, 1 CZ and 1 reset with or without three empty logical values.
+The entire ordered stream, operands and feedback are equal to the original
+primitive decomposition. Both measurement histories match unnormalized complex
+amplitudes with an entangled spectator and return the work bit to zero. The
+separate source model reports 1 And, 1 Clifford and 1 measurement. Empty logical
+values emit zero additional primitives. Scalar phase uses the existing clean
+physical carrier only when the body requires it.
+
+Strict typing for both changed Python files, Black, Ruff, team scope,
+architecture and IR checks pass. Dependency inspection reports 688 repository
+findings and zero findings on changed paths. The default suite stops after
+434 passes and 51 skips on the existing public-docstring coverage failure.
+Its nine reported modules and failing test are byte-identical to baseline
+`0ea36354ed7f35b5d7fcb4917da084f8739cdba9`. The initial concentrated invocation
+lacked the frozen source notebook marker. Reusing the existing reference-marker
+runner resolved that harness issue, with all 484 cases passing.
+
+Receipts are `g2-empty-register-evidence.json`, `g2-empty-register-dependency.json`,
+`g2-empty-register-default-baseline.json` and the matching focused, regression,
+default and quality logs in the reference directory. The complete Q-0163 parent
+remains open solely for the wider typed/control dependency tracked by Q-0158
+and pending Proposal 108.

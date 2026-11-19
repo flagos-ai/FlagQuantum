@@ -150,8 +150,6 @@ def _port_arrays(
     arrays: dict[str, Qureg] = {}
     for reg in ports:
         shape = _register_shape(reg)
-        if shape[-1] == 0:
-            raise ValueError("Cirq register import requires positive word widths")
         supplied = quregs[reg.name]
         values = np.asarray(
             [supplied] if isinstance(supplied, cirq.Qid) else supplied, dtype=object
@@ -174,8 +172,6 @@ def _operation_ports(
     offset = 0
     for register in signature:
         shape = _register_shape(register)
-        if shape[-1] == 0:
-            raise ValueError("Cirq register import requires positive word widths")
         width = prod(shape)
         wires = qubits[offset : offset + width]
         if len(wires) != width:
@@ -197,6 +193,7 @@ class _WordBindings:
     def __init__(self, builder: ComponentProgramBuilder) -> None:
         self.builder = builder
         self.words: dict[tuple[Hashable, ...], RegisterBinding] = {}
+        self.empty_words: dict[tuple[str, tuple[int, ...]], RegisterBinding] = {}
         self.bit = quantum_bit_type()
 
     def store(
@@ -209,13 +206,30 @@ class _WordBindings:
             words = np.asarray(bindings[register.name], dtype=object)
             for index in register.all_idxs():
                 qubits = tuple(ports[register.name][index])
+                if not qubits:
+                    key = (register.name, index)
+                    if key in self.empty_words:
+                        raise ValueError("Cirq output overlaps a live empty register")
+                    self.empty_words[key] = words[index]
+                    continue
                 if any(set(qubits).intersection(group) for group in self.words):
                     raise ValueError("Cirq gate output overlaps a live register")
                 self.words[qubits] = words[index]
 
     def take(
-        self, qubits: tuple[Hashable, ...], dtype: RegisterType
+        self,
+        qubits: tuple[Hashable, ...],
+        dtype: RegisterType,
+        empty_key: tuple[str, tuple[int, ...]],
     ) -> RegisterBinding:
+        if not qubits:
+            word = self.empty_words.pop(empty_key, None)
+            if word is None:
+                return self.builder.allocate(dtype=dtype)
+            if word.register.dtype == dtype:
+                return word
+            return self.builder.join(self.builder.split(word), dtype)
+
         direct = self.words.get(qubits)
         if direct is not None and direct.register.dtype == dtype:
             return self.words.pop(qubits)
@@ -253,7 +267,9 @@ class _WordBindings:
             words = np.empty(register.shape, dtype=object)
             for index in register.all_idxs():
                 words[index] = self.take(
-                    tuple(ports[register.name][index]), register.dtype
+                    tuple(ports[register.name][index]),
+                    register.dtype,
+                    (register.name, index),
                 )
             bindings[register.name] = words if register.shape else words[()]
         return bindings
@@ -415,7 +431,7 @@ def import_cirq_register_optree(
         call(function, qubits)
 
     returns = live.take_ports(signature.rights(), outgoing)
-    for word in live.words.values():
+    for word in (*live.words.values(), *live.empty_words.values()):
         builder.free(word)
     return builder.finalize(returns)
 
