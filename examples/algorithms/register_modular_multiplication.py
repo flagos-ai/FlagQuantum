@@ -11,10 +11,14 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler.registers.modular.modular_multiplication import (
     controlled_modular_multiply_constant_adjoint_ir,
-    controlled_modular_multiply_constant_ir,
     modular_multiplication_requirements,
 )
+from flagquantum.compiler.registers.modular.modular_multiplication_component import (
+    modular_multiplication_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.register_types import unsigned_register_type
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
@@ -34,21 +38,22 @@ class ModularMultiplication:
         return 1 + self.width + work
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        emit = (
-            controlled_modular_multiply_constant_adjoint_ir
-            if self.inverse
-            else controlled_modular_multiply_constant_ir
-        )
         start = 1 + self.width
         work, slots = modular_multiplication_requirements(self.width)
-        gates = emit(
-            0,
-            tuple(range(1, start)),
-            self.value,
-            self.modulus,
-            tuple(range(start, start + work)),
-            tuple(range(slots)),
-        )
+        target = tuple(range(1, start))
+        clean = tuple(range(start, start + work))
+        if self.inverse:
+            gates = controlled_modular_multiply_constant_adjoint_ir(
+                0, target, self.value, self.modulus, clean, tuple(range(slots))
+            )
+        else:
+            gates = bind_register_program(
+                modular_multiplication_program(
+                    unsigned_register_type(self.width), self.modulus, self.value
+                ),
+                ((0,), target),
+                clean=clean,
+            ).circuit.instructions
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 

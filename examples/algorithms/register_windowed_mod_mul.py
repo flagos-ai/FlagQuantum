@@ -10,7 +10,10 @@ import flagquantum as fq
 from flagquantum.compiler.registers.modular.single_window_mod_mul import (
     single_window_qroam_table,
 )
-from flagquantum.compiler.registers.modular.windowed_mod_mul import windowed_mod_mul_ir
+from flagquantum.compiler.registers.modular.windowed_multiplication_component import (
+    windowed_multiplication_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 
@@ -54,20 +57,33 @@ class WindowedMontgomeryMultiplication:
             tuple(range(start, start + n + w))
             for start in range(bank_start, work_start, n + w)
         )
-        gates, target = windowed_mod_mul_ir(
-            tuple(range(n)),
-            tuple(range(n, 2 * n)),
-            tuple(range(2 * n, 3 * n)),
-            self.history_wires,
-            self.reduction_wire,
-            self.modulus,
-            tuple(range(self.reduction_wire + 1, bank_start)),
-            bank,
-            tuple(range(work_start, self.qubit_count)),
-            tuple(range(2 * n)),
-            adjoint=self.adjoint,
+        original = tuple(range(2 * n, 3 * n))
+        forward = (*original[w:], *range(self.reduction_wire + 1, bank_start))
+        target = forward if self.adjoint else original
+        padding = (
+            original[:w]
+            if self.adjoint
+            else tuple(range(self.reduction_wire + 1, bank_start))
         )
-        assert target == self.target_wires
+        bound = bind_register_program(
+            windowed_multiplication_program(n, w, self.modulus, adjoint=self.adjoint),
+            (
+                tuple(range(n)),
+                tuple(range(n, 2 * n)),
+                target,
+                self.history_wires,
+                (self.reduction_wire,),
+            ),
+            clean=(
+                *padding,
+                *(q for word in bank for q in word),
+                *range(work_start, self.qubit_count),
+            ),
+            input_ownership=tuple((q, False) for q in target),
+            allow_workspace_outputs=True,
+        )
+        assert bound.outputs[2] == self.target_wires
+        gates = bound.circuit.instructions
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 

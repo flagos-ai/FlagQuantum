@@ -17,8 +17,14 @@ from examples.algorithms.register_modular_multiplication import ModularMultiplic
 from examples.algorithms.register_windowed_mod_mul import (
     WindowedMontgomeryMultiplication,
 )
+from flagquantum.compiler.registers.lookup.qroam_clean_erasure import (
+    qroam_clean_measurement_erase_ir,
+)
 from flagquantum.compiler.registers.modular.modular_doubling import (
     modular_double_requirements,
+)
+from flagquantum.compiler.registers.modular.single_window_mod_mul import (
+    single_window_qroam_table,
 )
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.simulation.classical_modular_multiplication import (
@@ -158,10 +164,34 @@ def test_append_uses_original_notebook_parameters_and_physical_models(
             )
             assert op.target_wires[-w:] == tuple(range(4 * n + 1, 4 * n + 1 + w))
             lookup = original._mod_mul_impl._window.qrom
-            load = get_cost_value(lookup, QECGatesCost())
             erase = get_cost_value(lookup.adjoint(), QECGatesCost())
-            t_delta = n // w * (load.total_t_count() - erase.total_t_count())
-            m_delta = n // w * (load.measurement - erase.measurement)
+            table = single_window_qroam_table(n, w, p)
+            assert tuple(map(int, lookup.data[0])) == table.datasets[0]
+            assert lookup.log_block_sizes == table.log_block_sizes
+            cells, bank_width = table.block_shape[0], n + w
+            bank_end = w + cells * bank_width
+            scratch = table.workspace_size(0, (w,))
+            raw_erase = qroam_clean_measurement_erase_ir(
+                table,
+                (),
+                (tuple(range(w)),),
+                (
+                    tuple(
+                        tuple(range(w + i * bank_width, w + (i + 1) * bank_width))
+                        for i in range(cells)
+                    ),
+                ),
+                tuple(range(bank_end, bank_end + scratch)),
+                tuple(range(scratch)),
+                tuple(range(scratch, scratch + cells * bank_width)),
+            )
+            emitted_erase = Counter(gate.name for gate in raw_erase)
+            t_delta = (
+                n
+                // w
+                * (emitted_erase["t"] + emitted_erase["tdg"] - erase.total_t_count())
+            )
+            m_delta = n // w * (emitted_erase["measure"] - erase.measurement)
         elif isinstance(ex.constant, int):
             multiply = ModularMultiplication(ex.constant, width=n, modulus=p)
             width = multiply.qubit_count

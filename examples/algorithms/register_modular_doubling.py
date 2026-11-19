@@ -10,15 +10,19 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler.registers.modular.modular_doubling import (
-    modular_double_ir,
     modular_double_outputs,
     modular_double_requirements,
+)
+from flagquantum.compiler.registers.modular.modular_doubling_component import (
+    modular_doubling_program,
 )
 from flagquantum.compiler.registers.modular.modular_halving import (
     modular_half_ir,
     modular_half_outputs,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.register_types import unsigned_register_type
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
@@ -39,9 +43,24 @@ class ModularDoubling:
         )
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        emit = modular_half_ir if self.inverse else modular_double_ir
-        _, slots = modular_double_requirements(len(self.target))
-        gates = emit(self.target, self.modulus, self.workspace, tuple(range(slots)))
+        width = len(self.target)
+        _, slots = modular_double_requirements(width)
+        if self.inverse:
+            gates = modular_half_ir(
+                self.target, self.modulus, self.workspace, tuple(range(slots))
+            )
+        else:
+            expected_output = self.outputs[0]
+            work = (self.workspace[1], self.workspace[0], *self.workspace[2:])
+            bound = bind_register_program(
+                modular_doubling_program(unsigned_register_type(width), self.modulus),
+                (self.target,),
+                clean=work,
+                input_ownership=((self.target[0], False),),
+                allow_workspace_outputs=True,
+            )
+            assert bound.outputs == (expected_output,)
+            gates = bound.circuit.instructions
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
