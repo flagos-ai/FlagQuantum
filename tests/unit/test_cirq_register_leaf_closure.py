@@ -97,7 +97,7 @@ def test_original_composite_wrapper_matches_full_operator_and_primitives(
 
 
 @pytest.mark.parametrize("control_value", [0, 1])
-def test_matrix_leaf_requires_typed_program_contract(control_value: int) -> None:
+def test_matrix_leaf_matches_source_through_native_program(control_value: int) -> None:
     source = pytest.importorskip("qualtran.cirq_interop._cirq_to_bloq")
     q0, q1 = cirq.LineQubit.range(2)
     matrix = np.array([[1, 0], [0, np.exp(0.37j)]], dtype=np.complex128)
@@ -113,8 +113,26 @@ def test_matrix_leaf_requires_typed_program_contract(control_value: int) -> None
         atol=2e-12,
         rtol=0,
     )
-    with pytest.raises(ValueError, match="typed native FunctionRecord"):
-        import_cirq_register_optree(operation)
+    program = import_cirq_register_optree(operation)
+    bound = bind_register_program(program, ((0,), (1,)))
+    assert estimate_resources(bound.circuit).operation_counts == {"any": 1}
+    np.testing.assert_allclose(
+        get_unitary(bound.circuit, dtype=torch.complex128).numpy(),
+        expected,
+        atol=2e-12,
+        rtol=0,
+    )
+    registers = program.functions[0].registers
+    assert registers is not None
+    exported = RegisterCirqGate(bound, Signature(registers))
+    restored = import_cirq_register_optree(exported.on(q0, q1))
+    rebound = bind_register_program(restored, ((0,), (1,)))
+    np.testing.assert_allclose(
+        get_unitary(rebound.circuit, dtype=torch.complex128).numpy(),
+        expected,
+        atol=2e-12,
+        rtol=0,
+    )
 
 
 def test_nested_workspace_reserves_siblings_and_roundtrips_native_gate() -> None:

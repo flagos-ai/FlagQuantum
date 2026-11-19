@@ -27,6 +27,7 @@ from ...core.ir.program.signatures import Signature
 from ._feedback_import import (
     _has_explicit_matrix,
     _lower_feedback_gate,
+    _matrix_instruction,
 )
 from ._gate_metadata import cirq_gate_signature
 from ._qubit_manager import InteropQubitManager
@@ -313,9 +314,7 @@ def import_cirq_register_optree(
         elif isinstance(gate, cirq.ResetChannel) and len(qubits) == 1:
             instructions = (Instruction("reset", (0,), metadata={"is_dynamic": True}),)
         elif _has_explicit_matrix(cirq, gate):
-            raise ValueError(
-                "Cirq matrix leaves require a typed native FunctionRecord definition"
-            )
+            instructions = (_matrix_instruction(cirq, gate, tuple(range(len(qubits)))),)
         else:
             if not qubits:
                 raise ValueError(

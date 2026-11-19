@@ -832,6 +832,19 @@ def _export_cirq(
                 name=instruction.name,
             )
             continue
+        if (
+            extent_declared_by_gate
+            and instruction.name == "any"
+            and instruction.matrix is not None
+        ):
+            matrix = instruction.matrix.detach().cpu().numpy().copy()
+            operation = cirq.MatrixGate(matrix).on(
+                *(qubits[wire] for wire in instruction.wires)
+            )
+            if feedback is not None and clauses:
+                operation = feedback.condition_operation(cirq, operation, clauses)
+            operations.append(operation)
+            continue
         if instruction.name not in supported_gates or instruction.matrix is not None:
             _issue(
                 issues,
