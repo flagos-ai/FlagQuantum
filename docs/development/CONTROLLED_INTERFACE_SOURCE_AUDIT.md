@@ -52,7 +52,7 @@ no whole-file acceptance.
 | `CtrlSpec.__hash__` | 243–244 | Immutable Core register and Compiler pattern tuples provide shape/type/value identity. Foreign CtrlSpec object equality is kept at the reference boundary. |
 | `CtrlSpec.to_cirq_cv` | 246–262 | Ecosystem `_control_values.py` provides typed single-clause transport. The multi-register decoder repair and source defect are explicit in `REGISTER_CONTROL_VALUES_AUDIT.md`. |
 | `CtrlSpec.from_cirq_cv` | 265–297 | Ecosystem `_control_values.py` provides typed single-clause transport. The multi-register decoder repair and source defect are explicit in `REGISTER_CONTROL_VALUES_AUDIT.md`. |
-| `CtrlSpec.get_single_ctrl_val` | 299–312 | `compiler/registers/control/component_control_selection.py`; physical typed single-bit descriptor coverage remains open. |
+| `CtrlSpec.get_single_ctrl_val` | 299–312 | `compiler/registers/control/component_control_selection.py`; physical typed single-bit descriptors now retain admitted word types and singleton shapes, with the source matrix-shape defect recorded separately. |
 | `AddControlledT` | 315–334 | `compiler/registers/component_control.py` ControlAdder and builder handle/output ordering. |
 | `AddControlledT.__call__` | 332–334 | `compiler/registers/component_control.py` ControlAdder and builder handle/output ordering. |
 | `_get_nice_ctrl_reg_names` | 337–356 | `compiler/registers/component_control.py::_control_names` shared naming and collision rules. |
@@ -132,8 +132,10 @@ alone as evidence of native capability.
   between registers. Two scalar QBit clauses `(0, 1)` decode to `(0, 0)` and
   reencode as `(0, 0)`. `g2-controlled-source-roundtrip-boundary.json` records
   the untouched source result. Native decoding advances each slice, verified for all 64 mixed unsigned/signed cases. This repair is explicitly distinguished from parity with the defective source.
-- Typed physical single-control selection admits scalar or shape `(1,)` QBit.
-  Other one-bit word metadata represented by source needs a dedicated audit.
+- Typed physical one-bit controls now retain QBit, QAny(1), QUInt(1) and
+  QInt(1) with scalar/vector/matrix singleton shapes. The source matrix-shape
+  decomposition defect and zero-gate native split/join adaptation are recorded
+  in `SINGLE_BIT_CONTROL_METADATA_AUDIT.md`.
 - One's-complement, bounded and Montgomery descriptors have flat physical
   emitters but remain outside Core typed physical admission. Generic symbolic
   control execution and mixed classical/quantum controls require their actual
