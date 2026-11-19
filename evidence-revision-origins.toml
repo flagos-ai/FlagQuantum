@@ -1123,3 +1123,15 @@ path = "artifacts/development/ascend_910c_20261030"
 value = "3aebd0c888789f35bb281435ddd44d5f1ff8cc55"
 origin = "external_dependency"
 repository = "FlagQuantum/Torch-FL"
+
+
+# Verified on 2026-11-19: #1212 squash-merged the measured Color code branch
+# as 305b58f5f1d862cdad0770ffdd35dfaf1713ee67. The old branch ref now returns
+# HTTP 404, while this repository's Git commit API still returns the original
+# measured commit below. Preserve that pin and all numerical evidence.
+[[artifact]]
+path = "artifacts/development/qec_colour_distance_acceptance_20261118.json"
+
+[[artifact.revision]]
+value = "dc90ce6622b2e6b014a9ae4bc3bf966df13bf1fa"
+origin = "unreferenced_object"
