@@ -1,3 +1,10 @@
+# Portions adapted from Qiskit 2.6.2, crates/transpiler/src/passes/sabre/route.rs.
+# (C) Copyright IBM 2024
+# Licensed under the Apache License, Version 2.0; see LICENSE.
+# Modified for FlagQuantum: incidence-indexed native IR scoring, existing weighted
+# extended layer, deterministic ties, and no upstream DAG or layout dependency.
+# Source and numerical policy: docs/development/COMPILER_SABRE_RELATIVE_SCORING.md.
+
 """SABRE-style lookahead SWAP planning for one undirected coupling topology.
 
 The planner implements the SABRE heuristic (Li, Ding, and Xie, "Tackling the
@@ -218,6 +225,79 @@ def _shifted_distance(
     return distances[first][second]
 
 
+def _relative_score_swap(
+    candidates: set[tuple[int, int]],
+    qubit_pairs: tuple[tuple[int, ...], ...],
+    front: list[int],
+    extended: list[int],
+    layout: list[int],
+    distances: tuple[tuple[float, ...], ...],
+) -> tuple[int, int] | None:
+    """Score only interactions incident on either endpoint of a proposed SWAP."""
+
+    def absolute_score(edge: tuple[int, int]) -> float:
+        left, right = edge
+
+        def shifted(index: int) -> float:
+            return _shifted_distance(qubit_pairs[index], left, right, layout, distances)
+
+        score = sum(shifted(index) for index in front) / len(front)
+        if extended:
+            lookahead = 0.0
+            weight = 1.0
+            for index in extended:
+                lookahead += weight * shifted(index)
+                weight *= LOOKAHEAD_DECAY
+            score += LOOKAHEAD_WEIGHT * lookahead / len(extended)
+        return score
+
+    ordered = sorted(candidates)
+    if not ordered:
+        return None
+    terms: list[tuple[int, int, float]] = []
+    incidence: list[list[int]] = [[] for _ in layout]
+    for indices, scale in (
+        (front, 1.0 / len(front)),
+        (extended, LOOKAHEAD_WEIGHT / len(extended) if extended else 0.0),
+    ):
+        weight = 1.0
+        for index in indices:
+            first, second = (layout[wire] for wire in qubit_pairs[index])
+            term_id = len(terms)
+            terms.append((first, second, scale * weight))
+            incidence[first].append(term_id)
+            incidence[second].append(term_id)
+            if indices is extended:
+                weight *= LOOKAHEAD_DECAY
+    # All candidates share the omitted current-layout score. Near a rounding
+    # tie, replay the original absolute arithmetic to preserve its tie behavior.
+    magnitude = math.fsum(weight * distances[a][b] for a, b, weight in terms)
+    tie_tolerance = 4 * len(terms) * math.ulp(max(1.0, magnitude))
+    best: tuple[int, int] | None = None
+    best_score = 0.0
+    for left, right in ordered:
+        changes = []
+        for term_id in sorted(set(incidence[left]) | set(incidence[right])):
+            first, second, weight = terms[term_id]
+            moved_first = right if first == left else left if first == right else first
+            moved_second = (
+                right if second == left else left if second == right else second
+            )
+            changes.append(
+                weight
+                * (distances[moved_first][moved_second] - distances[first][second])
+            )
+        score = math.fsum(changes)
+        if best is None:
+            best, best_score = (left, right), score
+        elif abs(score - best_score) <= tie_tolerance:
+            if absolute_score((left, right)) < absolute_score(best):
+                best, best_score = (left, right), score
+        elif score < best_score:
+            best, best_score = (left, right), score
+    return best
+
+
 def plan_sabre_swaps(
     program: CircuitIR,
     coupling: CouplingMap,
@@ -399,6 +479,16 @@ def plan_sabre_swaps(
                     )
         if not candidates:
             return None
+        if n_wires > 12:
+            return _relative_score_swap(
+                candidates,
+                wires,
+                blocked_front,
+                extended_layer(blocked_front),
+                logical_to_physical,
+                distances,
+            )
+        # Preserve the lower-overhead full scoring path on small devices.
         extended = extended_layer(blocked_front)
         best: tuple[int, int] | None = None
         best_score = 0.0
