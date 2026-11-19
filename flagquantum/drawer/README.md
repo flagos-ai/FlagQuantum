@@ -5,6 +5,17 @@ never executes a model, compiles quantum gates, chooses devices or submits jobs.
 Circuit semantics come from Core IR and its operator schema. Existing legacy
 operation-history adaptation stays in `ir_adapter.py` for text/Matplotlib.
 
+Typed component graphs can also be inspected as generation-delimited text.
+This view lists every incoming and outgoing register connection and retains
+instance labels returned by selective expansion.
+
+```python
+from examples.algorithms.register_graphs import parallel_program
+from flagquantum.drawer.component_debug_text import format_component_debug_text
+
+print(format_component_debug_text(parallel_program()))
+```
+
 ## Existing workflows
 
 ```python
