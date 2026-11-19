@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 from ...core.ir import CircuitIR
 from ...errors import CompilationError
+from ..lowering.schedule_legalization import CircuitSchedule
 from ..lowering.target_legalization import TargetLegalizationResult
 from ..routing import CouplingMap
 from ..topology.directed_topology import DirectedCouplingMap
@@ -254,7 +255,7 @@ class PhysicalCircuitPlan:
             allocated=allocated,
         )
         self._validate_instruction_records(source, recorded_coupling)
-        if self.critical_path != _critical_path(self.legalization):
+        if self.critical_path != _critical_path(self.legalization.schedule):
             raise PhysicalPlanError("physical plan critical path is inconsistent")
         expected_identity = hashlib.sha256(
             json.dumps(
@@ -705,13 +706,13 @@ def _mapping_evidence(
     return tuple(transitions), pre_restore_layout, pre_restore_occupancy
 
 
-def _critical_path(legalization: TargetLegalizationResult) -> tuple[int, ...]:
-    records = legalization.schedule.instructions
+def _critical_path(schedule: CircuitSchedule) -> tuple[int, ...]:
+    records = schedule.instructions
     if not records:
         return ()
     by_index = {item.instruction_index: item for item in records}
     current = min(
-        (item for item in records if item.layer == legalization.schedule.depth - 1),
+        (item for item in records if item.layer == schedule.depth - 1),
         key=lambda item: item.instruction_index,
     )
     reversed_path = [current.instruction_index]
@@ -950,7 +951,7 @@ def build_physical_circuit_plan(
         schedule_identity=schedule.schedule_identity,
         schedule_depth=schedule.depth,
         maximum_parallel_width=schedule.maximum_parallel_width,
-        critical_path=_critical_path(legalization),
+        critical_path=_critical_path(legalization.schedule),
         logical_qubit_count=source.n_wires,
         physical_slot_count=legalization.program.n_wires,
         initial_physical_to_logical=initial_occupancy,
