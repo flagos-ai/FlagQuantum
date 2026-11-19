@@ -25,6 +25,30 @@ cache/order, symbolic fallback, signed range and source-width DOT comparisons.
 [BITWISE_RESOURCE_WIDTH.md](../../../../docs/development/BITWISE_RESOURCE_WIDTH.md)
 records native identity normalization and execution/resource evidence.
 
+`bitwise_component.py` stores XOR, encoded constant XOR and complement in the
+existing typed Program. It reuses the emitters and `on_each_word_program`.
+The dtype remains attached to each through word, and binding leaves every word
+with its caller. Constants are unsigned encoded bit patterns. For example,
+the three-bit two's-complement encoding of -1 is pattern 7.
+
+```python
+from examples.algorithms.binary_field_arithmetic import FieldOperation
+from flagquantum import Circuit
+from flagquantum.compiler.registers.bits.bitwise_component import bitwise_word_program
+from flagquantum.compiler.registers.register_binding import bind_register_program
+from flagquantum.core.ir.program.registers import RegisterType
+
+program = bitwise_word_program(RegisterType("signed", 3), "xor_constant", pattern=7)
+bound = bind_register_program(program, ((2, 0, 1),))
+operation = FieldOperation(3, bound.circuit.instructions)
+circuit = Circuit(3)
+circuit.append(operation)
+assert circuit.state().flatten().abs().argmax().item() == 7
+```
+
+Run `python -m pytest tests/unit/test_bitwise_component.py -q` for stored call
+order, native binding, frozen-source gates, source tensors and caller ownership.
+
 `controlled_constant_width.py` reuses controlled XorK emission and the shared
 single-zero-control lifetime wrapper. Both directions and polarities keep the
 caller control/target live without workspace. Run

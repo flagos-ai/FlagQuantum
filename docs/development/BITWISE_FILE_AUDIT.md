@@ -78,3 +78,64 @@ A minimal native presentation change uses `bitwise_wire_symbol` as the existing
 `register_score_data(..., register_wire_symbol=...)` callback. The complete score
 test demonstrates this route alongside ordinary append execution. The callback
 has no compiler, simulator or foreign-object dependency.
+
+## Typed executable dependency closure
+
+The complete `bits/bitwise_component.py` module now supplies native typed
+Program construction for all three physical bitwise operations. It consumes a
+neutral `RegisterType` and retains that exact descriptor at its entry and exit.
+`xor` has x/y through ports. `xor_constant` and `bitwise_not` have one x port.
+Words and their MSB-first bit positions stay caller-owned. The module emits no
+allocation, measurement, reset or feedback and introduces no numerical backend
+dependency. The user example in the bits package README binds the graph and
+executes it with `circuit.append(operation)`.
+
+XOR and constant XOR reuse the authoritative existing primitive emitters to
+construct split, ordered leaf calls and join. Complement calls the existing
+typed OnEach graph once, retaining the original source's one-level boundary.
+Stored calls are counted with `program_component_call_graph`, separately from
+emitted primitives and original QEC estimates. The original decomposition's
+entire direct call sequence, including split/join, is compared independently.
+
+The constant interface deliberately accepts the encoded unsigned bit pattern.
+For signed words the caller encodes the signed scalar before constructing this
+graph. In particular, signed -1 uses the all-ones pattern. The Compiler adds
+no second dtype value codec. The existing Simulation callbacks continue to own
+scalar and array numerical semantics. Positive concrete physical widths are
+required, and symbolic metadata/models remain in their existing owners.
+
+Acceptance covers opaque, unsigned, two's-complement and Montgomery words of
+widths 1, 3 and 5. Original forward and self-adjoint streams match every ordered
+primitive and operand with reversed physical input placement. Full source
+matrices independently verify widths 1 and 3 with an entangled spectator.
+All tested widths also compare coherent execution against the unchanged source
+capture, preserve an additional caller-owned zero wire and restore the state
+after a second append. No measurement branches exist. Sparse eight-bit patterns
+0, 1, 6, 87, 128 and 255 verify actual leaf multiplicity and MSB order, including
+the zero-gate path. Invalid patterns and symbolic/empty widths remain explicit
+rejections. These executable graphs close the missing native construction
+dependency. General symbolic foreign conversion and the complete source
+autotester replacement remain open under Q-0177/Q-0178.
+
+Measured XOR emits one CX per bit and complement emits one X per bit.
+Constant XOR emits popcount(pattern) X gates. Their independent source models
+agree on Clifford counts and zero T/measurement totals. Stored root NOT has one
+OnEach call while its leaf graph and bound stream have width X calls. All three
+accounts are retained independently. Batch receipts use
+`ftqc-reference-env/g2-bitwise-component-*`.
+
+The final concentrated family regression passes 2,667 cases with eight existing
+paired source/native integer overflow warnings. The initial run exposed six
+stale OnEach assertions that expected signed, ones'-complement and fixed-point
+graph construction to fail. Existing approved logical admission already accepts
+these graphs. The repaired tests verify their construction independently,
+then bind signed/ones'-complement and retain fixed-point's physical refusal.
+The relevant production owners are byte-identical to the batch baseline.
+The OnEach correction is committed separately from the new bitwise module.
+
+All three changed Python files and the README example pass strict typing,
+formatting and lint. Compiler scope, architecture and multilevel IR checks pass.
+The required default run reaches the established public docstring coverage
+failure after 434 passes and 51 skips. All nine reported modules and the failed
+policy test are byte-identical to the batch baseline. Whole-repository dependency
+policy still has 688 findings, with zero findings in the changed paths.
