@@ -6,8 +6,11 @@ from typing import TypeVar
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.selection import Constraints, ConstructionBudget
+from flagquantum.compiler._construction.scheduling.selection import (
+    Constraints,
+    ConstructionBudget,
+)
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.ecosystem._qmod.adapter import SUPPORTED_SOURCE_VERSION, parse_qmod
 from flagquantum.runtime.execution_plan import ExecutionPlan
 from flagquantum.runtime.result import ExecutionResult

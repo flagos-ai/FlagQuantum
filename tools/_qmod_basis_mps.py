@@ -7,7 +7,9 @@ import warnings
 
 import torch
 
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.compiler.resource_estimation import estimate_resources
 from flagquantum.ecosystem._qmod.adapter import QmodImport
 from flagquantum.simulation.mps.entrypoints import run_mps

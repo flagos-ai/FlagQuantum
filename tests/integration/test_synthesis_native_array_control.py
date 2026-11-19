@@ -11,7 +11,7 @@ import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from tests.team.compiler.test_construction_python_program import program_definition
 from tools.synthesis_catalog import load_catalog
 

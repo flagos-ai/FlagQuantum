@@ -4,10 +4,10 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.register_profile import (
+from flagquantum.compiler._construction.verification.register_profile import (
     register_ports,
     verify_register_program,
 )

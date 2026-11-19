@@ -11,15 +11,13 @@ from typing import Literal, overload
 
 from ..compiler import estimate_resources
 from ..compiler._construction import program_types
-from ..compiler._construction.constraints import CircuitLimits
-from ..compiler._construction.frontend_python import (
+from ..compiler._construction.codegen.arithmetic import ArithmeticCandidate
+from ..compiler._construction.frontend.python import (
     Definition,
     _QuantumFunction,
     capture_named,
 )
-from ..compiler._construction.frontend_python import qfunc as qfunc
-from ..compiler._construction.lowering import ArithmeticCandidate
-from ..compiler._construction.profile import uint_type
+from ..compiler._construction.frontend.python import qfunc as qfunc
 from ..compiler._construction.program_types import (
     Const as Const,
 )
@@ -53,14 +51,16 @@ from ..compiler._construction.program_types import (
 from ..compiler._construction.program_types import (
     within as within,
 )
-from ..compiler._construction.register_profile import register_ports
-from ..compiler._construction.selection import (
+from ..compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     Selection,
     select_arithmetic,
 )
-from ..compiler._construction.target import Target
+from ..compiler._construction.scheduling.target import Target
+from ..compiler._construction.verification.constraints import CircuitLimits
+from ..compiler._construction.verification.profile import uint_type
+from ..compiler._construction.verification.register_profile import register_ports
 from ..compiler._hybrid.verifier import Diagnostic, HybridVerificationError
 from ..compiler.basis_conversion import require_basis
 from ..compiler.topology.coupling import CouplingMap
@@ -783,7 +783,7 @@ def _synthesize(
                 "typed qfunc programs own preparation and Output ports; omit scalar "
                 "inputs/state/constants/functions/preparation and use value mode"
             )
-        from ..compiler._construction.frontend_program import capture_program
+        from ..compiler._construction.frontend.program import capture_program
 
         owned_program, owned_functions = capture_program(function, classical_inputs)
         owned_source = "python"

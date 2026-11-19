@@ -8,7 +8,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_program import capture_program
+from flagquantum.compiler._construction.frontend.program import capture_program
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.synth import (
     Const,
@@ -204,7 +204,9 @@ def scheduled_phase(x: Output[QBit], y: Output[QBit]) -> None:
 
 
 def test_cleanup_schedules_agree_on_state_and_report_different_widths() -> None:
-    from flagquantum.compiler._construction.selection import select_register_program
+    from flagquantum.compiler._construction.scheduling.selection import (
+        select_register_program,
+    )
 
     root, functions = capture_program(scheduled_phase)
     selection = select_register_program(root, functions)

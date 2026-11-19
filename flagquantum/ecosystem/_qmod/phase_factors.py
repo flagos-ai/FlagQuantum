@@ -3,9 +3,11 @@
 from collections.abc import Callable
 from dataclasses import replace
 
-from ...compiler._construction import _phase_factors
-from ...compiler._construction._phase_factors import MAX_FACTORS as MAX_FACTORS
-from ...compiler._construction._phase_factors import Cube as Cube
+from ...compiler._construction.semantics import _phase_factors
+from ...compiler._construction.semantics._phase_factors import (
+    MAX_FACTORS as MAX_FACTORS,
+)
+from ...compiler._construction.semantics._phase_factors import Cube as Cube
 from .phase import Location
 from .syntax import Expression
 

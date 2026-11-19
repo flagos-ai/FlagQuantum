@@ -5,12 +5,14 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.register_expansion import expand_register_calls
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.codegen.register_expansion import (
+    expand_register_calls,
+)
+from flagquantum.compiler._construction.codegen.registers import (
     schedule_register_program,
 )
-from flagquantum.compiler._construction.register_profile import (
+from flagquantum.compiler._construction.verification.register_profile import (
     register_ports,
     register_type,
     verify_register_program,

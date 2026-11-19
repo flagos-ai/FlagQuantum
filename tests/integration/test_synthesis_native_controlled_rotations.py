@@ -15,7 +15,7 @@ from examples.synthesis.tutorials.basics.quantum_programming.controlled_rotation
     build_program,
 )
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.compiler.resource_estimation import ResourceEstimate
 from flagquantum.errors import PlanningError

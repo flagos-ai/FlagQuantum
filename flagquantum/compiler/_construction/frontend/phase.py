@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, NoReturn
 
 from ..._hybrid.model import Value
 from ..._hybrid.verifier import HybridVerificationError
-from .._phase_factors import Cube
-from .._phase_polynomial import Location, Polynomial, expand_phase
+from ..semantics._phase_factors import Cube
+from ..semantics._phase_polynomial import Location, Polynomial, expand_phase
 from .numeric import has_numeric_reads
 from .phase_factors import (
     capture_sparse_predicate_phase,

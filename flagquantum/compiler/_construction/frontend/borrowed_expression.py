@@ -7,7 +7,7 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, cast
 
 from ..._hybrid.model import Value
-from ..register_profile import register_width
+from ..verification.register_profile import register_width
 from .python import _error
 from .views import locations
 

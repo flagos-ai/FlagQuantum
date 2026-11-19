@@ -10,7 +10,9 @@ import torch
 import flagquantum as fq
 from examples.synthesis.tutorials.basics.mcx.main import build_program
 from flagquantum import synth
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.core.ir import CircuitIR, Instruction
 from flagquantum.ecosystem._qmod.source import load_qmod
 from flagquantum.runtime.execution_plan_contract import plan_from_dict, plan_to_dict

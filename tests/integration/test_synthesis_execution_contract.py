@@ -14,7 +14,7 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.constraints import CircuitLimits
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.basis_conversion import BasisConversionError, convert_basis
 from flagquantum.compiler.layout import remove_layout_restore
 from flagquantum.compiler.topology.coupling import CouplingMap

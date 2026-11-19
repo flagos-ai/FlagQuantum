@@ -7,16 +7,16 @@ import pytest
 
 from flagquantum.compiler import compile as compile_program
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lifetimes import analyze_lifetimes
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.analysis.lifetimes import analyze_lifetimes
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     _emit_arithmetic,
     lower_arithmetic,
     schedule_arithmetic,
 )
-from flagquantum.compiler._construction.profile import uint_type
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.verification.profile import uint_type
 from flagquantum.compiler._hybrid.model import (
     Block,
     HybridProgram,
@@ -447,7 +447,7 @@ def test_long_zero_chain_is_simplified_without_relaxing_original_depth_limit() -
     assert lower_arithmetic(
         (graph,), {x.id: (0,)}, (1,), scheduling="retain", **options
     )
-    from flagquantum.compiler._construction.lowering import _emit_arithmetic
+    from flagquantum.compiler._construction.codegen.arithmetic import _emit_arithmetic
 
     with pytest.raises(HybridVerificationError, match="dependency depth"):
         _emit_arithmetic(

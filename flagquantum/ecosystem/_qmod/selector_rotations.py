@@ -8,7 +8,7 @@ from dataclasses import replace
 from operator import eq, ge, gt, le, lt, ne
 from typing import TYPE_CHECKING, NoReturn
 
-from ...compiler._construction.rotation_table import (
+from ...compiler._construction.semantics.rotation_table import (
     emit_rotation_table as emit_shared_rotation_table,
 )
 from ...compiler._hybrid.model import Value

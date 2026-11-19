@@ -7,12 +7,17 @@ from collections.abc import Callable
 from typing import TYPE_CHECKING, NoReturn
 
 from ..._hybrid.model import Operation, Value, ValueId
-from .. import _phase_factors
-from .._phase_factors import Cube
-from .._phase_polynomial import MAX_PHASE_INPUT_BITS, Location, Polynomial, expand_phase
-from .._sparse_predicate import sparse_predicate
-from ..numeric_expression import WordExpression
-from ..register_profile import register_type, register_width
+from ..semantics import _phase_factors
+from ..semantics._phase_factors import Cube
+from ..semantics._phase_polynomial import (
+    MAX_PHASE_INPUT_BITS,
+    Location,
+    Polynomial,
+    expand_phase,
+)
+from ..semantics._sparse_predicate import sparse_predicate
+from ..semantics.numeric_expression import WordExpression
+from ..verification.register_profile import register_type, register_width
 from .python import _error
 
 if TYPE_CHECKING:

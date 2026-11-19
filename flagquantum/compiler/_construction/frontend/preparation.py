@@ -13,7 +13,7 @@ from ..program_types import (
     prepare_bell_state,
     prepare_ghz_state,
 )
-from ..register_profile import MAX_PREPARED_AMPLITUDES, register_width
+from ..verification.register_profile import MAX_PREPARED_AMPLITUDES, register_width
 from .python import _error
 from .views import locations, packed_locations
 

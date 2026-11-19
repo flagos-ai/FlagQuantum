@@ -9,10 +9,12 @@ import pytest
 
 from benchmarks.synthesis.expressions import EDGES, EXPRESSIONS
 from benchmarks.synthesis.oracle import evaluate
-from flagquantum.compiler._construction.arithmetic_rewrites import normalize_arithmetic
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lifetimes import analyze_lifetimes
-from flagquantum.compiler._construction.profile import uint_type
+from flagquantum.compiler._construction.analysis.arithmetic_rewrites import (
+    normalize_arithmetic,
+)
+from flagquantum.compiler._construction.analysis.lifetimes import analyze_lifetimes
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.verification.profile import uint_type
 from flagquantum.compiler._hybrid.model import (
     Block,
     HybridProgram,
@@ -241,7 +243,7 @@ def guarded(x: int, y: int) -> int:
 def test_optional_emission_budget_retains_original_and_normalized_facts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.compiler._construction import lowering
+    from flagquantum.compiler._construction.codegen import arithmetic as lowering
 
     graph = capture(repeated, {"x": 1, "y": 1})
     args = graph.body.blocks[0].arguments
@@ -265,7 +267,7 @@ def test_optional_emission_budget_retains_original_and_normalized_facts(
 
 
 def test_real_depth_regression_keeps_original_candidate_for_later_selection() -> None:
-    from flagquantum.compiler._construction.lowering import (
+    from flagquantum.compiler._construction.codegen.arithmetic import (
         _logical_cost,
         schedule_arithmetic,
     )
@@ -344,7 +346,9 @@ def test_explicit_ssa_helper_call_sites_survive_sharing() -> None:
 
 
 def test_optional_flattened_node_budget_keeps_a_valid_original_schedule() -> None:
-    from flagquantum.compiler._construction.lowering import schedule_arithmetic
+    from flagquantum.compiler._construction.codegen.arithmetic import (
+        schedule_arithmetic,
+    )
     from flagquantum.compiler._hybrid.model import INDEX
 
     arguments = tuple(Value(ValueId("wide_entry", i), uint_type(1)) for i in range(254))

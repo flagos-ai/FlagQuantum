@@ -6,21 +6,21 @@ from dataclasses import replace
 import pytest
 
 from flagquantum.compiler import estimate_resources
-from flagquantum.compiler._construction import selection
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.register_lowering import RegisterCandidate
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.codegen.registers import RegisterCandidate
+from flagquantum.compiler._construction.scheduling import selection
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     Selection,
 )
-from flagquantum.compiler._construction.target import (
+from flagquantum.compiler._construction.scheduling.target import (
     Target,
     TargetError,
     TargetProduct,
     compile_target,
 )
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import CircuitIR, Instruction
 

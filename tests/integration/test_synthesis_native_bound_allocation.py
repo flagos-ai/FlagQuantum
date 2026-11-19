@@ -8,8 +8,10 @@ import torch
 import flagquantum as fq
 from examples.synthesis.compare_states import compare_states
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.register_profile import verify_register_program
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.verification.register_profile import (
+    verify_register_program,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.integration.test_synthesis_native_exact_numbers import definition

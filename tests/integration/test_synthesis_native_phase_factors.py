@@ -17,10 +17,10 @@ from examples.synthesis.factor_reference import CostFactor, factored_cost_circui
 from examples.synthesis.quadratic_reference import order_register_factors
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction import _phase_factors
+from flagquantum.compiler._construction.semantics import _phase_factors
+from flagquantum.compiler._construction.semantics._phase_factors import Cube
+from flagquantum.compiler._construction.semantics._phase_polynomial import Location
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from flagquantum.compiler._phase_factors import Cube
-from flagquantum.compiler._phase_polynomial import Location
 from tests.team.compiler.test_construction_python_program import program_definition
 
 pytestmark = pytest.mark.integration

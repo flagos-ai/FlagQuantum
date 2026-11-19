@@ -9,13 +9,13 @@ from fractions import Fraction
 from functools import partial
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.fixed_point import (
+from ...compiler._construction.semantics.fixed_point import (
     LITERAL_BITS,
     FixedPointBranches,
     FixedPointExpression,
     FixedPointScalar,
 )
-from ...compiler._construction.fixed_point_program import (
+from ...compiler._construction.semantics.fixed_point_program import (
     FixedPointScope,
     emit_fixed_point_tables,
 )

@@ -7,7 +7,7 @@ import torch
 
 import flagquantum as fq
 from flagquantum import synth
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from tests.team.compiler.test_construction_python_program import program_definition
 
 pytestmark = pytest.mark.integration

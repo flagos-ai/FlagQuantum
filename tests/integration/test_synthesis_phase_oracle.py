@@ -8,19 +8,19 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import schedule_arithmetic
-from flagquantum.compiler._construction.selection import (
+from flagquantum.compiler._construction.codegen.arithmetic import schedule_arithmetic
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import (
     Constraints,
     ConstructionBudget,
     select_arithmetic,
 )
-from flagquantum.compiler._construction.target import (
+from flagquantum.compiler._construction.scheduling.target import (
     PHASE_BASIS,
     Target,
     compile_target,
 )
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.core.ir import Instruction
 from flagquantum.errors import PlanningError

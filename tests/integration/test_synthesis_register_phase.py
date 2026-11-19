@@ -12,15 +12,18 @@ import torch
 
 import flagquantum as fq
 from flagquantum import _api
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import Definition, capture
-from flagquantum.compiler._construction.lowering import Schedule
-from flagquantum.compiler._construction.register_lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import Schedule
+from flagquantum.compiler._construction.codegen.registers import (
     RegisterCandidate,
     schedule_register_program,
 )
-from flagquantum.compiler._construction.selection import Constraints, ConstructionBudget
-from flagquantum.compiler._construction.target import PHASE_BASIS, Target
+from flagquantum.compiler._construction.frontend.python import Definition, capture
+from flagquantum.compiler._construction.scheduling.selection import (
+    Constraints,
+    ConstructionBudget,
+)
+from flagquantum.compiler._construction.scheduling.target import PHASE_BASIS, Target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.errors import PlanningError

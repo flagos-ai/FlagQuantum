@@ -4,9 +4,9 @@ from ....core._composition import controlled_instruction, inverted_instruction
 from ....core.controlled import _clean_mcx_instructions
 from ....core.ir import Instruction
 from ..._hybrid.model import Operation
-from .._phase_polynomial import MAX_PHASE_DEGREE
 from ..mcx import one_clean_mcx
-from ..profile import _fail
+from ..semantics._phase_polynomial import MAX_PHASE_DEGREE
+from ..verification.profile import _fail
 
 
 def _array_controlled_x(

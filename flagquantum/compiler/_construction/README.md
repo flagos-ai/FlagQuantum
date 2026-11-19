@@ -4,81 +4,90 @@ Python qfunc and adapted Qmod programs share the existing HybridProgram model.
 Compiler owns semantic verification, lifetime analysis, constrained candidate
 selection and lowering to CircuitIR.
 
+## Responsibility directories
+
+| Directory | Owns |
+| --- | --- |
+| [`frontend/`](frontend/README.md) | Source capture and syntax-specific construction |
+| [`verification/`](verification/README.md) | Profile admission, operation attributes, ordered effects and physical binding checks |
+| [`analysis/`](analysis/README.md) | Widths, bit facts, expression rewrites and lifetime analysis |
+| [`semantics/`](semantics/README.md) | Shared exact numeric, phase, predicate and unitary semantics |
+| [`scheduling/`](scheduling/README.md) | Candidate selection, budgets and target constraints |
+| [`codegen/`](codegen/README.md) | Register expansion, gate emission, allocation and cleanup scheduling |
+
+`program_types.py` contains the shared construction records consumed by these
+stages. The stages reuse the existing HybridProgram and CircuitIR boundaries.
+The package must not select execution backends, execute numerical workloads,
+submit jobs or own Runtime results.
+
 ## Python frontend implementation
 
-[`frontend/`](frontend/README.md) owns Python source capture. The `frontend_*.py`
-files in this directory are compatibility aliases. Each old import resolves to
-the same module object as its implementation, so existing private symbol imports
-and module-level replacements continue to affect capture. Compiler owns these
-aliases. Their scope is the existing construction frontend imports, and their
-target review version is 0.5.0. Removal requires migrating repository consumers
-and explicit approval to retire the retained paths.
-
-| Existing module | Implementation |
-| --- | --- |
-| `frontend_borrowed_expression.py` | [`frontend/borrowed_expression.py`](frontend/borrowed_expression.py) |
-| `frontend_callback_controls.py` | [`frontend/callback_controls.py`](frontend/callback_controls.py) |
-| `frontend_callback_effects.py` | [`frontend/callback_effects.py`](frontend/callback_effects.py) |
-| `frontend_calls.py` | [`frontend/calls.py`](frontend/calls.py) |
-| `frontend_classical.py` | [`frontend/classical.py`](frontend/classical.py) |
-| `frontend_cnf.py` | [`frontend/cnf.py`](frontend/cnf.py) |
-| `frontend_control.py` | [`frontend/control.py`](frontend/control.py) |
-| `frontend_controlled_effects.py` | [`frontend/controlled_effects.py`](frontend/controlled_effects.py) |
-| `frontend_evolution.py` | [`frontend/evolution.py`](frontend/evolution.py) |
-| `frontend_fixed_xor.py` | [`frontend/fixed_xor.py`](frontend/fixed_xor.py) |
-| `frontend_increment.py` | [`frontend/increment.py`](frontend/increment.py) |
-| `frontend_matrix.py` | [`frontend/matrix.py`](frontend/matrix.py) |
-| `frontend_numeric.py` | [`frontend/numeric.py`](frontend/numeric.py) |
-| `frontend_phase.py` | [`frontend/phase.py`](frontend/phase.py) |
-| `frontend_phase_factors.py` | [`frontend/phase_factors.py`](frontend/phase_factors.py) |
-| `frontend_ports.py` | [`frontend/ports.py`](frontend/ports.py) |
-| `frontend_predicate_views.py` | [`frontend/predicate_views.py`](frontend/predicate_views.py) |
-| `frontend_preparation.py` | [`frontend/preparation.py`](frontend/preparation.py) |
-| `frontend_program.py` | [`frontend/program.py`](frontend/program.py) |
-| `frontend_python.py` | [`frontend/python.py`](frontend/python.py) |
-| `frontend_qpe.py` | [`frontend/qpe.py`](frontend/qpe.py) |
-| `frontend_quantized.py` | [`frontend/quantized.py`](frontend/quantized.py) |
-| `frontend_regions.py` | [`frontend/regions.py`](frontend/regions.py) |
-| `frontend_repeated_effects.py` | [`frontend/repeated_effects.py`](frontend/repeated_effects.py) |
-| `frontend_rotation_table.py` | [`frontend/rotation_table.py`](frontend/rotation_table.py) |
-| `frontend_statements.py` | [`frontend/statements.py`](frontend/statements.py) |
-| `frontend_storage.py` | [`frontend/storage.py`](frontend/storage.py) |
-| `frontend_transforms.py` | [`frontend/transforms.py`](frontend/transforms.py) |
-| `frontend_views.py` | [`frontend/views.py`](frontend/views.py) |
-| `frontend_xor.py` | [`frontend/xor.py`](frontend/xor.py) |
+[`frontend/`](frontend/README.md) owns Python source capture. Repository consumers
+import its authoritative modules directly. The former `frontend_*.py` private
+aliases were retired after consumer migration under the maintainer's explicit
+compiler cleanup authorization.
 
 ## Circuit generation implementation
 
-[`codegen/`](codegen/README.md) owns arithmetic, Boolean and register gate
-emission, including reversible workspace scheduling. Compiler owns the retained
-module aliases below. Each old path resolves to its implementation module, so
-existing imports and module-level replacements use the same state. Their scope
-is existing construction lowering consumers and private replacement hooks. The
-target review version is 0.5.0. Removal requires migrating repository consumers
-and explicit approval to retire these paths.
+[`codegen/`](codegen/README.md) owns arithmetic, Boolean and register gate emission,
+including reversible workspace scheduling. The former `lowering.py`,
+`register_lowering.py`, `boolean_lowering.py` and `gate_tape.py` aliases were retired.
+Import their `codegen/arithmetic.py`, `codegen/registers.py`,
+`codegen/boolean.py` and `codegen/gate_tape.py` implementations directly.
+Preparation, control and transform helpers belong to their named codegen modules.
 
-| Existing module | Implementation |
+## Retired private imports
+
+The private flat construction modules now live under their responsibility
+directories. Internal imports, tooling examples and test replacement hooks use
+these owning modules. The directory README files list the modules and short test
+paths. The expert compiler entry points remain documented in the
+[compiler README](../README.md).
+
+The former `frontend_<name>.py` aliases map to `frontend/<name>.py`.
+The remaining moved implementations use the following paths relative to this
+directory.
+
+| Former implementation | Current implementation |
 | --- | --- |
-| `lowering.py` | [`codegen/arithmetic.py`](codegen/arithmetic.py) |
-| `register_lowering.py` | [`codegen/registers.py`](codegen/registers.py) |
-| `boolean_lowering.py` | [`codegen/boolean.py`](codegen/boolean.py) |
-| `gate_tape.py` | [`codegen/gate_tape.py`](codegen/gate_tape.py) |
-
-Register emission delegates uniform interval preparation to `codegen/preparation.py`,
-controlled operations to `codegen/controls.py`, and real transforms to
-`codegen/transforms.py`. Their existing private helper names remain importable
-from `register_lowering`. Extracted helpers report their owning codegen module
-through `__module__`; their internal dependencies are resolved in that module.
+| `profile.py` | `verification/profile.py` |
+| `register_profile.py` | `verification/register_profile.py` |
+| `register_verifier.py` | `verification/register_verifier.py` |
+| `bindings.py` | `verification/bindings.py` |
+| `constraints.py` | `verification/constraints.py` |
+| `bit_facts.py` | `analysis/bit_facts.py` |
+| `lifetimes.py` | `analysis/lifetimes.py` |
+| `ranges.py` | `analysis/ranges.py` |
+| `arithmetic_rewrites.py` | `analysis/arithmetic_rewrites.py` |
+| `selection.py` | `scheduling/selection.py` |
+| `target.py` | `scheduling/target.py` |
+| `_fixed_word.py` | `semantics/_fixed_word.py` |
+| `_phase_factors.py` | `semantics/_phase_factors.py` |
+| `_phase_polynomial.py` | `semantics/_phase_polynomial.py` |
+| `_sparse_predicate.py` | `semantics/_sparse_predicate.py` |
+| `borrowed_unitary.py` | `semantics/borrowed_unitary.py` |
+| `clean_unitary_proof.py` | `semantics/clean_unitary_proof.py` |
+| `cnf_phase.py` | `semantics/cnf_phase.py` |
+| `fixed_point.py` | `semantics/fixed_point.py` |
+| `fixed_point_program.py` | `semantics/fixed_point_program.py` |
+| `numeric_expression.py` | `semantics/numeric_expression.py` |
+| `pauli_rotation.py` | `semantics/pauli_rotation.py` |
+| `qpe_control.py` | `semantics/qpe_control.py` |
+| `reset_cycles.py` | `semantics/reset_cycles.py` |
+| `rotation_table.py` | `semantics/rotation_table.py` |
+| `spectral_powers.py` | `semantics/spectral_powers.py` |
+| `unitary.py` | `semantics/unitary.py` |
+| `register_expansion.py` | `codegen/register_expansion.py` |
 
 ## Module ownership
 
 | Module | Responsibility |
 | --- | --- |
-| `_fixed_word.py` | Exact fixed-word expressions and XOR truth tables |
-| `_phase_polynomial.py`, `_phase_factors.py`, `_sparse_predicate.py` | Shared phase expansion, Boolean factor preservation, and sparse predicate evaluation |
-| `numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
-| `fixed_point.py` | Bounded quantized scalar arithmetic, shared prepared-selector rows and actual-value discard-environment proofs |
-| `fixed_point_program.py` | Shared fresh bindings, read/drop ownership facts and reversible output-column lowering |
+| `semantics/_fixed_word.py` | Exact fixed-word expressions and XOR truth tables |
+| `semantics/_phase_polynomial.py`, `semantics/_phase_factors.py`, `semantics/_sparse_predicate.py` | Shared phase expansion, Boolean factor preservation, and sparse predicate evaluation |
+| `semantics/numeric_expression.py` | Exact signed-word and binary-scale inference and qint emission, shared across syntax consumers |
+| `semantics/fixed_point.py` | Bounded quantized scalar arithmetic, shared prepared-selector rows and actual-value discard-environment proofs |
+| `semantics/fixed_point_program.py` | Shared fresh bindings, read/drop ownership facts and reversible output-column lowering |
 | `frontend/quantized.py` | Resolve the explicit native quantization marker and closed Python numeric/helper bindings |
 | `frontend/numeric.py` | Exact native numeric assignment, typed extrema and explicit scalar format admission |
 | `frontend/program.py` | Capture source-retaining Python qfunc programs |
@@ -90,14 +99,14 @@ through `__module__`; their internal dependencies are resolved in that module.
 | `frontend/preparation.py` | Capture bounded literal native preparation calls into existing register effects |
 | `frontend/views.py` | Resolve native bit-array locations, bounded loops and disjoint writable helper expansion |
 | `frontend/python.py` | Capture the supported scalar Python expression profile |
-| `register_profile.py` | Register types, operation attribute admission, preparation and publication shapes |
-| `register_verifier.py` | Ordered effects, initialized storage, ownership, aliases and lifetime checks |
-| `register_expansion.py` | Expand verified static register calls and inverse composition |
+| `verification/register_profile.py` | Register types, operation attribute admission, preparation and publication shapes |
+| `verification/register_verifier.py` | Ordered effects, initialized storage, ownership, aliases and lifetime checks |
+| `codegen/register_expansion.py` | Expand verified static register calls and inverse composition |
 | `codegen/registers.py` | Lower admitted register effects and schedule reversible workspace |
-| `lifetimes.py`, `codegen/arithmetic.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
+| `analysis/lifetimes.py`, `codegen/arithmetic.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
 | `codegen/boolean.py`, `codegen/gate_tape.py` | Boolean synthesis and checked gate-tape expansion |
 | `codegen/preparation.py`, `codegen/controls.py`, `codegen/transforms.py` | State preparation, controlled gates and real-transform emission |
-| `selection.py`, `target.py` | Evaluate supported schedules and verify target constraints |
+| `scheduling/selection.py`, `scheduling/target.py` | Evaluate supported schedules and verify target constraints |
 
 `verify_operation_attributes` checks the operation's exact permitted attributes
 before the body verifier inspects operands or modifies its local storage state.
@@ -168,7 +177,7 @@ are legal; overlapping physical input/output/workspace ports are not.
 Supported records are `arith.constant` with classical INDEX type and a checked
 nonnegative integer, `qint.add`, `qint.multiply`, `qint.equal`, `qint.less`, `qint.call`, and `qint.return`. The Qmod adapter also uses
 `qint.subtract_mod` for raw word subtraction modulo the declared result width.
-The shared `numeric_expression.py` owns exact sign extension and binary-point
+The shared `semantics/numeric_expression.py` owns exact sign extension and binary-point
 alignment before this operation; the source adapter supplies syntax accessors
 and retains its diagnostics. Native numeric admission uses `frontend/numeric.py` and checked scalar
 `qreg.declare.numeric_format` metadata; raw storage widths retain their meaning.
@@ -224,8 +233,8 @@ composes this frontend from Services; Compiler still has no Circuit or Runtime
 dependency. Both ordinary functions and optional `qfunc` declarations lower to
 the existing verified construction profile, with source diagnostics.
 
-`lifetimes.py` records direct use sites and inverse dependencies after inlining
-calls into existing SSA. `lowering.py` uses one emitter for `retain` and
+`analysis/lifetimes.py` records direct use sites and inverse dependencies after inlining
+calls into existing SSA. `codegen/arithmetic.py` uses one emitter for `retain` and
 `recompute`. The latter can clean operands between uses, restore missing
 dependencies before inverse computation and rebind regenerated kernels to their
 current qubits. Only inverse-cleaned allocations return to the zero pool.
@@ -248,10 +257,10 @@ or infer workspace ownership from CoreIR. Services consumes this record when
 checking a sealed Runtime plan. See the
 [CS06-A contract](../../../docs/api-changes/FQ-SYNTH-CS06-A-20261029.md).
 
-CS06-B `selection.py` enumerates the existing retain/recompute schedules, keeps
+CS06-B `scheduling/selection.py` enumerates the existing retain/recompute schedules, keeps
 their actual allocation histories, and ranks fully checked candidates. Final
 CircuitLimits and workspace ceilings are distinct from ConstructionBudget.
-`target.py` reuses basis conversion, compilation, routing, Layout and ASAP
+`scheduling/target.py` reuses basis conversion, compilation, routing, Layout and ASAP
 scheduling; it predicts normal Runtime instructions without importing Runtime.
 Each target stage retains its existing CoreIR content identity, and `validate()`
 rejects later mutations without compiling. Runtime confirmation still goes
@@ -268,7 +277,7 @@ complete static table and current manual comparison. Relevant tests are
 
 ## Fresh register composition
 
-`register_profile.py` verifies a separate, private profile in the same
+`verification/register_profile.py` verifies a separate, private profile in the same
 HybridProgram model. `quantum.register(width)` denotes live storage;
 `quantum.uint(width)` still denotes an arithmetic expression. One linear
 QUANTUM_EFFECT argument orders operations. `qreg.declare` creates an uninitialized
@@ -280,7 +289,7 @@ one existing verified expression function. `qreg.return` returns every declared
 output initialized, once and in declaration order. Roles, extra attributes,
 unknown operations and nested regions are rejected.
 
-`register_lowering.py` lowers that profile through the existing arithmetic
+`codegen/registers.py` lowers that profile through the existing arithmetic
 scheduler. It cleans each arithmetic segment before subsequent register mutation
 and reuses only the resulting zero workspace tail. All output registers remain
 live. Repeated actual arguments use a qint.call wrapper with unique physical
@@ -527,9 +536,9 @@ All definitions validate, including unused callees. Root programs keep the
 effect-only entry and all-zero allocation precondition; borrowed callees cannot
 be selected as fresh roots. Consuming Input is not admitted by this contract.
 
-register_profile.py verifies roles and the acyclic call graph. The internal
-register_expansion.py substitutes verified references and rethreads effects;
-register_lowering.py then uses the unchanged arithmetic/phase schedules. The
+`verification/register_profile.py` verifies roles and the acyclic call graph. The internal
+`codegen/register_expansion.py` substitutes verified references and rethreads effects;
+`codegen/registers.py` then uses the unchanged arithmetic/phase schedules. The
 selector checks reachable expanded phase actions before target conversion, so
 nested calls cannot hide phase effects. Limits include 32 call levels, the
 existing 4096 source/final model nodes, and 4096 expansion visits including
@@ -555,7 +564,7 @@ preserve it. Cleaning a dependency invalidates the dependent result's cleanup
 authority. Arbitrary initialization, user zero assertions and helper Outputs
 do not create direct-compute authority. Const references cannot be cleaned.
 
-register_lowering.py retains the actual selected ArithmeticCandidate and emits
+`codegen/registers.py` retains the actual selected ArithmeticCandidate and emits
 its exact reverse, with the same physical bindings and cleaned work tail. The
 shared lowering adjoint check admits only payload-free X/CX/CCX. Reverse events
 exchange compute/uncompute and retain their allocations, scratch and live-width
@@ -688,9 +697,9 @@ Qmod and Circuit comparisons with the remaining native phase gap explicit.
 
 ## Python program capture (UP-01)
 
-frontend_program owns the typed AST-to-register handoff. program_types supplies
+frontend/program owns the typed AST-to-register handoff. program_types supplies
 annotation roles/types and captured operation symbols; those never allocate or
-calculate in host Python. frontend_python reuses its source reader and captures
+calculate in host Python. frontend/python reuses its source reader and captures
 only annotation-name bindings from the lexical definition scope. Body call
 bindings resolve statically at synthesis, then the existing checked Program is
 independent of later namespace changes. No arbitrary annotations or properties
@@ -716,18 +725,18 @@ exact API scope, source guards, original-profile preservation and validation.
 
 The shared value scheduler now verifies the original graph, keeps its original
 candidate, and normalizes an immutable inlined pure segment in
-`arithmetic_rewrites.py`. Canonical operand order uses width and structural
+`analysis/arithmetic_rewrites.py`. Canonical operand order uses width and structural
 rank, not user names. Constants, zero/one identities, common pure operations
 and dead expressions are shared/simplified without narrowing any declared
 input or return type. A typed quantum constant witness remains where an INDEX
 constant could not legally stand for quantum output storage.
 
-`bit_facts.py` describes complete declared domains: effective width and known
+`analysis/bit_facts.py` describes complete declared domains: effective width and known
 zero/one masks. Addition propagates possible carries; multiplication uses sound
 conservative trailing-zero, power-of-two and same-SSA-square facts. This does
 not introduce a square kernel or general Boolean-network search. The 4096-node,
 256-bit profile bounds apply before rewriting. No input-state narrowing or
-cross-effect/global memoization is permitted. `lifetimes.py` retains supplied
+cross-effect/global memoization is permitted. `analysis/lifetimes.py` retains supplied
 source locations and explicit SSA call sites; scalar helpers already inlined by
 Python capture retain the helper-body locations that frontend supplied.
 
@@ -882,9 +891,9 @@ Run `python -m examples.synthesis.algorithms.search_and_optimization.qaoa.main`
 and `tests/integration/test_synthesis_native_guarded_phase.py` for the contributor
 golden path. See the [guarded phase contract](../../../docs/api-changes/FQ-SYNTH-NATIVE-GUARDED-PHASE-20261109.md).
 
-`frontend_control` also admits direct controlled Pauli-axis `R` rotations.
+`frontend/control` also admits direct controlled Pauli-axis `R` rotations.
 Scalar array controls and borrowed helper formals resolve through
-`frontend_views.gate_target` into the existing `qreg.pauli_rotation` effect's
+`frontend/views.gate_target` into the existing `qreg.pauli_rotation` effect's
 `control_index`. Preserve disjoint underlying registers and writable targets;
 do not silently narrow a whole register or relax controlled-helper-call rules.
 Bounded comparison conditions use the existing compute/uncompute lifecycle.
@@ -893,8 +902,8 @@ and `tests/integration/test_synthesis_native_indexed_rotations.py` cover the
 contributor path. No source-specific affine-rotation intrinsic is introduced.
 
 Native root arithmetic phases pass declared sign and binary scale through the
-existing `expand_phase` callbacks. `frontend_numeric.has_numeric_reads` selects
-this path; `frontend_phase` owns the source callbacks and rejects numeric
+existing `expand_phase` callbacks. `frontend/numeric.has_numeric_reads` selects
+this path; `frontend/phase` owns the source callbacks and rejects numeric
 conditions/comparisons and numeric factor fallback. Never interpret formatted
 words as unsigned raw bits. Initialization witnesses, coefficient/expansion
 limits and ordinary register-phase lowering stay shared. Numeric helper ports
@@ -924,7 +933,7 @@ Native reversible regions also admit closed compiler-generated predicate scratch
 local declaration, direct compute, pure action, matching uncompute and release.
 `unitary_effects.unitary_regions` checks this structural boundary without adding
 lifecycle opcodes to `PURE_EFFECTS`. The register verifier still proves unchanged
-compute inputs, initialization, roles and cleanup. `frontend_regions` freshens
+compute inputs, initialization, roles and cleanup. `frontend/regions` freshens
 local SSA identities when emitting the inverse, retaining compute/action/cleanup
 order while reversing adjacent unitary regions. User allocation, publication,
 drop and escaping locals remain outside the native unitary-region contract.
@@ -941,8 +950,8 @@ control remain outside this boundary.
 ### Borrowed expression XOR
 
 Static mutable helpers can apply `target ^= expression` to complete unsigned
-scalar registers. `frontend_views` retains the active formal port metadata while
-inlining and restores it after nested calls. `frontend_xor` checks the writable
+scalar registers. `frontend/views` retains the active formal port metadata while
+inlining and restores it after nested calls. `frontend/xor` checks the writable
 destination and complete logical-bit view; `capture_expression` resolves inputs
 through actual aliases. Existing `qreg.xor` verification and lowering preserve
 nonzero targets, coherent amplitudes and cleaned arithmetic work. Inputs and
@@ -954,7 +963,7 @@ and `tests/integration/test_synthesis_native_expression_xor.py`.
 ### Caller-owned helper outputs
 
 A forward static helper may initialize a fresh caller-owned root local through
-an `Output` formal. `frontend_calls` emits the existing `qreg.call`; the register
+an `Output` formal. `frontend/calls` emits the existing `qreg.call`; the register
 verifier checks freshness, disjoint read/write actuals, Const protection and
 complete formats. The caller retains ownership and must drop the initialized
 local before return. Dropping preserves its physical environment and correlations.
@@ -1017,7 +1026,7 @@ covered by `tests/integration/test_synthesis_native_numeric_control.py`.
 
 ### Bounded modular updates
 
-`frontend_increment` captures initialized raw unsigned scalar `+=`/`-=` with
+`frontend/increment` captures initialized raw unsigned scalar `+=`/`-=` with
 static integer offsets in -256..256. It reduces the offset modulo the complete
 target width and emits the existing indexed X ripple sequence. Borrowed targets
 must cover complete registers in logical bit order. A coherent control may call
@@ -1032,7 +1041,7 @@ grid-walk state comparison in `tests/integration/test_synthesis_native_grid_walk
 
 ### Bounded signed-clause phase oracles
 
-`frontend_cnf` captures `control(predicate, lambda: phase(1, pi))` when the
+`frontend/cnf` captures `control(predicate, lambda: phase(1, pi))` when the
 predicate is a conjunction of signed indexed-bit disjunctions. Python
 `and`/`or`/`not` and `&`/`|`/`~` are captured as syntax, without evaluating the
 host function. The bound is eighty clauses, each with at most three literals.
@@ -1210,7 +1219,7 @@ functions. Const permissions, disjoint actuals, definite initialization, closed
 scratch and an acyclic call graph are checked before sharing and again at the
 register IR boundary. Channel and ownership effects are not shareable.
 
-`borrowed_unitary.py` supplies a layout for incoming storage to the existing
+`semantics/borrowed_unitary.py` supplies a layout for incoming storage to the existing
 scheduler; it never allocates or reinitializes caller data at execution time.
 Lowering remaps actual registers and scratch, reuses released lexical storage,
 preserves absolute phase under adjoint, and charges every emitted gate. Shared

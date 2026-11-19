@@ -11,10 +11,10 @@ import pytest
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler._construction.constraints import CircuitLimits
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.selection import select_arithmetic
-from flagquantum.compiler._construction.target import Target
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.scheduling.selection import select_arithmetic
+from flagquantum.compiler._construction.scheduling.target import Target
+from flagquantum.compiler._construction.verification.constraints import CircuitLimits
 from flagquantum.compiler.topology.coupling import CouplingMap
 from flagquantum.runtime.execution_plan_contract import plan_execution_program
 from flagquantum.services._synthesis_execution import inspect_execution

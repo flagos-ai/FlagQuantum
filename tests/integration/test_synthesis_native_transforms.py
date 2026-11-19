@@ -13,8 +13,8 @@ from examples.synthesis.compare_states import compare_states
 from examples.synthesis.functions.qct_qst.reference import transform_matrix
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_program import capture_program
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.program import capture_program
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.errors import PlanningError
 from tests.team.compiler.test_construction_python_program import program_definition

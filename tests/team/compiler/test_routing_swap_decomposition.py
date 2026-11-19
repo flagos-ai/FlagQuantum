@@ -5,7 +5,7 @@ from dataclasses import replace
 import pytest
 import torch
 
-from flagquantum.compiler._construction.target import Target, compile_target
+from flagquantum.compiler._construction.scheduling.target import Target, compile_target
 from flagquantum.compiler.basis_conversion import convert_basis
 from flagquantum.compiler.layout import _routing_swap_phases, remove_layout_restore
 from flagquantum.compiler.pipeline import compile

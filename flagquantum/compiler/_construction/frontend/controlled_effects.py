@@ -6,7 +6,7 @@ import ast
 from typing import TYPE_CHECKING
 
 from ..._hybrid.model import Value
-from ..register_profile import _verify_borrowed_effects, register_width
+from ..verification.register_profile import _verify_borrowed_effects, register_width
 from .callback_effects import emit_callback_effects
 from .classical import bind_helper
 from .ports import program_ports

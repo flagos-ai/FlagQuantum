@@ -23,10 +23,12 @@ from examples.synthesis.tutorials.technology_demonstrations.oracle_generation.th
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction import cnf_phase
-from flagquantum.compiler._construction.cnf_phase import Clause, Location
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
+from flagquantum.compiler._construction.semantics import cnf_phase
+from flagquantum.compiler._construction.semantics.cnf_phase import Clause, Location
 from flagquantum.compiler._hybrid.model import Value
 from flagquantum.core.ir import Instruction
 from flagquantum.ecosystem._qmod.source import load_qmod

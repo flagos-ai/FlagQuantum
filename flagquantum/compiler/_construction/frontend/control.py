@@ -17,7 +17,7 @@ from ..program_types import (
     unitary,
     x,
 )
-from ..register_profile import register_type, register_width
+from ..verification.register_profile import register_type, register_width
 from .callback_controls import capture_predicate_x, scalar_comparison
 from .cnf import capture_cnf_phase
 from .controlled_effects import capture_controlled_effects
