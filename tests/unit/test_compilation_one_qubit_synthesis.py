@@ -64,6 +64,26 @@ def _angles_for(name: str, **overrides: object) -> dict[str, object]:
     return angles
 
 
+@pytest.mark.parametrize("offset", [1e-8, 1e-10, 1e-11])
+@pytest.mark.parametrize("pulse_opcode", ["rx", "sx"])
+def test_near_antidiagonal_matrix_does_not_amplify_roundoff(
+    offset: float, pulse_opcode: str
+) -> None:
+    source = _unitary(
+        Instruction("u3", (0,), {"theta": math.pi - offset, "phi": 0.37, "lbd": -0.83})
+    )
+    # Product decompositions can round the two small diagonal entries
+    # independently while keeping absolute unitarity error near machine epsilon.
+    source[1, 1] += 1e-16 + 2e-16j
+    emitted = synthesize_one_qubit_matrix(
+        source, qubit=0, z_rotation="rz", pulse_opcode=pulse_opcode
+    )
+    assert emitted is not None
+    actual = _product(emitted)
+    phase = torch.trace(actual.conj().T @ source) / 2
+    torch.testing.assert_close(source, phase * actual, atol=1e-12, rtol=0)
+
+
 @pytest.mark.parametrize("z_rotation", _Z_ROTATIONS)
 def test_every_declared_single_qubit_unitary_synthesizes(z_rotation: str) -> None:
     """Every declared arity-1 unitary reaches the basis, with a pinned count."""

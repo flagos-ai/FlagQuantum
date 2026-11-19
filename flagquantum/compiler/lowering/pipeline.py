@@ -17,8 +17,8 @@ from ..topology.directed_topology import DirectedCouplingMap
 from ..topology.routing import (
     CouplingMap,
     LinkErrorRates,
+    _route_automatically,
     record_post_routing_optimization,
-    select_routing_strategy,
 )
 
 
@@ -32,7 +32,7 @@ def compile_circuit(
         | Iterable[tuple[int, int]]
         | None
     ) = None,
-    routing_strategy: str = "restore_after_each_gate",
+    routing_strategy: str = "auto",
     optimize: bool = True,
     optimization_level: int = DEFAULT_OPTIMIZATION_LEVEL,
     config: RuntimeConfig | None = None,
@@ -73,15 +73,12 @@ def compile_circuit(
             else CouplingMap(ir.n_wires, coupling_map)
         )
         strategy_selection = None
-        selected_routing_strategy = routing_strategy
         if routing_strategy == "auto":
-            strategy_selection = select_routing_strategy(ir, coupling)
-            selected_routing_strategy = strategy_selection.selected_strategy
-        ir = route_program(
-            ir,
-            coupling,
-            strategy=selected_routing_strategy,
-        )
+            ir, strategy_selection = _route_automatically(
+                ir, coupling, route_program=route_program
+            )
+        else:
+            ir = route_program(ir, coupling, strategy=routing_strategy)
         if optimize:
             ir = optimize_program(ir, optimization_level, passes)
         ir = record_post_routing_optimization(ir)
