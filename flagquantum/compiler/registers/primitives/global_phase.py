@@ -13,6 +13,8 @@ from math import isfinite, pi
 from typing import TYPE_CHECKING, cast
 
 from ....core.ir import Instruction
+from ....core.ir.program.scalar import scalar_literal_error
+from ....core.parameters import Parameter, ParameterExpression
 from ..._component_trace.symbolic_math import SymbolicReal
 from ..bits.bitwise import _validate_wires
 from ..control.multi_control import _validate_controls, multi_and_ir
@@ -47,12 +49,20 @@ def _finite_angle(value: float, scale: float = 1.0) -> float:
     raise ValueError("Rotation requires a finite phase angle")
 
 
-def scalar_phase_ir(anchor: int, angle: float) -> tuple[Instruction, ...]:
+def scalar_phase_ir(
+    anchor: int, angle: float | Parameter | ParameterExpression
+) -> tuple[Instruction, ...]:
     """Multiply by exp(i * angle) using one existing wire of arbitrary state."""
     _validate_wires((anchor,))
-    theta = _finite_angle(angle)
-    if not theta:
-        return ()
+    if isinstance(angle, (Parameter, ParameterExpression)):
+        error = scalar_literal_error(angle)
+        if error:
+            raise ValueError(error)
+        theta: float | Parameter | ParameterExpression = angle
+    else:
+        theta = _finite_angle(angle)
+        if not theta:
+            return ()
     flip = Instruction("x", (anchor,))
     shift = Instruction("phase", (anchor,), params={"theta": theta})
     return (flip, shift, flip, shift)
