@@ -17,5 +17,6 @@
       "index": 3,
       "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
     }
-  ]
+  ],
+  "native_notebook": "examples/synthesis/functions/unitary/walkthrough.ipynb"
 }

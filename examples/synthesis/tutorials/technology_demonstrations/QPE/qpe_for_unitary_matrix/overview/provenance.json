@@ -1,0 +1,54 @@
+{
+  "upstream_path": "tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/qpe_for_unitary_matrix.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "218ed620138de771bc653181ee817fe5e68cb311fca31bfcf3ba1ef3b30949d9",
+  "git_blob_sha1": "395aee23afe04996204addb8f274eddc7f4376f5",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "10c4762e058e419c68b859ca0cf73f2d488a39b59d5c3b14ee395ca65a550d89",
+      "native_code_cell": 1,
+      "stage": "Seeded8x8 matrix, unused shift and actual original exponential"
+    },
+    {
+      "index": 3,
+      "sha256": "c6f705a44582d5335a94eeeba3b27ae82ef0c2c1374f85a338e22acfabb37fc8",
+      "native_code_cell": 2,
+      "stage": "Actual native target-basis choice and historical comparison qualification"
+    },
+    {
+      "index": 5,
+      "sha256": "ecaef73c570a054372048b5d7e42babfcae521152aeb4ff0f5e57b38ca38989d",
+      "native_code_cell": 3,
+      "stage": "All eight literal native roots, actual synthesis and independent target costs"
+    },
+    {
+      "index": 7,
+      "sha256": "bda72319ad0df2fd50aa533d63e500fa86bbe61ab8196a10a720fdbfe6961db0",
+      "native_code_cell": 4,
+      "stage": "Original stored Qiskit reference arrays with explicit historical labels"
+    },
+    {
+      "index": 8,
+      "sha256": "5088a74db7bfbdfabc9ece7f07bf5b081a873765b60d4ac99ba12a19cae75964",
+      "native_code_cell": 6,
+      "stage": "Commented source installer represented as historical environment metadata"
+    },
+    {
+      "index": 9,
+      "sha256": "bbedfc59c5f55c9d1ac811cbf453f5e89eba6a966a4ca706dbab11dd4a2ba347",
+      "native_code_cell": 7,
+      "stage": "Commented source transpilation retained as a qualified reference record"
+    },
+    {
+      "index": 11,
+      "sha256": "78c322602e062db00998586b2cf4c683f4441d9fdc3019bde40ccd3bd19c95fe",
+      "native_code_cell": 8,
+      "stage": "Actual complete precision plot with qualified historical arrays"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_matrix_qpe_precision_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.QPE.qpe_for_unitary_matrix.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/QPE/qpe_for_unitary_matrix/overview/walkthrough.ipynb",
+  "scope": "All seven original code stages, fresh seed1235 matrix8x8, all precisions1..8, actual native and converted complete Circuit states, named phase marginal and retained data environment. Preserve unused source shift and exponentiate the original matrix. Eight literal fractional signatures retain the annotation contract. Actual CX/U3 metrics and full source-style plot, with archived Qiskit counts clearly historical and commented optional installation/transpilation stages represented as non-executing provenance. No fresh cross-framework benchmark, source importer, frozen216 modification, compiler/API/dependency, hardware, release, speedup,scalability or optimality claim."
+}

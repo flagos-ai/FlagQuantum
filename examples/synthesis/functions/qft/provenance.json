@@ -17,5 +17,6 @@
   "native_entrypoint": "examples.synthesis.functions.qft.main",
   "acceptance_test": "tests/integration/test_synthesis_native_fourier.py",
   "scope": "Complete local computational Notebook workflow: allocate four qubits, apply QFT and synthesize. Local execution and a Fourier-matrix Circuit comparison additionally verify the program.",
-  "native_semantic_adaptations": "Use FlagQuantum qfunc and shared checked Fourier lowering. The source Notebook only constructs and synthesizes; local execution is an additional validation, with no cloud or training claim."
+  "native_semantic_adaptations": "Use FlagQuantum qfunc and shared checked Fourier lowering. The source Notebook only constructs and synthesizes; local execution is an additional validation, with no cloud or training claim.",
+  "native_notebook": "examples/synthesis/functions/qft/walkthrough.ipynb"
 }

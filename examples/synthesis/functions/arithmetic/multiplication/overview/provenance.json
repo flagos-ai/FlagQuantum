@@ -1,0 +1,29 @@
+{
+  "upstream_path": "functions/function_usage_examples/arithmetic/multiplication/multiplication.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "1492cdf0bc7d8c93cc1cd4c7744017562e16d949",
+  "original_sha256": "4af9506b6b783c0580397fc21681e7af7844613e5dbe7d0095454876d0cb7eb1",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "f8e32598c5a958daaef7a750d78cf3d642ca043629ec5505d8e8e69e83cdb4f7"
+    },
+    {
+      "index": 3,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    },
+    {
+      "index": 5,
+      "sha256": "611041dbe6540c1a65fc3de512d7c7c2043e32c01034b7cad63a24cbffa7e6f9"
+    },
+    {
+      "index": 6,
+      "sha256": "2fd5f6bf22ea5958801fc92713e7da0bf7d9215fa4b6b25abac06bccfeb46498"
+    }
+  ],
+  "native_entrypoint": "examples.synthesis.functions.arithmetic.multiplication.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_arithmetic_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/arithmetic/multiplication/overview/walkthrough.ipynb",
+  "scope": "Complete local computational Notebook workflow: both original quantum definitions, exact integer/fixed-point domains, synthesis, CPU execution and named readout. Seeded 1000-shot host samples replace cloud sampling; independent full-state and clean-workspace checks are separate.",
+  "native_semantic_adaptations": "Native qfunc definitions preserve both examples and input domains. Typed widths use Annotated. Signed and binary-scaled results use exact numeric readout. Seeded sampling from local exact probabilities replaces cloud calls; no hardware claim."
+}

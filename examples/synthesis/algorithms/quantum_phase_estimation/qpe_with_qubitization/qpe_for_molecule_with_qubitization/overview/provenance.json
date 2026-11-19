@@ -1,0 +1,148 @@
+{
+  "upstream_path": "algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "7d25430c76b919fa3b154321e872fc491ac5b995ebda0883333e8c49cbcc69c0",
+  "git_blob_sha1": "b6d8b276f01faf64cd6331dd44a43493235a130a",
+  "scope": "All 27 source stages, H2 at 0.735 angstrom in STO-3G, 15 fresh Pauli terms, four data bits, four selector bits, five phase bits and both original power schedules.",
+  "native_semantic_adaptations": "Regenerate the full electronic model and its exact CI energy on the native driver. Synthesize one controlled walk and compose 31 copies for the naive route to respect the native source expansion budget. Synthesize the optimized branch as one qfunc program. Draw 1,000 local CPU samples per circuit with fixed separate seeds, and measure both complete programs in CX/U3. The install cell becomes a local environment import check.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_phase_estimation.qpe_with_qubitization.qpe_for_molecule_with_qubitization.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_phase_estimation/qpe_with_qubitization/qpe_for_molecule_with_qubitization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_h2_qubitization_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "native_code_cell": 1,
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "sha256": "5a587b81a8aabcaa3c0c1d8042d38c7a88ed871518282b6e4b18f8d63ee54c4c"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "sha256": "1e039a6d0ba00a4241c2ca6f4e71948ce925fa15b1c0404677c09f59556608d0"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "sha256": "d87a2e88843e30940dc589f051ad6314afdcfadabea32b130d4b62cb515041f2"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 5,
+      "sha256": "7aa38da488b68cbb07ca140cf230d0b77186c5b7c9411ef700c10d88be1f86cc"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 6,
+      "sha256": "39bd95152f5a11b37e6ae0a8a9287bea9fed7ab82a1f464685aeba5c7099251f"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "sha256": "6331ddd03db7f549dbbb9e57c8d8a6487d68fe27a51ecda7b48d663f8afa515c"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "sha256": "aecbb6f733081a0d79fc9b0b831e1bcd9f289671ce098952b256281e0000c2b3"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 9,
+      "sha256": "0ee7ce84f957af91d1eecaecb6bca1ccfd538e5fdcff0533003161cfccc46085"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 10,
+      "sha256": "d2777b6d98f1c747672d3b093eb437746ce2189ce97ca3f4619d4f9b36104bf5"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 11,
+      "sha256": "9a9b5f8535848d4faa4b4bc9aa5f116b8173988fb4a2c4c6876d955a484dc4de"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 12,
+      "sha256": "cb20e2be5cca20f3caac69da52315285e1c306cba61e90bd99dc26975a2b9b96"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 13,
+      "sha256": "32944a8e616ac94669e13674f619381317d08383aac9e3df3335829053ca1ce7"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 14,
+      "sha256": "1a566581a498296b7db49ae991e7b58422a6902863bba3e8e7397f2b675951c2"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 15,
+      "sha256": "6f9e7c9e4bb51fab13d22b4af17793cb63af78e9d251248d0ac6a465a0efd9c7"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 16,
+      "sha256": "44694121ff68d1b70be14905e40d22fc69478703c89b342394ced9e204be566f"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 17,
+      "sha256": "ac8ca3493773d99fcab09ae73b8ea01e663af69b1469d78bd61904097671f82c"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 18,
+      "sha256": "2b284211b5a539b786a73e096f523b122a51a81cfe04a5bb724f9d0bbe616fbc"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 19,
+      "sha256": "bc0519953afb59efda285dc62e31e690d1159d02f7666cc9832c31f751ed83a5"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 20,
+      "sha256": "14a42ba594b2aad1c208960b04b44d594f8bb5222fda6b0e4826292169b92a05"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 21,
+      "sha256": "7ac128900208520cc3c6460daaf6fc7b055c250e378543b1871b186f4836bbf0"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 22,
+      "sha256": "8efeaa9a781830229ad78505c248c47ec28ec0be85d69f745fcb00d10ac10f77"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 23,
+      "sha256": "dd329c865f928cdad79c6ca9aed4c8bbda188a7e601ab4e73f1f70151192770e"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 24,
+      "sha256": "58a2dbcdf0545693740d616f576f4ad99a52816d453576c865b3c9e1ad38cbae"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 25,
+      "sha256": "c876d85b47fe77c88c38b153d9b23e1378efaf242d1c2a085dc63f07bbfcacf7"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 26,
+      "sha256": "041b33e7e95c5c7fe20419d6d2d40af8cd27301f2b25532759310345037be490"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 27,
+      "sha256": "4c33b489ad49cd29ed42e2c3438be20868c0d9f2c1f81acbeb6089221e268a20"
+    }
+  ]
+}

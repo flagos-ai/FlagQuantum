@@ -1,0 +1,126 @@
+{
+  "upstream_path": "tutorials/workshops/oracle_workshop/oracles_workshop.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "1e099181f5def69f1709e300486653b6c754494f319a3877dce9eff36f858d10",
+  "git_blob_sha1": "2272cb88e74fd9ac0e03b309a89d31bdd6ca2dad",
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "sha256": "414daba49c60446d1b1f4212648d991a4477debbfab738ab847e0e54a9bf7c7b",
+      "native_code_cell": 1,
+      "stage": "Native imports and shared local verification"
+    },
+    {
+      "index": 9,
+      "sha256": "9a7c711763fb04fc6e23c8164e70383a749782df37684565d524036cdf6a19c3",
+      "native_code_cell": 3,
+      "stage": "Predicate XOR helper"
+    },
+    {
+      "index": 12,
+      "sha256": "3bcefd94b27da3e1a3dca860c1e296d19ef8a9df101419729070934a01441830",
+      "native_code_cell": 5,
+      "stage": "Original1/2/1-bit bit-oracle program"
+    },
+    {
+      "index": 13,
+      "sha256": "8d960c47db48b2b5db411b5832aeb533f65fb0b39c885e8eefd75d5c571144ea",
+      "native_code_cell": 7,
+      "stage": "Actual bit-oracle synthesis and full-state check"
+    },
+    {
+      "index": 16,
+      "sha256": "3791b9d17a69fcedb2e4df25768a199485d183fea9bf60220762317dfe8b2c88",
+      "native_code_cell": 9,
+      "stage": "Both auxiliary and direct phase-kickback solutions"
+    },
+    {
+      "index": 17,
+      "sha256": "424a5af0f7357bb57dc5f2e271007487836f6b9409b6421eff1525f7049d2b81",
+      "native_code_cell": 11,
+      "stage": "Both eight-row complex phase tables"
+    },
+    {
+      "index": 25,
+      "sha256": "2edfb14bd829f20b2bd924e1ea5b280177f369ececc900c22858ee492cb246a7",
+      "native_code_cell": 13,
+      "stage": "Three-bit balanced parity program"
+    },
+    {
+      "index": 26,
+      "sha256": "f16a2a677c9f2337a6bddf2c59ebaa0ba9c7c00fd3099ec89b7364ffafc2822f",
+      "native_code_cell": 14,
+      "stage": "Deutsch-Jozsa synthesis"
+    },
+    {
+      "index": 27,
+      "sha256": "24c6b0c5b1deb32ebb3b312ad7553c85d4bbb60266d468e2f84cbaefbbe7e429",
+      "native_code_cell": 16,
+      "stage": "Actual1000draws and balanced classification"
+    },
+    {
+      "index": 33,
+      "sha256": "4cc46d203662a502454f0d1b213c876d0a25016d3bd4fc28fb4166df6f9b4ee0",
+      "native_code_cell": 18,
+      "stage": "Two-word signed-difference XOR helper"
+    },
+    {
+      "index": 35,
+      "sha256": "3ec3320a7709269354acf71349a8b7f3e5f35d9a9c2be5171d5c3e11f7ab747e",
+      "native_code_cell": 20,
+      "stage": "Native fixed phase-oracle and Grover helper composition"
+    },
+    {
+      "index": 36,
+      "sha256": "dea5e3d67f894a16cd877c65efa848ff4df1eb4e8a2cbbfc275fe25b8279e23b",
+      "native_code_cell": 21,
+      "stage": "Grover synthesis and1000actual observations"
+    },
+    {
+      "index": 41,
+      "sha256": "cf81af390daf6402a0911d25224a52b30d9231d645c8f004915bdf15bb55acbe",
+      "native_code_cell": 23,
+      "stage": "Source direct-phase solution replay"
+    },
+    {
+      "index": 42,
+      "sha256": "6d47519cfa28b186621b949f101505f1c238591501b1a4f0e67975cc1a926ae8",
+      "native_code_cell": 24,
+      "stage": "Source eight-row phase-table replay"
+    },
+    {
+      "index": 44,
+      "sha256": "70d6b6305a351217515f5f661e799a1bde30c4ae9d8372a0d64790b65e17c293",
+      "native_code_cell": 26,
+      "stage": "Source balanced-program replay"
+    },
+    {
+      "index": 45,
+      "sha256": "ad286a8fd9a25a9de7bd8b197b8b12a03b9fdd756a9e8defc36492ef813bda8b",
+      "native_code_cell": 27,
+      "stage": "Source postprocessing replay with actual draws"
+    },
+    {
+      "index": 48,
+      "sha256": "de2846cda19ed56656d6b3f55f63cb9ea96bbe2b3420fa6195e84a79d79ec8a2",
+      "native_code_cell": 29,
+      "stage": "Source predicate solution reference"
+    },
+    {
+      "index": 49,
+      "sha256": "bc421b8ee54b5b1ae3dbf6cffa01287580569821de3f81905d98412c5463a030",
+      "native_code_cell": 30,
+      "stage": "Source two-round Grover solution rebuild"
+    },
+    {
+      "index": 50,
+      "sha256": "58e79e72cc5a64b10b289656bf216c22ac1d410c64f83aa5d7559742a65939a7",
+      "native_code_cell": 31,
+      "stage": "Source final1000draws"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_oracle_workshop_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.oracle_workshop.oracles_workshop.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/oracle_workshop/oracles_workshop/overview/walkthrough.ipynb",
+  "scope": "All19original source code stages and full solution replays. Preserve1/2/1-bit2*x+y==4 Boolean XOR;both auxiliary within/apply and direct conditional phase;three-bit balanced Deutsch-Jozsa x%2==0;two2-bit-field x-y==2 Grover with2rounds. Fixed source qperm,phase_oracle/grover_search and struct usage becomes explicit native qfunc helpers and named ports;no generic callable/qperm/QStruct API claimed. Root-owned clean auxiliary borrowed across helpers;drop is not reset. Eight independent absolute Circuit program states,three8row complex phase tables,fouractual1000draw batches and source postprocessing. Source viewer replaced by actual synthesized resource reports. No compiler/publicAPI/dependency/frozen216counterpart change. No source importer,hardware,scalability,speedup or optimality claim."
+}

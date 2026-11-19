@@ -70,7 +70,7 @@ def test_successor_guard_refuses_unapproved_expansion(
         ("control", "native coherent control differs"),
         ("qct_type2", "native trigonometric transforms differ"),
         ("drop", "native hidden storage differs"),
-        ("qpe", "native matrix qpe differs"),
+        ("qpe", "native qpe power callbacks differ"),
         ("select_rotation", "native rotation tables differ"),
         ("qft", "native Fourier operation differs"),
         ("unitary", "native unitary operation differs"),

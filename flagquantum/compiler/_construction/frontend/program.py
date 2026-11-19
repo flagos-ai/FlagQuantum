@@ -105,7 +105,7 @@ from .rotation_table import capture_rotation_table
 from .statements import capture_statements
 from .storage import capture_reset, drop_hidden, hidden_declarations
 from .transforms import capture_modular_exp, capture_transform
-from .views import gate_target, locations
+from .views import gate_target, locations, static_integer
 from .xor import capture_expression_xor
 
 
@@ -690,23 +690,23 @@ class _Body:
                     self.source,
                     node,
                     "program.signature",
-                    "allocate accepts an output or literal size and output",
+                    "allocate accepts an output or static integer size and output",
                 )
             size = None
             if len(node.args) == 2:
                 size_node = node.args[0]
-                if (
-                    not isinstance(size_node, ast.Constant)
-                    or type(size_node.value) is not int
+                if any(
+                    isinstance(part, (ast.Call, ast.Attribute))
+                    for part in ast.walk(size_node)
                 ):
                     _error(
                         self.source,
                         size_node,
                         "program.width",
-                        "allocation size must be a literal integer in 1..256",
+                        "allocation size must be a static integer in 1..256 without calls or attributes",
                     )
                 try:
-                    size = _width_spec(size_node.value)
+                    size = _width_spec(static_integer(self, size_node))
                 except (TypeError, ValueError) as error:
                     _error(self.source, size_node, "program.width", str(error))
             target = node.args[-1]

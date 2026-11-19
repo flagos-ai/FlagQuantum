@@ -1,0 +1,120 @@
+{
+  "upstream_path": "tutorials/workshops/algo_design_QCE_tutorial/algo_design_QCE_tutorial_part_I.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "27d7e49a1e580c515fa3b132081b3eb3847386782f6ffd986daa7dca0f8f856c",
+  "git_blob_sha1": "2dbb00fbe1e8d6e1f172e8b8510b0aa74e17f101",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "e7a36cdb7909b5a9a982e52a94205ef3a2f139507d418a47f0d313eb886018ae",
+      "native_code_cell": 1,
+      "stage": "Bell helper and native ownership"
+    },
+    {
+      "index": 7,
+      "sha256": "7dc1c360dbf8c1270fa6aadd3499539e723d0d30fd64d94b45778277265004ff",
+      "native_code_cell": 3,
+      "stage": "Bell synthesis and1000actual observations"
+    },
+    {
+      "index": 11,
+      "sha256": "cbdf4e86bece6c62bf80fea72b16703dfd7c14a3ed037365655f0ca48c0e803f",
+      "native_code_cell": 5,
+      "stage": "GHZ exercise solution"
+    },
+    {
+      "index": 14,
+      "sha256": "b060d81bec91d1c943b52255364457ddc6e625be7c3da2a14e18b97c3c39148a",
+      "native_code_cell": 7,
+      "stage": "Signed integer GHZ exercise solution"
+    },
+    {
+      "index": 20,
+      "sha256": "9180ab6812eee27fb3f981862f4326922900bce69d798086c7b2724868284f54",
+      "native_code_cell": 9,
+      "stage": "Integer arithmetic and inferred width"
+    },
+    {
+      "index": 24,
+      "sha256": "cc8c6b1e36b931a8aacd148bf31355bfe9c45e6bef81edd70322ed07458552a2",
+      "native_code_cell": 11,
+      "stage": "Fractional arithmetic and inferred format"
+    },
+    {
+      "index": 28,
+      "sha256": "9ec8142a0643a70e414c58d3f00ca9cee1378033857f0e04a6e76c31241e1572",
+      "native_code_cell": 13,
+      "stage": "Signed fractional conditional flag"
+    },
+    {
+      "index": 32,
+      "sha256": "f9f197479faede08784ec46b9fdabf666eeafbb46f223c4971868a11b73182a4",
+      "native_code_cell": 15,
+      "stage": "Six-bit two-round Grover exercise solution"
+    },
+    {
+      "index": 37,
+      "sha256": "d2601d13d57859d58d278f6876e1e59d36cfee009f7abf7c1c42911a7ddf7716",
+      "native_code_cell": 17,
+      "stage": "Product phase complex amplitudes"
+    },
+    {
+      "index": 41,
+      "sha256": "f182651b9d4606e232030e82a60b735e478b52b39bd192588a13562676ed05a5",
+      "native_code_cell": 19,
+      "stage": "Fourier square exercise solution"
+    },
+    {
+      "index": 45,
+      "sha256": "8fd0615a5985494a52ece81be7d953bb3256c1dd9b82b763cfc651b22d6a34b7",
+      "native_code_cell": 21,
+      "stage": "Full source solution replay: ghz"
+    },
+    {
+      "index": 47,
+      "sha256": "77fcddaad05ccff0237ec2706fd91a131962e08a49a6db22028ee6d80844211c",
+      "native_code_cell": 23,
+      "stage": "Full source solution replay: signed_ghz"
+    },
+    {
+      "index": 50,
+      "sha256": "9461e2a9507726c5d5f0fecdbda901a0f1ce4929419a5094d958693480a65f1d",
+      "native_code_cell": 25,
+      "stage": "Full source solution replay: integer_sum"
+    },
+    {
+      "index": 52,
+      "sha256": "f3fadd9536be9ff202600de84f16ff3d82b0217e46a99a39f6ff572da4a795fd",
+      "native_code_cell": 27,
+      "stage": "Full source solution replay: fractional_sum"
+    },
+    {
+      "index": 54,
+      "sha256": "bb4a0efade706d3df271bea7b6e153dcfa4320320fa2f02cab744317bb55ea74",
+      "native_code_cell": 29,
+      "stage": "Full source solution replay: signed_condition"
+    },
+    {
+      "index": 56,
+      "sha256": "93bdb0a5e29c84be7797fb89fc44d084a13b16c9e3cf16bfaf4265b018d9416c",
+      "native_code_cell": 31,
+      "stage": "Full source solution replay: grover"
+    },
+    {
+      "index": 58,
+      "sha256": "0ddd5227573069f89062ae78222a196a6736402ee930bd47bc0a3453a54d4390",
+      "native_code_cell": 33,
+      "stage": "Full source solution replay: product_phase"
+    },
+    {
+      "index": 60,
+      "sha256": "4df375e46d082c604ddde9acbe0ad8d7db3caeea4f909c081599119cfea114f5",
+      "native_code_cell": 35,
+      "stage": "Full source solution replay: fourier_square"
+    }
+  ],
+  "acceptance_test": "tests/integration/test_synthesis_qce_part1_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.algo_design_qce_tutorial.algo_design_qce_tutorial_part_i.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/algo_design_qce_tutorial/algo_design_qce_tutorial_part_i/overview/walkthrough.ipynb",
+  "scope": "All18original code stages with labeled reference solutions and full exercise/solution replays. Preserve Bell/GHZ,signed3-bit GHZ,2/2-bit unsigned3*a+b,1/2-fractional-bit3*a+b with inferred5-bit2-fraction output,signed3-bit2-fraction conditional x<0.5,three2-bit-field two-round Grover3*a+b+2*c==9,two2-bit product phase pi/8,and3/4-bit Fourier square addition modulo16. Named native ports replace source struct fields. Native constant conditional phase uses phase(1,pi);public metadata replaces tracing-time numeric introspection. Fifteen actual1000-draw batches,two complete16-row complex amplitude tables,full independent absolute Circuit state/clean-workspace checks for all17executed programs. No compiler/publicAPI/source importer/hardware/performance change."
+}

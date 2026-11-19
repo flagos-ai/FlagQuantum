@@ -1,0 +1,67 @@
+{
+  "upstream_path": "applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "4e81152e7bd605b547209298bb5443511a7a5e5df0290e08ba1250675b6a6639",
+  "git_blob_sha1": "ead25dfb5a58952eaa4b51a47c0b9c1682b46308",
+  "scope": "All nine original stages, the complete 13-spin 162-term cost, three QAOA layers, bounded actual-CX selection, full optimization and finite samples.",
+  "native_semantic_adaptations": "Apply the requested CX objective to three operator-equivalent public Circuit candidates. Use symbolic local binding, direct mean costs, and a genuine 60-query COBYLA run with an explicit local initial schedule and 1,000 final draws.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.low_autocorrelation_binary_sequences_problem.evidence_scaling_labs.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/low_autocorrelation_binary_sequences_problem/evidence_scaling_labs/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_labs_cx_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "stage": "Generate the original 13-spin autocorrelation cost independently.",
+      "sha256": "3abb12cdd610965122d0f23dc543c9636741a7786eb9cbddf401179494a8ddf5"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 2,
+      "stage": "Keep all 13 spins and both constant and variable cost terms.",
+      "sha256": "43f3651158ca3a7eb8421e946dc3419fa0a60f2ecdfd4e12117a8627e0882581"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "stage": "Construct the same three alternating cost and mixer layers.",
+      "sha256": "4d9e7ad7fb52efc459670bb997db42bdd0e9e0817e8a8edba93d73a6f251cdac"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "stage": "Generate and measure candidate parity orders in a common CX/U3 basis.",
+      "sha256": "895bcd1d3762b5563b834352b0dd6e0830246a7cb783116f3780c1a350f67a02"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "stage": "Check the complete compiled states at two nonzero sets of angles.",
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "stage": "Run the original 60-query optimization budget using the measured CX winner.",
+      "sha256": "4a18f06ca37d071c4cd6675ff59390e90fc79e3dd37d9855ca46d987f9100848"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "stage": "Plot actual mean costs from the executed objective calls.",
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 8,
+      "stage": "Inspect five of the lowest-cost outcomes among the actual 1,000 draws.",
+      "sha256": "66eb29306bf2ae397d30b3f983b9ba84a5713939e93149122b0e9a16c8173d9b"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 9,
+      "stage": "Plot the measured cost distribution from those draws.",
+      "sha256": "29d0bc59eedb083ea4f8de402ad2b2d470d4ac54e58970cbc2bb76719483f68e"
+    }
+  ]
+}

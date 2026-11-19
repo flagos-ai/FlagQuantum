@@ -1,0 +1,93 @@
+{
+  "upstream_path": "applications/finance/rainbow_options/rainbow_options_integration_method.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "e97cd0fae842107223588c6d38e75b06b30c00ec",
+  "original_sha256": "a93db678482a15c93c76b554f7ee2482d0f8e6643bfbb5f35409646746273fdc",
+  "scope": "All 16 source stages, two assets with two bits apiece, five-bit selector with two fractional bits, width budget 25, epsilon 0.05, alpha 0.1, and the original confidence check.",
+  "native_semantic_adaptations": "Regenerate the source rounded two-asset selector and all 32 exponential reference weights. Use the native inclusive comparison and retain its complete environment. Sample with the local count-only profile at source epsilon and alpha, verify absolute states and clean workspace, and use the source affine rescaling.",
+  "native_entrypoint": "examples.synthesis.applications.finance.rainbow_options.rainbow_options_integration_method.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/rainbow_options/rainbow_options_integration_method/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_rainbow_integration_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "sha256": "831d04d31d9640a4426246b42aecf266a09456014ae26dc6539b2637e19937b1"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "50d81b0dcb2ba949f83bff0baa65c9317fd27fd5bfd1e3b6361e6483d8f04483"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "3be53b89902323b1bf34a6d514b06266e077725ae84f3096a4a07a69a348af9a"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "sha256": "9cf45bddbd47fc04ece968c19edfc3d7d5e06d01eb73e3fe89fca1cf8331ef24"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "sha256": "b1f8da754c623ae5ab65095ecd515f75251313d05fbde77cfef15c0e35171294"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "sha256": "1009c522421cdcb1eb9286e26925c9ab6ec8a6974e396b3012276c44a3e15c34"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 7,
+      "sha256": "e92f0f5ca173f640c32a0234ce1d959e38ddbc6bc71cf9a7ace30763ae2dfcff"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 8,
+      "sha256": "ab5ee9a1cbb85198857af7d084e7d458a45cc0d6c97b4f11ce407d0be8e948ed"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 9,
+      "sha256": "1c0db7e6f0d507be2ed477ec7831abc994c0c40fa6eb08ce6329c0199f1fd997"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 10,
+      "sha256": "50c73c02d507762cc0fd809cdf54c508a23a125898a946bcb4ed3c48af466364"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 11,
+      "sha256": "529fd7973c92a7fba64924e36616a7a6a48b5331b91d1acd90662e555ba5ef5a"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 12,
+      "sha256": "635b5dea8ec606010151b61283b2435cd224dbda298273759520344ced0c92de"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 13,
+      "sha256": "65bddcfcc72741370c8e6464f99d643f494bed39c55cfbb4663984c1ad163845"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 14,
+      "sha256": "7fba80bcebb90faee918279f2353e117fb555628de9124645209bab19a885f19"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 15,
+      "sha256": "a7550ab6b8f5af577ccea95a021d2b64a2c148e84a68d94fd032c7df45bfc644"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 16,
+      "sha256": "ad3bbe8fb9ad48415aef3d7d7d14f14ae7e057d01eb9e699d488cd9c6e3a8e62"
+    }
+  ]
+}

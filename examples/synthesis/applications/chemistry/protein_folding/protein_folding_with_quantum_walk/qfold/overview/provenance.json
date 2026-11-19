@@ -1,0 +1,91 @@
+{
+  "upstream_path": "applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "3ac71bf5dd5dae72e24509d37809b90b1f615e7174df51dd32804bee5a311268",
+  "git_blob_sha1": "723debdd098a2bf22a1f0dc39ea76ed206f7175a",
+  "scope": "All thirteen original QFold notebook stages, the original alanylalanine input, one native walk step, 2,048 finite draws, and the final energy-table lookup.",
+  "native_semantic_adaptations": "Use the original precomputed input data and recompute the coin angles at beta 1. Preserve the original variable assignment by move, synthesize the one-step native program, and measure the logical pair. Verify the full retained state and clean predicate workspace. Report the original fixed-prefix lookup independently of the current sample.",
+  "native_entrypoint": "examples.synthesis.applications.chemistry.protein_folding.protein_folding_with_quantum_walk.qfold.overview.main",
+  "native_notebook": "examples/synthesis/applications/chemistry/protein_folding/protein_folding_with_quantum_walk/qfold/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qfold_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "native_code_cell": 1,
+      "stage": "Load the native workflow.",
+      "sha256": "4ed9138e961e51c720ceeda5b82e66d4b8526bc6c31aebce6fd1df0e13e13b79"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 2,
+      "stage": "Load the original alanylalanine input data.",
+      "sha256": "10fa3f7c1f18aa0c31c12363c0948409748175215f71afe8f99a4160ddf694c1"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 3,
+      "stage": "Inspect all sixteen energy differences.",
+      "sha256": "a17e6f5950838388b718b3bf2875c61e0805d9fa3727430ecbe80f98ed248aca"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "stage": "Read the original dihedral angles.",
+      "sha256": "8e125b6f0c8ec04a07a021bc2f1184476cf3c31a3328674e7976a264a885e46e"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 5,
+      "stage": "Check both original one-angle registers.",
+      "sha256": "80c068ecacd93043b5124effe7a72fe1bbcfe6737e5d558a84afd78dc1a94461"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 6,
+      "stage": "Compute the move and rotation register widths.",
+      "sha256": "ba28294aea72bce532e21ef0d4812fdb1a013891257aa36d1a68b3a271bbd5bd"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 7,
+      "stage": "Use the Metropolis acceptance formula to derive both angles.",
+      "sha256": "46822fe1f0b066d48614bd68052cf11804e36d27dd10f0580b371f4acf0059f3"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 8,
+      "stage": "Evaluate both coin rotations using the original move assignment.",
+      "sha256": "884ded5b2d6303c6962a98cbadae525b2f2926ec7d2bd4b79680f0a0cb64b9af"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 9,
+      "stage": "Build the native one-step walk from the two calculated rotations.",
+      "sha256": "0394719601f9242a81fad658717fd508c8e52bd839af06599f0b30b414728914"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 10,
+      "stage": "Inspect the synthesized circuits and independent complete-state check.",
+      "sha256": "f0799e5ce2aecde74f19b3e2a9c075aae7804e863fbb88c661422faad38a2bd6"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 11,
+      "stage": "Draw the original 2,048 samples from the two logical outputs.",
+      "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 12,
+      "stage": "Read back the observed counts.",
+      "sha256": "32c220482c68413fbf8290e3b1e49b0a85901cfcd62ab0738760568a2a6e8a57"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 13,
+      "stage": "Reproduce the original energy lookup for the fixed 01 prefix.",
+      "sha256": "909da0f4700f3b7cd6592565c85b7c1682384c44760cff6788feebf26def2b76"
+    }
+  ]
+}

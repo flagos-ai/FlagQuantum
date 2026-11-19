@@ -41,5 +41,6 @@
   "native_entrypoint": "examples.synthesis.algorithms.foundational.deutsch_jozsa.main",
   "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
   "scope": "Complete local computational Notebook workflow: quantum composition, synthesis, text visualization, seeded sampling from exact named probabilities, and classical decision/recovery. Local drawing and sampling replace cloud services; no hardware result is claimed. Concrete tutorial oracles are specialized; general quantum callable ports are not added.",
-  "native_semantic_adaptations": "Algebraically reduce the two concrete predicates to the high bit and its complement; retain the constant pi phase. Classify from zero-outcome probability under the promise rather than the upstream row-count heuristic. Explicit Hadamard transforms replace gate-preparation within/apply."
+  "native_semantic_adaptations": "Algebraically reduce the two concrete predicates to the high bit and its complement; retain the constant pi phase. Classify from zero-outcome probability under the promise rather than the upstream row-count heuristic. Explicit Hadamard transforms replace gate-preparation within/apply.",
+  "native_notebook": "examples/synthesis/algorithms/foundational/deutsch_jozsa/walkthrough.ipynb"
 }

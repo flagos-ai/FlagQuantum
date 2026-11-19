@@ -25,3 +25,6 @@ input pairs, equal states and all actual resource caps are covered.
 
 This accepts the quantum program only. It does not certify a complete Notebook
 workflow or the pending generic callback/storage features in other examples.
+
+See the [complete native Notebook](overview/README.md) for all retained
+computational stages, source parameters, local sampling and adaptations.

@@ -1,0 +1,58 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/quantum_oracle_sketching_boolean/quantum_oracle_sketching_boolean.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "721523e7acb30a54f53009838ea334817a0a2ecd9d995e3fd57093bc8e5dd872",
+  "git_blob_sha1": "35d454bd496dce0e745691b7154be28edabd73a1",
+  "scope": "All nine source stages, 200/500/4000 sample demonstrations, all twelve sample sizes with 1,500 independent trials each, weighted phases and the full twenty-sample degree-18 QSVT correction, plus 10,000 outcomes per Bell test.",
+  "native_semantic_adaptations": "Preserve the seeded classical sample streams. Accumulate commuting phases by basis word in the native qfunc input. Fit the threshold anew with a bounded minimax solver and symmetric phases. The local CPU executes the corrected selector as an exact packed operation. Read both Bell fidelities from finite local samples.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.quantum_oracle_sketching_boolean.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_primitives/quantum_oracle_sketching_boolean/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_boolean_oracle_sketching_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "native_code_cell": 1,
+      "sha256": "d41aa62c388cde9b3e9122c22c23c661760152cc79c0193e57202765cf8e8f25"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 2,
+      "sha256": "e399819b20c400be69e93c9c2bdeb9f271c9f3b542d910367d68208f35db84bd"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 3,
+      "sha256": "15dac6e95addc4666752f1f0dfbb45b76bf7eaa0b41d08ac54d2da210a4df577"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 4,
+      "sha256": "48a1185f4f20818f23cff10aa42ef9f0d33f3db351240042e399de6b5db5851c"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 5,
+      "sha256": "6921b59fdef241eaa63fd91e9f61060a9b1053ef083fda9f231bcc72680e6531"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 6,
+      "sha256": "cfc8d6e1a130e75d25fa996473389291f2a9b4e151a87d6495a15136e1d13e53"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 7,
+      "sha256": "f5bd1765fc6ce68b2da034f6a106a068abd6070a10afcce10f90db9e8c7d9618"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 8,
+      "sha256": "549809edb2330e91dd6a9198a4e45cf3ecbdc7f6c6b6dd37b772aa3eb57f4c21"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 9,
+      "sha256": "f3b4a84143532cd38902cbddff037b74ce9d119fa5b7ae0d75fb39038a611fd0"
+    }
+  ]
+}

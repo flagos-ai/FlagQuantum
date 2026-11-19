@@ -1254,3 +1254,131 @@ certify numerical execution or suppress unsupported gates.
 Run `python -m pytest tests/integration/test_synthesis_native_predicate_truth.py -q`.
 The full double-slit native/Circuit/mathematical acceptance is in
 `tests/integration/test_synthesis_native_double_slit.py`.
+
+### Scalar controls on disjoint raw-word views
+
+Single-update modular helpers accept a direct initialized raw scalar selector
+and disjoint target bit locations, including a slice of the same QNum or an
+explicit little-endian composition across registers. Zero/one comparisons on a
+one-bit view are recognized before general predicate-view normalization; negative
+selectors retain writable-storage checks. The increment capture compares actual
+bit locations for direct controls. Computed predicates still borrow their complete
+input Values and reject mutation of any such register. No public API or effect
+schema changes. Numeric, Const, initialization, alias and Output escape checks
+remain authoritative. Run
+`python -m pytest tests/integration/test_synthesis_native_disjoint_increment.py -q`
+for exhaustive small-domain, complex-coherence, cleanup and refusal acceptance.
+
+A user can coherently update the high bits while borrowing only the low bit:
+
+```python
+from typing import Annotated
+
+import flagquantum as fq
+from flagquantum.synth import H, Output, QNum, allocate, control, qfunc, synthesize
+
+
+@qfunc
+def increment(word: QNum) -> None:
+    word += 1
+
+
+@qfunc
+def main(word: Output[Annotated[QNum, 3]]) -> None:
+    allocate(word)
+    word ^= 2
+    H(word[0])
+    control(word[0] == 0, lambda: increment(word[1:3]))
+
+
+program = synthesize(main)
+result = fq.run(program)
+print(dict(program.probabilities(result, registers=("word",))))
+```
+
+The named outcomes are `(3,)` and `(4,)`, each with probability `0.5`.
+All indices refer to logical register bits, not physical circuit wires.
+
+
+Generic pure unitary helper callbacks use the same exact raw-scalar location
+boundary. A writable slice or composed view may share its backing Value with a
+control only when all writable actual locations exclude the selector bit.
+Computed-predicate dependencies retain the whole-register protection above.
+The existing lifecycle verifier still checks every captured callback, including
+nested helpers, Const roles, initialization and closed scratch.
+
+The private `qreg.pauli_rotation` profile admits a control in the same backing
+Value only when its bounded index is outside every target support position.
+This extends the earlier whole-register refusal: physical overlap still fails,
+and there is no public API or operation-schema change. Independent full-operator
+comparisons cover each Pauli axis, multiple-axis support and controlled identity
+phase. `tests/integration/test_synthesis_native_controlled_helper_borrows.py`
+checks all small basis inputs, complex coherence, branch scalar phases, actual
+selector overlap, repeated writable aliases, Output escape and resource limits.
+
+
+### Identical candidate target compilation
+
+Selection builds and checks each supported schedule independently. Within one
+selection request, candidates with the same full `CircuitIR.content_hash` reuse
+one successfully compiled `TargetProduct`. The target configuration and
+intermediate operation budget are fixed for that request. Source identity covers
+width, dtype, shape, instructions, parameters, matrices and annotations, including
+preparation. Failed transforms are not cached, and later requests compile again.
+The cache holds at most the three bounded candidate products.
+
+Each row retains its own strategy, construction timing, arithmetic evidence,
+workspace ceiling, final resource checks and recovery diagnostics. Identical rows
+share the target artifact and its recorded transformation timing; those timings
+are observations of the same work and must not be summed as separate compiler
+work. `TargetProduct.validate()` runs for every row. Nested IR annotations remain
+mutable, so changing a shared artifact invalidates every row that references it.
+An identity failure makes the entire search incomplete and authorizes no result.
+Runtime planning and Program validation retain their existing authority.
+
+Start with `tests/team/compiler/test_construction_target_reuse.py` for equal and
+differing inputs, basis and routing profiles, request isolation, budget refusal
+and tamper behavior. The runnable eight-layer example at
+`examples/synthesis/applications/optimization/max_induced_k_color_subgraph/main.py`
+exercises this reuse through the unchanged public `synth.synthesize` workflow.
+
+### Boolean XOR from static bit views
+
+`frontend_xor` recognizes one writable `QBit` updated by constants 0/1,
+static one-bit views and `&`, `|`, `^`, `~`. It reuses `expand_native_phase`'s
+bounded Boolean predicate expansion (eight distinct reads) and emits existing
+indexed `qreg.control_x` effects for odd polynomial coefficients. All reads are
+witnessed even when terms cancel; physical target/read overlap is rejected.
+The XOR path cannot invoke phase factoring or sparse-phase fallbacks. Numeric
+and multi-bit expressions retain checked arithmetic lowering. Existing controlled-X
+scheduling chooses a budget-compatible workspace strategy; zero-workspace
+schedules remain legal when their actual cost fits the other limits.
+
+Run `tests/integration/test_synthesis_native_boolean_xor.py` for basis,
+nonzero-target, coherence, view, ownership and resource-budget checks. The full
+Hidden Shift Notebook is an original-size consumer, including an eight-input
+Boolean marker and independently verified binary reconstruction.
+
+### One-clean wide MCX scheduling
+
+`mcx.one_clean_mcx` is a private fallback for array-controlled X when the existing
+cheaper ladders do not fit and at least one proven-zero bit remains. Each half of
+the controls temporarily borrows the other half through an exact dirty ladder.
+Every control, the target XOR behavior and the clean flag are restored correctly
+for arbitrary coherent inputs; no user bit is assumed zero. Existing larger
+workspace candidates remain unchanged when they fit. This is not a new IR opcode
+or user-facing storage concept.
+
+The shared named-basis search can emit exact U3 forms from the authoritative
+Euler table, retaining the RZ/SX scalar conventions without detaching trainable
+angles. U-only runs retain their vocabulary through Runtime normalization.
+Compiler layout validation also accepts complete, ordered three-CX SWAP
+witnesses, including disjoint ASAP interleavings. Marked routing CX leaves are
+retained until a rewrite can update their complete witness; this may cost
+additional gates. Incomplete, overlapping or mismatched-source witnesses fail.
+Run the Compiler MCX/U3/routing tests and
+`tests/integration/test_synthesis_native_mcx_workspace.py`. The complete
+hardware-aware MCX Notebook retains15 controls, width18, both topologies and
+CX/U-only leaves; all216 existing quantum counterparts remain unchanged.
+
+Scalar gate targets can address static encoded bits of signed or binary-scaled QNum registers without changing their numeric format. General numeric slices and helper borrowing retain their unsigned-only admission; raw scalar access is never a format reinterpretation. See `docs/api-changes/FQ-SYNTH-NATIVE-NUMERIC-BIT-GATES-20261114.md` for the scoped acceptance.

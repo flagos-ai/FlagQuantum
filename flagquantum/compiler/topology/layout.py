@@ -330,19 +330,64 @@ def final_layout(circuit_or_ir: Any) -> Layout:
 
 
 def _routing_swap_phases(ir: CircuitIR) -> list[tuple[int, str, tuple[int, int]]]:
-    """Return ``(index, phase, qubits)`` for every routed SWAP, validating each one."""
+    """Validate routed SWAPs or exact CX triples; return one record per SWAP."""
 
     marked: list[tuple[int, str, tuple[int, int]]] = []
+    # Each CX decomposition may interleave only with disjoint operations.
+    # Store its first leaf, phase, orientation, source and next ordinal.
+    pending: dict[tuple[int, int], tuple[int, str, tuple[int, int], object, int]] = {}
     for index, instruction in enumerate(ir.instructions):
         phase = instruction.metadata.get("routing_phase")
+        touches = [
+            pair for pair in pending if set(pair).intersection(instruction.wires)
+        ]
         if phase is None:
+            if touches:
+                raise ValueError(f"routed instruction {index} interrupts SWAP evidence")
             continue
-        if instruction.name != "swap" or len(instruction.wires) != 2:
+        source = instruction.metadata.get("source_instruction_index")
+        if source is None:
+            if instruction.name == "swap":
+                raise ValueError(
+                    f"routed instruction {index} has no source instruction"
+                )
             raise ValueError(f"routed instruction {index} has invalid SWAP evidence")
-        if instruction.metadata.get("source_instruction_index") is None:
-            raise ValueError(f"routed instruction {index} has no source instruction")
-        marked.append((index, str(phase), instruction.wires))
-    return marked
+        if (
+            len(instruction.wires) != 2
+            or instruction.params
+            or instruction.matrix is not None
+        ):
+            raise ValueError(f"routed instruction {index} has invalid SWAP evidence")
+        if instruction.name == "swap" and not touches:
+            marked.append((index, str(phase), instruction.wires))
+            continue
+        if instruction.name != "cx":
+            raise ValueError(f"routed instruction {index} has invalid SWAP evidence")
+        pair = (min(instruction.wires), max(instruction.wires))
+        if any(touched != pair for touched in touches):
+            raise ValueError(
+                f"routed instruction {index} overlaps incomplete SWAP evidence"
+            )
+        held = pending.get(pair)
+        if held is None:
+            pending[pair] = (index, str(phase), instruction.wires, source, 1)
+            continue
+        start, held_phase, orientation, held_source, ordinal = held
+        expected = orientation[::-1] if ordinal == 1 else orientation
+        if (
+            instruction.wires != expected
+            or str(phase) != held_phase
+            or source != held_source
+        ):
+            raise ValueError(f"routed instruction {index} has invalid SWAP evidence")
+        if ordinal == 1:
+            pending[pair] = (start, held_phase, orientation, held_source, 2)
+        else:
+            marked.append((start, held_phase, orientation))
+            del pending[pair]
+    if pending:
+        raise ValueError("routed program has incomplete SWAP evidence")
+    return sorted(marked)
 
 
 def remove_layout_restore(circuit_or_ir: Any) -> CircuitIR:
@@ -394,7 +439,11 @@ def remove_layout_restore(circuit_or_ir: Any) -> CircuitIR:
     if routing.get("mapping_restored") is not True:
         return ir
     marked = _routing_swap_phases(ir)
-    restore_indexes = {index for index, phase, _ in marked if phase == "final_restore"}
+    restore_indexes = {
+        index
+        for index, instruction in enumerate(ir.instructions)
+        if instruction.metadata.get("routing_phase") == "final_restore"
+    }
     if not restore_indexes:
         return ir
     forward_swaps = [
@@ -437,18 +486,16 @@ def remove_layout_restore(circuit_or_ir: Any) -> CircuitIR:
             "appended to it, so it cannot be removed as a group"
         )
     kept = list(ir.instructions[:first_restore])
-    inserted_swap_count = sum(
-        1
-        for instruction in kept
-        if instruction.metadata.get("routing_phase") is not None
-    )
+    inserted_swap_count = sum(phase != "final_restore" for _, phase, _ in marked)
     placement = reported.logical_to_physical
     updated = dict(routing) | {
         "final_logical_to_physical": placement,
         "mapping_restored": False,
         "inserted_swap_count": inserted_swap_count,
         "planned_inserted_swap_count": inserted_swap_count,
-        "removed_layout_restore_swap_count": len(restore_indexes),
+        "removed_layout_restore_swap_count": sum(
+            phase == "final_restore" for _, phase, _ in marked
+        ),
     }
     # Every statement of the output layout has to move together, or the metadata
     # would carry two answers to one question.
