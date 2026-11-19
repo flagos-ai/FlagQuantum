@@ -578,7 +578,9 @@ The checked-in `ci.yml` defines twenty-seven jobs:
 - `cpu-core-3-12-tests`: the complete smoke/unit suite on the newest supported
   interpreter;
 - `cpu-runtime`: the Python 3.12 integration tier and launched CPU-distributed
-  proofs, running in parallel with the complete unit suite;
+  proofs, running in parallel with the complete unit suite. The full integration
+  selection is partitioned deterministically across eight jobs; the two launcher
+  proofs run only in shard zero. Each job retains the 60-minute limit;
 - `cpu-core-3-12`: the required aggregation gate, reported to branch protection
   as `cpu-core (3.12)`, that succeeds only when both Python 3.12 suites pass;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
@@ -1108,3 +1110,13 @@ Coverage plan and result downloads use one bounded transport retry. Attempts
 stage in separate runner-temporary directories, so partial files from a failed
 transfer cannot enter the successful plan or coverage input set. Digest errors
 and a persistent transport failure still stop the job.
+
+### Cold dependency-bound source caches
+
+The dependency-bound jobs first reuse the incremental source artifact. When a
+self-hosted cache is incomplete, they try one 180-second HTTP/1.1 Git fetch of
+the exact workflow commit before the existing bounded API repair and full
+artifact fallback. The fetched commit ID and complete object closure must match;
+checkout still verifies `GITHUB_SHA`. This avoids the slow Actions blob-storage
+route when Git transport succeeds, without bypassing source identity checks or
+changing the 30-minute dependency-bound job limit.

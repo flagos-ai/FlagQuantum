@@ -331,7 +331,7 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
     job = _document("ci.yml")["jobs"]["cpu-runtime"]
     assert job["strategy"] == {
         "fail-fast": False,
-        "matrix": {"shard": [0, 1, 2, 3]},
+        "matrix": {"shard": list(range(8))},
     }
     expensive_steps = [
         step
@@ -344,7 +344,7 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
     )
     assert runtime["run"] == (
-        "python tools/ci_tier.py pr-runtime --shard-count 4 "
+        "python tools/ci_tier.py pr-runtime --shard-count 8 "
         "--shard-index ${{ matrix.shard }}"
     )
     for step in expensive_steps:
