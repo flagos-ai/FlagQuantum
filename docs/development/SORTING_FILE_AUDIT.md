@@ -68,3 +68,73 @@ teaching topics. The final example executes merge and sort with ordinary
 Q-0216 closes. Q-0217 and Q-0218 retain generic symbolic and foreign
 admission, the original strict dtype and autotester count-mode gaps,
 and unsupported concrete lengths as recorded above.
+
+## Concrete native execution graphs
+
+Compiler comparison owns directional BiQubitsMixer/SingleQubitCompare calls,
+the equal-width LessThanEqual tree, GreaterThan and compare/exchange. Compiler
+primitives owns the exact typed CSwap wrapper over the existing seven-T emitter.
+Comparison also owns offset traversal. Sorting composes merge and recursive
+sort using those owners. Inputs are concrete MSB-first unsigned words. Tree
+ancillas are RIGHT outputs consumed by LEFT adjoints. Comparator history is a
+logical RIGHT output retained through the whole network and consumed by its
+inverse. Temporary comparison work starts and ends clean. Existing symbolic
+factory declarations, numerical primitives, models and classical callbacks keep
+their authoritative owners. Normal consumers continue to use circuit.append(op).
+
+
+The complete concrete `sorting.py` hierarchy now has native stored bodies.
+`comparison/tree_component.py` owns the directional mixer and final comparison
+flags. `comparison/ordering_component.py` composes the equal-width comparison
+tree and exact GreaterThan adjoint. `primitives/controlled_swap_component.py`
+owns register Split/TwoBitCSwap/Join and preserves QBit for one-bit source ports.
+`comparison/compare_exchange_component.py` retains history allocation, ordered
+comparison and exchange, and inverse consumption. Offset, merge and recursive
+sort have independent owners and reuse these children. Existing physical,
+classical, declaration and resource owners remain shared dependencies.
+
+The two normal append examples now bind the stored graph. Their clean-pool
+order keeps caller-visible history contiguous while flag lifetimes are reused.
+The inverse explicitly adopts valid history inputs before clearing and freeing
+them. Empty offset networks and one-word sorts are identity. The comparison
+tree entry is equal-width only, matching sorting's direct dependency. Generic
+unequal-width comparison support is outside this concrete graph batch.
+
+The native/source comparison reads every network's original named connections,
+all 81 offset cases, and the complete physical streams through three-bit words,
+with comparator streams through eight bits. It binds each untouched source
+comparator to the native allocation lifetime and maps measurement events
+bijectively to SSA slots. This retains source component order when global Cirq
+flattening reschedules independent branches. Full complex source tensors cover
+the directional tree flags, dirty comparison target, coherent swap, small
+networks, entangled spectators and all applicable raw histories in each
+independent direction. Clean work and restored history pass within 3e-12.
+The original 45 seeded lists also execute the native hierarchy, compare all
+history outputs with source, and restore every input through the inverse.
+
+All four actual concrete source factories run the existing five native check
+modes. Their primitive multisets match the previously accepted emitters. The
+source's strict QUInt/QAny typing gap and count-mode policy remain recorded
+above. Native check-mode acceptance does not close those source fixture gaps.
+
+| Native stored eight-word, three-bit sort | Count |
+|---|---|
+| Actual primitives | 2376 CX, 288 X, 984 T/TDG, 504 H, 120 S, 120 conditional CZ, 120 measurements and 120 reset operations |
+| Quantum ownership | 24 retained logical history bits, 8 reusable clean work wires, 56 total quantum wires |
+| Classical storage | 120 fresh Program SSA measurement slots, compared with 5 reused slots in the explicit emitter |
+| Independent source categories | 120 And, 72 CSwap, 1392 Clifford, 120 measurements, peak 56 logical wires |
+| Independent T conversion | 984 at the exact seven-T CSwap convention, 768 under the source default four-T convention |
+
+Measurement events, reusable classical storage, quantum history and clean work
+are reported separately. Source analytical categories are retained alongside
+actual primitive counts. Their category names do not imply primitive identity.
+
+Batch receipts use `g2-sorting-native-*` in the external reference evidence
+folder. Focused acceptance passes 179 cases and the concentrated regression passes
+5354 cases without skips, retaining 12 existing warnings. Two local integration
+cases include both changed append consumers. Strict mypy covers
+13 changed Python files, and format, Compiler scope, architecture, multilevel
+IR and protected API checks pass. The default suite retains its previously
+recorded docstring-example coverage failure. Q-0217/Q-0218 remain open for
+generic symbolic/foreign admission, original strict dtype/count-mode gaps and
+unsupported concrete lengths. The frozen reference remains unchanged.

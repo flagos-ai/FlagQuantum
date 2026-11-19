@@ -11,8 +11,13 @@ from typing import Literal
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.sorting.bitonic_merge import bitonic_merge_ir
-from flagquantum.compiler.registers.sorting.bitonic_sort import bitonic_sort_ir
+from flagquantum.compiler.registers.register_binding import bind_register_program
+from flagquantum.compiler.registers.sorting.bitonic_merge_component import (
+    bitonic_merge_program,
+)
+from flagquantum.compiler.registers.sorting.bitonic_sort_component import (
+    bitonic_sort_program,
+)
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -27,14 +32,28 @@ class BitonicWords:
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         count = 4 if self.operation == "merge" else 6
-        emit = bitonic_merge_ir if self.operation == "merge" else bitonic_sort_ir
-        gates = emit(
-            tuple((i,) for i in range(4)),
-            tuple(range(4, 4 + count)),
-            (4 + count, 5 + count),
-            (0,),
-            adjoint=self.inverse,
+        graph = (
+            bitonic_merge_program(2, 1, adjoint=self.inverse)
+            if self.operation == "merge"
+            else bitonic_sort_program(4, 1, adjoint=self.inverse)
         )
+        inputs = tuple((i,) for i in range(4))
+        histories = tuple(range(4, 4 + count))
+        if self.inverse:
+            inputs += tuple((i,) for i in histories)
+        # The first comparison releases its flags before the next history is
+        # allocated. Order the pool so logical outputs stay contiguous.
+        pool = (4, 4 + count, *range(5, 4 + count), 5 + count)
+        bound = bind_register_program(
+            graph,
+            inputs,
+            clean=(4 + count, 5 + count) if self.inverse else pool,
+            allow_workspace_outputs=not self.inverse,
+            input_ownership=(
+                tuple((i, False) for i in histories) if self.inverse else ()
+            ),
+        )
+        gates = bound.circuit.instructions
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
