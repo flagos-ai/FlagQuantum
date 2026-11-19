@@ -1394,3 +1394,12 @@ alias checks and the existing unitary/initialization/budget verifier. Const
 selectors, computed predicates and multi-bit truth tests remain refused. See
 `tests/integration/test_synthesis_native_controlled_matrix.py` and
 `docs/api-changes/FQ-SYNTH-NATIVE-CONTROLLED-MATRIX-20261110.md`.
+
+## Upstream routing adaptations
+
+[The source audit](../../docs/development/COMPILER_UPSTREAM_REUSE.md) separates
+implemented adaptations from unported mechanisms and pending pull requests.
+[Bounded Cirq layer lookahead](../../docs/development/COMPILER_LAYER_LOOKAHEAD.md)
+adds a candidate behind the native planner; it preserves the existing restored
+layout and directed-operation obligations. Run the focused routing tests listed
+there before changing this search.
