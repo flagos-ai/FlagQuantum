@@ -14,10 +14,15 @@ import torch
 import flagquantum as fq
 from flagquantum.compiler.registers.comparison.less_equal import less_equal_requirements
 from flagquantum.compiler.registers.comparison.linear_comparison import (
-    linear_greater_ir,
     linear_greater_requirements,
 )
-from flagquantum.compiler.registers.comparison.ordering import greater_ir
+from flagquantum.compiler.registers.comparison.linear_component import (
+    linear_greater_program,
+)
+from flagquantum.compiler.registers.comparison.ordering_component import (
+    greater_than_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -31,18 +36,17 @@ class Greater:
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         if self.route == "linear":
-            q, c = linear_greater_requirements(3)
-            gates = linear_greater_ir(
-                (0, 1, 2), (3, 4, 5), 6, tuple(range(7, 7 + q)), tuple(range(c))
-            )
+            q, _ = linear_greater_requirements(3)
+            graph = linear_greater_program(3)
         elif self.route == "tree":
-            q, c = less_equal_requirements(3, 3)
-            gates = greater_ir(
-                (0, 1, 2), (3, 4, 5), 6, tuple(range(7, 7 + q)), tuple(range(c))
-            )
+            q, _ = less_equal_requirements(3, 3)
+            graph = greater_than_program(3)
         else:
             raise ValueError("Unknown comparison route")
-        return circuit.compose(CircuitIR(circuit.n_qubits, gates))
+        bound = bind_register_program(
+            graph, ((0, 1, 2), (3, 4, 5), (6,)), clean=tuple(range(7, 7 + q))
+        )
+        return circuit.compose(CircuitIR(circuit.n_qubits, bound.circuit.instructions))
 
 
 def main() -> None:
@@ -65,9 +69,8 @@ def main() -> None:
         expected = torch.zeros_like(state)
         expected[mapped << q] = amps
         operation = Greater(route)
-        circuit = DynamicCircuit(n_qubits, inputs=state, dtype=torch.complex128).append(
-            operation
-        )
+        circuit = DynamicCircuit(n_qubits, inputs=state, dtype=torch.complex128)
+        circuit.append(operation)
         result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
         torch.testing.assert_close(
             result.final_states.reshape(32, -1),
@@ -76,9 +79,8 @@ def main() -> None:
             atol=1e-12,
         )
         counts = Counter(g.name for g in circuit.to_ir().instructions)
-        restored = run_dynamic(
-            circuit.append(operation), shots=8, seed=41, strategy="trajectory"
-        )
+        circuit.append(operation)
+        restored = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
         torch.testing.assert_close(
             restored.final_states.reshape(8, -1),
             state.expand(8, -1),
