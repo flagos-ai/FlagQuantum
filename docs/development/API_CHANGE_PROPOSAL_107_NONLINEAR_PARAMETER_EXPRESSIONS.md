@@ -177,3 +177,14 @@ Q-0156 stays open for generic symbolic global shifts on eigen-gates and the
 final full-definition audit. The diagnostic source probe is retained; no
 unchecked parent is marked accepted. The earlier pre-existing Rydberg legacy
 field assertion remains recorded separately from passing integration.
+
+## Generic eigen-gate phase contract
+
+The approved real-angle phase path also applies to XPow, YPow, ZPow, ZZPow and
+CZPow gates with symbolic exponents and shifts. Translation factors the source
+matrix into a canonical gate and exp(i*pi*exponent*shift_difference), preserving
+that operation order and each quantum/classical control. Original symbols from
+both fields participate in identity checks. Source Cirq only discovers and
+resolves the exponent field, so source transport and explicit scalar substitution
+must be reported separately. No new Core operations or parameter methods are
+introduced. Static CZPow maps to the existing cphase primitive.
