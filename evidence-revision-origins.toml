@@ -1124,9 +1124,10 @@ value = "3aebd0c888789f35bb281435ddd44d5f1ff8cc55"
 origin = "external_dependency"
 repository = "FlagQuantum/Torch-FL"
 
-# PR #1212 was squash-merged as 305b58f5f. Its measured branch revision remains
-# available by full SHA through the repository commit API, verified 2026-11-18,
-# but is absent from CI's fetched history.
+# Measured on 2026-11-18: both repository commit endpoints return this producer,
+# but none of the 55 current branch/tag tips reaches it. The QEC acceptance
+# artifact entered main through squash-merged #1212. Numerical evidence is
+# unchanged; see docs/development/QEC_EVIDENCE_REVISION_ORIGIN_20261118.md.
 [[artifact]]
 path = "artifacts/development/qec_colour_distance_acceptance_20261118.json"
 
