@@ -845,6 +845,18 @@ def _export_cirq(
                 operation = feedback.condition_operation(cirq, operation, clauses)
             operations.append(operation)
             continue
+        if (
+            extent_declared_by_gate
+            and instruction.name == "kraus"
+            and instruction.metadata.get("is_channel")
+        ):
+            from ._channel import _channel_operation
+
+            operation = _channel_operation(instruction, qubits)
+            if feedback is not None and clauses:
+                operation = feedback.condition_operation(cirq, operation, clauses)
+            operations.append(operation)
+            continue
         if instruction.name not in supported_gates or instruction.matrix is not None:
             _issue(
                 issues,

@@ -17,6 +17,7 @@ from ...compiler.registers.primitives.global_phase import (
 from ...core.classical_control import validate_classical_control
 from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import CircuitIR, Instruction
+from ._channel import _channel_instruction
 from .conversion import _cirq, _lower_gate, _real_scalar, _report
 from .models import CirqConversionError, CirqConversionIssue, CirqImportResult
 
@@ -398,6 +399,8 @@ def import_cirq_feedback(
                 )
             elif _has_explicit_matrix(cirq, gate):
                 emitted = (_matrix_instruction(cirq, gate, operands),)
+            elif (channel := _channel_instruction(gate, operands)) is not None:
+                emitted = (channel,)
             else:
                 lowered = _lower_feedback_gate(cirq, gate, issues, index)
                 if lowered is None:

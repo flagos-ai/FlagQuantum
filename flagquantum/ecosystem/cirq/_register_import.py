@@ -24,6 +24,7 @@ from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...core.ir.program.signatures import Signature
+from ._channel import _channel_instruction
 from ._feedback_import import (
     _has_explicit_matrix,
     _lower_feedback_gate,
@@ -369,6 +370,10 @@ def import_cirq_register_optree(
             instructions = (Instruction("reset", (0,), metadata={"is_dynamic": True}),)
         elif _has_explicit_matrix(cirq, gate):
             instructions = (_matrix_instruction(cirq, gate, tuple(range(len(qubits)))),)
+        elif (
+            channel := _channel_instruction(gate, tuple(range(len(qubits))))
+        ) is not None:
+            instructions = (channel,)
         else:
             if not qubits:
                 raise ValueError(

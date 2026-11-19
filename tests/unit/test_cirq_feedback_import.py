@@ -82,7 +82,7 @@ def source_branch(
         else:
             state = cirq.Circuit(operation).unitary(qubit_order=order) @ state
     assert next(results, None) is None
-    return state
+    return np.asarray(state)
 
 
 def compare_every_branch(circuit: Any, order: tuple[Any, ...]) -> None:
@@ -219,7 +219,12 @@ def test_unsupported_or_undefined_semantics_fail_with_report(bad: str) -> None:
             ),
         )
     elif bad == "gate":
-        source = cirq.Circuit(cirq.amplitude_damp(0.1)(a))
+
+        class UnsupportedGate(cirq.Gate):
+            def _num_qubits_(self) -> int:
+                return 1
+
+        source = cirq.Circuit(UnsupportedGate().on(a))
     elif bad == "tag":
         source = cirq.Circuit(cirq.X(a).with_tags("uninterpreted"))
     elif bad == "assumptions":
@@ -376,9 +381,11 @@ def test_matrix_leaf_is_copied_and_invalid_matrix_cannot_be_imported() -> None:
     original = np.array([[0, 1j], [1j, 0]], dtype=np.complex128)
     gate = cirq.MatrixGate(original)
     imported = import_cirq_feedback(cirq.Circuit(gate(q)), qubit_order=(q,))
-    before = imported.ir.instructions[0].matrix.clone()
+    imported_matrix = imported.ir.instructions[0].matrix
+    assert isinstance(imported_matrix, torch.Tensor)
+    before = imported_matrix.clone()
     original[:] = np.eye(2)
-    assert torch.equal(imported.ir.instructions[0].matrix, before)
+    assert torch.equal(imported_matrix, before)
     invalid = cirq.MatrixGate(
         np.array([[1, 1], [0, 1]], dtype=np.complex128), unitary_check=False
     )
