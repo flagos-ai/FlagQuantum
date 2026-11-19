@@ -198,10 +198,12 @@ def worker(workload: Workload, mode: Mode, warmups: int, seconds: float) -> None
     emit("result", **payload)
 
 
-def terminate_group(process: subprocess.Popen[str]) -> bool:
+def terminate_group(
+    process: subprocess.Popen[str], *, grace_seconds: float = 0.2
+) -> bool:
     """Kill and reap the entire isolated worker group, including descendants."""
     try:
-        process.wait(timeout=0.2)
+        process.wait(timeout=grace_seconds)
     except subprocess.TimeoutExpired:
         try:
             os.killpg(process.pid, signal.SIGKILL)
@@ -390,7 +392,18 @@ def observe_worker(
             samples.update(status="measurement_failed", error=repr(error))
         finally:
             try:
-                cleanup = terminate_group(process)
+                # A completed worker may still be releasing Torch resources.
+                # Do not kill healthy teardown after only 200 ms; deadlines and
+                # workers without a terminal receipt retain prompt termination.
+                cleanup = terminate_group(
+                    process,
+                    grace_seconds=(
+                        2.0
+                        if samples.get("status")
+                        in {"verified", "cold", "resource_refused"}
+                        else 0.2
+                    ),
+                )
             except (OSError, subprocess.SubprocessError) as error:
                 cleanup = False
                 samples.update(
