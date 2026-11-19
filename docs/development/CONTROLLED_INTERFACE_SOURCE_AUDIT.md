@@ -35,7 +35,7 @@ no whole-file acceptance.
 | Source definition | Lines | Native owner or outstanding boundary |
 | --- | --- | --- |
 | `_cvs_convert` | 60–69 | `simulation/classical_control_patterns.py` preserves conversion and iterator behavior. |
-| `CtrlSpec` | 73–312 | Core register metadata plus Compiler activation records. Full typed SDK transport remains open. |
+| `CtrlSpec` | 73–312 | Core register metadata plus Compiler activation records. Typed single-clause SDK transport is implemented. Full constructor/equality/hash/count auditing remains open. |
 | `CtrlSpec.__attrs_post_init__` | 122–123 | Core register metadata and `simulation/classical_control_activation.py`; construction/shape/width and symbolic guards. Full symbolic typed execution is open. |
 | `CtrlSpec.num_ctrl_reg` | 126–127 | Core register metadata and `simulation/classical_control_activation.py`; construction/shape/width and symbolic guards. Full symbolic typed execution is open. |
 | `CtrlSpec.shapes` | 130–132 | Core register metadata and `simulation/classical_control_activation.py`; construction/shape/width and symbolic guards. Full symbolic typed execution is open. |
@@ -80,7 +80,7 @@ no whole-file acceptance.
 | `Controlled.build_composite_bloq` | 626–653 | `compiler/registers/component_control.py`, control predicate/selection owners and typed builder. THRU checks, controls-first ordering and stored call propagation are tested. |
 | `Controlled.build_call_graph` | 655–672 | `compiler/_component_trace` controlled models and program call graphs. `_component_trace/controlled.py` now propagates arbitrary child declarations with specialized factories and the same allocator; complete source graph edges are tested. |
 | `Controlled.adjoint` | 674–675 | `compiler/registers/control/component_adjoint_control.py` and exact hierarchy adjoint; branch/work regressions reused. |
-| `make_ctrl_system_with_correct_metabloq` | 678–717 | `component_control_selection.py`, specialized control and predicate owners. Full classical/quantum selection admission remains to audit. |
+| `make_ctrl_system_with_correct_metabloq` | 678–717 | `control/default_component_control.py` selects the existing total, predicate or feedback system and preserves its returned attachment callback. Concrete routing and actual consumers are audited in `DEFAULT_COMPONENT_CONTROL_AUDIT.md`. General classical child graphs and symbolic physical admission remain open. |
 
 ## Every original test and helper
 
@@ -91,18 +91,18 @@ alone as evidence of native capability.
 
 | Original test/helper | Lines | Native evidence or gap |
 | --- | --- | --- |
-| `test_ctrl_spec` | 43–60 | Control-pattern, predicate and activation tests cover concrete cases. Full metadata, symbolic transport and one-bit type admission remain open. |
+| `test_ctrl_spec` | 43–60 | Control-pattern, predicate and activation tests cover concrete cases. Concrete typed transport and admitted one-bit physical metadata are covered by `test_cirq_control_values.py` and `test_single_bit_control_metadata.py`. Full constructor/equality/hash/count and symbolic execution coverage remain open. |
 | `test_ctrl_spec_classical` | 63–74 | `test_classical_control_activation.py`, `test_classical_control_patterns.py`, `test_classical_controlled_values.py`. |
-| `test_ctrl_spec_shape` | 77–81 | Control-pattern, predicate and activation tests cover concrete cases. Full metadata, symbolic transport and one-bit type admission remain open. |
-| `test_ctrl_spec_to_cirq_cv_roundtrip` | 84–102 | SDK integration tests exercise bound exports. Full typed control-spec conversion and declaration diagrams remain open. |
-| `test_ctrl_spec_single_bit_one` | 108–109 | Control-pattern, predicate and activation tests cover concrete cases. Full metadata, symbolic transport and one-bit type admission remain open. |
-| `test_ctrl_spec_single_bit_zero` | 115–116 | Control-pattern, predicate and activation tests cover concrete cases. Full metadata, symbolic transport and one-bit type admission remain open. |
-| `test_ctrl_spec_single_bit_raises` | 120–122 | Control-pattern, predicate and activation tests cover concrete cases. Full metadata, symbolic transport and one-bit type admission remain open. |
-| `test_ctrl_spec_symbolic_cvs` | 126–131 | Control-pattern, predicate and activation tests cover concrete cases. Full metadata, symbolic transport and one-bit type admission remain open. |
-| `test_ctrl_spec_symbolic_dtype` | 135–144 | Control-pattern, predicate and activation tests cover concrete cases. Full metadata, symbolic transport and one-bit type admission remain open. |
-| `test_ctrl_spec_symbolic_wire_symbol` | 147–150 | `test_drawer_control_symbols.py` compares original callbacks. Complete SDK diagram protocol remains open. |
-| `_test_cirq_equivalence` | 153–161 | SDK integration tests exercise bound exports. Full typed control-spec conversion and declaration diagrams remain open. |
-| `test_ctrl_bloq_as_cirq_op` | 164–203 | SDK integration tests exercise bound exports. Full typed control-spec conversion and declaration diagrams remain open. |
+| `test_ctrl_spec_shape` | 77–81 | Control-pattern, predicate and activation tests cover concrete cases. Concrete typed transport and admitted one-bit physical metadata are covered by `test_cirq_control_values.py` and `test_single_bit_control_metadata.py`. Full constructor/equality/hash/count and symbolic execution coverage remain open. |
+| `test_ctrl_spec_to_cirq_cv_roundtrip` | 84–102 | SDK integration tests exercise bound exports. Typed single-clause conversion and the four original SDK diagrams are covered by `test_cirq_control_values.py` and `test_cirq_register_control.py`. Full constructor/metadata auditing remains open. |
+| `test_ctrl_spec_single_bit_one` | 108–109 | Control-pattern, predicate and activation tests cover concrete cases. Concrete typed transport and admitted one-bit physical metadata are covered by `test_cirq_control_values.py` and `test_single_bit_control_metadata.py`. Full constructor/equality/hash/count and symbolic execution coverage remain open. |
+| `test_ctrl_spec_single_bit_zero` | 115–116 | Control-pattern, predicate and activation tests cover concrete cases. Concrete typed transport and admitted one-bit physical metadata are covered by `test_cirq_control_values.py` and `test_single_bit_control_metadata.py`. Full constructor/equality/hash/count and symbolic execution coverage remain open. |
+| `test_ctrl_spec_single_bit_raises` | 120–122 | Control-pattern, predicate and activation tests cover concrete cases. Concrete typed transport and admitted one-bit physical metadata are covered by `test_cirq_control_values.py` and `test_single_bit_control_metadata.py`. Full constructor/equality/hash/count and symbolic execution coverage remain open. |
+| `test_ctrl_spec_symbolic_cvs` | 126–131 | Control-pattern, predicate and activation tests cover concrete cases. Concrete typed transport and admitted one-bit physical metadata are covered by `test_cirq_control_values.py` and `test_single_bit_control_metadata.py`. Full constructor/equality/hash/count and symbolic execution coverage remain open. |
+| `test_ctrl_spec_symbolic_dtype` | 135–144 | Control-pattern, predicate and activation tests cover concrete cases. Concrete typed transport and admitted one-bit physical metadata are covered by `test_cirq_control_values.py` and `test_single_bit_control_metadata.py`. Full constructor/equality/hash/count and symbolic execution coverage remain open. |
+| `test_ctrl_spec_symbolic_wire_symbol` | 147–150 | `test_drawer_control_symbols.py` compares original callbacks. The four original SDK diagrams are compared exactly in `test_cirq_register_control.py`. Symbolic physical admission remains open. |
+| `_test_cirq_equivalence` | 153–161 | SDK integration tests exercise bound exports. Typed single-clause conversion and the four original SDK diagrams are covered by `test_cirq_control_values.py` and `test_cirq_register_control.py`. Full constructor/metadata auditing remains open. |
+| `test_ctrl_bloq_as_cirq_op` | 164–203 | SDK integration tests exercise bound exports. Typed single-clause conversion and the four original SDK diagrams are covered by `test_cirq_control_values.py` and `test_cirq_register_control.py`. Full constructor/metadata auditing remains open. |
 | `test_ctrl_spec_activation_1` | 206–210 | `test_classical_control_activation.py`, `test_classical_control_patterns.py`, `test_classical_controlled_values.py`. |
 | `test_ctrl_spec_activation_2` | 213–222 | `test_classical_control_activation.py`, `test_classical_control_patterns.py`, `test_classical_controlled_values.py`. |
 | `test_ctrl_spec_activation_3` | 225–228 | `test_classical_control_activation.py`, `test_classical_control_patterns.py`, `test_classical_controlled_values.py`. |
@@ -121,13 +121,14 @@ alone as evidence of native capability.
 | `test_controlled_tensor_for_unitary` | 417–424 | `test_controlled_tensor.py`, `test_register_control_tutorial.py` and component tensor integration preserve complete complex states. |
 | `test_controlled_tensor_without_decompose` | 427–437 | `test_controlled_tensor.py`, `test_register_control_tutorial.py` and component tensor integration preserve complete complex states. |
 | `test_controlled_global_phase_tensor` | 440–443 | `test_controlled_tensor.py`, `test_register_control_tutorial.py` and component tensor integration preserve complete complex states. |
-| `test_controlled_diagrams` | 446–492 | `test_drawer_control_symbols.py` compares original callbacks. Complete SDK diagram protocol remains open. |
+| `test_controlled_diagrams` | 446–492 | `test_drawer_control_symbols.py` compares original callbacks. The four original SDK diagrams are compared exactly in `test_cirq_register_control.py`. Symbolic physical admission remains open. |
 
 ## Concrete remaining gaps
 
 - Typed single-clause control values now have an Ecosystem to/from Cirq transport
   retaining register metadata and supported numerical encodings. See
-  `REGISTER_CONTROL_VALUES_AUDIT.md`. Direct controlled SDK wrappers remain open.
+  `REGISTER_CONTROL_VALUES_AUDIT.md`. Direct exported wrappers are audited in
+  `CONTROLLED_REGISTER_EXPORT_AUDIT.md`.
 - Frozen `CtrlSpec.from_cirq_cv` initializes `idx = 0` and never advances it
   between registers. Two scalar QBit clauses `(0, 1)` decode to `(0, 0)` and
   reencode as `(0, 0)`. `g2-controlled-source-roundtrip-boundary.json` records
@@ -138,12 +139,15 @@ alone as evidence of native capability.
   in `SINGLE_BIT_CONTROL_METADATA_AUDIT.md`.
 - One's-complement, bounded and Montgomery descriptors have flat physical
   emitters but remain outside Core typed physical admission. Generic symbolic
-  control execution and mixed classical/quantum controls require their actual
-  admission/selection contracts to be closed.
+  control execution still requires its physical admission contract. The default
+  selector now preserves the source mixed-storage refusal, including zero-width
+  descriptors. It does not claim source mixed-control support.
 - Direct exported SDK wrappers and original diagram protocols now have exact
   comparison evidence. Generic declared-child control counts are implemented
   with complete source graph edge comparison. Whole symbolic typed control
-  metadata and classical/quantum selection admission still require full audit.
+  metadata requires full audit. Default routing is now covered through existing
+  owners and their actual returned callbacks. Generic classical stored-child
+  control and additional physical admission remain open.
 
 The source notebook's signed QInt(8) value 255 draws but fails physical encoding.
 Its prose also predates the direct tensor and Cirq controlled-operation methods
@@ -162,3 +166,7 @@ estimates are separately recorded in `g2-control-tutorial-resources.json`.
 
 The full dependency scan reports 688 existing findings. This batch has zero
 changed-path findings after guarding the optional NumPy test dependency.
+
+The default-routing dependency batch is audited in
+`DEFAULT_COMPONENT_CONTROL_AUDIT.md`. Its observations supersede stale selection
+and SDK-gap wording in earlier intake evidence. Q-0158 and Q-0159 remain open.
