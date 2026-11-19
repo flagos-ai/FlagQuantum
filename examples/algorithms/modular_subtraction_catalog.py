@@ -21,25 +21,34 @@ from flagquantum.compiler.registers.modular.controlled_modular_addition import (
 )
 from flagquantum.compiler.registers.modular.controlled_modular_negation import (
     controlled_modular_negate_adjoint_ir,
-    controlled_modular_negate_ir,
     controlled_modular_negation_requirements,
+)
+from flagquantum.compiler.registers.modular.controlled_modular_negation_component import (
+    controlled_modular_negation_program,
 )
 from flagquantum.compiler.registers.modular.controlled_modular_subtraction import (
     controlled_modular_subtract_adjoint_ir,
-    controlled_modular_subtract_ir,
+)
+from flagquantum.compiler.registers.modular.controlled_modular_subtraction_component import (
+    controlled_modular_subtraction_program,
 )
 from flagquantum.compiler.registers.modular.modular_addition import (
     modular_add_requirements,
 )
 from flagquantum.compiler.registers.modular.modular_negation import (
     modular_negate_adjoint_ir,
-    modular_negate_ir,
     modular_negation_requirements,
+)
+from flagquantum.compiler.registers.modular.modular_negation_component import (
+    modular_negation_program,
 )
 from flagquantum.compiler.registers.modular.modular_subtraction import (
     modular_subtract_adjoint_ir,
-    modular_subtract_ir,
 )
+from flagquantum.compiler.registers.modular.modular_subtraction_component import (
+    modular_subtraction_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.core.ir.program.register_types import (
     quantum_bit_type,
@@ -146,30 +155,38 @@ class ModularSubtractionExample:
             raise ValueError("Modular operation requires its data and clean work wires")
         work = tuple(range(data_end, data_end + work_count))
         bits = tuple(range(slots))
-        if self.kind == "CModSub":
-            controlled_sub = (
-                controlled_modular_subtract_adjoint_ir
-                if self.adjoint
-                else controlled_modular_subtract_ir
-            )
-            gates = controlled_sub(
-                0, x, y, p, work, bits, control_value=self.control_value
-            )
-        elif self.kind == "ModSub":
-            sub = modular_subtract_adjoint_ir if self.adjoint else modular_subtract_ir
-            gates = sub(x, y, p, work, bits)
-        elif self.kind == "CModNeg":
-            controlled_neg = (
-                controlled_modular_negate_adjoint_ir
-                if self.adjoint
-                else controlled_modular_negate_ir
-            )
-            gates = controlled_neg(
-                0, x, p, work, bits, control_value=self.control_value
-            )
+        if self.adjoint:
+            if self.kind == "CModSub":
+                gates = controlled_modular_subtract_adjoint_ir(
+                    0, x, y, p, work, bits, control_value=self.control_value
+                )
+            elif self.kind == "ModSub":
+                gates = modular_subtract_adjoint_ir(x, y, p, work, bits)
+            elif self.kind == "CModNeg":
+                gates = controlled_modular_negate_adjoint_ir(
+                    0, x, p, work, bits, control_value=self.control_value
+                )
+            else:
+                gates = modular_negate_adjoint_ir(x, p, work, bits)
         else:
-            neg = modular_negate_adjoint_ir if self.adjoint else modular_negate_ir
-            gates = neg(x, p, work, bits)
+            dtype = unsigned_register_type(n)
+            if self.kind == "CModSub":
+                graph = controlled_modular_subtraction_program(
+                    dtype, p, control_value=self.control_value
+                )
+            elif self.kind == "ModSub":
+                graph = modular_subtraction_program(dtype, p)
+            elif self.kind == "CModNeg":
+                graph = controlled_modular_negation_program(
+                    dtype, p, control_value=self.control_value
+                )
+            else:
+                graph = modular_negation_program(dtype, p)
+            inputs: tuple[tuple[int, ...], ...] = ((0,),) if controlled else ()
+            inputs += (x, y) if subtract else (x,)
+            gates = bind_register_program(
+                graph, inputs, clean=work
+            ).circuit.instructions
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
