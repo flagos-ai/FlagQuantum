@@ -221,7 +221,7 @@ def test_unsupported_cirq_semantics_fail_closed_with_diagnostics() -> None:
     q0, q1 = cirq.LineQubit.range(2)
     cases = (
         (
-            cirq.Circuit(cirq.X(q0), cirq.global_phase_operation(1j)),
+            cirq.Circuit(cirq.X(q0), cirq.global_phase_operation(sympy.Symbol("coefficient"))),
             "global_phase_not_represented",
         ),
         (cirq.Circuit(cirq.ISWAP(q0, q1)), "unsupported_operation"),

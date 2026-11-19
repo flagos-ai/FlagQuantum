@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Iterable
 from importlib import import_module
 from numbers import Number
 from typing import Any, Literal
@@ -32,6 +33,7 @@ _CIRQ_SYMBOL_TO_FLAGQUANTUM = {
     "H": "h",
     "S": "s",
     "T": "t",
+    "ZPowGate": "phase",
     "rx": "rx",
     "ry": "ry",
     "rz": "rz",
@@ -130,7 +132,10 @@ def _flagquantum_parameter_value(
     symbolic = sympy.sympify(value)
     if scale_by_pi:
         symbolic = symbolic * sympy.pi
-    cirq_symbols = tuple(cirq.parameter_symbols(symbolic))
+    discovered = {str(symbol) for symbol in cirq.parameter_symbols(symbolic)}
+    cirq_symbols = tuple(symbolic.free_symbols)
+    if {str(symbol) for symbol in cirq_symbols} != discovered:
+        raise ValueError("Cirq and SymPy symbol discovery disagree")
     parameters_by_name = {
         str(symbol): Parameter(str(symbol)) for symbol in cirq_symbols
     }
@@ -239,6 +244,58 @@ def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
     raise TypeError(f"unsupported FlagQuantum parameter value {value!r}")
 
 
+def _check_cirq_symbol_identity(cirq: Any, operations: Iterable[Any]) -> None:
+    """Reject distinct symbols sharing one owned name across supported leaves."""
+    sympy = import_module("sympy")
+    symbols: dict[str, Any] = {}
+    for operation in operations:
+        gate = operation.gate
+        while isinstance(gate, cirq.ControlledGate):
+            gate = gate.sub_gate
+        if isinstance(gate, cirq.GlobalPhaseGate):
+            values: tuple[Any, ...] = (gate.coefficient,)
+        elif isinstance(gate, cirq.EigenGate):
+            values = (gate.exponent, gate.global_shift)
+        else:
+            continue
+        for value in values:
+            for symbol in sympy.sympify(value).free_symbols:
+                name = str(symbol)
+                if name in symbols and symbols[name] != symbol:
+                    issues: list[CirqConversionIssue] = []
+                    _issue(
+                        issues,
+                        "unsupported_parameter_expression",
+                        "distinct Cirq symbols share the same name",
+                    )
+                    raise CirqConversionError(
+                        "distinct Cirq symbols share the same name",
+                        _report("from_cirq", str(cirq.__version__), issues),
+                    )
+                symbols[name] = symbol
+
+
+def _global_phase_angle(cirq: Any, coefficient: Any) -> Any:
+    """Derive an owned real angle before admitting a scalar coefficient."""
+    sympy = import_module("sympy")
+    if not cirq.is_parameterized(coefficient):
+        value = complex(coefficient)
+        if not (
+            math.isfinite(value.real) and math.isfinite(value.imag)
+        ) or not math.isclose(abs(value), 1.0, rel_tol=0, abs_tol=1e-12):
+            raise ValueError("Global phase coefficient must be finite and unit modulus")
+        return math.atan2(value.imag, value.real)
+    symbolic = sympy.simplify(sympy.sympify(coefficient).rewrite(sympy.exp))
+    if symbolic.func != sympy.exp:
+        raise ValueError(
+            "Symbolic global phase requires a proven exp(i * real_angle) coefficient"
+        )
+    angle = sympy.simplify(symbolic.args[0] / sympy.I)
+    # Owned expression leaves denote real values. Nonlinear domains are checked
+    # by Core binding, while complex constants and foreign functions stop here.
+    return _flagquantum_parameter_value(cirq, angle)
+
+
 def _qubit_map(
     cirq: Any, circuit: Any, issues: list[CirqConversionIssue]
 ) -> dict[Any, int]:
@@ -274,6 +331,26 @@ def _pow_gate(
     shift = _real_scalar(gate.global_shift, issues, index, name)
     if shift is None:
         return None
+    if (
+        isinstance(gate, cirq.ZPowGate)
+        and shift == 0
+        and cirq.is_parameterized(gate.exponent)
+    ):
+        try:
+            return "phase", {
+                "theta": _flagquantum_parameter_value(
+                    cirq, gate.exponent, scale_by_pi=True
+                )
+            }
+        except (TypeError, ValueError) as exc:
+            _issue(
+                issues,
+                "unsupported_parameter_expression",
+                str(exc),
+                index=index,
+                name=name,
+            )
+            return None
     if cirq.is_parameterized(gate.exponent):
         rotations = (
             (cirq.XPowGate, "rx"),
@@ -291,8 +368,8 @@ def _pow_gate(
                     _issue(
                         issues,
                         "unsupported_parameter_expression",
-                        "Cirq parameter expression is outside the FlagQuantum v1 "
-                        f"arithmetic subset: {exc}",
+                        "Cirq parameter expression is outside the supported "
+                        f"real expression vocabulary: {exc}",
                         index=index,
                         name=name,
                     )
@@ -331,6 +408,8 @@ def _pow_gate(
             ):
                 if _close(exponent, fixed_exponent):
                     return opcode, {}
+        if shift == 0:
+            return "phase", {"theta": math.pi * exponent}
         if _close(shift, -0.5):
             return "rz", {"theta": math.pi * exponent}
     if isinstance(gate, cirq.ZZPowGate) and _close(shift, -0.5):
@@ -520,6 +599,7 @@ def _import_static_cirq(
     indexed_operations = tuple(
         operation for moment in circuit for operation in moment.operations
     )
+    _check_cirq_symbol_identity(cirq, indexed_operations)
     last_non_measurement = max(
         (
             index
@@ -582,6 +662,26 @@ def _import_static_cirq(
                     )
                     instructions.extend(lowered_measurement)
                     classical_bit += len(lowered_measurement)
+                operation_index += 1
+                continue
+            if isinstance(gate, cirq.GlobalPhaseGate):
+                from ...compiler.registers.primitives.global_phase import (
+                    scalar_phase_ir,
+                )
+
+                try:
+                    angle = _global_phase_angle(cirq, gate.coefficient)
+                    if not wires:
+                        raise ValueError("Global phase requires a declared anchor wire")
+                    instructions.extend(scalar_phase_ir(0, angle))
+                except (TypeError, ValueError) as exc:
+                    _issue(
+                        issues,
+                        "global_phase_not_represented",
+                        str(exc),
+                        index=operation_index,
+                        name=name,
+                    )
                 operation_index += 1
                 continue
             lowered = _lower_gate(cirq, gate, issues, operation_index)

@@ -488,7 +488,6 @@ def import_qiskit(circuit: Any, *, allow_lossy: bool = False) -> QiskitImportRes
             )
         )
 
-    global_phase: float | None
     converted_phase = _numeric_parameter(
         circuit.global_phase,
         parameter_type=parameter_type,
@@ -497,7 +496,24 @@ def import_qiskit(circuit: Any, *, allow_lossy: bool = False) -> QiskitImportRes
         operation_index=-1,
         operation_name="global_phase",
     )
-    global_phase = float(converted_phase) if converted_phase is not None else None
+    if isinstance(converted_phase, (Parameter, ParameterExpression)):
+        from ...compiler.registers.primitives.global_phase import scalar_phase_ir
+
+        if circuit.num_qubits == 0:
+            issues.append(
+                QiskitConversionIssue(
+                    "unsupported_parameter_expression",
+                    "Symbolic global phase requires a declared anchor wire",
+                    "error",
+                    -1,
+                    "global_phase",
+                )
+            )
+        else:
+            instructions.extend(scalar_phase_ir(0, converted_phase))
+        global_phase = None
+    else:
+        global_phase = float(converted_phase) if converted_phase is not None else None
     report = _report("from_qiskit", str(qiskit.__version__), issues)
     metadata: dict[str, Any] = {
         "interop": {

@@ -6,21 +6,22 @@ and any composed Boolean predicate. The existing static conversion is separate.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Iterator, Sequence
 from math import pi
 from typing import Any
 
 from ...compiler.registers.primitives.global_phase import (
-    global_phase_exponent,
-    global_phase_ir,
+    scalar_phase_ir,
 )
 from ...core.classical_control import validate_classical_control
 from ...core.classical_dataflow import ClassicalXor
 from ...core.ir import CircuitIR, Instruction
 from ._channel import _channel_instruction
 from .conversion import (
+    _check_cirq_symbol_identity,
     _cirq,
     _flagquantum_parameter_value,
+    _global_phase_angle,
     _lower_gate,
     _real_scalar,
     _report,
@@ -30,11 +31,50 @@ from .models import CirqConversionError, CirqConversionIssue, CirqImportResult
 Bit = int | bool
 
 
+def _scalar_control_operations(cirq: Any, operations: Iterable[Any]) -> Iterator[Any]:
+    """Express binary negative scalar controls in the existing phase basis."""
+    for original in operations:
+        if original.tags:
+            yield original
+            continue
+        operation = original.without_classical_controls()
+        gate = operation.gate
+        if isinstance(gate, cirq.ControlledGate) and isinstance(
+            gate.sub_gate, cirq.GlobalPhaseGate
+        ):
+            values = tuple(tuple(value) for value in gate.control_values)
+            if (
+                len(values) <= 2
+                and all(value in ((0,), (1,)) for value in values)
+                and (0,) in values
+            ):
+                flips = tuple(
+                    cirq.X(qubit)
+                    for qubit, value in zip(operation.qubits, values, strict=True)
+                    if value == (0,)
+                )
+                positive = gate.sub_gate.controlled(num_controls=len(values)).on(
+                    *operation.qubits
+                )
+                for leaf in (*flips, positive, *reversed(flips)):
+                    yield leaf.with_classical_controls(*original.classical_controls)
+                continue
+        yield original
+
+
 def _lower_feedback_gate(
     cirq: Any, gate: Any, issues: list[CirqConversionIssue], index: int
 ) -> tuple[str, dict[str, Any]] | None:
     """Retain exact phase powers and canonical singly controlled primitives."""
-    if gate == cirq.CY:
+    if isinstance(gate, cirq.ControlledGate) and isinstance(
+        gate.sub_gate, cirq.GlobalPhaseGate
+    ):
+        values = tuple(tuple(value) for value in gate.control_values)
+        if values in (((1,),), ((1,), (1,))):
+            return ("phase" if len(values) == 1 else "cphase"), {
+                "theta": _global_phase_angle(cirq, gate.sub_gate.coefficient)
+            }
+    if gate == cirq.Y.controlled():
         return "cy", {}
     if gate in (cirq.ISWAP, cirq.ISWAP**-1):
         return ("iswap" if gate == cirq.ISWAP else "iswapdg"), {}
@@ -361,8 +401,11 @@ def import_cirq_feedback(
     wires = {qubit: index for index, qubit in enumerate(order)}
     if not set(circuit.all_qubits()) <= set(wires):
         raise ValueError("Wire order must include every circuit qubit")
+    _check_cirq_symbol_identity(cirq, circuit.all_operations())
     feedback = _Feedback()
-    for index, original in enumerate(circuit.all_operations()):
+    for index, original in enumerate(
+        _scalar_control_operations(cirq, circuit.all_operations())
+    ):
         issues: list[CirqConversionIssue] = []
         try:
             if original.tags:
@@ -410,8 +453,8 @@ def import_cirq_feedback(
             elif isinstance(gate, cirq.GlobalPhaseGate):
                 if not order:
                     raise ValueError("Scalar phase import needs a declared anchor wire")
-                emitted = global_phase_ir(
-                    float(global_phase_exponent(complex(gate.coefficient))), anchor=0
+                emitted = scalar_phase_ir(
+                    0, _global_phase_angle(cirq, gate.coefficient)
                 )
             elif _has_explicit_matrix(cirq, gate):
                 emitted = (_matrix_instruction(cirq, gate, operands),)

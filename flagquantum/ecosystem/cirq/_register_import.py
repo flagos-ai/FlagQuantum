@@ -15,8 +15,7 @@ from numpy.typing import NDArray
 from ...compiler.registers.component_builder import ComponentProgramBuilder
 from ...compiler.registers.component_gate_function import bit_gate_function
 from ...compiler.registers.primitives.global_phase import (
-    global_phase_exponent,
-    global_phase_ir,
+    scalar_phase_ir,
 )
 from ...core.ir import CircuitIR, Instruction
 from ...core.ir.program import FunctionRecord, ProgramRecord
@@ -29,13 +28,20 @@ from ._feedback_import import (
     _has_explicit_matrix,
     _lower_feedback_gate,
     _matrix_instruction,
+    _scalar_control_operations,
     import_cirq_feedback,
 )
 from ._gate_metadata import cirq_gate_signature
 from ._qubit_manager import InteropQubitManager
 from ._register_definition import _expand_native_definitions
 from ._register_export import _register_shape
-from .conversion import _cirq, _raise_if_lossy, _report
+from .conversion import (
+    _check_cirq_symbol_identity,
+    _cirq,
+    _global_phase_angle,
+    _raise_if_lossy,
+    _report,
+)
 from .models import CirqConversionIssue
 
 Qureg = NDArray[np.object_]
@@ -60,7 +66,7 @@ def _register_operations(
     context = cirq.DecompositionContext(manager)
 
     def expand(operations: Iterable[Any], ancestors: tuple[Any, ...]) -> Iterator[Any]:
-        frame = tuple(operations)
+        frame = tuple(_scalar_control_operations(cirq, operations))
         with manager.reserve_qubits(q for op in frame for q in op.qubits):
             for operation in frame:
                 if operation.tags:
@@ -292,6 +298,7 @@ def import_cirq_register_optree(
     definitions: dict[str, FunctionRecord] = {}
     gates: list[tuple[object, tuple[Hashable, ...], FunctionRecord | None]] = []
     operations = tuple(_register_operations(circuit, declared))
+    _check_cirq_symbol_identity(cirq, operations)
     if any(op.classical_controls or cirq.is_measurement(op) for op in operations):
         replacements = _expand_native_definitions(operations, declared)
         native_gates = tuple(
@@ -360,12 +367,11 @@ def import_cirq_register_optree(
             call(definition, qubits)
             continue
         if isinstance(gate, cirq.GlobalPhaseGate):
-            if cirq.is_parameterized(gate.coefficient):
-                raise ValueError("Cirq global phase requires a concrete coefficient")
             # A phase-only program allocates a clean scalar carrier from the pool.
             qubits = (next(iter(live.words))[0] if live.words else object(),)
-            exponent = global_phase_exponent(complex(gate.coefficient))
-            instructions = global_phase_ir(float(exponent), anchor=0)
+            instructions = scalar_phase_ir(
+                0, _global_phase_angle(cirq, gate.coefficient)
+            )
         elif isinstance(gate, cirq.ResetChannel) and len(qubits) == 1:
             instructions = (Instruction("reset", (0,), metadata={"is_dynamic": True}),)
         elif _has_explicit_matrix(cirq, gate):

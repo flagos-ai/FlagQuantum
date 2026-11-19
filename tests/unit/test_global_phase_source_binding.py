@@ -165,7 +165,7 @@ def test_original_external_scalar_conventions_and_static_refusal() -> None:
     from qualtran.bloqs.basic_gates import GlobalPhase
     from qualtran.cirq_interop import cirq_gate_to_bloq
 
-    from flagquantum.ecosystem.cirq import CirqConversionError, from_cirq
+    from flagquantum.ecosystem.cirq import from_cirq
     from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
 
     original = GlobalPhase.from_coefficient(1j)
@@ -176,8 +176,10 @@ def test_original_external_scalar_conventions_and_static_refusal() -> None:
     )
     with pytest.raises(ValueError, match="must reference at least one qubit"):
         from_cirq(foreign)
-    with pytest.raises(CirqConversionError, match="global_phase_not_represented"):
-        from_cirq(foreign + cirq.Circuit(cirq.I(cirq.LineQubit(0))))
+    assert (
+        len(from_cirq(foreign + cirq.Circuit(cirq.I(cirq.LineQubit(0)))).instructions)
+        == 5
+    )
     captured = import_cirq_feedback(foreign, qubit_order=(cirq.LineQubit(0),)).ir
     assert (
         captured.instructions

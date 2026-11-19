@@ -123,3 +123,22 @@ def test_owned_nonlinear_export_uses_existing_rotation_without_added_gates(
     assert restored.instructions[0].params["theta"].bind(
         {"theta": 0.37}
     ) == pytest.approx(expected, abs=2e-15)
+
+
+def test_distinct_assumption_symbols_in_separate_gates_remain_rejected() -> None:
+    cirq = pytest.importorskip("cirq")
+    sympy = pytest.importorskip("sympy")
+    from flagquantum.ecosystem.cirq import CirqConversionError
+    from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
+    from flagquantum.ecosystem.cirq._register_import import import_cirq_register_optree
+
+    qubit = cirq.LineQubit(0)
+    source = cirq.Circuit(
+        cirq.rx(sympy.sin(sympy.Symbol("theta")))(qubit),
+        cirq.rz(sympy.cos(sympy.Symbol("theta", positive=True)))(qubit),
+    )
+    for convert in (from_cirq, import_cirq_register_optree):
+        with pytest.raises(CirqConversionError, match="distinct Cirq symbols"):
+            convert(source)
+    with pytest.raises(CirqConversionError, match="distinct Cirq symbols"):
+        import_cirq_feedback(source, qubit_order=(qubit,))
