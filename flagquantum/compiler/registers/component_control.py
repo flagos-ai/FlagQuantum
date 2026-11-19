@@ -252,9 +252,10 @@ def control_component_via_predicate(
     An explicit entry adder invokes the actual positive-control callback,
     including directional ports; otherwise a THRU hierarchy is derived.
     Directional output names must match the source callback zip order.
-    Integer words are row-major and MSB-first. A single QBit is scalar or shape
-    (1,). Multiple bits produce n-1 owned predicate outputs, call the positive
-    body once, then measure-erase and release them. Specialized adders own their
+    Integer words are row-major and MSB-first. A one-bit register retains its
+    admitted dtype and singleton shape. Multiple bits produce n-1 owned predicate
+    outputs, call the positive body once, then measure-erase and release them.
+    Specialized adders own their
     private workspace and must preserve the predicate. Invalid controls, name
     collisions and incompatible data signatures raise ValueError.
     """
@@ -263,12 +264,8 @@ def control_component_via_predicate(
     assert function.registers is not None
     if {r.name for r in controls} & {r.name for r in function.registers}:
         raise ValueError("control names conflict with component data ports")
-    if count == 1 and (
-        len(controls) != 1
-        or controls[0].dtype != quantum_bit_type()
-        or controls[0].shape not in ((), (1,))
-    ):
-        raise ValueError("single control requires a scalar or shape-(1,) QBit")
+    if count == 1 and len(controls) != 1:
+        raise ValueError("single control requires exactly one register")
     adder = controlled.get(entry)
     if adder is not None:
         rights = tuple(r.name for r in Signature(function.registers).rights())
@@ -321,6 +318,8 @@ def control_component_via_predicate(
     }
     if count == 1:
         q = np.asarray(builder.inputs[controls[0].name]).flat[0]
+        if controls[0].dtype != quantum_bit_type():
+            q = builder.split(q)[0]
         negative = patterns[0].bits() == (0,)
         if negative:
             q = builder.call_dict(prefix + "x", {"q": q})["q"]
@@ -341,8 +340,12 @@ def control_component_via_predicate(
     if count == 1:
         if negative:
             q = builder.call_dict(prefix + "x", {"q": q})["q"]
+        if controls[0].dtype != quantum_bit_type():
+            q = builder.join(np.array([q], dtype=object), controls[0].dtype)
         outputs[controls[0].name] = (
-            np.array([q], dtype=object) if controls[0].shape else q
+            np.array([q], dtype=object).reshape(controls[0].shape)
+            if controls[0].shape
+            else q
         )
     else:
         predicate["target"] = q

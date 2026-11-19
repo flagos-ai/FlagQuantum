@@ -275,8 +275,6 @@ def test_directional_predicate_ports_match_original(case: ControlCase) -> None:
         "classical",
         "side",
         "names",
-        "single_word",
-        "single_matrix",
     ),
 )
 def test_invalid_control_descriptors_fail_without_modifying_program(
@@ -304,10 +302,6 @@ def test_invalid_control_descriptors_fail_without_modifying_program(
         controls = (Register("ctrl", quantum_bit_type(), side=RegisterSide.LEFT),)
     elif failure == "names":
         controls = (Register("q", quantum_bit_type()),)
-    elif failure == "single_word":
-        controls = (Register("ctrl", RegisterType("uint", 1)),)
-    elif failure == "single_matrix":
-        controls = (Register("ctrl", quantum_bit_type(), (1, 1)),)
     before = repr(record)
     with pytest.raises(ValueError):
         control_component_via_predicate(
