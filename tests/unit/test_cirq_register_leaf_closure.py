@@ -226,3 +226,59 @@ def test_cyclic_missing_and_empty_decompositions_have_distinct_outcomes() -> Non
     empty = import_cirq_register_optree(Empty().on(qubit))
     bound = bind_register_program(empty, ((0,),))
     assert bound.outputs == ((0,),) and not bound.circuit.instructions
+
+
+@pytest.mark.parametrize("width", [1, 2, 3, 4])
+def test_original_tensor_only_wrapper_matches_full_operator(width: int) -> None:
+    source = pytest.importorskip("qualtran.cirq_interop._bloq_to_cirq_test")
+    gate = source.BloqAsCirqGate(source.SwapTestWithOnlyTensorData(width))
+    qubits = tuple(reversed(cirq.LineQubit.range(2 * width)))
+    assert cirq.decompose_once(gate.on(*qubits), default=None) is None
+    expected = cirq.Circuit(gate.on(*qubits)).unitary(qubit_order=sorted(qubits))
+    program = import_cirq_register_optree(gate.on(*qubits))
+    bound = bind_register_program(program, tuple((i,) for i in range(2 * width)))
+    assert estimate_resources(bound.circuit).operation_counts == {"any": 1}
+    assert not bound.events
+    actual = get_unitary(bound.circuit, dtype=torch.complex128).numpy()
+    np.testing.assert_allclose(actual, expected, atol=2e-12, rtol=0)
+    state = np.arange(1, 2 ** (2 * width + 1) + 1, dtype=np.complex128)
+    state *= np.exp(0.17j * np.arange(len(state)))
+    state /= np.linalg.norm(state)
+    circuit = Circuit(
+        2 * width + 1, inputs=torch.from_numpy(state), dtype=torch.complex128
+    )
+    circuit.append(FieldOperation(2 * width + 1, bound.circuit.instructions))
+    torch.testing.assert_close(
+        circuit.state().flatten(),
+        torch.from_numpy(np.kron(expected, np.eye(2)) @ state),
+        atol=2e-12,
+        rtol=0,
+    )
+    registers = program.functions[0].registers
+    assert registers is not None
+    exported = RegisterCirqGate(bound, Signature(registers))
+    restored = import_cirq_register_optree(exported.on(*sorted(qubits)))
+    rebound = bind_register_program(restored, tuple((i,) for i in range(2 * width)))
+    np.testing.assert_allclose(
+        get_unitary(rebound.circuit, dtype=torch.complex128).numpy(),
+        expected,
+        atol=2e-12,
+        rtol=0,
+    )
+
+
+def test_available_decomposition_precedes_tensor_fallback() -> None:
+    class Decomposable(cirq.Gate):
+        def _num_qubits_(self) -> int:
+            return 1
+
+        def _decompose_(self, qubits: Sequence[cirq.Qid]) -> cirq.OP_TREE:
+            return [cirq.H(qubits[0])]
+
+        def _unitary_(self) -> NDArray[np.complex128]:
+            raise AssertionError("decomposable gates must retain their call chain")
+
+    program = import_cirq_register_optree(Decomposable().on(cirq.LineQubit(0)))
+    assert bind_register_program(program, ((0,),)).circuit.instructions == (
+        Instruction("h", (0,)),
+    )

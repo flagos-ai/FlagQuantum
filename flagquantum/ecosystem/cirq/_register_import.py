@@ -90,7 +90,13 @@ def _register_operations(
                     operation, context=context, flatten=False, default=None
                 )
                 if tree is None:
-                    yield operation
+                    # Match the SDK wrapper's tensor-backed unitary fallback only
+                    # after its declared decomposition has declined the operation.
+                    matrix = cirq.unitary(gate, default=None)
+                    if matrix is None:
+                        yield operation
+                    else:
+                        yield cirq.MatrixGate(matrix).on(*operation.qubits)
                 else:
                     yield from expand(cirq.flatten_to_ops(tree), (*ancestors, gate))
 
@@ -233,7 +239,8 @@ def import_cirq_register_optree(
     supply its own FunctionRecord as `flagquantum_register_definition`.
     An explicit definition takes precedence over recursive SDK decomposition.
     Recursive decompositions require clean workspace and a maximum nesting depth
-    of 256. Matrix leaves require a typed native definition.
+    of 256. Explicit unitary leaves become owned matrix operations. A tensor-only
+    unitary fallback is consulted after the SDK decomposition declines.
     """
     cirq = _cirq()
     circuit = cirq.Circuit(optree)
