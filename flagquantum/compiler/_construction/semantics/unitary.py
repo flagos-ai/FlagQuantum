@@ -194,7 +194,10 @@ def _givens_instructions(
     for column in range(last):
         for row in range(last, column, -1):
             a, b = reduced[row - 1, column].item(), reduced[row, column].item()
-            if abs(b) <= 1e-16:
+            # Match the phase residual floor instead of promoting last-bit
+            # eigensolver/BLAS noise into a controlled rotation network. The
+            # complete reconstruction below still enforces its 1e-12 bound.
+            if abs(b) <= 1e-15:
                 continue
             norm = math.hypot(abs(a), abs(b))
             rotation = torch.tensor(
