@@ -8,10 +8,17 @@
 from collections import defaultdict
 
 from ..compiler.registers.component_expansion import _occurrence_labels
+from ..compiler.registers.component_graph import _call_entry
 from ..core.ir.program import ProgramRecord, ValueRef
 from ..core.ir.program.registers import Register
 from ..core.ir.program.signatures import Signature
 from .component_score import component_register_score
+
+
+def format_component_summary(record: ProgramRecord, entry: str = "main") -> str:
+    """Summarize the immediate component layer, including isolated calls."""
+    root = _call_entry(record, entry)
+    return f"ComponentProgram([{len(root.blocks[0].operations)} components...])"
 
 
 def _port_labels(registers: tuple[Register, ...]) -> tuple[str, ...]:

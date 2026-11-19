@@ -462,3 +462,8 @@ display steps. It preserves source port directions and sum labels. The catalog
 in `examples/algorithms/addition_catalog.py` and the register-addition notebook
 compose existing Core metadata, Compiler declarations and Drawer rendering.
 Execution continues through the existing addition append examples.
+
+Component summaries use `format_component_summary` from
+`flagquantum.drawer.component_debug_text`. For `parallel_program()` the result
+is `ComponentProgram([5 components...])`. The count describes the selected
+function body before expansion and counts repeated calls separately.

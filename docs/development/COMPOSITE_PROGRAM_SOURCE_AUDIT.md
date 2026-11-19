@@ -27,14 +27,14 @@ owns presentation. Source Python objects are confined to reference tests.
 | `CompositeBloq.flatten_once`, `flatten` | `component_expansion.expand_component_calls_once` and `expand_component_calls`; selective expansion and notebook tests cover callback decisions, depth, retained/gapped IDs, atomic refusal and empty bodies. | Arbitrary Python decomposition callbacks are not admitted as typed Program bodies. |
 | `CompositeBloq.adjoint` | `component_adjoint` and specialized hierarchy adjoints, with physical and all-branch reference tests. | Adjoint selection for a source leaf must resolve to a declared native provider. Reversing measurement instruction order is not a valid substitute. |
 | `CompositeBloq._debug_binst`, `debug_text` | `drawer.component_debug_text.format_component_debug_text`, commit `3dde10db5`. Complete text parity covers adjacency grouping, generations, multidimensional ports, empty/zero-width graphs and expansion labels. | Source names and angle-bracket instance notation map to native names and `name#instance`. Source isolated-node ties use native stored order. |
-| `CompositeBloq.__str__` | The native record representation and explicit Drawer diagnostic serve separate storage and display uses. | Exact source class-name summary formatting has not been introduced. Decide the native summary entry together with full diagnostic acceptance; do not equate dataclass repr with source summary. |
+| `CompositeBloq.__str__` | The native record representation and explicit Drawer diagnostic serve separate storage and display uses. | Drawer format_component_summary reports the immediate call-instance count with native ComponentProgram/components spelling. Nested shared definitions remain single instances at the selected layer; source text is compared after only this naming substitution. |
 | `_create_binst_graph`, `_binst_to_cxns` | `component_schedule._function_connections`, existing SSA traversal, Drawer score generations and adjacency text. | Native graph consumers derive edges; no cached mutable NetworkX graph enters Core. |
 | `_get_soquet`, `_cxns_to_soq_dict`, `_cxns_to_cxn_dict`, `_get_dangling_soquets`, `_flatten_soquet_collection`, `_get_flat_dangling_soqs` | `component_graph._collections`, `_defined_bindings`, `_elements`, `create_register_bindings`, SSA argument/result/return identities. Existing graph/bindings/notebook parity establishes row-major and directional endpoints. | Non-executable type/shape admission follows Q-0149; no separate graph identity representation is planned. |
 | `BloqError`, `DidNotFlattenAnythingError` | `RegisterBindingError` and `NoComponentExpansionError`, both native value errors with existing failure tests. | Native exception names are explicit, source classes do not leak through the public boundary. |
 | `_IgnoreAvailable`, `_IgnoreAvailable.add` | Existing binding constructor can omit availability tracking, while live builder owns its availability set. | A source private helper class is replaced by the native callable boundary. |
 | `_reg_to_soq`, `_process_soquets` | `component_bindings.create_register_bindings`, `process_register_bindings`; source-backed contract tests cover shape, order, prefix mutations and width compatibility. | Wider descriptor admission remains tracked separately. |
 | `_map_soqs`, `_map_flat_soqs`, `_update_flat_soq_map` | `component_binding_map.map_register_bindings`, copy/expansion SSA replacement maps. `test_component_inline_calls.py` covers scalar/shaped replacement, duplicate precedence, failures and inlining. | The public collection operation is covered; private flat-map mutation is expressed with native SSA dictionaries and must be assessed through copy/expansion consumers. |
-| `BloqBuilder`, `__init__`, `add_register_from_dtype`, all `add_register` overloads, `from_signature` | `ComponentProgramBuilder` accepts a Signature and supports opt-in `allow_register_addition`; `component_signature.infer_output_registers`. Commit `b6a6705b5`, mutable-signature tests and audit. | Negative width source metadata is rejected at the native finite execution boundary. Symbolic and fixed-point typed Programs remain open. |
+| `BloqBuilder`, `__init__`, `add_register_from_dtype`, all `add_register` overloads, `from_signature` | `ComponentProgramBuilder` accepts a Signature and supports opt-in `allow_register_addition`; `component_signature.infer_output_registers`. Commit `b6a6705b5`, mutable-signature tests and audit. | Negative width source metadata is rejected at the native finite execution boundary. Fixed-point, bounded integer and symbolic bit-width graphs are admitted by the logical register contract. Symbolic element shapes and broader descriptor families remain open. |
 | `BloqBuilder.map_soqs` | `map_register_bindings` is independently owned and callable, shared by inlining. | The operation is a module function; no builder convenience duplicate is needed. |
 | `BloqBuilder._new_binst_i`, `_add_cxn`, `_add_binst` | Builder operation positions, Core SSA operands/results, `_new_value`, `_consume` and ordinary call insertion own identity and consumption. | Source private counters are not native contracts. Preserved display labels remain separate metadata returned by expansion. |
 | `BloqBuilder.add_t`, `add_d`, `add` | Native `call_tuple`, `call_dict`, `call` for known definitions and `call_program` for imported composite bodies. Builder tests verify ordered outputs, linear consumption and failure prefixes. | Executable source leaves require native definitions/providers, not a live foreign object in the Program. |
@@ -49,10 +49,23 @@ source/native workflow described in CIRQ_REGISTER_PROGRAM_EXPORT.md. Reuse that
 evidence when evaluating the three Cirq methods. The source `as_cirq_op` includes
 a wrapper fallback for source components whose direct Cirq conversion refuses;
 its arbitrary SDK-backed leaves and symbolic declaration semantics still need
-explicit disposition. The source summary method also needs a native presentation
-owner and original-source behavioral comparison.
+explicit disposition. The source summary method is owned by Drawer and compared directly with native
+immediate-layer counts, including nested shared definitions.
 
 The frozen source file's own tests currently pass 39 cases and its original
 notebook test passes separately. Those runs confirm the reference environment.
-They do not close untested native replacements. Q-0157 and Q-0149 remain open
-independently, as do the dashboard numerical and PennyLane declaration gaps.
+They do not close untested native replacements. Q-0157 is accepted through its complete test inventory. Q-0149 remains open
+for broader descriptors and symbolic shapes, as do the dashboard numerical and PennyLane declaration gaps.
+
+## Summary presentation follow-up
+
+Drawer `format_component_summary` counts immediate verified call instances,
+including repeated calls to a shared nested definition. It reports
+`ComponentProgram([N components...])`, preserving the original summary shape
+with native domain names. Empty graphs report zero. Invalid entries use the
+existing Compiler diagnostics. This projection retains the stored graph.
+The unchanged source parallel fixture and twice-wrapped fixture match after
+the explicit domain-name substitution. The 25-file concentrated regression
+passes 915 cases without skips. Strict typing of both changed Python files,
+Black, Ruff, Compiler scope, architecture and internal IR checks pass.
+The broader SDK wrapper conversion remains open.

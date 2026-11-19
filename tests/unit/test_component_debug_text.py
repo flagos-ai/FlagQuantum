@@ -14,7 +14,10 @@ from flagquantum.core.ir.program import ProgramRecord
 from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.registers import Register, RegisterType
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.drawer.component_debug_text import format_component_debug_text
+from flagquantum.drawer.component_debug_text import (
+    format_component_debug_text,
+    format_component_summary,
+)
 from tests.unit.test_register_rebinding_contract import SourceRebindings
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
@@ -45,6 +48,30 @@ def test_parallel_calls_match_source_generations_and_every_endpoint() -> None:
     assert text == normalized_source_text(record, source)
     assert text.count("--------------------") == 2
     assert text.count(" -> ") == 14
+    assert format_component_summary(record) == str(source).replace(
+        "CompositeBloq", "ComponentProgram"
+    ).replace("subbloqs", "components")
+
+
+def test_summary_counts_immediate_calls_without_expanding_shared_definitions() -> None:
+    from qualtran import BloqBuilder
+    from qualtran.bloqs.for_testing.with_decomposition import TestParallelCombo
+
+    record = parallel_program()
+    builder = ComponentProgramBuilder(Signature(record.functions[0].registers or ()))
+    outputs = builder.inputs
+    source, source_inputs = BloqBuilder.from_signature(TestParallelCombo().signature)
+    for _ in range(2):
+        outputs = builder.call_program(record, outputs)
+        source_inputs = source.add_d(TestParallelCombo(), **source_inputs)
+    native = builder.finalize(outputs)
+    reference = source.finalize(**source_inputs)
+    assert format_component_summary(native) == str(reference).replace(
+        "CompositeBloq", "ComponentProgram"
+    ).replace("subbloqs", "components")
+    assert format_component_summary(native) == "ComponentProgram([2 components...])"
+    with pytest.raises(ValueError, match="unknown component entry"):
+        format_component_summary(native, "missing")
 
 
 @pytest.mark.parametrize("width", [0, 1, 3])
@@ -75,6 +102,7 @@ def test_empty_identity_has_no_call_text_and_invalid_entry_is_refused() -> None:
     builder = ComponentProgramBuilder(Signature.build(q=1))
     record = builder.finalize(builder.inputs)
     assert format_component_debug_text(record) == ""
+    assert format_component_summary(record) == "ComponentProgram([0 components...])"
     with pytest.raises(ValueError, match="unknown component entry"):
         format_component_debug_text(record, "missing")
 
