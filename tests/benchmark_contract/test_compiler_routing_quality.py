@@ -9,9 +9,8 @@ by becoming an alias of one candidate, or by silently widening its scope.
 
 Only a small seeded basis is measured here, so this stays a fast
 ``benchmark_contract`` test. The basis is checked to contain the behaviour the
-recorded result turns on -- every resolution of the automatic selection, and at
-least one program on which its cost estimate answers differently for the source
-program and for the optimized one ``compile`` actually routes -- so it cannot
+recorded result turns on -- every resolution of the automatic selection, and an explicit
+observation of the optimized program that ``compile`` actually routes -- so it cannot
 pass on a basis that never exercises them.
 
 What this contract no longer holds is the check that the estimate sometimes picks
@@ -29,8 +28,11 @@ benchmark reaches it, so asserting it here would be asserting a property the
 merged candidate set removed.
 """
 
+from unittest.mock import patch
+
 import pytest
 
+import flagquantum as fq
 from benchmarks.compiler_lookahead_swap import case_basis
 from benchmarks.compiler_routing_quality import (
     AUTOMATIC_SELECTION,
@@ -39,8 +41,9 @@ from benchmarks.compiler_routing_quality import (
     retained_swap_count,
     run_benchmark,
 )
+from flagquantum.compiler import CouplingMap, optimize
 from flagquantum.compiler import compile as compile_program
-from flagquantum.compiler import optimize
+from flagquantum.compiler.lowering import pipeline as lowering_pipeline
 from flagquantum.compiler.optimization.optimization_levels import (
     DEFAULT_OPTIMIZATION_LEVEL,
     optimization_level_stages,
@@ -262,8 +265,7 @@ def test_the_measured_automatic_selection_is_the_one_compile_actually_makes(
     ``compile`` optimizes a program and then selects a strategy for the optimized
     program, so the estimate never sees the caller's source program. A measurement
     that selected on the source program instead would publish the cost of a route
-    no caller receives -- and this basis is chosen to contain that difference
-    rather than to assume it away.
+    no caller receives. A cancelling-gate witness observes that input directly.
     """
 
     cases = case_basis(topologies=_BASIS_TOPOLOGIES, seeds=_BASIS_SEEDS)
@@ -274,7 +276,6 @@ def test_the_measured_automatic_selection_is_the_one_compile_actually_makes(
     }
     assert len(recorded) == _BASIS_CASE_COUNT == len(cases)
 
-    differs_on_the_source_program = 0
     for case in cases:
         program = case.program()
         device = case.device()
@@ -283,18 +284,23 @@ def test_the_measured_automatic_selection_is_the_one_compile_actually_makes(
             f"{case.label}: the benchmark recorded {recorded[case.label]} but "
             f"compile selects {selected} for the program it routes"
         )
-        if (
-            select_routing_strategy(program, case.device()).selected_strategy
-            != selected
-        ):
-            differs_on_the_source_program += 1
 
-    # Non-vacuity: the two places the estimate could be run apart on this basis, so
-    # the assertion above is not trivially satisfied by them always agreeing.
-    assert differs_on_the_source_program > 0, (
-        "this basis cannot distinguish selecting on the optimized program from "
-        "selecting on the source program, so it cannot hold the recorded choice"
-    )
+    # Observe the actual boundary rather than require two correct selectors to
+    # disagree. Better route search can legitimately make both select the same
+    # strategy, even though compile must still optimize before routing.
+    source = fq.Circuit(4).cx(0, 3).cx(0, 3).to_ir()
+    expected = optimize(source)
+    assert expected.instructions != source.instructions
+    with patch.object(
+        lowering_pipeline,
+        "_route_automatically",
+        wraps=lowering_pipeline._route_automatically,
+    ) as select:
+        compile_program(source, coupling_map=CouplingMap.line(4))
+    assert select.call_count == 1
+    received = select.call_args.args[0]
+    assert received.instructions == expected.instructions
+    assert received.instructions != source.instructions
 
 
 def test_the_recorded_counts_are_measured_at_the_declared_optimization_level(
