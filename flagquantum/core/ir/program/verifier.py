@@ -37,6 +37,7 @@ from .model import (
 )
 from .register_verifier import register_port_types, verify_register_block
 from .registers import RegisterSide
+from .scalar import scalar_literal_error
 
 __all__ = ("verify_program_record",)
 
@@ -473,6 +474,10 @@ def _verify_operation_shape(
                 "constant without stating its value",
             )
         )
+    elif operation.opcode == CONSTANT_OPCODE:
+        error = scalar_literal_error(operation.literal)
+        if error is not None:
+            diagnostics.append(_diagnostic("program.result_kind", error))
     return diagnostics
 
 

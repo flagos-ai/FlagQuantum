@@ -23,6 +23,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from ...operator_schema import get_operator_schema
+from ...parameters import Parameter, ParameterExpression
 from ..diagnostics import LevelContractError, LevelDiagnostic
 from .physical import (
     IsingContext,
@@ -52,7 +53,7 @@ TERMINATORS = ("return", "branch")
 
 #: Program-level opcodes with semantics beyond the static circuit operator
 #: vocabulary. A parameter is a compile constant that the circuit states as a
-#: number and the program states as a `scalar` value. Measurement and reset make
+#: number or owned expression and the program states as a `scalar` value. Measurement and reset make
 #: dynamic qubit and classical def-use explicit.
 CONSTANT_OPCODE = "constant"
 MEASURE_OPCODE = "measure"
@@ -99,8 +100,8 @@ class Operation:
     a later operation has already replaced gives that value two consumers.
 
     `parameters` binds every parameter the opcode declares to a `scalar` value
-    rather than to a number, and `literal` carries the number for the `constant`
-    opcode that defines such a value.
+    rather than embedding it, and `literal` carries the owned scalar for the
+    `constant` opcode that defines such a value.
 
     Attributes:
         opcode: A compile constant, finite call or canonical circuit opcode.
@@ -120,7 +121,7 @@ class Operation:
     operands: tuple[ValueRef, ...] = ()
     results: tuple[ValueRef, ...] = ()
     parameters: tuple[tuple[str, ValueRef], ...] = ()
-    literal: float | None = None
+    literal: float | Parameter | ParameterExpression | None = None
     condition_clauses: tuple[tuple[ConditionRef, ...], ...] = ()
     physical_data: (
         RydbergTransport | RydbergPulse | RydbergPresence | IsingExchange | None

@@ -36,6 +36,7 @@ from ...classical_control import (
     validate_classical_control,
 )
 from ...classical_dataflow import parse_classical_xor
+from ...parameters import Parameter, ParameterExpression
 from .. import CircuitIR, Instruction, IRSerializationError, IRValidationError
 from ..diagnostics import LEVEL_PROGRAM, PUBLIC_LEVEL, LevelDiagnostic, _diagnostic
 from .kraus import kraus_error
@@ -53,6 +54,7 @@ from .model import (
     ValueRef,
     opcode_signature,
 )
+from .scalar import scalar_literal_error
 from .verifier import verify_program_record
 
 __all__ = (
@@ -278,12 +280,21 @@ def _lower_instructions(
             )
         parameters: list[tuple[str, ValueRef]] = []
         for name in signature.parameters:
+            parameter = instruction.params[name]
+            literal = (
+                parameter
+                if isinstance(parameter, (Parameter, ParameterExpression))
+                else float(parameter)
+            )
+            error = scalar_literal_error(literal)
+            if error is not None:
+                raise _UnmodelledOpcodeError(_diagnostic("program.result_kind", error))
             scalar = builder.define("scalar")
             operations.append(
                 Operation(
                     CONSTANT_OPCODE,
                     results=(scalar,),
-                    literal=float(instruction.params[name]),
+                    literal=literal,
                 )
             )
             parameters.append((name, scalar))
