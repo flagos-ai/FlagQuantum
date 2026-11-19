@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import register_width
+from ...compiler._construction.verification.register_profile import register_width
 from .syntax import Statement, reject
 
 if TYPE_CHECKING:

@@ -9,10 +9,10 @@ from fractions import Fraction
 from typing import TYPE_CHECKING, NoReturn
 
 from ..._hybrid.model import INDEX, HybridProgram, Operation, Value, ValueId
-from ..numeric_expression import WordExpression
-from ..profile import uint_type
 from ..program_types import maximum, minimum
-from ..register_profile import register_width
+from ..semantics.numeric_expression import WordExpression
+from ..verification.profile import uint_type
+from ..verification.register_profile import register_width
 from .ports import _Port
 from .python import _error
 from .views import _require_builtin, locations

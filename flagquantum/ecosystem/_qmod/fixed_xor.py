@@ -5,7 +5,10 @@ from __future__ import annotations
 from fractions import Fraction
 from typing import TYPE_CHECKING, NoReturn
 
-from ...compiler._fixed_word import exact_expression, fixed_xor_table
+from ...compiler._construction.semantics._fixed_word import (
+    exact_expression,
+    fixed_xor_table,
+)
 from .angles import REAL_LITERAL
 from .masked_selection import emit_truth_xor
 from .syntax import Expression, Token, reject

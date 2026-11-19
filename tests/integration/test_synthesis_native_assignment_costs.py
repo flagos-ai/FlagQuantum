@@ -25,7 +25,7 @@ from examples.synthesis.compare_states import compare_states
 from examples.synthesis.factor_reference import CostFactor
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

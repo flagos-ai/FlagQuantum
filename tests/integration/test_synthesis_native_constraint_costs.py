@@ -26,7 +26,7 @@ from examples.synthesis.quadratic_reference import (
 )
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_python import _QuantumFunction
+from flagquantum.compiler._construction.frontend.python import _QuantumFunction
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]

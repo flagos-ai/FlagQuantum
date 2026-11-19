@@ -4,7 +4,7 @@ import itertools
 
 import pytest
 
-from flagquantum.compiler._arithmetic_kernels import comparison_xor
+from flagquantum.compiler.registers._arithmetic_kernels import comparison_xor
 
 pytestmark = pytest.mark.unit
 

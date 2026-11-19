@@ -5,14 +5,14 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.bindings import OutputMode
-from flagquantum.compiler._construction.frontend_python import Definition, capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     _emit_arithmetic,
     schedule_arithmetic,
 )
+from flagquantum.compiler._construction.frontend.python import Definition, capture
+from flagquantum.compiler._construction.verification.bindings import OutputMode
 from flagquantum.compiler._hybrid.model import HybridProgram, ValueId
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.core.ir import CircuitIR, Instruction

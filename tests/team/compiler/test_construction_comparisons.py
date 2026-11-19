@@ -4,9 +4,12 @@ from dataclasses import replace
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lifetimes import analyze_lifetimes
-from flagquantum.compiler._construction.profile import uint_type, verify_construction
+from flagquantum.compiler._construction.analysis.lifetimes import analyze_lifetimes
+from flagquantum.compiler._construction.frontend.python import capture
+from flagquantum.compiler._construction.verification.profile import (
+    uint_type,
+    verify_construction,
+)
 from flagquantum.compiler._hybrid.model import (
     INDEX,
     Block,

@@ -5,8 +5,8 @@ from __future__ import annotations
 import ast
 from typing import TYPE_CHECKING
 
-from .._phase_polynomial import MAX_PHASE_DEGREE, Location
 from ..codegen.boolean import BooleanCandidateError, _disjoint_cubes
+from ..semantics._phase_polynomial import MAX_PHASE_DEGREE, Location
 from .phase import expand_native_phase
 from .python import _error
 from .views import gate_target, locations

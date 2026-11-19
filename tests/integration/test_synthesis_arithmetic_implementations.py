@@ -13,15 +13,15 @@ from benchmarks.synthesis.verification import classical_apply, encode
 from examples.synthesis.tutorials.arithmetic.arithmetic_implementations.main import main
 from flagquantum import synth
 from flagquantum.compiler import ResourceEstimate
-from flagquantum.compiler._construction.frontend_python import capture
-from flagquantum.compiler._construction.lowering import (
+from flagquantum.compiler._construction.codegen.arithmetic import (
     ArithmeticCandidate,
     Schedule,
     _logical_cost,
     adjoint_value_candidate,
     schedule_arithmetic,
 )
-from flagquantum.compiler._construction.register_lowering import RegisterCandidate
+from flagquantum.compiler._construction.codegen.registers import RegisterCandidate
+from flagquantum.compiler._construction.frontend.python import capture
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from tests.synthesis_workflow_helpers import check_state
 
@@ -282,7 +282,7 @@ def test_constant_tradeoff_retains_the_actual_conservative_candidate() -> None:
 def test_optional_implementation_probe_has_a_recorded_budget(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from flagquantum.compiler._construction import lowering
+    from flagquantum.compiler._construction.codegen import arithmetic as lowering
 
     monkeypatch.setattr(lowering, "_NORMALIZATION_PROBE_MAX_OPERATIONS", 10)
     result, _ = candidate(times_three, {"x": 4})

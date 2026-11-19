@@ -10,8 +10,8 @@ from typing import TYPE_CHECKING
 from ....observables import Observable, _PauliTerm
 from ..._hybrid.model import Value
 from ...lowering import _pauli_products, _pauli_schedule
-from ..pauli_rotation import Support
-from ..register_profile import register_width
+from ..semantics.pauli_rotation import Support
+from ..verification.register_profile import register_width
 from .classical import classical_number
 from .ports import _resolve
 from .python import _error

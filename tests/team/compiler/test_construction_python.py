@@ -6,7 +6,7 @@ from collections.abc import Callable
 
 import pytest
 
-from flagquantum.compiler._construction.frontend_python import capture, qfunc
+from flagquantum.compiler._construction.frontend.python import capture, qfunc
 from flagquantum.compiler._hybrid.model import HybridProgram
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 

@@ -12,12 +12,6 @@ from typing import NoReturn
 
 from ..._hybrid.model import HybridProgram, Value
 from ..._hybrid.verifier import HybridVerificationError
-from ..fixed_point import (
-    FixedPointBranches,
-    FixedPointExpression,
-    FixedPointScalar,
-)
-from ..fixed_point_program import FixedPointScope, emit_fixed_point_tables
 from ..program_types import (
     QBit,
     QNum,
@@ -27,6 +21,12 @@ from ..program_types import (
     prepare_state,
     quantize,
 )
+from ..semantics.fixed_point import (
+    FixedPointBranches,
+    FixedPointExpression,
+    FixedPointScalar,
+)
+from ..semantics.fixed_point_program import FixedPointScope, emit_fixed_point_tables
 from .ports import (
     _annotation_node,
     _Port,

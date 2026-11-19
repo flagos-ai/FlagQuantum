@@ -4,7 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from flagquantum.compiler._construction.selection import select_register_program
+from flagquantum.compiler._construction.scheduling.selection import (
+    select_register_program,
+)
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem._qmod.adapter import (
     SUPPORTED_SOURCE_VERSION,
@@ -284,10 +286,10 @@ def test_capture_never_executes_source_reads_files_or_invokes_synthesis(
         raise AssertionError("source adaptation must not execute, read, or synthesize")
 
     monkeypatch.setattr(
-        "flagquantum.compiler._construction.frontend_python.capture", forbidden
+        "flagquantum.compiler._construction.frontend.python.capture", forbidden
     )
     monkeypatch.setattr(
-        "flagquantum.compiler._construction.selection.select_register_program",
+        "flagquantum.compiler._construction.scheduling.selection.select_register_program",
         forbidden,
     )
     monkeypatch.setattr(Path, "read_text", forbidden)

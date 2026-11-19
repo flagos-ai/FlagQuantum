@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import replace
 from types import MappingProxyType
 
-from ...compiler._construction.register_profile import (
+from ...compiler._construction.verification.register_profile import (
     register_type,
 )
 from ...compiler._hybrid.model import (

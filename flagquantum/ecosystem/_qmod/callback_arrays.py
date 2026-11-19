@@ -5,7 +5,7 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import register_width
+from ...compiler._construction.verification.register_profile import register_width
 from ...compiler._hybrid.model import Operation
 from .quantum_callbacks import MAX_CALLBACK_STATEMENTS, Lambda
 from .syntax import Expression, Function, Statement, Token, reject

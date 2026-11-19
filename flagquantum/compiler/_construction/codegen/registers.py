@@ -17,18 +17,19 @@ import torch
 from ....core._composition import controlled_instruction, inverted_instruction
 from ....core.ir import CircuitIR, Instruction
 from ....noise import amplitude_damping_channel
-from ..._fourier_kernels import qft_instructions
 from ..._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from ..._hybrid.verifier import Diagnostic
 from ...noise import _encode_channel_instruction
 from ...optimization.canonicalization import merge_self_inverse
 from ...optimization.commutation_cancellation import cancel_commuting_self_inverse
 from ...optimization.state_preparation_synthesis import _synthesize_real_state
-from ..borrowed_unitary import owned_unitary_layout
-from ..pauli_rotation import pauli_rotation_instructions
-from ..profile import _fail, _positive_integer, _width, uint_type
-from ..register_expansion import expand_register_calls, is_register_function
-from ..register_profile import (
+from ...registers._fourier_kernels import qft_instructions
+from ..semantics.borrowed_unitary import owned_unitary_layout
+from ..semantics.pauli_rotation import pauli_rotation_instructions
+from ..semantics.spectral_powers import lower_spectral_powers
+from ..semantics.unitary import unitary_instructions
+from ..verification.profile import _fail, _positive_integer, _width, uint_type
+from ..verification.register_profile import (
     _ANGLE_GATES,
     register_ports,
     register_width,
@@ -36,8 +37,6 @@ from ..register_profile import (
     unitary_matrix,
     verify_register_program,
 )
-from ..spectral_powers import lower_spectral_powers
-from ..unitary import unitary_instructions
 from .arithmetic import (
     ArithmeticCandidate,
     BoundArithmetic,
@@ -52,8 +51,7 @@ from .controls import _bounded_control_group as _bounded_control_group
 from .controls import _modular_exp_instructions as _modular_exp_instructions
 from .gate_tape import expand_gate_tape
 from .preparation import _uniform_interval as _uniform_interval
-from .transforms import _pattern_gate as _pattern_gate
-from .transforms import _real_transform_instructions as _real_transform_instructions
+from .register_expansion import expand_register_calls, is_register_function
 from .transforms import _type1_instructions as _type1_instructions
 from .transforms import _type2_instructions as _type2_instructions
 

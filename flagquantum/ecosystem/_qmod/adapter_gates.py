@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ...compiler._construction.register_profile import (
+from ...compiler._construction.verification.register_profile import (
     equatorial_rotation,
     euler_rotation,
     register_width,
