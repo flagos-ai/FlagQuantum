@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict
 import hashlib
 import json
 import os
-from pathlib import Path
 import platform
 import random
 import statistics
@@ -14,9 +12,11 @@ import subprocess
 import sys
 import time
 import types
+from dataclasses import asdict
+from pathlib import Path
 
-from flagquantum.compiler.topology import sabre
 from flagquantum.compiler import CouplingMap
+from flagquantum.compiler.topology import sabre
 from flagquantum.core.ir import CircuitIR, Instruction
 
 BASELINE = "1e2fbd3f45687afc2ba0e057f2f0f01c67a9e53e"  # Integrated main before the relative-score adaptation.

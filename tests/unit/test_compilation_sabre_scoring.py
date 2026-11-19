@@ -112,6 +112,7 @@ def test_relative_scoring_preserves_state_and_shared_parameter_gradient(
     seed: int,
 ) -> None:
     import torch
+
     import flagquantum as fq
     from flagquantum.compiler import route_to_topology
 
