@@ -264,6 +264,13 @@ checked in.
 
 ## Native target-CZ block compilation development status
 
+Generated RX/RZ local runs now use a bounded Cirq-derived cleanup inside the
+existing verified CZ block stage. It preserves CZ count and the enclosing raw
+proposal budgets, operator acceptance and layout contracts. The
+[source and development evidence](../development/COMPILER_CZ_CIRQ_REUSE.md)
+include rejected interaction-kernel adaptations as well as the selected cleanup.
+This does not promote the capability level or establish an SDK ranking.
+
 `compiler_native_cz_blocks` has local CPU `development_evidence` for the automatic
 target-to-artifact path and its offline Runtime/Deployment handoff. The native
 baseline, verified rewrites, topology-space mapping transitions and final
