@@ -82,6 +82,16 @@ def classical_bit_feedback_function(
         for op in circuit.instructions
     ):
         raise ValueError("Typed bit feedback requires an unconditional coherent body")
+    child = bit_gate_function(name, registers, circuit)
+    return _feedback_component_function(child, controls, {})
+
+
+def _feedback_component_function(
+    child: FunctionRecord,
+    controls: tuple[tuple[tuple[int, ...], tuple[bool, ...]], ...],
+    callees: Mapping[str, str],
+) -> FunctionRecord:
+    """Thread owned CBits through calls and conjoin snapshots on primitives."""
     required = tuple(value for _, values in controls for value in values)
     if any(
         any(type(size) is not int or size < 1 for size in shape)
@@ -90,50 +100,116 @@ def classical_bit_feedback_function(
         for shape, values in controls
     ):
         raise ValueError("Feedback values must match the concrete CBit control shapes")
+    if child.registers is None or len(child.blocks) != 1:
+        raise ValueError("Feedback requires a single typed register block")
     signature = classical_control_signature(
-        Signature(registers),
+        Signature(child.registers),
         tuple((classical_bit_type(), shape) for shape, _ in controls),
     )
-    child = bit_gate_function(name, registers, circuit)
     block = child.blocks[0]
-    assert block.return_values is not None
+    if block.return_values is None or block.edges or block.terminator != "return":
+        raise ValueError("Feedback requires an explicit finite return")
+    if any(
+        op.opcode
+        in {
+            "measure",
+            "measure_register",
+            "reset",
+            "parity_register",
+            "discard_classical_register",
+        }
+        for op in block.operations
+    ):
+        raise ValueError("Feedback requires a coherent body without classical writes")
     next_index = count(
         1
         + max(
-            value.index
-            for value in (
-                *block.arguments,
-                *(r for op in block.operations for r in op.results),
-            )
+            (
+                value.index
+                for value in (
+                    *block.arguments,
+                    *(r for op in block.operations for r in op.results),
+                )
+            ),
+            default=-1,
         )
     )
-    inputs = tuple(ValueRef("entry", next(next_index), "register") for _ in required)
-    carried = tuple(ValueRef("entry", next(next_index), "register") for _ in required)
-    snapshots = tuple(ValueRef("entry", next(next_index), "bool") for _ in required)
-    reads = (
-        Operation("read_classical_register", (before,), (after, snapshot))
-        for before, after, snapshot in zip(inputs, carried, snapshots, strict=True)
-    )
-    clause = tuple(
+    inputs = tuple(ValueRef(block.name, next(next_index), "register") for _ in required)
+    carried = inputs
+    operations: list[Operation] = []
+    snapshots = tuple(ValueRef(block.name, next(next_index), "bool") for _ in required)
+    # Structural operations remain unconditional, including private work lifetimes.
+    structural = {
+        "call",
+        "split_register",
+        "join_register",
+        "constant",
+        "allocate_register",
+        "free_register",
+        "read_classical_register",
+        "bool_zero",
+        "bool_one",
+        "bool_xor",
+    }
+    if any(op.opcode not in structural for op in block.operations):
+        carried = tuple(
+            ValueRef(block.name, next(next_index), "register") for _ in required
+        )
+        operations.extend(
+            Operation("read_classical_register", (before,), (after, snapshot))
+            for before, after, snapshot in zip(inputs, carried, snapshots, strict=True)
+        )
+    guard = tuple(
         ConditionRef(snapshot, value)
         for snapshot, value in zip(snapshots, required, strict=True)
     )
-    body = (
-        (
-            replace(op, condition_clauses=(clause,))
-            if clause
-            and op.opcode not in {"split_register", "join_register", "constant"}
-            else op
-        )
-        for op in block.operations
-    )
+    for op in block.operations:
+        if op.opcode == "call":
+            returned = tuple(
+                ValueRef(block.name, next(next_index), "register") for _ in required
+            )
+            operations.append(
+                replace(
+                    op,
+                    callee=callees[op.callee or ""],
+                    operands=(*carried, *op.operands),
+                    results=(*returned, *op.results),
+                )
+            )
+            carried = returned
+        elif guard and op.opcode not in structural:
+            clauses = tuple(
+                tuple(
+                    sorted(
+                        (*clause, *guard),
+                        key=lambda item: (
+                            item.value.scope,
+                            item.value.index,
+                            item.equals,
+                        ),
+                    )
+                )
+                for clause in (op.condition_clauses or ((),))
+            )
+            clauses = tuple(
+                sorted(
+                    clauses,
+                    key=lambda clause: tuple(
+                        (item.value.scope, item.value.index, item.equals)
+                        for item in clause
+                    ),
+                )
+            )
+            operations.append(replace(op, condition_clauses=clauses))
+        else:
+            operations.append(op)
     return replace(
         child,
         blocks=(
             replace(
                 block,
                 arguments=(*inputs, *block.arguments),
-                operations=(*reads, *body),
+                operations=tuple(operations),
                 return_values=(*carried, *block.return_values),
             ),
         ),
