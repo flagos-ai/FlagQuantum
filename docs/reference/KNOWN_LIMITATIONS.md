@@ -144,6 +144,18 @@ requires all evidence for the target level to pass
 `python tools/check_capability_maturity.py`.
 <!-- END GENERATED KNOWN_LIMITATIONS -->
 
+## SABRE search recovery
+
+The native SABRE planner now adapts Qiskit's speculative-SWAP rollback and
+shortest-path progress mechanism, with a Cirq-inspired repeated-search guard.
+Connected front-layer operands no longer become an unroutable-circuit error
+merely because the heuristic cycles. This does not add free final layouts,
+calibration-aware SABRE, physical ancillas, multi-trial search or an optimality
+guarantee. It can change routes when the earlier deterministic search repeated a
+layout. The [source audit and acceptance checks](../development/COMPILER_UPSTREAM_REUSE.md)
+separate actual adaptations from mechanisms still missing. No cross-SDK quality
+or speed claim follows from this recovery change.
+
 ## Prepared explicit measurement sampling
 
 The Stim 1.16.0 path admits one CPU circuit with exact Clifford gates,

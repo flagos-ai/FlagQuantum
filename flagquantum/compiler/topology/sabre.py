@@ -1,3 +1,13 @@
+# Portions adapted from Qiskit 2.6.2, crates/transpiler/src/passes/sabre/route.rs.
+# (C) Copyright IBM 2024
+# Portions adapted from Cirq 1.7.0, transformers/routing/route_circuit_cqc.py.
+# Copyright 2022 The Cirq Developers
+# Licensed under the Apache License, Version 2.0. See the repository LICENSE or
+# https://www.apache.org/licenses/LICENSE-2.0.
+# Modified for FlagQuantum: deterministic IR-native search, repeated-layout
+# detection, bounded rollback, and balanced shortest-path progress. Upstream
+# revisions and adaptation details: docs/development/COMPILER_UPSTREAM_REUSE.md.
+
 """SABRE-style lookahead SWAP planning for one undirected coupling topology.
 
 The planner implements the SABRE heuristic (Li, Ding, and Xie, "Tackling the
@@ -63,10 +73,9 @@ LOOKAHEAD_DECAY = 0.9
 LOOKAHEAD_EXTENDED_SIZE = 20
 LOOKAHEAD_WEIGHT = 0.5
 
-# A SWAP that executes no front-layer operation is only useful if it shortens
-# some blocked front-layer distance. On a connected topology of N qubits a useful
-# SWAP always exists within the graph diameter, so this many consecutive
-# stalled SWAPs means the front layer cannot be unblocked.
+# Bound speculative work between executed instructions. A heuristic can cycle on
+# a connected graph; reaching this budget triggers guaranteed shortest-path
+# progress rather than misclassifying the circuit as unroutable.
 STALLED_SWAP_LIMIT_PER_WIRE = 4
 
 # The layout search reroutes the reversed program until the swap count stops
@@ -242,8 +251,7 @@ def plan_sabre_swaps(
             ``initial_layout`` is not a permutation of the circuit qubits, if a
             two-qubit operation is connected on the device only through qubits the
             circuit does not own, if an instruction states its classical condition
-            in a malformed or ambiguous way, or if the front layer cannot be
-            unblocked within the stalled-SWAP limit.
+            in a malformed or ambiguous way.
     """
 
     n_wires = program.n_wires
@@ -357,6 +365,24 @@ def plan_sabre_swaps(
     front = [index for index in range(count) if pending[index] == 0]
     executed = 0
     stalled = 0
+    progress_swap_start = 0
+    seen_layouts: set[tuple[int, ...]] = set()
+
+    def exchange(left: int, right: int) -> None:
+        left_logical = physical_to_logical[left]
+        right_logical = physical_to_logical[right]
+        physical_to_logical[left], physical_to_logical[right] = (
+            right_logical,
+            left_logical,
+        )
+        logical_to_physical[left_logical] = right
+        logical_to_physical[right_logical] = left
+
+    def record_swap(left: int, right: int, anchor: int) -> None:
+        exchange(left, right)
+        swaps.append((left, right))
+        swap_placements.append(executed)
+        swap_anchors.append(anchor)
 
     def separation(index: int) -> float:
         left = logical_to_physical[wires[index][0]]
@@ -442,9 +468,40 @@ def plan_sabre_swaps(
                     if pending[successor] == 0:
                         front.append(successor)
             stalled = 0
+            progress_swap_start = len(swaps)
+            seen_layouts.clear()
             continue
 
         blocked_front = [index for index in front if blocks[index]]
+        layout = tuple(logical_to_physical)
+        if layout in seen_layouts or stalled >= stalled_limit:
+            # Qiskit's release valve undoes speculation since the last routed
+            # instruction. No source instruction has executed in this suffix,
+            # so removing it preserves both semantics and attribution.
+            for left, right in reversed(swaps[progress_swap_start:]):
+                exchange(left, right)
+            del swaps[progress_swap_start:]
+            del swap_placements[progress_swap_start:]
+            del swap_anchors[progress_swap_start:]
+            anchor = min(blocked_front, key=lambda index: (separation(index), index))
+            first, second = wires[anchor]
+            path = planning.shortest_path(
+                logical_to_physical[first], logical_to_physical[second]
+            )
+            # Bring both ends together, stopping one edge short. Every SWAP
+            # reduces their distance by one; the next iteration must execute
+            # this front-layer instruction. Unrelated dependencies stay intact.
+            required = len(path) - 2
+            for offset in range((required + 1) // 2):
+                record_swap(path[offset], path[offset + 1], anchor)
+            for offset in range(required // 2):
+                end = len(path) - 1 - offset
+                record_swap(path[end], path[end - 1], anchor)
+            continue
+        # Cirq tracks repeated search choices before forcing a shortest path.
+        # Track complete layouts here because FQ's frontier is a dependency DAG,
+        # rather than Cirq's disjoint two-qubit timesteps.
+        seen_layouts.add(layout)
         choice = best_swap(blocked_front)
         if choice is None:
             raise ValueError(
@@ -452,23 +509,8 @@ def plan_sabre_swaps(
                 "disconnected across the front layer"
             )
         left, right = choice
-        left_logical = physical_to_logical[left]
-        right_logical = physical_to_logical[right]
-        physical_to_logical[left], physical_to_logical[right] = (
-            right_logical,
-            left_logical,
-        )
-        logical_to_physical[left_logical] = right
-        logical_to_physical[right_logical] = left
-        swaps.append((left, right))
-        swap_placements.append(executed)
-        swap_anchors.append(blocked_front[0])
+        record_swap(left, right, blocked_front[0])
         stalled += 1
-        if stalled > stalled_limit:
-            raise ValueError(
-                "SABRE swap insertion made no progress after "
-                f"{stalled} consecutive swaps on {n_wires} wires"
-            )
 
     if executed != count:
         raise RuntimeError(
