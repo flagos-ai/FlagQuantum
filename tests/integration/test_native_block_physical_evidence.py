@@ -43,6 +43,7 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.deployment.artifact_dry_run import prepare_artifact_deployment
 from flagquantum.errors import ExecutionError
 from flagquantum.runtime.compilation_evidence import (
     validate_executable_result_samples,
@@ -63,6 +64,7 @@ def _snapshot() -> TargetCapabilitySnapshot:
         "gates.native": ("rx", "rz", "cz"),
         "artifacts.profiles": ("openqasm-3.0",),
         "measurements.results": ("samples",),
+        "limits.maximum_shots": 1024,
     }
     return TargetCapabilitySnapshot(
         target_identity=TargetIdentity(
@@ -506,7 +508,11 @@ def test_runtime_rejects_rehashed_v4_handoff_role_substitution(
         compiled, snapshot=_snapshot(), producer="block-test"
     )
     assert isinstance(bundle, CompilationEvidenceBundleV4)
-    fields = dict(getattr(bundle, role))
+    fields = dict(
+        bundle.source
+        if role == "source"
+        else bundle.target if role == "target" else bundle.output
+    )
     fields[field] = "b" * 64
     if role == "source":
         forged = replace(bundle, source=fields, bundle_identity="")
@@ -520,4 +526,54 @@ def test_runtime_rejects_rehashed_v4_handoff_role_substitution(
             compiled.input_artifact,
             compiled.executable_artifact,
             snapshot=_snapshot(),
+        )
+
+
+def test_v4_target_artifact_completes_offline_deployment_preparation() -> None:
+    source = CircuitIR(
+        3, (Instruction("swap", (0, 2)), Instruction("cx", (2, 0))), dtype="complex128"
+    )
+    compiled = _compile(source, routed=True)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    restored = read_compilation_evidence_bundle_json(bundle.to_json())
+    prepared = prepare_artifact_deployment(
+        compiled.executable_artifact,
+        snapshot=_snapshot(),
+        source=compiled.input_artifact,
+        compilation_evidence=restored,
+        provider="test",
+        target_id="block-evidence-test",
+        shots=128,
+        evaluated_at=_NOW,
+    )
+    assert prepared.capability_match.executable
+    assert prepared.compilation_evidence_identity == bundle.bundle_identity
+    assert prepared.artifact_identity == compiled.executable_artifact.artifact_identity
+    assert prepared.logical_result_width == 3
+    assert prepared.physical_result_slots is None
+    assert prepared.program == compiled.emission.text
+
+
+@pytest.mark.parametrize("refusal", ["expired", "shots", "provider", "target"])
+def test_v4_evidence_does_not_bypass_deployment_preflight(refusal: str) -> None:
+    source = CircuitIR(
+        2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))), dtype="complex128"
+    )
+    compiled = _compile(source)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    with pytest.raises(ExecutionError):
+        prepare_artifact_deployment(
+            compiled.executable_artifact,
+            snapshot=_snapshot(),
+            source=compiled.input_artifact,
+            compilation_evidence=bundle,
+            provider="other" if refusal == "provider" else "test",
+            target_id="other" if refusal == "target" else "block-evidence-test",
+            shots=2048 if refusal == "shots" else 128,
+            evaluated_at=_NOW + timedelta(hours=2) if refusal == "expired" else _NOW,
         )
