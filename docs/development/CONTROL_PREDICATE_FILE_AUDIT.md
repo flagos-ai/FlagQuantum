@@ -46,10 +46,44 @@ All seven examples match source Clifford, And, measurement and peak width
 queries. The symbolic binary child retains the explicit `cv1` and `cv2`
 symbols. Symbolic widths and polarities have metadata and resource formulas.
 
-The locked original notebook runs in an independent kernel. The remaining
-original suite has 34 passes, three symbolic decomposition skips and three
-symbolic serialization expected failures. Q-0553 remains open for typed
-Program binding of signed, bounded and Montgomery encodings, explicit
-Partition/And nodes in the typed Program, and per-control source wire symbols
-in the native drawer. Signed integer register groups already have exact
-physical wiring and symbolic layouts are admitted for metadata.
+## Complete definition and dependency map
+
+| Source definitions | Native ownership and evidence |
+| --- | --- |
+| `CtrlSpecAnd`, `__attrs_post_init__` | Existing integer control validation and canonical concrete storage admission. |
+| `signature`, `control_registers`, `junk_registers`, `n_ctrl_qubits` | Grouped signature owner and symbolic width/resource metadata. |
+| `_ctrl_partition_bloq` | Shared `partition_component_program` for both directions. |
+| `_flat_cvs` | Existing `ControlRegister` row-major MSB-first codecs and symbolic ControlPattern metadata. |
+| `build_composite_bloq` | Typed Partition inverse, Split, conjunction, Join, Partition and junk Join calls match original connections. |
+| `wire_symbol` | `control_predicate_wire_symbol` delegates grouped controls and the existing adjoint symbol protocol. |
+| `build_call_graph` | Existing ControlPredicateCall/QEC authority selects binary And or MultiAnd. |
+| Seven `_ctrl_on_*` factories | Original tutorial and source test fixtures, including symbolic metadata models. |
+
+All eighteen definitions in the frozen file are mapped. Q-0553 remains open
+for symbolic activation graph construction.
+The shared typed conjunction owner retains each And call and directional target
+ownership. Its primitive leaves reuse the existing physical emitter. The
+previous tutorial-local graph construction is removed in favor of this owner.
+Concrete signed, ones'-complement, bounded unsigned and Montgomery controls now
+cross the same typed Program path and preserve their original descriptors.
+No codec or physical gate sequence is duplicated.
+
+The unchanged upstream suites complete with 45 passes, three source skips and
+three expected source failures. Their notebook runs in the existing reference
+kernel environment. Its unregistered notebook-marker warning is retained.
+Symbolic counts/activations have source-matching metadata and QEC models.
+For concrete widths with unknown activations the original additionally builds
+a symbolic And/MultiAnd graph. The native typed predicate still rejects those
+values before graph construction. `g2-integer-storage-symbolic-boundary.json`
+records this remaining implementation gap. No finite physical stream is
+claimed for unresolved activation values. The original symbolic serialization failures remain
+visible. Physical counts and model counts are separate in
+`g2-integer-storage-resources.json`.
+
+Original and native root connections match for every supported encoding in
+both directions. Full primitive ordering and feedback, small complete complex
+states, every measurement history, exact inverse history pairs and clean work
+are covered by the concentrated regression. Full six-control state comparison
+covers 64 single-pass histories; larger source tutorial fixtures reuse sparse
+amplitude and exact stream evidence. Predicate glyphs match every original
+port and direction, including daggered text boxes under the generic adjoint.

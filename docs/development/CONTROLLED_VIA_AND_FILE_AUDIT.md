@@ -36,9 +36,56 @@ The source QEC model counts the controlled-H child as four Cliffords and two
 rotations. The nested X source model matches three And calls, four Cliffords,
 and three measurements.
 
-Q-0550 remains open for signed word admission through the typed Program binder
-and for generic source attachment contracts outside the current directional
-port rules. Signed groups are covered in metadata, direct gate emission, and
-the original seeded tensor cases. The 64-wire fixture has exact gate, output
-and resource comparisons. Exhaustive amplitude checks apply to the small
-fixtures listed above.
+## Complete definition and dependency map
+
+The twelve source definitions are accounted for below. The wrapper is native
+composition over existing Program records, without a foreign Bloq hierarchy.
+
+| Source definition | Native owner and evidence |
+| --- | --- |
+| `ControlledViaAnd`, `__attrs_post_init__` | `quantum_control_signature`, `validate_control_ports`; quantum metadata remains separate from executable storage admission. |
+| `make_ctrl_system` | `extend_component_control_system` and its actual returned adder tests. |
+| `decompose_bloq`, `build_composite_bloq` | `control_component_via_predicate`; actual callback between explicit predicate compute and erase. |
+| `_is_single_bit_control`, `_single_control_value` | Total encoded width and `ControlRegister.bits`; scalar/singleton and both polarities. |
+| `adjoint` | Existing exact component adjoint and explicit inverse leaf bindings; all forward/inverse measurement-history pairs. |
+| `build_call_graph` | Existing predicate-controlled resource queries, both QEC profiles and independent private peak accounting. |
+| `get_ctrl_system` | New groups precede old groups; returned callback preserves source pop/zip behavior and invokes one merged predicate. |
+| `_controlled_via_and_qbits`, `_controlled_via_and_ints` | Both complete original fixtures and the fourteen-cell native tutorial. |
+
+The integer storage dependency now admits concrete canonical ones'-complement,
+bounded unsigned and Montgomery words alongside previously accepted signed
+words. Core retains dtype and parameters through ownership and rebindings.
+Compiler flattens the existing bit codecs and reconstructs the original ports.
+There is no conversion from an arithmetic integer into Montgomery representation
+in this wrapper. Its activation value is already the stored representation.
+
+The predicate dependency now retains Partition inverse, Split, conjunction,
+Join and Partition as actual typed calls. MultiAnd contains source-ordered And
+calls. The tutorial consumes that shared implementation. Original root and
+ladder connection traces match in both directions. Physical primitive order,
+operands, feedback and allocation lifetimes remain independently checked.
+
+The concrete execution dependencies of Q-0550 now pass. The complete source
+file remains open for the symbolic typed graph boundary below.
+The source default refuses non-THRU child decompositions. A specialized child
+with incompatible renamed directional output order fails source finalization;
+the native wrapper diagnoses this before the callback. These failures are
+preserved witnesses in `test_left_only_control_fallback.py`. The source also
+fails singleton shape `(1, 1)` decomposition although its direct tensor works;
+that distinction is retained in `SINGLE_BIT_CONTROL_METADATA_AUDIT.md`.
+Unresolved symbolic counts and activations have metadata/resource support.
+With a concrete width and unknown activation, the source can additionally build
+a graph containing symbolic And calls, whereas the native predicate currently
+requires concrete activation values. This is a real missing typed graph path,
+recorded in `g2-integer-storage-symbolic-boundary.json`. It prevents full-file
+acceptance even though neither side supplies a finite physical stream for the
+unknown values. Wider symbolic Program work remains tracked separately.
+
+The current receipts are `g2-integer-storage-resources.json`,
+`g2-integer-storage-regression.log`, `g2-predicate-root-traces.log` and
+`g2-integer-storage-original.log` in the reference workspace. They record
+observed primitive counts separately from all source model categories.
+The changed storage widths emit zero gates. Small controlled fixtures enumerate
+all measurement histories, check complete complex spectator states and clear
+all work. Larger original fixtures retain exact streams and resource evidence
+without claiming exhaustive statevector enumeration.
