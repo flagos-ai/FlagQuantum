@@ -48,6 +48,12 @@ def test_symbolic_parameter_extension_is_implemented() -> None:
         "add",
         "mul",
         "neg",
+        "sin",
+        "cos",
+        "exp",
+        "log",
+        "pow",
+        "div",
     ]
     assert symbolic_parameters["external_object_retention"] is False
     assert "symbolic_parameters" not in contract["unsupported"]["cirq_features"]

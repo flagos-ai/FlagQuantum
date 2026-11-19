@@ -19,10 +19,15 @@ parameter_identity = "unique_name"
 global_phase = "preserved"
 loss_policy = "fail_closed_unless_allow_lossy_true"
 
+[symbolic_parameter_contract]
+proposal = "API_CHANGE_PROPOSAL_107_NONLINEAR_PARAMETER_EXPRESSIONS"
+supported_nodes = ["symbol", "real_constant", "add", "mul", "neg", "sin", "cos", "exp", "log", "pow", "div"]
+external_object_retention = false
+
 [unsupported]
 qiskit_features = [
     "control_flow_import",
-    "parameter_expression_operations_outside_add_mul_neg",
+    "parameter_expression_operations_outside_approved_real_vocabulary",
     "nonstandard_register_layout_without_explicit_flattening",
     "custom_unitary_above_three_qubits",
 ]
