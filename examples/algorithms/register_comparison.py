@@ -11,10 +11,13 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
+from flagquantum.compiler.registers.comparison.constant_component import (
+    less_than_constant_program,
+)
 from flagquantum.compiler.registers.comparison.less_than import (
-    less_than_constant_ir,
     less_than_constant_workspace_size,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -28,14 +31,12 @@ class ConstantComparison:
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
         size = less_than_constant_workspace_size(3, self.threshold)
-        gates = less_than_constant_ir(
-            (0, 1, 2),
-            self.threshold,
-            3,
-            tuple(range(4, 4 + size)),
-            tuple(range(3)) if size else (),
+        bound = bind_register_program(
+            less_than_constant_program(3, self.threshold),
+            ((0, 1, 2), (3,)),
+            clean=tuple(range(4, 4 + size)),
         )
-        return circuit.compose(CircuitIR(circuit.n_qubits, gates))
+        return circuit.compose(CircuitIR(circuit.n_qubits, bound.circuit.instructions))
 
 
 def main() -> None:
@@ -48,9 +49,8 @@ def main() -> None:
     state[data << 4] = amplitudes
     for threshold in (5, 8):
         operation = ConstantComparison(threshold)
-        circuit = DynamicCircuit(8, inputs=state, dtype=torch.complex128).append(
-            operation
-        )
+        circuit = DynamicCircuit(8, inputs=state, dtype=torch.complex128)
+        circuit.append(operation)
         mapped = ((data >> 1) << 1) | ((data & 1) ^ ((data >> 1) < threshold))
         expected = torch.zeros_like(state)
         expected[mapped << 4] = amplitudes
@@ -62,9 +62,8 @@ def main() -> None:
             atol=1e-12,
         )
         counts = Counter(g.name for g in circuit.to_ir().instructions)
-        restored = run_dynamic(
-            circuit.append(operation), shots=32, seed=41, strategy="trajectory"
-        )
+        circuit.append(operation)
+        restored = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
         torch.testing.assert_close(
             restored.final_states.reshape(32, -1),
             state.expand(32, -1),
