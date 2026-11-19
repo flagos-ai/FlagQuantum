@@ -81,3 +81,81 @@ The untouched original test file passed 169 cases. The notebook test was
 explicitly deselected for its separately tracked asset migration. Three warnings
 retain the original unknown notebook/slow markers. The separate original
 notebook execution boundary is documented in its teaching audit.
+
+## Native stored-call execution closure
+
+The Compiler owner `arithmetic/controlled_addition_component.py` provides
+`controlled_addition_program(a_dtype, b_dtype=None, control_value=1, adjoint=False)`.
+Its signature retains ctrl/a/b order, caller-owned through words and MSB-first
+bit order. Omitted b retains the exact a descriptor. Concrete unsigned, signed,
+Montgomery and mixed integer words use the existing executable-width admission.
+Montgomery modulus metadata remains intact. The earlier source narrow-signed
+classical/quantum disagreement is preserved by the actual Add zero extension.
+
+The full root body retains Split(a), Split(ctrl), the ordered And load loop,
+Join(QUInt), Cast, typed Add, Split(loaded), reverse And erasure, Join(a) and
+Join(ctrl). The last control Join retains the source's default QAny one-bit
+view. This view is physically compatible with the caller's QBit port. Each
+source view remains an actual stored call with its original named operands and
+SSA predecessor connections. And owns each loaded bit until its measured
+erasure, while Add independently owns the right-width-minus-one carries.
+
+The shared `addition_component_program` gains an explicit boolean adjoint
+keyword. It consumes the existing `addition_components(..., adjoint=True)`
+sequence, reversing logical components before expanding measured And bodies.
+Its omitted forward behavior remains identical. The conditional arithmetic
+consumer from the preceding batch continues to call the same forward Add.
+
+The CAdd adjoint uses `adjoint_component_program` with explicit source-paired
+And/erase, Add/inverse, Split/Join and inverse Cast definitions. It retains
+the actual source graph reversal and shares existing private helper definitions.
+The inverse follows logical calls before primitive measurement lowering.
+The existing ControlledAddition append example binds this typed graph through
+the existing workspace binder, retaining ordinary DynamicCircuit execution.
+The controlled constant-add example continues to exercise its existing owner.
+
+Actual view calls, source-declared non-view edges, measured primitives and the
+independent QEC model have separate assertions. Acceptance covers both
+polarities and directions, four dtype configurations and six width pairs up to
+eight bits. Small tensors include reversed logical wire placement, an entangled
+spectator, every unnormalized raw measurement history, and every forward/inverse
+history pair with all loaded and carry work zero. The actual small factory uses
+all five existing native check modes. The thousand-bit factory has a native
+typed graph and physical accounting test without allocating a dense state.
+
+The actual CAdd.get_ctrl_system one-bit callback now consumes the existing
+specialized control owner with the native positive CAdd body. Four dtype
+configurations and all four old/new activation pairs preserve the callback's
+packing and named operands, the complete primitive/feedback stream, full
+coherent tensors, every measurement history and all clean work. The outer
+conjunction and original CAdd retain separate lifetimes and source costs.
+
+Symbolic physical execution, generic foreign-object roundtrip and broader
+foreign/static outer-control admission retain their existing boundaries. Source signed, drawer and recursion
+defects above remain explicit. Q-0186/Q-0187 remain open for those boundaries.
+Batch evidence uses `ftqc-reference-env/g2-cadd-component-*`.
+
+Final focused verification passes 219 cases. The concentrated direct-dependency
+regression passes 2,298 cases without skips, retaining two paired original/native
+NumPy overflow warnings. Five changed Python files pass strict typing, Black
+and Ruff. Compiler scope, architecture and multilevel IR checks pass. The
+ordinary DynamicCircuit example runs both polarities with coherent input and
+returns all four loaded/carry work bits to zero.
+
+For left width two and right width three, measured positive-control emission
+contains 12 H, 8 T, 8 T-dagger, 32 CX, 4 S, 4 measurements, 4 conditional CZ and
+4 resets. Negative control adds 8 X. The independent source model reports
+4 And, 13 Clifford, 4 measurements and 10 peak qubits. All seven native model
+categories and source peak queries are compared separately from actual primitive
+counts. The thousand-bit native graph retains 1,000 And load calls, one Add
+and 1,000 And erasure calls, emitting 7,996 T/T-dagger and 1,999 measurements
+with 1,999 work qubits and a physical width of 4,000.
+
+Default verification reaches 434 passed and 51 skipped before the established
+docstring-example coverage failure. All nine reported modules and the failed
+policy test are byte-identical to baseline 95a89e4dc. The source blobs and locked
+Qualtran/Kickmix versions are verified. Global-suite acceptance remains qualified
+by that failure and optional dependency skips. The local integration selection
+pins PYTHONPATH to this worktree for child processes and covers both arithmetic
+append consumers and the QEC retirement gate. Dependency-policy findings for the
+whole repository and changed paths remain separately recorded.

@@ -17,9 +17,13 @@ from flagquantum.compiler.registers.arithmetic.arithmetic_resource_model import 
 )
 from flagquantum.compiler.registers.arithmetic.controlled_addition import (
     controlled_add_constant_ir,
-    controlled_add_ir,
 )
+from flagquantum.compiler.registers.arithmetic.controlled_addition_component import (
+    controlled_addition_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.registers import RegisterType
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -32,17 +36,15 @@ class ControlledAddition:
     control_value: int
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        gates = controlled_add_ir(
-            0,
-            (1, 2),
-            (3, 4, 5),
-            (6, 7),
-            (8, 9),
-            (0, 1),
-            (2, 3),
+        program = controlled_addition_program(
+            RegisterType("uint", 2),
+            RegisterType("uint", 3),
             control_value=self.control_value,
         )
-        return circuit.compose(CircuitIR(10, gates))
+        bound = bind_register_program(
+            program, ((0,), (1, 2), (3, 4, 5)), clean=(6, 7, 8, 9)
+        )
+        return circuit.compose(CircuitIR(circuit.n_qubits, bound.circuit.instructions))
 
 
 @dataclass(frozen=True)

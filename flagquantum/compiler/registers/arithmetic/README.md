@@ -28,6 +28,8 @@ Run `tests/unit/test_addition_component.py` for the complete contributor scenari
 arguments. Omitting them retains the original unsigned graph. Signed and
 Montgomery metadata survive split/join and physical binding, including explicit
 Montgomery moduli. The original Add circuit zero-extends a narrower signed input.
+The `adjoint=True` option reverses the same logical component sequence before
+measured lowering and preserves the original forward graph by default.
 
 `conditional_addition_component.py` composes the complete conditional
 sum/difference body from that Add graph, the shared bitwise complement,
@@ -54,6 +56,23 @@ symbolic fallback and Always wrappers. Run
 source cache/order, bystander peaks and DOT width-table acceptance.
 [ADDITION_RESOURCE_WIDTH.md](../../../../docs/development/ADDITION_RESOURCE_WIDTH.md)
 records lifetime ownership, dtype normalization and separate gate/model counts.
+
+`controlled_addition_component.py` retains the complete CAdd load/Cast/Add/erase
+body and every Split/Join call. Each loaded conjunction and Add carry has its
+existing measured cleanup owner. Both control polarities and exact stored-call
+adjoints reuse the shared And and typed Add dependencies. The existing specialized
+control owner also executes the source one-bit outer-control callback in all
+four activation combinations. The user example
+keeps `circuit.append(ControlledAddition(cv))` and runs coherent control sectors.
+
+```bash
+python -m examples.algorithms.register_controlled_addition
+python -m pytest tests/unit/test_controlled_addition_component.py -q
+```
+
+See [the complete controlled addition audit](../../../../docs/development/CONTROLLED_ADDITION_FILE_AUDIT.md)
+for the interface, all-small branch evidence, large factory accounting and
+remaining symbolic/outer-control admission boundaries.
 
 CAdd connected resource widths live in `controlled_addition_width.py`. The owner
 keeps caller words live across controlled load, the shared Add child and erasure.
