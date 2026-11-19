@@ -5,9 +5,9 @@ checked `HybridProgram` register/effect records. `program.py` coordinates typed
 program capture, `python.py` reads source and captures scalar expressions, and
 the other modules capture their named source constructs.
 
-Compiler verification, register expansion, arithmetic kernels, candidate
-selection, allocation and gate lowering remain in the parent construction
-package. This frontend must not execute user bodies, choose runtime backends,
+Compiler verification, register expansion and candidate selection remain in
+the parent construction package. Arithmetic kernels, allocation and gate lowering
+are owned by the sibling [`codegen/`](../codegen/README.md) package. This frontend must not execute user bodies, choose runtime backends,
 submit jobs or define another IR.
 
 ## Dependencies and entry points

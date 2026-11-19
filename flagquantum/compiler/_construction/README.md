@@ -47,6 +47,29 @@ and explicit approval to retire the retained paths.
 | `frontend_views.py` | [`frontend/views.py`](frontend/views.py) |
 | `frontend_xor.py` | [`frontend/xor.py`](frontend/xor.py) |
 
+## Circuit generation implementation
+
+[`codegen/`](codegen/README.md) owns arithmetic, Boolean and register gate
+emission, including reversible workspace scheduling. Compiler owns the retained
+module aliases below. Each old path resolves to its implementation module, so
+existing imports and module-level replacements use the same state. Their scope
+is existing construction lowering consumers and private replacement hooks. The
+target review version is 0.5.0. Removal requires migrating repository consumers
+and explicit approval to retire these paths.
+
+| Existing module | Implementation |
+| --- | --- |
+| `lowering.py` | [`codegen/arithmetic.py`](codegen/arithmetic.py) |
+| `register_lowering.py` | [`codegen/registers.py`](codegen/registers.py) |
+| `boolean_lowering.py` | [`codegen/boolean.py`](codegen/boolean.py) |
+| `gate_tape.py` | [`codegen/gate_tape.py`](codegen/gate_tape.py) |
+
+Register emission delegates uniform interval preparation to `codegen/preparation.py`,
+controlled operations to `codegen/controls.py`, and real transforms to
+`codegen/transforms.py`. Their existing private helper names remain importable
+from `register_lowering`. Extracted helpers report their owning codegen module
+through `__module__`; their internal dependencies are resolved in that module.
+
 ## Module ownership
 
 | Module | Responsibility |
@@ -70,8 +93,10 @@ and explicit approval to retire the retained paths.
 | `register_profile.py` | Register types, operation attribute admission, preparation and publication shapes |
 | `register_verifier.py` | Ordered effects, initialized storage, ownership, aliases and lifetime checks |
 | `register_expansion.py` | Expand verified static register calls and inverse composition |
-| `register_lowering.py` | Lower admitted register effects to existing gate kernels |
-| `lifetimes.py`, `lowering.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
+| `codegen/registers.py` | Lower admitted register effects and schedule reversible workspace |
+| `lifetimes.py`, `codegen/arithmetic.py` | Arithmetic use analysis, computation and reversible workspace scheduling |
+| `codegen/boolean.py`, `codegen/gate_tape.py` | Boolean synthesis and checked gate-tape expansion |
+| `codegen/preparation.py`, `codegen/controls.py`, `codegen/transforms.py` | State preparation, controlled gates and real-transform emission |
 | `selection.py`, `target.py` | Evaluate supported schedules and verify target constraints |
 
 `verify_operation_attributes` checks the operation's exact permitted attributes

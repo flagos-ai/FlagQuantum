@@ -12,8 +12,8 @@ from ..optimization.one_qubit_optimization import (
 from ..optimization.two_qubit_optimization import (
     _instruction_matrix as two_qubit_matrix,
 )
+from .codegen.registers import schedule_register_program
 from .profile import _fail
-from .register_lowering import schedule_register_program
 
 
 def _matrix(gate: Instruction) -> torch.Tensor | None:
