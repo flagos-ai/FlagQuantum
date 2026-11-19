@@ -137,9 +137,14 @@ alone as evidence of native capability.
   QInt(1) with scalar/vector/matrix singleton shapes. The source matrix-shape
   decomposition defect and zero-gate native split/join adaptation are recorded
   in `SINGLE_BIT_CONTROL_METADATA_AUDIT.md`.
-- One's-complement, bounded and Montgomery descriptors have flat physical
-  emitters but remain outside Core typed physical admission. Generic symbolic
-  control execution still requires its physical admission contract. The default
+- One's-complement, bounded and Montgomery descriptors now cross Core typed
+  physical admission and preserve their canonical metadata through split/join
+  and stored calls. Complete predicate and wrapper evidence is recorded in
+  `CONTROLLED_VIA_AND_SOURCE_AUDIT.md` and
+  `test_controlled_integer_storage.py`. Unknown binary activation declarations,
+  concrete specialization and the source HasLength rule are accepted in the
+  same audit. Unresolved symbolic physical widths remain outside execution.
+  The default
   selector now preserves the source mixed-storage refusal, including zero-width
   descriptors. It does not claim source mixed-control support.
 - Direct exported SDK wrappers and original diagram protocols now have exact
@@ -151,6 +156,28 @@ alone as evidence of native capability.
   compose existing conditions and clean work through native calls, audited in
   `CLASSICAL_COMPONENT_CONTROL_AUDIT.md`. Wider classical-word reads and other
   physical admission remain open.
+
+### Current direct dependency review — 2026-11-20
+
+Q-0156 is accepted after the full nonlinear scalar, global-phase and generic
+EigenGate shift dependency closure at 275ea4611. Reuse its published primitive,
+complex-amplitude, feedback, work-zero and SDK evidence. The controlled source
+parents remain open while their remaining execution dependencies are resolved.
+
+The classical-word intake proves the exact next boundary before any execution
+change. Existing Simulation callbacks agree with unchanged source callbacks for
+unsigned, signed, ones'-complement, Montgomery, bounded and fixed-point storage.
+An identity Program with each wider classical dtype fails current Core port
+admission. The source classical wrapper supplies no physical decomposition or
+QEC model. A native physical implementation therefore needs its numerical or
+tensor reference and the already verified child stream, with source wrapper
+model refusal reported independently.
+
+Proposal 108 records the required typed-port and read-result contract extension
+in `API_CHANGE_PROPOSAL_108_CLASSICAL_WORD_FEEDBACK.md`. Its status is pending
+explicit approval. Proposal 107's nonlinear approval is complete and published.
+The two decisions have separate scopes. No current acceptance count is increased
+by this intake or proposal.
 
 The source notebook's signed QInt(8) value 255 draws but fails physical encoding.
 Its prose also predates the direct tensor and Cirq controlled-operation methods
