@@ -9,9 +9,10 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.comparison.parallel_comparison import (
-    parallel_compare_ir,
+from flagquantum.compiler.registers.comparison.parallel_comparison_component import (
+    parallel_comparison_program,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
@@ -24,9 +25,17 @@ class OffsetComparisons:
     inverse: bool = False
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        gates = parallel_compare_ir(
-            tuple((i,) for i in range(5)), 2, (5, 6), (7, 8), (0,), adjoint=self.inverse
+        inputs = tuple((i,) for i in range(5))
+        if self.inverse:
+            inputs += ((5,), (6,))
+        bound = bind_register_program(
+            parallel_comparison_program(5, 2, 1, adjoint=self.inverse),
+            inputs,
+            clean=(7, 8) if self.inverse else (5, 7, 6, 8),
+            allow_workspace_outputs=not self.inverse,
+            input_ownership=((5, False), (6, False)) if self.inverse else (),
         )
+        gates = bound.circuit.instructions
         return circuit.compose(CircuitIR(circuit.n_qubits, gates))
 
 
