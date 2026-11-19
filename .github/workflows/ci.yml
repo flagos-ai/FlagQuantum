@@ -2362,9 +2362,9 @@ jobs:
     permissions:
       contents: read
       packages: read
-    # Run 43187409331 needed 28m53s for a passing QSVT partition before
-    # coverage/artifact finalization; full-state catalog partitions need longer.
-    timeout-minutes: 60
+    # Only shards carrying indivisible full-scale optimization tests need
+    # extended finite budgets; all other coverage shards retain 60 minutes.
+    timeout-minutes: ${{ matrix.timeout-minutes }}
     env:
       # Python 3.12 line coverage: retain the same measured lines without
       # tracing every repeated optimizer instruction through CTracer.

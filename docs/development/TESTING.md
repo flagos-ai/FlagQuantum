@@ -1086,6 +1086,15 @@ selected tests, source scope, exclusions, or coverage floors. The configuration
 does not request branch coverage or dynamic contexts. Older interpreter and SDK
 lanes retain their own coverage configuration.
 
+Coverage shards normally have a 60-minute job budget. The planner reserves
+separate slots for the original 50-iteration induced-color and 100-iteration
+minimum-coloring tests and gives each containing shard 120 minutes. A one-shard
+plan sums those two finite budgets. These are explicit scheduling budgets, not
+measured duration hints: one full induced-color objective evaluation measured
+57.72 seconds (build plus distribution read), and its original optimizer made
+94 evaluations, projecting about 90 minutes. Test selection, iteration counts,
+assertions, numerical tolerances, and coverage floors remain unchanged.
+
 The offline action measures the runner service before entering Docker. Containers
 inherit that CPU and memory budget and receive explicit CPU, memory, and affinity
 limits, including on shared Docker daemons. Recognized MC550, BW1100, and A800 CPU
