@@ -148,6 +148,13 @@ calibration restrictions. To retain the earlier implicit policy, pass
 search runs. Automatic selection may cost additional compilation time; minimum
 estimated routing cost is not a runtime or target-CZ optimality claim.
 
+SABRE search recovers from repeated layouts or an exhausted speculation budget
+by undoing its unused SWAP suffix and forcing one front-layer operation onto an
+edge. This adapts Qiskit's release valve and Cirq's repeated-search guard to FQ
+IR. See the [upstream reuse audit](../../docs/development/COMPILER_UPSTREAM_REUSE.md)
+for pinned sources, license notices, implementation differences and remaining
+gaps. It is a progress guarantee for connected operands, not an optimality claim.
+
 ### Export a synthesized circuit and prepare an offline deployment
 
 Run [the Bell-state `@qfunc` example](../../examples/synthesis_offline_deployment.py)

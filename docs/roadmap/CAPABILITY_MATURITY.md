@@ -279,6 +279,14 @@ or allocated topology, nonidentity initial placement in artifacts, free final
 layout, a global-phase writer and root native-target admission remain outside
 this profile.
 
+SABRE search recovery has local CPU development coverage for a previously failing
+connected 11-wire circuit, complete permutation-operator preservation, rollback
+attribution, symbolic parameters and classical dependencies. The
+[upstream reuse audit](../development/COMPILER_UPSTREAM_REUSE.md) records the
+Qiskit and Cirq adaptations and outstanding algorithm gaps. This refines
+implementation robustness without promoting compiler maturity, hardware support,
+cross-SDK performance or gate-count claims.
+
 ## Private training compilation development status
 
 The approved #936 boundary has a reusable CPU Torch training candidate behind a

@@ -1,3 +1,12 @@
+# Qiskit-derived Weyl and basis-decomposition formulas.
+# (C) Copyright IBM 2017, 2024.
+# Licensed under the Apache License, Version 2.0. See the repository LICENSE or
+# https://www.apache.org/licenses/LICENSE-2.0.
+# Modified for FlagQuantum: native Instruction output, deterministic pure-Python
+# algebra, register convention, and target gate selection. The inspected upstream
+# reference and the limits of the ancestry audit are documented in
+# docs/development/COMPILER_UPSTREAM_REUSE.md.
+
 """Two-qubit unitary synthesis by KAK decomposition over a published entangler.
 
 `gates.native` publishes the gates a target can execute. A supercontrolled
