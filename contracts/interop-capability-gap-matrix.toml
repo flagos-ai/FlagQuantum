@@ -110,7 +110,7 @@ reason = "Finite bound real gate parameters are converted."
 name = "symbolic_parameters"
 status = "partial"
 evidence = ["symbolic_parameter_contract", "unsupported.issue_codes"]
-reason = "Named arithmetic and approved real sin/cos/exp/log/pow/div expressions round-trip; symbolic scalar phase uses existing physical primitives. Generic eigen-gate global shifts remain open."
+reason = "Named arithmetic and approved real sin/cos/exp/log/pow/div expressions round-trip; symbolic scalar phase uses existing physical primitives. X/Y/Z/ZZ/CZ eigen-gate shifts preserve both real symbolic fields."
 
 [[frameworks.capabilities]]
 name = "measurements"

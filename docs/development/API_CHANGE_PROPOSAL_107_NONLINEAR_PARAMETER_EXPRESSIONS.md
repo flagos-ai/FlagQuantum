@@ -188,3 +188,14 @@ both fields participate in identity checks. Source Cirq only discovers and
 resolves the exponent field, so source transport and explicit scalar substitution
 must be reported separately. No new Core operations or parameter methods are
 introduced. Static CZPow maps to the existing cphase primitive.
+
+## Generic eigen phase acceptance — 2026-11-20
+
+Commit 9f1272200 closes the generic-shift dependency for five declared families.
+Both fields retain original symbol identity and bind through owned expressions.
+The 426-case concentrated suite, 213-case local integration and both 166-case
+SDK lanes pass. Full matrices, feedback branches, controls and work-zero are
+checked. Existing sx/sxdg specializations retain their primitive counts.
+Composite source Q-0156 is accepted under its final owner audit. Broader control
+provider coverage remains assigned to Q-0158. Raw source atoms, model estimates
+and emitted primitives are explicitly separated in that audit.

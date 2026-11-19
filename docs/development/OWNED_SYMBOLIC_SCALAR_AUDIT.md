@@ -97,3 +97,8 @@ the original assumption-bearing symbol identity are verified. See Proposal 107
 for the current acceptance evidence. Generic eigen-gate symbolic global shifts
 remain the explicit Q-0156 boundary; earlier nonlinear-refusal paragraphs are
 historical evidence from before the approved extension.
+
+
+The generic EigenGate shift dependency is now implemented by 9f1272200.
+Q-0156 passed its final owner audit on 2026-11-20; see the final closure in
+COMPOSITE_PROGRAM_SOURCE_AUDIT.md for current boundaries and resource accounting.

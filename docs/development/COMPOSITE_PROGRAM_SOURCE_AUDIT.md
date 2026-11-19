@@ -2,9 +2,10 @@
 
 This inventory covers frozen Qualtran v0.7.0
 `qualtran/_infra/composite_bloq.py` at
-`bcb17bb25360ed68ce3bc084645db3e929799389`. Q-0156 remains open. Having a native
-owner below does not establish full source-file acceptance. The outstanding
-boundaries after each group identify the next verification or implementation.
+`bcb17bb25360ed68ce3bc084645db3e929799389`. Q-0156 passed its complete
+64-definition audit on 2026-11-20. The final closure section distinguishes
+accepted graph/adapter behavior from separately owned control and backend
+boundaries. Earlier follow-up sections retain historical intake evidence.
 
 The immutable Core `ProgramRecord`, `FunctionRecord`, `Operation` and `ValueRef`
 are the graph authority. Compiler owns construction and transformations,
@@ -17,8 +18,8 @@ owns presentation. Source Python objects are confined to reference tests.
 | --- | --- | --- |
 | `_to_tuple`, `_to_set`, `CompositeBloq` | Core immutable tuples and typed Program validation replace attrs converter storage. | Logical typed graph admission and scheduling are accepted under Q-0149. Source object equality is represented through native records, not source Python classes. |
 | `CompositeBloq._default_bloq_instances`, `all_soquets`, `_binst_graph` | Existing operations/results/arguments and `component_graph` / `component_schedule` derive nodes, values and dependencies. `test_component_graph.py` checks metadata, array shape, ownership and copy. | A portable ordering for source frozenset-only isolated nodes is unavailable. Native stored order is explicit. |
-| `CompositeBloq.as_cirq_op`, `to_cirq_circuit_and_quregs`, `to_cirq_circuit` | `_register_program_export.export_bound_register_cirq` composes Compiler-bound Program traversal with external manager lifetime replay and returns final shaped Qids. Source/native tests cover clean/borrowed reuse, LEFT release and RIGHT transfer, reordered ports, primitive order and every repeated measured-child branch. See CIRQ_REGISTER_PROGRAM_EXPORT.md. | Finite executable Programs use consecutive input binding explicitly. SDK decomposition, explicit matrix and channel leaves, tensor fallback and recursive feedback are accepted in the follow-ups below. Nonlinear parameters and symbolic global phase remain open. The gate wrapper and direct returned-output conversion retain separate ownership semantics. |
-| `CompositeBloq.from_cirq_circuit` | `_register_import.import_cirq_register_optree` builds native typed Programs. `test_cirq_register_import.py` checks default sorted qubits, directional/shaped ports, phase, resets, custom definitions and six-wire full unitary. | The accepted recursive SDK importer covers finite decomposition, matrices, tensor fallback, channels and feedback. Nonlinear parameters and generic symbolic global phase remain concrete gaps. Foreign objects terminate at Ecosystem. |
+| `CompositeBloq.as_cirq_op`, `to_cirq_circuit_and_quregs`, `to_cirq_circuit` | `_register_program_export.export_bound_register_cirq` composes Compiler-bound Program traversal with external manager lifetime replay and returns final shaped Qids. Source/native tests cover clean/borrowed reuse, LEFT release and RIGHT transfer, reordered ports, primitive order and every repeated measured-child branch. See CIRQ_REGISTER_PROGRAM_EXPORT.md. | Finite executable Programs use consecutive input binding explicitly. SDK decomposition, explicit matrix and channel leaves, tensor fallback and recursive feedback are accepted in the follow-ups below. Approved nonlinear parameters, scalar phase and eigen-gate shifts are covered by the final closure below. The gate wrapper and direct returned-output conversion retain separate ownership semantics. |
+| `CompositeBloq.from_cirq_circuit` | `_register_import.import_cirq_register_optree` builds native typed Programs. `test_cirq_register_import.py` checks default sorted qubits, directional/shaped ports, phase, resets, custom definitions and six-wire full unitary. | The accepted recursive SDK importer covers finite decomposition, matrices, tensor fallback, channels and feedback. Approved nonlinear parameters, scalar phase and eigen-gate shifts are covered by the final closure below. Foreign objects terminate at Ecosystem. |
 | `CompositeBloq.on_classical_vals` | `component_classical_state.ComponentClassicalState` and pure/phased component traversal compose registered numerical actions. Tests cover shaped values, phase, RNG, failures and all small measurement branches. | Logical typed graphs are admitted under Q-0149. Numerical execution requires a declared native provider for each child action. Arbitrary source Python callbacks terminate at the reference boundary. |
 | `CompositeBloq.as_composite_bloq`, `decompose_bloq` | A native stored Program already is the composite. Root wrapping and decomposition use `component_tensor_expansion` and `component_expansion`; no redundant wrapper is required for an existing composite. | Source refusal to decompose an already-composite value must stay distinct from selective child expansion. Existing root tensor tests document the distinction. |
 | `CompositeBloq.build_call_graph` | `_component_trace.program_call_graph.program_component_call_graph`, backed by the shared symbolic call graph. `test_program_component_call_graph.py` covers hierarchy, direct counts, specialized adjoints, depth and keep policies. | Stored component multiplicities and source models remain separate from measured emitted instructions. |
@@ -386,3 +387,50 @@ and connected before complete Q-0156 acceptance. Earlier pending-approval text
 above records historical intake and is superseded by the approved proposal.
 No earlier source defect, optional test skip or baseline failure is hidden by
 this dependency delivery.
+
+## Complete source-file closure — 2026-11-20
+
+All 64 frozen definitions, including classes, methods and overloads, appear in
+the owner table. Their implementations are distributed across Core, Compiler,
+Simulation, Ecosystem, Drawer and Testing instead of a foreign-name package.
+Previous graph, builder, remapping, classical traversal, resource and diagnostic
+evidence is reused. The last direct dependencies are closed by Core facd9b1d3,
+nonlinear adapters 6a4f21155, scalar phases a14c013f5 and eigen phases 9f1272200.
+Q-0156 is accepted. The immutable source blob remains
+b0317f675c96f9cce1581fcbb7030c48ab32a529.
+
+Five eigen-gate families now preserve both exponent and global_shift. The
+adapter factors the original matrix into a supported canonical gate followed
+by its exact scalar phase. Static conversion, typed register import, ordinary
+append, export/reimport, entangled spectators and every two-outcome feedback
+branch are tested. Controlled X/Y/Z powers cover one and two controls, including
+negative activations. The Cirq 1.7 S-adjoint/CCX/S basis change makes the same
+symbolic controlled-Y path executable with Cirq 1.6.
+
+The final concentrated suite passes 426 tests with two unchanged optional skips
+(PennyLane and Aer). Local native/register/Rydberg integration passes 213. Both
+additional SDK lanes pass 166 each. Eight files pass strict typing, Black and
+Ruff; scope, architecture and IR checks pass. g2-eigen-phase-* logs record the
+runs. The unchanged source definition inventory is g2-composite-final-definition-intake.json.
+
+| Boundary | Actual emitted primitives | Source reference or model |
+| --- | --- | --- |
+| Generic uncontrolled eigen phase | One canonical rotation/phase plus X/phase/X/phase, five total | Original SDK call remains one atomic source call; no identical lower-level decomposition count is asserted |
+| Existing half-X specializations | Existing sx/sxdg opcodes retained | Existing primitive parity regression passes |
+| Controlled generic phase | Original ordered control decomposition and scalar phase, without removing global phase | Resolved original SDK matrix supplies complex amplitudes; the source symbolic shift resolver omits this field |
+| Scalar phase alone | Four primitives and one physical carrier if none is declared | Source GlobalPhase model has empty QEC count and zero logical qubits |
+
+The source's EigenGate parameter protocol discovers/resolves exponent only.
+Tests explicitly substitute both fields into a fresh unchanged SDK gate for the
+numerical reference, while separately recording original symbolic transport.
+This is not reported as successful source name-based shift resolution.
+Cirq/Qualtran source files were not patched. Source self-tests and prior graph
+protocol evidence remain reusable.
+
+General control construction and larger-control provider coverage belong to
+Q-0158 and its direct dependencies. This closure establishes the CompositeBloq
+source file's graph and conversion responsibilities; it does not promote every
+SDK gate, external callback, backend or G2 module to accepted. Existing source
+empty-shape defects, separately declared unsupported functions and baseline test
+failures retain their recorded boundaries. Numeric scalar serialization and
+all previous accepted primitive specializations remain compatible.
