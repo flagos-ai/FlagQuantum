@@ -28,6 +28,7 @@ from ._feedback_import import (
     _has_explicit_matrix,
     _lower_feedback_gate,
     _matrix_instruction,
+    import_cirq_feedback,
 )
 from ._gate_metadata import cirq_gate_signature
 from ._qubit_manager import InteropQubitManager
@@ -57,7 +58,19 @@ def _register_operations(
         frame = tuple(operations)
         with manager.reserve_qubits(q for op in frame for q in op.qubits):
             for operation in frame:
-                if not isinstance(operation.gate, cirq.Gate) or operation.tags:
+                if operation.tags:
+                    raise ValueError(
+                        "Cirq register import requires untagged gate operations"
+                    )
+                if operation.classical_controls:
+                    for leaf in expand(
+                        (operation.without_classical_controls(),), ancestors
+                    ):
+                        yield leaf.with_classical_controls(
+                            *operation.classical_controls
+                        )
+                    continue
+                if not isinstance(operation.gate, cirq.Gate):
                     raise ValueError(
                         "Cirq register import requires untagged gate operations"
                     )
@@ -76,7 +89,6 @@ def _register_operations(
                     or getattr(gate, "flagquantum_register_definition", None)
                     is not None
                     or isinstance(gate, (cirq.GlobalPhaseGate, cirq.ResetChannel))
-                    or gate in (cirq.ISWAP, cirq.ISWAP**-1)
                     or _lower_feedback_gate(cirq, gate, [], 0) is not None
                     or _has_explicit_matrix(cirq, gate)
                 ):
@@ -228,7 +240,7 @@ def import_cirq_register_optree(
     out_quregs: Mapping[str, object] | None = None,
     gate_definitions: Mapping[Hashable, FunctionRecord] | None = None,
 ) -> ProgramRecord:
-    """Import admitted gates and single-wire reset with explicit placement.
+    """Import admitted gates, measurement and feedback with explicit placement.
 
     Qureg arrays use the register shape followed by the ordered bit axis.
     Without a signature, sorted circuit qubits form one through register.
@@ -241,6 +253,8 @@ def import_cirq_register_optree(
     Recursive decompositions require clean workspace and a maximum nesting depth
     of 256. Explicit unitary leaves become owned matrix operations. A tensor-only
     unitary fallback is consulted after the SDK decomposition declines.
+    Measured bodies retain one shared key history across recursive calls.
+    Explicit definitions in a measured body must first be decomposed.
     """
     cirq = _cirq()
     circuit = cirq.Circuit(optree)
@@ -263,7 +277,28 @@ def import_cirq_register_optree(
     declared = {} if gate_definitions is None else gate_definitions
     definitions: dict[str, FunctionRecord] = {}
     gates: list[tuple[object, tuple[Hashable, ...], FunctionRecord | None]] = []
-    for operation in _register_operations(circuit, declared):
+    operations = tuple(_register_operations(circuit, declared))
+    if any(op.classical_controls or cirq.is_measurement(op) for op in operations):
+        if any(
+            (declared and isinstance(op.gate, Hashable) and op.gate in declared)
+            or getattr(op.gate, "flagquantum_register_definition", None) is not None
+            for op in operations
+        ):
+            raise ValueError(
+                "Measured SDK import requires explicit definitions to be decomposed"
+            )
+        # Lower one history so feedback across nested SDK bodies and repeated
+        # keys retains its SSA producers. Individual per-gate calls lose them.
+        qubits = tuple(sorted({q for op in operations for q in op.qubits}))
+        feedback = import_cirq_feedback(
+            cirq.Circuit(cirq.Moment((op,)) for op in operations), qubit_order=qubits
+        )
+        registers = tuple(Register(f"bit{i}", bit) for i in range(len(qubits)))
+        function = bit_gate_function("feedback", registers, feedback.ir)
+        definitions[function.name] = function
+        gates.append((None, qubits, function))
+        operations = ()
+    for operation in operations:
         if not isinstance(operation.gate, cirq.Gate) or operation.tags:
             raise ValueError("Cirq register import requires untagged gate operations")
         gate = operation.gate
@@ -312,12 +347,6 @@ def import_cirq_register_optree(
             qubits = (next(iter(live.words))[0] if live.words else object(),)
             exponent = global_phase_exponent(complex(gate.coefficient))
             instructions = global_phase_ir(float(exponent), anchor=0)
-        elif isinstance(gate, cirq.ISwapPowGate) and gate in (
-            cirq.ISWAP,
-            cirq.ISWAP**-1,
-        ):
-            opcode = "iswap" if gate == cirq.ISWAP else "iswapdg"
-            instructions = (Instruction(opcode, (0, 1)),)
         elif isinstance(gate, cirq.ResetChannel) and len(qubits) == 1:
             instructions = (Instruction("reset", (0,), metadata={"is_dynamic": True}),)
         elif _has_explicit_matrix(cirq, gate):

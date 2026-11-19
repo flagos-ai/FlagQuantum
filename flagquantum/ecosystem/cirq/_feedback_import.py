@@ -29,6 +29,8 @@ def _lower_feedback_gate(
     """Retain exact phase powers and canonical singly controlled primitives."""
     if gate == cirq.CY:
         return "cy", {}
+    if gate in (cirq.ISWAP, cirq.ISWAP**-1):
+        return ("iswap" if gate == cirq.ISWAP else "iswapdg"), {}
     if isinstance(gate, (cirq.XPowGate, cirq.CXPowGate)) and gate.global_shift == 0:
         exponent = _real_scalar(gate.exponent, issues, index, "X power")
         if exponent is not None and exponent % 2 in (0.5, 1.5):

@@ -1,6 +1,6 @@
 """Exercise recursive SDK leaves through native register Programs and append."""
 
-from collections.abc import Sequence
+from collections.abc import Hashable, Sequence
 
 import pytest
 import torch
@@ -20,6 +20,7 @@ from flagquantum.compiler import estimate_resources
 from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
 from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import Instruction
+from flagquantum.core.ir.program import FunctionRecord
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
@@ -282,3 +283,209 @@ def test_available_decomposition_precedes_tensor_fallback() -> None:
     assert bind_register_program(program, ((0,),)).circuit.instructions == (
         Instruction("h", (0,)),
     )
+
+
+@pytest.mark.parametrize("values", [(1, 1), (0, 1), (1, 0), (0, 0)])
+def test_recursive_original_and_erasure_retains_all_histories(
+    values: tuple[int, int],
+) -> None:
+    from itertools import product
+
+    from qualtran import BloqBuilder, QBit
+    from qualtran import Register as SourceRegister
+    from qualtran import Signature as SourceSignature
+    from qualtran.bloqs.mcmt import And
+    from qualtran.resource_counting import QECGatesCost, get_cost_value
+
+    from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
+    from tests.unit.measurement_checks import forced_branch
+    from tests.unit.test_cirq_feedback_import import source_branch
+
+    builder, inputs = BloqBuilder.from_signature(
+        SourceSignature((SourceRegister("ctrl", QBit(), shape=(2,)),))
+    )
+    controls = inputs["ctrl"]
+    for _ in range(2):
+        controls, target = builder.add(And(*values), ctrl=controls)
+        controls = builder.add(
+            And(*values, uncompute=True), ctrl=controls, target=target
+        )
+    composite = builder.finalize(ctrl=controls)
+    q0, q1, spectator = cirq.NamedQubit.range(3, prefix="data")
+    quregs = {"ctrl": np.array([[q0], [q1]], dtype=object)}
+    source_body = composite.to_cirq_circuit(
+        cirq_quregs=quregs,
+        qubit_manager=cirq.GreedyQubitManager(
+            prefix="register_work", maximize_reuse=True
+        ),
+    )
+    signature = Signature((Register("ctrl", quantum_bit_type(), shape=(2,)),))
+    program = import_cirq_register_optree(
+        source_body, signature=signature, in_quregs=quregs, out_quregs=quregs
+    )
+    bound = bind_register_program(program, ((0,), (1,)), clean=(2,))
+    primitives = (
+        cirq.HPowGate,
+        cirq.XPowGate,
+        cirq.YPowGate,
+        cirq.ZPowGate,
+        cirq.CXPowGate,
+        cirq.CZPowGate,
+        cirq.MeasurementGate,
+        cirq.ResetChannel,
+    )
+    source_ops = cirq.decompose(
+        source_body,
+        context=cirq.DecompositionContext(
+            cirq.GreedyQubitManager(prefix="register_work", maximize_reuse=True)
+        ),
+        keep=lambda op: isinstance(op.without_classical_controls().gate, primitives),
+    )
+    source = cirq.Circuit(cirq.Moment((op,)) for op in source_ops)
+    (work,) = source.all_qubits() - {q0, q1}
+    order = (q0, q1, work, spectator)
+    expected = import_cirq_feedback(source, qubit_order=order[:3]).ir
+    assert bound.circuit.instructions == expected.instructions
+    assert len(bound.circuit.instructions) == 34 + 8 * values.count(0)
+    assert sum(op.name == "measure" for op in bound.circuit.instructions) == 2
+    model = get_cost_value(composite, QECGatesCost())
+    assert (model.and_bloq, model.clifford, model.measurement) == (2, 2, 2)
+    assert [(event.kind, event.wires) for event in bound.events] == [
+        ("allocate", (2,)),
+        ("free", (2,)),
+    ]
+    state = np.zeros(16, dtype=np.complex128)
+    indices = [i for i in range(16) if not i & 2]
+    state[indices] = np.arange(1, 9) * np.exp(0.19j * np.arange(8))
+    state /= np.linalg.norm(state)
+    from flagquantum.dynamic import DynamicCircuit
+    from flagquantum.runtime.dynamic.execution import run_dynamic
+
+    runtime = DynamicCircuit(4, inputs=torch.from_numpy(state), dtype=torch.complex128)
+    runtime.append(FieldOperation(4, bound.circuit.instructions))
+    result = run_dynamic(runtime, shots=8, seed=53, strategy="trajectory")
+    torch.testing.assert_close(
+        result.final_states.reshape(8, -1),
+        torch.from_numpy(state).expand(8, -1),
+        atol=3e-12,
+        rtol=0,
+    )
+    registers = program.functions[0].registers
+    assert registers is not None
+    exported = RegisterCirqGate(
+        bound, Signature(registers), feedback_key_prefix="nested"
+    )
+    restored = import_cirq_register_optree(exported.on(q0, q1))
+    rebound = bind_register_program(restored, ((0,), (1,)), clean=(2,))
+    for history in product((0, 1), repeat=2):
+        expected_state = torch.from_numpy(source_branch(source, order, state, history))
+        for circuit_ir in (bound.circuit, rebound.circuit):
+            actual = forced_branch(
+                torch.from_numpy(state), circuit_ir.instructions, history
+            )
+            torch.testing.assert_close(actual, expected_state, atol=3e-12, rtol=0)
+            assert torch.count_nonzero(actual[[i for i in range(16) if i & 2]]) == 0
+
+
+def test_recursive_feedback_preserves_old_inverted_and_latest_records() -> None:
+    from itertools import product
+
+    from tests.unit.measurement_checks import forced_branch
+    from tests.unit.test_cirq_feedback_import import source_branch
+
+    a, b = cirq.NamedQubit.range(2, prefix="data")
+    key = cirq.MeasurementKey("record")
+    circuit = cirq.Circuit(
+        cirq.H(a),
+        cirq.measure(a, key=key, invert_mask=(True,)),
+        cirq.reset(a),
+        cirq.H(a),
+        cirq.measure(a, key=key),
+        _NestedWork(1).on(b).with_classical_controls(cirq.KeyCondition(key, index=0)),
+        cirq.Y(b).with_classical_controls(key),
+        cirq.reset(a),
+    )
+    program = import_cirq_register_optree(circuit)
+    bound = bind_register_program(program, ((0,), (1,)), clean=(2,))
+    source_ops = cirq.decompose(
+        circuit,
+        context=cirq.DecompositionContext(
+            cirq.GreedyQubitManager(prefix="register_work", maximize_reuse=True)
+        ),
+        keep=lambda op: not isinstance(
+            op.without_classical_controls().gate, _NestedWork
+        ),
+    )
+    source = cirq.Circuit(cirq.Moment((op,)) for op in source_ops)
+    (work,) = source.all_qubits() - {a, b}
+    state = np.array([1, 0, 1j, 0, 2j, 0, 3, 0], dtype=np.complex128)
+    state /= np.linalg.norm(state)
+    for history in product((0, 1), repeat=2):
+        actual = forced_branch(
+            torch.from_numpy(state), bound.circuit.instructions, history
+        )
+        expected = torch.from_numpy(source_branch(source, (a, b, work), state, history))
+        torch.testing.assert_close(actual, expected, atol=3e-12, rtol=0)
+        assert torch.count_nonzero(actual[1::2]) == 0
+
+
+@pytest.mark.parametrize("kind", ["undefined", "noisy_measure", "tagged", "definition"])
+def test_recursive_feedback_rejects_unrepresented_history(kind: str) -> None:
+    a, b = cirq.LineQubit.range(2)
+    measurement = cirq.measure(a, key="record")
+    definitions: dict[Hashable, FunctionRecord] = {}
+    if kind == "undefined":
+        operations = [cirq.X(b).with_classical_controls("missing")]
+    elif kind == "noisy_measure":
+        operations = [
+            measurement,
+            cirq.MeasurementGate(1, key="other", confusion_map={(0,): np.eye(2)}).on(b),
+        ]
+    elif kind == "tagged":
+        operations = [
+            measurement,
+            cirq.X(b).with_classical_controls("record").with_tags("tag"),
+        ]
+    else:
+        leaf = _NestedWork(1)
+        builder = ComponentProgramBuilder(
+            Signature((Register("q", quantum_bit_type()),))
+        )
+        definitions[leaf] = builder.finalize(builder.inputs).functions[0]
+        operations = [measurement, leaf.on(b)]
+    with pytest.raises((ValueError, CirqConversionError)):
+        import_cirq_register_optree(
+            cirq.Circuit(operations), gate_definitions=definitions
+        )
+
+
+@pytest.mark.parametrize("exponent", [1, -1])
+def test_register_feedback_retains_iswap_phase(exponent: int) -> None:
+    from tests.unit.measurement_checks import forced_branch
+    from tests.unit.test_cirq_feedback_import import source_branch
+
+    a, b, record = cirq.LineQubit.range(3)
+    circuit = cirq.Circuit(
+        cirq.H(record),
+        cirq.measure(record, key="record"),
+        (cirq.ISWAP**exponent).on(b, a).with_classical_controls("record"),
+        cirq.reset(record),
+    )
+    bound = bind_register_program(
+        import_cirq_register_optree(circuit), ((0,), (1,), (2,))
+    )
+    assert bound.circuit.instructions[2].name == (
+        "iswap" if exponent == 1 else "iswapdg"
+    )
+    assert bound.circuit.instructions[2].wires == (1, 0)
+    state = np.array([1, 0, 2j, 0, -3, 0, 4j, 0], dtype=np.complex128)
+    state /= np.linalg.norm(state)
+    for history in ((0,), (1,)):
+        actual = forced_branch(
+            torch.from_numpy(state), bound.circuit.instructions, history
+        )
+        expected = source_branch(circuit, (a, b, record), state, history)
+        torch.testing.assert_close(
+            actual, torch.from_numpy(expected), atol=3e-12, rtol=0
+        )
+        assert torch.count_nonzero(actual[1::2]) == 0
