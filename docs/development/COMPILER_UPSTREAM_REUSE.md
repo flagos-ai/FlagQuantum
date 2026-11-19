@@ -34,10 +34,15 @@ alone does not constitute an audit of its numerical implementation.
 | Bounded search recovery | Qiskit `swap_map_trial`, `State::force_enable_closest_node` | `topology/sabre.py`, recovery branch in `plan_sabre_swaps` | Newly adapted control flow: undo the speculative SWAP suffix, remove its output records, choose the closest blocked operation, and bring its operands together along a shortest path. |
 | Repeated-search detection | Cirq `RouteCQC._route`, its `seen` set and forced shortest-path strategy | `topology/sabre.py`, `seen_layouts` | Newly adapted algorithmic mechanism. FQ tracks repeated full layouts between executed instructions; Cirq tracks repeated SWAP choices within a timestep. This is not a port of all RouteCQC. |
 | Full-CZ synthesis | Cirq's `_xx_interaction_via_full_czs`, `_xx_yy_interaction_via_full_czs`, `_xx_yy_zz_interaction_via_full_czs` | No new integration in this change | Reviewed candidate for native CZ synthesis and local single-qubit cleanup. Must be checked under FQ's ordering, global-phase and target contracts before adoption. |
-| Frontier-relative scoring | Qiskit `State::choose_best_swap` and layer-local score updates | Existing FQ rescoring remains | Not yet ported. A useful next performance change, but numerical tie behavior and unchanged placement semantics need tests. |
-| Multi-trial routing/layout | Qiskit's independent trials and best-result selection | Existing FQ deterministic route and reverse-layout search remain | Not yet equivalent. Restored-layout cost and explicit search budgets must drive candidate selection. |
-| Layer-by-layer lookahead and paired SWAPs | Cirq `_choose_optimal_swap`, `_choose_pair_of_swaps`, `_cost` | Existing FQ weighted extended-layer score remains | Not yet ported. DAG dependencies, barriers and classical accesses must remain authoritative. |
+| Frontier-relative scoring | Qiskit `State::choose_best_swap` and layer-local score updates | `topology/sabre.py` | Adapted in PR #1232; retained absolute-score tie behavior and the small-circuit path. See [relative scoring](COMPILER_SABRE_RELATIVE_SCORING.md). Pending integration and complete CI. |
+| Multi-trial routing/layout | Qiskit's independent trials and best-result selection | `topology/sabre.py` | Adapted in PR #1233: original route plus three seeded trials, scored including restoration and directed operand repair. See [bounded trials](COMPILER_ROUTING_TRIALS.md). Pending integration and complete CI; not the complete Qiskit layout pipeline. |
+| Layer-by-layer lookahead and paired SWAPs | Cirq `_choose_optimal_swap`, `_choose_pair_of_swaps`, `_cost` | `topology/_layer_lookahead.py` and `topology/sabre.py` | Adapted as one additional bounded candidate. See [layer lookahead](COMPILER_LAYER_LOOKAHEAD.md). Source-conformance and native routing tests pass locally; pending integration and complete CI. |
 | Two-qubit collection and re-synthesis | Upstream collect/consolidate/re-synthesize workflows | `optimization/_cz_blocks.py` | FQ-owned implementation of a shared pattern. It must not be described as copied Qiskit or Cirq code. |
+
+Cirq local one-qubit cleanup is implemented separately in PR #1229 and remains
+pending complete CI; the full-CZ synthesis row above does not claim it is
+integrated here. PR status must be checked before describing any adaptation as
+released.
 
 The implementation still lacks several important upstream mechanisms. The
 presence of SABRE or KAK alone does not establish equivalent compilation quality.

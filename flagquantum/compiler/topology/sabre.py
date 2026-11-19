@@ -22,7 +22,8 @@ The plan is one persistent layout for the whole circuit, so a materializer
 replays the forward SWAPs in reverse at the end to restore the logical output
 layout. The planner is deterministic: ties between equal-cost SWAP candidates
 first use the lexicographically smallest physical pair. Three additional fixed-seed
-trials explore equal-cost choices, retaining a trial only when its complete route,
+trials explore equal-cost choices and one layer-lookahead trial considers disjoint
+SWAP pairs, retaining a trial only when its complete route,
 including final restoration, uses fewer SWAPs. The same input always produces the
 same result without a user seed.
 
@@ -68,6 +69,7 @@ from typing import TYPE_CHECKING, Any
 
 from ...core.ir import CircuitIR, Instruction
 from ..optimization.ordering_barrier import is_ordering_barrier
+from ._layer_lookahead import choose_layer_swaps
 
 if TYPE_CHECKING:
     from .routing import CouplingMap
@@ -357,13 +359,14 @@ def _select_sabre_trials(
         cost if cost is not None else lambda plan: _restored_swap_count(plan, coupling)
     )
     best_cost = score(best)
-    for seed in (0, 1, 2):
+    for seed, use_layers in ((0, False), (1, False), (2, False), (None, True)):
         candidate = _plan_sabre_trial(
             program,
             coupling,
             initial_layout=baseline.initial_logical_to_physical,
-            tie_rng=random.Random(seed),
+            tie_rng=random.Random(seed) if seed is not None else None,
             committed_swap_limit=best_cost,
+            layer_lookahead=use_layers,
         )
         if candidate is not None:
             candidate_cost = score(candidate)
@@ -379,6 +382,7 @@ def _plan_sabre_trial(
     initial_layout: tuple[int, ...] | None = None,
     tie_rng: random.Random | None = None,
     committed_swap_limit: int | None = None,
+    layer_lookahead: bool = False,
 ) -> SabrePlan | None:
     """Run one search; prune only committed SWAPs that cannot beat the incumbent."""
 
@@ -651,6 +655,29 @@ def _plan_sabre_trial(
         # Track complete layouts here because FQ's frontier is a dependency DAG,
         # rather than Cirq's disjoint two-qubit timesteps.
         seen_layouts.add(layout)
+        if layer_lookahead:
+            candidates = {
+                (min(physical, neighbor), max(physical, neighbor))
+                for index in blocked_front
+                for qubit in wires[index]
+                for physical in (logical_to_physical[qubit],)
+                for neighbor in neighbours[physical]
+            }
+            moves = choose_layer_swaps(
+                candidates,
+                front,
+                wires,
+                blocks,
+                successors,
+                pending,
+                logical_to_physical,
+                distances,
+            )
+            if moves is not None:
+                for left, right in moves:
+                    record_swap(left, right, blocked_front[0])
+                stalled += len(moves)
+                continue
         choice = best_swap(blocked_front)
         if choice is None:
             raise ValueError(
