@@ -9,6 +9,13 @@ from ...core.ir.program.register_verifier import (
 from ...core.ir.program.registers import RegisterSide
 
 
+def validate_executable_registers(function: FunctionRecord) -> None:
+    """Check declared physical types even when their arrays have no elements."""
+    for register in function.registers or ():
+        if register.dtype != classical_bit_type():
+            executable_register_width(register.dtype)
+
+
 def entry_input_layout(
     function: FunctionRecord, classical_inputs: tuple[int | None, ...]
 ) -> tuple[tuple[int, ...], tuple[int | None, ...]]:

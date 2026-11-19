@@ -239,7 +239,7 @@ def test_definition_names_and_execution_profile_fail_explicitly():
     with pytest.raises(ValueError, match="unknown"):
         builder.call_dict("absent", builder.inputs)
     assert not builder._operations
-    with pytest.raises(ValueError, match="unsupported executable"):
+    with pytest.raises(ValueError, match="unsupported logical"):
         ComponentProgramBuilder(
             Signature([Register("x", RegisterType("classical_bit", 0, 1))])
         )

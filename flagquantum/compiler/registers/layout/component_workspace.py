@@ -6,7 +6,7 @@
 """Real typed lifetime functions for finite register construction."""
 
 from ....core.ir.program import BlockRecord, FunctionRecord, Operation, ValueRef
-from ....core.ir.program.register_verifier import executable_register_width
+from ....core.ir.program.register_verifier import logical_register_width
 from ....core.ir.program.registers import Register, RegisterSide, RegisterType
 
 
@@ -14,7 +14,7 @@ def allocate_word_function(
     name: str, dtype: RegisterType, dirty: bool
 ) -> FunctionRecord:
     """Define one fresh owned word, preserving the explicit borrowing flag."""
-    executable_register_width(dtype)
+    logical_register_width(dtype)
     if type(dirty) is not bool:
         raise ValueError("workspace dirty flag must be a built-in boolean")
     word = ValueRef("entry", 0, "register")
@@ -30,7 +30,7 @@ def allocate_word_function(
 
 def free_word_function(name: str, dtype: RegisterType, dirty: bool) -> FunctionRecord:
     """Consume one owned word without claiming numerical restoration."""
-    executable_register_width(dtype)
+    logical_register_width(dtype)
     if type(dirty) is not bool:
         raise ValueError("workspace dirty flag must be a built-in boolean")
     word = ValueRef("entry", 0, "register")

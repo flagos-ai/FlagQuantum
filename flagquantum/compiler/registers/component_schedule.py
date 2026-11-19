@@ -13,9 +13,11 @@ from ...core.ir.program import FunctionRecord, Operation, ValueRef
 from ...core.ir.program.register_types import classical_bit_type
 from ...core.ir.program.register_verifier import (
     executable_register_width,
+    logical_register_width,
     register_port_types,
 )
-from ...core.ir.program.registers import RegisterSide
+from ...core.ir.program.registers import RegisterSide, RegisterType
+from ...core.value_math import SymbolicInt
 from .._component_trace.width_schedule import (
     WidthConnection,
     WidthStep,
@@ -100,9 +102,19 @@ def _function_connections(
     return steps, edges, tuple(nodes)
 
 
+def _connection_width(dtype: RegisterType, logical_graph: bool) -> SymbolicInt:
+    if dtype == classical_bit_type():
+        return int(logical_graph)
+    return (
+        logical_register_width(dtype)
+        if logical_graph
+        else executable_register_width(dtype)
+    )
+
+
 def _argument_widths(
     function: FunctionRecord, logical_graph: bool
-) -> dict[ValueRef, int]:
+) -> dict[ValueRef, SymbolicInt]:
     values = function.blocks[0].arguments
     if function.registers is None:
         return {value: int(value.kind == "qubit") for value in values}
@@ -110,11 +122,7 @@ def _argument_widths(
         zip(
             values,
             (
-                (
-                    int(logical_graph)
-                    if dtype == classical_bit_type()
-                    else executable_register_width(dtype)
-                )
+                _connection_width(dtype, logical_graph)
                 for dtype in register_port_types(function, RegisterSide.LEFT)
             ),
             strict=True,
@@ -126,11 +134,11 @@ def _result_widths(
     operation: Operation,
     functions: Mapping[str, FunctionRecord],
     logical_graph: bool,
-) -> dict[ValueRef, int]:
+) -> dict[ValueRef, SymbolicInt]:
     if operation.opcode in {"join_register", "allocate_register"}:
         assert operation.register_type is not None
         return {
-            value: executable_register_width(operation.register_type)
+            value: _connection_width(operation.register_type, logical_graph)
             for value in operation.results
         }
     if operation.opcode == "call":
@@ -140,11 +148,7 @@ def _result_widths(
                 zip(
                     operation.results,
                     (
-                        (
-                            int(logical_graph)
-                            if dtype == classical_bit_type()
-                            else executable_register_width(dtype)
-                        )
+                        _connection_width(dtype, logical_graph)
                         for dtype in register_port_types(callee, RegisterSide.RIGHT)
                     ),
                     strict=True,

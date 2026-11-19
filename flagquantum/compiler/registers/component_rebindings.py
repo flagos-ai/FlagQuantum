@@ -6,13 +6,13 @@
 """Real word-to-bit-word functions over existing typed Program rebindings."""
 
 from ...core.ir.program import BlockRecord, FunctionRecord, Operation, ValueRef
-from ...core.ir.program.register_verifier import executable_register_width
+from ...core.ir.program.register_verifier import concrete_logical_register_width
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 
 
 def split_word_function(name: str, dtype: RegisterType) -> FunctionRecord:
     """Consume one word and expose an array of owned width-one words."""
-    width = executable_register_width(dtype)
+    width = concrete_logical_register_width(dtype)
     word = ValueRef("entry", 0, "register")
     bits = tuple(ValueRef("entry", 1 + index, "qubit") for index in range(width))
     outputs = tuple(
@@ -38,7 +38,7 @@ def split_word_function(name: str, dtype: RegisterType) -> FunctionRecord:
 
 def join_word_function(name: str, dtype: RegisterType) -> FunctionRecord:
     """Consume ordered bit-word inputs and return a fresh owned word."""
-    width = executable_register_width(dtype)
+    width = concrete_logical_register_width(dtype)
     inputs = tuple(ValueRef("entry", index, "register") for index in range(width))
     bits = tuple(ValueRef("entry", width + index, "qubit") for index in range(width))
     output = ValueRef("entry", 2 * width, "register")

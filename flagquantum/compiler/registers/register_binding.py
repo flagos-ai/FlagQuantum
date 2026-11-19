@@ -13,7 +13,7 @@ from ...core.ir.program.register_verifier import (
     executable_register_width,
 )
 from .component_schedule import local_operation_order
-from .entry_bindings import entry_input_layout
+from .entry_bindings import entry_input_layout, validate_executable_registers
 from .layout.workspace import RegisterWorkspace, WorkspaceLease
 from .program_calls import _expand
 
@@ -84,6 +84,8 @@ def bind_register_program(
     )
     if missing:
         raise ValueError(f"physical lowering requires component bodies: {missing!r}")
+    for definition in record.functions:
+        validate_executable_registers(definition)
     functions = {function.name: function for function in record.functions}
     if entry not in functions:
         raise ValueError(f"unknown Program entry {entry!r}")

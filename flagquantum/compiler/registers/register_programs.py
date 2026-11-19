@@ -20,6 +20,7 @@ from ...core.ir.program.register_verifier import (
     register_port_types,
 )
 from ...core.ir.program.registers import RegisterSide
+from .entry_bindings import validate_executable_registers
 from .program_calls import _remap_conditions, inline_program_calls
 
 
@@ -43,6 +44,8 @@ def lower_register_program(record: ProgramRecord, entry: str = "main") -> Progra
     )
     if missing:
         raise ValueError(f"physical lowering requires component bodies: {missing!r}")
+    for function in record.functions:
+        validate_executable_registers(function)
     if any(
         operation.opcode in {"allocate_register", "free_register"}
         for function in record.functions
