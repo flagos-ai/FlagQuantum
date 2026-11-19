@@ -108,6 +108,12 @@ class Approximation:
     error: float
 
 
+def _nearest_index(overlaps: Quaternion) -> int:
+    # Equivalent words can differ by BLAS roundoff. Resolve overlap ties in
+    # insertion order at the same 1e-12 precision used to validate the target.
+    return int(np.argmax(np.round(np.abs(overlaps), 12)))
+
+
 def approximate(value: Quaternion, iterations: int) -> Approximation:
     """Return actual H/T/Tdg words; errors are computed, never assumed from depth."""
     if type(iterations) is not int or not 0 <= iterations <= 3:
@@ -121,7 +127,7 @@ def approximate(value: Quaternion, iterations: int) -> Approximation:
     def recurse(target: Quaternion, depth: int) -> tuple[Quaternion, Word]:
         if depth == 0:
             overlaps = values @ target
-            index = int(np.argmax(np.abs(overlaps)))
+            index = _nearest_index(overlaps)
             chosen = values[index] * (1 if overlaps[index] >= 0 else -1)
             return chosen, words[index]
         previous, word = recurse(target, depth - 1)

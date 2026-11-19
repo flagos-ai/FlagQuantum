@@ -48,6 +48,12 @@ def test_actual_source_matrix_is_not_silently_replaced_by_its_unused_shift() -> 
     torch.testing.assert_close(
         actual, torch.matrix_exp(2j * math.pi * MATRIX), atol=1e-14, rtol=0
     )
+    torch.testing.assert_close(
+        actual.mH @ actual,
+        torch.eye(8, dtype=torch.complex128),
+        atol=32 * torch.finfo(torch.float64).eps,
+        rtol=0,
+    )
     assert (
         MATRIX.shape == (8, 8)
         and float(EIGENVALUES.min()) < 0

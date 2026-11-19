@@ -123,6 +123,17 @@ def test_quaternion_words_and_sub_ulp_commutators() -> None:
         synthesis.approximate(target, 4)
 
 
+def test_equivalent_words_ignore_machine_precision_overlap_ties() -> None:
+    np = pytest.importorskip("numpy")
+    from examples.synthesis.community.basic_examples.logical_qubits.logical_qubits_by_alice_and_bob.overview.synthesis import (
+        _nearest_index,
+    )
+
+    for perturbation in (-1e-14, 0.0, 1e-14):
+        assert _nearest_index(np.array([0.5, -(0.5 + perturbation)])) == 0
+    assert _nearest_index(np.array([0.5, -0.50001])) == 1
+
+
 def test_physical_cat_saturation_and_invalid_parameters() -> None:
     pytest.importorskip("numpy")
     from examples.synthesis.community.basic_examples.logical_qubits.logical_qubits_by_alice_and_bob.overview.noise import (
