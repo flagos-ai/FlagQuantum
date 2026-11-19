@@ -177,3 +177,69 @@ Canonical display titles and wider notebook spacing corrected it before final
 integration. Source notebook execution uses a test-only kernel selection and
 60-second timeout in place of the source runner's default environment/600 seconds.
 The original test function and all notebook code cells remain unchanged.
+
+## Native component graph completion — 2026-11-20
+
+The complete executable Add/AddK/OutOfPlaceAdder source-file batch now shares
+existing typed Add, bitwise, Always, And, control and lifetime owners. Add's
+accepted forward and exact-adjoint evidence is reused. No reference source is
+modified. The extraction of bitwise control propagation has two concrete
+consumers, conditional complement and controlled constant loading.
+
+`constant_addition_program(dtype, pattern, adjoint=False, control_value=None)`
+accepts an encoded unsigned pattern in MSB-first storage. Numerical signed-value
+encoding belongs to the caller. It retains allocation, XorK, Always(Add), XorK
+and release. The exact adjoint retains the same load/unload and uses Add-adjoint.
+Positive control acts directly on the load calls. Negative control retains the
+original X/positive-body/X wrapper. Always(Add), allocation and release preserve
+the through control without controlling their bodies. The loaded constant and
+all Add carries are clean on return.
+
+`out_of_place_addition_program(width, include_msb=True, adjoint=False)` retains
+unsigned a/b and creates a RIGHT c, or consumes a LEFT c in the inverse. The
+forward graph owns one allocated low output and the And-created higher outputs.
+Its adjoint consumes those And outputs by measurement and frees the low bit.
+There is no independent scratch pool beyond c. A bound forward graph explicitly
+transfers its live outputs to the caller. A separately bound inverse requires
+explicit pool ownership of the correct sum. Incorrect c is outside physical
+cleanup admission, although the source classical callback discards it.
+
+Source Cirq import schedules independent XORs ahead of Allocate. Tests compare
+canonical dependency edges and named operands after instance-ID renaming, as
+well as the complete primitive stream and feedback. At width one, source Cirq
+omits Split/Join views. Native typed integer ports retain these zero-cost views.
+Their physical gates, operands, output order and ownership still agree. These
+view occurrences are not charged as primitive gates.
+
+Both append consumers execute the native graph. The out-of-place example checks
+coherent sum amplitudes and sampled erasure histories. Native conformance checks
+all small raw erasure histories, unnormalized complex amplitudes, an entangled
+spectator and clean work. AddK checks every forward/inverse history pair, three
+integer descriptors, both control polarities and both directions. Wider cases
+compare physical streams, feedback and resource counts without dense simulation.
+The actual concrete source factories are AddK 4-bit k=2 and signed 64-bit k=-23,
+and OutOfPlaceAdder 4 and 64 bits. They use all five existing native check modes.
+
+Measured examples remain distinct from analytical categories. Three-bit k=-3
+emits 4X, 6H, 4T, 4Tdg, 21CX, 2S, 2measure, 2CZ and 2reset. Its source model is
+2And, 15Clifford, 2measurement and peak8. Two-bit full sum emits 22CX, 4H, 4T,
+4Tdg and 2S, while its source model is 2And, 10Clifford and peak7. Its inverse
+emits 10CX, 2H, 2measure, 2CZ and 2reset, while the independent inverse model
+is 12Clifford, 2measurement and peak7. Other model categories are zero.
+
+Q-0174/Q-0175 remain open for symbolic physical/generic foreign-object and
+original autotester/classical callback admission, with original power-1
+truncation loss and source estimate discrepancies recorded above. This native
+execution graph completion does not certify those wider boundaries. Proposal108
+remains pending for wider classical Program admission. Whole-file source test,
+notebook and numerical callback evidence is reused.
+
+Final local acceptance has 372 focused and 3,885 concentrated passes, with two
+existing notebook/environment warnings and no skips in those runs. Strict typing
+covers all nine changed Python files. Black, Ruff, team scope, architecture, IR,
+public API validation, both append examples and four related integration checks
+pass. The default suite has 434 passes and 51 skips before the established
+`test_every_module_with_examples_is_covered` failure. Its reported nine modules
+and failing test are byte-identical to this batch's base `e59ec616a`.
+The dependency policy reports 688 whole-repository findings and none in the
+changed paths. Local evidence receipts use the `g2-addition-native-*` prefix.

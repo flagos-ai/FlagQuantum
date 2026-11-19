@@ -92,3 +92,28 @@ emission and width connections share `out_of_place_addition_structure.py`.
 AND creates output bits and its exact adjoint consumes them, with one explicit
 low-output allocation/free. See
 [the interface and acceptance](../../../../docs/development/OUT_OF_PLACE_RESOURCE_WIDTH.md).
+
+`constant_addition_component.py` retains the actual AddK allocation, XorK,
+Always(Add), XorK and release calls. Its `pattern` is an already encoded unsigned
+bit pattern of the supplied integer dtype. Caller-owned numerical encoding
+handles signed values. Exact adjoints use Add-adjoint with the same load. Optional
+zero/one control affects loading only, so Always(Add) remains unconditional.
+Loaded constants and Add carries return clean. The constant append example uses
+this graph through the existing register binder.
+
+`out_of_place_addition_component.py` owns an unsigned RIGHT sum and its LEFT
+measured consumption. It shares the existing ordered structure and And owner.
+Forward binding transfers output ownership with `allow_workspace_outputs=True`.
+A separately supplied correct sum needs explicit `input_ownership` for erasure.
+The inverse returns only a/b. One-bit integer views stay explicit in native IR,
+while the source Cirq importer omits those zero-cost Split/Join calls.
+
+```bash
+python -m examples.algorithms.register_constant_addition
+python -m examples.algorithms.register_out_of_place_addition
+python -m pytest tests/unit/test_constant_addition_component.py tests/unit/test_out_of_place_addition_component.py -q
+```
+
+[The complete addition audit](../../../../docs/development/ADDITION_FILE_AUDIT.md)
+separates stored calls, measured primitive inventories, source analytical costs
+and remaining foreign/symbolic admission boundaries.
