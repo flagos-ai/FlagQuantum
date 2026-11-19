@@ -102,3 +102,29 @@ def test_zero_width_signed_word_retains_logical_ownership() -> None:
     bound = bind_register_program(record, ((),), clean=(0,))
     assert bound.outputs == ()
     assert bound.circuit.instructions == () and bound.events == ()
+
+
+@pytest.mark.parametrize("width", [1, 3, 8])
+def test_signed_workspace_lifetime_uses_existing_clean_pool(width: int) -> None:
+    from qualtran import BloqBuilder, QInt
+
+    from flagquantum.compiler.registers.component_builder import ComponentProgramBuilder
+    from flagquantum.core.ir.program.signatures import Signature
+
+    original = BloqBuilder()
+    source_word = original.allocate(dtype=QInt(width))
+    original.free(source_word)
+    source = original.finalize()
+    builder = ComponentProgramBuilder(Signature(()))
+    word = builder.allocate(dtype=signed_register_type(width))
+    assert word.register.dtype == signed_register_type(width)
+    builder.free(word)
+    record = builder.finalize({})
+    assert len(source.connections) == 1
+    assert len(record.functions[0].blocks[0].operations) == 2
+    bound = bind_register_program(record, (), clean=tuple(range(width)))
+    assert bound.outputs == () and bound.circuit.instructions == ()
+    assert [(event.kind, event.wires, event.dirty) for event in bound.events] == [
+        ("allocate", tuple(range(width)), False),
+        ("free", tuple(range(width)), False),
+    ]

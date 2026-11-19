@@ -122,7 +122,11 @@ def test_workspace_construction_rejects_unadmitted_dirty_flags_before_mutation(
 
 @pytest.mark.parametrize(
     "dtype",
-    [RegisterType("uint", -1), RegisterType("signed", 3), RegisterType("uint", 3, 1)],
+    [
+        RegisterType("uint", -1),
+        RegisterType("signed", 3, parameters=(("unresolved", 1),)),
+        RegisterType("uint", 3, 1),
+    ],
 )
 def test_workspace_executable_descriptor_admission_precedes_call_reservation(dtype):
     builder = ComponentProgramBuilder(Signature([]))
