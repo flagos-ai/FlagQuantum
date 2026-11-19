@@ -5,9 +5,7 @@ from __future__ import annotations
 import random
 from unittest.mock import patch
 
-import numpy as np
 import pytest
-from numpy.typing import NDArray
 
 from flagquantum.compiler import CouplingMap, route_to_topology
 from flagquantum.compiler.topology import sabre
@@ -52,21 +50,29 @@ _CYCLING_PAIRS = (
 )
 
 
-def _basis_permutation(program: CircuitIR) -> NDArray[np.int64]:
+def _basis_permutation(program: CircuitIR) -> tuple[int, ...]:
     """Compute the complete CX/SWAP operator as a permutation of basis indices."""
-    indices = np.arange(1 << program.n_wires, dtype=np.int64)
+    indices = list(range(1 << program.n_wires))
     for instruction in program:
         left, right = instruction.wires
         left_mask = 1 << (program.n_wires - 1 - left)
         right_mask = 1 << (program.n_wires - 1 - right)
         if instruction.name == "cx":
-            indices ^= ((indices & left_mask) != 0) * right_mask
+            indices = [
+                index ^ (right_mask if index & left_mask else 0) for index in indices
+            ]
         elif instruction.name == "swap":
-            unequal = ((indices & left_mask) != 0) != ((indices & right_mask) != 0)
-            indices ^= unequal * (left_mask | right_mask)
+            indices = [
+                (
+                    index ^ (left_mask | right_mask)
+                    if bool(index & left_mask) != bool(index & right_mask)
+                    else index
+                )
+                for index in indices
+            ]
         else:
             raise AssertionError(f"Unsupported reference opcode: {instruction.name}")
-    return indices
+    return tuple(indices)
 
 
 def test_repeated_layout_recovers_and_preserves_the_complete_operator() -> None:
@@ -79,9 +85,7 @@ def test_repeated_layout_recovers_and_preserves_the_complete_operator() -> None:
         program, topology
     )
     assert all(topology.has_edge(*instruction.wires) for instruction in first)
-    np.testing.assert_array_equal(
-        _basis_permutation(first), _basis_permutation(program)
-    )
+    assert _basis_permutation(first) == _basis_permutation(program)
     assert first.metadata["routing"]["mapping_restored"] is True
     assert sorted(
         item.metadata["source_instruction_index"]
@@ -103,9 +107,7 @@ def test_budget_release_valve_stops_one_edge_short(
     assert plan.sequence == (0,)
     assert abs(plan.placements[0][0] - plan.placements[0][1]) == 1
     routed = route_to_topology(program, CouplingMap.line(n_wires), strategy="sabre")
-    np.testing.assert_array_equal(
-        _basis_permutation(routed), _basis_permutation(program)
-    )
+    assert _basis_permutation(routed) == _basis_permutation(program)
 
 
 def test_repeated_search_discards_speculative_swaps() -> None:
@@ -131,9 +133,7 @@ def test_rollback_keeps_layout_and_attribution_consistent(
     )
     topology = CouplingMap.grid(2, 3)
     routed = route_to_topology(program, topology, strategy="sabre")
-    np.testing.assert_array_equal(
-        _basis_permutation(routed), _basis_permutation(program)
-    )
+    assert _basis_permutation(routed) == _basis_permutation(program)
     assert all(topology.has_edge(*instruction.wires) for instruction in routed)
     assert routed.metadata["routing"]["planned_inserted_swap_count"] == sum(
         item.metadata.get("routing_phase") is not None for item in routed
