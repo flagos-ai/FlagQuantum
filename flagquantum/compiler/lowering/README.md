@@ -58,8 +58,9 @@ absent or undirected, unallocated topology and identity initial placement.
 `TargetLegalizationResult.native_block_optimization` retains the native baseline,
 output and rejection counters. Final scheduling uses the accepted output.
 An accepted rewrite enters the [v4 artifact evidence workflow](../artifacts/README.md).
-When no rewrite is accepted, existing identities and encodings are preserved. Runtime and
-Deployment handoff qualification remains separate and pending.
+When no rewrite is accepted, existing identities and encodings are preserved.
+Runtime and Deployment accept the v4 handoff through their existing read-only
+identity checks and offline preparation; no remote execution is certified here.
 
 Run its focused offline checks with:
 

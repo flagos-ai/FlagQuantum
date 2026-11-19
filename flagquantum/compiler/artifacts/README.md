@@ -37,9 +37,11 @@ authorize executing against an expired target snapshot.
 
 The admitted artifact profile remains undirected and unallocated, with identity
 initial and final placement. Private optimizer support for other initial
-placements does not expand the version 4 reader's admission. Runtime/Deployment
-handoff support is still pending; generating a v4 bundle is not a deployment
-support claim.
+placements does not expand the version 4 reader's admission. Runtime accepts v4
+through its existing read-only source/target/output identity checks. Deployment
+can prepare the handoff offline while retaining snapshot-expiry and shot-limit
+checks. Neither adapter recompiles or independently proves a block operator,
+and these local checks do not certify remote submission or hardware execution.
 
 The shortest development path for this workflow is:
 
