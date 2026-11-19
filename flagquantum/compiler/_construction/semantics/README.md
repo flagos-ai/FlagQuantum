@@ -61,4 +61,6 @@ and seeded random matrices with and without coherent controls, including global
 phase and clean workspace. They use the workspace count chosen by the existing
 allocator. A diagnostic with one fewer workspace bit for the controlled
 four-qubit case exposed approximately `2.2e-12` inactive-branch simulator drift;
-that separate fallback precision issue is not claimed fixed here.
+that separate fallback precision issue is tracked in
+[issue #1240](https://github.com/flagos-ai/FlagQuantum/issues/1240) and is not
+claimed fixed here.
