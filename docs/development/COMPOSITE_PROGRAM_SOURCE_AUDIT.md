@@ -90,8 +90,8 @@ inferred from the primitive counts. The previous measured Program export tests
 are reused for all-branch evidence, while recursive measured SDK leaves remain
 open. The concentrated graph and Cirq regression passes 997 cases without skips.
 
-The remaining arbitrary SDK leaf boundary is concrete. The existing physical
-CircuitIR supports explicit matrices, but typed Program operations cannot yet
+At this batch boundary, the arbitrary SDK leaf gap was concrete. The physical
+CircuitIR supported explicit matrices, but typed Program operations could not yet
 carry an `any` matrix operand. Both control polarities of an original
 `CirqGateAsBloq` matrix wrapper are verified as source evidence and rejected by
 the native register importer with a specific definition requirement. This needs
@@ -107,3 +107,40 @@ registry failure. Its test and every scanned example-bearing module are byte
 identical to the baseline. The only changed production module contains no
 docstring examples in either revision. The persistent evidence is
 `g2-sdk-leaf-default-baseline.json`. Whole-repository acceptance remains open.
+
+## Explicit unitary leaf closure
+
+Proposal 103 prerequisite 1.21 now carries explicit unitary leaves through
+Core, Compiler and Ecosystem. Core stores immutable built-in complex rows,
+checks finite square unitary data, preserves old hashes when absent, and rejects
+missing payloads or payloads on other opcodes. Compiler creates independent
+complex128 physical storage while preserving wire order and classical clauses.
+Ecosystem reuses its explicit matrix recognizer and emits one owned `any` atom.
+The register-gate decomposition exports that atom as a copied SDK MatrixGate.
+
+The unchanged source wrapper witnesses cover one- and two-qubit leaves, both
+control polarities, reversed operands, full global phase and an entangled
+spectator. Native Program binding and export/reimport match complete operators.
+A graph-copy and `Circuit.append(op)` workflow applies the exact forward and
+inverse matrices to work, releases the clean wire, and retains the data phase.
+Both measurement outcomes and control polarities retain full complex branch
+amplitudes after binding and after export/reimport, with the reset wire zero.
+The measured circuit has one matrix atom, one measurement and one reset. The
+clean-work workflow emits three matrix atoms and two lifetime events. These
+are primitive counts at the explicit-matrix boundary. These fixtures provide
+no independent Clifford/T synthesis model.
+
+Validation includes 1,016 concentrated cases across 33 files without skips,
+90 local integration and public-IR cases, strict typing of 12 files, Black,
+Ruff, architecture, classified scope and the internal IR contract. The latter
+checks 44 diagnostic codes and 15 rules. Dependency scanning records 706
+repository findings and zero findings in this batch. Optional source-test
+imports have explicit missing-dependency guards. The default smoke/unit run
+again stops at the existing docstring registry failure after 434 passes and
+51 skips. Logs use the `g2-matrix-leaf-` prefix in the reference environment.
+
+The complete Q-0156 source file remains open. Tensor-only component fallback,
+recursive measurement-key transfer and arbitrary nonunitary channels still
+need their own call-chain treatment. Existing public static export admission
+retains its established gate vocabulary. The matrix export here belongs to
+the register-gate decomposition entry used by the source wrapper workflow.

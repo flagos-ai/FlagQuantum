@@ -2005,3 +2005,12 @@ through existing graph transformations. Count each emitted `any` atom as one
 measured primitive and record source model estimates independently. No Clifford/T
 synthesis count is inferred for a dense leaf. This internal prerequisite declares
 no owner approval or Stable Core freeze.
+
+
+Prerequisite 1.21 implementation evidence is recorded in
+`COMPOSITE_PROGRAM_SOURCE_AUDIT.md` under explicit unitary leaf closure.
+`test_program_matrix_payload.py`, `test_register_matrix_binding.py`, and
+`test_register_matrix_contract.py` exercise ownership, rejection, exact phase,
+work release and both feedback branches. `test_cirq_register_leaf_closure.py`
+checks the source wrapper and native export/reimport. The complete Q-0156
+source file retains the tensor-only and recursive measurement boundaries.
