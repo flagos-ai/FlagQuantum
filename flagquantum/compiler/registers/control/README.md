@@ -108,3 +108,15 @@ query own visitation and caching. Run
 `python -m pytest tests/unit/test_controlled_constant_resource_width.py -q`.
 [The interface and evidence](../../../../docs/development/CONTROLLED_CONSTANT_RESOURCE_WIDTH.md)
 record the concrete and symbolic acceptance boundaries.
+
+`default_component_control_system` dispatches the default request to the supplied
+existing total, predicate or classical system factory. Only the exact positive
+scalar QBit descriptor selects total control. One-bit words and shaped controls
+select the predicate factory. Classical storage identity survives zero width.
+Mixed storage and empty specifications fail before invoking any factory. The
+selected ProgramRecord and attachment callback pass through unchanged. This
+owner performs routing, while each factory retains typed admission, child
+semantics and workspace responsibilities. Run
+`python -m pytest tests/unit/test_default_component_control.py -q` for source
+routing and real attachment-to-execution consumers. General classical stored
+child graphs and symbolic execution remain separate acceptance gaps.
