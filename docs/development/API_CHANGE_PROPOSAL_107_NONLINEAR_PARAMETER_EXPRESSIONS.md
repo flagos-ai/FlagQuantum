@@ -2,12 +2,15 @@
 
 ## Review status
 
-Draft awaiting explicit user approval for the protected parameter behavior and
-serialized expression vocabulary. This draft records no approval. Production
-continues to admit the existing add, sub, mul and neg expression operations.
-Proposal 103 prerequisite 1.24 explicitly retains diagnostics for nonlinear
-expressions and symbolic global shifts. This proposal supplies the required
-contract for that remaining Q-0156 dependency.
+Approved by the user on 2026-11-19 with the instruction “批准，按提案实施”.
+The approved scope is the six additional expression operators and symbolic
+real-angle global phase described below. Implementation proceeds in separate
+contract, Core and Ecosystem commits. This approval supersedes Proposal 103
+prerequisite 1.24's nonlinear refusal for precisely this scope.
+
+The machine contract is `contracts/parameter-expression-contract.toml`.
+The compatibility fixture fixes existing arithmetic payload bytes, content
+hashes and binding results before implementation.
 
 ## Verified requirement
 

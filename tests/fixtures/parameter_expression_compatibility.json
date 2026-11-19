@@ -1,0 +1,236 @@
+[
+  {
+    "name": "add",
+    "payload": {
+      "kind": "flagquantum.circuit_ir",
+      "version": "1.0",
+      "n_wires": 1,
+      "dtype": "complex64",
+      "shape": [
+        2
+      ],
+      "instructions": [
+        {
+          "opcode": "rz",
+          "wires": [
+            0
+          ],
+          "params": {
+            "theta": {
+              "$expression": {
+                "op": "add",
+                "args": [
+                  {
+                    "$parameter": "theta"
+                  },
+                  2
+                ]
+              }
+            }
+          },
+          "matrix": null,
+          "metadata": {}
+        }
+      ],
+      "observables": [],
+      "measurements": [],
+      "metadata": {}
+    },
+    "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"add\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+    "content_hash": "c036b23890b27fdc3cb38f58000c9fec8774e24668c7a102ed83d854db223724",
+    "binding": {
+      "theta": 0.375
+    },
+    "value": 2.375
+  },
+  {
+    "name": "sub",
+    "payload": {
+      "kind": "flagquantum.circuit_ir",
+      "version": "1.0",
+      "n_wires": 1,
+      "dtype": "complex64",
+      "shape": [
+        2
+      ],
+      "instructions": [
+        {
+          "opcode": "rz",
+          "wires": [
+            0
+          ],
+          "params": {
+            "theta": {
+              "$expression": {
+                "op": "sub",
+                "args": [
+                  {
+                    "$parameter": "theta"
+                  },
+                  2
+                ]
+              }
+            }
+          },
+          "matrix": null,
+          "metadata": {}
+        }
+      ],
+      "observables": [],
+      "measurements": [],
+      "metadata": {}
+    },
+    "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"sub\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+    "content_hash": "12408c407854bde613c9ea090d145d053216acb133e5a62c5b9984ccfd362fb0",
+    "binding": {
+      "theta": 0.375
+    },
+    "value": -1.625
+  },
+  {
+    "name": "mul",
+    "payload": {
+      "kind": "flagquantum.circuit_ir",
+      "version": "1.0",
+      "n_wires": 1,
+      "dtype": "complex64",
+      "shape": [
+        2
+      ],
+      "instructions": [
+        {
+          "opcode": "rz",
+          "wires": [
+            0
+          ],
+          "params": {
+            "theta": {
+              "$expression": {
+                "op": "mul",
+                "args": [
+                  {
+                    "$parameter": "theta"
+                  },
+                  2
+                ]
+              }
+            }
+          },
+          "matrix": null,
+          "metadata": {}
+        }
+      ],
+      "observables": [],
+      "measurements": [],
+      "metadata": {}
+    },
+    "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"mul\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+    "content_hash": "b04fd79eb311eeab6c8f0f61bc06d35bb886a9705d67bf5933364649ac7fcceb",
+    "binding": {
+      "theta": 0.375
+    },
+    "value": 0.75
+  },
+  {
+    "name": "neg",
+    "payload": {
+      "kind": "flagquantum.circuit_ir",
+      "version": "1.0",
+      "n_wires": 1,
+      "dtype": "complex64",
+      "shape": [
+        2
+      ],
+      "instructions": [
+        {
+          "opcode": "rz",
+          "wires": [
+            0
+          ],
+          "params": {
+            "theta": {
+              "$expression": {
+                "op": "neg",
+                "args": [
+                  {
+                    "$parameter": "theta"
+                  }
+                ]
+              }
+            }
+          },
+          "matrix": null,
+          "metadata": {}
+        }
+      ],
+      "observables": [],
+      "measurements": [],
+      "metadata": {}
+    },
+    "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"}],\"op\":\"neg\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+    "content_hash": "5268988eb5f57b84d9bfa3616e2b8a2973ebb1c60d43589fa3743d4557bd7735",
+    "binding": {
+      "theta": 0.375
+    },
+    "value": -0.375
+  },
+  {
+    "name": "nested",
+    "payload": {
+      "kind": "flagquantum.circuit_ir",
+      "version": "1.0",
+      "n_wires": 1,
+      "dtype": "complex64",
+      "shape": [
+        2
+      ],
+      "instructions": [
+        {
+          "opcode": "rz",
+          "wires": [
+            0
+          ],
+          "params": {
+            "theta": {
+              "$expression": {
+                "op": "neg",
+                "args": [
+                  {
+                    "$expression": {
+                      "op": "add",
+                      "args": [
+                        {
+                          "$expression": {
+                            "op": "mul",
+                            "args": [
+                              {
+                                "$parameter": "theta"
+                              },
+                              2
+                            ]
+                          }
+                        },
+                        3
+                      ]
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "matrix": null,
+          "metadata": {}
+        }
+      ],
+      "observables": [],
+      "measurements": [],
+      "metadata": {}
+    },
+    "json": "{\"dtype\":\"complex64\",\"instructions\":[{\"matrix\":null,\"metadata\":{},\"opcode\":\"rz\",\"params\":{\"theta\":{\"$expression\":{\"args\":[{\"$expression\":{\"args\":[{\"$expression\":{\"args\":[{\"$parameter\":\"theta\"},2],\"op\":\"mul\"}},3],\"op\":\"add\"}}],\"op\":\"neg\"}}},\"wires\":[0]}],\"kind\":\"flagquantum.circuit_ir\",\"measurements\":[],\"metadata\":{},\"n_wires\":1,\"observables\":[],\"shape\":[2],\"version\":\"1.0\"}",
+    "content_hash": "f318e3d7146dac4a737cc0352b3ea3720e104fddcab980aa9ef851640bcf5231",
+    "binding": {
+      "theta": 0.375
+    },
+    "value": -3.75
+  }
+]

@@ -2118,3 +2118,12 @@ source constructor admits it. Compiler consumers must reuse the shared
 predicate and exact adjoint, compare ordered operands and feedback, and verify
 all small measurement histories with full complex spectator amplitudes and
 zero work. Primitive counts and independent source QEC models remain separate.
+
+
+### Approved nonlinear follow-up
+
+On 2026-11-19 the user explicitly approved Proposal 107. Its real nonlinear
+expression and proven-real global-phase scope supersedes prerequisite 1.24's
+nonlinear refusal. The original 1.24 implementation and evidence retain their
+historical scope. Follow the separate machine contract, compatibility fixtures
+and domain implementation commits specified by Proposal 107.
