@@ -2,7 +2,8 @@
 # (C) Copyright IBM 2024
 # Portions adapted from Cirq 1.7.0, transformers/routing/route_circuit_cqc.py.
 # Copyright 2022 The Cirq Developers
-# Licensed under the Apache License, Version 2.0; see LICENSE.
+# Licensed under the Apache License, Version 2.0. See the repository LICENSE or
+# https://www.apache.org/licenses/LICENSE-2.0.
 # Modified for FlagQuantum: native IR relative scoring, deterministic ties,
 # repeated-layout detection, bounded rollback and shortest-path progress.
 # Sources: docs/development/COMPILER_UPSTREAM_REUSE.md and
