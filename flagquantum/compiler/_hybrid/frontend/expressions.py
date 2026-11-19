@@ -1,4 +1,4 @@
-"""Capture scalar expressions, tensor views and quantum wire operands."""
+"""Capture scalar expressions, tensor indices and quantum operands."""
 
 from __future__ import annotations
 

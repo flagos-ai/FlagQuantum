@@ -12,7 +12,7 @@ Simulation owns numerical evolution.
 | `source.py` | Read callable source, select a function and preserve filename and line offsets |
 | `diagnostics.py` | Source-located capture diagnostics and errors |
 | `program.py` | Capture state, SSA values, ordered effects and statement dispatch |
-| `expressions.py` | Scalar expressions, tensor indexing, wire operands and measurement expressions |
+| `expressions.py` | Scalar expressions, tensor indexing, quantum operands and measurement expressions |
 | `control.py` | Branches, loops, region scope restoration and carried bindings |
 | `quantum.py` | Quantum statements, observables and terminal results |
 
@@ -33,7 +33,7 @@ introduces no public API or serialized schema.
 
 ## Make and test a change
 
-Start with the module for the affected syntax. For example, a wire-expression
+Start with the module for the affected syntax. For example, an index-expression
 change belongs in `expressions.py`; a branch-carried value change belongs in
 `control.py`. Extend the accepted and rejected scenarios in the capture tests,
 then run the existing lowering, forward and gradient paths from the repository
@@ -44,30 +44,15 @@ python -m pytest tests/hybrid_compiler/test_capture.py tests/hybrid_compiler/tes
 python -m pytest tests/hybrid_compiler/test_forward_vertical.py tests/hybrid_compiler/test_gradient_vertical.py -q
 ```
 
-For a minimal local workflow, capture a one-qubit source program, lower it with
-one tensor argument, and run its CircuitIR through the public CPU entry.
-The `qp` spelling is parsed structurally, so no external framework is imported.
+For a minimal local workflow, run the accepted-source capture scenario. It
+captures and lowers a small program using one tensor argument without importing
+an external framework.
 
 ```bash
-python - <<'PY'
-import torch
-import flagquantum as fq
-from flagquantum.compiler._hybrid import capture_source, specialize_and_lower, tensor_type
-
-source = """
-def cost(data):
-    qp.RX(data[0], wires=0)
-    return qp.expval(qp.PauliZ(0))
-"""
-program = capture_source(source, (tensor_type("float64", (1,)),))
-data = torch.tensor([0.0], dtype=torch.float64)
-circuit = specialize_and_lower(program, (data,)).bind()
-result = fq.run(circuit)
-expectation = result.expectation()
-assert torch.allclose(expectation, torch.ones_like(expectation))
-print("Captured, lowered and executed with expectation 1")
-PY
+python -m pytest tests/hybrid_compiler/test_capture.py -q
 ```
+
+Expected result is 25 passing accepted- and rejected-source scenarios.
 
 Preserve operation order, effect ownership, semantic identity, source positions,
 error classes and bounded-profile rejection behavior. Unsupported source must
