@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, cast
 
 from ...compiler.registers.register_binding import WorkspaceEvent
 from ._qubit_manager import InteropQubitManager
+from .conversion import _cirq
 
 if TYPE_CHECKING:
     from cirq import LineQubit, Operation, Qid, QubitManager
@@ -45,10 +46,38 @@ def bind_workspace_operations(
     instruction_offsets: Sequence[int] | None = None,
 ) -> tuple[Operation, ...]:
     """Remap emitted operations at physical lease boundaries."""
+    result, _ = _replay_workspace_operations(
+        operations,
+        events,
+        inputs,
+        consumed_inputs,
+        output_groups,
+        base,
+        instruction_offsets=instruction_offsets,
+    )
+    return result
+
+
+def _replay_workspace_operations(
+    operations: Sequence[Operation],
+    events: tuple[WorkspaceEvent, ...],
+    inputs: Sequence[Qid],
+    consumed_inputs: frozenset[int],
+    output_groups: Sequence[Mapping[int, Qid]],
+    base: QubitManager | None,
+    *,
+    instruction_offsets: Sequence[int] | None = None,
+    retained_outputs: tuple[int, ...] | None = None,
+) -> tuple[tuple[Operation, ...], tuple[Qid, ...]]:
+    """Replay either a gate frame or a direct export with live output transfer."""
     outputs = {wire: qubit for group in output_groups for wire, qubit in group.items()}
     final_allocations = _output_allocations(events, outputs)
-    manager = InteropQubitManager(base)
-    manager.manage_qubits((*inputs, *outputs.values()))
+    manager: QubitManager | InteropQubitManager
+    if retained_outputs is None:
+        manager = InteropQubitManager(base)
+        manager.manage_qubits((*inputs, *outputs.values()))
+    else:
+        manager = base if base is not None else _cirq().SimpleQubitManager()
     ports = dict(enumerate(inputs))
     pending_inputs = set(consumed_inputs)
     live: dict[int, Qid] = {}
@@ -111,6 +140,17 @@ def bind_workspace_operations(
         result.extend(op.transform_qubits(locate) for op in operations[start:])
         if pending_inputs:
             raise ValueError("Cirq workspace must release every owned left-only input")
+        if retained_outputs is not None:
+            if live.keys() != set(retained_outputs).difference(ports):
+                raise ValueError(
+                    "Cirq export must retain exactly its live output leases"
+                )
+            returned = tuple(
+                ports[wire] if wire in ports else live[wire]
+                for wire in retained_outputs
+            )
+            live.clear()
+            return tuple(result), returned
         if live.keys() != outputs.keys():
             raise ValueError("Cirq workspace may only keep declared output leases live")
         for group in output_groups:
@@ -121,4 +161,4 @@ def bind_workspace_operations(
     finally:
         if live:
             manager.qfree(live.values())
-    return tuple(result)
+    return tuple(result), ()

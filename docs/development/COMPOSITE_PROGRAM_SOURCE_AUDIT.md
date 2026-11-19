@@ -17,7 +17,7 @@ owns presentation. Source Python objects are confined to reference tests.
 | --- | --- | --- |
 | `_to_tuple`, `_to_set`, `CompositeBloq` | Core immutable tuples and typed Program validation replace attrs converter storage. | Symbolic and non-executable typed graph admission is still Q-0149. Source object equality is represented through native records, not source Python classes. |
 | `CompositeBloq._default_bloq_instances`, `all_soquets`, `_binst_graph` | Existing operations/results/arguments and `component_graph` / `component_schedule` derive nodes, values and dependencies. `test_component_graph.py` checks metadata, array shape, ownership and copy. | A portable ordering for source frozenset-only isolated nodes is unavailable. Native stored order is explicit. |
-| `CompositeBloq.as_cirq_op`, `to_cirq_circuit_and_quregs`, `to_cirq_circuit` | `_register_export.export_register_cirq`, native physical binding and `bind_workspace_operations` own placement, gates and lifetime actions. Register physical-binding/output-transfer tests compare source Cirq output and work reuse. | Full Program-to-Cirq facade parity is unverified. Existing export takes bound gate IR and explicit wire ports; automatic Program traversal with external qubit-manager lifetime and returned-qureg mapping still needs a complete workflow audit. Do not claim these three source methods replaced solely by gate export. |
+| `CompositeBloq.as_cirq_op`, `to_cirq_circuit_and_quregs`, `to_cirq_circuit` | `_register_program_export.export_bound_register_cirq` composes Compiler-bound Program traversal with external manager lifetime replay and returns final shaped Qids. Source/native tests cover clean/borrowed reuse, LEFT release and RIGHT transfer, reordered ports, primitive order and every repeated measured-child branch. See CIRQ_REGISTER_PROGRAM_EXPORT.md. | Finite executable Programs use consecutive input binding explicitly. Arbitrary SDK-backed leaf wrappers and symbolic graphs remain open. The gate wrapper and direct returned-output conversion have separate ownership semantics. |
 | `CompositeBloq.from_cirq_circuit` | `_register_import.import_cirq_register_optree` builds native typed Programs. `test_cirq_register_import.py` checks default sorted qubits, directional/shaped ports, phase, resets, custom definitions and six-wire full unitary. | Source permits arbitrary Cirq wrappers; native admission is finite and explicit. Audit unsupported operation classes before full conversion closure. |
 | `CompositeBloq.on_classical_vals` | `component_classical_state.ComponentClassicalState` and pure/phased component traversal compose registered numerical actions. Tests cover shaped values, phase, RNG, failures and all small measurement branches. | Symbolic typed graph admission and arbitrary source Python callbacks remain outside finite Program construction. |
 | `CompositeBloq.as_composite_bloq`, `decompose_bloq` | A native stored Program already is the composite. Root wrapping and decomposition use `component_tensor_expansion` and `component_expansion`; no redundant wrapper is required for an existing composite. | Source refusal to decompose an already-composite value must stay distinct from selective child expansion. Existing root tensor tests document the distinction. |
@@ -44,12 +44,13 @@ owns presentation. Source Python objects are confined to reference tests.
 
 ## Next complete workflow
 
-Audit the full source `to_cirq_circuit_and_quregs` path with its direct
-`_cbloq_to_cirq_circuit` dependency. Compare native binding plus export using a
-reordered input, a RIGHT-only output, LEFT-only release and reused clean/borrowed
-workspace. Exercise a measured child and its feedback keys, then append the same
-native operation and compare every applicable branch. Determine whether an
-Ecosystem-owned facade is required without moving allocation policy into Core.
+The direct finite Program export is now implemented and covered by the connected
+source/native workflow described in CIRQ_REGISTER_PROGRAM_EXPORT.md. Reuse that
+evidence when evaluating the three Cirq methods. The source `as_cirq_op` includes
+a wrapper fallback for source components whose direct Cirq conversion refuses;
+its arbitrary SDK-backed leaves and symbolic declaration semantics still need
+explicit disposition. The source summary method also needs a native presentation
+owner and original-source behavioral comparison.
 
 The frozen source file's own tests currently pass 39 cases and its original
 notebook test passes separately. Those runs confirm the reference environment.

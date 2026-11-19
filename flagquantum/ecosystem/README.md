@@ -76,3 +76,14 @@ The complete optional local-estimator workflow is in
 `examples/notebooks/physical_resource_interop.ipynb`. SDK result and widget objects
 remain inside that interoperability example. Test a conversion change with
 `python -m pytest tests/unit/test_resource_estimator_counts.py -q`.
+
+## Bound register Program conversion
+
+`cirq._register_program_export.export_bound_register_cirq` translates a
+Compiler-bound finite Program with consecutive input wires into a Cirq circuit
+and shaped output Qids. It replays external manager lifetimes and transfers
+new output leases to the caller. Allocation policy stays in Compiler. Follow
+[the executable example and ownership rules](../../docs/development/CIRQ_REGISTER_PROGRAM_EXPORT.md)
+when modifying this internal adapter. Run
+`tests/unit/test_cirq_register_program_export.py` and
+`tests/test_cirq_register_export.py` to cover direct and gate-frame conversion.
