@@ -4,35 +4,34 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import pytest
+import torch
 
-from flagquantum.compiler.artifacts.native_block_evidence import (
-    build_native_block_physical_evidence,
+from flagquantum.compiler.artifacts.artifact_compilation import (
+    ArtifactCompilationError,
+    ArtifactCompilationResult,
+    compile_circuit_artifact_for_target,
+)
+from flagquantum.compiler.artifacts.compilation_evidence import (
+    build_compilation_evidence_bundle,
+    verify_compilation_evidence_bundle,
 )
 from flagquantum.compiler.artifacts.physical_plan import (
-    PhysicalCircuitPlan,
     PhysicalPlanError,
-    build_physical_circuit_plan,
-)
-from flagquantum.compiler.lowering.native_block_optimization import (
-    NativeBlockOptimizationError,
-    NativeBlockOptimizationResult,
-    optimize_native_blocks,
-)
-from flagquantum.compiler.lowering.native_gate_legalization import (
-    NativeGateLegalizationError,
-)
-from flagquantum.compiler.lowering.schedule_legalization import (
-    CircuitSchedule,
-    schedule_circuit_dependencies,
 )
 from flagquantum.compiler.lowering.target_legalization import (
     legalize_circuit_for_target,
 )
 from flagquantum.compiler.routing import CouplingMap
-from flagquantum.core._compilation_evidence_v4 import PhysicalPlanEvidenceV4
-from flagquantum.core.ir import CircuitIR, Instruction
+from flagquantum.core._artifacts import ProgramArtifactV2
+from flagquantum.core._compilation_evidence import read_compilation_evidence_bundle_json
+from flagquantum.core._compilation_evidence_v4 import (
+    CompilationEvidenceBundleV4,
+)
+from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
+from flagquantum.core.parameters import Parameter
 from flagquantum.core.target_capabilities import (
     CapabilityFact,
     CapabilityScope,
@@ -44,6 +43,7 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.integration
 _NOW = datetime(2026, 11, 19, tzinfo=timezone.utc)
@@ -56,6 +56,8 @@ def _snapshot() -> TargetCapabilitySnapshot:
         "limits.maximum_program_operations": 1024,
         "precision.effective_dtype": "complex128",
         "gates.native": ("rx", "rz", "cz"),
+        "artifacts.profiles": ("openqasm-3.0",),
+        "measurements.results": ("samples",),
     }
     return TargetCapabilitySnapshot(
         target_identity=TargetIdentity(
@@ -94,43 +96,193 @@ def _snapshot() -> TargetCapabilitySnapshot:
     )
 
 
-def _stages(
+def _compile(
     source: CircuitIR,
     *,
-    coupling: CouplingMap | None = None,
+    routed: bool = False,
+    budget: int = 256,
     strategy: str = "auto",
-) -> tuple[
-    PhysicalCircuitPlan,
-    NativeBlockOptimizationResult,
-    CircuitSchedule,
-    TargetCapabilitySnapshot,
-]:
-    snapshot = _snapshot()
-    target = legalize_circuit_for_target(
-        source,
-        backend="pytorch",
-        snapshot=snapshot,
+) -> ArtifactCompilationResult:
+    source = replace(
+        source, measurements=(MeasurementNode("samples", tuple(range(source.n_wires))),)
+    )
+    return compile_circuit_artifact_for_target(
+        ProgramArtifactV2.from_circuit_ir(source, producer="block-test"),
+        backend="qasm",
+        profile="openqasm-3.0",
+        producer="block-test",
+        snapshot=_snapshot(),
         evaluated_at=_NOW,
-        coupling_map=coupling,
+        coupling_map=CouplingMap.line(source.n_wires) if routed else None,
+        max_native_added_operations=budget,
         routing_strategy=strategy,
     )
-    baseline = build_physical_circuit_plan(target, coupling_map=coupling)
-    optimization = optimize_native_blocks(
-        target.native_gate_legalization,
-        snapshot=snapshot,
-        evaluated_at=_NOW,
-        topology=target.topology_legalization,
-        coupling_map=coupling,
+
+
+def _operator(program: CircuitIR) -> torch.Tensor:
+    size = 1 << program.n_wires
+    result = torch.eye(size, dtype=torch.complex128).reshape(
+        *([2] * program.n_wires), size
     )
-    assert optimization is not None
-    schedule = schedule_circuit_dependencies(
-        optimization.program, target_snapshot_id=snapshot.snapshot_id
+    for instruction in program.instructions:
+        order = (
+            *instruction.wires,
+            *(q for q in range(program.n_wires) if q not in instruction.wires),
+            program.n_wires,
+        )
+        inverse = tuple(order.index(q) for q in range(program.n_wires + 1))
+        local_size = 1 << len(instruction.wires)
+        local = gate_matrix(
+            instruction, bsz=1, device=torch.device("cpu"), dtype=torch.complex128
+        ).reshape(local_size, local_size)
+        result = (
+            (local @ result.permute(order).reshape(local_size, -1))
+            .reshape(*([2] * program.n_wires), size)
+            .permute(inverse)
+        )
+    return result.reshape(size, size)
+
+
+@pytest.mark.parametrize("routed", [False, True])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_automatic_target_artifact_has_v4_lineage_and_independent_operator(
+    routed: bool, reverse: bool
+) -> None:
+    pair = (2, 0) if reverse else (0, 2)
+    source = CircuitIR(
+        3,
+        (Instruction("swap", pair), Instruction("cx", pair[::-1])),
+        dtype="complex128",
     )
-    return baseline, optimization, schedule, snapshot
+    compiled = _compile(source, routed=routed)
+    stage = compiled.legalization.native_block_optimization
+    assert stage is not None and stage.rewrites
+    assert (
+        compiled.legalization.native_gate_legalization.program is stage.source_program
+    )
+    assert compiled.physical_plan.program is stage.program
+    assert compiled.legalization.schedule.program is stage.program
+    assert compiled.physical_plan.version == "4.0"
+    assert sum(item.name == "cz" for item in stage.program.instructions) < sum(
+        item.name == "cz" for item in stage.source_program.instructions
+    )
+    expected, actual = _operator(source), _operator(stage.program)
+    phase = torch.trace(actual.conj().T @ expected) / len(expected)
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+    assert float(abs(abs(phase) - 1)) <= 1e-11
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    decoded = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert decoded == bundle
+    verify_compilation_evidence_bundle(decoded, compiled, snapshot=_snapshot())
+    assert bundle.physical_plan.plan_identity == compiled.physical_plan.plan_identity
+    assert (
+        _compile(source, routed=routed).compilation_identity
+        == compiled.compilation_identity
+    )
+
+
+def test_identity_replacement_does_not_change_target_or_artifact_consumers() -> None:
+    source = CircuitIR(
+        2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))), dtype="complex128"
+    )
+    optimized = _compile(source)
+    with patch(
+        "flagquantum.compiler.lowering.target_legalization.optimize_native_blocks",
+        return_value=None,
+    ):
+        baseline = _compile(source)
+        legacy_bundle = build_compilation_evidence_bundle(
+            baseline, snapshot=_snapshot(), producer="block-test"
+        )
+    assert baseline.physical_plan.version == legacy_bundle.version == "1.0"
+    assert optimized.physical_plan.version == "4.0"
+    assert baseline.legalization.native_block_optimization is None
+    assert (
+        sum(item.name == "cz" for item in baseline.legalization.program.instructions)
+        == 4
+    )
+    assert (
+        sum(item.name == "cz" for item in optimized.legalization.program.instructions)
+        == 2
+    )
+    expected, actual = _operator(baseline.legalization.program), _operator(
+        optimized.legalization.program
+    )
+    phase = torch.trace(actual.conj().T @ expected) / len(expected)
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+
+
+def test_no_accepted_rewrite_preserves_legacy_artifact_bytes_and_identities() -> None:
+    source = CircuitIR(2, (Instruction("cz", (0, 1)),), dtype="complex128")
+    enabled = _compile(source)
+    with patch(
+        "flagquantum.compiler.lowering.target_legalization.optimize_native_blocks",
+        return_value=None,
+    ):
+        baseline = _compile(source)
+    stage = enabled.legalization.native_block_optimization
+    assert stage is not None and stage.rewrites == ()
+    assert stage.program is enabled.legalization.native_gate_legalization.program
+    assert enabled.physical_plan.version == "1.0"
+    assert (
+        enabled.executable_artifact.to_json() == baseline.executable_artifact.to_json()
+    )
+    assert enabled.compilation_identity == baseline.compilation_identity
+    assert (
+        build_compilation_evidence_bundle(
+            enabled, snapshot=_snapshot(), producer="block-test"
+        ).to_json()
+        == build_compilation_evidence_bundle(
+            baseline, snapshot=_snapshot(), producer="block-test"
+        ).to_json()
+    )
+
+
+@pytest.mark.parametrize(
+    "theta",
+    [
+        Parameter("theta"),
+        torch.tensor(0.2, requires_grad=True),
+        torch.tensor([0.2, 0.3]),
+    ],
+)
+def test_automatic_stage_preserves_parameters_as_boundaries(theta: object) -> None:
+    source = CircuitIR(
+        2,
+        (
+            Instruction("swap", (0, 1)),
+            Instruction("rx", (0,), {"theta": theta}),
+            Instruction("cx", (1, 0)),
+        ),
+        dtype="complex128",
+    )
+    target = legalize_circuit_for_target(
+        source, backend="pytorch", snapshot=_snapshot(), evaluated_at=_NOW
+    )
+    stage = target.native_block_optimization
+    assert stage is not None and stage.rewrites == ()
+    assert any(
+        item.params.get("theta") is theta for item in target.program.instructions
+    )
+    assert target.program is target.native_gate_legalization.program
+
+
+@pytest.mark.parametrize("budget", [0, 22])
+def test_automatic_stage_cannot_rescue_native_budget_exhaustion(budget: int) -> None:
+    source = CircuitIR(
+        2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))), dtype="complex128"
+    )
+    with pytest.raises(ArtifactCompilationError, match="max_added_operations"):
+        _compile(source, budget=budget)
 
 
 @pytest.mark.parametrize("pair", [(0, 1), (1, 0)])
-def test_generated_plan_keeps_many_to_many_ownership(pair: tuple[int, int]) -> None:
+def test_collective_ownership_keeps_disjoint_spectator_and_original_sources(
+    pair: tuple[int, int]
+) -> None:
     source = CircuitIR(
         3,
         (
@@ -140,49 +292,38 @@ def test_generated_plan_keeps_many_to_many_ownership(pair: tuple[int, int]) -> N
         ),
         dtype="complex128",
     )
-    baseline, optimization, schedule, snapshot = _stages(source)
-    evidence = build_native_block_physical_evidence(
-        baseline, optimization, schedule, snapshot=snapshot, evaluated_at=_NOW
+    compiled = _compile(source)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
     )
-    assert (
-        PhysicalPlanEvidenceV4.from_dict(
-            evidence.to_dict(), target_snapshot_id=snapshot.snapshot_id
-        )
-        == evidence
-    )
-    assert evidence.source_circuit_hash == source.content_hash
-    assert evidence.native_input_circuit_hash == baseline.program.content_hash
-    assert evidence.physical_circuit_hash == optimization.program.content_hash
-    assert sum(item.opcode == "cz" for item in evidence.native_input_instructions) == 4
-    assert sum(item.opcode == "cz" for item in evidence.instructions) == 2
-    assert len(evidence.block_rewrites) == 1
-    block = evidence.block_rewrites[0]
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    plan = bundle.physical_plan
+    assert len(plan.block_rewrites) == 1
+    block = plan.block_rewrites[0]
     assert {
-        evidence.native_input_instructions[index].source_instruction_index
+        plan.native_input_instructions[index].source_instruction_index
         for index in block.input_instruction_indices
     } == {0, 2}
     unchanged = [
         item
-        for item in evidence.instructions
+        for item in plan.instructions
         if item.native_input_instruction_index is not None
     ]
     assert len(unchanged) == 1
-    for item in unchanged:
-        assert item.native_input_instruction_index is not None
-        native = evidence.native_input_instructions[item.native_input_instruction_index]
-        assert native.source_instruction_index == 1
-        assert item.block_rewrite_index is None
+    index = unchanged[0].native_input_instruction_index
+    assert index is not None
+    assert plan.native_input_instructions[index].source_instruction_index == 1
     for index in block.output_instruction_indices:
-        assert evidence.instructions[index].native_input_instruction_index is None
-        assert evidence.instructions[index].block_rewrite_index == 0
-    assert evidence.schedule_identity == schedule.schedule_identity
-    assert evidence.schedule_depth == schedule.depth
+        assert plan.instructions[index].native_input_instruction_index is None
+        assert plan.instructions[index].block_rewrite_index == 0
 
 
 @pytest.mark.parametrize(
     "strategy", ["restore_after_each_gate", "persistent_layout", "sabre", "auto"]
 )
-def test_routing_transitions_remain_in_topology_space(strategy: str) -> None:
+def test_automatic_routed_plan_retains_topology_space_transitions(
+    strategy: str,
+) -> None:
     source = CircuitIR(
         3,
         (
@@ -192,46 +333,50 @@ def test_routing_transitions_remain_in_topology_space(strategy: str) -> None:
         ),
         dtype="complex128",
     )
-    baseline, optimization, schedule, snapshot = _stages(
-        source, coupling=CouplingMap.line(3), strategy=strategy
+    compiled = _compile(source, routed=True, strategy=strategy)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
     )
-    evidence = build_native_block_physical_evidence(
-        baseline, optimization, schedule, snapshot=snapshot, evaluated_at=_NOW
-    )
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    plan = bundle.physical_plan
+    assert plan.mapping_transition_space == "topology_program"
+    assert plan.mapping_transitions
     assert (
-        PhysicalPlanEvidenceV4.from_dict(
-            evidence.to_dict(), target_snapshot_id=snapshot.snapshot_id
+        plan.initial_logical_to_physical == plan.final_logical_to_physical == (0, 1, 2)
+    )
+    for transition in plan.mapping_transitions:
+        related = [
+            item
+            for item in plan.native_input_instructions
+            if item.topology_instruction_index == transition.routed_instruction_index
+        ]
+        assert related
+        assert all(
+            item.origin in {"routing_swap", "routing_swap_decomposition"}
+            for item in related
         )
-        == evidence
-    )
-    assert evidence.mapping_transition_space == "topology_program"
-    assert evidence.mapping_transitions
-    assert evidence.initial_logical_to_physical == (0, 1, 2)
-    assert evidence.final_logical_to_physical == (0, 1, 2)
-    assert len(evidence.mapping_transitions) == len(baseline.mapping_transitions)
-    for transition, retained in zip(
-        evidence.mapping_transitions, baseline.mapping_transitions, strict=True
-    ):
-        assert transition.routed_instruction_index == retained.routed_instruction_index
-        assert transition.layout_before == retained.layout_before
-        assert transition.layout_after == retained.layout_after
-    assert sum(item.opcode == "cz" for item in evidence.instructions) < sum(
-        item.opcode == "cz" for item in evidence.native_input_instructions
-    )
+        assert all(
+            item.source_instruction_index == transition.source_instruction_index
+            for item in related
+        )
+    expected, actual = _operator(source), _operator(compiled.legalization.program)
+    phase = torch.trace(actual.conj().T @ expected) / len(expected)
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
 
 
-def test_complete_cancellation_retains_consumed_inputs() -> None:
+def test_complete_cancellation_retains_consumed_inputs_in_the_artifact_bundle() -> None:
     source = CircuitIR(
         2, (Instruction("cz", (0, 1)), Instruction("cz", (1, 0))), dtype="complex128"
     )
-    baseline, optimization, schedule, snapshot = _stages(source)
-    evidence = build_native_block_physical_evidence(
-        baseline, optimization, schedule, snapshot=snapshot, evaluated_at=_NOW
+    compiled = _compile(source)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
     )
-    assert len(evidence.native_input_instructions) == 2
-    assert evidence.instructions == evidence.critical_path == ()
-    assert evidence.block_rewrites[0].output_instruction_indices == ()
-    assert evidence.schedule_depth == 0
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    assert len(bundle.physical_plan.native_input_instructions) == 2
+    assert bundle.physical_plan.instructions == bundle.physical_plan.critical_path == ()
+    assert bundle.physical_plan.block_rewrites[0].output_instruction_indices == ()
+    assert bundle.physical_plan.schedule_depth == 0
 
 
 def test_nonidentity_initial_placement_keeps_the_existing_artifact_refusal() -> None:
@@ -244,65 +389,66 @@ def test_nonidentity_initial_placement_keeps_the_existing_artifact_refusal() -> 
         ),
         dtype="complex128",
     )
-    with pytest.raises(PhysicalPlanError, match="initial layout must be identity"):
-        _stages(source, coupling=CouplingMap.line(3), strategy="sabre_layout")
+    with pytest.raises(
+        ArtifactCompilationError, match="initial layout must be identity"
+    ):
+        _compile(source, routed=True, strategy="sabre_layout")
 
 
-@pytest.mark.parametrize("mutation", ["schedule", "program", "target", "budget"])
-def test_builder_rejects_inconsistent_retained_stage_chain(mutation: str) -> None:
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "native_ancestry",
+        "block_identity",
+        "output_owner",
+        "schedule",
+        "target",
+        "program",
+    ],
+)
+def test_actual_collective_plan_rejects_resealed_inconsistent_stage_evidence(
+    mutation: str,
+) -> None:
     source = CircuitIR(
         2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))), dtype="complex128"
     )
-    baseline, optimization, schedule, snapshot = _stages(source)
-    budget = 256
-    if mutation == "schedule":
-        schedule = replace(schedule, depth=schedule.depth + 1)
-    elif mutation == "program":
-        schedule = replace(schedule, program=baseline.program)
-    elif mutation == "target":
-        schedule = replace(schedule, target_snapshot_id="b" * 64)
-    else:
-        budget = 0
-    with pytest.raises(
-        (PhysicalPlanError, NativeBlockOptimizationError, NativeGateLegalizationError)
-    ):
-        build_native_block_physical_evidence(
-            baseline,
-            optimization,
-            schedule,
-            snapshot=snapshot,
-            evaluated_at=_NOW,
-            max_added_operations=budget,
-        )
-
-
-def test_no_rewrite_keeps_the_existing_plan_version() -> None:
-    source = CircuitIR(2, (Instruction("cz", (0, 1)),), dtype="complex128")
-    baseline, optimization, schedule, snapshot = _stages(source)
-    assert optimization.rewrites == ()
-    assert baseline.version == "1.0"
-    with pytest.raises(PhysicalPlanError, match="block rewrite"):
-        build_native_block_physical_evidence(
-            baseline, optimization, schedule, snapshot=snapshot, evaluated_at=_NOW
-        )
-
-
-def test_resealed_baseline_ancestry_is_not_accepted_as_its_own_proof() -> None:
-    source = CircuitIR(
-        2,
-        (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))),
-        dtype="complex128",
-    )
-    baseline, optimization, schedule, snapshot = _stages(source)
-    forged = replace(
-        baseline,
-        instructions=(
-            replace(baseline.instructions[0], native_replacement_ordinal=99),
-            *baseline.instructions[1:],
-        ),
-        plan_identity="",
-    )
-    with pytest.raises(PhysicalPlanError, match="physical plan failed replay"):
-        build_native_block_physical_evidence(
-            forged, optimization, schedule, snapshot=snapshot, evaluated_at=_NOW
-        )
+    compiled = _compile(source)
+    plan = compiled.physical_plan
+    with pytest.raises((PhysicalPlanError, ValueError)):
+        if mutation == "native_ancestry":
+            replace(
+                plan,
+                native_input_instructions=(
+                    replace(
+                        plan.native_input_instructions[0], native_replacement_ordinal=99
+                    ),
+                    *plan.native_input_instructions[1:],
+                ),
+                plan_identity="",
+            )
+        elif mutation == "block_identity":
+            replace(plan, native_block_optimization_identity="b" * 64, plan_identity="")
+        elif mutation == "output_owner":
+            record = plan._v4_evidence().instructions[0]
+            replace(
+                plan,
+                instructions=(
+                    replace(record, block_replacement_ordinal=99),
+                    *plan._v4_evidence().instructions[1:],
+                ),
+                plan_identity="",
+            )
+        elif mutation == "schedule":
+            legalization = replace(
+                compiled.legalization,
+                schedule=replace(compiled.legalization.schedule, depth=1),
+            )
+            replace(plan, legalization=legalization, schedule_depth=1, plan_identity="")
+        elif mutation == "target":
+            replace(plan, target_snapshot_id="b" * 64, plan_identity="")
+        else:
+            replace(
+                plan,
+                program=compiled.legalization.native_gate_legalization.program,
+                plan_identity="",
+            )

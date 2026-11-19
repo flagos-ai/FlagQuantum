@@ -53,12 +53,13 @@ Directed routing and allocated workspace remain outside this stage's admission.
 Replay repeats the selected routing strategy; its compile-time and memory cost
 must be included in subsequent performance measurements.
 
-The implementation currently remains private and is not connected to automatic
-target compilation. A private [physical-evidence builder](../artifacts/README.md)
-now generates v4 records from its retained stages. Enabling the automatic workflow
-still requires physical-plan/artifact integration and the subsequent
-Runtime/Deployment handoff work from the approved proposal.
-No new execution or deployment support is claimed by this stage alone.
+The stage is automatic in `legalize_circuit_for_target` for full-CZ targets with
+absent or undirected, unallocated topology and identity initial placement.
+`TargetLegalizationResult.native_block_optimization` retains the native baseline,
+output and rejection counters. Final scheduling uses the accepted output.
+An accepted rewrite enters the [v4 artifact evidence workflow](../artifacts/README.md).
+When no rewrite is accepted, existing identities and encodings are preserved. Runtime and
+Deployment handoff qualification remains separate and pending.
 
 Run its focused offline checks with:
 
@@ -73,5 +74,5 @@ matrices verify the complete operator, including both operand orders and all
 five routing selections. Nonidentity initial placements are applied explicitly
 to every input basis state; final layouts remain restored. Rehashed mutations
 of routing parameters, ordering, ancestry, coverage and restoration are rejected
-before annotations can enter a block. The
-existing user-facing target workflow above continues to use its prior behavior.
+before annotations can enter a block. The existing user-facing target workflow
+above retains its prior behavior for targets outside the admitted CZ profile.
