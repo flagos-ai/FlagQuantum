@@ -19,6 +19,7 @@ from collections.abc import Mapping
 
 from ..diagnostics import LevelDiagnostic, _diagnostic
 from .call_verifier import call_signature, has_call_profile, verify_call_structure
+from .matrix import matrix_error
 from .model import (
     CONSTANT_OPCODE,
     MEASURE_OPCODE,
@@ -231,10 +232,21 @@ def _verify_operations(
     live = set(block.arguments)
     results: list[ValueRef] = []
     for position, operation in enumerate(block.operations):
+        error = (
+            matrix_error(operation.matrix, len(operation.operands))
+            if operation.opcode == "any"
+            else (
+                "only explicit unitary leaves may carry matrix data"
+                if operation.matrix is not None
+                else None
+            )
+        )
+        if error is not None:
+            diagnostics.append(_diagnostic("program.matrix_invalid", error))
         signature = (
             call_signature(operation, callees)
             if operation.opcode == "call" and callees is not None
-            else opcode_signature(operation.opcode)
+            else opcode_signature(operation.opcode, arity=len(operation.operands))
         )
         signature = (register_signatures or {}).get(position, signature)
         if signature is None:
@@ -369,7 +381,9 @@ def _verify_operation_shape(
 ) -> list[LevelDiagnostic]:
     """Type one operation against its opcode signature, ignoring liveness."""
 
-    signature = signature or opcode_signature(operation.opcode)
+    signature = signature or opcode_signature(
+        operation.opcode, arity=len(operation.operands)
+    )
     assert signature is not None  # caller checked; narrows for the type checker
     diagnostics: list[LevelDiagnostic] = []
     if len(operation.operands) != signature.arity:

@@ -62,6 +62,7 @@ DIAGNOSTIC_LEVELS: dict[str, str] = {
     "program.edge_unknown": LEVEL_PROGRAM,
     "program.entry_missing": LEVEL_PROGRAM,
     "program.function_arity": LEVEL_PROGRAM,
+    "program.matrix_invalid": LEVEL_PROGRAM,
     "program.opcode_unknown": LEVEL_PROGRAM,
     "program.operand_arity": LEVEL_PROGRAM,
     "program.operand_kind": LEVEL_PROGRAM,

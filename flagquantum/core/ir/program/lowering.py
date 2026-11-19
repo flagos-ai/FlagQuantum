@@ -242,7 +242,7 @@ def _lower_instructions(
                 value = result
             classical_values[operation.target] = value
             continue
-        signature = opcode_signature(instruction.name)
+        signature = opcode_signature(instruction.name, arity=len(instruction.wires))
         if signature is None:
             raise _UnmodelledOpcodeError(
                 _diagnostic(
@@ -276,6 +276,14 @@ def _lower_instructions(
                 operands=operands,
                 results=results,
                 parameters=tuple(parameters),
+                matrix=(
+                    tuple(
+                        tuple(complex(value) for value in row)
+                        for row in instruction.matrix.detach().cpu().tolist()
+                    )
+                    if instruction.matrix is not None
+                    else None
+                ),
                 condition_clauses=_lower_conditions(
                     instruction,
                     classical_values,

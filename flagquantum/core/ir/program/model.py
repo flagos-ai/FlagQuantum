@@ -112,6 +112,7 @@ class Operation:
         callee: Same-module function name, present only for a finite call.
         register_type: Destination descriptor for a join or allocation.
         workspace_dirty: Explicit borrowing flag for allocation or release.
+        matrix: Immutable complex rows owned by an explicit unitary leaf.
     """
 
     opcode: str
@@ -127,6 +128,7 @@ class Operation:
     callee: str | None = None
     register_type: RegisterType | None = None
     workspace_dirty: bool | None = None
+    matrix: tuple[tuple[complex, ...], ...] | None = None
 
     def __hash__(self) -> int:
         previous: tuple[object, ...] = (
@@ -143,11 +145,9 @@ class Operation:
             previous = (*previous, self.callee)
         if self.register_type is not None:
             previous = (*previous, self.register_type)
-        return hash(
-            previous
-            if self.workspace_dirty is None
-            else (*previous, self.workspace_dirty)
-        )
+        if self.workspace_dirty is not None:
+            previous = (*previous, self.workspace_dirty)
+        return hash(previous if self.matrix is None else (*previous, self.matrix))
 
 
 @dataclass(frozen=True)
@@ -283,7 +283,9 @@ class OpcodeSignature:
         return len(self.operand_kinds)
 
 
-def opcode_signature(opcode: str) -> OpcodeSignature | None:
+def opcode_signature(
+    opcode: str, *, arity: int | None = None
+) -> OpcodeSignature | None:
     """Return the type signature of one opcode this level models.
 
     The canonical operator vocabulary is the one the repository already owns, so
@@ -293,6 +295,9 @@ def opcode_signature(opcode: str) -> OpcodeSignature | None:
     that vocabulary. Every other opcode outside it has no program-level signature;
     the quantum level owns the extended vocabulary.
     """
+    if opcode == "any" and arity is not None:
+        wires = ("qubit",) * arity
+        return OpcodeSignature(opcode, operand_kinds=wires, result_kinds=wires)
     if opcode == CONSTANT_OPCODE:
         return OpcodeSignature(opcode, result_kinds=("scalar",))
     if opcode in {"bool_zero", "bool_one"}:
