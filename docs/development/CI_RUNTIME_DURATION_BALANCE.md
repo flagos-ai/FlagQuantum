@@ -56,3 +56,15 @@ the complete tier. The focused scheduler and coverage-plan tests passed
 18 cases in 0.55 seconds, retaining the existing disjointness, coverage and
 balance bounds. Full CI, including both launcher proofs, is still required.
 The cancelled job must not be reclassified as passing.
+
+
+## Source provenance after integration
+
+The observed source `abde94db5cef007495cc1bce41ce36f673747cff` belonged to
+the former compiler cleanup branch. GitHub still serves the full object by
+commit ID, but the original branch was deleted after squash merge and the
+commit is not an ancestor of main. Its origin is declared as
+`unreferenced_object` in the existing evidence-revision manifest. The original
+failed run, source pin, log hashes, measured durations and scheduler evidence
+remain unchanged. A full-history CI checkout detected the missing declaration;
+adding it accounts for the source rather than weakening the provenance gate.
