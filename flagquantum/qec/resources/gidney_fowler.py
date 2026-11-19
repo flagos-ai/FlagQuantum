@@ -7,10 +7,10 @@
 """Physical costs for catalyzed CCZ-to-T factories and a surface-code data block."""
 
 from dataclasses import dataclass
-from math import ceil
 
 from ...compiler._component_trace.gate_budget import t_and_ccz_budget
-from ...compiler._component_trace.resource_model import ModeledResources
+from ...compiler._component_trace.resource_model import GateCost, ModeledResources
+from .ccz_to_t_factory import CCZToTFactory
 from .data_block import DataBlock, DataLayout
 from .error_model import LogicalErrorModel, SurfaceCodeScheme
 from .physical_cost import PhysicalResourceEstimate, validate_logical_counts
@@ -53,24 +53,18 @@ def estimate_gidney_fowler_resources(
     data_block = DataBlock(data_layout, data_distance)
     validate_logical_counts(logical)
     budget = t_and_ccz_budget(logical.gates)
-    pairs = ceil(int(budget["n_t"]) / 2)
-    ccz_states = int(budget["n_ccz"]) + pairs
-
+    factory_gates = GateCost(t=int(budget["n_t"]), toffoli=int(budget["n_ccz"]))
     logical_error = LogicalErrorModel(physical_error, SurfaceCodeScheme.gidney_fowler())
-
-    l1, l2 = distillation_l1_distance, distillation_l2_distance
-    l0_error = physical_error + 100 * logical_error(l1 // 2)
-    l1_error = 1000 * logical_error(l1) + 100 * logical_error(l1) + 35 * l0_error**3
-    l2_error = 1000 * logical_error(l2) + 28 * l1_error**2
-    generation_cycles = ceil((ccz_states * 5.5 + pairs) * max(2 * l1 + 1, l2))
-    factory_qubits = 6 * (4 * 8 * 2 * l1**2) + 4 * 8 * 2 * l2**2
+    factory = CCZToTFactory(distillation_l1_distance, distillation_l2_distance)
+    factory_error = factory.factory_error(factory_gates, logical_error)
+    assert isinstance(factory_error, float)
     return GidneyFowlerEstimate._from_components(
         logical,
         data_block,
         hardware,
         error_rate_scaler=0.1,
-        factory_cycles=generation_cycles,
-        factory_qubits=factory_qubits,
-        factory_error=l2_error * ccz_states,
+        factory_cycles=factory.n_cycles(factory_gates, logical_error),
+        factory_qubits=factory.n_physical_qubits(),
+        factory_error=factory_error,
         factory_count=factory_count,
     )
