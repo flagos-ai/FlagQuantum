@@ -50,7 +50,8 @@ def _replace_operations(
 
 
 def test_shared_helper_remaps_actuals_and_specializes_nonzero_angles() -> None:
-    definition = program_definition(IMPORTS + KICK + """
+    definition = program_definition(
+        f"""{IMPORTS}{KICK}
 @qfunc
 def main(x: Output[QBit], y: Output[QBit]) -> None:
     allocate(x)
@@ -62,7 +63,8 @@ def main(x: Output[QBit], y: Output[QBit]) -> None:
     kick(0.27, y)
     kick(0.41, x)
     kick(0.27, x)
-""")
+""",
+    )
     root, functions = capture_program(definition)
     verify_register_program(root, functions)
     assert len(functions) == 2
@@ -90,7 +92,8 @@ def main(x: Output[QBit], y: Output[QBit]) -> None:
 
 
 def test_shared_adjoint_preserves_absolute_phase_and_control_interference() -> None:
-    definition = program_definition(IMPORTS + KICK + """
+    definition = program_definition(
+        f"""{IMPORTS}{KICK}
 @qfunc
 def main(control_bit: Output[QBit], q: Output[QBit]) -> None:
     allocate(control_bit)
@@ -102,7 +105,8 @@ def main(control_bit: Output[QBit], q: Output[QBit]) -> None:
         kick(0.37, q)
     control(control_bit, lambda: kick(0.37, q))
     H(control_bit)
-""")
+""",
+    )
     program = synth.synthesize(definition)
     # Build a unitary from independent basis-state Circuit evolution.
     columns = []
@@ -126,7 +130,8 @@ def main(control_bit: Output[QBit], q: Output[QBit]) -> None:
 
 
 def test_three_hundred_calls_keep_source_bounded_but_charge_all_gates() -> None:
-    definition = program_definition(IMPORTS + KICK + """
+    definition = program_definition(
+        f"""{IMPORTS}{KICK}
 @qfunc
 def repeat_kick(q: QBit) -> None:
     for index in range(150):
@@ -137,7 +142,8 @@ def main(q: Output[QBit]) -> None:
     allocate(q)
     H(q)
     repeat_kick(q)
-""")
+""",
+    )
     root, functions = capture_program(definition)
     assert len(root.body.blocks[0].operations) < 400
     program = synth.synthesize(definition, max_qubits=1, max_workspace=0)
@@ -158,7 +164,8 @@ def main(q: Output[QBit]) -> None:
 
 
 def test_shared_const_predicate_scratch_is_clean_for_nonzero_target() -> None:
-    definition = program_definition(IMPORTS + """
+    definition = program_definition(
+        f"""{IMPORTS}
 @qfunc
 def marked(x: Const[QNum], q: QBit) -> None:
     for index in range(7):
@@ -173,7 +180,8 @@ def main(q: Output[QBit], x: Output[QNum[2]]) -> None:
     marked(x, q)
     with adjoint():
         marked(x, q)
-""")
+""",
+    )
     root, functions = capture_program(definition)
     assert any(op.name == "qreg.unitary_call" for op in root.body.blocks[0].operations)
     program = synth.synthesize(definition)
@@ -196,7 +204,8 @@ def main(q: Output[QBit], x: Output[QNum[2]]) -> None:
 
 
 def test_cached_body_cannot_launder_const_storage() -> None:
-    definition = program_definition(IMPORTS + KICK + """
+    definition = program_definition(
+        f"""{IMPORTS}{KICK}
 @qfunc
 def misuse(readonly: Const[QBit], writable: QBit) -> None:
     kick(0.27, writable)
@@ -206,7 +215,8 @@ def main(x: Output[QBit], y: Output[QBit]) -> None:
     allocate(x)
     allocate(y)
     misuse(x, y)
-""")
+""",
+    )
     with pytest.raises(ValueError, match="Const cannot be passed as writable"):
         synth.synthesize(definition)
 
@@ -240,7 +250,8 @@ def test_shared_helper_reuses_released_scratch() -> None:
         phase(mark, 0.17)
     marked(x, q)
 """
-    definition = program_definition(IMPORTS + """
+    definition = program_definition(
+        f"""{IMPORTS}
 @qfunc
 def marked(x: Const[QNum], q: QBit) -> None:
     for index in range(7):
@@ -252,7 +263,8 @@ def main(x: Output[QNum[2]], q: Output[QBit]) -> None:
     hadamard_transform(x)
     X(q)
     marked(x, q)
-""" + region)
+{region}""",
+    )
     root, _ = capture_program(definition)
     assert any(op.name == "qreg.unitary_call" for op in root.body.blocks[0].operations)
     program = synth.synthesize(definition)
@@ -279,13 +291,15 @@ def main(x: Output[QNum[2]], q: Output[QBit]) -> None:
 def test_tampered_unitary_calls_cannot_bypass_borrow_or_unitary_proofs(
     violation: str,
 ) -> None:
-    definition = program_definition(IMPORTS + KICK + """
+    definition = program_definition(
+        f"""{IMPORTS}{KICK}
 @qfunc
 def main(q: Output[QBit]) -> None:
     allocate(q)
     kick(0.27, q)
     kick(0.27, q)
-""")
+""",
+    )
     root, functions = capture_program(definition)
     operations = list(root.body.blocks[0].operations)
     index = next(i for i, op in enumerate(operations) if op.name == "qreg.unitary_call")

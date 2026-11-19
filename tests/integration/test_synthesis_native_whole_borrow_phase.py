@@ -163,9 +163,8 @@ def test_wide_callback_updates_keep_carry_phase_and_computed_fallback(
     actual = fq.run(program).statevector().reshape(size, -1)
     torch.testing.assert_close(actual[:, 0], expected, atol=1e-11, rtol=0)
     assert float(actual[:, 1:].abs().square().sum()) < 1e-22
-    if width == 7:
-        assert program.report["workspace_qubits"] == 0
-    else:
-        assert program.report["workspace_qubits"] != 0
-        with pytest.raises(synth.SynthesisError):
-            synth.synthesize(entry, max_workspace=0)
+    constrained = synth.synthesize(entry, max_workspace=0)
+    assert constrained.report["workspace_qubits"] == 0
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    check_program_equivalence(program, constrained)

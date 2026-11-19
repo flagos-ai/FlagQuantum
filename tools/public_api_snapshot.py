@@ -44,6 +44,10 @@ TWIN_CONTRACT = ROOT / "contracts" / "twin-v1-candidate.json"
 GRADIENT_CONTRACT = ROOT / "contracts" / "gradient-api-v1-candidate.json"
 OPENQASM_IMPORT_CONTRACT = ROOT / "contracts" / "openqasm-import-v1-candidate.json"
 EXPERIMENT_CONTRACT = ROOT / "contracts" / "experiment-file-v1-candidate.json"
+INITIAL_STATE_CONTRACT = (
+    ROOT / "contracts" / "execution-initial-state-v1-candidate.json"
+)
+RUNTIME_INPUTS_CONTRACT = ROOT / "contracts/execution-runtime-inputs-v1-candidate.json"
 ADDRESS = re.compile(r"0x[0-9a-fA-F]+")
 
 
@@ -340,6 +344,12 @@ def validate() -> tuple[str, ...]:
         expected_signatures.update(gradient_contract.get("signatures", {}))
     if openqasm_import_contract.get("implementation_authorized") is True:
         expected_signatures.update(openqasm_import_contract.get("signatures", {}))
+    initial_state_contract = json.loads(INITIAL_STATE_CONTRACT.read_text())
+    errors.extend(_validate_authorized_initial_state(initial_state_contract))
+    errors.extend(_validate_authorized_runtime_inputs())
+    expected_signatures["run"] = _initial_state_run_signature(
+        expected_signatures["run"]
+    )
     errors.extend(
         _validate_authorized_execution_options(
             options_contract,
@@ -396,6 +406,148 @@ def validate() -> tuple[str, ...]:
                 if str(inspect.signature(getattr(value, symbol))) != expected_signature:
                     errors.append(f"authorized Twin API signature changed: {symbol}")
     return tuple(errors)
+
+
+def _initial_state_run_signature(signature: str) -> str:
+    contract = json.loads(INITIAL_STATE_CONTRACT.read_text())
+    if contract.get("implementation_authorized") is not True:
+        return signature
+    signature = signature.replace(
+        "name: 'str | None' = None)",
+        "name: 'str | None' = None, initial_state: 'Tensor | None' = None)",
+    )
+    return _runtime_inputs_run_signature(signature)
+
+
+def _runtime_inputs_run_signature(signature: str) -> str:
+    contract = json.loads(RUNTIME_INPUTS_CONTRACT.read_text())
+    if contract.get("implementation_authorized") is not True:
+        return signature
+    return signature.replace(
+        "initial_state: 'Tensor | None' = None)",
+        "initial_state: 'Tensor | None' = None, inputs: 'Mapping[str, float | Tensor] | None' = None)",
+    )
+
+
+def _validate_authorized_runtime_inputs() -> list[str]:
+    import flagquantum as fq
+
+    contract = json.loads(RUNTIME_INPUTS_CONTRACT.read_text())
+    proposal = json.loads((ROOT / contract["proposal"]).read_text())
+    previous = json.loads(INITIAL_STATE_CONTRACT.read_text())["run_signature"]
+    expected = {
+        "schema": "flagquantum.execution_runtime_inputs",
+        "version": "1.0",
+        "status": "implemented_candidate",
+        "proposal": "contracts/execution-runtime-inputs-proposal.json",
+        "authorization_record": "docs/api-changes/FQ-EXECUTION-RUNTIME-INPUTS-20261112.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+        "previous_run_signature": previous,
+        "run_signature": _runtime_inputs_run_signature(previous),
+        "plan_signature_unchanged": True,
+        "outer_plan_schema_unchanged": True,
+        "runtime_inputs_extension": {
+            "namespace": "flagquantum.execution",
+            "kind": "runtime_inputs",
+            "version": "1.0",
+            "payload": {"parameters": "sorted_unique_symbolic_names"},
+        },
+        "scope": "exact_unbatched_cpu_pytorch_statevector_real_scalar_angles",
+        "consumer_tests": "tests/api_contract/test_execution_runtime_inputs.py",
+    }
+    approval = proposal.get("api_owner_approval") or {}
+    if (
+        contract != expected
+        or any(
+            type(contract.get(key)) is not bool
+            for key in (
+                "implementation_authorized",
+                "release_authorized",
+                "plan_signature_unchanged",
+                "outer_plan_schema_unchanged",
+            )
+        )
+        or proposal.get("implementation_authorized") is not True
+        or approval
+        != {
+            "kind": "explicit_human_user_approval",
+            "date": "2026-11-12",
+            "request": "Approved",
+            "record": expected["authorization_record"],
+        }
+        or not (ROOT / expected["authorization_record"]).is_file()
+        or str(inspect.signature(fq.run, eval_str=False)) != expected["run_signature"]
+    ):
+        return [
+            "runtime-input API differs from its explicitly approved additive contract"
+        ]
+    return []
+
+
+def _validate_authorized_initial_state(contract: dict[str, Any]) -> list[str]:
+    import flagquantum as fq
+
+    proposal = json.loads(
+        (ROOT / "contracts/execution-initial-state-proposal.json").read_text()
+    )
+    errors: list[str] = []
+    historical_signature = json.loads(
+        (ROOT / "contracts/synthesis-program-run-v1-candidate.json").read_text()
+    )["run_signature"]
+    expected_signature = historical_signature.replace(
+        "name: 'str | None' = None)",
+        "name: 'str | None' = None, initial_state: 'Tensor | None' = None)",
+    )
+    expected = {
+        "schema": "flagquantum.execution_initial_state",
+        "version": "1.0",
+        "status": "implemented_candidate",
+        "proposal": "contracts/execution-initial-state-proposal.json",
+        "authorization_record": "docs/api-changes/FQ-EXECUTION-INITIAL-STATE-20261112.md",
+        "implementation_authorized": True,
+        "release_authorized": False,
+        "run_signature": expected_signature,
+        "plan_signature_unchanged": True,
+        "outer_plan_schema_unchanged": True,
+        "initial_state_extension": {
+            "namespace": "flagquantum.execution",
+            "kind": "initial_state",
+            "version": "1.0",
+            "payload": {"representation": "statevector"},
+        },
+        "scope": "exact_unbatched_cpu_pytorch_statevector",
+        "consumer_tests": "tests/api_contract/test_execution_initial_state.py",
+    }
+    if contract != expected or any(
+        type(contract.get(key)) is not bool
+        for key in (
+            "implementation_authorized",
+            "release_authorized",
+            "plan_signature_unchanged",
+            "outer_plan_schema_unchanged",
+        )
+    ):
+        errors.append(
+            "initial-state candidate exceeds the approved signature or execution scope"
+        )
+    approval = proposal.get("api_owner_approval", {})
+    if (
+        proposal.get("implementation_authorized") is not True
+        or approval.get("kind") != "explicit_human_user_approval"
+        or approval.get("date") != "2026-11-12"
+        or approval.get("review_commit") != "c420795e2e6d668a2039cbc986945449f7da345f"
+        or not (ROOT / expected["authorization_record"]).is_file()
+    ):
+        errors.append("initial-state API-owner approval record is missing")
+    if (
+        proposal["public_api"]["current_run_signature"] != historical_signature
+        or proposal["public_api"]["proposed_run_signature"] != expected_signature
+        or str(inspect.signature(fq.run, eval_str=False))
+        != _runtime_inputs_run_signature(expected_signature)
+    ):
+        errors.append("fq.run differs from the approved initial_state keyword addition")
+    return errors
 
 
 def _validate_authorized_execution_options(
@@ -496,7 +648,8 @@ def _validate_authorized_execution_plan(
             " | LindbladPlan'", " | LindbladPlan | SynthesisProgram'"
         )
     if (
-        str(inspect.signature(fq.run)) != approved_run_signature
+        str(inspect.signature(fq.run))
+        != _initial_state_run_signature(approved_run_signature)
         or contract["proposed_signatures"]["run"] != approved_run_signature
     ):
         errors.append("proposal 092 root input union differs from approval")
@@ -797,7 +950,8 @@ def _validate_authorized_synthesis_run(contract: dict[str, Any]) -> list[str]:
     if (
         proposal["proposed_run_signature"] != expected_run
         or contract.get("run_signature") != expected_run
-        or str(inspect.signature(fq.run, eval_str=False)) != expected_run
+        or str(inspect.signature(fq.run, eval_str=False))
+        != _initial_state_run_signature(expected_run)
     ):
         errors.append(
             "synthesis run signature exceeds the approved single input addition"
@@ -912,7 +1066,8 @@ def _validate_authorized_synthesis_qmod(contract: Any) -> list[str]:
     ):
         errors.append("Qmod source predecessor differs from reviewed phase baseline")
     if (
-        str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
+        str(inspect.signature(fq.run))
+        != _initial_state_run_signature(proposal["unchanged_run_signature"])
         or str(inspect.signature(synth.Program.probabilities))
         != proposal["unchanged_probabilities_signature"]
     ):
@@ -992,7 +1147,8 @@ def _validate_authorized_synthesis_phase(contract: Any) -> list[str]:
     )
     errors.extend(_validate_authorized_synthesis_python_program(program_contract))
     if (
-        str(inspect.signature(fq.run)) != proposal["unchanged_run_signature"]
+        str(inspect.signature(fq.run))
+        != _initial_state_run_signature(proposal["unchanged_run_signature"])
         or str(inspect.signature(synth.Program.probabilities))
         != proposal["unchanged_probabilities_signature"]
     ):
@@ -1074,40 +1230,17 @@ def _validate_authorized_synthesis_classical(contract: Any) -> list[str]:
     return errors
 
 
-def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
-    """Protect the user-authorized UP-01 successor without rewriting predecessors."""
-    import flagquantum as fq
-    from flagquantum import synth
-    from flagquantum.services import synthesis
+_SYNTH_JOINT_SIGNATURES: dict[str, str] = {
+    "unitary": "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+    "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
+}
 
-    path = ROOT / "contracts/synthesis-python-program-v1-candidate.json"
-    reviewed_hash = "5f500166f026674faa66744ef33d17bc67edc6a16f695ff891769785e1cf6a5e"
-    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
-        return ["reviewed Python program contract changed"]
-    expected = json.loads(path.read_text())
-    if not isinstance(contract, dict) or json.dumps(
-        contract, sort_keys=True
-    ) != json.dumps(expected, sort_keys=True):
-        return ["Python program admission differs from its reviewed scope"]
-    errors = []
-    if (
-        hashlib.sha256((ROOT / contract["proposal"]).read_bytes()).hexdigest()
-        != contract["proposal_sha256"]
-    ):
-        errors.append("reviewed Python program proposal changed")
-    for filename, digest in contract["historical_contracts_sha256"].items():
-        if hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() != digest:
-            errors.append("Python program must preserve historical synthesis contracts")
-    if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
-        errors.append("Python program export delta exceeds authorization")
-    exports = _SYNTH_ACTIVE_EXPORTS
-    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
-        errors.append("Python program namespace differs from its reviewed scope")
-    if any(
-        getattr(synth, name, None) is not getattr(synthesis, name, None)
-        for name in exports
-    ):
-        errors.append("Python program facade must reuse Services symbols")
+
+def _validate_synthesis_phase_and_cleanup() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     phase_contract = json.loads(
         (ROOT / "contracts/synthesis-python-phase-up02-candidate.json").read_text()
     )
@@ -1145,6 +1278,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native program cleanup differs from its UP-03 authorization")
+    return errors
+
+
+def _validate_synthesis_quantization_and_reset() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     quantized_contract = json.loads(
         (
             ROOT / "contracts/synthesis-native-quantized-expressions-candidate.json"
@@ -1195,6 +1335,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.RESET)) != reset_signature
     ):
         errors.append("native RESET differs from its authorized channel contract")
+    return errors
+
+
+def _validate_synthesis_gates_and_control() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     pair_contract = json.loads(
         (ROOT / "contracts/synthesis-python-pair-gates-candidate.json").read_text()
     )
@@ -1256,6 +1403,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native pair gates differ from their authorization")
+    return errors
+
+
+def _validate_synthesis_transforms_and_preparation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     transform_contract = json.loads(
         (ROOT / "contracts/synthesis-python-transforms-up06-candidate.json").read_text()
     )
@@ -1310,16 +1464,18 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native catalog operations differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_storage() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     joint_contract = json.loads(
         (ROOT / "contracts/synthesis-native-joint-storage-candidate.json").read_text()
     )
-    joint_signatures = {
-        "unitary": "(matrix: 'Sequence[Sequence[complex | float | int]]', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
-        "inplace_prepare_amplitudes": "(amplitudes: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
-        "inplace_prepare_state": "(probabilities: 'Sequence[float]', bound: 'float', target: 'QNum | QArray[QBit] | Sequence[QNum | QArray[QBit]]', /) -> 'None'",
-    }
     if (
-        joint_contract.get("expanded_signatures") != joint_signatures
+        joint_contract.get("expanded_signatures") != _SYNTH_JOINT_SIGNATURES
         or joint_contract.get("implementation_authorized") is not True
         or joint_contract.get("release_authorized") is not False
         or joint_contract.get("authorization_record")
@@ -1329,7 +1485,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         ).is_file()
         or any(
             str(inspect.signature(getattr(synth, name))) != signature
-            for name, signature in joint_signatures.items()
+            for name, signature in _SYNTH_JOINT_SIGNATURES.items()
         )
     ):
         errors.append("joint native storage differs from its authorized admission")
@@ -1355,7 +1511,7 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         ).is_file()
         or any(
             not callable(function := getattr(synth, name, None))
-            or str(inspect.signature(function)) != joint_signatures[name]
+            or str(inspect.signature(function)) != _SYNTH_JOINT_SIGNATURES[name]
             for name, signature in inplace_signatures.items()
         )
     ):
@@ -1375,6 +1531,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.drop)) != hidden_contract["signatures"]["drop"]
     ):
         errors.append("native hidden storage differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_qpe() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     matrix_qpe_contract = json.loads(
         (ROOT / "contracts/synthesis-native-matrix-qpe-candidate.json").read_text()
     )
@@ -1441,6 +1604,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         != rotation_table_contract["signatures"]["select_rotation"]
     ):
         errors.append("native rotation tables differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_views_and_unitary() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     views = json.loads(
         (ROOT / "contracts/synthesis-native-views-candidate.json").read_text()
     )
@@ -1501,9 +1671,16 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         type(matrix_admission.get("implementation_authorized")) is not bool
         or type(matrix_admission.get("release_authorized")) is not bool
         or not (ROOT / matrix_admission["authorization_record"]).is_file()
-        or str(inspect.signature(synth.unitary)) != joint_signatures["unitary"]
+        or str(inspect.signature(synth.unitary)) != _SYNTH_JOINT_SIGNATURES["unitary"]
     ):
         errors.append("native unitary operation differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_modular_exponentiation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     modular_admission = json.loads(
         (ROOT / "contracts/synthesis-native-modular-exp-candidate.json").read_text()
     )
@@ -1524,6 +1701,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         or str(inspect.signature(synth.modular_exp)) != modular_signature
     ):
         errors.append("native modular exponentiation differs from its authorized scope")
+    return errors
+
+
+def _validate_synthesis_pauli_evolution() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     evolution_admission = json.loads(
         (ROOT / "contracts/synthesis-native-evolution-candidate.json").read_text()
     )
@@ -1603,6 +1787,13 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native Pauli views differ from their authorized scope")
+    return errors
+
+
+def _validate_synthesis_numeric_interpretation() -> list[str]:
+    from flagquantum import synth
+
+    errors: list[str] = []
     numeric_admission = json.loads(
         (ROOT / "contracts/synthesis-native-exact-numbers-candidate.json").read_text()
     )
@@ -1644,16 +1835,68 @@ def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
         )
     ):
         errors.append("native numeric interpretation differs from its authorized scope")
+    return errors
+
+
+def _validate_authorized_synthesis_python_program(contract: Any) -> list[str]:
+    """Protect the user-authorized UP-01 successor without rewriting predecessors."""
+    import flagquantum as fq
+    from flagquantum import synth
+    from flagquantum.services import synthesis
+
+    path = ROOT / "contracts/synthesis-python-program-v1-candidate.json"
+    reviewed_hash = "5f500166f026674faa66744ef33d17bc67edc6a16f695ff891769785e1cf6a5e"
+    if hashlib.sha256(path.read_bytes()).hexdigest() != reviewed_hash:
+        return ["reviewed Python program contract changed"]
+    expected = json.loads(path.read_text())
+    if not isinstance(contract, dict) or json.dumps(
+        contract, sort_keys=True
+    ) != json.dumps(expected, sort_keys=True):
+        return ["Python program admission differs from its reviewed scope"]
+    errors = []
+    if (
+        hashlib.sha256((ROOT / contract["proposal"]).read_bytes()).hexdigest()
+        != contract["proposal_sha256"]
+    ):
+        errors.append("reviewed Python program proposal changed")
+    for filename, digest in contract["historical_contracts_sha256"].items():
+        if hashlib.sha256((ROOT / filename).read_bytes()).hexdigest() != digest:
+            errors.append("Python program must preserve historical synthesis contracts")
+    if tuple(contract["namespace_exports"]) != _SYNTH_PROGRAM_EXPORTS:
+        errors.append("Python program export delta exceeds authorization")
+    exports = _SYNTH_ACTIVE_EXPORTS
+    if tuple(synth.__all__) != exports or tuple(synthesis.__all__) != exports:
+        errors.append("Python program namespace differs from its reviewed scope")
+    if any(
+        getattr(synth, name, None) is not getattr(synthesis, name, None)
+        for name in exports
+    ):
+        errors.append("Python program facade must reuse Services symbols")
+    errors.extend(_validate_synthesis_phase_and_cleanup())
+    errors.extend(_validate_synthesis_quantization_and_reset())
+    errors.extend(_validate_synthesis_gates_and_control())
+    errors.extend(_validate_synthesis_transforms_and_preparation())
+    errors.extend(_validate_synthesis_storage())
+    errors.extend(_validate_synthesis_qpe())
+    errors.extend(_validate_synthesis_views_and_unitary())
+    errors.extend(_validate_synthesis_modular_exponentiation())
+    errors.extend(_validate_synthesis_pauli_evolution())
+    errors.extend(_validate_synthesis_numeric_interpretation())
     for field, value in (
         ("synthesize_signature", synth.synthesize),
         ("run_signature", fq.run),
         ("probabilities_signature", synth.Program.probabilities),
     ):
+        signature = (
+            _initial_state_run_signature(contract[field])
+            if field == "run_signature"
+            else contract[field]
+        )
         if (
             _synthesis_pre_classical_signature(value)
             if field == "synthesize_signature"
             else str(inspect.signature(value))
-        ) != contract[field]:
+        ) != signature:
             errors.append("Python program must preserve run/read/synthesize signatures")
     for name, signature in contract["new_operation_signatures"].items():
         if str(inspect.signature(getattr(synth, name))) != _SYNTH_ARRAY_SIGNATURES.get(

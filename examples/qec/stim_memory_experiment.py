@@ -1,6 +1,6 @@
-"""Report a supported original Stim circuit using existing optional SDKs.
+"""Sample an original Stim circuit and decode with bundled Sparse Blossom.
 
-Install the stim and pymatching extras. CPU only; no threshold or speed claim.
+Install FlagQuantum with the Stim extra to run this CPU example.
 """
 
 from flagquantum.qec.execution.experiments import run_stim_experiment
@@ -20,7 +20,7 @@ def main() -> None:
     """Decode swapped logical columns with a final three-shot partial batch."""
     result = run_stim_experiment(
         SOURCE,
-        decoder="pymatching",
+        decoder="sparse_blossom",
         shots=35,
         batch_size=16,
         seed=53,

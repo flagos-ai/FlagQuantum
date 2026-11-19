@@ -23,11 +23,10 @@ execution, core IR, noise channels and the optional stabilizer sampler.
   observable layouts, without executing an amplitude store. The original forced
   execution remains the independent small-system test reference. DEM construction consumes these
   functions/constants without a reverse import, avoiding a module cycle.
-- `experiments.py`: the approved fixed-shot composition of original-source
-  export, strict actual-law DEM, complete-record batch decoding and a single
-  owned sampler. Canonical imports only; no root/parent re-export or persistence
-  schema. Run `examples/qec/memory_experiment.py` with the Stim/PyMatching extras
-  for all five default decoders; unsupported model/decoder intersections refuse.
+- `experiments.py`: fixed-shot composition of original-source sampling,
+  DEM construction and batch decoding. Run `examples/qec/memory_experiment.py`
+  with the Stim extra for bundled Sparse Blossom or select
+  `--decoder minimum_weight_matching` for the reference matcher.
 - `measurement_conversion.py`: reference-normalized detector and logical flips
   from existing records. Use `convert_measurement_records` with
   `circuit_format="stim"` and run
@@ -188,3 +187,52 @@ Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
 checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
 for byte and numerical conformance. The ten-minute user path is
 `python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.
+
+## Write caller-owned shot data
+
+The approved writing candidate adds `write_shot_data_file` beside the two
+readers. QEC owns the public signature; Simulation validates one owned bounded
+copy, chooses the pinned SDK or embedded codec, validates staged output and
+publishes without replacement. Run `python -m examples.qec.shot_file_encoding`
+with Stim 1.16.0 or an embedded build. Fake, fixed-byte and installed
+acceptance are tracked in the proposal; no memory-mapped, append or streaming
+writer is included.
+
+## Reusable independent DEM sampling
+
+`model.compile_sampler(seed=7)` returns a CPU `CompiledDemSampler` from
+`flagquantum.qec.execution.dem_sampling`. `sample(shots, bit_packed=True,
+return_errors=True)` returns detector, observable and error tables. Error column
+`i` follows canonical `model.errors[i]`, including repeated signatures; it does
+not follow the insertion order of constructor arguments. Replay accepts bool or
+packed uint8 independently of output packing and ignores unused input padding.
+Returned padding is zero and arrays own storage.
+
+`sample_write` streams optional detector, observable and error outputs in `01`,
+`b8`, `r8`, `ptb64`, `hits` or `dets`. Error files use M labels, detector files D
+and observable files L. PTB64 requires a multiple of 64 shots. Zero shots produce
+empty results without advancing RNG. Files never overwrite destinations; three
+outputs publish sequentially, with owned-inode rollback on failure rather than
+cross-file atomic visibility. Replay is validated on a bounded immutable snapshot.
+
+The 64 MiB principal-data guard includes all native tables, result and replay
+copies; it is not process RSS or model/parser heap. Each dimension is at most
+65,536, targets at most 262,144, canonical text at most 1 MiB, aggregate final
+outputs at most 1 GiB, and replay snapshots separately at most 1 GiB. Native
+stripes have at most 1024 shots. Handles belong to the creating thread/process,
+cannot be serialized, and invalidate after execution/publication failure.
+Validation failures preserve the handle. No backend fallback is performed.
+
+Every stated `error_id` is refused before preparation, preserving the existing
+independence boundary. Use unchanged `dem_sampling()` for exclusive groups.
+Seed reproducibility requires the same backend/build/SIMD and call partition;
+SDK/native/platform byte equality is not promised for random draws. Exact replay
+and deterministic mechanisms are the cross-implementation witnesses.
+
+Run `python -m examples.qec.compiled_dem_sampler` with the existing PyMatching
+extra and a Stim 1.16.0 SDK or embedded build. Expected output is
+`shots 64 batches 4 logical_failures 0`. macOS arm64 offline wheel/sdist
+builds and installed native acceptance passed, including an environment without
+the Stim Python package. See the implementation acceptance record in
+`docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
+capability makes no performance, threshold, full-parity or scalability claim.

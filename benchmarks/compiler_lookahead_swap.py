@@ -59,7 +59,7 @@ from unittest.mock import patch
 import torch
 
 import flagquantum as fq
-import flagquantum.compiler.routing as routing_module
+import flagquantum.compiler.topology.routing as routing_module
 import flagquantum.compiler.topology.sabre as sabre_module
 from flagquantum.compiler import CouplingMap, optimize, route_to_topology
 from flagquantum.compiler.optimization.optimization_levels import (

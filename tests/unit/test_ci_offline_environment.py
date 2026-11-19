@@ -360,3 +360,53 @@ def test_export_pins_oci_manifests_instead_of_local_docker_ids(
             if fault == "changed_identity"
             else "Exported manifest does not match its digest" in result.stderr.decode()
         )
+
+
+@pytest.mark.parametrize(
+    ("edit", "expected_exit"),
+    [
+        ('license-files = ["LICENSE", "vendor/LICENSE"]', 0),
+        ('dependencies = ["torch>=2.14"]', 1),
+        ('requires = ["setuptools>=78", "wheel"]', 1),
+        ('qec = ["stim>=1.17"]', 1),
+    ],
+)
+def test_offline_manifest_ignores_wheel_metadata_and_rejects_dependency_changes(
+    tmp_path: Path, edit: str, expected_exit: int
+) -> None:
+    original = """\
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+[project]
+dependencies = ["torch>=2.13"]
+license-files = ["LICENSE"]
+[project.optional-dependencies]
+qec = ["stim>=1.16"]
+[tool.cibuildwheel]
+test-command = "python smoke.py"
+"""
+    image = tmp_path / "image.toml"
+    image.write_text(original)
+    checkout = tmp_path / "checkout.toml"
+    key, _ = edit.split(" = ", 1)
+    updated = "\n".join(
+        edit if line.startswith(f"{key} = ") else line for line in original.splitlines()
+    )
+    checkout.write_text(
+        updated.replace("python smoke.py", "python check_wheel.py") + "\n"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(ROOT / ".github/actions/offline-cpu/check_manifest.py"),
+            str(checkout),
+            str(image),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+    assert result.returncode == expected_exit, result.stderr
+    if expected_exit:
+        assert "differs from the locked CPU image manifest" in result.stderr

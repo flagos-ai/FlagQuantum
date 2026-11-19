@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Callable
 from dataclasses import dataclass
 from numbers import Integral
 from statistics import NormalDist
@@ -14,6 +15,7 @@ from ...errors import ValidationError
 from ...noise import NoiseModel
 from ...simulation.stabilizer._validation import _validate_seed
 from ..adapters.stim import (
+    _stim_circuit_to_matching_dem_text,
     compile_stim_sampler,
     memory_to_stim_text,
     stim_circuit_to_dem_text,
@@ -21,7 +23,9 @@ from ..adapters.stim import (
 from ..circuits.memory import MemoryCircuit
 from ..decoders.batch import decode_batch
 from ..decoders.registry import DetectorErrorModelDecoder, decoder_names, get_decoder
+from ..decoders.sparse_blossom import SparseBlossomDecoder
 from ..dem import DetectorErrorModel
+from ..dem.graph import DecodingGraph
 from ..noise import PhenomenologicalNoise
 from .sampling import MemorySampler, _checked_seed, _checked_shots
 
@@ -31,6 +35,8 @@ __all__ = (
     "StimExperimentResult",
     "run_stim_experiment",
 )
+
+_SPARSE_BLOSSOM = "sparse_blossom"
 
 
 @dataclass(frozen=True)
@@ -114,6 +120,8 @@ def run_memory_experiment(
 
     Requires the optional Stim extra; the pymatching selection also needs its
     existing optional dependencies. Decoder names use constructor defaults.
+    Select `decoder="sparse_blossom"` for the bundled CPU batch solver. Its
+    graphlike decomposition is used for decoding the original-circuit samples.
     Batches advance one seeded stream, including a final partial batch. Different
     batch sizes need not produce identical samples. Storage is bounded by the
     source/model and one batch, apart from the existing decoder's own state.
@@ -154,14 +162,10 @@ def run_memory_experiment(
         )
 
     text = memory_to_stim_text(memory, noise=noise)
-    model = DetectorErrorModel.from_stim_text(
-        stim_circuit_to_dem_text(text, decompose_errors=False)
-    )
+    model = _experiment_model(text, decoder)
     if (model.num_detectors, model.num_observables) != (detectors, observables):
         raise ValidationError("strict model dimensions do not match the memory source")
-    selected = get_decoder(decoder, model)
-    # Empty admission uses 005's single authority without executing a decode.
-    decode_batch(selected, ())
+    selected, predict_dense = _experiment_decoder(decoder, model)
     sampler = compile_stim_sampler(text, seed=seed)
     failures, per_observable = _collect_fixed_shots(
         sampler,
@@ -170,6 +174,7 @@ def run_memory_experiment(
         batch_size=batch_size,
         detectors=detectors,
         observables=observables,
+        predict_dense=predict_dense,
     )
     return MemoryExperimentResult(
         shots=shots,
@@ -195,11 +200,13 @@ def run_stim_experiment(
     Uses strict DEM analysis and the selected registered decoder's defaults.
     The sampler reads the original circuit, not its DEM. Unsupported source or
     decoder combinations propagate their existing errors without approximation.
-    Requires the Stim extra; the pymatching decoder also requires its extra.
+    Standard builds require the Stim extra. Embedded Stim builds provide the
+    engine directly. The pymatching decoder requires its own extra.
 
     Args:
         circuit_text: Text accepted by the existing annotated Stim bridge.
-        decoder: Registered certified independent-shot decoder name.
+        decoder: Registered independent-shot decoder name or `"sparse_blossom"`
+            for bundled batch matching on the graphlike decomposition.
         shots: Positive total number of original-circuit repetitions.
         batch_size: Positive maximum draw size, including the final partial draw.
         seed: Existing optional unsigned 64-bit sampler seed.
@@ -228,16 +235,13 @@ def run_stim_experiment(
     if not isinstance(circuit_text, str):
         raise TypeError("circuit_text must be a string")
     shots, batch_size, seed = _experiment_options(decoder, shots, batch_size, seed)
-    model = DetectorErrorModel.from_stim_text(
-        stim_circuit_to_dem_text(circuit_text, decompose_errors=False)
-    )
+    model = _experiment_model(circuit_text, decoder)
     detectors, observables = model.num_detectors, model.num_observables
     if detectors == 0 or observables == 0:
         raise ValueError(
             "Stim experiments require at least one detector and observable"
         )
-    selected = get_decoder(decoder, model)
-    decode_batch(selected, ())
+    selected, predict_dense = _experiment_decoder(decoder, model)
     sampler = compile_stim_sampler(circuit_text, seed=seed)
     failures, per_observable = _collect_fixed_shots(
         sampler,
@@ -246,6 +250,7 @@ def run_stim_experiment(
         batch_size=batch_size,
         detectors=detectors,
         observables=observables,
+        predict_dense=predict_dense,
     )
     return StimExperimentResult(
         shots=shots,
@@ -273,19 +278,43 @@ def _experiment_options(
         raise ValueError("batch_size must be a positive integer")
     batch_size = int(batch_size)
     seed = _validate_seed(_checked_seed(seed))
-    if decoder not in decoder_names():
+    if decoder != _SPARSE_BLOSSOM and decoder not in decoder_names():
         raise ValueError(f"unknown decoder name: {decoder!r}")
     return shots, batch_size, seed
 
 
+def _experiment_model(text: str, decoder: str) -> DetectorErrorModel:
+    if decoder != _SPARSE_BLOSSOM:
+        return DetectorErrorModel.from_stim_text(
+            stim_circuit_to_dem_text(text, decompose_errors=False)
+        )
+    return DetectorErrorModel.from_stim_text(
+        _stim_circuit_to_matching_dem_text(text), use_decomp_suggestions=True
+    ).merge_duplicate_mechanisms()
+
+
+def _experiment_decoder(
+    name: str, model: DetectorErrorModel
+) -> tuple[
+    DetectorErrorModelDecoder | None, Callable[[torch.Tensor], torch.Tensor] | None
+]:
+    if name == _SPARSE_BLOSSOM:
+        graph = DecodingGraph.from_detector_error_model(model)
+        return None, SparseBlossomDecoder(graph).decode_batch
+    selected = get_decoder(name, model)
+    decode_batch(selected, ())
+    return selected, None
+
+
 def _collect_fixed_shots(
     sampler: MemorySampler,
-    selected: DetectorErrorModelDecoder,
+    selected: DetectorErrorModelDecoder | None,
     *,
     shots: int,
     batch_size: int,
     detectors: int,
     observables: int,
+    predict_dense: Callable[[torch.Tensor], torch.Tensor] | None = None,
 ) -> tuple[int, tuple[int, ...]]:
     completed = failures = 0
     per_observable = [0] * observables
@@ -295,31 +324,14 @@ def _collect_fixed_shots(
             batch = sampler.sample(shots=size)
             _check_bits(batch.detectors, size, detectors)
             _check_bits(batch.observables, size, observables)
-            rows = tuple(
-                tuple(row.nonzero().flatten().tolist()) for row in batch.detectors
-            )
-            results = decode_batch(selected, rows)
-            if len(results) != size:
-                raise ValidationError(
-                    "decoder returned an unexpected number of results"
+            if predict_dense is None:
+                assert selected is not None
+                predicted = _predict_sparse_batch(
+                    selected, batch.detectors, observables
                 )
-            predicted = torch.zeros((size, observables), dtype=torch.bool, device="cpu")
-            for row_index, result in enumerate(results):
-                seen: set[int] = set()
-                if not isinstance(result.observables, tuple):
-                    raise ValidationError("decoder observables must be a sparse tuple")
-                for index in result.observables:
-                    if (
-                        isinstance(index, bool)
-                        or not isinstance(index, Integral)
-                        or not 0 <= index < observables
-                        or index in seen
-                    ):
-                        raise ValidationError(
-                            "decoder returned invalid observable indices"
-                        )
-                    seen.add(index)
-                    predicted[row_index, index] = True
+            else:
+                predicted = predict_dense(batch.detectors)
+                _check_bits(predicted, size, observables)
             disagreement = predicted != batch.observables
             failures += int(disagreement.any(dim=1).sum().item())
             for index, count in enumerate(disagreement.sum(dim=0).tolist()):
@@ -335,3 +347,30 @@ def _collect_fixed_shots(
     else:
         sampler.close()
     return failures, tuple(per_observable)
+
+
+def _predict_sparse_batch(
+    selected: DetectorErrorModelDecoder,
+    detectors: torch.Tensor,
+    observables: int,
+) -> torch.Tensor:
+    rows = tuple(tuple(row.nonzero().flatten().tolist()) for row in detectors)
+    results = decode_batch(selected, rows)
+    if len(results) != len(rows):
+        raise ValidationError("decoder returned an unexpected number of results")
+    predicted = torch.zeros((len(rows), observables), dtype=torch.bool, device="cpu")
+    for row_index, result in enumerate(results):
+        seen: set[int] = set()
+        if not isinstance(result.observables, tuple):
+            raise ValidationError("decoder observables must be a sparse tuple")
+        for index in result.observables:
+            if (
+                isinstance(index, bool)
+                or not isinstance(index, Integral)
+                or not 0 <= index < observables
+                or index in seen
+            ):
+                raise ValidationError("decoder returned invalid observable indices")
+            seen.add(index)
+            predicted[row_index, index] = True
+    return predicted

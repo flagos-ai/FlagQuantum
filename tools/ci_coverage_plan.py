@@ -14,6 +14,7 @@ from tools.pytest_shard import balanced_assignments, load_duration_hints
 SCHEMA = "flagquantum_coverage_plan_v1"
 MAX_SHARDS = 192
 MAX_FILE_BATCH_TESTS = 16
+MAX_FILE_BATCH_SECONDS = 60.0
 
 
 def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int:
@@ -29,15 +30,28 @@ def write_plan(nodeids: tuple[str, ...], directory: Path, requested: int) -> int
             raise ValueError(f"Invalid collected test path: {filename}")
         files[filename].append(nodeid)
     default, hints = load_duration_hints()
-    # Large newly added files may have no timing hints yet. A bounded batch
-    # prevents one such file from concentrating all expensive tests on one slot.
-    batches = {
-        f"{filename}::batch-{offset // MAX_FILE_BATCH_TESTS}": nodes[
-            offset : offset + MAX_FILE_BATCH_TESTS
-        ]
-        for filename, nodes in sorted(files.items())
-        for offset in range(0, len(nodes), MAX_FILE_BATCH_TESTS)
-    }
+    # Keep untimed files bounded by test count. Measured heavy tests must also
+    # be separable: three QLBM cases in one 16-test batch exhausted a job while
+    # other slots were idle. A single long test remains indivisible.
+    batches: dict[str, list[str]] = {}
+    for filename, nodes in sorted(files.items()):
+        batch: list[str] = []
+        seconds = 0.0
+        batch_index = 0
+        for node in nodes:
+            weight = hints.get(node, default)
+            if batch and (
+                len(batch) >= MAX_FILE_BATCH_TESTS
+                or seconds + weight > MAX_FILE_BATCH_SECONDS
+            ):
+                batches[f"{filename}::batch-{batch_index}"] = batch
+                batch_index += 1
+                batch = []
+                seconds = 0.0
+            batch.append(node)
+            seconds += weight
+        if batch:
+            batches[f"{filename}::batch-{batch_index}"] = batch
     weights = {
         name: sum(hints.get(node, default) for node in nodes)
         for name, nodes in batches.items()

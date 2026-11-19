@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from ...core.ir import CircuitIR, ensure_circuit_ir
 from ...core.target_capabilities import TargetCapabilitySnapshot
 from ...errors import CompilationError
-from ..routing import CouplingMap, route_to_topology, select_routing_strategy
 from .directed_topology import DirectedCouplingMap, route_to_directed_topology
+from .routing import CouplingMap, route_to_topology, select_routing_strategy
 
 
 class TopologyLegalizationError(CompilationError):

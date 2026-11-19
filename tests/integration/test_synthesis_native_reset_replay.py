@@ -16,7 +16,7 @@ from tests.team.compiler.test_construction_python_program import program_definit
 
 pytestmark = pytest.mark.integration
 PREFIX = "from flagquantum.synth import RESET,H,CX,R,QArray\n"
-BELL = PREFIX + """
+BELL = f"""{PREFIX}
 @qfunc
 def cycle(q: QArray[QBit]) -> None:
     H(q[0])
@@ -68,7 +68,7 @@ def test_fifty_bell_reset_cycles_reuse_template_and_preserve_mixed_partner() -> 
 
 @pytest.mark.parametrize("index", ["i", "49-i"])
 def test_index_dependent_reset_loops_expand_each_angle(index: str) -> None:
-    source = PREFIX + f"""
+    source = f"""{PREFIX}
 @qfunc
 def main(q: Output[QBit]) -> None:
     allocate(q)
@@ -96,7 +96,7 @@ def main(q: Output[QBit]) -> None:
 
 
 def test_unselected_reset_branch_uses_checked_expansion() -> None:
-    source = PREFIX + """
+    source = f"""{PREFIX}
 @qfunc
 def cycle(q: QBit, flag: int) -> None:
     if flag == 1:
@@ -138,7 +138,7 @@ def test_expanded_resources_are_charged(
     ],
 )
 def test_invalid_cycle_storage_and_aliases_refuse(body: str) -> None:
-    source = PREFIX + f"""
+    source = f"""{PREFIX}
 @qfunc
 def cycle(a:QBit,b:QBit) -> None:
     RESET(a)
@@ -160,7 +160,7 @@ def test_helper_budget_cannot_be_evaded_by_reset_replay() -> None:
                 BELL.replace(
                     "cycle(q)\n",
                     "cycle(q)\n        cycle(q)\n        cycle(q)\n        cycle(q)\n        cycle(q)\n        cycle(q)\n",
-                )
+                ),
             )
         )
 

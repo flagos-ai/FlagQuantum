@@ -8,8 +8,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ...observables import Observable, _PauliTerm
-from .. import _pauli_products, _pauli_schedule
 from .._hybrid.model import Value
+from ..lowering import _pauli_products, _pauli_schedule
 from .frontend_classical import classical_number
 from .frontend_ports import _resolve
 from .frontend_python import _error

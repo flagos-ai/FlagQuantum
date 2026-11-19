@@ -190,8 +190,7 @@ def test_predicate_input_budget_refuses_more_than_twelve_decision_bits() -> None
 @pytest.mark.parametrize(
     "key,value",
     [
-        ("max_qubits", 6),
-        ("max_workspace", 1),
+        ("max_qubits", 4),
         ("max_operations", 400),
         ("max_depth", 300),
         ("memory_limit_bytes", 1024),
@@ -299,3 +298,17 @@ def test_grover_callback_field_name_is_not_a_captured_variable() -> None:
         reference_circuit("oracles_workshop", 1, p.circuit.n_wires - 4)
     ).statevector()
     torch.testing.assert_close(fq.run(p).statevector(), expected, atol=1e-12, rtol=0)
+
+
+def test_scratch_free_grover_preserves_the_complete_state() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = _synthesize(FIXTURES / "grover.qmod", classical_inputs={"r": 2})
+    constrained = _synthesize(
+        FIXTURES / "grover.qmod",
+        classical_inputs={"r": 2},
+        max_workspace=0,
+        max_qubits=5,
+    )
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

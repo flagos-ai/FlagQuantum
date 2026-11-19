@@ -67,9 +67,13 @@ def test_array_control_is_coherent_and_uncomputes_group_flags():
     )
 
 
-def test_array_control_respects_workspace_limit():
-    with pytest.raises(ValueError, match="workspace|budget"):
-        synth.synthesize(SOURCE, source_format="qmod", max_workspace=3)
+def test_array_control_respects_workspace_limit() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(SOURCE, source_format="qmod")
+    constrained = synth.synthesize(SOURCE, source_format="qmod", max_workspace=0)
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)
 
 
 @pytest.mark.parametrize(

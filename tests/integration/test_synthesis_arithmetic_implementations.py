@@ -23,7 +23,7 @@ from flagquantum.compiler._construction.lowering import (
 )
 from flagquantum.compiler._construction.register_lowering import RegisterCandidate
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 QMOD = (

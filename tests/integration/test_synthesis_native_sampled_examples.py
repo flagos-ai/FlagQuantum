@@ -35,7 +35,8 @@ def test_complete_original_native_and_independent_circuit(
     module = ".".join(Path(case["directory"]).parts)
     native = importlib.import_module(module + ".main")
     reference = importlib.import_module(module + ".comparisons.circuit")
-    for time in ((0.37, -0.81) if name == "hamiltonian_simulation_guide" else (None,)):
+    times = (0.37, -0.81) if name == "hamiltonian_simulation_guide" else (None,)
+    for time in times:
         bindings = {} if time is None else {"t": time}
         for entry in (native.main, ROOT / case["original"]["path"]):
             program = synth.synthesize(

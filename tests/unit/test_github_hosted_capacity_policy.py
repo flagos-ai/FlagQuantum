@@ -184,7 +184,7 @@ def test_cpu_pytest_tiers_use_sixteen_bounded_work_stealing_workers() -> None:
     tier_steps = []
     for job in ("cpu-core", "cpu-core-3-12-tests", "cpu-runtime"):
         definition = _document("ci.yml")["jobs"][job]
-        assert definition["timeout-minutes"] == 30
+        assert definition["timeout-minutes"] == (60 if job == "cpu-runtime" else 30)
         assert definition["needs"] == "prepare-source"
         download = next(
             step
@@ -257,7 +257,7 @@ def test_migrated_cpu_jobs_keep_frameworks_and_processes_isolated(job: str) -> N
         )
         assert not any("pip install" in step.get("run", "") for step in steps)
     else:
-        assert definition["timeout-minutes"] == 30
+        assert definition["timeout-minutes"] == 60
     if job == "coverage-shard":
         assert (
             definition["strategy"]["matrix"]
@@ -328,6 +328,11 @@ def test_python_312_required_check_aggregates_parallel_suites() -> None:
 
 
 def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
+    job = _document("ci.yml")["jobs"]["cpu-runtime"]
+    assert job["strategy"] == {
+        "fail-fast": False,
+        "matrix": {"shard": [0, 1, 2, 3]},
+    }
     expensive_steps = [
         step
         for step in _steps("ci.yml", "cpu-runtime")
@@ -335,6 +340,16 @@ def test_expensive_cpu_runtime_proofs_run_once_on_the_newest_python() -> None:
         or "torchrun" in str(step.get("run", ""))
     ]
     assert len(expensive_steps) == 3
+    runtime = next(
+        step for step in expensive_steps if "ci_tier.py pr-runtime" in step["run"]
+    )
+    assert runtime["run"] == (
+        "python tools/ci_tier.py pr-runtime --shard-count 4 "
+        "--shard-index ${{ matrix.shard }}"
+    )
+    for step in expensive_steps:
+        if "torchrun" in step["run"]:
+            assert step["if"] == "matrix.shard == 0"
 
 
 def test_launched_distributed_steps_never_inherit_xdist_workers() -> None:

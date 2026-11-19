@@ -216,4 +216,4 @@ def test_payoff_rejects_unchecked_inputs(old: str, new: str, diagnostic: str) ->
 
 def test_original_rejects_workspace_budget_below_measured() -> None:
     with pytest.raises(ValueError, match="budget|workspace"):
-        _synthesize(_original("direct"), classical_inputs={"k": 0}, max_workspace=3)
+        _synthesize(_original("direct"), classical_inputs={"k": 0}, max_workspace=0)

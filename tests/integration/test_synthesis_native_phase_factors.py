@@ -16,7 +16,8 @@ from examples.synthesis.compare_states import compare_states
 from examples.synthesis.factor_reference import CostFactor, factored_cost_circuit
 from examples.synthesis.quadratic_reference import order_register_factors
 from flagquantum import synth
-from flagquantum.compiler import ResourceEstimate, _phase_factors
+from flagquantum.compiler import ResourceEstimate
+from flagquantum.compiler._construction import _phase_factors
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.compiler._phase_factors import Cube
 from flagquantum.compiler._phase_polynomial import Location

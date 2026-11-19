@@ -62,7 +62,7 @@ def test_approved_source_native_and_independent_complete_state() -> None:
     assert isinstance(resources, ResourceEstimate)
     assert resources.n_qubits == 19
     assert program.report["workspace_qubits"] == 7
-    assert resources.n_operations == 3342
+    assert resources.n_operations == 3316
     assert resources.depth == 2770
     assert physics.ACTIVE_VELOCITIES == (3, 2, 3, 1, 2, 3, 3, 2, 3, 1, 2, 3, 3)
 

@@ -648,6 +648,78 @@ def _exercise_shot_file_reading(profile: str) -> list[list[int]] | None:
         return [[0], [1]]
 
 
+def _exercise_shot_data_writing(profile: str) -> dict[str, object] | None:
+    """Exercise all public shot-data encodings in an installed profile."""
+    import torch
+
+    from flagquantum.qec.execution.shot_data import write_shot_data_file
+
+    if not PROFILES[profile][0] and not _embedded_profile():
+        return None
+    witnesses: dict[Literal["01", "b8", "r8", "ptb64", "hits", "dets"], bytes] = {
+        "01": b"111\n" * 64,
+        "b8": b"\x07" * 64,
+        "r8": b"\x00\x00\x00\x00" * 64,
+        "ptb64": b"\xff" * 24,
+        "hits": b"0,1,2\n" * 64,
+        "dets": b"shot D0 D1 D2\n" * 64,
+    }
+    with TemporaryDirectory() as directory:
+        for encoding, expected in witnesses.items():
+            path = Path(directory) / encoding
+            write_shot_data_file(
+                data=torch.ones((64, 3), dtype=torch.bool),
+                path=path,
+                format=encoding,
+                num_detectors=3,
+            )
+            assert path.read_bytes() == expected
+    return {"formats": list(witnesses), "shots_per_format": 64, "exact_bytes": True}
+
+
+def _exercise_compiled_dem_sampler(profile: str) -> dict[str, object] | None:
+    """Record/replay canonical error columns and stream three independent files."""
+    import torch
+
+    from flagquantum.qec import DemError, DetectorErrorModel
+
+    if not PROFILES[profile][0] and not _embedded_profile():
+        return None
+    model = DetectorErrorModel(1, 1, (DemError(0.25, (0,), (0,)),))
+    sampler = model.compile_sampler(seed=7)
+    detectors, logicals, errors = sampler.sample(
+        64, bit_packed=True, return_errors=True
+    )
+    assert errors is not None
+    replayed, replayed_logicals, unused = sampler.sample(
+        64, bit_packed=True, recorded_errors_to_replay=errors
+    )
+    assert torch.equal(detectors, replayed) and torch.equal(logicals, replayed_logicals)
+    assert unused is None
+    with TemporaryDirectory() as directory:
+        root = Path(directory)
+        replay = root / "input.b8"
+        replay.write_bytes(bytes(errors[:, 0].tolist()))
+        sampler.sample_write(
+            64,
+            det_out_file=root / "d",
+            det_out_format="b8",
+            obs_out_file=root / "o",
+            obs_out_format="b8",
+            err_out_file=root / "e",
+            err_out_format="b8",
+            replay_err_in_file=replay,
+            replay_err_in_format="b8",
+        )
+        assert (
+            (root / "d").read_bytes()
+            == (root / "o").read_bytes()
+            == (root / "e").read_bytes()
+            == replay.read_bytes()
+        )
+    return {"shots": 64, "error_columns": 1, "exact_replay": True, "file_streams": 3}
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("profile", choices=PROFILES)
@@ -685,6 +757,8 @@ def main() -> int:
         json.dumps(
             {
                 "shot_file_reading": _exercise_shot_file_reading(args.profile),
+                "shot_data_writing": _exercise_shot_data_writing(args.profile),
+                "compiled_dem_sampler": _exercise_compiled_dem_sampler(args.profile),
                 "profile": args.profile,
                 "package": flagquantum.__file__,
                 "python": sys.version.split()[0],

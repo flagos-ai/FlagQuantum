@@ -570,8 +570,9 @@ class SdkStream:
 
 @pytest.mark.parametrize("version", ["1.16.0", "1.15.0"])
 def test_sdk_contract_without_optional_installation(
-    monkeypatch: pytest.MonkeyPatch, version: str
+    monkeypatch: pytest.MonkeyPatch, version: str, tmp_path: Path
 ) -> None:
+    monkeypatch.setattr(numerical, "__file__", str(tmp_path / "_detector_sampling.py"))
     stream = SdkStream()
 
     class SdkCircuit:

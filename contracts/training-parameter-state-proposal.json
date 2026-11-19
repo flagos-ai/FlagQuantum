@@ -1,0 +1,68 @@
+{
+  "schema": "flagquantum.api_change_proposal",
+  "version": "1.0",
+  "status": "approved",
+  "implementation_authorized": true,
+  "production_implemented": true,
+  "api_owner_approval": "docs/api-changes/FQ-TRAINING-PARAMETER-STATE-20261112.md",
+  "owner": "integration",
+  "implementation_owner": "runtime",
+  "path_classification": "single_device_fast_path",
+  "proposal": "docs/development/TRAINING_PARAMETER_STATE_PROPOSAL.md",
+  "review_fake": "tests/unit/test_training_parameter_state_contract_fake.py",
+  "public_api": {
+    "signatures_unchanged": true,
+    "exports_unchanged": true,
+    "Module_state_dict_unchanged": true,
+    "TrainingCheckpointRestore_unchanged": true,
+    "initialization_defaults_and_tensor_copying_unchanged": true,
+    "historical_snapshot_regeneration_authorized": false
+  },
+  "checkpoint": {
+    "new_version": "flagquantum.training_state.v3",
+    "retain_existing_envelope_fields": true,
+    "new_field": "parameter_training",
+    "parameter_training": {
+      "requires_grad": "exact_full_registered_parameter_name_to_strict_bool_mapping",
+      "optimizer_parameters": "ordered_list_of_ordered_parameter_name_lists_or_null"
+    },
+    "parameter_aliases": "refuse_in_first_slice",
+    "duplicate_optimizer_references": "refuse_in_first_slice",
+    "unregistered_optimizer_parameters": "refuse_before_writing_or_mutation",
+    "optimizer_membership": "exact_names_and_order_match_not_only_group_sizes",
+    "automatic_optimizer_rebinding": false,
+    "parameter_object_identity_preserved": true,
+    "successful_restore_gradients": "clear_registered_parameter_gradients_to_None",
+    "failed_restore": "rollback_existing_state_plus_flags_and_gradients",
+    "gradient_accumulation_resume": false
+  },
+  "workload_identity": {
+    "v1_v2_algorithms_unchanged": true,
+    "v3_captured_builder": "domain_separated_existing_certified_v2_digest",
+    "v3_symbolic_circuit": "domain_separated_canonical_source_Core_IR",
+    "ordinary_symbolic_profile": "ordinary_Circuit_named_parameters_default_initial_state_no_Tensor_literals",
+    "dynamic_values_or_requires_grad_in_workload_identity": false,
+    "fixed_values_and_gradient_cuts_preserved": true,
+    "unqualified_all_trainable_save": "retain_existing_version_and_limitations",
+    "unqualified_frozen_save": "TrainingStateError",
+    "stale_capture_or_template": "refuse_before_writing"
+  },
+  "compatibility": {
+    "new_reader": [
+      "v1",
+      "v2",
+      "v3"
+    ],
+    "old_reader_v3": "unknown_version_refusal",
+    "old_reader_grad_flags": "retain_existing_caller_owned_behavior",
+    "migration": "explicit_old_file_restore_reapply_freeze_execute_then_save_v3",
+    "relabel_old_payload": false
+  },
+  "delivery": {
+    "contract_and_fake_before_runtime_implementation": true,
+    "new_dependencies_or_public_training_framework": false,
+    "new_compiler_import_or_simulation_change": false,
+    "production_conformance_required": true,
+    "release_or_performance_authorized": false
+  }
+}

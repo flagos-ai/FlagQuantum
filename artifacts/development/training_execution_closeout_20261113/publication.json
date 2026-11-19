@@ -1,0 +1,19 @@
+{
+  "command": [
+    "git",
+    "-c",
+    "http.connectTimeout=10",
+    "-c",
+    "http.lowSpeedLimit=1",
+    "-c",
+    "http.lowSpeedTime=15",
+    "push",
+    "origin",
+    "HEAD:refs/heads/codex/training-execution-inputs"
+  ],
+  "returncode": 128,
+  "stdout": "",
+  "stderr": "fatal: unable to access 'https://github.com/flagos-ai/FlagQuantum.git/': Could not resolve host: github.com\n",
+  "elapsed_seconds": 0.02,
+  "pull_request_created": false
+}

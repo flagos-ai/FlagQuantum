@@ -21,11 +21,11 @@ from ...noise import amplitude_damping_channel
 from .._fourier_kernels import qft_instructions
 from .._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from .._hybrid.verifier import Diagnostic
-from .._phase_polynomial import MAX_PHASE_DEGREE
 from ..noise import _encode_channel_instruction
+from ..optimization.canonicalization import merge_self_inverse
 from ..optimization.commutation_cancellation import cancel_commuting_self_inverse
 from ..optimization.state_preparation_synthesis import _synthesize_real_state
-from ..pipeline import merge_self_inverse
+from ._phase_polynomial import MAX_PHASE_DEGREE
 from .boolean_lowering import BooleanCandidateError, lower_boolean_value
 from .borrowed_unitary import owned_unitary_layout
 from .gate_tape import expand_gate_tape

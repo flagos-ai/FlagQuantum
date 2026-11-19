@@ -13,7 +13,13 @@ pytestmark = pytest.mark.integration
 
 
 @pytest.mark.parametrize(
-    "annotation", ["QNum[1]", "Annotated[QNum, 1]", "typing.Annotated[QNum, 1]"]
+    "annotation",
+    [
+        "QNum[1]",
+        "Annotated[QNum, 1]",
+        "typing.Annotated[QNum, 1]",
+        "Annotated[QNum, (1, False, 0)]",
+    ],
 )
 def test_annotation_spellings_preserve_phase_and_clean_workspace(
     annotation: str,
@@ -40,7 +46,7 @@ def test_annotation_spellings_preserve_phase_and_clean_workspace(
         "Annotated[QNum, 257]",
         "Annotated[QNum, True]",
         "Annotated[QNum, -1]",
-        "Annotated[QNum, (1, False, 0)]",
+        "Annotated[QNum, (0, False, 0)]",
         "Annotated[QNum, 1, 2]",
         "Annotated[QBit, 1]",
         "Annotated[int, 1]",

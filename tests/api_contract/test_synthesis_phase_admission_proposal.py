@@ -11,6 +11,7 @@ from flagquantum import _api, synth
 from flagquantum.compiler._construction.frontend_python import capture
 from flagquantum.compiler._construction.selection import select_arithmetic
 from flagquantum.services.synthesis import _complete
+from tools.public_api_snapshot import _initial_state_run_signature
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[2]
@@ -56,36 +57,15 @@ def test_proposal_records_current_api_and_precise_pending_delta_without_fake_app
         (ROOT / "contracts/synthesis-python-program-v1-candidate.json").read_text()
     )
     assert PROPOSAL["namespace_exports"] == program["previous_namespace_exports"]
-    assert list(synth.__all__) == [
-        *program["namespace_exports"],
-        "phase",
-        "within",
-        "apply",
-        "adjoint",
-        "CX",
-        "SWAP",
-        "CRX",
-        "R",
-        "U",
-        "prepare_uniform_interval_state",
-        "control",
-        "X",
-        "RZ",
-        "PHASE",
-        "RZZ",
-        "prepare_bell_state",
-        "prepare_ghz_state",
-        "prepare_amplitudes",
-        "prepare_state",
-        "QArray",
-        "H",
-        "S",
-        "RX",
-        "qft",
-        "unitary",
-        "modular_exp",
-    ]
-    assert str(inspect.signature(fq.run)) == PROPOSAL["unchanged_run_signature"]
+    # Later authorized deltas are checked by the current admission validator.
+    from tools.public_api_snapshot import (
+        _validate_authorized_synthesis_python_program,
+    )
+
+    assert not _validate_authorized_synthesis_python_program(program)
+    assert str(inspect.signature(fq.run)) == _initial_state_run_signature(
+        PROPOSAL["unchanged_run_signature"]
+    )
     assert (
         str(inspect.signature(synth.Program.probabilities))
         == PROPOSAL["unchanged_probabilities_signature"]

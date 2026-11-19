@@ -1306,3 +1306,56 @@ RSS and caller-retained batches. Zero stored columns are refused. See
 [the approved proposal](../development/QEC_SHOT_DATA_READING_PROPOSAL.md) for
 exact budgets, API mapping and remaining parity gaps. Native and installed
 acceptance are pending for this candidate.
+
+## Write caller-owned shot data candidate
+
+`write_shot_data_file(*, data, path, format, num_measurements=None,
+num_detectors=None, num_observables=None)` writes CPU `torch.bool` rows or
+little-endian bit-packed CPU `torch.uint8` rows in `01`, `b8`, `r8`, `ptb64`,
+`hits`, or `dets`. Specify measurement columns alone, or detector and observable
+columns; measurements cannot be combined with D/L columns. Nonzero packed
+padding and incomplete PTB64 groups are refused. Existing files and symlinks are
+never replaced. The candidate limits principal payload to 64 MiB and estimated
+output to 1 GiB; neither is a process RSS bound. SDK mode uses Stim 1.16.0;
+embedded mode calls the locked native writer and fails closed if unavailable.
+Installed acceptance is pending. See the
+[approved proposal](../development/QEC_SHOT_DATA_WRITING_PROPOSAL.md).
+
+## Reusable independent DEM sampling
+
+`model.compile_sampler(seed=7)` returns a CPU `CompiledDemSampler` from
+`flagquantum.qec.execution.dem_sampling`. `sample(shots, bit_packed=True,
+return_errors=True)` returns detector, observable and error tables. Error column
+`i` follows canonical `model.errors[i]`, including repeated signatures; it does
+not follow the insertion order of constructor arguments. Replay accepts bool or
+packed uint8 independently of output packing and ignores unused input padding.
+Returned padding is zero and arrays own storage.
+
+`sample_write` streams optional detector, observable and error outputs in `01`,
+`b8`, `r8`, `ptb64`, `hits` or `dets`. Error files use M labels, detector files D
+and observable files L. PTB64 requires a multiple of 64 shots. Zero shots produce
+empty results without advancing RNG. Files never overwrite destinations; three
+outputs publish sequentially, with owned-inode rollback on failure rather than
+cross-file atomic visibility. Replay is validated on a bounded immutable snapshot.
+
+The 64 MiB principal-data guard includes all native tables, result and replay
+copies; it is not process RSS or model/parser heap. Each dimension is at most
+65,536, targets at most 262,144, canonical text at most 1 MiB, aggregate final
+outputs at most 1 GiB, and replay snapshots separately at most 1 GiB. Native
+stripes have at most 1024 shots. Handles belong to the creating thread/process,
+cannot be serialized, and invalidate after execution/publication failure.
+Validation failures preserve the handle. No backend fallback is performed.
+
+Every stated `error_id` is refused before preparation, preserving the existing
+independence boundary. Use unchanged `dem_sampling()` for exclusive groups.
+Seed reproducibility requires the same backend/build/SIMD and call partition;
+SDK/native/platform byte equality is not promised for random draws. Exact replay
+and deterministic mechanisms are the cross-implementation witnesses.
+
+Run `python -m examples.qec.compiled_dem_sampler` with the existing PyMatching
+extra and a Stim 1.16.0 SDK or embedded build. Expected output is
+`shots 64 batches 4 logical_failures 0`. macOS arm64 offline wheel/sdist
+builds and installed native acceptance passed, including an environment without
+the Stim Python package. See the implementation acceptance record in
+`docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
+capability makes no performance, threshold, full-parity or scalability claim.

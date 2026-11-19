@@ -293,6 +293,13 @@ def render(catalog: Catalog) -> dict[Path, str]:
         (ROOT / "tests/fixtures/classiq_qmod/native_library_inventory.json").read_text()
     )
     groups = inventory["groups"]
+    native_paths = {str(path.relative_to(ROOT)) for path in base.rglob("*.py")}
+    for group in groups:
+        native = group["native_program"]
+        if native and native["path"] not in native_paths:
+            raise ValueError(
+                f"missing or case-mismatched native program: {native['path']}"
+            )
     source_count = sum(len(group["sources"]) for group in groups)
     notebooks = [group for group in groups if group["kind"] == "notebook_workflow"]
     validated_workflows = sum(

@@ -1,26 +1,37 @@
-"""Measure the two-electron ground state of a two-site open Hubbard chain.
+"""Measure N=2 on a two-site Hubbard chain or three-site periodic ring.
 
-Run: python -m examples.algorithms.fermion_hubbard
+Run: python -m examples.algorithms.fermion_hubbard [--periodic]
 """
+
+import argparse
 
 import torch
 
 import flagquantum as fq
 from flagquantum.algorithms.fermion.encoding import ENCODINGS, encode_fermion
-from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
+from flagquantum.algorithms.fermion.hubbard import (
+    fermi_hubbard_chain,
+    fermi_hubbard_ring,
+)
 from flagquantum.algorithms.fermion.numerics import pauli_matrix
 from flagquantum.algorithms.fermion.observables import to_observable
 from flagquantum.algorithms.primitives.state_preparation import append_arbitrary_state
 from flagquantum.observables.fermion import FermionOperator, number
 
 
-def main() -> None:
+def main(*, periodic: bool = False) -> None:
+    profile = "three-site periodic ring" if periodic else "two-site open chain"
     print(
-        "premise: fixed two-site N=2 sector; dense diagonalization and state "
+        f"premise: fixed {profile} N=2 CPU sector; dense diagonalization and state "
         "preparation have exponential inspection cost, not a many-body scalability claim.\n"
     )
-    width = 4
-    hamiltonian = fermi_hubbard_chain(2, t=1, u=4, mu=0)
+    sites = 3 if periodic else 2
+    width = 2 * sites
+    hamiltonian = (
+        fermi_hubbard_ring(sites, t=1, u=4)
+        if periodic
+        else fermi_hubbard_chain(sites, t=1, u=4)
+    )
     particles = sum((number(mode) for mode in range(width)), FermionOperator())
     jw = encode_fermion(hamiltonian, n_modes=width, encoding="jordan_wigner")
     matrix = pauli_matrix(jw.operator, n_qubits=width)
@@ -28,7 +39,7 @@ def main() -> None:
     energies, vectors = torch.linalg.eigh(matrix[sector][:, sector])
     reference = torch.zeros(2**width, dtype=torch.complex128)
     reference[sector] = vectors[:, 0]
-    analytic = (4 - (4**2 + 16) ** 0.5) / 2
+    analytic = (2 - 68**0.5) / 2 if periodic else (4 - 32**0.5) / 2
     print(f"Analytic N=2 energy: {analytic:.10f}")
     print(f"Dense N=2 energy: {float(energies[0]):.10f}")
     for encoding in ENCODINGS:
@@ -57,4 +68,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--periodic", action="store_true", help="inspect a three-site ring"
+    )
+    main(periodic=parser.parse_args().periodic)

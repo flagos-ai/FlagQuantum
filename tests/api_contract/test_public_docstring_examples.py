@@ -35,10 +35,18 @@ from flagquantum.algorithms.data_encoding import (
     amplitude_encode,
     angular_encode,
 )
+from flagquantum.algorithms.fermion.density import (
+    one_body_density_observables,
+    two_body_density_observables,
+)
 from flagquantum.algorithms.fermion.hubbard import fermi_hubbard_chain
 from flagquantum.algorithms.fermion.lowering import fermionic_fourier_transform
 from flagquantum.algorithms.fermion.preparation import prepare_slater
-from flagquantum.algorithms.fermion.stabilizer import reduce_stabilizers
+from flagquantum.algorithms.fermion.stabilizer import (
+    discover_pauli_symmetries,
+    reduce_stabilizers,
+)
+from flagquantum.algorithms.fermion.symmetry import discover_z_parities
 from flagquantum.algorithms.folding import fold_program
 from flagquantum.algorithms.logical_resources import (
     estimate_logical_resources,
@@ -76,6 +84,7 @@ from flagquantum.ecosystem.pennylane import run as run_pennylane
 from flagquantum.ecosystem.qcis import import_qcis
 from flagquantum.ecosystem.qiskit import run as run_qiskit
 from flagquantum.ecosystem.simulators import recommend as recommend_simulator
+from flagquantum.experimental.qec import run_stim_matching_experiment
 from flagquantum.lindblad import plan as plan_lindblad_evolution
 from flagquantum.observables.boson import BosonOperator
 from flagquantum.observables.boson import position as boson_position
@@ -113,6 +122,8 @@ from flagquantum.qec.adapters.stim import (
 )
 from flagquantum.qec.decoders.batch import decode_batch
 from flagquantum.qec.decoders.matching_graph import MatchingGraph
+from flagquantum.qec.dem import DetectorErrorModel
+from flagquantum.qec.execution.dem_sampling import CompiledDemSampler
 from flagquantum.qec.execution.detector_sampling import CompiledDetectorSampler
 from flagquantum.qec.execution.experiments import run_memory_experiment
 from flagquantum.qec.execution.measurement_conversion import (
@@ -123,6 +134,7 @@ from flagquantum.qec.execution.measurement_conversion import (
 from flagquantum.qec.execution.shot_data import (
     iter_shot_data_file,
     read_shot_data_file,
+    write_shot_data_file,
 )
 from flagquantum.runtime import planner
 from flagquantum.runtime.executors.statevector import gather_distributed_statevector
@@ -221,12 +233,16 @@ ENTRIES = (
     synth.Program.numeric_probabilities,
     read_shot_data_file,
     iter_shot_data_file,
+    write_shot_data_file,
+    DetectorErrorModel.compile_sampler,
+    CompiledDemSampler,
     CompiledDetectorSampler,
     fq.Circuit.compile_detector_sampler,
     fq.Circuit.detector_error_model,
     fq.save,
     fq.load,
     run_memory_experiment,
+    run_stim_matching_experiment,
     convert_measurement_records,
     compile_m2d_converter,
     CompiledMeasurementsToDetectionEventsConverter,
@@ -304,8 +320,12 @@ ENTRIES = (
     pauli_readout,
     prepare_slater,
     fermi_hubbard_chain,
+    one_body_density_observables,
+    two_body_density_observables,
     fermionic_fourier_transform,
     reduce_stabilizers,
+    discover_pauli_symmetries,
+    discover_z_parities,
     PyMatchingDecoder.decode_batch,
     PyMatchingGraphDecoder,
     MatchingGraph,
@@ -392,6 +412,16 @@ def test_every_module_with_examples_is_covered() -> None:
         == Path(batch_owner.__file__).resolve()
     )
     covered.add(batch_owner.__name__)
+    dem_entry = DetectorErrorModel.compile_sampler
+    assert dem_entry in ENTRIES
+    dem_owner = importlib.import_module("flagquantum.qec.dem.model")
+    assert dem_owner.__file__ is not None
+    assert dem_owner.DetectorErrorModel.compile_sampler is dem_entry
+    assert (
+        Path(dem_entry.__code__.co_filename).resolve()
+        == Path(dem_owner.__file__).resolve()
+    )
+    covered.add(dem_owner.__name__)
     # Historical pickle modules differ from physical owners after relocation.
     # Map only existing executable entries, checking their actual source files.
     for entry, owner_name in (

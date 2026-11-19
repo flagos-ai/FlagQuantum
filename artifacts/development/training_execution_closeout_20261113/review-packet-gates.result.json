@@ -1,0 +1,17 @@
+{
+  "command": [
+    "<redacted-path>",
+    "-m",
+    "pytest",
+    "tests/unit/test_public_evidence_privacy.py",
+    "tests/unit/test_evidence_revisions.py",
+    "tests/unit/test_evidence_provenance.py",
+    "-q",
+    "--junitxml=../training-review-final-packet-gates.xml"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 0,
+  "reason": "process_exit",
+  "elapsed_seconds": 31.13,
+  "child_reaped": true
+}

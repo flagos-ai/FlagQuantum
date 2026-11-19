@@ -93,7 +93,7 @@ is a numerical primitive. It also must not import Runtime, and it does not read
 lowered `MeasurementNode`s, because reconciling a caller's requested qubits with
 an already-lowered output request is a Runtime decision.
 
-## Why the engine is an external distribution
+## Why the engine reuses Stim
 
 The dependency policy requires a new production dependency to record a
 documented need, an ownership boundary, a licence and supply-chain review, a
@@ -136,6 +136,9 @@ fixtures. `test_prepared_stabilizer_sampling.py` checks one compilation, release
 invalid records and independently authored measurement distributions. A future
 Clifford kernel can replace this private boundary without changing the QEC
 consumer, as the controlled-record replacement test demonstrates.
+
+The embedded build uses the same prepared measurement boundary for positioned
+Pauli noise; the standard profile continues to use the Stim Python SDK.
 
 A seed reproduces a run on one engine version and one machine instruction set
 and does not pin a bit pattern. That is the engine's documented behaviour, so a
@@ -259,8 +262,8 @@ Stim owns sampling, packing and its bounded write batches. FlagQuantum owns
 preflight budgets, tensor and column semantics, and no-replace publication.
 Run `python -m examples.qec.compiled_measurement_sampler` with the Stim extra.
 
-The opt-in macOS arm64 embedded wheel uses a private Stim source extension
-for prepared measurement sampling. The source lock and license are under
+The opt-in embedded wheel uses a private Stim source extension for prepared
+measurement sampling on macOS arm64 and Linux x86_64. The source lock and license are under
 `csrc/`. Both implementations use the same Clifford and single-slot X
 feedback admission rules before engine preparation.
 
@@ -366,3 +369,87 @@ Run `python -m pytest tests/qec/test_shot_data_reading.py -q` for fake-contract
 checks and `python -m pytest tests/team/simulation/test_shot_data_reading_conformance.py -q`
 for byte and numerical conformance. The ten-minute user path is
 `python examples/qec/shot_file_decoding.py` in an embedded + PyMatching profile.
+
+## Write caller-owned shot data
+
+The private `_shot_data_write.py` owns tensor admission, the single bounded
+bytearray copy, codec selection and no-replace publication. Embedded mode uses
+the existing 96-file Stim 1.16.0 closure and `write_table_data`; SDK mode uses
+the same pinned Python writer. No upstream source or translation unit is added.
+Start with `tests/qec/test_shot_data_writing.py`, then run
+`tests/team/simulation/test_shot_data_writing_conformance.py`. The 64 MiB
+principal estimate and 1 GiB output bound are request guards, not RSS guarantees.
+
+## Reusable independent DEM sampling
+
+`model.compile_sampler(seed=7)` returns a CPU `CompiledDemSampler` from
+`flagquantum.qec.execution.dem_sampling`. `sample(shots, bit_packed=True,
+return_errors=True)` returns detector, observable and error tables. Error column
+`i` follows canonical `model.errors[i]`, including repeated signatures; it does
+not follow the insertion order of constructor arguments. Replay accepts bool or
+packed uint8 independently of output packing and ignores unused input padding.
+Returned padding is zero and arrays own storage.
+
+`sample_write` streams optional detector, observable and error outputs in `01`,
+`b8`, `r8`, `ptb64`, `hits` or `dets`. Error files use M labels, detector files D
+and observable files L. PTB64 requires a multiple of 64 shots. Zero shots produce
+empty results without advancing RNG. Files never overwrite destinations; three
+outputs publish sequentially, with owned-inode rollback on failure rather than
+cross-file atomic visibility. Replay is validated on a bounded immutable snapshot.
+
+The 64 MiB principal-data guard includes all native tables, result and replay
+copies; it is not process RSS or model/parser heap. Each dimension is at most
+65,536, targets at most 262,144, canonical text at most 1 MiB, aggregate final
+outputs at most 1 GiB, and replay snapshots separately at most 1 GiB. Native
+stripes have at most 1024 shots. Handles belong to the creating thread/process,
+cannot be serialized, and invalidate after execution/publication failure.
+Validation failures preserve the handle. No backend fallback is performed.
+
+Every stated `error_id` is refused before preparation, preserving the existing
+independence boundary. Use unchanged `dem_sampling()` for exclusive groups.
+Seed reproducibility requires the same backend/build/SIMD and call partition;
+SDK/native/platform byte equality is not promised for random draws. Exact replay
+and deterministic mechanisms are the cross-implementation witnesses.
+
+Run `python -m examples.qec.compiled_dem_sampler` with the existing PyMatching
+extra and a Stim 1.16.0 SDK or embedded build. Expected output is
+`shots 64 batches 4 logical_failures 0`. macOS arm64 offline wheel/sdist
+builds and installed native acceptance passed, including an environment without
+the Stim Python package. See the implementation acceptance record in
+`docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
+capability makes no performance, threshold, full-parity or scalability claim.
+
+## Embedded noiseless execution candidate
+
+The candidate changes only the internal implementation of `sample_stabilizer`.
+After existing input, seed and Clifford validation, an embedded build uses the
+existing private `_EmbeddedSampler`, with a terminal measurement in requested
+wire order. The returned CPU `int64` tensor owns its storage. The genuine build
+marker selects this route; a load or link failure retains its cause in
+`StabilizerDependencyError` and does not select the SDK instead. Marker-free
+installations retain the SDK route. Positioned-noise execution and Runtime
+metadata are unchanged. No Runtime orchestration belongs in this package.
+
+Fresh macOS arm64 offline wheel/sdist and installed acceptance passed: 82 tests
+in the no-SDK profile and 246 each with the SDK and with the embedded marker
+absent. Real embedded preparation/sampling and the existing 16,384-wire
+regression were verified separately from replacement fakes. Focused tests passed
+208 cases; complete smoke/unit passed 20,567, with 296 selected-node skips and
+36 additional collection skips. Integration completed all 12,274 selected nodes
+across disjoint groups: 12,028 passed and 246 skipped. Historical failed attempts
+and approved recovery evidence are retained; this was not one uninterrupted run.
+Start with `tests/team/simulation/test_embedded_stabilizer_engine.py` and the
+public workflow in `examples/stabilizer_sampling.py`. Final-head publication and
+actual-main acceptance remain separate gates; no maturity or parity is promoted.
+
+## Embedded external Stim text experiments
+
+On opt-in macOS arm64 and Linux x86_64 embedded builds, the existing
+`run_stim_experiment()` consumes annotated Stim text using the bundled
+Stim 1.16.0 engine. Original-circuit sampling and strict DEM conversion
+remain separate. The engine retains the source byte limit, symbolic repeat
+limit, qubit and record limits, gauge rejection, coordinate handling, and
+complete detector and observable shape. Marker-free builds use the Stim SDK.
+The FlagQuantum memory-circuit text exporter still uses the SDK.
+Start with `tests/team/simulation/test_stim_annotated_engine.py` for exact-model
+and original-circuit checks.

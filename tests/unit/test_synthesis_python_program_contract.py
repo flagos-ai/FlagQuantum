@@ -62,6 +62,35 @@ def test_successor_guard_refuses_unapproved_expansion(
 
 
 @pytest.mark.parametrize(
+    ("operation", "diagnostic"),
+    [
+        ("phase", "native program phase differs"),
+        ("quantize", "native quantize differs"),
+        ("RESET", "native RESET differs"),
+        ("control", "native coherent control differs"),
+        ("qct_type2", "native trigonometric transforms differ"),
+        ("drop", "native hidden storage differs"),
+        ("qpe", "native matrix qpe differs"),
+        ("select_rotation", "native rotation tables differ"),
+        ("qft", "native Fourier operation differs"),
+        ("unitary", "native unitary operation differs"),
+        ("modular_exp", "native modular exponentiation differs"),
+        ("qdrift", "native sampled Pauli evolution differs"),
+        ("min", "native numeric interpretation differs"),
+    ],
+)
+def test_successor_checks_each_capability_signature(
+    monkeypatch: pytest.MonkeyPatch, operation: str, diagnostic: str
+) -> None:
+    def unsupported() -> None:
+        pass
+
+    monkeypatch.setattr(synth, operation, unsupported)
+    errors = _validate_authorized_synthesis_python_program(contract())
+    assert any(diagnostic in error for error in errors)
+
+
+@pytest.mark.parametrize(
     "operation",
     [
         lambda: synth.allocate(2),

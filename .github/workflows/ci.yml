@@ -413,7 +413,8 @@ jobs:
   native-fermion:
     needs: prepare-source
     runs-on: ${{ (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) && 'flagquantum-cpu-general' || 'ubuntu-latest' }}
-    timeout-minutes: 25
+    # Cold science wheels measured over 16 minutes across shared runners.
+    timeout-minutes: 45
     permissions:
       contents: read
     concurrency:
@@ -520,6 +521,7 @@ jobs:
           python -m pytest tests/unit/fermion/test_molecular_hdf5.py tests/integration/test_molecular_hdf5_isolation.py tests/test_algorithm_examples.py -k "hdf5 or covered_and_indexed" -q
           python -m examples.algorithms.fermion_hdf5
       - name: Install the direct chemistry driver
+        timeout-minutes: 20
         run: python -m pip install --no-build-isolation -e '.[chemistry-pyscf]' 'pyscf==${{ matrix.pyscf }}'
       - name: Require a working driver and run real RHF cases
         run: |
@@ -795,7 +797,13 @@ jobs:
     permissions:
       contents: read
       packages: read
-    timeout-minutes: 30
+    # Run 43187409331 reached 99% at 60 minutes. Partition the full selection
+    # with the existing deterministic planner; run both launcher proofs once.
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"
@@ -881,10 +889,12 @@ jobs:
       - name: Run integration tests with bounded workers
         env:
           PYTEST_ADDOPTS: -n ${{ env.FQ_PYTEST_WORKERS }} --dist=worksteal --durations=50 --junitxml=${{ env.FQ_CI_REPORT_DIR }}/pytest.xml
-        run: python tools/ci_tier.py pr-runtime
+        run: python tools/ci_tier.py pr-runtime --shard-count 4 --shard-index ${{ matrix.shard }}
       - name: Prove native distributed runtime does not require JAX
+        if: matrix.shard == 0
         run: torchrun --standalone --nproc-per-node=2 tests/distributed/runtime_modes.py
       - name: Run the launched distributed tests under a real launcher
+        if: matrix.shard == 0
         run: torchrun --standalone --nproc-per-node=2 -m pytest -m distributed_launch -q
       - name: Retain resource limits and pytest timing reports
         if: ${{ always() && env.FQ_CI_REPORT_DIR != '' }}
@@ -2352,7 +2362,9 @@ jobs:
     permissions:
       contents: read
       packages: read
-    timeout-minutes: 30
+    # Run 43187409331 needed 28m53s for a passing QSVT partition before
+    # coverage/artifact finalization; full-state catalog partitions need longer.
+    timeout-minutes: 60
     env:
       OMP_NUM_THREADS: "1"
       MKL_NUM_THREADS: "1"

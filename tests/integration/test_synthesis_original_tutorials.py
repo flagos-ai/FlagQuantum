@@ -9,7 +9,7 @@ import pytest
 
 import flagquantum as fq
 from flagquantum import synth
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 CORPUS = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod"

@@ -278,7 +278,7 @@ def test_the_module_takes_its_rule_from_the_operator_schema() -> None:
     assert "core.operator_schema.get_operator_schema" in imports
     assert "core.operator_schema.inverse_operator" in imports
     # The wire index that `merge_self_inverse` also uses, rather than a second one.
-    assert "pipeline._WireLocalProgram" in imports
+    assert "canonicalization._WireLocalProgram" in imports
 
 
 @pytest.mark.parametrize(
@@ -583,7 +583,8 @@ def test_the_pass_is_wired_into_the_fixed_point_loop_exactly_once() -> None:
     composition = OPTIMIZATION_LEVEL_STAGES[DEFAULT_OPTIMIZATION_LEVEL]
     assert composition.count("merge_inverse_pairs") == 1
 
-    tree = ast.parse(Path(pipeline_module.__file__).read_text(encoding="utf-8"))
+    implementation = Path(pipeline_module.__file__).parent / "optimization/pipeline.py"
+    tree = ast.parse(implementation.read_text(encoding="utf-8"))
     loop = next(
         node
         for node in ast.walk(tree)

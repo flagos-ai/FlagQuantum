@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+import math
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
 import torch
 
+import flagquantum as fq
 from flagquantum.compiler.artifacts.artifact_compilation import (
+    ArtifactCompilationError,
+    ArtifactCompilationResult,
     compile_circuit_artifact_for_target,
 )
 from flagquantum.compiler.artifacts.compilation_evidence import (
@@ -64,12 +68,14 @@ _SCOPE = CapabilityScope(device_ids=("allocation:0",))
 _SOURCE = FactSource(kind="phase43_test", ref="phase43-evidence")
 
 
-def _snapshot() -> TargetCapabilitySnapshot:
+def _snapshot(
+    *, native_gates: tuple[str, ...] = ("h", "ry", "cx", "swap")
+) -> TargetCapabilitySnapshot:
     values: dict[str, object] = {
         "qubits.logical_capacity": 8,
         "limits.maximum_program_operations": 4096,
         "precision.effective_dtype": "complex128",
-        "gates.native": ("h", "ry", "cx", "swap"),
+        "gates.native": native_gates,
         "measurements.results": ("samples",),
         "artifacts.profiles": ("openqasm-2.0", "openqasm-3.0"),
         "limits.maximum_shots": 4096,
@@ -146,6 +152,216 @@ def _state(program: CircuitIR) -> torch.Tensor:
         device=torch.device("cpu"),
         dtype=torch.complex128,
     )
+
+
+def test_allocated_artifact_preserves_permuted_logical_sample_order() -> None:
+    source = ProgramArtifactV2.from_circuit_ir(
+        CircuitIR(
+            2,
+            (Instruction("ry", (0,), params={"theta": math.pi}),),
+            dtype="complex128",
+            measurements=(MeasurementNode("samples", (0, 1)),),
+        ),
+        producer="permuted-results-source",
+    )
+    snapshot = _snapshot()
+    result = compile_circuit_artifact_for_target(
+        source,
+        backend="qasm",
+        profile="openqasm-3.0",
+        snapshot=snapshot,
+        producer="flagquantum.compiler",
+        evaluated_at=_NOW,
+        coupling_map=DirectedCouplingMap(3, ((0, 1), (1, 2))),
+        initial_layout=(2, 0),
+    )
+    artifact = read_program_artifact_json(result.executable_artifact.to_json())
+    assert isinstance(artifact, ProgramArtifactV3)
+    assert artifact.result_schema["physical_result_slots"] == (2, 0)
+    bundle = build_compilation_evidence_bundle(
+        result, snapshot=snapshot, producer="flagquantum.compiler"
+    )
+    evidence = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert isinstance(evidence, CompilationEvidenceBundleV3)
+    assert evidence.physical_plan.logical_result_physical_slots == (2, 0)
+    prepared = prepare_artifact_deployment(
+        artifact,
+        snapshot=snapshot,
+        source=source,
+        compilation_evidence=evidence,
+        provider=snapshot.target_identity.provider,
+        target_id=snapshot.target_identity.target_id,
+        shots=32,
+        evaluated_at=_NOW,
+    )
+    assert prepared.capability_match.executable
+    assert prepared.physical_result_slots == (2, 0)
+    assert prepared.logical_result_width == 2
+
+    imported = fq.from_openqasm(prepared.program)
+    assert imported.version == 3.0
+    assert imported.n_qubits == 3
+    assert imported.measurement_qubits == (2, 0)
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    circuit = imported.to_circuit()
+    samples = fq.run(
+        circuit,
+        options=options,
+        outputs=fq.samples(qubits=imported.measurement_qubits),
+        shots=prepared.shots,
+    ).samples
+    assert samples is not None
+    assert validate_executable_result_samples(artifact, samples) is samples
+    expected_samples = torch.tensor([1, 0], dtype=samples.dtype).expand(1, 32, 2)
+    torch.testing.assert_close(samples, expected_samples, atol=0, rtol=0)
+
+    state = fq.run(circuit, options=options).statevector()
+    expected_state = torch.zeros(8, dtype=torch.complex128)
+    expected_state[1] = 1  # Physical |001> leaves the workspace slot 1 in |0>.
+    torch.testing.assert_close(state.reshape(-1), expected_state, atol=1e-12, rtol=0)
+
+    wrong_artifact = replace(
+        artifact,
+        result_schema=dict(artifact.result_schema) | {"physical_result_slots": (0, 2)},
+        artifact_identity="",
+    )
+    # Keep output identity consistent to exercise the projection guard itself.
+    wrong_evidence = replace(
+        evidence,
+        output=dict(evidence.output)
+        | {"executable_artifact_identity": wrong_artifact.artifact_identity},
+        bundle_identity="",
+    )
+    with pytest.raises(ExecutionError, match="result projection does not match"):
+        prepare_artifact_deployment(
+            wrong_artifact,
+            snapshot=snapshot,
+            source=source,
+            compilation_evidence=wrong_evidence,
+            provider=snapshot.target_identity.provider,
+            target_id=snapshot.target_identity.target_id,
+            shots=32,
+            evaluated_at=_NOW,
+        )
+
+
+def test_routed_artifact_restores_permuted_results_and_workspace() -> None:
+    theta, phi = 0.63, 0.37
+    source = ProgramArtifactV2.from_circuit_ir(
+        CircuitIR(
+            2,
+            (
+                Instruction("rx", (0,), params={"theta": theta}),
+                Instruction("ry", (1,), params={"theta": phi}),
+                Instruction("cx", (0, 1)),
+            ),
+            dtype="complex128",
+            measurements=(MeasurementNode("samples", (0, 1)),),
+        ),
+        producer="routed-permuted-results-source",
+    )
+    snapshot = _snapshot(native_gates=("h", "rx", "ry", "cx", "swap"))
+    graph = DirectedCouplingMap(3, ((0, 1), (1, 2)))
+
+    def compile_with_routing_budget(budget: int) -> ArtifactCompilationResult:
+        return compile_circuit_artifact_for_target(
+            source,
+            backend="qasm",
+            profile="openqasm-3.0",
+            snapshot=snapshot,
+            producer="flagquantum.compiler",
+            evaluated_at=_NOW,
+            coupling_map=graph,
+            initial_layout=(2, 0),
+            max_routing_added_operations=budget,
+        )
+
+    result = compile_with_routing_budget(2)
+    artifact = read_program_artifact_json(result.executable_artifact.to_json())
+    assert isinstance(artifact, ProgramArtifactV3)
+    bundle = build_compilation_evidence_bundle(
+        result, snapshot=snapshot, producer="flagquantum.compiler"
+    )
+    evidence = read_compilation_evidence_bundle_json(bundle.to_json())
+    assert isinstance(evidence, CompilationEvidenceBundleV3)
+    verify_compilation_evidence_bundle(evidence, result, snapshot=snapshot)
+    plan = evidence.physical_plan
+    assert plan.initial_logical_to_physical == (2, 0)
+    assert plan.final_logical_to_physical == (2, 0)
+    assert plan.logical_result_physical_slots == (2, 0)
+    assert (
+        plan.initial_physical_to_logical
+        == plan.final_physical_to_logical
+        == (1, None, 0)
+    )
+    swaps = tuple(
+        item.physical_wires for item in plan.instructions if item.opcode == "swap"
+    )
+    assert len(swaps) == 2
+    assert tuple(item.physical_wires for item in plan.mapping_transitions) == swaps
+    assert plan.mapping_transitions[0].physical_to_logical_after != (
+        plan.initial_physical_to_logical
+    )
+    assert plan.mapping_transitions[-1].physical_to_logical_after == (
+        plan.final_physical_to_logical
+    )
+    prepared = prepare_artifact_deployment(
+        artifact,
+        snapshot=snapshot,
+        source=source,
+        compilation_evidence=evidence,
+        provider=snapshot.target_identity.provider,
+        target_id=snapshot.target_identity.target_id,
+        shots=32,
+        evaluated_at=_NOW,
+    )
+    assert prepared.capability_match.executable
+    assert prepared.physical_result_slots == (2, 0)
+    assert prepared.logical_result_width == 2
+    assert artifact.result_schema["physical_result_slots"] == (2, 0)
+    imported = fq.from_openqasm(prepared.program)
+    assert imported.version == 3.0
+    assert imported.measurement_qubits == (2, 0)
+    assert (
+        tuple(item.wires for item in imported.instructions if item.name == "swap")
+        == swaps
+    )
+    assert any(item.name == "cx" for item in imported.instructions)
+    for item in imported.instructions:
+        if len(item.wires) == 2:
+            assert (
+                graph.has_weak_edge(*item.wires)
+                if item.name == "swap"
+                else graph.has_edge(*item.wires)
+            )
+
+    options = fq.ExecutionOptions(
+        backend="pytorch", device="cpu", mode="statevector", precision="complex128"
+    )
+    physical = (
+        fq.run(imported.to_circuit(), options=options).statevector().reshape(2, 2, 2)
+    )
+    control_zero = math.cos(theta / 2)
+    control_one = -1j * math.sin(theta / 2)
+    target_zero, target_one = math.cos(phi / 2), math.sin(phi / 2)
+    expected = torch.tensor(
+        [
+            [control_zero * target_zero, control_zero * target_one],
+            [control_one * target_one, control_one * target_zero],
+        ],
+        dtype=torch.complex128,
+    )
+    # Physical axes 2 and 0 carry logical qubits 0 and 1, respectively.
+    torch.testing.assert_close(physical[:, 0, :].T, expected, atol=1e-12, rtol=0)
+    torch.testing.assert_close(
+        physical[:, 1, :], torch.zeros_like(expected), atol=1e-12, rtol=0
+    )
+    with pytest.raises(
+        ArtifactCompilationError, match="topology routing exceeds max_added_operations"
+    ):
+        compile_with_routing_budget(0)
 
 
 def test_idle_slot_routes_interaction_and_restores_logical_result_slots() -> None:

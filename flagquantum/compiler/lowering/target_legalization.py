@@ -21,14 +21,7 @@ from ...core.target_capabilities import (
     match_target_capabilities,
 )
 from ...errors import CompilationError
-from ..operator_lowering import (
-    DEFAULT_LOWERING_REGISTRY,
-    LoweringCapability,
-    OperatorLoweringRegistry,
-    UnsupportedLoweringError,
-)
 from ..routing import CouplingMap
-from ..select_lowering import SELECT_REPORT, lower_select_program
 from ..topology.directed_topology import DirectedCouplingMap
 from ..topology.direction_legalization import (
     DirectionLegalizationError,
@@ -45,11 +38,18 @@ from .native_gate_legalization import (
     NativeGateLegalizationResult,
     legalize_native_gates,
 )
+from .operator_lowering import (
+    DEFAULT_LOWERING_REGISTRY,
+    LoweringCapability,
+    OperatorLoweringRegistry,
+    UnsupportedLoweringError,
+)
 from .schedule_legalization import (
     CircuitSchedule,
     ScheduleLegalizationError,
     schedule_circuit_dependencies,
 )
+from .select_lowering import SELECT_REPORT, lower_select_program
 
 
 class TargetLegalizationError(CompilationError):

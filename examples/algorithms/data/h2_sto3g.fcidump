@@ -1,0 +1,14 @@
+! Native FlagQuantum RHF integrals for H2 at 0.7414 angstrom, STO-3G.
+! Chemist spatial integrals in hartree, interleaved alpha/beta spin modes.
+! Generated with create_molecular_hamiltonian; no upstream SDK data is used.
+&FCI NORB=2,NELEC=2,MS2=0,ORBSYM=1,1 /
+6.74488766352290603e-01 1 1 1 1
+-1.25246357355051696e+00 1 1 0 0
+-1.55765350132847592e-16 2 1 1 1
+1.81288808212834801e-01 2 1 2 1
+4.58031996721153849e-18 2 1 0 0
+6.63468096419424280e-01 2 2 1 1
+3.92094106418741615e-16 2 2 2 1
+6.97393767418631794e-01 2 2 2 2
+-4.75948715235953723e-01 2 2 0 0
+7.13753993664688391e-01 0 0 0 0

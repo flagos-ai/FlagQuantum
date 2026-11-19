@@ -40,10 +40,10 @@
     "strategy_vocabulary_is_a_copied_literal": {
       "site": "flagquantum/deployment/routing_evidence.py",
       "clause": "strategy not in DEPLOYABLE_ROUTING_STRATEGIES",
-      "authority": "flagquantum/compiler/routing.py:24 ROUTING_STRATEGIES",
+      "authority": "flagquantum/compiler/topology/routing.py:40 ROUTING_STRATEGIES",
       "authority_members": 4,
       "consumer_members": 3,
-      "consumer_authority": "flagquantum/compiler/routing.py:57 DEPLOYABLE_ROUTING_STRATEGIES",
+      "consumer_authority": "flagquantum/compiler/topology/routing.py:63 DEPLOYABLE_ROUTING_STRATEGIES",
       "measured_refusal": "unsupported routing strategy",
       "measured_count": "12 of 48 routed plans (12 sabre_layout), down from 24 of 48 when the clause was a copy of the two estimating strategies",
       "narrowing_experiment": "Widening only this clause, with every other clause of the validator left in place, makes the sabre plan pass every remaining check on the same programs and leaves sabre_layout refused by the initial-permutation clause instead. Both verdicts are asserted by tests/unit/test_routing_plan_v2_candidate.py.",

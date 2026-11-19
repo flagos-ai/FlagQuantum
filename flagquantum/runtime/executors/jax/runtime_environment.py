@@ -7,10 +7,8 @@ from collections.abc import Sequence
 from dataclasses import replace
 from typing import Any
 
-from ...distributed.backend_policy import (
-    DistributedBackendPolicy,
-    resolve_distributed_backend_policy,
-)
+from ...distributed import backend_policy as _backend_policy
+from ...distributed.backend_policy import DistributedBackendPolicy
 from .common import env_int as _env_int
 
 
@@ -21,8 +19,11 @@ def _resolve_policy(
     jax_backend: str | None = None,
     torch_backend: str | None = None,
 ) -> DistributedBackendPolicy:
-    policy = distributed_backend_policy or resolve_distributed_backend_policy(
-        profile=distributed_profile
+    policy = (
+        distributed_backend_policy
+        or _backend_policy.resolve_distributed_backend_policy(
+            profile=distributed_profile
+        )
     )
     if jax_backend is None and torch_backend is None:
         return policy

@@ -1,4 +1,4 @@
-"""Decode captured b8 records with an embedded build and the pymatching extra."""
+"""Decode captured b8 records with the bundled Sparse Blossom backend."""
 
 from contextlib import closing
 from pathlib import Path
@@ -6,14 +6,15 @@ from tempfile import TemporaryDirectory
 
 import torch
 
-from flagquantum.qec import DemError, DetectorErrorModel, PyMatchingDecoder
+from flagquantum.qec import DecodingGraph, DemError, DetectorErrorModel
+from flagquantum.qec.decoders.sparse_blossom import SparseBlossomDecoder
 from flagquantum.qec.execution.shot_data import (
     iter_shot_data_file,
     read_shot_data_file,
 )
 
 model = DetectorErrorModel(1, 1, (DemError(0.1, (0,), (0,)),))
-decoder = PyMatchingDecoder.from_detector_error_model(model)
+decoder = SparseBlossomDecoder(DecodingGraph.from_detector_error_model(model))
 with TemporaryDirectory() as directory:
     path = Path(directory) / "events.b8"
     # The two stored bits are D0 and L0; every other shot flips both.

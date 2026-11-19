@@ -1,0 +1,41 @@
+{
+  "black": {
+    "command": [
+      "<redacted-path>",
+      "-m",
+      "black",
+      "--check",
+      "tests/api_contract/test_synthesis_phase_admission_proposal.py",
+      "tests/api_contract/test_synthesis_qmod_admission_proposal.py",
+      "tests/api_contract/test_synthesis_run_admission_proposal.py",
+      "tests/unit/test_training_compilation.py"
+    ],
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "All done! \u2728 \ud83c\udf70 \u2728\n4 files would be left unchanged.\n"
+  },
+  "ruff": {
+    "command": [
+      "<redacted-path>",
+      "-m",
+      "ruff",
+      "check",
+      "tests/api_contract/test_synthesis_phase_admission_proposal.py",
+      "tests/api_contract/test_synthesis_qmod_admission_proposal.py",
+      "tests/api_contract/test_synthesis_run_admission_proposal.py",
+      "tests/unit/test_training_compilation.py"
+    ],
+    "returncode": 0,
+    "stdout": "All checks passed!\n",
+    "stderr": ""
+  },
+  "origins": {
+    "command": [
+      "<redacted-path>",
+      "tools/check_evidence_revisions.py"
+    ],
+    "returncode": 0,
+    "stdout": "evidence revision origins passed\n",
+    "stderr": ""
+  }
+}

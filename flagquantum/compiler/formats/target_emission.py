@@ -13,9 +13,9 @@ from ..lowering.schedule_legalization import (
     schedule_circuit_dependencies,
 )
 from ..lowering.target_legalization import TargetLegalizationResult
-from ..openqasm import emit_openqasm
-from ..qcis import emit_qcis
-from ..qir import emit_qir
+from .openqasm import emit_openqasm
+from .qcis import emit_qcis
+from .qir import emit_qir
 
 
 class TargetEmissionError(CompilationError):

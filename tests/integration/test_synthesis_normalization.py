@@ -16,7 +16,7 @@ from flagquantum.compiler._construction.lowering import (
     schedule_arithmetic,
 )
 from flagquantum.compiler._construction.register_lowering import RegisterCandidate
-from tests.integration.test_synthesis_register_workflow import check_state
+from tests.synthesis_workflow_helpers import check_state
 
 pytestmark = pytest.mark.integration
 QMOD = (

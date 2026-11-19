@@ -265,17 +265,12 @@ def test_parameter_binding_preserves_resource_rejection(
         (
             "@qfunc\ndef helper(theta: float, q: QArray[QBit]) -> None:\n    allocate(2,q)\n",
             "helper(angles[0],q)",
-            "program.borrow",
+            "construction.register.initialized",
         ),
         (
             "@qfunc\ndef helper(theta: float, q: QArray[QBit]) -> None:\n    helper(theta,q)\n",
             "helper(angles[0],q)",
             "program.recursion",
-        ),
-        (
-            "@qfunc\ndef helper(theta: float, q: QBit) -> None:\n    RX(theta,q)\n",
-            "with adjoint():\n    helper(angles[0],q[0])",
-            "program.adjoint",
         ),
     ],
 )
@@ -406,3 +401,17 @@ def test_quoted_annotations_and_standard_type_aliases(tmp_path: Path) -> None:
         _definition(
             tmp_path, "theta: 'float', q: Output[QBit]", "allocate(q)", "float = None\n"
         )
+
+
+def test_classical_helper_in_adjoint_preserves_the_inverse(tmp_path: Path) -> None:
+    entry = _definition(
+        tmp_path,
+        "angles: list[float], q: Output[QArray[QBit]]",
+        "allocate(2,q)\nwith adjoint():\n    helper(angles[0],q[0])",
+        "@qfunc\ndef helper(theta: float, q: QBit) -> None:\n    RX(theta,q)\n",
+    )
+    program = synth.synthesize(entry, classical_inputs={"angles": [0.3, -0.4]})
+    expected = fq.Circuit(2, dtype=torch.complex128).rx(1, theta=-0.3).state()
+    torch.testing.assert_close(
+        fq.run(program).statevector().flatten(), expected.flatten(), atol=1e-12, rtol=0
+    )

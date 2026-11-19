@@ -43,6 +43,8 @@ from tests.team.compiler.test_construction_python_program import program_definit
 
 pytestmark = pytest.mark.integration
 ROOT = Path(__file__).resolve().parents[1] / "fixtures/classiq_qmod/corpus/original"
+QUANTUM_TIMES = tuple(index * 0.1 / 19 for index in range(20))
+EXACT_TIMES = tuple(index * 0.1 / 99 for index in range(100))
 
 
 @pytest.mark.parametrize("theta", [0.23, -0.41])
@@ -104,11 +106,16 @@ def test_every_fmo_basis_column_including_padding_preserves_bit_order(
     compare_states(synth.synthesize(entry), reference, ("q",))
 
 
-def test_full_fmo_time_sweep_and_plot(tmp_path: Path) -> None:
-    times = tuple(index * 0.1 / 19 for index in range(20))
-    exact_times = tuple(index * 0.1 / 99 for index in range(100))
-    populations, durations = quantum_sweep(times)
-    exact = exact_sweep(exact_times)
+@pytest.fixture(scope="module")
+def fmo_sweep() -> tuple[torch.Tensor, tuple[float, ...]]:
+    return quantum_sweep(QUANTUM_TIMES)
+
+
+def test_full_fmo_time_sweep(
+    fmo_sweep: tuple[torch.Tensor, tuple[float, ...]],
+) -> None:
+    populations, durations = fmo_sweep
+    exact = exact_sweep(EXACT_TIMES)
     assert populations.shape == (20, 8)
     assert exact.shape == (100, 7)
     assert len(durations) == 20 and all(value >= 0 for value in durations)
@@ -118,14 +125,26 @@ def test_full_fmo_time_sweep_and_plot(tmp_path: Path) -> None:
     torch.testing.assert_close(
         exact.sum(dim=1), torch.ones(100, dtype=torch.float64), atol=1e-12, rtol=0
     )
-    for index, time in enumerate(times):
+    for index, time in enumerate(QUANTUM_TIMES):
         reference = fq.run(fmo_reference(time)).statevector().flatten().abs().square()
         torch.testing.assert_close(populations[index], reference, atol=1e-12, rtol=0)
     # Product-formula padding leakage is physical approximation error, not dirty scratch.
     assert float(populations[7, 7]) > 0
+
+
+def test_full_fmo_population_plot(
+    tmp_path: Path, fmo_sweep: tuple[torch.Tensor, tuple[float, ...]]
+) -> None:
+    pytest.importorskip("matplotlib")
+    from matplotlib import pyplot as plt
+
+    populations, _ = fmo_sweep
     output = tmp_path / "fmo-populations.png"
-    save_plot(times, populations, exact_times, exact, output)
+    before = plt.get_fignums()
+    save_plot(QUANTUM_TIMES, populations, EXACT_TIMES, exact_sweep(EXACT_TIMES), output)
+    assert output.read_bytes().startswith(b"\x89PNG\r\n\x1a\n")
     assert output.stat().st_size > 10_000
+    assert plt.get_fignums() == before
 
 
 def test_native_application_budgets_are_checked() -> None:

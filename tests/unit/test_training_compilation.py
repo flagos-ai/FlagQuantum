@@ -508,7 +508,7 @@ def test_unobserved_eager_steps_preserve_consumed_ir_and_checkpoint_recovery(tmp
 
 @pytest.mark.parametrize("kind", ("SGD", "Adam"))
 @pytest.mark.parametrize("grad", (False, True))
-def test_checkpoint_v2_recovers_dynamic_detached_bindings(tmp_path, kind, grad):
+def test_checkpoint_recovers_dynamic_detached_bindings(tmp_path, kind, grad):
     def workload(p, x):
         return build(p, x).rx(0, p[0].detach() * x[:, 0])
 
@@ -537,7 +537,7 @@ def test_checkpoint_v2_recovers_dynamic_detached_bindings(tmp_path, kind, grad):
         if step == 3:
             source.save_checkpoint(checkpoint, optimizer=optimizer, seed=11, step=step)
             payload = torch.load(checkpoint, weights_only=True)
-            assert payload["version"] == "flagquantum.training_state.v2"
+            assert payload["version"] == "flagquantum.training_state.v3"
             assert payload["ir_hash"] == execution.provenance["ir_hash"]
             assert payload["ir_hash"] != payload["workload_signature"]
 

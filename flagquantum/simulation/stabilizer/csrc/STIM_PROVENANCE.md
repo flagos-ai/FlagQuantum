@@ -7,7 +7,7 @@ CPython bridge uses upstream reference sampling, frame sampling, RNG
 construction and the b8 writer. The Stim Python extension is not linked
 or imported by the embedded measurement route.
 
-The first local embedded build profile targets macOS arm64 and is selected
+Local embedded builds target macOS arm64 and Linux x86_64 and are selected
 with `FQ_BUILD_EMBEDDED_STIM=1`. The generated wheel marker selects the
 private extension. An embedded profile with a missing or broken extension
 fails at preparation. The standard build retains its existing optional
@@ -73,3 +73,26 @@ PTB64 retains the upstream 64-shot buffer across consumer batches. No pybind11,
 NumPy, upstream source edits, dependency changes or extra translation units are
 introduced. read_write.pybind.cc is a semantic reference, not a compiled input.
 Native and installed acceptance remain required before delivery.
+
+## Caller-owned shot-data writer candidate
+
+The private `write_shot_records` bridge accepts the already-owned bounded
+bytearray and writes at most 64 shots per SIMD table through the locked
+`write_table_data` implementation. PTB64 uses Stim's transposed-table branch;
+other formats use its `MeasureRecordWriter`. Python owns dimensions, framing,
+staging and no-replace publication. No upstream source, source lock, translation
+unit, dependency or license byte changes. Native and installed acceptance
+remain pending.
+
+## Reusable DEM sampler candidate
+
+The approved closure adds unchanged `dem_sampler.h` and `dem_sampler.inl`
+from the same pinned Stim 1.16.0 archives, for 98 files and the same 37
+translation units. `prepare_dem`, `sample_dem` and `write_dem` call upstream
+`DemSampler<width>`, `resample` and `sample_write`; the random algorithm is
+not reimplemented. The private bridge validates flat bounded instructions
+before constructing the 1024-shot SIMD tables. QEC owns model serialization,
+replay snapshots, result bounds and no-replace publication. No pybind11,
+NumPy C API, setup.py changes or external Stim extension is used. Both new
+file hashes are in the existing source lock; all previous upstream bytes
+remain unchanged. Offline native build and installed acceptance are pending.

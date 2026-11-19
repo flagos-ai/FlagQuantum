@@ -366,6 +366,8 @@ def test_linux_prerequisites_keep_forks_off_private_cpu_runners(
         assert job["env"]["GIT_CONFIG_COUNT"] == "1"
         assert job["env"]["GIT_CONFIG_KEY_0"] == "http.version"
         assert job["env"]["GIT_CONFIG_VALUE_0"] == "HTTP/1.1"
+    elif workflow == "main-smoke.yml":
+        assert job["runs-on"] == "ubuntu-22.04"
     else:
         assert job["runs-on"] == "ubuntu-latest"
         if name == "pre-commit":

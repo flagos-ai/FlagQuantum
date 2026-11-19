@@ -226,11 +226,19 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     from .planner import analyze
 
     planned_program = program
-    if normalized["extensions"]:
+    noise_extension = next(
+        (
+            extension
+            for extension in normalized["extensions"]
+            if extension["kind"] == NOISE_EXTENSION_KIND
+        ),
+        None,
+    )
+    if noise_extension is not None:
         from ..noise import NoiseModel
         from .planner import lower_noise_model
 
-        noise_model = NoiseModel.from_dict(normalized["extensions"][0]["payload"])
+        noise_model = NoiseModel.from_dict(noise_extension["payload"])
         planned_program = lower_noise_model(program, noise_model)
     analysis = analyze(planned_program)
     plan = ExecutionPlan(
@@ -261,10 +269,10 @@ def plan_from_dict(payload: Mapping[str, Any]) -> ExecutionPlan:
     # one, and executing it returned the noiseless number.
     from .planner import carries_noise_channels
 
-    if normalized["extensions"] or carries_noise_channels(planned_program):
+    if noise_extension is not None or carries_noise_channels(planned_program):
         from .planner import build_noisy_execution_plan
 
-        extension = normalized["extensions"][0] if normalized["extensions"] else None
+        extension = noise_extension
         noisy_mps = plan.state_mode == "mps"
         resolved = normalized["resolved_options"]
         plan = replace(
@@ -466,6 +474,31 @@ def _validate_plan_payload(
             "extension_incompatible", "extensions must be a JSON array"
         )
     _validate_extensions(extensions)
+    if has_initial_state_extension(values):
+        from ..errors import CapabilityError, ValidationError
+        from ._initial_state import validate_input_decision
+
+        try:
+            validate_input_decision(program, decision, resolved)
+        except (CapabilityError, ValidationError) as exc:
+            raise ExecutionPlanContractError(
+                "extension_incompatible", str(exc)
+            ) from exc
+    if has_runtime_inputs_extension(values):
+        from ..errors import CapabilityError, ValidationError
+        from ._runtime_inputs import validate_runtime_decision
+
+        try:
+            validate_runtime_decision(program, decision, resolved)
+        except (CapabilityError, ValidationError) as exc:
+            raise ExecutionPlanContractError(
+                "extension_incompatible", str(exc)
+            ) from exc
+        if extensions[0] != runtime_inputs_extension(program):
+            raise ExecutionPlanContractError(
+                "extension_incompatible",
+                "runtime input names disagree with the symbolic program",
+            )
 
     _validate_plan_identity(
         values,
@@ -487,7 +520,12 @@ def _validate_plan_payload(
 def validate_plan_environment(plan: ExecutionPlan) -> None:
     """Fail before kernel launch when the current environment cannot run a plan."""
 
-    payload = validate_plan_payload(_payload(plan))
+    _validate_plan_environment_payload(plan_to_dict(plan))
+
+
+def _validate_plan_environment_payload(payload: Mapping[str, Any]) -> None:
+    """Check live requirements after the caller has validated the sealed payload."""
+
     decision = payload["decision"]
     backend = str(decision["backend"])
 
@@ -550,7 +588,11 @@ def plan_resolved_options(plan: ExecutionPlan) -> dict[str, object]:
 def plan_noise_model(plan: ExecutionPlan) -> Any | None:
     """Restore the optional stable noise extension carried by a plan."""
 
-    extensions = plan_to_dict(plan)["extensions"]
+    return _noise_model_from_payload(plan_to_dict(plan))
+
+
+def _noise_model_from_payload(payload: Mapping[str, Any]) -> Any | None:
+    extensions = payload["extensions"]
     if not isinstance(extensions, list):  # pragma: no cover - validated invariant
         raise ExecutionPlanContractError(
             "unsupported_schema", "ExecutionPlan.extensions must be a JSON array"
@@ -560,6 +602,8 @@ def plan_noise_model(plan: ExecutionPlan) -> Any | None:
     from ..noise import NoiseModel
 
     extension = _require_mapping("ExecutionPlan.extension", extensions[0])
+    if extension["kind"] != NOISE_EXTENSION_KIND:
+        return None
     payload = _require_mapping("ExecutionPlan.extension.payload", extension["payload"])
     return NoiseModel.from_dict(payload)
 
@@ -613,6 +657,43 @@ def _noise_extension(noise_model: Any) -> dict[str, object]:
     }
 
 
+def initial_state_extension() -> dict[str, object]:
+    """Return the versioned arbitrary-input requirement, without live data."""
+    payload = {"representation": "statevector"}
+    return {
+        "namespace": "flagquantum.execution",
+        "kind": "initial_state",
+        "version": "1.0",
+        "identity": canonical_hash(payload),
+        "payload": payload,
+    }
+
+
+def has_initial_state_extension(payload: Mapping[str, Any]) -> bool:
+    """Read the initial-input requirement from an already validated payload."""
+    extensions = payload["extensions"]
+    return bool(extensions and extensions[0]["kind"] == "initial_state")
+
+
+def runtime_inputs_extension(program: CircuitIR) -> dict[str, object]:
+    """Record declared parameter names without retaining any runtime values."""
+    from ._runtime_inputs import parameter_names
+
+    payload = {"parameters": list(parameter_names(program))}
+    return {
+        "namespace": "flagquantum.execution",
+        "kind": "runtime_inputs",
+        "version": "1.0",
+        "identity": canonical_hash(payload),
+        "payload": payload,
+    }
+
+
+def has_runtime_inputs_extension(payload: Mapping[str, Any]) -> bool:
+    extensions = payload["extensions"]
+    return bool(extensions and extensions[0]["kind"] == "runtime_inputs")
+
+
 def _validate_extensions(extensions: Sequence[object]) -> None:
     if len(extensions) > 1:
         raise ExecutionPlanContractError(
@@ -620,12 +701,33 @@ def _validate_extensions(extensions: Sequence[object]) -> None:
         )
     if not extensions:
         return
-    extension = _require_mapping("noise extension", extensions[0])
+    extension = _require_mapping("plan extension", extensions[0])
+    if extension == initial_state_extension():
+        return
     expected = {"namespace", "kind", "version", "identity", "payload"}
     if set(extension) != expected:
         raise ExecutionPlanContractError(
             "extension_incompatible", "noise extension fields do not match schema v1"
         )
+    if (
+        extension["namespace"] == "flagquantum.execution"
+        and extension["kind"] == "runtime_inputs"
+        and extension["version"] == "1.0"
+    ):
+        payload = _require_mapping("runtime inputs payload", extension["payload"])
+        names = payload.get("parameters")
+        if (
+            set(payload) != {"parameters"}
+            or not isinstance(names, list)
+            or not names
+            or any(type(name) is not str or not name for name in names)
+            or names != sorted(set(names))
+            or extension["identity"] != canonical_hash(payload)
+        ):
+            raise ExecutionPlanContractError(
+                "extension_incompatible", "invalid runtime inputs extension"
+            )
+        return
     if (
         extension["namespace"] != NOISE_EXTENSION_NAMESPACE
         or extension["kind"] != NOISE_EXTENSION_KIND

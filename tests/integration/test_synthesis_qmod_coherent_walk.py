@@ -122,11 +122,15 @@ def test_control_rejects_aliases_across_helper_boundary():
         synth.synthesize(source, source_format="qmod")
 
 
-def test_walk_workspace_budget_is_enforced():
-    with pytest.raises(ValueError, match="workspace|budget"):
-        synth.synthesize(
-            FIXTURES / "classiq_discrete_quantum_walk.qmod", max_workspace=2
-        )
+def test_walk_workspace_budget_is_enforced() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(FIXTURES / "classiq_discrete_quantum_walk.qmod")
+    constrained = synth.synthesize(
+        FIXTURES / "classiq_discrete_quantum_walk.qmod", max_workspace=0
+    )
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)
 
 
 def test_nested_inverse_of_helper_preserves_gate_phase():

@@ -385,7 +385,7 @@ text = (
     "OBSERVABLE_INCLUDE(0) rec[-1]\nOBSERVABLE_INCLUDE(1) rec[-2]\n"
 )
 result = run_stim_experiment(
-    text, decoder="minimum_weight_matching", shots=35, batch_size=16, seed=53
+    text, decoder="sparse_blossom", shots=35, batch_size=16, seed=53
 )
 print(result.shots, result.logical_failures, result.observable_failures)
 # 35 0 (0, 0) -- exact decoding of all four independent-fault outcomes
@@ -457,5 +457,79 @@ for the embedded build, not an upstream Stim API. Its independently packed
 detectors can feed the existing `PyMatchingDecoder.decode_packed_batch`.
 See [shot-file decoding](../../examples/qec/shot_file_decoding.py) and the
 [approved contract](../development/QEC_SHOT_DATA_READING_PROPOSAL.md). Standard
-SDK builds support eager reads only. Zero-column records and arbitrary-data
-write_shot_data_file remain explicit gaps. This candidate is not full parity.
+SDK builds support eager reads only. Zero-column records remain an explicit
+gap, and the reading candidate is not full parity.
+
+## Write caller-owned records
+
+Pass a CPU Torch table to `write_shot_data_file`; bool rows are dense and uint8
+rows are already bit-packed. The format remains Stim's `01`, `b8`, `r8`,
+`ptb64`, `hits` or `dets`. Supply `num_measurements` alone, or detector and
+observable widths. The example `python -m examples.qec.shot_file_encoding`
+prints two shots and the exact `b8` bytes. The writing candidate uses the Stim
+1.16.0 SDK or an embedded build; installed acceptance is pending.
+
+## Reusable independent DEM sampling
+
+`model.compile_sampler(seed=7)` returns a CPU `CompiledDemSampler` from
+`flagquantum.qec.execution.dem_sampling`. `sample(shots, bit_packed=True,
+return_errors=True)` returns detector, observable and error tables. Error column
+`i` follows canonical `model.errors[i]`, including repeated signatures; it does
+not follow the insertion order of constructor arguments. Replay accepts bool or
+packed uint8 independently of output packing and ignores unused input padding.
+Returned padding is zero and arrays own storage.
+
+`sample_write` streams optional detector, observable and error outputs in `01`,
+`b8`, `r8`, `ptb64`, `hits` or `dets`. Error files use M labels, detector files D
+and observable files L. PTB64 requires a multiple of 64 shots. Zero shots produce
+empty results without advancing RNG. Files never overwrite destinations; three
+outputs publish sequentially, with owned-inode rollback on failure rather than
+cross-file atomic visibility. Replay is validated on a bounded immutable snapshot.
+
+The 64 MiB principal-data guard includes all native tables, result and replay
+copies; it is not process RSS or model/parser heap. Each dimension is at most
+65,536, targets at most 262,144, canonical text at most 1 MiB, aggregate final
+outputs at most 1 GiB, and replay snapshots separately at most 1 GiB. Native
+stripes have at most 1024 shots. Handles belong to the creating thread/process,
+cannot be serialized, and invalidate after execution/publication failure.
+Validation failures preserve the handle. No backend fallback is performed.
+
+Every stated `error_id` is refused before preparation, preserving the existing
+independence boundary. Use unchanged `dem_sampling()` for exclusive groups.
+Seed reproducibility requires the same backend/build/SIMD and call partition;
+SDK/native/platform byte equality is not promised for random draws. Exact replay
+and deterministic mechanisms are the cross-implementation witnesses.
+
+Run `python -m examples.qec.compiled_dem_sampler` with the existing PyMatching
+extra and a Stim 1.16.0 SDK or embedded build. Expected output is
+`shots 64 batches 4 logical_failures 0`. macOS arm64 offline wheel/sdist
+builds and installed native acceptance passed, including an environment without
+the Stim Python package. See the implementation acceptance record in
+`docs/development/QEC_COMPILED_DEM_SAMPLING_PROPOSAL.md`. This bounded
+capability makes no performance, threshold, full-parity or scalability claim.
+
+## Existing noiseless execution with an embedded build
+
+The recovered candidate keeps the existing public workflow:
+
+```python
+import flagquantum as fq
+
+result = fq.run(
+    fq.Circuit(3).x(1),
+    options=fq.ExecutionOptions(mode="stabilizer", shots=8, seed=7),
+    outputs=fq.samples(),
+)
+assert result.samples is not None
+assert result.samples.tolist() == [[[0, 1, 0]] * 8]
+print(result.runtime["execution_path"])
+# local_stabilizer -- the existing local execution path is preserved
+```
+
+An embedded build selects the private native sampler without loading the Stim
+Python package; a marker-free build retains the optional SDK path. Existing
+Clifford validation and refusal behavior remain in force. Fresh no-SDK installed
+acceptance verifies this workflow through the real native sampler, separately
+from replacement fakes. The existing 16,384-wire regression also passed in the
+embedded installation. This is bounded local evidence, not a full Stim parity
+claim; PR delivery and actual-main acceptance remain separate gates.

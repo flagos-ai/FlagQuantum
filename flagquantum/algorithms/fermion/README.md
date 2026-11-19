@@ -17,6 +17,46 @@ coefficient and run `python -m pytest tests/unit/fermion -q` to verify a change.
 Dense matrix helpers are explicitly bounded inspection tools. They do not
 establish large-system capacity, distributed training or accelerator support.
 
+`density.py` owns experimental one-body density observables and measured tensor
+assembly, with gamma[p,q] = <a†p aq>. It imports no execution code: consumers
+request the returned Hermitian observables through ordinary `fq.run` and pass
+`result.expectations` to `one_body_density`. The output is an ordinary complex
+PyTorch tensor with circuit-parameter gradients. Full JW/parity/BK registers
+require matching preparations supplied by the caller. Run
+`python -m examples.algorithms.fermion_one_body_density --encoding parity`,
+then change a one-body coefficient and run
+`python -m pytest tests/unit/fermion/test_density.py tests/integration/test_fermion_one_body_density.py -q`.
+The example reports particle number 1, energy 0.4520082847 and angle gradient
+-0.5016897975. See the [scope](../../../docs/development/FERMION_ONE_BODY_DENSITY.md)
+for ordering, O(n**2) measurement/output costs and unsupported boundaries.
+
+The same module also provides experimental two-body measurements and assembly.
+Run `python -m examples.algorithms.fermion_two_body_density --encoding parity`
+to reconstruct the energy and angle gradient of a four-mode H2 determinant
+pair. See the [two-body scope](../../../docs/development/FERMION_TWO_BODY_DENSITY.md)
+for the pair order, molecular coefficient convention and O(n^4) costs.
+
+For static measured densities with a known particle number, the optional
+[fixed-particle projection](../../../docs/development/FERMION_RDM_PROJECTION.md)
+operates on the assembled tensors and leaves the raw measurements untouched.
+Add `--project` to the two-body H2 example to compare constraint residuals
+and energies. The projection enforces linear identities, without a positivity
+or N-representability guarantee.
+
+The [H2 UCCSD encoding example](../../../docs/development/FERMION_H2_UCCSD_ENCODINGS.md)
+uses `encode_occupation` to derive a four-wire basis conversion at the end of
+the existing state preparation. The Hamiltonian and number observable use
+the same explicit encoding. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_h2_uccsd_encodings.py -q`
+to compare states, energy, gradients and an Adam update against JW.
+
+The [tapered H2 UCCSD example](../../../docs/development/FERMION_H2_TAPERED_UCCSD.md)
+also reduces the three ordered excitation generators into the Hamiltonian's
+explicit spin-parity sector in the chosen JW, parity or BK encoding before
+constructing a two-qubit circuit. Run
+`python -m pytest tests/integration/test_fermion_h2_tapered_uccsd.py -q` after
+changing the fixture angles to check the lifted state and the shared Adam step.
+
 Modules are split by numerical responsibility: decomposition.py returns adjacent
 orbital matrices without importing Circuit; lowering.py lifts them to JW gates;
 preparation.py creates Slater determinants and canonical Gaussian vacua.
@@ -88,6 +128,17 @@ interferometer and `python -m pytest tests/unit/fermion/test_controlled_evolutio
 -q` for independent full-branch, phase, convergence and gradient references.
  That profile is unreduced JW/CPU only and makes no routing or hardware claim.
 
+For file-to-training composition, run
+`python -m examples.algorithms.fermion_fcidump_training`. The example composes
+the existing FCIDUMP adapter, fermionic Hamiltonian assembly, full JW encoding,
+UCCSD circuit and native runtime with PyTorch Adam. It accepts only two orbitals
+and two electrons and uses a small dense N=2 energy as an inspection reference.
+It owns no parser, ansatz or solver implementation. UCCSD angles remain float32;
+geometry/SCF gradients and scalable optimization are not implied. Run
+`python -m pytest tests/integration/test_fermion_fcidump_training.py -q` to check
+file/native producer replacement, gradients, particle-sector support, invalid
+inputs and execution without external quantum or chemistry SDKs.
+
 For the delivered stages, file-input workflows and planned extension boundaries,
 see the [migration status](../../../docs/development/OPENFERMION_NATIVE_MIGRATION.md#current-delivery-status).
 The initial PR description and its CI counts are historical records; the status
@@ -110,3 +161,179 @@ occupation-bit and analytic sector references before changing assembly. The
 [EXT01 contract](../../../docs/development/FERMION_HUBBARD_CHAIN.md) records
 validation and unsupported boundaries. Always encode with explicit
 `n_modes=2*n_sites`, including the zero Hamiltonian.
+
+For a training composition, run
+`python -m examples.algorithms.fermion_hubbard_training`. It uses the same static
+Hamiltonian with ordinary circuit angles, native CPU expectations and PyTorch
+Adam; it adds no domain solver or trainable Hamiltonian coefficients. Its
+four-mode JW preparation keeps one particle of each spin after each completed
+preparation, rather than after every gate. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_hubbard_training.py -q` to check
+sector support, finite-difference gradients and an optimizer update. The analytic
+two-site energy is an inspection reference, not a many-body performance claim.
+
+The same `hubbard.py` module also owns the experimental static
+`fermi_hubbard_ring` constructor for periodic cycles of at least three sites. It
+reuses the chain assembly and adds one closing bond per spin; native algebra
+retains the occupation-dependent fermionic sign. Run the existing consumer with
+`python -m examples.algorithms.fermion_hubbard --periodic` for a three-site N=2
+reference energy of -3.1231056256 at t=1, U=4, mu=0 through JW, parity and BK.
+See the [ring scope and contributor path](../../../docs/development/FERMION_HUBBARD_RING.md)
+and run `python -m pytest tests/unit/fermion/test_hubbard_ring.py
+tests/integration/test_fermion_hubbard_ring.py -q` after changing this behavior.
+One/two-site cycles are refused, coefficients remain static, and the dense
+reference remains a bounded correctness oracle.
+
+For the bounded periodic training composition, run
+`python -m examples.algorithms.fermion_hubbard_ring_training`. Existing six-mode
+UCCSD and PyTorch Adam optimize circuit angles for the three-site ring with
+one up and one down particle. No dense reference state, domain solver or runtime
+change is needed. Run
+`python -m pytest tests/integration/test_fermion_hubbard_ring_training.py -q`
+for independent lattice energies, finite-difference gradients, spin-sector
+preservation, closing-bond sensitivity and dependency isolation. See the
+[training golden path](../../../docs/development/FERMION_HUBBARD_RING.md#training-golden-path)
+for float32 angle precision and bounded CPU scope.
+
+The same model module owns experimental `spinless_fermion_chain` and
+`spinless_fermion_ring`: one mode per site, minus-t hopping, unshifted
+nearest-neighbor V interaction and minus-mu population. They return existing
+fermion values and own no solver or runtime. Open chains allow one site; rings
+require at least three. Static validation reuses the existing scalar and count
+boundaries. Encode with explicit `n_modes=n_sites`, including zero operators.
+Run `python -m examples.algorithms.fermion_spinless` and add `--periodic` to
+replace only the model producer; three encodings measure -0.7320508076 or 1.0
+respectively at t=1, V=2, mu=0 and N=2. See the
+[spinless golden path](../../../docs/development/FERMION_SPINLESS.md) and run
+`python -m pytest tests/unit/fermion/test_spinless.py tests/integration/test_spinless_fermion.py -q`
+for independent occupation action, boundary signs, free spectra, density bonds,
+encodings and native gradients. Dense state preparation remains a bounded CPU
+inspection tool; no coefficient-gradient or scalability claim is introduced.
+
+For spinless training, run
+`python -m examples.algorithms.fermion_spinless_training` and add `--periodic`
+to replace only the static producer. Existing single excitations prepare N=2 in
+three full JW modes, and native expectations feed 160 PyTorch Adam steps on two
+float64 circuit angles. Change the initial angles and run
+`python -m pytest tests/integration/test_fermion_spinless_training.py -q` to
+check occupation-matrix energies, finite-difference gradients, closing bonds,
+particle-sector support and native dependency isolation. See the
+[training golden path](../../../docs/development/FERMION_SPINLESS.md#training-golden-path)
+for expected values and the zero-hopping stationary case. This example adds no
+solver or model API and makes no coefficient-gradient or scalability claim.
+
+Explicit undirected simple graphs use the experimental concrete
+`hubbard.fermi_hubbard_graph(n_sites, edges, t=..., u=..., mu=...)` constructor.
+It reuses chain onsite terms, counts each supplied bond once and retains native
+fermionic signs. It owns no topology type, graph library, encoding or solver.
+Self/duplicate edges and invalid endpoints fail before execution; empty graphs
+and isolated sites retain their explicit register width. Existing chain/ring
+constructors keep their separate interfaces and capability entries.
+
+Run `python -m examples.algorithms.fermion_hubbard_graph` for a four-site star
+with a down-spin spectator and a trainable up-spin determinant pair. It uses
+ordinary CPU expectations and SGD without dense eigenstate preparation. JW is
+the default; `--encoding parity` and `--encoding bravyi_kitaev` select matched
+preparations of the same two physical determinants. Complete amplitudes and
+angle derivatives are verified independently. This manually specified pair is
+not a general ansatz transform. See the
+[encoding replacement scope](../../../docs/development/FERMION_HUBBARD_GRAPH_ENCODINGS.md).
+Change an edge and run
+`python -m pytest tests/unit/fermion/test_hubbard_graph.py tests/integration/test_fermion_hubbard_graph.py -q`.
+The [graph scope](../../../docs/development/FERMION_HUBBARD_GRAPH.md) records
+independent occupation matrices, encoding/producer replacement and the analytic
+nonlocal-hop gradient. Coefficients are static uniform real numbers; weighted or
+complex bonds, flux, coefficient gradients and accelerator/distributed evidence
+are outside this profile. Graph catalog registration landed separately in #1175;
+this encoding example extension does not change its registered metadata.
+
+
+Diagonal symmetry discovery lives in `symmetry.discover_z_parities`. It returns
+independent encoded Z words for the existing `reduce_z_parities` consumer;
+optional independent candidate words restrict the search to their product span.
+It selects no eigenvalues and does not infer particle-number conservation.
+Run `python -m examples.algorithms.fermion_parity_discovery` for the shortest
+explicit-total-parity path, then change a hopping term and run
+`python -m pytest tests/unit/fermion/test_parity_discovery.py tests/integration/test_fermion_parity_discovery.py -q`.
+See the [discovery scope](../../../docs/development/FERMION_PARITY_DISCOVERY.md)
+for encoded-index conventions, exact coefficients and unsupported X/Y discovery.
+
+
+## Explicit parity-sector training composition
+
+Run `python -m examples.algorithms.fermion_parity_training` for the ten-minute
+path from a fixed pairing Hamiltonian through total-parity discovery, explicit
++1 selection, reduced-register angle training and lifted-state inspection.
+Change the static pairing coefficient and run
+`python -m pytest tests/integration/test_fermion_parity_training.py -q`.
+The tests replace JW with parity and BK without changing the training consumer,
+and check energies and gradients against an independent occupation-space matrix.
+Symbolic discovery/reduction remain static: they own no optimizer, runtime or
+trainable-coefficient conversion. This experimental CPU example trains one
+circuit angle, not model coefficients or an automatic matched tapered ansatz.
+The selected sector contains N=0 and N=2; it is not an exact-number projection.
+
+
+## Commuting X/Y/Z symmetry discovery
+
+`stabilizer.discover_pauli_symmetries` discovers a deterministic maximum-size
+independent commuting set of positive Pauli words in an explicit encoded
+register. The full centralizer can contain anticommuting pairs; it is not returned
+as if every member defined a joint sector. Independent signed candidates can
+restrict the binary search span; signs and scalar product phases are discarded.
+Choose eigenvalues for the returned positive words explicitly and pass them to
+the unchanged `reduce_stabilizers` consumer. General discovery need not choose
+the same commuting subgroup as diagonal discovery unless candidates restrict it.
+
+Run `python -m examples.algorithms.fermion_pauli_discovery` for the ten-minute
+path: discover Y0 and X1Z2, choose +1/-1, reduce three qubits to one, measure
+-1.1770329614 and inspect its lifted residual. Change a static coefficient, then
+run `python -m pytest tests/unit/fermion/test_pauli_discovery.py tests/integration/test_fermion_pauli_discovery.py -q`.
+See [the scope and conventions](../../../docs/development/FERMION_PAULI_DISCOVERY.md).
+Symbolic discovery depends on native algebra and shared binary elimination;
+it owns no optimizer, runtime, adapter, dense solver or automatic sector choice.
+This is experimental local CPU behavior with static coefficients.
+
+
+## Explicit mixed-axis sector training composition
+
+Run `python -m examples.algorithms.fermion_pauli_training` to replace bounded
+eigenstate preparation with an ordinary one-qubit RY circuit and PyTorch SGD.
+The model is static; callers explicitly choose Y0=+1 and X1Z2=-1 before training.
+Only the reduced circuit angle participates in autograd. After optimization,
+`lift_stabilizer_state` inspects the selected full-register state under
+`torch.no_grad()`; its static-input contract remains unchanged.
+
+Change the initial angle and run
+`python -m pytest tests/integration/test_fermion_pauli_training.py -q`.
+Independent three-qubit product states and analytic energies verify all four
+joint sectors, either sign of the static coupling, gradients, optimizer steps
+and replacement of discovered generators with supplied signed words. See the
+[training scope](../../../docs/development/FERMION_PAULI_TRAINING.md).
+No automatic ansatz transform, ground-sector inference, coefficient gradients,
+new solver, runtime or capability promotion is introduced.
+
+## Explicit molecular spin-sector training composition
+
+Run `python -m examples.algorithms.fermion_h2_sector_training` for the ten-minute
+FCIDUMP-to-training path. Fixed H2 integrals pass through native JW encoding,
+candidate-restricted spin-parity discovery and explicit -1/-1 selection. An
+ordinary two-qubit RY/CX circuit and PyTorch SGD reach -1.1372701747 Ha.
+Change the initial angle, then run
+`python -m pytest tests/integration/test_fermion_h2_sector_training.py -q`.
+The tests replace file input with the native molecular producer without changing
+the training consumer and compare gradients and updates with independent Fock
+states. For this two-orbital fixture only, the selected parities fix one alpha
+and one beta electron. Static lifting inspects the optimized state outside
+autograd. The example owns composition; symbolic reduction owns no training,
+input adapter or automatic ansatz transformation. See the
+[H2 training scope](../../../docs/development/FERMION_H2_SECTOR_TRAINING.md).
+
+Use `--encoding parity` or `--encoding bravyi_kitaev` with the same example to
+replace encoding and its bounded preparation while retaining the expectation
+and optimizer consumer. Physical spin-parity operators are encoded before
+discovery. The explicitly supplied (1,1,0,0) reference fixes signs for returned
+positive representatives; these signs need not equal the physical -1/-1 labels.
+Independent occupation permutations verify the physical state, gradients and
+updates across file/native inputs and all three encodings. This is a manually
+specified determinant pair, not automatic full-register ansatz transformation.

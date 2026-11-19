@@ -1,0 +1,133 @@
+{
+  "date": "2026-11-13",
+  "status": "Local review series prepared and qualified within the declared scope; network-dependent validation and remote publication remain blocked.",
+  "all_required_tiers_green": false,
+  "base_commit": "98ea298bd7de9b0e8d0f905adc6b333aa1aadaed",
+  "base_ref": "locally fetched origin/main",
+  "network_refresh_succeeded": false,
+  "independent_git_checkout": true,
+  "fresh_network_clone_certified": false,
+  "path_classification": "single_device_fast_path",
+  "review_branch": "codex/training-execution-inputs",
+  "implementation_commit_count": 5,
+  "source_file_count": 56,
+  "source_manifest": "source-manifest.json",
+  "runs": {
+    "contract": {
+      "tests": 74,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 71,
+      "collection_skips": 0,
+      "report": "contract.xml.gz"
+    },
+    "contract-recheck": {
+      "tests": 74,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 74,
+      "collection_skips": 0,
+      "report": "contract-recheck.xml.gz"
+    },
+    "focused": {
+      "tests": 508,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 9,
+      "passed": 499,
+      "collection_skips": 0,
+      "report": "focused.xml.gz"
+    },
+    "native": {
+      "tests": 415,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 415,
+      "collection_skips": 0,
+      "report": "native.xml.gz"
+    },
+    "default": {
+      "tests": 19978,
+      "failures": 10,
+      "errors": 6,
+      "skipped": 778,
+      "passed": 19184,
+      "collection_skips": 56,
+      "report": "default.xml.gz"
+    },
+    "historical-consumers-before": {
+      "tests": 10,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 7,
+      "collection_skips": 0,
+      "report": "historical-consumers-before.xml.gz"
+    },
+    "consumers-recheck": {
+      "tests": 92,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 92,
+      "collection_skips": 0,
+      "report": "consumers-recheck.xml.gz"
+    },
+    "network-recheck": {
+      "tests": 2,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "passed": 0,
+      "collection_skips": 0,
+      "report": "network-recheck.xml.gz"
+    }
+  },
+  "counts_overlap": true,
+  "original_default_result_retained": true,
+  "default_run_precedes_consumer_test_fix": true,
+  "test_fix_scope": "Four existing consumer test files now apply only the approved signature deltas and expect qualified writer v3. Historical contracts/snapshots and v1/v2 reader checks are unchanged.",
+  "default_remaining_blockers": {
+    "sandbox_network_cases": 12,
+    "corrected_and_retested_writer_expectations": 4,
+    "unclassified_cases": 0
+  },
+  "history_gate": {
+    "clean_main_findings": 0,
+    "prepared_checkout_gate_returncode": 0,
+    "original_workspace_findings_previously_recorded": 98,
+    "declarations_and_validators_modified": false,
+    "interpretation": "Local-ref-dependent conflict is absent in the isolated main-based history. No original failure is erased; no network clone is certified."
+  },
+  "network_followup": {
+    "list": "network-blocked-nodeids.txt",
+    "case_count": 35,
+    "scope": "Twelve default-tier cases reproduced in this round; 23 integration cases retained from the earlier full-tier blocker list. Two representative network cases were rerun explicitly and failed during socket/Gloo initialization.",
+    "full_integration_on_prepared_checkout": false,
+    "focused_local_integration_included": true
+  },
+  "contract_staging_note": "The initial staging check exposed production-reader assertions inside replacement fakes. Those assertions are included in the dependent Runtime commit; the contract-only commit passed all 74 fake tests before Runtime implementation. Initial and corrected reports are both retained.",
+  "native_binary": "native-identity.json",
+  "static_checks": "static-checks.json",
+  "final_gates": "final-gates.json",
+  "type_limitation": "The operations numerical test file still has its previously recorded 119 strict-mypy diagnostics. Focused strict-mypy checks pass; no suppressions or full-file clean claim are introduced.",
+  "publication": "publication.json",
+  "pull_request_created": false,
+  "release_or_scalability_claim": false,
+  "final_packet_gate": {
+    "passed": 95,
+    "failed": 0,
+    "report": "review-packet-gates.xml.gz",
+    "scope": "Prepared main-based review checkout, with the handoff evidence present."
+  },
+  "original_worktree_diagnostic": {
+    "passed": 94,
+    "failed": 1,
+    "existing_origin_findings": 98,
+    "report": "source-worktree-diagnostic.xml.gz",
+    "scope": "A packet-gate invocation used the original worktree rather than the prepared checkout. Its result is retained as a context diagnostic and does not qualify the review branch."
+  }
+}

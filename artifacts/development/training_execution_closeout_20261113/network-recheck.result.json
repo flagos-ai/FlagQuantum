@@ -1,0 +1,16 @@
+{
+  "command": [
+    "<redacted-path>",
+    "-m",
+    "pytest",
+    "tests/unit/test_multinode_launch_plan.py::test_an_automatic_master_port_is_free_when_it_is_handed_over",
+    "tests/test_native_circuit.py::test_distributed_mps_torch_executor_single_rank",
+    "-q",
+    "--junitxml=../training-review-network-recheck.xml"
+  ],
+  "cwd": "<redacted-path>",
+  "returncode": 1,
+  "reason": "process_exit",
+  "elapsed_seconds": 3.03,
+  "child_reaped": true
+}

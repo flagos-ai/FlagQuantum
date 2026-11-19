@@ -17,6 +17,38 @@ Benchmark claims require audited artifacts and are not inferred from this file.
 
 ## Unreleased
 
+- Add an approved candidate `write_shot_data_file` entry for caller-owned CPU
+  bool and packed uint8 shot tables in six Stim 1.16.0 formats. It reuses the
+  existing SDK or embedded source closure, validates a bounded owned copy, and
+  publishes without replacing a destination. Native and installed acceptance
+  are pending; no complete Stim parity claim is made.
+
+- Qualified training checkpoints now write v3 with parameter freeze flags and
+  ordered optimizer parameter names. Restore preserves Parameter identities,
+  clears stale gradients and refuses reordered bindings before mutation.
+  Supported failures roll back model, optimizer, flags, gradients, precision and
+  RNG. V1/v2 retain their historical reader behavior; unqualified frozen sources
+  refuse save. See [Training parameters](../guides/TRAINING_PARAMETERS.md) for
+  eligibility, step-boundary use and migration. Local CPU coverage does not
+  expand accelerator/distributed support or promote capability maturity.
+
+- Add experimental `fq.run(circuit, inputs={"theta": value})` for named
+  symbolic scalar angles on exact unbatched CPU PyTorch statevectors. Compatible
+  input changes reuse the accepted symbolic plan, preserving first-order
+  gradients and optimizer updates. JSON/FQX records retain the input requirement
+  without storing supplied angles or graphs; every replay must bind all names.
+  `fq.plan` is unchanged. External initial states cannot be combined with this
+  bounded route, and other engines, dynamic programs and remote binding remain
+  unsupported.
+- Add `fq.run(circuit, initial_state=...)` for exact unbatched CPU PyTorch
+  statevectors and probability outputs, preserving first-order input and gate
+  gradients. Effective plans require compatible input again on replay without
+  recompilation. JSON and FQX result records preserve the requirement rather
+  than a separate initial tensor; a marked plan-only FQX save fails before
+  writing. Existing zero-input plans and Circuit(inputs=...).state remain
+  unchanged. Other engines, dynamic/QEC external inputs, remote loading, shots
+  and noise are outside this slice.
+
 - Add a private ordered predicate-phase action to the fresh-register Compiler
   profile. It borrows initialized basis values without consuming references,
   reuses existing exact prefix/adjoint cleanup and shares workspace with later

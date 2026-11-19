@@ -12,8 +12,8 @@ lower-level samples. The [compatibility table](../docs/reference/QEC_STIM_PYMATC
 distinguishes native code and optional SDK routes.
 
 - [Existing Stim circuit report](qec/stim_memory_experiment.py): run
-  `python examples/qec/stim_memory_experiment.py`; CPU plus Stim/PyMatching,
-  35 shots and two deliberately swapped logical columns. Expected output is
+  `python examples/qec/stim_memory_experiment.py` with the Stim extra. The
+  bundled Sparse Blossom solver decodes 35 shots and two deliberately swapped logical columns. Expected output is
   `35 0 (0, 0)` followed by `stim_circuit`.
 - [Native memory declarations](qec/memory_experiment.py): use repetition or
   `--code surface --basis x` / `--code surface --basis z` for fixed-shot reports.
@@ -37,6 +37,32 @@ Examples driven by the root-level `fq` alias use:
 - explicit runtime and distribution semantics when making performance claims.
 
 These examples do not use that alias:
+
+- [`qec/colour_distance_acceptance.py`](qec/colour_distance_acceptance.py)
+  checks a triangular 6.6.6 colour patch using original noisy shots, an
+  undecomposed strict DEM, Stim 1.16.0 reference mechanisms and bundled BP/OSD
+  decoding. In an embedded build with the Stim extra, run
+  `python -m examples.qec.colour_distance_acceptance 15 z`; the JSON reports
+  `"status": "passed"`, `"distance": 15` and `"syndrome_reproduced": 64`.
+
+
+- [`qec/code_distance_acceptance.py`](qec/code_distance_acceptance.py)
+  accepts the specified Surface and Repetition distances using original noisy
+  circuit shots, strict DEM analysis and bundled Sparse Blossom decoding.
+  Run `python -m examples.qec.code_distance_acceptance surface 30 z` with the
+  Stim 1.16.0 extra and an embedded build. Expected JSON fields include
+  `"status": "passed"`, `"distance": 30` and `"shots": 64`.
+
+- [`synthesis_offline_deployment.py`](synthesis_offline_deployment.py) uses the
+  synthesis, compiler, and deployment namespaces to export OpenQASM and build
+  a deployment package for a fixed local target. Run
+  `python -m examples.synthesis_offline_deployment`.
+
+- Synthesis support modules (`operations.py`, `physics.py`, `data.py`, `curve.py`,
+  `portfolio_reference.py`, and `quadratic_reference.py`) define source helpers or
+  mathematical data. Some `comparisons/circuit.py` entrypoints delegate to shared
+  references, and `synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py`
+  defines its quantum function through the synthesis namespace.
 
 - [`algorithms/fermion_orbital_rotation.py`](algorithms/fermion_orbital_rotation.py)
   differentiates a real orbital angle through domain tensor functions.
@@ -100,7 +126,9 @@ These examples do not use that alias:
   refusal. Core Torch is sufficient; circuit execution separately needs Stim.
 
 - [`qec/ai_predecoder.py`](qec/ai_predecoder.py) trains and evaluates the private
-  QEC predecoder through domain imports; it does not use the root-level alias.
+  QEC predecoder through domain imports. CPU evaluation uses bundled Sparse
+  Blossom by default. Choose `--backend minimum_weight_matching` to use the
+  built-in reference decoder.
 
 - [`visualize_rydberg_transport.py`](visualize_rydberg_transport.py) uses Core
   commanded positions and the existing optional Matplotlib visualization extra.
@@ -230,7 +258,7 @@ These examples do not use that alias:
   cost, and different logical predictions need not indicate a decoding defect.
 - [`qec/surface_memory_sweep.py`](qec/surface_memory_sweep.py) reports eight
   fixed CPU Surface points: X/Z, distances 3/5 and two explicit noise profiles.
-  Install the existing Stim/PyMatching extras. Each point uses 35 shots in
+  Install the Stim extra for the bundled Sparse Blossom workflow. Each point uses 35 shots in
   batches 16, 16, 3 and a declared keyed seed; stdout contains configuration,
   eight point records and a completion record only on full success. The JSON
   lines are example output, not a persistence API. Wilson intervals are
@@ -245,17 +273,15 @@ These examples do not use that alias:
   independent edge costs and the unique selected pair edge.
 - [`qec/stim_memory_experiment.py`](qec/stim_memory_experiment.py) runs an
   external Stim circuit through the canonical QEC fixed-shot report entry,
-  using domain imports rather than the root-level alias. CPU and the existing
-  Stim/PyMatching extras are required; it prints `35 0 (0, 0)` and `stim_circuit`.
-- [`qec/memory_experiment.py`](qec/memory_experiment.py) composes the approved
-  fixed-shot experiment through its canonical QEC execution import. It uses one
-  original source and exact final partial batches with five default decoders;
-  install the Stim and PyMatching extras. Reports counts without a speed claim.
-  Add `--code surface --basis z` or `--code surface --basis x` for distance-three,
+  with the Stim extra and bundled Sparse Blossom. It prints `35 0 (0, 0)`
+  and `stim_circuit`.
+- [`qec/memory_experiment.py`](qec/memory_experiment.py) reports fixed-shot
+  counts using the Stim extra and bundled Sparse Blossom by default.
+  Select `--decoder minimum_weight_matching` for the reference matcher or use
+  `--decoder all` with both extras to compare the example's decoders. Use
+  `--code surface --basis z` or `--code surface --basis x` for distance-three,
   three-round memory using 35 shots in batches of 16, 16 and 3. X memory uses
-  the certified all-data X product. Each command reports five decoder counts
-  and checks the fixed-shot interval; zero observed failures do not establish
-  logical suppression, a threshold or decoder performance.
+  the all-data X product.
   Use `--batch-size 1`, `--batch-size 35` or `--batch-size 64` to request
   respectively 35 single-shot batches, one full batch or one capped batch.
   The default remains 16. Each setting advances one seeded stream; different
@@ -982,4 +1008,7 @@ Stim 1.16.0. External repeated-slot records 010 produce detectors 10 and logical
 1. Expected output: `shots 64`, `detectors 10; observables 1`, `file_bytes 64 64`.
 The example performs bounded file conversion, not sampling or a research study.
 
-- `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build and PyMatching required).
+- `qec/shot_file_decoding.py`: read fixed captured detector/logical records eagerly and in bounded batches, then decode packed rows (embedded build, with bundled Sparse Blossom).
+- `qec/shot_file_encoding.py`: write caller-owned Torch shot rows in Stim-compatible formats, stream them back and decode packed batches (embedded build, with bundled Sparse Blossom).
+
+- `qec/compiled_dem_sampler.py`: record and replay canonical error columns, write bounded detector/error files, and decode packed batches; expected `shots 64 batches 4 logical_failures 0` (embedded build, with bundled Sparse Blossom).

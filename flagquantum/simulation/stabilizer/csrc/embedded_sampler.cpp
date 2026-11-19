@@ -8,12 +8,17 @@
 #include <system_error>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
+#include <string>
 
 #include "stim/circuit/circuit.h"
+#include "stim/io/measure_record_writer.h"
 #include "stim/io/measure_record_reader.h"
+#include "stim/mem/simd_bit_table.h"
 #include "stim/simulators/frame_simulator_util.h"
 #include "stim/simulators/error_analyzer.h"
+#include "stim/simulators/dem_sampler.h"
 #include "stim/simulators/measurements_to_detection_events.h"
 #include "stim/simulators/tableau_simulator.h"
 #include "stim/util_bot/probability_util.h"
@@ -22,14 +27,61 @@ namespace {
 
 constexpr char capsule_name[] = "flagquantum.embedded_stim_sampler";
 constexpr size_t width = stim::MAX_BITWORD_WIDTH;
+static_assert(width <= 1024, "the reviewed shot-data estimate assumes SIMD width <= 1024");
+
+size_t checked_add(size_t left, size_t right) {
+    if (right > std::numeric_limits<size_t>::max() - left) {
+        throw std::invalid_argument("Shot data size overflow.");
+    }
+    return left + right;
+}
+
+size_t checked_mul(size_t left, size_t right) {
+    if (left && right > std::numeric_limits<size_t>::max() / left) {
+        throw std::invalid_argument("Shot data size overflow.");
+    }
+    return left * right;
+}
+
+size_t rounded_simd(size_t value) {
+    return checked_mul(checked_add(value, 1023) / 1024, 1024);
+}
+
+size_t shot_principal_bytes(size_t shots, size_t columns, bool packed) {
+    const size_t stride = packed ? checked_add(columns, 7) / 8 : columns;
+    const size_t scratch = checked_mul(
+        checked_mul(rounded_simd(columns), rounded_simd(std::max<size_t>(shots, 64))), 2) / 8;
+    const size_t transposed = checked_mul(rounded_simd(columns), 2) / 8;
+    return checked_add(checked_add(checked_mul(shots, stride), scratch),
+                       checked_add(transposed, 65536));
+}
+
+size_t shot_output_bound(size_t shots, size_t columns, stim::SampleFormat format) {
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_B8) {
+        return checked_mul(shots, checked_add(columns, 7) / 8);
+    }
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_PTB64) {
+        if (shots % 64) throw std::invalid_argument("ptb64 shots must be a multiple of 64.");
+        return checked_mul(checked_mul(shots / 64, columns), 8);
+    }
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_01 ||
+        format == stim::SampleFormat::SAMPLE_FORMAT_R8) {
+        return checked_mul(shots, checked_add(columns, 1));
+    }
+    const size_t digits = std::to_string(columns - 1).size();
+    if (format == stim::SampleFormat::SAMPLE_FORMAT_HITS) {
+        return checked_mul(shots, std::max<size_t>(1, checked_mul(columns, digits + 1)));
+    }
+    return checked_mul(shots, checked_add(5, checked_mul(columns, digits + 2)));
+}
 
 struct Sampler {
     stim::Circuit circuit;
     stim::simd_bits<width> reference;
     std::mt19937_64 rng;
 
-    Sampler(const char *text, std::mt19937_64 generator)
-        : circuit(text),
+    Sampler(stim::Circuit source, std::mt19937_64 generator)
+        : circuit(std::move(source)),
           reference(stim::TableauSimulator<width>::reference_sample_circuit(circuit)),
           rng(std::move(generator)) {}
 };
@@ -38,12 +90,7 @@ void destroy_sampler(PyObject *capsule) {
     delete static_cast<Sampler *>(PyCapsule_GetPointer(capsule, capsule_name));
 }
 
-PyObject *prepare(PyObject *, PyObject *args) {
-    const char *text;
-    PyObject *seed;
-    if (!PyArg_ParseTuple(args, "sO", &text, &seed)) {
-        return nullptr;
-    }
+PyObject *make_sampler(stim::Circuit circuit, PyObject *seed) {
     try {
         auto rng = seed == Py_None ? stim::externally_seeded_rng() : std::mt19937_64{};
         if (seed != Py_None) {
@@ -53,12 +100,26 @@ PyObject *prepare(PyObject *, PyObject *args) {
             }
             rng.seed(value ^ stim::INTENTIONAL_VERSION_SEED_INCOMPATIBILITY);
         }
-        auto sampler = std::make_unique<Sampler>(text, std::move(rng));
+        auto sampler = std::make_unique<Sampler>(std::move(circuit), std::move(rng));
         PyObject *capsule = PyCapsule_New(sampler.get(), capsule_name, destroy_sampler);
         if (capsule != nullptr) {
             sampler.release();
         }
         return capsule;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+PyObject *prepare(PyObject *, PyObject *args) {
+    const char *text;
+    PyObject *seed;
+    if (!PyArg_ParseTuple(args, "sO", &text, &seed)) {
+        return nullptr;
+    }
+    try {
+        return make_sampler(stim::Circuit(text), seed);
     } catch (const std::exception &error) {
         PyErr_SetString(PyExc_RuntimeError, error.what());
         return nullptr;
@@ -118,6 +179,108 @@ stim::SampleFormat parse_format(const char *format) {
     if (strcmp(format, "dets") == 0) return stim::SampleFormat::SAMPLE_FORMAT_DETS;
     if (strcmp(format, "ptb64") == 0) return stim::SampleFormat::SAMPLE_FORMAT_PTB64;
     throw std::invalid_argument("Unknown sample file format.");
+}
+
+PyObject *write_shot_records(PyObject *, PyObject *args) {
+    PyObject *data;
+    Py_ssize_t shots_arg, nm_arg, nd_arg, no_arg;
+    const char *path, *format;
+    int packed;
+    if (!PyArg_ParseTuple(args, "Onpssnnn", &data, &shots_arg, &packed, &path,
+                          &format, &nm_arg, &nd_arg, &no_arg)) {
+        return nullptr;
+    }
+    try {
+        if (!PyByteArray_Check(data)) {
+            throw std::invalid_argument("Shot data must be an owned bytearray.");
+        }
+        if (shots_arg < 0 || nm_arg < 0 || nd_arg < 0 || no_arg < 0 ||
+            nm_arg > PY_SSIZE_T_MAX - nd_arg ||
+            nm_arg + nd_arg > PY_SSIZE_T_MAX - no_arg) {
+            throw std::invalid_argument("Invalid shot data dimensions.");
+        }
+        const size_t shots = size_t(shots_arg);
+        const size_t nm = size_t(nm_arg), nd = size_t(nd_arg), no = size_t(no_arg);
+        if ((nm == 0 && nd + no == 0) || (nm != 0 && (nd != 0 || no != 0))) {
+            throw std::invalid_argument("Invalid measurement, detector and observable sections.");
+        }
+        const size_t columns = nm + nd + no;
+        const auto output_format = parse_format(format);
+        const size_t stride = packed ? (columns + 7) / 8 : columns;
+        const size_t expected = checked_mul(shots, stride);
+        if (expected > size_t(PY_SSIZE_T_MAX) ||
+            PyByteArray_Size(data) != Py_ssize_t(expected)) {
+            throw std::invalid_argument("Shot data byte length disagrees with its dimensions.");
+        }
+        if (shot_principal_bytes(shots, columns, packed != 0) > 64 * 1024 * 1024) {
+            throw std::invalid_argument("Shot data principal payload exceeds the 64 MiB limit.");
+        }
+        if (shot_output_bound(shots, columns, output_format) > 1024ULL * 1024 * 1024) {
+            throw std::invalid_argument("Shot data output exceeds the 1 GiB limit.");
+        }
+        const auto *input = reinterpret_cast<const uint8_t *>(PyByteArray_AsString(data));
+        if (input == nullptr) return nullptr;
+        if (packed && columns % 8) {
+            const uint8_t mask = uint8_t(255 ^ ((1u << (columns % 8)) - 1));
+            for (size_t shot = 0; shot < shots; ++shot) {
+                if (input[shot * stride + stride - 1] & mask) {
+                    throw std::invalid_argument("Shot data has nonzero packed padding bits.");
+                }
+            }
+        } else if (!packed) {
+            for (size_t index = 0; index < expected; ++index) {
+                if (input[index] > 1) {
+                    throw std::invalid_argument("Dense shot data contains a nonbinary value.");
+                }
+            }
+        }
+
+        errno = 0;
+        FILE *raw_file = fopen(path, "wb");
+        if (raw_file == nullptr) {
+            throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                    "Could not open staged shot-data output");
+        }
+        std::unique_ptr<FILE, decltype(&fclose)> file(raw_file, fclose);
+        stim::simd_bits<width> reference(0);
+        for (size_t offset = 0; offset < shots; offset += 64) {
+            const size_t block_shots = std::min<size_t>(64, shots - offset);
+            stim::simd_bit_table<width> table(columns, block_shots);
+            for (size_t column = 0; column < columns; ++column) {
+                for (size_t shot = 0; shot < block_shots; ++shot) {
+                    const size_t source_row = offset + shot;
+                    const bool value = packed
+                        ? ((input[source_row * stride + column / 8] >> (column % 8)) & 1) != 0
+                        : input[source_row * stride + column] != 0;
+                    table[column][shot] = value;
+                }
+            }
+            const char first = nm == 0 ? 'D' : 'M';
+            const char second = nm == 0 ? 'L' : 'M';
+            stim::write_table_data(raw_file, block_shots, columns, reference, table,
+                                   output_format, first, second, nm + nd);
+            if (ferror(raw_file)) {
+                throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                        "Failed writing staged shot data");
+            }
+        }
+        if (fflush(raw_file) != 0 || ferror(raw_file)) {
+            throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                    "Failed flushing staged shot data");
+        }
+        FILE *closed = file.release();
+        if (fclose(closed) != 0) {
+            throw std::system_error(errno ? errno : EIO, std::generic_category(),
+                                    "Failed closing staged shot data");
+        }
+        Py_RETURN_NONE;
+    } catch (const std::system_error &error) {
+        PyErr_SetString(PyExc_OSError, error.what());
+        return nullptr;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_ValueError, error.what());
+        return nullptr;
+    }
 }
 
 PyObject *write_measurements(PyObject *args, bool select_format) {
@@ -453,6 +616,144 @@ PyObject *detector_error_model(PyObject *, PyObject *args) {
     }
 }
 
+constexpr uint64_t experiment_limit = 1'000'000;
+
+struct TextExperiment {
+    stim::Circuit circuit;
+    stim::CircuitStats stats;
+};
+
+std::optional<TextExperiment> parse_text_experiment(std::string_view text) {
+    if (text.size() > 1'048'576) {
+        PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1 MiB of UTF-8 source");
+        return std::nullopt;
+    }
+    try {
+        stim::Circuit circuit(text);
+        if (circuit.flat_count_operations([](const stim::CircuitInstruction &) { return 1; }) >
+            experiment_limit) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1,000,000 expanded instructions");
+            return std::nullopt;
+        }
+        const auto stats = circuit.compute_stats();
+        if (stats.num_qubits > 4096) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 4,096 qubits");
+            return std::nullopt;
+        }
+        if (stim::add_saturate(stats.num_measurements,
+                              stim::add_saturate(stats.num_detectors, stats.num_observables)) >
+            experiment_limit) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1,000,000 recorded columns");
+            return std::nullopt;
+        }
+        if (stats.num_detectors == 0) {
+            PyErr_SetString(PyExc_ValueError, "Stim experiment requires at least one detector");
+            return std::nullopt;
+        }
+        return TextExperiment{std::move(circuit), stats};
+    } catch (const std::invalid_argument &error) {
+        PyErr_Format(PyExc_ValueError, "invalid Stim circuit text: %s", error.what());
+        return std::nullopt;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return std::nullopt;
+    }
+}
+
+PyObject *prepare_text_experiment(PyObject *, PyObject *args) {
+    const char *text;
+    Py_ssize_t size;
+    PyObject *seed;
+    if (!PyArg_ParseTuple(args, "s#O", &text, &size, &seed)) return nullptr;
+    auto experiment = parse_text_experiment({text, size_t(size)});
+    if (!experiment) return nullptr;
+    try {
+        stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            experiment->circuit.without_noise(), false, false, false, 0, false, false);
+        PyObject *capsule = make_sampler(std::move(experiment->circuit), seed);
+        if (!capsule) return nullptr;
+        return Py_BuildValue("NKK", capsule,
+                             static_cast<unsigned long long>(experiment->stats.num_detectors),
+                             static_cast<unsigned long long>(experiment->stats.num_observables));
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
+uint64_t expanded_dem_instructions(const stim::DetectorErrorModel &model) {
+    uint64_t count = 0;
+    for (const auto &op : model.instructions) {
+        const auto increment = op.type == stim::DemInstructionType::DEM_REPEAT_BLOCK
+            ? stim::mul_saturate(expanded_dem_instructions(op.repeat_block_body(model)),
+                                 op.repeat_block_rep_count())
+            : 1;
+        count = stim::add_saturate(count, increment);
+        if (count > experiment_limit) break;
+    }
+    return count;
+}
+
+stim::Circuit normalize_uniform_channels(const stim::Circuit &circuit) {
+    stim::Circuit normalized;
+    const auto flattened = circuit.flattened();
+    for (const auto &op : flattened.operations) {
+        const bool one_wire = op.gate_type == stim::GateType::PAULI_CHANNEL_1;
+        if ((one_wire || op.gate_type == stim::GateType::PAULI_CHANNEL_2) &&
+            std::all_of(op.args.begin(), op.args.end(), [&](double p) { return p == op.args[0]; })) {
+            const double probability = op.args[0] * op.args.size();
+            const auto gate = one_wire ? stim::GateType::DEPOLARIZE1 : stim::GateType::DEPOLARIZE2;
+            normalized.safe_append({gate, {&probability, &probability + 1}, op.targets, op.tag});
+        } else {
+            normalized.safe_append(op);
+        }
+    }
+    return normalized;
+}
+
+void append_missing_declarations(stim::DetectorErrorModel &model, const stim::CircuitStats &stats) {
+    std::vector<bool> detectors(stats.num_detectors);
+    std::vector<bool> observables(stats.num_observables);
+    for (const auto &op : model.instructions) {
+        if (op.type == stim::DemInstructionType::DEM_DETECTOR) {
+            for (const auto &target : op.target_data) detectors.at(target.val()) = true;
+        } else if (op.type == stim::DemInstructionType::DEM_LOGICAL_OBSERVABLE) {
+            for (const auto &target : op.target_data) observables.at(target.val()) = true;
+        }
+    }
+    for (size_t k = 0; k < detectors.size(); ++k) {
+        if (!detectors[k]) model.append_detector_instruction({}, stim::DemTarget::relative_detector_id(k), "");
+    }
+    for (size_t k = 0; k < observables.size(); ++k) {
+        if (!observables[k]) model.append_logical_observable_instruction(stim::DemTarget::observable_id(k), "");
+    }
+}
+
+PyObject *text_experiment_dem(PyObject *, PyObject *args) {
+    const char *text;
+    Py_ssize_t size;
+    int decompose, normalize;
+    if (!PyArg_ParseTuple(args, "s#pp", &text, &size, &decompose, &normalize)) return nullptr;
+    auto experiment = parse_text_experiment({text, size_t(size)});
+    if (!experiment) return nullptr;
+    try {
+        if (normalize) experiment->circuit = normalize_uniform_channels(experiment->circuit);
+        const auto model = stim::ErrorAnalyzer::circuit_to_detector_error_model(
+            experiment->circuit, decompose, false, false, 0, false, false);
+        if (expanded_dem_instructions(model) > experiment_limit) {
+            PyErr_SetString(PyExc_OverflowError, "Stim experiment exceeds 1,000,000 expanded instructions");
+            return nullptr;
+        }
+        auto flat = model.flattened();
+        append_missing_declarations(flat, experiment->stats);
+        const auto output = flat.str();
+        return PyUnicode_FromStringAndSize(output.data(), Py_ssize_t(output.size()));
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_RuntimeError, error.what());
+        return nullptr;
+    }
+}
+
 constexpr char reader_capsule_name[] = "flagquantum.embedded_shot_reader";
 
 struct ShotReader {
@@ -592,11 +893,205 @@ PyObject *read_shot_reader(PyObject *, PyObject *args) {
     } catch (const std::system_error &error) { PyErr_SetString(PyExc_OSError, error.what()); return nullptr; } catch (const std::exception &error) { PyErr_SetString(PyExc_ValueError, error.what()); return nullptr; }
 }
 
+
+constexpr char dem_capsule_name[] = "flagquantum.embedded_dem_sampler";
+constexpr size_t dem_stripes = 1024;
+constexpr size_t dem_limit = 64 * 1024 * 1024;
+
+size_t dem_principal_bytes(size_t shots, const stim::DemSampler<width> &sampler,
+                           bool packed, bool return_errors, bool replay, bool replay_packed) {
+    size_t padded = checked_add(rounded_simd(sampler.num_detectors),
+        checked_add(rounded_simd(sampler.num_observables), rounded_simd(sampler.num_errors)));
+    size_t native = checked_mul(padded, dem_stripes) / 8;
+    auto stride = [packed](size_t n) { return packed ? checked_add(n, 7) / 8 : n; };
+    size_t columns = checked_add(stride(sampler.num_detectors), stride(sampler.num_observables));
+    if (return_errors) columns = checked_add(columns, stride(sampler.num_errors));
+    size_t input = replay ? checked_mul(shots,
+        replay_packed ? checked_add(sampler.num_errors, 7) / 8 : sampler.num_errors) : 0;
+    return checked_add(checked_add(checked_mul(native, 4), checked_mul(checked_mul(shots, columns), 3)),
+        checked_add(checked_mul(input, 3), 65536));
+}
+
+void destroy_dem_sampler(PyObject *capsule) {
+    delete static_cast<stim::DemSampler<width> *>(PyCapsule_GetPointer(capsule, dem_capsule_name));
+}
+
+PyObject *prepare_dem(PyObject *, PyObject *args) {
+    const char *text;
+    Py_ssize_t text_size;
+    PyObject *seed;
+    if (!PyArg_ParseTuple(args, "s#O", &text, &text_size, &seed)) return nullptr;
+    try {
+        if (text_size > 1024 * 1024 || std::memchr(text, 0, size_t(text_size)))
+            throw std::invalid_argument("DEM text exceeds the canonical text bound.");
+        stim::DetectorErrorModel model(text);
+        size_t targets = 0, errors = 0;
+        // The owned facade emits only flat errors and declarations. Reject raw
+        // repeats/shifts before invoking counts, which may expand their values.
+        for (const auto &op : model.instructions) {
+            if (op.type != stim::DemInstructionType::DEM_ERROR &&
+                op.type != stim::DemInstructionType::DEM_DETECTOR &&
+                op.type != stim::DemInstructionType::DEM_LOGICAL_OBSERVABLE)
+                throw std::invalid_argument("DEM sampling requires flat canonical instructions.");
+            if (!op.tag.empty()) throw std::invalid_argument("DEM tags are not supported.");
+            if (op.type == stim::DemInstructionType::DEM_ERROR) {
+                if (++errors > 65536) throw std::invalid_argument("Too many DEM errors.");
+                targets = checked_add(targets, op.target_data.size());
+                if (targets > 262144) throw std::invalid_argument("Too many DEM targets.");
+            }
+            for (const auto &target : op.target_data) {
+                if (target.is_separator() || target.raw_id() >= 65536)
+                    throw std::invalid_argument("Invalid canonical DEM target.");
+            }
+        }
+        size_t d = model.count_detectors(), o = model.count_observables();
+        if (!d || d > 65536 || o > 65536)
+            throw std::invalid_argument("Invalid DEM dimensions.");
+        size_t native = checked_mul(checked_add(rounded_simd(d),
+            checked_add(rounded_simd(o), rounded_simd(errors))), dem_stripes) / 8;
+        if (checked_add(checked_mul(native, 4), 65536) > dem_limit)
+            throw std::invalid_argument("DEM principal payload exceeds byte limit.");
+        auto rng = seed == Py_None ? stim::externally_seeded_rng() : std::mt19937_64{};
+        if (seed != Py_None) {
+            if (PyBool_Check(seed) || !PyLong_Check(seed))
+                throw std::invalid_argument("DEM seed must be an integer or None.");
+            auto value = PyLong_AsUnsignedLongLong(seed);
+            if (PyErr_Occurred()) return nullptr;
+            rng.seed(value ^ stim::INTENTIONAL_VERSION_SEED_INCOMPATIBILITY);
+        }
+        auto sampler = std::make_unique<stim::DemSampler<width>>(
+            std::move(model), std::move(rng), dem_stripes);
+        PyObject *capsule = PyCapsule_New(sampler.get(), dem_capsule_name, destroy_dem_sampler);
+        if (capsule) sampler.release();
+        return capsule;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_ValueError, error.what()); return nullptr;
+    }
+}
+
+PyObject *dem_table_bytes(const stim::simd_bit_table<width> &table,
+                          size_t shots, size_t columns, bool packed) {
+    size_t stride = packed ? checked_add(columns, 7) / 8 : columns;
+    size_t bytes = checked_mul(shots, stride);
+    PyObject *buffer = PyByteArray_FromStringAndSize(nullptr, Py_ssize_t(bytes));
+    if (!buffer) return nullptr;
+    auto *out = reinterpret_cast<uint8_t *>(PyByteArray_AsString(buffer));
+    std::memset(out, 0, bytes);
+    for (size_t column = 0; column < columns; ++column) {
+        auto row = table[column];
+        for (size_t shot = 0; shot < shots; ++shot) {
+            if (packed) out[shot * stride + column / 8] |= uint8_t(bool(row[shot]) << (column % 8));
+            else out[shot * stride + column] = bool(row[shot]);
+        }
+    }
+    return buffer;
+}
+
+PyObject *sample_dem(PyObject *, PyObject *args) {
+    PyObject *capsule, *replay;
+    Py_ssize_t shots;
+    int packed, replay_packed, return_errors;
+    if (!PyArg_ParseTuple(args, "OnpOpp", &capsule, &shots, &packed, &replay,
+                          &replay_packed, &return_errors)) return nullptr;
+    auto *s = static_cast<stim::DemSampler<width> *>(PyCapsule_GetPointer(capsule, dem_capsule_name));
+    if (!s) return nullptr;
+    try {
+        if (shots < 0 || size_t(shots) > dem_stripes)
+            throw std::invalid_argument("DEM array calls require 0 to 1024 shots.");
+        if (dem_principal_bytes(size_t(shots), *s, packed, return_errors, replay != Py_None, replay_packed) > dem_limit)
+            throw std::invalid_argument("DEM principal payload exceeds byte limit.");
+        if (replay != Py_None) {
+            size_t stride = replay_packed ? (s->num_errors + 7) / 8 : s->num_errors;
+            if (!PyByteArray_Check(replay) ||
+                PyByteArray_Size(replay) != Py_ssize_t(checked_mul(size_t(shots), stride)))
+                throw std::invalid_argument("Invalid DEM replay buffer.");
+            auto *in = reinterpret_cast<uint8_t *>(PyByteArray_AsString(replay));
+            s->err_buffer.clear();
+            for (size_t e = 0; e < s->num_errors; ++e)
+                for (size_t shot = 0; shot < size_t(shots); ++shot)
+                    s->err_buffer[e][shot] = replay_packed ? bool(in[shot * stride + e / 8] & (1 << (e % 8)))
+                                                         : bool(in[shot * stride + e]);
+        }
+        if (shots) s->resample(replay != Py_None);
+        PyObject *d = dem_table_bytes(s->det_buffer, shots, s->num_detectors, packed);
+        if (!d) return nullptr;
+        PyObject *o = dem_table_bytes(s->obs_buffer, shots, s->num_observables, packed);
+        if (!o) { Py_DECREF(d); return nullptr; }
+        PyObject *e = return_errors ? dem_table_bytes(s->err_buffer, shots, s->num_errors, packed) : Py_None;
+        if (!return_errors) Py_INCREF(e);
+        if (!e) { Py_DECREF(d); Py_DECREF(o); return nullptr; }
+        PyObject *result = PyTuple_New(3);
+        if (!result) { Py_DECREF(d); Py_DECREF(o); Py_DECREF(e); return nullptr; }
+        PyTuple_SetItem(result, 0, d); PyTuple_SetItem(result, 1, o); PyTuple_SetItem(result, 2, e);
+        return result;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_ValueError, error.what()); return nullptr;
+    }
+}
+
+// Files here are private staged paths; QEC owns snapshot admission and publication.
+struct DemFile {
+    FILE *file = nullptr;
+    DemFile(const char *path, const char *mode) {
+        if (path) {
+            file = std::fopen(path, mode);
+            if (!file) throw std::system_error(errno, std::generic_category(), "Cannot open DEM sample file");
+        }
+    }
+    ~DemFile() { if (file) std::fclose(file); }
+    void close() {
+        if (!file) return;
+        bool failed = std::ferror(file);
+        FILE *owned = file;
+        file = nullptr;
+        if (std::fclose(owned) || failed) throw std::runtime_error("Cannot finish DEM sample file.");
+    }
+};
+
+PyObject *write_dem(PyObject *, PyObject *args) {
+    PyObject *capsule;
+    Py_ssize_t shots;
+    const char *d, *df, *o, *of, *e, *ef, *r, *rf;
+    if (!PyArg_ParseTuple(args, "Onzszszszs", &capsule, &shots, &d, &df, &o, &of, &e, &ef, &r, &rf)) return nullptr;
+    auto *s = static_cast<stim::DemSampler<width> *>(PyCapsule_GetPointer(capsule, dem_capsule_name));
+    if (!s) return nullptr;
+    try {
+        if (shots < 0) throw std::invalid_argument("DEM shots must be nonnegative.");
+        auto dformat = parse_format(df), oformat = parse_format(of), eformat = parse_format(ef), rformat = parse_format(rf);
+        size_t bound = 0;
+        if (d) bound = checked_add(bound, shot_output_bound(shots, s->num_detectors, dformat));
+        if (o) bound = checked_add(bound, shot_output_bound(shots, s->num_observables, oformat));
+        if (e) bound = checked_add(bound, shot_output_bound(shots, s->num_errors, eformat));
+        if (r) shot_output_bound(shots, s->num_errors, rformat);
+        if (bound > 1024 * 1024 * 1024 || dem_principal_bytes(0, *s, true, false, false, false) > dem_limit)
+            throw std::invalid_argument("DEM file output exceeds byte limit.");
+        DemFile det(d, "wb"), obs(o, "wb"), err(e, "wb"), replay(r, "rb");
+        if (shots) {
+            // With no mechanisms every replay row is the same empty tuple.
+            // The upstream fixed-width reader cannot infer rows from zero bytes.
+            s->sample_write(size_t(shots), det.file, dformat, obs.file, oformat,
+                            err.file, eformat, s->num_errors ? replay.file : nullptr, rformat);
+        }
+        det.close(); obs.close(); err.close(); replay.close();
+        Py_RETURN_NONE;
+    } catch (const std::system_error &error) {
+        PyErr_SetString(PyExc_OSError, error.what()); return nullptr;
+    } catch (const std::exception &error) {
+        PyErr_SetString(PyExc_ValueError, error.what()); return nullptr;
+    }
+}
+
 PyMethodDef methods[] = {
+    {"prepare_dem", prepare_dem, METH_VARARGS, nullptr},
+    {"sample_dem", sample_dem, METH_VARARGS, nullptr},
+    {"write_dem", write_dem, METH_VARARGS, nullptr},
+    {"write_shot_records", write_shot_records, METH_VARARGS, nullptr},
     {"open_shot_reader", open_shot_reader, METH_VARARGS, nullptr},
     {"scan_shot_reader", scan_shot_reader, METH_VARARGS, nullptr},
     {"read_shot_reader", read_shot_reader, METH_VARARGS, nullptr},
     {"close_shot_reader", close_shot_reader, METH_VARARGS, nullptr},
+    {"prepare_text_experiment", prepare_text_experiment, METH_VARARGS, nullptr},
+    {"text_experiment_dem", text_experiment_dem, METH_VARARGS, nullptr},
     {"prepare_detector", prepare_detector, METH_VARARGS, nullptr},
     {"sample_detectors", sample_detectors, METH_VARARGS, nullptr},
     {"write_detectors", write_detectors, METH_VARARGS, nullptr},

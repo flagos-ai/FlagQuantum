@@ -54,6 +54,16 @@ def table_inputs() -> dict[str, list[int]]:
     }
 
 
+def main_inputs() -> dict[str, list[int] | list[float]]:
+    return table_inputs() | {
+        "amplitudes": native.symmetric_amplitudes(WEIGHTS),
+        "matrix": [
+            (column >> row) & 1 for row in range(6) for column in PARITY_COLUMNS
+        ],
+        "signs": list(SIGNS),
+    }
+
+
 def verify(program: synth.Program, expected: torch.Tensor) -> torch.Tensor:
     raw = fq.run(program).statevector()
     assert isinstance(raw, torch.Tensor)
@@ -225,22 +235,12 @@ def test_invalid_weights_refuse(weights: tuple[float, ...]) -> None:
         native.build_program(weights)
 
 
-@pytest.mark.parametrize(
-    "kind", ["qubits", "workspace", "operations", "depth", "memory"]
-)
+@pytest.mark.parametrize("kind", ["qubits", "operations", "depth", "memory"])
 def test_budget_refusals(kind: str) -> None:
-    bindings: dict[str, list[int] | list[float]] = table_inputs() | {
-        "amplitudes": native.symmetric_amplitudes(WEIGHTS),
-        "matrix": [
-            (column >> row) & 1 for row in range(6) for column in PARITY_COLUMNS
-        ],
-        "signs": list(SIGNS),
-    }
+    bindings = main_inputs()
     with pytest.raises((synth.SynthesisError, PlanningError)):
         if kind == "qubits":
             synth.synthesize(native.main, classical_inputs=bindings, max_qubits=11)
-        elif kind == "workspace":
-            synth.synthesize(native.main, classical_inputs=bindings, max_workspace=0)
         elif kind == "operations":
             synth.synthesize(native.main, classical_inputs=bindings, max_operations=1)
         elif kind == "depth":
@@ -249,3 +249,11 @@ def test_budget_refusals(kind: str) -> None:
             synth.synthesize(
                 native.main, classical_inputs=bindings, memory_limit_bytes=16
             )
+
+
+def test_scratch_free_dqi_preserves_the_independent_state() -> None:
+    program = synth.synthesize(
+        native.main, classical_inputs=main_inputs(), max_workspace=0, max_qubits=12
+    )
+    assert program.report["workspace_qubits"] == 0
+    verify(program, fq.run(reference_circuit(WEIGHTS)).statevector())

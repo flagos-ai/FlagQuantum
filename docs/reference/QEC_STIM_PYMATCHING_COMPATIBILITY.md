@@ -28,7 +28,7 @@ qualification on one OS does not certify every OS/SDK combination.
 | Compiled measurement file writing | Simulation SDK/embedded boundary | `01`, `b8`, `r8`, `hits`, `dets`, `ptb64`; explicit measurement columns; 1 GiB encoded bound; ptb64 shot alignment 64; new-head delivery pending |
 | Code/memory/noise declaration | FlagQuantum QEC | Only explicitly executed code/basis scenarios are accepted as workflows |
 | Native-memory fixed-shot report | `execution.experiments.run_memory_experiment` | Original MemoryCircuit, required noise declaration, default decoder settings; source `memory_circuit` |
-| External-text fixed-shot report | `execution.experiments.run_stim_experiment` | Text accepted by existing Stim bridge, strict DEM, at least one detector/observable; source `stim_circuit` |
+| External-text fixed-shot report | `execution.experiments.run_stim_experiment` through the Stim SDK or an opt-in macOS arm64 or Linux x86_64 embedded build | Original annotated text, strict DEM, at least one detector and observable; source `stim_circuit` |
 | Stim parsing/compilation/sampling | Simulation SDK boundary | Existing instruction, size, seed, reference-normalization and ownership limits |
 | DEM text and probability model | FlagQuantum canonical DEM | Existing repeat bounds, detector/logical indexing, exact law and explicit refusal rules |
 | Complete independent-shot batches | `decoders.batch.decode_batch` | Sparse indices; five certified concrete types; complete original record fields |
@@ -63,7 +63,8 @@ Additional report fields must verify:
 1. Complete per-shot/batch records and swapped logical mapping for every
    supported native decoder, plus PyMatching when present; its dense batch path
    is checked independently.
-2. Missing-Stim report refusal in core and PyMatching-only profiles.
+2. Missing-Stim report refusal in marker-free core and PyMatching-only profiles.
+   The opt-in embedded profile runs the external-text report without the SDK.
 3. External two-observable reports using native matching in Stim-only and
    PyMatching in both profiles, including nonzero ideal-reference normalization.
 4. Repetition Z and Surface X/Z fixed-shot public reports using the same
@@ -73,3 +74,21 @@ Actual failed/cancelled jobs and their logs remain part of delivery history.
 Final-head CI/GPU, reviews and actual-main artifact acceptance must finish before
 this candidate is called delivered. Historical receipts validate their original
 SHA and cannot certify a newly changed package automatically.
+
+## Noiseless stabilizer execution candidate
+
+The recovered internal replacement uses the existing embedded Stim source
+closure for noiseless `sample_stabilizer` execution. It adds no Python SDK
+requirement to embedded installations and preserves the SDK implementation in
+marker-free installations. The candidate adds no QEC API, decoder behavior,
+format, general-feedback support or full Stim compatibility claim.
+
+Fresh installed execution passed on macOS arm64: no-SDK embedded 82 tests,
+embedded with SDK 246, and marker-free SDK 246. Actual embedded preparation and
+sampling calls, owned CPU integer results, requested wire ordering, seeded
+repeatability and the 16,384-wire regression were checked independently from
+replacement fakes. Complete smoke/unit passed 20,567 tests (296 selected-node
+skips and 36 collection skips); disjoint integration groups completed all
+12,274 selected nodes (12,028 passed, 246 skipped). Failed attempts and approved
+recoveries remain retained. These results qualify this bounded local candidate;
+final-head CI and actual-main acceptance remain separate delivery gates.

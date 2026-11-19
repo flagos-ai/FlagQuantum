@@ -59,12 +59,14 @@ No public native-source execution entry is admitted by this private work.
 
 ## Optional OpenFermion operator migration
 
-`openfermion.py` owns only explicit operator conversion. Its four entry points
+`openfermion.py` owns only explicit operator conversion. Its operator entry points
 are `from_openfermion_fermion`, `to_openfermion_fermion`,
-`from_openfermion_qubit` and `to_openfermion_qubit`. Imports stop at native
-fermionic/Pauli algebra and standard-library validation; upstream OpenFermion is
-loaded only when a conversion is called. It must not own simulation, model
-construction, encoding, chemistry drivers or runtime selection. Native modules
+`from_openfermion_qubit`, `to_openfermion_qubit`, and the one-way
+`from_openfermion_interaction` import. Imports stop at native
+fermionic/Pauli algebra and standard-library validation; upstream OpenFermion and
+its NumPy tensor boundary are loaded only when explicitly needed by a conversion.
+It must not own simulation, model construction, encoding, chemistry drivers or
+runtime selection. Native modules
 never depend on this adapter. No adapter registry entry or root API is added.
 
 For an old-object migration, install `openfermion==1.7.1` separately in the
@@ -102,3 +104,22 @@ still executes. Conversion preserves mode labels; neither algebra records idle
 register width, so always pass it explicitly to native encoding or inspection.
 Exported raw term dictionaries may differ from upstream normal ordering while
 representing the same operator. Observable Hermiticity checks remain native.
+
+For an existing `openfermion.InteractionOperator`, use
+`from_openfermion_interaction(old)` and keep the same encoding and measurement
+consumer above. This imports spin-orbital operator coefficients directly; it
+adds no half-factor and does not interpret spatial chemistry integrals. Real or
+complex numeric dense NumPy tensors must have shapes `(n, n)` and `(n, n, n, n)`.
+The import reads all entries in O(n^4) time, including validating entries whose
+ladder products vanish. It retains no arrays and preserves tiny nonzero
+coefficients without a tolerance. This experimental import has no reverse tensor
+export and does not construct a molecular problem. See the separate interaction
+import extension in the contract for its exact formula and acceptance checks.
+
+The optional lane's UCCSD replacement scenario checks that this imported value
+and a native Hubbard Hamiltonian give matching energies, gradients and SGD
+updates through the same unchanged consumer. Run
+`python -m pytest tests/unit/test_openfermion_conversion.py -k replacement -q`
+after installing the optional upstream environment. This is a small CPU/full-JW
+training proof; parameter differentiation stays in native circuits rather than
+in the imported static coefficients.

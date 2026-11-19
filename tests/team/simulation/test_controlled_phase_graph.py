@@ -1,22 +1,35 @@
-"""Tests for exact CPU controlled-phase graph compilation and execution."""
+"""Exact controlled-phase execution with and without the optional native extension.
+
+Portable numerical/gradient and absent-extension dispatch checks always run.
+Single-pass native traversal assertions require the loadable native operator.
+"""
 
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 
 import pytest
 import torch
 
 from flagquantum import Circuit
 from flagquantum.benchmarking.simulator_workload_corpus import build_workload
+from flagquantum.simulation.native_cpu.rotation import (
+    native_cpu_hadamard_controlled_phase_available,
+)
 from flagquantum.simulation.statevector.controlled_phase import (
     _apply_controlled_phase_graph_cpu,
+    _apply_hadamard_controlled_phase_graph_cpu,
     _controlled_phase_graph_factors_cpu,
     _fuse_controlled_phase_graphs,
+    _fuse_hadamard_controlled_phase_graphs,
 )
+from flagquantum.simulation.statevector.operations import _statevector_layout
 from flagquantum.simulation.statevector.program import (
     _StatevectorControlledPhaseDecompositionStep,
     _StatevectorControlledPhaseGraphStep,
+    _StatevectorGateStep,
+    _StatevectorHadamardControlledPhaseGraphStep,
 )
 
 pytestmark = pytest.mark.unit
@@ -114,7 +127,9 @@ def test_controlled_phase_graph_kernel_rejects_an_invalid_wire() -> None:
 
 
 @pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
-def test_controlled_phase_graph_can_update_an_owned_state_in_place(dtype) -> None:
+def test_controlled_phase_graph_can_update_an_owned_state_in_place(
+    dtype: torch.dtype,
+) -> None:
     generator = torch.Generator().manual_seed(216)
     state = torch.randn((2, 16), dtype=dtype, generator=generator)
     factors, wires = _controlled_phase_graph_factors_cpu(
@@ -147,11 +162,18 @@ def test_qft_graphs_only_update_executor_owned_states_in_place(
     _append_portable_controlled_phase(circuit, 3, 1, math.pi / 8)
 
     calls: list[bool] = []
-    apply_graph = local_statevector._apply_controlled_phase_graph_cpu
+    apply_graph = _apply_controlled_phase_graph_cpu
 
-    def record_inplace(*args, inplace=False, **kwargs):
-        result = apply_graph(*args, inplace=inplace, **kwargs)
-        calls.append(result is args[0])
+    def record_inplace(
+        state: torch.Tensor,
+        factors: torch.Tensor,
+        qubits: Sequence[int],
+        n_qubits: int,
+        *,
+        inplace: bool = False,
+    ) -> torch.Tensor:
+        result = apply_graph(state, factors, qubits, n_qubits, inplace=inplace)
+        calls.append(result is state)
         return result
 
     monkeypatch.setattr(
@@ -172,7 +194,7 @@ def test_product_state_graph_cache_isolated_by_dtype(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", "1")
-    cached_dtypes = set()
+    cached_dtypes: set[torch.dtype] = set()
     for dtype in (torch.complex64, torch.complex128):
         circuit = build_workload("truncated_qft_statevector", n_qubits=16)
         circuit.dtype = dtype
@@ -216,6 +238,8 @@ def test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes(
     monkeypatch: pytest.MonkeyPatch,
     dtype: torch.dtype,
 ) -> None:
+    if not native_cpu_hadamard_controlled_phase_available():
+        pytest.skip("native CPU Hadamard/phase extension is unavailable")
     monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "0")
     circuit = build_workload("truncated_qft_statevector", n_qubits=18)
     circuit.dtype = dtype
@@ -237,6 +261,8 @@ def test_qft_hadamard_phase_fusion_matches_graph_path_and_reduces_passes(
 def test_product_state_qft_uses_hadamard_phase_fusion(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    if not native_cpu_hadamard_controlled_phase_available():
+        pytest.skip("native CPU Hadamard/phase extension is unavailable")
     monkeypatch.setenv("FQ_CPU_SWAP_SEQUENCE_FUSION", "0")
     circuit = build_workload("truncated_qft_statevector", n_qubits=18)
 
@@ -251,3 +277,75 @@ def test_product_state_qft_uses_hadamard_phase_fusion(
     torch.testing.assert_close(actual, expected, atol=2e-12, rtol=2e-12)
     assert rollback_applies == 44
     assert fused_applies == 28
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+@pytest.mark.parametrize("product_state", (False, True))
+def test_qft_without_native_fusion_keeps_graph_execution(
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype, product_state: bool
+) -> None:
+    import flagquantum.simulation.statevector.local as local_statevector
+
+    monkeypatch.setenv("FQ_CPU_PRODUCT_STATE_EXECUTION", "1" if product_state else "0")
+    monkeypatch.setenv("FQ_CPU_SWAP_SEQUENCE_FUSION", "0")
+    monkeypatch.setenv("FQ_CPU_CONTROLLED_PHASE_GRAPH_FUSION", "1")
+    monkeypatch.setattr(
+        local_statevector,
+        "native_cpu_hadamard_controlled_phase_available",
+        lambda: False,
+    )
+    circuit = build_workload("truncated_qft_statevector", n_qubits=18)
+    circuit.dtype = dtype
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "0")
+    expected = circuit.state(refresh=True)
+
+    def reject_unavailable_fusion(*args: object, **kwargs: object) -> torch.Tensor:
+        raise AssertionError("unavailable native fusion must not be selected")
+
+    monkeypatch.setattr(
+        local_statevector,
+        "_apply_hadamard_controlled_phase_graph_cpu",
+        reject_unavailable_fusion,
+    )
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "1")
+    actual = circuit.state(refresh=True)
+
+    torch.testing.assert_close(actual, expected, atol=0, rtol=0)
+    assert circuit._last_statevector_runtime["statevector_apply_count"] == 44
+
+
+@pytest.mark.parametrize("dtype", (torch.complex64, torch.complex128))
+def test_hadamard_phase_portable_interpreter_preserves_state_and_gradient(
+    monkeypatch: pytest.MonkeyPatch, dtype: torch.dtype
+) -> None:
+    # Exercise the existing portable interpreter directly; this does not assert
+    # that native fusion is available or makes a single memory traversal.
+    monkeypatch.setenv("FQ_NATIVE_CPU_HADAMARD_CONTROLLED_PHASE", "0")
+    monkeypatch.setenv("FQ_CPU_HADAMARD_CONTROLLED_PHASE_FUSION", "0")
+    generator = torch.Generator().manual_seed(217)
+    inputs = torch.randn((2, 8), dtype=dtype, generator=generator, requires_grad=True)
+    before = inputs.detach().clone()
+    circuit = Circuit(3, dtype=dtype, inputs=inputs).h(1)
+    edges = ((0, 1, math.pi / 4), (2, 1, math.pi / 8))
+    hadamard = _StatevectorGateStep(
+        circuit.to_ir().instructions[0], _statevector_layout(3, (1,))
+    )
+    graph = _StatevectorControlledPhaseGraphStep(edges)
+    assert _fuse_hadamard_controlled_phase_graphs((hadamard, graph)) == [
+        _StatevectorHadamardControlledPhaseGraphStep(target=1, edges=edges)
+    ]
+    for control, target, half_angle in edges:
+        _append_portable_controlled_phase(circuit, control, target, half_angle)
+    expected = circuit.state(refresh=True)
+    expected_gradient = torch.autograd.grad(
+        expected.real.square().sum(), inputs, retain_graph=True
+    )[0]
+    factors, qubits = _controlled_phase_graph_factors_cpu(
+        edges, device=inputs.device, dtype=dtype
+    )
+    actual = _apply_hadamard_controlled_phase_graph_cpu(inputs, factors, qubits, 1, 3)
+    actual_gradient = torch.autograd.grad(actual.real.square().sum(), inputs)[0]
+
+    torch.testing.assert_close(actual, expected)
+    torch.testing.assert_close(actual_gradient, expected_gradient)
+    torch.testing.assert_close(inputs, before, atol=0, rtol=0)

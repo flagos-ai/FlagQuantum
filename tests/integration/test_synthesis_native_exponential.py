@@ -250,3 +250,19 @@ def test_tighter_workspace_uses_more_gates_and_preserves_full_state(
     torch.testing.assert_close(
         state(program, 64), expected.reshape(64), atol=1e-11, rtol=0
     )
+
+
+def test_scratch_free_exponential_preserves_the_complete_state() -> None:
+    from tests.synthesis_workflow_helpers import check_program_equivalence
+
+    unconstrained = synth.synthesize(
+        native.main, classical_inputs=native.classical_inputs()
+    )
+    constrained = synth.synthesize(
+        native.main,
+        classical_inputs=native.classical_inputs(),
+        max_workspace=0,
+        max_qubits=6,
+    )
+    assert constrained.report["workspace_qubits"] == 0
+    check_program_equivalence(unconstrained, constrained)

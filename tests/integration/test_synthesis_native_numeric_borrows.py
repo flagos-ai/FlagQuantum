@@ -53,7 +53,7 @@ def _definition(
                 + "\n"
                 + body
             ).splitlines()
-        )
+        ),
     )
 
 
@@ -145,12 +145,13 @@ def test_duplicate_overlap_condition_dependency_and_invalid_views_refuse(
 def test_sliced_numeric_helper_predicates_use_formal_bit_order(
     view: str, expected: Callable[[int], int]
 ) -> None:
-    helpers = HELPERS + """
+    helpers = f"""{HELPERS}
 @qfunc
 def mark(word: QNum, flag: QBit) -> None:
     control(word == 2, lambda: X(flag))
 """
-    definition = program_definition(helpers + f"""
+    definition = program_definition(
+        f"""{helpers}
 @qfunc
 def main(x: Output[QNum[3]], flag: Output[QBit]) -> None:
     allocate(x)
@@ -159,7 +160,8 @@ def main(x: Output[QNum[3]], flag: Output[QBit]) -> None:
     hadamard_transform(flag)
     RZ(0.37,flag)
     mark({view},flag)
-""")
+""",
+    )
     program = synth.synthesize(definition)
     reference = fq.Circuit(4, dtype=torch.complex128)
     for wire in range(4):
@@ -177,7 +179,7 @@ def main(x: Output[QNum[3]], flag: Output[QBit]) -> None:
 
 
 def test_nested_slice_is_relative_to_borrowed_formal_and_keeps_work_zero() -> None:
-    helpers = HELPERS + """
+    helpers = f"""{HELPERS}
 @qfunc
 def mark(word: QNum, flag: QBit) -> None:
     control(word[1:3] == 2, lambda: X(flag))
@@ -185,14 +187,16 @@ def mark(word: QNum, flag: QBit) -> None:
 def nested_mark(word: QNum, flag: QBit) -> None:
     mark(word[1:4],flag)
 """
-    definition = program_definition(helpers + """
+    definition = program_definition(
+        f"""{helpers}
 @qfunc
 def main(x: Output[QNum[6]], flag: Output[QBit]) -> None:
     allocate(x)
     allocate(flag)
     hadamard_transform(x)
     nested_mark(x[1:5],flag)
-""")
+""",
+    )
     program = synth.synthesize(definition)
     actual = fq.run(program).statevector().reshape(128, -1)
     expected = torch.zeros_like(actual)

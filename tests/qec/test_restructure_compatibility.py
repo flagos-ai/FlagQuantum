@@ -50,7 +50,7 @@ def _describe(value: object) -> dict[str, object]:
                 }
                 for field in dataclasses.fields(value)
             ]
-            description["frozen"] = value.__dataclass_params__.frozen
+            description["frozen"] = getattr(value, "__dataclass_params__").frozen
         if issubclass(value, Enum):
             description["members"] = {member.name: member.value for member in value}
         description["methods"] = {
@@ -75,6 +75,11 @@ def test_top_level_exports_and_signatures_match_pre_migration_baseline() -> None
             Path(__file__).parents[2] / "contracts/qec-batch-prediction-v1.json"
         ).read_text()
     )
+    dem_contract = json.loads(
+        (
+            Path(__file__).parents[2] / "contracts/qec-dem-sampling-v1-candidate.json"
+        ).read_text()
+    )
     sampler_contract = json.loads(
         (Path(__file__).parents[2] / "contracts/qec-memory-sampler-v1.json").read_text()
     )
@@ -82,14 +87,15 @@ def test_top_level_exports_and_signatures_match_pre_migration_baseline() -> None
         baseline["exports"] + sampler_contract["appended_exports"]
     )
     for name, expected in baseline["api"].items():
-        if name in contract["additive_methods"]:
-            expected = {
-                **expected,
-                "methods": {
-                    **expected["methods"],
-                    **contract["additive_methods"][name],
-                },
-            }
+        for addition in (contract, dem_contract):
+            if name in addition["additive_methods"]:
+                expected = {
+                    **expected,
+                    "methods": {
+                        **expected["methods"],
+                        **addition["additive_methods"][name],
+                    },
+                }
         assert _describe(getattr(qec, name)) == expected, name
 
 
