@@ -672,7 +672,7 @@ _BlockKey = tuple[tuple[str, tuple[int, ...], tuple[tuple[str, str], ...]], ...]
 def _block_key(
     instructions: Sequence[Instruction], pair: tuple[int, ...]
 ) -> _BlockKey | None:
-    """Identify immutable scalar gate blocks independently of physical wires.
+    """Identify immutable scalar gate blocks independently of physical qubits.
 
     Matrices, tensor parameters and other caller-owned values are not cached.
     Exact numeric spellings retain signed zero and avoid tolerance-based keys.

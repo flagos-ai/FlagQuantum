@@ -105,20 +105,39 @@ class TargetProduct:
     content_identities: tuple[tuple[str, str], ...] = field(init=False)
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self,
-            "content_identities",
-            tuple((name, program.content_hash) for name, program in self.stages),
-        )
-        self.validate()
+        current, submitted, executable = self._read_identities()
+        object.__setattr__(self, "content_identities", current)
+        self._check_identities(current, submitted, executable)
 
     def validate(self) -> None:
         """Refuse stale programs without recompiling or creating new evidence."""
-        current = tuple((name, program.content_hash) for name, program in self.stages)
+        self._check_identities(*self._read_identities())
+
+    def _read_identities(self) -> tuple[tuple[tuple[str, str], ...], str, str]:
+        # Stages can share the submitted/executable object. Hash each object
+        # once per validation, never across validations: nested mutable values
+        # must be read again on every public access.
+        observed: dict[int, str] = {}
+
+        def digest(program: CircuitIR) -> str:
+            key = id(program)
+            if key not in observed:
+                observed[key] = program.content_hash
+            return observed[key]
+
+        return (
+            tuple((name, digest(program)) for name, program in self.stages),
+            digest(self.submitted),
+            digest(self.executable),
+        )
+
+    def _check_identities(
+        self, current: tuple[tuple[str, str], ...], submitted: str, executable: str
+    ) -> None:
         if (
             current != self.content_identities
-            or self.submitted.content_hash != self.content_identities[-3][1]
-            or self.executable.content_hash != self.content_identities[-1][1]
+            or submitted != self.content_identities[-3][1]
+            or executable != self.content_identities[-1][1]
         ):
             raise TargetError(
                 "target.identity",

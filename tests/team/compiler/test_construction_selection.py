@@ -308,6 +308,43 @@ def test_stale_candidate_stage_is_refused_without_recompiling(
         product.validate()
 
 
+def test_target_validation_reads_each_shared_object_once_and_detects_later_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from flagquantum.compiler._construction.target import TargetError
+    from flagquantum.compiler.layout import Layout
+
+    program = CircuitIR(1, (Instruction("h", (0,)),))
+    original = CircuitIR.content_hash.fget
+    assert original is not None
+    calls: list[int] = []
+
+    def digest(value: CircuitIR) -> str:
+        calls.append(id(value))
+        return original(value)
+
+    monkeypatch.setattr(CircuitIR, "content_hash", property(digest))
+    target = TargetProduct(
+        program,
+        program,
+        tuple(
+            (name, program)
+            for name in ("source", "submitted", "normalized", "executable")
+        ),
+        (),
+        Layout(range(1)),
+        None,
+        0.0,
+    )
+    assert calls == [id(program)]
+    target.validate()
+    assert calls == [id(program)] * 2
+    program.metadata["changed"] = True
+    with pytest.raises(TargetError, match="changed"):
+        target.validate()
+    assert calls == [id(program)] * 3
+
+
 def test_intermediate_conversion_budget_is_not_reported_as_infeasibility() -> None:
     report = _select(
         target=Target(basis=BASIS), budget=ConstructionBudget(operations=200)
