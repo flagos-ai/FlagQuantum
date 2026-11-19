@@ -602,7 +602,10 @@ def test_combined_budget_rejects_a_candidate_that_fits_the_block_limit(
     native = legalize_native_gates(_source(), snapshot=snapshot, evaluated_at=_NOW)
     valid = _cz_blocks._candidate(native.program.instructions, (0, 1))
     assert valid is not None
-    padded = valid + (Instruction("rz", (0,), {"theta": 0.0}),) * 10
+    combined_limit = len(native.source_program.instructions) + 26
+    assert len(valid) <= combined_limit
+    padding = combined_limit + 1 - len(valid)
+    padded = valid + (Instruction("rz", (0,), {"theta": 0.0}),) * padding
     assert len(padded) <= len(native.program.instructions) + 32
     monkeypatch.setattr(
         _cz_blocks, "synthesize_two_qubit", lambda *args, **kwargs: padded
@@ -867,9 +870,12 @@ def test_forged_cancellation_cannot_cross_a_dependency(spectator: Instruction) -
 
 def test_resealed_equivalent_output_must_obey_the_combined_budget() -> None:
     result, native = _stage(_source())
+    combined_limit = len(native.source_program.instructions) + 26
+    assert len(result.program.instructions) <= combined_limit
+    padding = combined_limit + 1 - len(result.program.instructions)
     padded = (
         *result.program.instructions,
-        *((Instruction("rz", (0,), {"theta": 0.0}),) * 10),
+        *((Instruction("rz", (0,), {"theta": 0.0}),) * padding),
     )
     rewrite = replace(
         result.rewrites[0], output_instruction_indices=tuple(range(len(padded)))
