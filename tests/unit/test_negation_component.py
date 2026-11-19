@@ -4,7 +4,6 @@ from collections import Counter
 from itertools import product
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
 
@@ -178,6 +177,7 @@ def grouped_controls(
 ) -> tuple[tuple[Register, ...], tuple[ControlRegister, ...], Any]:
     from qualtran import CtrlSpec
 
+    np = pytest.importorskip("numpy")
     registers: tuple[Register, ...]
     patterns: tuple[ControlRegister, ...]
     if case == "bits":
