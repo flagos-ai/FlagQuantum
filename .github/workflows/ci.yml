@@ -1922,7 +1922,7 @@ jobs:
       - uses: ./.github/actions/install-cpu-torch
         with:
           torch-spec: ${{ matrix.torch }}
-      - run: python -m pip install pytest
+      - run: python -m pip install 'pytest>=7.0.0,<10'
       - run: python -m pip install --no-build-isolation -e . --no-deps
       - name: Verify dependency consistency and CPU frameworks
         run: |
