@@ -1887,3 +1887,32 @@ changed verifier and new native scenarios, architecture, 74 IR/API cases and the
 machine contract pass. The repository dependency scan retains 706 pre-existing
 findings and reports none in these changed paths. Tutorial acceptance remains
 separate. No whole-repository green-test or dependency-policy claim is made.
+
+### Declared component prerequisite 1.19
+
+The complete Q-0144 source tutorial uses signature-only components before
+implementing their decompositions. The same source protocol allows custom
+numerical tensors or classical actions on a component without a decomposition.
+Use the existing internal `FunctionRecord` with an empty `blocks` tuple and
+non-None register declarations to represent this state. No field, opcode or
+public schema is added. An empty block tuple is a declaration, distinct from a
+single block with no operations, which still represents an implemented identity
+or empty computation. Untyped missing bodies remain invalid.
+
+A declaration must have the default entry name and a valid finite register
+signature. Its calls derive ordered register operand and result kinds from the
+signature. Core validates caller linearity, signature compatibility and every
+signature, including unreachable declarations. It never synthesizes a body or
+assumes an identity, allocation, reset or unitary action. Empty signatures and
+zero-sized arrays follow existing Signature semantics. Symbolic execution
+profiles retain their existing rejection.
+
+Compiler construction, graph traversal, rebuilding and partial expansion may
+retain declared leaf calls. Drawer may render those calls. Explicit external
+Simulation suppliers can interpret their numerical meaning through existing
+per-function providers. Physical binding and gate lowering must reject modules
+with missing bodies rather than emit no gates or fabricate semantics. Exact
+adjoint and control require existing explicit specialized definitions/adders.
+Source-backed contract scenarios precede Core implementation, followed by
+independent Compiler/Drawer admission and replacement tests. No owner approval
+or Stable Core freeze is declared by this prerequisite.
