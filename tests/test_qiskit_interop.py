@@ -348,14 +348,14 @@ def test_qiskit_arithmetic_parameter_expression_imports_and_round_trips() -> Non
     assert float(qiskit_bound.data[0].operation.params[0]) == pytest.approx(pi - 0.5)
 
 
-def test_qiskit_parameter_expression_outside_arithmetic_subset_fails_closed() -> None:
+def test_qiskit_parameter_expression_outside_approved_subset_fails_closed() -> None:
     theta = QiskitParameter("theta")
     circuit = QuantumCircuit(1)
-    circuit.rz(theta.sin(), 0)
+    circuit.rz(theta.tan(), 0)
 
     with pytest.raises(QiskitConversionError) as captured:
         import_qiskit(circuit)
 
     blocker = captured.value.report.blockers[0]
     assert blocker.code == "unsupported_parameter_expression"
-    assert "sin" in blocker.message
+    assert "tan" in blocker.message

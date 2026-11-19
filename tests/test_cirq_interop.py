@@ -534,9 +534,8 @@ def test_symbolic_rzz_parameter_round_trips_and_binds_equivalently() -> None:
 @pytest.mark.parametrize(
     "expression",
     [
-        lambda symbol: sympy.sin(symbol),
-        lambda symbol: symbol**2,
-        lambda symbol: 1 / symbol,
+        lambda symbol: sympy.tan(symbol),
+        lambda symbol: sympy.Abs(symbol),
         lambda symbol: symbol + sympy.I,
     ],
 )

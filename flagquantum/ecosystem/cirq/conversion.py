@@ -167,6 +167,19 @@ def _flagquantum_parameter_value(
             for arg in args[1:]:
                 result = result * arg
             return result
+        if isinstance(node, sympy.Pow):
+            base, exponent = node.args
+            if exponent == -1:
+                return ParameterExpression("div", (1.0, convert(base)))
+            return ParameterExpression("pow", (convert(base), convert(exponent)))
+        functions = {
+            sympy.sin: "sin",
+            sympy.cos: "cos",
+            sympy.exp: "exp",
+            sympy.log: "log",
+        }
+        if node.func in functions and len(node.args) == 1:
+            return ParameterExpression(functions[node.func], (convert(node.args[0]),))
         function_name = getattr(getattr(node, "func", None), "__name__", None)
         raise ValueError(
             f"operation {function_name or type(node).__name__!r} is unsupported"
@@ -182,8 +195,19 @@ def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
     if isinstance(value, Parameter):
         return cache.setdefault(value.name, sympy.Symbol(value.name))
     if isinstance(value, ParameterExpression):
-        expected_operands = 1 if value.op == "neg" else 2
-        if value.op not in {"add", "sub", "mul", "neg"}:
+        expected_operands = 1 if value.op in {"neg", "sin", "cos", "exp", "log"} else 2
+        if value.op not in {
+            "add",
+            "sub",
+            "mul",
+            "neg",
+            "sin",
+            "cos",
+            "exp",
+            "log",
+            "pow",
+            "div",
+        }:
             raise ValueError(
                 f"unsupported FlagQuantum parameter expression {value.op!r}"
             )
@@ -199,7 +223,13 @@ def _cirq_parameter_value(value: Any, *, cache: dict[str, Any]) -> Any:
             return args[0] + (-args[1])
         if value.op == "mul":
             return args[0] * args[1]
-        return -args[0]
+        if value.op == "pow":
+            return args[0] ** args[1]
+        if value.op == "div":
+            return args[0] / args[1]
+        if value.op == "neg":
+            return -args[0]
+        return getattr(sympy, value.op)(args[0])
     if isinstance(value, Number) or hasattr(value, "item"):
         raw = value.item() if hasattr(value, "item") else value
         converted = complex(raw)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from importlib import import_module
 from numbers import Number
@@ -87,8 +88,8 @@ def _numeric_parameter(
             issues.append(
                 QiskitConversionIssue(
                     "unsupported_parameter_expression",
-                    "Qiskit ParameterExpression is outside the FlagQuantum v1 "
-                    f"arithmetic subset: {exc}",
+                    "Qiskit ParameterExpression is outside the FlagQuantum supported "
+                    f"real expression vocabulary: {exc}",
                     "error",
                     operation_index,
                     operation_name,
@@ -152,10 +153,10 @@ def _flagquantum_parameter_expression(value: Any) -> Any:
                 return parameters_by_name[str(node)]
             except KeyError as exc:
                 raise ValueError(f"unknown symbol {node!s}") from exc
-        if bool(getattr(node, "is_Number", False)):
+        if isinstance(node, (sympy.Number, sympy.NumberSymbol)):
             converted = complex(node)
-            if converted.imag != 0:
-                raise ValueError(f"constant {node!s} is complex")
+            if converted.imag != 0 or not math.isfinite(converted.real):
+                raise ValueError(f"constant {node!s} is not a finite real scalar")
             return float(converted.real)
         if isinstance(node, sympy.Add):
             args = tuple(convert(arg) for arg in node.args)
@@ -173,6 +174,19 @@ def _flagquantum_parameter_expression(value: Any) -> Any:
             for arg in args[1:]:
                 result = result * arg
             return result
+        if isinstance(node, sympy.Pow):
+            base, exponent = node.args
+            if exponent == -1:
+                return ParameterExpression("div", (1.0, convert(base)))
+            return ParameterExpression("pow", (convert(base), convert(exponent)))
+        functions = {
+            sympy.sin: "sin",
+            sympy.cos: "cos",
+            sympy.exp: "exp",
+            sympy.log: "log",
+        }
+        if node.func in functions and len(node.args) == 1:
+            return ParameterExpression(functions[node.func], (convert(node.args[0]),))
         function_name = getattr(getattr(node, "func", None), "__name__", None)
         raise ValueError(
             f"operation {function_name or type(node).__name__!r} is unsupported"
@@ -527,6 +541,16 @@ def _qiskit_parameter(
     if isinstance(value, Parameter):
         return cache.setdefault(value.name, parameter_type(value.name))
     if isinstance(value, ParameterExpression):
+        unary = {"neg", "sin", "cos", "exp", "log"}
+        if value.op not in unary | {"add", "sub", "mul", "pow", "div"}:
+            raise ValueError(
+                f"unsupported FlagQuantum parameter expression {value.op!r}"
+            )
+        arity = 1 if value.op in unary else 2
+        if len(value.args) != arity:
+            raise ValueError(
+                f"FlagQuantum parameter expression {value.op!r} requires {arity} operands"
+            )
         args = tuple(
             _qiskit_parameter(item, parameter_type=parameter_type, cache=cache)
             for item in value.args
@@ -539,7 +563,13 @@ def _qiskit_parameter(
             return args[0] * args[1]
         if value.op == "neg":
             return -args[0]
-        raise ValueError(f"unsupported FlagQuantum parameter expression {value.op!r}")
+        if value.op == "pow":
+            return args[0] ** args[1]
+        if value.op == "div":
+            return args[0] / args[1]
+        if isinstance(args[0], Number):
+            return getattr(math, value.op)(args[0])
+        return getattr(args[0], value.op)()
     if isinstance(value, Number) or hasattr(value, "item"):
         return value.item() if hasattr(value, "item") else value
     raise TypeError(f"unsupported FlagQuantum parameter value {value!r}")
