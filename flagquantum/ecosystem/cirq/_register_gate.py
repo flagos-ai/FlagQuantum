@@ -141,6 +141,8 @@ class RegisterCirqGate(Gate):
         self._signature = signature
         self._wire_symbol = wire_symbol
         self._labels = tuple(labels)
+        self._diagram_exponent = 1
+        self._inverse_of: RegisterCirqGate | None = None
         self._input_indices = tuple(input_indices)
         self._consumed_wires = consumed_wires
         self._output_groups = (
@@ -171,6 +173,7 @@ class RegisterCirqGate(Gate):
                 workspace,
                 feedback_key_prefix,
                 guarded_measurement_work,
+                self._diagram_exponent,
             )
 
     def __eq__(self, other: object) -> bool:
@@ -275,7 +278,9 @@ class RegisterCirqGate(Gate):
         return np.asarray(matrix.detach().numpy(), dtype=np.complex128)
 
     def _circuit_diagram_info_(self, args: object) -> CircuitDiagramInfo:
-        info: CircuitDiagramInfo = _cirq().CircuitDiagramInfo(self._labels)
+        info: CircuitDiagramInfo = _cirq().CircuitDiagramInfo(
+            self._labels, exponent=self._diagram_exponent
+        )
         return info
 
     def __pow__(self, power: object) -> RegisterCirqGate:
@@ -283,6 +288,8 @@ class RegisterCirqGate(Gate):
             raise ValueError("Cirq gate power requires a positive integer magnitude")
         if power == 1:
             return self
+        if power == -1 and self._inverse_of is not None:
+            return self._inverse_of
         if self._feedback_key_prefix is not None:
             raise ValueError("Cirq feedback gate power requires fresh measurement keys")
         if self._bound is not None:
@@ -293,8 +300,25 @@ class RegisterCirqGate(Gate):
             raise ValueError("Repeated Cirq gate power requires through registers")
         instructions = register_power_ir(self._body, abs(power), adjoint=power < 0)
         signature = self._signature if power > 0 else self._signature.adjoint()
-        return RegisterCirqGate(
+        wire_symbol = self._wire_symbol
+        if wire_symbol is not None and power < 0:
+            original_symbol = wire_symbol
+
+            def inverted_symbol(
+                register: Register, index: tuple[int, ...]
+            ) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+                return original_symbol(register.adjoint(), index)
+
+            wire_symbol = inverted_symbol
+        result = RegisterCirqGate(
             replace(self._body, instructions=instructions),
             signature,
-            wire_symbol=self._wire_symbol,
+            wire_symbol=wire_symbol,
         )
+        # Preserve the original label while applying the source's diagram power.
+        result._diagram_exponent = self._diagram_exponent * power
+        if result._value_key is not None:
+            result._value_key = (*result._value_key[:-1], result._diagram_exponent)
+        if power == -1:
+            result._inverse_of = self
+        return result
