@@ -177,7 +177,9 @@ native constructor-field labels. A title callback controls application-specific
 presentation. Default visible leaves match the source's
 And, Toffoli, TwoBitCSwap and CZPow class policy through native resource keys.
 The renderer returns SVG bytes and callers own persistent output paths.
-The executable is explicit, with no vendored dependency or asset discovery.
+The executable remains explicit. The frozen Perl asset, original metadata and
+CDDL license are now package data. The native example resolves that asset and
+passes it to the existing renderer.
 UTF-8 input is streamed with source-compatible inter-row newlines. Temporary
 files and directories are removed on success, subprocess failure, timeout and
 input-generator failure. Error diagnostics retain the final 4000 stderr bytes.
@@ -202,7 +204,8 @@ test boundary. Script, license and metadata match frozen blobs
 8c917ecf323e13c1ab3c1107c1963f33dec0123e,
 2230598ebad9e470736e12119db740007c1a764b and
 8c6696d1a9b9c36c929d0a01a00dfe46f4de1cbb respectively.
-They remain reference-environment assets. The source code is unchanged.
+Installed package copies are byte-for-byte identical. The frozen source remains
+unchanged.
 
 Local acceptance reports 53 focused cases, 961 concentrated cases and 86
 independent integration cases, with zero skips. Strict typing covers four changed
@@ -216,7 +219,7 @@ g2-flame-workflow- prefixes in the external reference environment.
 
 The browser evidence is recorded under Whole-file disposition below. XML
 comparison includes the original script bodies. Foreign name reflection,
-executable distribution, historical QFT T190 versus T496 assertions and general
+historical QFT T190 versus T496 assertions and general
 foreign/serialized-symbol admission remain explicit gaps. Actual Fredkin emission
 remains CX8/H2/T4/Tdg3, zero work and zero measurements. Terminal-model Fredkin7T
 and QEC default Fredkin4T remain separately reported. The native mixture model
@@ -311,11 +314,10 @@ terminal Fredkin7T and approximate swap4n remain distinct estimates. This batch
 changes graph/cost composition and adds zero physical gates/work/measurements.
 The ordinary circuit.append path remains covered by existing regressions.
 
-Foreign naming reflection, licensed renderer distribution, browser interaction,
+Foreign naming reflection, browser interaction,
 the historical QFT expectation and general foreign/serialized-symbol admission
-remain open. The renderer's CDDL asset distribution would touch the protected
-package/license manifest and requires its own integration change. No package
-or dependency edits are included in this batch. Evidence uses g2-flame-auto-.
+remain open. Complete CDDL asset distribution and package/license declarations
+are tracked independently as Q-0939/Q-0940/Q-0941. Evidence uses g2-flame-auto-.
 
 
 ## Native concise label ownership
@@ -391,8 +393,8 @@ ordered rows, full-subtree model, visible DFS, explicit rendering and native
 title adapters are used directly. Program callers supply declarations or
 already evaluated counts for resource identities outside the automatic recipe
 set. Foreign object conversion and serialized symbol reflection remain outside
-that interface. The renderer executable is caller-owned. Bundling the frozen
-CDDL script would require a separate package and license integration change.
+that interface. Callers may select the packaged CDDL renderer through the
+native example, or provide an external executable explicitly.
 
 `test_drawer_flame_graph_browser.py` renders two native DFS stacks with weights
 7 and 3 through the unchanged frozen executable. Chrome 157 loaded the SVG

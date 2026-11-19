@@ -1,9 +1,11 @@
 """Verify local FlameGraph execution and owned temporary-file lifecycle."""
 
+import os
 import subprocess
 import tempfile
 from collections.abc import Iterator
 from hashlib import sha1
+from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
@@ -24,7 +26,7 @@ from flagquantum.drawer.flame_graph import (
 pytestmark = pytest.mark.unit
 REFERENCE_SCRIPT = (
     Path(__file__).resolve().parents[3]
-    / "Qualtran-linear-adjoint-fix/qualtran/third_party/flamegraph/flamegraph.pl"
+    / "ftqc-reference-env/qualtran/third_party/flamegraph/flamegraph.pl"
 )
 
 
@@ -124,6 +126,7 @@ def canonical_svg(raw: bytes) -> str:
 def test_actual_svg_matches_untouched_source_and_frozen_asset(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    pytest.importorskip("qualtran.drawing.flame_graph")
     from qualtran.bloqs.basic_gates.swap import CSwap
     from qualtran.drawing import flame_graph as source
 
@@ -170,3 +173,38 @@ def test_actual_renderer_empty_data_and_timeout_cleanup(
     assert len(temporary_paths) == 2 and all(
         not path.exists() for path in temporary_paths
     )
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.skipif(os.name == "nt", reason="Direct Perl script execution is Unix-only")
+def test_complete_frozen_renderer_assets_and_packaged_execution(tmp_path: Path) -> None:
+    pytest.importorskip("qualtran.drawing.flame_graph")
+    from qualtran.bloqs.basic_gates.swap import CSwap
+    from qualtran.drawing import flame_graph as source
+
+    assets = files("flagquantum.drawer").joinpath("_assets")
+    expected_blobs = {
+        "resource_flame_graph.pl": "8c917ecf323e13c1ab3c1107c1963f33dec0123e",
+        "resource_flame_graph.metadata": "8c6696d1a9b9c36c929d0a01a00dfe46f4de1cbb",
+        "licenses/cddl-1.0.txt": "2230598ebad9e470736e12119db740007c1a764b",
+    }
+    for relative_path, expected_blob in expected_blobs.items():
+        raw = assets.joinpath(relative_path).read_bytes()
+        actual_blob = sha1(f"blob {len(raw)}\0".encode() + raw).hexdigest()
+        assert actual_blob == expected_blob
+
+    script = assets.joinpath("resource_flame_graph.pl")
+    with as_file(script) as executable:
+        assert executable.stat().st_mode & 0o111
+        expected = source.get_flame_graph_svg_data(CSwap(10))
+        assert isinstance(expected, str)
+        root, fredkin = ComponentCost("CSwap[10]", 21), FixedTCall("fredkin")
+        rows = iter_resource_flame_graph_data(
+            root,
+            declared_calls={root: {fredkin: 10}},
+            title=lambda call: "CSwap[10]" if call is root else "TwoBitCSwap",
+        )
+        actual = render_flame_graph_svg(rows, executable=str(executable))
+    assert canonical_svg(actual) == canonical_svg(expected.encode())
+    assert "70 TCounts" in "".join(ET.fromstring(actual).itertext())
+    (tmp_path / "packaged-resource-flame.svg").write_bytes(actual)
