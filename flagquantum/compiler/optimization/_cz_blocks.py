@@ -28,6 +28,7 @@ RejectionReason = Literal[
     "residual_rejected",
     "instruction_growth_rejected",
 ]
+MatrixReader = Callable[[Instruction, tuple[int, int]], Matrix | None]
 
 
 def _matrix(instruction: Instruction, pair: tuple[int, int]) -> Matrix | None:
@@ -35,6 +36,12 @@ def _matrix(instruction: Instruction, pair: tuple[int, int]) -> Matrix | None:
         # Annotations can carry conditions or routing-layout evidence; neither
         # may disappear into a numeric block. Matrix-valued gradients need their
         # own admission, rather than implicit scalar extraction here.
+        return None
+    return _numeric_matrix(instruction, pair)
+
+
+def _numeric_matrix(instruction: Instruction, pair: tuple[int, int]) -> Matrix | None:
+    if instruction.matrix is not None:
         return None
     if len(instruction.wires) == 2 and instruction.wires == pair[::-1]:
         local = _lifted_matrix(instruction, pair[::-1])
@@ -46,11 +53,14 @@ def _matrix(instruction: Instruction, pair: tuple[int, int]) -> Matrix | None:
 
 
 def _product(
-    instructions: Sequence[Instruction], pair: tuple[int, int]
+    instructions: Sequence[Instruction],
+    pair: tuple[int, int],
+    *,
+    matrix_reader: MatrixReader = _matrix,
 ) -> Matrix | None:
     result = _IDENTITY
     for instruction in instructions:
-        matrix = _matrix(instruction, pair)
+        matrix = matrix_reader(instruction, pair)
         if matrix is None:
             return None
         result = _matmul(matrix, result)
@@ -86,6 +96,7 @@ def _candidate(
     *,
     max_output_operations: int | None = None,
     on_rejection: Callable[[RejectionReason], None] | None = None,
+    matrix_reader: MatrixReader = _matrix,
 ) -> tuple[Instruction, ...] | None:
     def reject(reason: RejectionReason) -> None:
         if on_rejection is not None:
@@ -110,7 +121,7 @@ def _candidate(
     if cz_count < 2:
         reject("not_lower_cz_cost")
         return None
-    product = _product(block, pair)
+    product = _product(block, pair, matrix_reader=matrix_reader)
     if product is None:
         reject("synthesis_unavailable")
         return None

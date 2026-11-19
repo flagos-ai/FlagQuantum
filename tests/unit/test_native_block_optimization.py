@@ -14,6 +14,8 @@ from flagquantum.compiler.lowering.native_gate_legalization import (
     legalize_native_gates,
 )
 from flagquantum.compiler.optimization import _cz_blocks
+from flagquantum.compiler.routing import CouplingMap
+from flagquantum.compiler.topology import topology_legalization as routing
 from flagquantum.core.ir import CircuitIR, Instruction, MeasurementNode
 from flagquantum.core.parameters import Parameter
 from flagquantum.core.target_capabilities import (
@@ -125,6 +127,316 @@ def _equivalent(source: CircuitIR, output: CircuitIR) -> None:
     phase = torch.trace(actual.conj().T @ expected) / len(expected)
     assert float(abs(abs(phase) - 1)) <= 1e-11
     torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+
+
+def _routed_stage(
+    source: CircuitIR,
+    *,
+    strategy: str = "persistent_layout",
+) -> tuple[
+    blocks.NativeBlockOptimizationResult,
+    NativeGateLegalizationResult,
+    routing.TopologyLegalizationResult,
+    CouplingMap,
+]:
+    snapshot = _snapshot()
+    coupling = CouplingMap.line(source.n_wires)
+    topology = routing.legalize_circuit_topology(
+        source, coupling_map=coupling, snapshot=snapshot, strategy=strategy
+    )
+    native = legalize_native_gates(
+        topology.program, snapshot=snapshot, evaluated_at=_NOW
+    )
+    result = blocks.optimize_native_blocks(
+        native,
+        snapshot=snapshot,
+        evaluated_at=_NOW,
+        topology=topology,
+        coupling_map=coupling,
+    )
+    assert result is not None
+    blocks.verify_native_block_optimization(
+        result,
+        native,
+        snapshot=snapshot,
+        evaluated_at=_NOW,
+        topology=topology,
+        coupling_map=coupling,
+    )
+    return result, native, topology, coupling
+
+
+@pytest.mark.parametrize(
+    "strategy",
+    ["restore_after_each_gate", "persistent_layout", "sabre", "sabre_layout", "auto"],
+)
+def test_verified_routing_allows_native_blocks_and_preserves_layout(
+    strategy: str,
+) -> None:
+    source = CircuitIR(
+        3,
+        (
+            Instruction("swap", (0, 2)),
+            Instruction("cx", (2, 0)),
+            Instruction("cx", (1, 2)),
+        ),
+    )
+    result, native, topology, coupling = _routed_stage(source, strategy=strategy)
+    assert result.rewrites
+    assert topology.inserted_swap_count > 0
+    assert sum(item.name == "cz" for item in result.program.instructions) < sum(
+        item.name == "cz" for item in native.program.instructions
+    )
+    assert all(
+        len(item.wires) != 2 or coupling.has_edge(*item.wires)
+        for item in result.program.instructions
+    )
+    _equivalent(topology.program, result.program)
+    # An initial placement permutes logical input into physical slots. The
+    # full operator check accounts for it instead of assuming a zero input.
+    size = 1 << source.n_wires
+    placement = torch.zeros((size, size), dtype=torch.complex128)
+    for column in range(size):
+        row = sum(
+            ((column >> (source.n_wires - logical - 1)) & 1)
+            << (source.n_wires - physical - 1)
+            for logical, physical in enumerate(topology.initial_logical_to_physical)
+        )
+        placement[row, column] = 1
+    expected, actual = _operator(source), _operator(result.program) @ placement
+    phase = torch.trace(actual.conj().T @ expected) / size
+    torch.testing.assert_close(expected, phase * actual, atol=1e-11, rtol=0)
+    assert topology.final_logical_to_physical == tuple(range(source.n_wires))
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {"conditions": ((0, 1),)},
+        {"user_annotation": "retain"},
+        {"source_instruction_index": 10, "routing_strategy": "sabre"},
+        {"routing_phase": "forward", "logical_wires": (0,)},
+    ],
+)
+def test_original_annotations_cannot_be_certified_as_router_metadata(
+    metadata: dict[str, object],
+) -> None:
+    source = CircuitIR(
+        2,
+        (
+            Instruction("cz", (0, 1)),
+            Instruction("rz", (0,), {"theta": 0.2}, metadata=metadata),
+            Instruction("cz", (1, 0)),
+        ),
+    )
+    result, native, _, _ = _routed_stage(source)
+    assert result.rewrites == ()
+    assert result.program is native.program
+
+
+def test_original_disjoint_annotation_remains_global_boundary_after_routing() -> None:
+    source = CircuitIR(
+        3,
+        (
+            Instruction("cz", (0, 1)),
+            Instruction(
+                "rz", (2,), {"theta": 0.2}, metadata={"user_annotation": "retain"}
+            ),
+            Instruction("cz", (1, 0)),
+        ),
+    )
+    result, native, _, _ = _routed_stage(source)
+    assert result.program is native.program
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "angle",
+        "order",
+        "logical_qubits",
+        "source_index",
+        "missing",
+        "duplicate",
+        "restore",
+    ],
+)
+def test_resealed_tampered_routing_is_rejected_before_metadata_admission(
+    change: str,
+) -> None:
+    source = CircuitIR(
+        3,
+        (
+            Instruction("rx", (0,), {"theta": 0.2}),
+            Instruction("cx", (0, 2)),
+            Instruction("rz", (0,), {"theta": 0.4}),
+        ),
+    )
+    snapshot = _snapshot()
+    coupling = CouplingMap.line(3)
+    topology = routing.legalize_circuit_topology(
+        source, coupling_map=coupling, snapshot=snapshot, strategy="persistent_layout"
+    )
+    instructions = list(topology.program.instructions)
+    source_positions = [
+        index
+        for index, item in enumerate(instructions)
+        if "layout_mapped" in item.metadata
+    ]
+    first, last = source_positions[0], source_positions[-1]
+    if change == "angle":
+        instructions[first] = replace(instructions[first], params={"theta": 0.3})
+    elif change == "order":
+        instructions[first], instructions[last] = (
+            instructions[last],
+            instructions[first],
+        )
+    elif change == "logical_qubits":
+        instructions[first] = replace(
+            instructions[first],
+            metadata=dict(instructions[first].metadata) | {"logical_wires": (2,)},
+        )
+    elif change == "source_index":
+        instructions[first] = replace(
+            instructions[first],
+            metadata=dict(instructions[first].metadata)
+            | {"source_instruction_index": 2},
+        )
+    elif change == "missing":
+        del instructions[first]
+    elif change == "duplicate":
+        instructions.insert(first, instructions[first])
+    else:
+        restore = next(
+            index
+            for index, item in enumerate(instructions)
+            if item.metadata.get("routing_phase") == "final_restore"
+        )
+        del instructions[restore]
+    altered = replace(topology.program, instructions=tuple(instructions))
+    topology = replace(
+        topology,
+        program=altered,
+        routed_instruction_count=len(instructions),
+        legalization_identity=routing._legalization_identity(
+            source, altered, snapshot, topology.topology_identity, topology.strategy
+        ),
+    )
+    native = legalize_native_gates(altered, snapshot=snapshot, evaluated_at=_NOW)
+    with pytest.raises(blocks.NativeBlockOptimizationError, match="routing replay"):
+        blocks.optimize_native_blocks(
+            native,
+            snapshot=snapshot,
+            evaluated_at=_NOW,
+            topology=topology,
+            coupling_map=coupling,
+        )
+
+
+def test_routing_proof_is_required_again_during_rewrite_verification() -> None:
+    result, native, topology, coupling = _routed_stage(_source())
+    assert result.rewrites
+    with pytest.raises(
+        blocks.NativeBlockOptimizationError, match="operator equivalence"
+    ):
+        blocks.verify_native_block_optimization(
+            result, native, snapshot=_snapshot(), evaluated_at=_NOW
+        )
+    with pytest.raises(blocks.NativeBlockOptimizationError, match="routing replay"):
+        blocks.verify_native_block_optimization(
+            result,
+            native,
+            snapshot=_snapshot(),
+            evaluated_at=_NOW,
+            topology=replace(topology, final_logical_to_physical=(1, 0)),
+            coupling_map=coupling,
+        )
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "missing_map",
+        "missing_topology",
+        "copied_source",
+        "directed",
+        "allocated",
+        "wrong_map",
+        "baseline",
+    ],
+)
+def test_routing_admission_requires_the_complete_bound_stage_chain(change: str) -> None:
+    _, native, topology, coupling = _routed_stage(_source())
+    provided_topology: routing.TopologyLegalizationResult | None = topology
+    provided_map: CouplingMap | None = coupling
+    if change == "missing_map":
+        provided_map = None
+    elif change == "missing_topology":
+        provided_topology = None
+    elif change == "copied_source":
+        native = replace(native, source_program=replace(native.source_program))
+    elif change == "directed":
+        provided_topology = replace(topology, direction_semantics="directed_cx")
+    elif change == "allocated":
+        provided_topology = replace(topology, allocation_identity="a" * 64)
+    elif change == "wrong_map":
+        provided_map = CouplingMap(2, ())
+    else:
+        native = replace(native, decompositions=())
+    with pytest.raises(blocks.NativeBlockOptimizationError):
+        blocks.optimize_native_blocks(
+            native,
+            snapshot=_snapshot(),
+            evaluated_at=_NOW,
+            topology=provided_topology,
+            coupling_map=provided_map,
+        )
+
+
+@pytest.mark.parametrize(
+    "theta",
+    [
+        Parameter("theta"),
+        torch.tensor(0.3, requires_grad=True),
+        torch.tensor([0.2, 0.3]),
+    ],
+)
+def test_verified_routing_does_not_admit_symbolic_trainable_or_batched_values(
+    theta: object,
+) -> None:
+    source = CircuitIR(
+        2,
+        (
+            Instruction("cz", (0, 1)),
+            Instruction("rz", (0,), {"theta": theta}),
+            Instruction("cz", (0, 1)),
+        ),
+    )
+    result, native, _, _ = _routed_stage(source)
+    assert result.program is native.program
+    assert result.rewrites == ()
+    assert result.program.instructions[1].params["theta"] is theta
+
+
+@pytest.mark.parametrize("routed", [False, True])
+def test_native_decomposition_does_not_erase_a_custom_matrix_boundary(
+    routed: bool,
+) -> None:
+    source = CircuitIR(
+        2,
+        (
+            Instruction("cz", (0, 1)),
+            Instruction("blob", (0, 1), matrix=_operator(_source()).tolist()),
+            Instruction("cz", (0, 1)),
+        ),
+    )
+    if routed:
+        result, native, _, _ = _routed_stage(source)
+    else:
+        result, native = _stage(source)
+    assert native.decompositions
+    assert result.program is native.program
+    assert result.rewrites == ()
 
 
 @pytest.mark.parametrize("pair", [(0, 1), (1, 0)])

@@ -43,10 +43,19 @@ not count as additional entanglers. They do not enable dynamic instructions in
 this CircuitIR stage. Terminal measurement requests are retained, while noise
 channels and unknown annotations remain global collection boundaries.
 
+Routing annotations are admitted only with the retained undirected topology
+result and its coupling map. The stage replays the existing router with the
+recorded selected strategy, compares the complete retained result and program
+hash, and replays native legalization before deriving eligible native leaves.
+It never strips annotations from the retained IR. Original source annotations
+remain boundaries, including source metadata that imitates reserved router keys.
+Directed routing and allocated workspace remain outside this stage's admission.
+Replay repeats the selected routing strategy; its compile-time and memory cost
+must be included in subsequent performance measurements.
+
 The implementation currently remains private and is not connected to automatic
-target compilation. Routing annotations are still boundaries. Enabling it in
-that workflow requires validated routing provenance, v4 physical-plan generation
-and the subsequent Runtime/Deployment handoff work from the approved proposal.
+target compilation. Enabling it in that workflow still requires v4 physical-plan
+generation and the subsequent Runtime/Deployment handoff work from the approved proposal.
 No new execution or deployment support is claimed by this stage alone.
 
 Run its focused offline checks with:
@@ -58,5 +67,9 @@ python -m pytest -q tests/unit/test_native_block_optimization.py tests/unit/test
 They exercise the existing SWAP/reversed-CX workflow, reducing its retained
 28-instruction baseline from four CZ gates to two, plus cancellation, spectators,
 parameter boundaries, tampering and resource refusals. Independent simulation
-matrices verify the complete operator, including both operand orders. The
+matrices verify the complete operator, including both operand orders and all
+five routing selections. Nonidentity initial placements are applied explicitly
+to every input basis state; final layouts remain restored. Rehashed mutations
+of routing parameters, ordering, ancestry, coverage and restoration are rejected
+before annotations can enter a block. The
 existing user-facing target workflow above continues to use its prior behavior.

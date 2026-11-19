@@ -1,8 +1,8 @@
 """Retain and verify bounded collective rewrites of a native CZ baseline.
 
-This private stage owns no routing decisions or serialized physical plan. Until
-routing provenance has been validated by its owning stage, annotated operations
-remain boundaries. The target workflow connects this stage with v4 lineage.
+This private stage owns no routing decisions or serialized physical plan.
+Annotations remain boundaries unless the owning router's retained result passes
+replay. The target workflow connects this stage with v4 lineage.
 """
 
 from __future__ import annotations
@@ -21,12 +21,20 @@ from ...core.operator_schema import get_operator_schema
 from ...core.target_capabilities import TargetCapabilitySnapshot
 from ...errors import CompilationError
 from ..optimization._cz_blocks import (
+    MatrixReader,
     RejectionReason,
     _candidate,
     _collect_blocks,
     _equivalence_witness,
     _matrix,
+    _numeric_matrix,
     _product,
+)
+from ..topology.routing import CouplingMap
+from ..topology.topology_legalization import (
+    TopologyLegalizationError,
+    TopologyLegalizationResult,
+    legalize_circuit_topology,
 )
 from .native_gate_legalization import (
     NativeGateLegalizationResult,
@@ -113,7 +121,9 @@ def _budget(max_added_operations: int) -> None:
         raise ValueError("max_added_operations must be non-negative")
 
 
-def _safe_spectator(instruction: Instruction) -> bool:
+def _safe_spectator(
+    instruction: Instruction, matrix_reader: MatrixReader = _matrix
+) -> bool:
     if len(instruction.wires) not in (1, 2):
         return False
     pair = (
@@ -121,7 +131,97 @@ def _safe_spectator(instruction: Instruction) -> bool:
         if len(instruction.wires) == 2
         else (instruction.wires[0], instruction.wires[0] + 1)
     )
-    return _matrix(instruction, (pair[0], pair[1])) is not None
+    return matrix_reader(instruction, (pair[0], pair[1])) is not None
+
+
+def _native_matrix_reader(
+    native: NativeGateLegalizationResult,
+    *,
+    topology: TopologyLegalizationResult | None,
+    coupling_map: CouplingMap | None,
+    snapshot: TargetCapabilitySnapshot,
+    evaluated_at: datetime | None,
+    max_added_operations: int,
+) -> MatrixReader:
+    if topology is None:
+        if coupling_map is not None:
+            raise NativeBlockOptimizationError("coupling map has no retained routing")
+    elif (
+        coupling_map is None
+        or topology.direction_semantics != "undirected"
+        or topology.allocation_identity is not None
+        or native.source_program is not topology.program
+    ):
+        raise NativeBlockOptimizationError(
+            "native blocks require retained undirected routing"
+        )
+    elif coupling_map is not None:
+        try:
+            replay = legalize_circuit_topology(
+                topology.source_program,
+                coupling_map=coupling_map,
+                snapshot=snapshot,
+                strategy=topology.strategy,
+                max_added_operations=max(
+                    0,
+                    len(topology.program.instructions)
+                    - len(topology.source_program.instructions),
+                ),
+            )
+        except TopologyLegalizationError as error:
+            raise NativeBlockOptimizationError(
+                "retained topology failed routing replay"
+            ) from error
+        # Compare all result fields without invoking tensor-valued IR equality.
+        if (
+            replay.program.content_hash != topology.program.content_hash
+            or replace(
+                topology, source_program=replay.source_program, program=replay.program
+            )
+            != replay
+        ):
+            raise NativeBlockOptimizationError(
+                "retained topology failed routing replay"
+            )
+    _verify_native_baseline(native, snapshot, evaluated_at, max_added_operations)
+    decompositions = {item.instruction_index: item for item in native.decompositions}
+    trusted: set[int] = set()
+    native_index = 0
+    for index, instruction in enumerate(native.source_program.instructions):
+        original = instruction
+        if topology is not None:
+            source_index = instruction.metadata["source_instruction_index"]
+            original = topology.source_program.instructions[source_index]
+        # Source operations carry layout_mapped, or routed in the per-gate
+        # materializer. Inserted SWAPs use their source only as an audit anchor.
+        inserted_swap = (
+            topology is not None
+            and "layout_mapped" not in instruction.metadata
+            and "routed" not in instruction.metadata
+        )
+        decomposition = decompositions.get(index)
+        count = 1 if decomposition is None else len(decomposition.replacement_opcodes)
+        if inserted_swap or (not original.metadata and original.matrix is None):
+            trusted.update(
+                id(item)
+                for item in native.program.instructions[
+                    native_index : native_index + count
+                ]
+            )
+        native_index += count
+
+    def read(
+        instruction: Instruction, pair: tuple[int, int]
+    ) -> list[list[complex]] | None:
+        if id(instruction) in trusted:
+            return (
+                _numeric_matrix(instruction, pair)
+                if topology is not None
+                else _matrix(instruction, pair)
+            )
+        return None
+
+    return read
 
 
 def optimize_native_blocks(
@@ -130,6 +230,8 @@ def optimize_native_blocks(
     snapshot: TargetCapabilitySnapshot,
     evaluated_at: datetime | None = None,
     max_added_operations: int = 256,
+    topology: TopologyLegalizationResult | None = None,
+    coupling_map: CouplingMap | None = None,
 ) -> NativeBlockOptimizationResult | None:
     """Propose verified CZ reductions while retaining the exact native baseline.
 
@@ -145,6 +247,14 @@ def optimize_native_blocks(
     limit = len(native.source_program.instructions) + max_added_operations
     if len(source.instructions) > limit:
         raise NativeBlockOptimizationError("native baseline already exceeds budget")
+    matrix_reader = _native_matrix_reader(
+        native,
+        topology=topology,
+        coupling_map=coupling_map,
+        snapshot=snapshot,
+        evaluated_at=evaluated_at,
+        max_added_operations=max_added_operations,
+    )
     counts: dict[str, int] = dict.fromkeys(_REJECTION_REASONS, 0)
     replacements: dict[int, tuple[Instruction, ...]] = {}
     accepted: list[tuple[tuple[int, ...], tuple[int, int], complex, float]] = []
@@ -156,8 +266,8 @@ def optimize_native_blocks(
     for pair, positions in _collect_blocks(
         source,
         lambda index, pair: source.instructions[index].name in {"rx", "rz", "cz"}
-        and _matrix(source.instructions[index], pair) is not None,
-        barrier=lambda instruction: not _safe_spectator(instruction),
+        and matrix_reader(source.instructions[index], pair) is not None,
+        barrier=lambda instruction: not _safe_spectator(instruction, matrix_reader),
     ):
         block = [source.instructions[index] for index in positions]
         candidate = _candidate(
@@ -165,10 +275,13 @@ def optimize_native_blocks(
             pair,
             max_output_operations=len(block) + limit - output_size,
             on_rejection=rejected,
+            matrix_reader=matrix_reader,
         )
         if candidate is None:
             continue
-        before, after = _product(block, pair), _product(candidate, pair)
+        before, after = _product(block, pair, matrix_reader=matrix_reader), _product(
+            candidate, pair
+        )
         witness = (
             None
             if before is None or after is None
@@ -233,6 +346,8 @@ def verify_native_block_optimization(
     snapshot: TargetCapabilitySnapshot,
     evaluated_at: datetime | None = None,
     max_added_operations: int = 256,
+    topology: TopologyLegalizationResult | None = None,
+    coupling_map: CouplingMap | None = None,
 ) -> None:
     """Recompute operators and ancestry; a recorded residual is never the proof."""
     _budget(max_added_operations)
@@ -249,20 +364,14 @@ def verify_native_block_optimization(
         )
     if not _admitted_target(snapshot, evaluated_at):
         raise NativeBlockOptimizationError("target does not admit native CZ blocks")
-    baseline = legalize_native_gates(
-        native.source_program,
+    matrix_reader = _native_matrix_reader(
+        native,
+        topology=topology,
+        coupling_map=coupling_map,
         snapshot=snapshot,
         evaluated_at=evaluated_at,
         max_added_operations=max_added_operations,
     )
-    if (
-        baseline.legalization_identity != native.legalization_identity
-        or baseline.program.content_hash != native.program.content_hash
-        or baseline.decompositions != native.decompositions
-        or baseline.native_opcodes != native.native_opcodes
-        or native.source_content_hash != native.source_program.content_hash
-    ):
-        raise NativeBlockOptimizationError("retained native baseline failed replay")
     if result.optimization_identity != _identity(
         result.source_program,
         result.program,
@@ -288,11 +397,36 @@ def verify_native_block_optimization(
         raise NativeBlockOptimizationError(
             "native block output exceeds combined budget"
         )
-    _verify_lineage(result)
+    _verify_lineage(result, matrix_reader)
+
+
+def _verify_native_baseline(
+    native: NativeGateLegalizationResult,
+    snapshot: TargetCapabilitySnapshot,
+    evaluated_at: datetime | None,
+    max_added_operations: int,
+) -> None:
+    baseline = legalize_native_gates(
+        native.source_program,
+        snapshot=snapshot,
+        evaluated_at=evaluated_at,
+        max_added_operations=max_added_operations,
+    )
+    if (
+        baseline.legalization_identity != native.legalization_identity
+        or baseline.program.content_hash != native.program.content_hash
+        or baseline.decompositions != native.decompositions
+        or baseline.native_opcodes != native.native_opcodes
+        or native.source_content_hash != native.source_program.content_hash
+    ):
+        raise NativeBlockOptimizationError("retained native baseline failed replay")
 
 
 def _verify_rewrite_operators(
-    rewrite: BlockRewriteEvidence, source: CircuitIR, program: CircuitIR
+    rewrite: BlockRewriteEvidence,
+    source: CircuitIR,
+    program: CircuitIR,
+    matrix_reader: MatrixReader,
 ) -> None:
     block = [source.instructions[index] for index in rewrite.input_instruction_indices]
     output = [
@@ -300,9 +434,9 @@ def _verify_rewrite_operators(
     ]
     if any(item.name not in {"rx", "rz", "cz"} for item in (*block, *output)):
         raise NativeBlockOptimizationError("native block is outside the admitted basis")
-    before, after = _product(block, rewrite.physical_qubits), _product(
-        output, rewrite.physical_qubits
-    )
+    before, after = _product(
+        block, rewrite.physical_qubits, matrix_reader=matrix_reader
+    ), _product(output, rewrite.physical_qubits)
     witness = (
         None if before is None or after is None else _equivalence_witness(before, after)
     )
@@ -325,7 +459,9 @@ def _verify_rewrite_operators(
         )
 
 
-def _verify_lineage(result: NativeBlockOptimizationResult) -> None:
+def _verify_lineage(
+    result: NativeBlockOptimizationResult, matrix_reader: MatrixReader
+) -> None:
     source = result.source_program
     memberships: dict[int, BlockRewriteEvidence] = {}
     for rewrite in result.rewrites:
@@ -345,7 +481,7 @@ def _verify_lineage(result: NativeBlockOptimizationResult) -> None:
                 "native block output index is out of range"
             )
         memberships.update((index, rewrite) for index in positions)
-        _verify_rewrite_operators(rewrite, source, result.program)
+        _verify_rewrite_operators(rewrite, source, result.program, matrix_reader)
     cursor = 0
     last_touch: dict[int, int] = {}
     last_barrier = -1
@@ -379,7 +515,7 @@ def _verify_lineage(result: NativeBlockOptimizationResult) -> None:
                 cursor += len(expected)
             last_touch.update((qubit, index) for qubit in instruction.wires)
             continue
-        if not _safe_spectator(instruction):
+        if not _safe_spectator(instruction, matrix_reader):
             last_barrier = index
         last_touch.update((qubit, index) for qubit in instruction.wires)
         if (
