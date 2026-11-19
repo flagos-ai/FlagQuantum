@@ -18,6 +18,8 @@ from .register_types import (
     bounded_unsigned_register_type,
     classical_bit_type,
     fixed_point_register_type,
+    montgomery_register_type,
+    ones_complement_register_type,
     quantum_bit_type,
 )
 from .registers import Register, RegisterSide, RegisterType
@@ -27,8 +29,8 @@ from .signatures import Signature
 def executable_register_width(dtype: RegisterType) -> int:
     """Return the concrete width admitted for a packed quantum word.
 
-    Metadata constructors have wider support. Execution admits unparameterized
-    bit, opaque, unsigned and signed quantum encodings and resolved binary fields.
+    Execution admits concrete bit, opaque, integer storage and binary fields.
+    Canonical integer parameters retain their metadata identity during binding.
     """
     if not isinstance(dtype, RegisterType):
         raise ValueError("an executable word needs a neutral RegisterType")
@@ -58,15 +60,22 @@ def executable_register_width(dtype: RegisterType) -> int:
             return width
         raise ValueError(f"unsupported executable register descriptor {dtype!r}")
     if (
-        dtype.encoding not in {"bit", "opaque", "uint", "signed"}
+        dtype.encoding
+        not in {"bit", "opaque", "uint", "signed", "ones_complement", "montgomery"}
         or type(width) is not int
         or width < 0
         or type(dtype.classical_bits) is not int
         or dtype.classical_bits != 0
-        or dtype.parameters
+        or any(type(value) is not int for _, value in dtype.parameters)
         or (dtype.encoding == "bit" and width != 1)
     ):
         raise ValueError(f"unsupported executable register descriptor {dtype!r}")
+    try:
+        logical_register_width(dtype)
+    except ValueError as error:
+        raise ValueError(
+            f"unsupported executable register descriptor {dtype!r}"
+        ) from error
     return width
 
 
@@ -96,7 +105,20 @@ def logical_register_width(dtype: RegisterType) -> SymbolicInt:
         return width
     names = tuple(name for name, _ in dtype.parameters)
     parameters = dict(dtype.parameters)
-    if dtype.encoding == "uint" and names == ("bound",):
+    if dtype.encoding == "ones_complement" and not names:
+        expected = ones_complement_register_type(width)
+    elif dtype.encoding == "montgomery" and names in ((), ("modulus",)):
+        modulus = parameters.get("modulus")
+        if (
+            modulus is not None
+            and not is_symbolic_value(modulus)
+            and type(modulus) is not int
+        ):
+            raise ValueError(
+                "a logical Montgomery modulus must be integral or symbolic"
+            )
+        expected = montgomery_register_type(width, cast("SymbolicInt | None", modulus))
+    elif dtype.encoding == "uint" and names == ("bound",):
         bound = parameters["bound"]
         if not is_symbolic_value(bound) and type(bound) is not int:
             raise ValueError("a logical unsigned bound must be integral or symbolic")
