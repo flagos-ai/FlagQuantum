@@ -137,24 +137,6 @@ def test_channel_measurement_feedback_density_and_branches(controlled: bool) -> 
         for operator_index, reference in enumerate(cirq.kraus(gate)):
             if controlled and outcome == 0 and operator_index > 0:
                 continue
-            gates = tuple(
-                (
-                    replace(
-                        op,
-                        name="any",
-                        matrix=channel.matrix[operator_index],
-                        metadata={
-                            key: value
-                            for key, value in op.metadata.items()
-                            if key != "is_channel"
-                        },
-                    )
-                    if op.name == "kraus"
-                    else op
-                )
-                for op in bound.circuit.instructions
-            )
-            actual = forced_branch(torch.from_numpy(state), gates, (outcome,))
             linear_channel = cirq.MatrixGate(reference, unitary_check=False).on(data)
             if controlled:
                 linear_channel = linear_channel.with_classical_controls("record")
@@ -169,10 +151,29 @@ def test_channel_measurement_feedback_density_and_branches(controlled: bool) -> 
                 )
             )
             target = source_branch(linear, qubits, state, (outcome,))
-            torch.testing.assert_close(
-                actual, torch.from_numpy(target), atol=3e-12, rtol=0
-            )
-            assert torch.count_nonzero(actual[[2, 3, 6, 7]]) == 0
+            for body in (bound.circuit, rebound.circuit):
+                gates = []
+                for op in body.instructions:
+                    if op.name == "kraus":
+                        assert op.matrix is not None
+                        op = replace(
+                            op,
+                            name="any",
+                            matrix=op.matrix[operator_index],
+                            metadata={
+                                key: value
+                                for key, value in op.metadata.items()
+                                if key != "is_channel"
+                            },
+                        )
+                    gates.append(op)
+                actual = forced_branch(
+                    torch.from_numpy(state), tuple(gates), (outcome,)
+                )
+                torch.testing.assert_close(
+                    actual, torch.from_numpy(target), atol=3e-12, rtol=0
+                )
+                assert torch.count_nonzero(actual[[2, 3, 6, 7]]) == 0
             total += actual[:, None] @ actual.conj()[None, :]
     for body in (bound.circuit, rebound.circuit):
         circuit = Circuit(3, inputs=torch.from_numpy(state), dtype=torch.complex128)

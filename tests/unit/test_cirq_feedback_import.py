@@ -7,15 +7,21 @@ from itertools import product
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.skip("NumPy reference dependency is not installed", allow_module_level=True)
 
 from flagquantum.ecosystem.cirq._feedback_import import import_cirq_feedback
 from flagquantum.ecosystem.cirq.models import CirqConversionError
 from tests.unit.measurement_checks import forced_branch
 
 pytestmark = [pytest.mark.unit, pytest.mark.ftqc_reference]
+
+pytest.importorskip("cirq")
 
 
 @pytest.fixture(scope="module", autouse=True)
