@@ -4,9 +4,13 @@ from collections.abc import Callable
 from itertools import product
 from typing import Any
 
-import numpy as np
 import pytest
 import torch
+
+try:
+    import numpy as np
+except ModuleNotFoundError:
+    pytest.importorskip("numpy")
 
 from flagquantum.core.ir.program import register_types as types
 from flagquantum.core.ir.program import verify_program_record
@@ -258,7 +262,7 @@ def test_unsupported_metadata_has_no_codec_fallback(dtype: RegisterType) -> None
         encode_register_bits(register, np.array(1))
 
 
-def test_metadata_composition_does_not_expand_core_admission() -> None:
+def test_logical_metadata_does_not_expand_physical_admission() -> None:
     from dataclasses import replace
 
     record = identity_record(2)
@@ -267,7 +271,11 @@ def test_metadata_composition_does_not_expand_core_admission() -> None:
         record,
         functions=tuple(replace(f, registers=(register,)) for f in record.functions),
     )
-    assert verify_program_record(changed)
+    assert verify_program_record(changed) == ()
+    from flagquantum.compiler.registers.register_binding import bind_register_program
+
+    with pytest.raises(ValueError, match="unsupported executable register"):
+        bind_register_program(changed, ((0, 1),))
 
 
 @pytest.mark.parametrize("depth", [1, 3])
