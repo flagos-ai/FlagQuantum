@@ -48,7 +48,7 @@ def test_nonfinite_or_boolean_parameters_are_refused(value: float) -> None:
         build_program([value] + [0.1] * 39)
 
 
-def test_complete_optimization_notebook_is_still_pending() -> None:
+def test_complete_optimization_notebook_has_source_pinned_acceptance() -> None:
     inventory = json.loads(
         (ROOT / "tests/fixtures/classiq_qmod/native_library_inventory.json").read_text()
     )
@@ -58,4 +58,12 @@ def test_complete_optimization_notebook_is_still_pending() -> None:
         if g["id"].endswith("/quantum_drude_oscillator/quantum_drude_oscillator")
     )
     assert group["native_program"]
-    assert group["workflow_status"] == "pending"
+    assert group["workflow_status"] == "validated"
+    validation = group["workflow_validation"]
+    assert validation["acceptance_test"] == (
+        "tests/integration/test_synthesis_drude_oscillator_notebook.py"
+    )
+    assert (ROOT / validation["acceptance_test"]).is_file()
+    assert (ROOT / validation["native_notebook"]).is_file()
+    assert len(validation["reviewed_code_cells"]) == 28
+    assert validation["git_blob_sha1"] == "f90e0929a5ac8bb426fd8e0d393dda1c37fa6f87"

@@ -148,16 +148,31 @@ def test_nonconsecutive_and_isolated_nodes_refuse() -> None:
         walk.neighbor_probabilities(graph)
 
 
-def test_plots_notebook_and_source_provenance() -> None:
+@pytest.mark.parametrize("preexisting_figure", (False, True))
+def test_plots_notebook_and_source_provenance(
+    preexisting_figure: bool, request: pytest.FixtureRequest
+) -> None:
     pytest.importorskip("matplotlib")
     import matplotlib.pyplot as plt
     from matplotlib.container import BarContainer
 
+    original_numbers = set(plt.get_fignums())
+
+    def close_created_figures() -> None:
+        for number in set(plt.get_fignums()) - original_numbers:
+            plt.close(number)
+
+    request.addfinalizer(close_created_figures)
+    if preexisting_figure:
+        plt.subplots()
+    before = set(plt.get_fignums())
     namespace, executed = execute_code_cells(DIRECTORY / "walkthrough.ipynb")
     assert executed == 4
     counts = cast(Counter[int], namespace["counts"])
     assert sum(counts.values()) == 1000
-    figures = [plt.figure(number) for number in plt.get_fignums()]
+    figures = [
+        plt.figure(number) for number in plt.get_fignums() if number not in before
+    ]
     assert [len(figure.axes) for figure in figures] == [1, 1, 5]
     assert list(figures[0].get_size_inches()) == [3, 3]
     assert list(figures[2].get_size_inches()) == [18, 4]
@@ -178,7 +193,7 @@ def test_plots_notebook_and_source_provenance() -> None:
         ]
         for series, values in zip(bars, expected, strict=True):
             assert [bar.get_height() for bar in series.patches] == pytest.approx(values)
-    plt.close("all")
+    assert before <= set(plt.get_fignums())
     notebook = json.loads((DIRECTORY / "walkthrough.ipynb").read_text())
     assert all(
         not cell["outputs"] and cell["execution_count"] is None
