@@ -139,8 +139,41 @@ imports have explicit missing-dependency guards. The default smoke/unit run
 again stops at the existing docstring registry failure after 434 passes and
 51 skips. Logs use the `g2-matrix-leaf-` prefix in the reference environment.
 
-The complete Q-0156 source file remains open. Tensor-only component fallback,
-recursive measurement-key transfer and arbitrary nonunitary channels still
-need their own call-chain treatment. Existing public static export admission
+The complete Q-0156 source file remains open. Recursive measurement-key
+transfer and arbitrary nonunitary channels still need their own call-chain
+treatment. Tensor-only component admission is covered below. Existing public static export admission
 retains its established gate vocabulary. The matrix export here belongs to
 the register-gate decomposition entry used by the source wrapper workflow.
+
+
+## Tensor-only SDK fallback closure
+
+The complete tensor-only wrapper path follows the unchanged source
+`BloqAsCirqGate._decompose_with_context_` refusal, then `_unitary_` and
+`bloq.tensor_contract()`. Ecosystem converts the resulting finite unitary to
+an owned matrix leaf using the existing Core/Compiler contract. An available
+SDK decomposition takes precedence, including an empty body. Existing native
+Simulation tensor contraction owners remain authoritative. This adapter does
+not introduce another tensor provider or retain a foreign component in Program.
+
+Original `SwapTestWithOnlyTensorData` fixtures at widths 1 through 4 match full
+complex operators with reversed input order, entangled spectators and native
+`Circuit.append(op)`. Export and reimport retain the operator and typed binding.
+Each imported tensor-only wrapper emits one `any` primitive, with no workspace
+leases. Its original decomposable swap body has a different primitive expansion.
+The tensor-only fixture supplies no independent Clifford/T resource model.
+Previously accepted matrix feedback tests retain all measurement outcomes,
+phase and reset-work evidence. Recursive measured wrapper import remains open.
+
+The frozen implementation and test blobs are respectively
+`d49ab63f9f74104dc5f2856a9e1c997635e21e5b` and
+`6b2ab24b21b3bbb926a9228ac56a6b14a735104c`, matching the pinned inventory.
+All 16 unchanged source tests, including the original notebook, pass. The
+reference runner passes its frozen dependency path to the Jupyter subprocess.
+The 33-file concentrated regression passes 1,021 cases without skips. The
+three-file Cirq integration/conformance regression passes 96 cases. Strict
+typing of both changed Python files, Black, Ruff, scope, architecture and
+internal IR checks pass. Dependency policy records 706 repository findings
+and zero changed-path findings. Default smoke/unit repeats the existing
+example-registry failure after 434 passes and 51 skips. Persistent evidence
+uses the `g2-tensor-leaf-` prefix. Implementation commit is `c00ab7cea`.
