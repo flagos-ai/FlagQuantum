@@ -1271,6 +1271,13 @@ two-level rotation. Gray-path permutations remain unconditional and cancel on
 the inactive branch. ZYZ rotations reuse the existing Euler-angle extraction,
 and each two-level global phase is conditioned once on the other bits. This
 avoids controlling pulse decompositions and their phase repairs repeatedly.
+For four/five-qubit blocks with clean helper storage, a rotation and its global
+phase reuse the same computed control flag; the phase is applied to that flag
+before it is uncomputed. Without enough helper storage, registered controlled
+gates retain the phase on the target. No phase tolerance or resource limit is
+relaxed. `tests/integration/test_synthesis_native_unitary.py` checks coherent
+positive/negative controls and helper cleanup; the Lanchester integration test
+also retains its original operation and depth ceilings.
 
 Commutation analysis retains one representative per structural predicate class
 inside each open block. Its parameter-blind rules depend on opcode, ordered
