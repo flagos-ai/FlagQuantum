@@ -236,7 +236,7 @@ def test_wrong_direction_signature_and_invalid_unused_body_rejected() -> None:
     record = replace(record, functions=(*record.functions, *definitions))
     with pytest.raises(ValueError, match="incompatible adjoint signature"):
         adjoint_component_program(record, {"h": "add"})
-    bad = replace(definitions[0], name="invalid", blocks=())
+    bad = replace(definitions[0], name="invalid", blocks=(), entry="invalid")
     record = replace(record, functions=(*record.functions, bad))
     with pytest.raises(ValueError, match="invalid component graph"):
         adjoint_component_program(record, {"h": "h"})

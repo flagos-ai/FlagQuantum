@@ -79,6 +79,11 @@ def bind_register_program(
     diagnostics = verify_program_record(record)
     if diagnostics:
         raise ValueError(f"invalid register Program: {diagnostics}")
+    missing = tuple(
+        function.name for function in record.functions if not function.blocks
+    )
+    if missing:
+        raise ValueError(f"physical lowering requires component bodies: {missing!r}")
     functions = {function.name: function for function in record.functions}
     if entry not in functions:
         raise ValueError(f"unknown Program entry {entry!r}")

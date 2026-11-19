@@ -164,7 +164,10 @@ def _operation_step(
     # body only, preserving a composite wrapper as a neutral component.
     while operation.opcode == "call":
         name = operation.callee or ""
-        body = functions[name].blocks[0].operations
+        function = functions[name]
+        if not function.blocks:
+            break
+        body = function.blocks[0].operations
         if len(body) != 1:
             break
         operation = body[0]

@@ -1916,3 +1916,15 @@ adjoint and control require existing explicit specialized definitions/adders.
 Source-backed contract scenarios precede Core implementation, followed by
 independent Compiler/Drawer admission and replacement tests. No owner approval
 or Stable Core freeze is declared by this prerequisite.
+
+Prerequisite 1.19 implementation evidence on 2026-11-19 passes all 625
+concentrated declaration, linear binding, graph, physical lowering, adjoint,
+control, resource, tensor-provider and Drawer cases without skips. The same six
+unchanged-source declaration contracts run against the native builder. Explicit
+classical and complex tensor suppliers execute declared leaves, while both
+physical entry points reject missing bodies, including unreachable declarations.
+Strict checking passes for the four Compiler/test files. Black, Ruff, scope,
+architecture, machine contract and 74 IR/API cases pass. The full dependency
+scan retains 706 existing findings, with none in the changed paths. This is a
+prerequisite for Q-0144; the complete tutorial remains unaccepted until its
+remaining source cells and direct dependencies have independent evidence.

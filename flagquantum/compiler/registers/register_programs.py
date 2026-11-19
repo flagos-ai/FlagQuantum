@@ -38,6 +38,11 @@ def lower_register_program(record: ProgramRecord, entry: str = "main") -> Progra
     diagnostics = verify_program_record(record)
     if diagnostics:
         raise ValueError(f"invalid register Program: {diagnostics}")
+    missing = tuple(
+        function.name for function in record.functions if not function.blocks
+    )
+    if missing:
+        raise ValueError(f"physical lowering requires component bodies: {missing!r}")
     if any(
         operation.opcode in {"allocate_register", "free_register"}
         for function in record.functions

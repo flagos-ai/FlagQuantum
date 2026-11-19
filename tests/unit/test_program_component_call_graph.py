@@ -132,7 +132,7 @@ def test_invalid_graph_depth_rejected_by_existing_policy(depth: int) -> None:
 
 def test_invalid_unused_body_rejected_before_resource_callback() -> None:
     record, _ = _hierarchy(1)
-    bad = replace(record.functions[-1], name="unused", blocks=())
+    bad = replace(record.functions[-1], name="unused", blocks=(), entry="invalid")
     record = replace(record, functions=(*record.functions, bad))
     seen: list[str] = []
 
