@@ -8,8 +8,9 @@ ordered basis, so reversed operands retain their control/target meaning.
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Iterator, Sequence
 from dataclasses import replace
+from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
 from ..lowering.basis_translation import translate
@@ -21,6 +22,12 @@ from .two_qubit_synthesis import synthesize_two_qubit
 _MAX_BLOCK_OPERATIONS = 64
 _MAX_ADDITIONAL_OPERATIONS = 32
 _BASIS = frozenset(("rz", "rx", "cz"))
+RejectionReason = Literal[
+    "not_lower_cz_cost",
+    "synthesis_unavailable",
+    "residual_rejected",
+    "instruction_growth_rejected",
+]
 
 
 def _matrix(instruction: Instruction, pair: tuple[int, int]) -> Matrix | None:
@@ -50,25 +57,40 @@ def _product(
     return result
 
 
-def _verified(source: Matrix, candidate: Matrix) -> bool:
+def _equivalence_witness(
+    source: Matrix, candidate: Matrix
+) -> tuple[complex, float] | None:
     row, column = max(
         ((i, j) for i in range(4) for j in range(4)),
         key=lambda index: abs(candidate[index[0]][index[1]]),
     )
     pivot = candidate[row][column]
     if abs(pivot) < 1e-15:
-        return False
+        return None
     phase = source[row][column] / pivot
-    return abs(abs(phase) - 1.0) <= 1e-11 and all(
-        abs(source[i][j] - phase * candidate[i][j]) <= 1e-11
-        for i in range(4)
-        for j in range(4)
+    residual = max(
+        abs(source[i][j] - phase * candidate[i][j]) for i in range(4) for j in range(4)
     )
+    if abs(abs(phase) - 1.0) <= 1e-11 and residual <= 1e-11:
+        return phase, residual
+    return None
+
+
+def _verified(source: Matrix, candidate: Matrix) -> bool:
+    return _equivalence_witness(source, candidate) is not None
 
 
 def _candidate(
-    block: Sequence[Instruction], pair: tuple[int, int]
+    block: Sequence[Instruction],
+    pair: tuple[int, int],
+    *,
+    max_output_operations: int | None = None,
+    on_rejection: Callable[[RejectionReason], None] | None = None,
 ) -> tuple[Instruction, ...] | None:
+    def reject(reason: RejectionReason) -> None:
+        if on_rejection is not None:
+            on_rejection(reason)
+
     baseline: list[Instruction] = []
     for instruction in block:
         if instruction.name in _BASIS:
@@ -81,48 +103,52 @@ def _candidate(
             pulse_opcode="rx",
         )
         if leaves is None or any(item.name not in _BASIS for item in leaves):
+            reject("synthesis_unavailable")
             return None
         baseline.extend(leaves)
     cz_count = sum(item.name == "cz" for item in baseline)
     if cz_count < 2:
+        reject("not_lower_cz_cost")
         return None
     product = _product(block, pair)
     if product is None:
+        reject("synthesis_unavailable")
         return None
     candidate = synthesize_two_qubit(
         product, qubits=pair, entangler="cz", z_rotation="rz", pulse_opcode="rx"
     )
-    if (
-        candidate is None
-        or any(item.name not in _BASIS for item in candidate)
-        or len(candidate) > len(baseline) + _MAX_ADDITIONAL_OPERATIONS
-        or sum(item.name == "cz" for item in candidate) >= cz_count
-    ):
+    if candidate is None or any(item.name not in _BASIS for item in candidate):
+        reject("synthesis_unavailable")
+        return None
+    limit = len(baseline) + _MAX_ADDITIONAL_OPERATIONS
+    if max_output_operations is not None:
+        limit = min(limit, max_output_operations)
+    if len(candidate) > limit:
+        reject("instruction_growth_rejected")
+        return None
+    if sum(item.name == "cz" for item in candidate) >= cz_count:
+        reject("not_lower_cz_cost")
         return None
     # Bounded numerical synthesis is a proposal, not its own acceptance oracle.
     reconstructed = _product(candidate, pair)
     if reconstructed is None or not _verified(product, reconstructed):
+        reject("residual_rejected")
         return None
     return candidate
 
 
-def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
-    """Reduce full-CZ cost of numeric two-qubit blocks, up to global phase.
-
-    This private pass is admitted explicitly through the existing compiler pass
-    extension point. It assumes a full-CZ plus arbitrary-one-qubit target; it must
-    not run in a target-independent or phase-sensitive controlled construction.
-    It preserves final placement and never absorbs a logical SWAP into a layout.
-    Annotated operations, trainable/batched values, custom matrices, nonunitaries
-    and wider operations form boundaries. Routing SWAP evidence is kept intact.
-    """
+def _collect_blocks(
+    program: CircuitIR,
+    readable: Callable[[int, tuple[int, int]], bool],
+    *,
+    barrier: Callable[[Instruction], bool] | None = None,
+) -> Iterator[tuple[tuple[int, int], tuple[int, ...]]]:
+    """Collect exclusive, bounded pair blocks without constructing another IR."""
     open_blocks: dict[tuple[int, int], list[int]] = {}
     wire_blocks: dict[int, tuple[int, int]] = {}
     claimed: set[int] = set()
-    changed = False
 
-    def close(pair: tuple[int, int]) -> None:
-        nonlocal changed
+    def close(pair: tuple[int, int]) -> tuple[int, ...]:
         positions = open_blocks.pop(pair)
         for wire in pair:
             del wire_blocks[wire]
@@ -137,25 +163,19 @@ def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
             and len(leading) + len(positions) < _MAX_BLOCK_OPERATIONS
         ):
             instruction = program.instructions[back]
-            if len(instruction.wires) != 1 or _matrix(instruction, pair) is None:
+            if len(instruction.wires) != 1 or not readable(back, pair):
                 break
             leading.append(back)
             back -= 1
         positions = [*reversed(leading), *positions]
         claimed.update(leading)
-        block = [program.instructions[index] for index in positions]
-        if len(block) < 2:
-            return
-        candidate = _candidate(block, pair)
-        if candidate is None:
-            return
-        replacements[positions[0]] = candidate
-        for index in positions[1:]:
-            replacements[index] = ()
-        changed = True
+        return tuple(positions)
 
-    replacements: dict[int, tuple[Instruction, ...]] = {}
     for index, instruction in enumerate(program.instructions):
+        if barrier is not None and barrier(instruction):
+            for pair in tuple(open_blocks):
+                yield pair, close(pair)
+            continue
         wires = set(instruction.wires)
         touching = (
             {wire_blocks[wire] for wire in wires if wire in wire_blocks}
@@ -163,31 +183,56 @@ def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
             else set(open_blocks)
         )
         joining = next(iter(touching)) if len(touching) == 1 else None
-        readable = (
-            joining is not None
-            and wires <= set(joining)
-            and _matrix(instruction, joining) is not None
+        joins = (
+            joining is not None and wires <= set(joining) and readable(index, joining)
         )
         for pair in touching:
             # A zero-qubit directive is conservatively a global boundary.
-            if not wires or pair != joining or not readable:
-                close(pair)
-        if joining is not None and readable and joining in open_blocks:
+            if not wires or pair != joining or not joins:
+                yield pair, close(pair)
+        if joining is not None and joins and joining in open_blocks:
             open_blocks[joining].append(index)
             claimed.add(index)
             if len(open_blocks[joining]) == _MAX_BLOCK_OPERATIONS:
-                close(joining)
+                yield joining, close(joining)
         elif len(instruction.wires) == 2:
             left, right = instruction.wires
             pair = (min(left, right), max(left, right))
-            if _matrix(instruction, pair) is not None:
+            if readable(index, pair):
                 open_blocks[pair] = [index]
                 claimed.add(index)
                 for wire in pair:
                     wire_blocks[wire] = pair
     for pair in tuple(open_blocks):
-        close(pair)
-    if not changed:
+        yield pair, close(pair)
+
+
+def resynthesize_cz_blocks(program: CircuitIR) -> CircuitIR:
+    """Reduce full-CZ cost of numeric two-qubit blocks, up to global phase.
+
+    This private pass is admitted explicitly through the existing compiler pass
+    extension point. It assumes a full-CZ plus arbitrary-one-qubit target; it must
+    not run in a target-independent or phase-sensitive controlled construction.
+    It preserves final placement and never absorbs a logical SWAP into a layout.
+    Annotated operations, trainable/batched values, custom matrices, nonunitaries
+    and wider operations form boundaries. Routing SWAP evidence is kept intact.
+    """
+    replacements: dict[int, tuple[Instruction, ...]] = {}
+    for pair, positions in _collect_blocks(
+        program,
+        lambda index, pair: _matrix(program.instructions[index], pair) is not None,
+    ):
+        if len(positions) < 2:
+            continue
+        candidate = _candidate(
+            [program.instructions[index] for index in positions], pair
+        )
+        if candidate is None:
+            continue
+        replacements[positions[0]] = candidate
+        for index in positions[1:]:
+            replacements[index] = ()
+    if not replacements:
         return program
     return replace(
         program,
