@@ -45,6 +45,7 @@ from .resource_generalization import (
     PhaseCall,
     PowerCall,
     ResourceCall,
+    RotationCall,
     ZeroCostCall,
     arbitrary_clifford_signature,
 )
@@ -211,7 +212,7 @@ def _signature_width(node: ResourceCall) -> SymbolicInt:
         return node.width + 1
     if isinstance(node, ComponentCost):
         return _component_width(node)
-    if isinstance(node, PhaseCall):
+    if isinstance(node, (PhaseCall, RotationCall)):
         return 1
     if isinstance(node, CliffordCall):
         if node.opcode == "arbitrary":

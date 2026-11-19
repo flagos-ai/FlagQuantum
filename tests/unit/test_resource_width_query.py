@@ -5,7 +5,7 @@ from __future__ import annotations
 import csv
 import hashlib
 from pathlib import Path
-from typing import Any, get_args
+from typing import Any, Literal, get_args
 
 import pytest
 from sympy import Integer, Symbol
@@ -264,7 +264,6 @@ def test_symbolic_power_failed_width_boundary_matches_source() -> None:
 @pytest.mark.parametrize(
     "root",
     [
-        RotationCall("rz", 0.125),
         ZeroCostCall("identity"),
         ZeroCostCall("identity", ("bad",)),
         BookkeepingCall("split", (2, 3)),
@@ -275,10 +274,6 @@ def test_unsupported_binding_fails_and_explicit_provider_remains_available(
 ) -> None:
     with pytest.raises(NotImplementedError, match="logical width"):
         query_resource_logical_width(root)
-    if isinstance(root, RotationCall):
-        with pytest.raises(NotImplementedError, match="logical width"):
-            export_resource_call_graph_dot(root, max_depth=0)
-        assert "7" in export_resource_call_graph_dot(root, logical_width=lambda node: 7)
 
 
 @pytest.mark.parametrize(
@@ -329,3 +324,32 @@ def test_each_of_power_preserves_nested_width_visitation() -> None:
         root: 3,
     }
     assert len(actual) == len(source_cache)
+
+
+@pytest.mark.ftqc_reference
+@pytest.mark.parametrize("opcode", ("rx", "ry", "rz", "xpow", "ypow", "zpow"))
+def test_rotation_atoms_have_source_width_and_graph_annotations(
+    opcode: Literal["rx", "ry", "rz", "xpow", "ypow", "zpow"],
+) -> None:
+
+    from qualtran.bloqs.basic_gates import Rx, Ry, Rz, XPowGate, YPowGate, ZPowGate
+    from qualtran.resource_counting import QubitCount, get_cost_value
+
+    constructors = {
+        "rx": Rx,
+        "ry": Ry,
+        "rz": Rz,
+        "xpow": XPowGate,
+        "ypow": YPowGate,
+        "zpow": ZPowGate,
+    }
+    root = RotationCall(opcode, 0.125)
+    assert (
+        query_resource_logical_width(root)
+        == get_cost_value(constructors[opcode](0.125), QubitCount())
+        == 1
+    )
+    assert "1" in export_resource_call_graph_dot(root, max_depth=0)
+    assert "7" in export_resource_call_graph_dot(root, logical_width=lambda node: 7)
+    assert query_resource_logical_width(PowerCall(root, 3)) == 1
+    assert query_resource_logical_width(OnEachCall(root, 4)) == 4
