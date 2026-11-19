@@ -12,7 +12,7 @@ from ....core.operator_schema import get_operator_schema
 from ....core.parameters import parameter_names_in_value
 from ..._hybrid.model import HybridProgram
 from ..._hybrid.verifier import Diagnostic, HybridVerificationError
-from ...resource_estimation import ResourceEstimate, estimate_resources
+from ...optimization.resource_estimation import ResourceEstimate, estimate_resources
 from ..codegen.arithmetic import ArithmeticCandidate, BoundArithmetic, Schedule
 from ..codegen.boolean import BooleanCandidateError
 from ..codegen.register_expansion import expand_register_calls

@@ -31,7 +31,7 @@ from typing import Any
 
 from ...core.ir import Instruction, ensure_circuit_ir
 from ...errors import CapabilityError
-from ..basis_conversion import convert_basis
+from ..lowering.basis_conversion import convert_basis
 from ..lowering.schedule_legalization import schedule_layers
 
 ESTIMATE_BASIS = "static_instruction_sequence"

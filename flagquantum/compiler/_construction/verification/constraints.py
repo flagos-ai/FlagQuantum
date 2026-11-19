@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from ..._hybrid.verifier import Diagnostic
-from ...resource_estimation import ResourceEstimate
+from ...optimization.resource_estimation import ResourceEstimate
 
 
 @dataclass(frozen=True)
