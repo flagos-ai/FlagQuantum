@@ -14,13 +14,17 @@ from flagquantum.compiler._component_trace.resource_model import (
     estimate_component_resources,
 )
 from flagquantum.compiler.registers.arithmetic.addition import (
-    add_constant_ir,
     negate_ir,
 )
 from flagquantum.compiler.registers.arithmetic.constant_add_resource_model import (
     source_constant_add_cost,
 )
+from flagquantum.compiler.registers.arithmetic.constant_addition_component import (
+    constant_addition_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.registers import RegisterType
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
@@ -32,8 +36,9 @@ class ConstantAddition:
     value: int
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        gates = add_constant_ir((0, 1, 2), self.value, (3, 4, 5), (6, 7), (0, 1))
-        return circuit.compose(CircuitIR(8, gates))
+        program = constant_addition_program(RegisterType("uint", 3), self.value % 8)
+        bound = bind_register_program(program, ((0, 1, 2),), clean=(3, 4, 5, 6, 7))
+        return circuit.compose(bound.circuit)
 
 
 class Negation:
