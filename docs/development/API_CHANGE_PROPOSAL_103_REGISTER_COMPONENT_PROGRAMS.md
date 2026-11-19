@@ -1847,3 +1847,32 @@ physical circuits and the complete Q-0157.03 source replacement inventory remain
 separate work. Concrete specialization accepts built-in zero/one integers and
 booleans. The wider source numerical callback input domain remains Simulation's
 responsibility. G2 remains open.
+
+### Signed-word execution prerequisite 1.18
+
+The complete Q-0945 addressing-bits tutorial requires executable QInt words.
+Its unchanged source declares two signed four-bit ports, splits each into bits,
+applies four TwoBitSwap calls and rejoins the same signed descriptors. The
+existing native metadata and numerical codecs represent this type already, but
+executable_register_width currently refuses it before construction.
+
+Extend the internal finite-word admission to unparameterized quantum `signed`
+with a built-in nonnegative integer quantum width, built-in zero classical width
+and no additional parameters. Preserve zero-width linear ownership. Negative,
+boolean, floating, unresolved symbolic, classical-storage and parameterized
+signed profiles remain refused. This uses existing records, value kinds,
+MSB-first split/join operations and source-compatible type consistency. It adds
+no public exports, fields, opcode, JSON representation or numerical codec.
+Classical interpretation remains two's complement at the Simulation boundary.
+No owner approval or Stable Core freeze is declared by this prerequisite.
+
+Contract-first witnesses in `test_signed_word_contract.py` use the unchanged
+source-backed builder stand-in. The same conformance scenarios must run against
+the existing native adapter after Core implementation, covering exact ordered
+connections, signed output types and clean single consumption. Native acceptance
+must additionally test physical binding and lowering, source signed codecs,
+complete complex spectator amplitudes, valid zero-width ownership and malformed
+profile refusal. Existing gate/opaque/unsigned/field execution remains covered
+by concentrated regression. Pure signed split/join emits zero gates and uses
+zero work. The complete tutorial separately validates four emitted SWAP gates
+and its independent Clifford/width model.
