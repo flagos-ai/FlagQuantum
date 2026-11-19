@@ -14,8 +14,9 @@ from itertools import combinations
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from ...geometry import cartesian_pair, finite_real, same_time
-from ...parameters import Parameter, ParameterExpression, parameter_names_in_value
+from ...parameters import Parameter, ParameterExpression
 from ..diagnostics import LevelDiagnostic, _diagnostic
+from .scalar import scalar_literal_error
 
 if TYPE_CHECKING:
     from .model import Operation, ProgramRecord
@@ -109,7 +110,9 @@ def control_scalar(value: object, field: str) -> ControlScalar:
         for argument in value.args:
             control_scalar(argument, field)
         # Reuse the existing operator/arity validator, not another evaluator.
-        value.bind(dict.fromkeys(parameter_names_in_value(value), 0.0))
+        error = scalar_literal_error(value)
+        if error:
+            raise ValueError(error)
         return value
     return finite_real(value, field)
 

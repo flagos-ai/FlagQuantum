@@ -2,11 +2,26 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Mapping
 from dataclasses import dataclass
+from numbers import Real
 from typing import Any, TypeVar, cast
 
 import torch
+
+_EXPRESSION_ARITIES = {
+    "add": 2,
+    "sub": 2,
+    "mul": 2,
+    "neg": 1,
+    "sin": 1,
+    "cos": 1,
+    "exp": 1,
+    "log": 1,
+    "pow": 2,
+    "div": 2,
+}
 
 _ParameterKey = TypeVar("_ParameterKey", bound="str | Parameter")
 
@@ -54,22 +69,33 @@ class Parameter:
 
 @dataclass(frozen=True)
 class ParameterExpression:
-    """A small symbolic expression over named circuit parameters."""
+    """An immutable scalar expression over named circuit parameters.
+
+    Arithmetic nodes retain their existing binding behavior. Real nonlinear
+    nodes support sin, cos, exp, log, pow and div, with finite scalar domains.
+    """
 
     op: str
     args: tuple[Any, ...]
 
     def bind(self, values: Mapping[_ParameterKey, Any]) -> Any:
         """Resolve a valid expression, rejecting malformed operands with ValueError."""
-        if self.op not in ("add", "sub", "mul", "neg"):
+        if not isinstance(self.op, str) or self.op not in _EXPRESSION_ARITIES:
             raise ValueError(f"Unsupported parameter expression op {self.op!r}.")
-        expected_operands = 1 if self.op == "neg" else 2
+        expected_operands = _EXPRESSION_ARITIES[self.op]
         if len(self.args) != expected_operands:
             raise ValueError(
                 f"Parameter expression {self.op!r} requires {expected_operands} "
                 f"operands; got {len(self.args)}."
             )
+        nonlinear = self.op in {"sin", "cos", "exp", "log", "pow", "div"}
+        if nonlinear:
+            error = _parameter_literal_error(self)
+            if error:
+                raise ValueError(error)
         bound = tuple(bind_parameter_value(arg, values) for arg in self.args)
+        if nonlinear:
+            return _bind_real_expression(self.op, bound)
         if self.op == "add":
             return bound[0] + bound[1]
         if self.op == "sub":
@@ -98,6 +124,81 @@ class ParameterExpression:
 
     def __neg__(self) -> "ParameterExpression":
         return ParameterExpression("neg", (self,))
+
+
+def _require_real_scalar(value: Any) -> None:
+    if isinstance(value, torch.Tensor):
+        if value.ndim != 0 or value.is_complex() or value.dtype == torch.bool:
+            raise ValueError("Nonlinear expression requires real scalar operands")
+        finite = bool(torch.isfinite(value))
+    elif isinstance(value, Real) and not isinstance(value, bool):
+        try:
+            finite = math.isfinite(value)
+        except OverflowError:
+            finite = False
+    else:
+        raise ValueError("Nonlinear expression requires real scalar operands")
+    if not finite:
+        raise ValueError("Nonlinear expression requires finite real values")
+
+
+def _bind_real_expression(operation: str, operands: tuple[Any, ...]) -> Any:
+    for operand in operands:
+        _require_real_scalar(operand)
+    left = operands[0]
+    if operation == "log" and left <= 0:
+        raise ValueError("Logarithm requires a positive real operand")
+    if operation == "div" and operands[1] == 0:
+        raise ValueError("Division requires a nonzero denominator")
+    try:
+        if operation == "div":
+            result = left / operands[1]
+        elif operation == "pow":
+            right = operands[1]
+            result = (
+                torch.pow(left, right)
+                if isinstance(left, torch.Tensor) or isinstance(right, torch.Tensor)
+                else left**right
+            )
+        else:
+            owner = torch if isinstance(left, torch.Tensor) else math
+            result = getattr(owner, operation)(left)
+    except (OverflowError, ZeroDivisionError, RuntimeError) as error:
+        raise ValueError(
+            "Nonlinear expression is outside its finite real domain"
+        ) from error
+    _require_real_scalar(result)
+    return result
+
+
+def _parameter_literal_error(value: object) -> str | None:
+    """Validate a scalar expression structurally, without assigning dummy values."""
+    pending = [(value, frozenset[int]())]
+    while pending:
+        item, ancestors = pending.pop()
+        if isinstance(item, Parameter):
+            if not isinstance(item.name, str) or not item.name:
+                return "scalar parameter requires a nonempty name"
+        elif isinstance(item, ParameterExpression):
+            if id(item) in ancestors:
+                return "scalar expression must be acyclic"
+            if not isinstance(item.op, str) or item.op not in _EXPRESSION_ARITIES:
+                return "scalar expression uses an unsupported operation"
+            if (
+                not isinstance(item.args, tuple)
+                or len(item.args) != _EXPRESSION_ARITIES[item.op]
+            ):
+                return "scalar expression has invalid immutable operands"
+            pending.extend((arg, ancestors | {id(item)}) for arg in item.args)
+        elif isinstance(item, (int, float)) and type(item) in (int, float):
+            try:
+                if not math.isfinite(item):
+                    return "scalar numeric leaves must be finite"
+            except OverflowError:
+                return "scalar numeric leaves must be finite"
+        else:
+            return "scalar literal requires a number or an owned parameter expression"
+    return None
 
 
 def is_parameterized_value(value: Any) -> bool:

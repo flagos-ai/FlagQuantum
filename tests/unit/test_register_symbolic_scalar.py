@@ -15,14 +15,28 @@ from flagquantum.core.ir.program.register_bindings import RegisterBinding
 from flagquantum.core.ir.program.register_types import quantum_bit_type
 from flagquantum.core.ir.program.registers import Register
 from flagquantum.core.ir.program.signatures import Signature
-from flagquantum.core.parameters import Parameter
+from flagquantum.core.parameters import Parameter, ParameterExpression
 
 pytestmark = pytest.mark.unit
 
 
-def test_nested_symbolic_calls_keep_clean_work_phase_and_gradient() -> None:
+@pytest.mark.parametrize(
+    "operation", ["arithmetic", "sin", "cos", "exp", "log", "pow", "div"]
+)
+def test_nested_symbolic_calls_keep_clean_work_phase_and_gradient(
+    operation: str,
+) -> None:
     theta = Parameter("theta")
-    angle = 2 * theta - 0.125
+    expressions = {
+        "arithmetic": 2 * theta - 0.125,
+        **{
+            name: ParameterExpression(name, (theta,))
+            for name in ("sin", "cos", "exp", "log")
+        },
+        "pow": ParameterExpression("pow", (theta, 0.5)),
+        "div": ParameterExpression("div", (1, theta)),
+    }
+    angle = expressions[operation]
     registers = (Register("q", quantum_bit_type()),)
     leaf = bit_gate_function(
         "rotate", registers, CircuitIR(1, (Instruction("rz", (0,), {"theta": angle}),))
@@ -54,7 +68,16 @@ def test_nested_symbolic_calls_keep_clean_work_phase_and_gradient() -> None:
         circuit.state()
     value = torch.tensor(0.37, dtype=torch.float64, requires_grad=True)
     actual = circuit.bind_parameters({"theta": value}).state().flatten()
-    physical_angle = 2 * value - 0.125
+    expected_angles = {
+        "arithmetic": 2 * value - 0.125,
+        "sin": torch.sin(value),
+        "cos": torch.cos(value),
+        "exp": torch.exp(value),
+        "log": torch.log(value),
+        "pow": value**0.5,
+        "div": 1 / value,
+    }
+    physical_angle = expected_angles[operation]
     expected = (
         torch.stack(
             (torch.exp(-1j * physical_angle), value * 0j, value * 0j + 1j, value * 0j)
