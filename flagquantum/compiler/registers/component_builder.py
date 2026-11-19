@@ -31,6 +31,7 @@ from .component_bindings import (
     process_register_bindings,
 )
 from .component_rebindings import join_word_function, split_word_function
+from .component_signature import infer_output_registers
 from .layout.component_workspace import allocate_word_function, free_word_function
 
 BindingCollection = RegisterBinding | NDArray[np.object_]
@@ -51,7 +52,12 @@ class ComponentProgramBuilder:
         signature: Signature,
         functions: Iterable[FunctionRecord] = (),
         name: str = "main",
+        *,
+        allow_register_addition: bool = False,
     ) -> None:
+        if not isinstance(allow_register_addition, bool):
+            raise ValueError("allow_register_addition must be a boolean")
+        self._allow_register_addition = allow_register_addition
         self._registers = tuple(signature)
         self._name = name
         self._functions: dict[str, FunctionRecord] = {}
@@ -69,6 +75,38 @@ class ComponentProgramBuilder:
             for value in self.inputs.values()
             for binding in np.asarray(value).flat
         )
+
+    def add_register(
+        self, register: Register | str, dtype: RegisterType | int | None = None
+    ) -> BindingCollection | None:
+        """Append an ad hoc port and return its input handles, if any.
+
+        A supplied Register retains its metadata and cannot include a dtype
+        argument. String names require a concrete width or RegisterType.
+        Duplicate names remain visible to final Signature validation.
+        """
+        if not self._allow_register_addition:
+            raise ValueError("This builder has a fixed register signature")
+        if isinstance(register, Register):
+            if dtype is not None:
+                raise ValueError("dtype must not accompany a Register")
+        elif isinstance(register, str):
+            if isinstance(dtype, int):
+                dtype = RegisterType("bit" if dtype == 1 else "opaque", dtype)
+            if not isinstance(dtype, RegisterType):
+                raise ValueError("A register name requires a width or RegisterType")
+            register = Register(register, dtype)
+        else:
+            raise ValueError("Expected a Register or string name")
+        declaration = FunctionRecord(self._name, (), registers=(register,))
+        register_port_types(declaration, RegisterSide.LEFT)
+        self._registers = (*self._registers, register)
+        if not register.side & RegisterSide.LEFT:
+            return None
+        value = self._outputs((register,))[register.name]
+        self.inputs[register.name] = value
+        self._arguments += tuple(binding.value for binding in np.asarray(value).flat)
+        return value
 
     def define(self, function: FunctionRecord) -> None:
         """Add one definition before its first call; reject name replacement.
@@ -244,6 +282,10 @@ class ComponentProgramBuilder:
         Failed returns retain their consumption prefix. A complete signature
         cannot hide invalid supplied bodies, unfinished calls or unused handles.
         """
+
+        if self._allow_register_addition:
+            for register in infer_output_registers(self._registers, bindings):
+                self._registers = (*self._registers, register)
 
         def consume(
             binding: RegisterBinding, register: Register, index: tuple[int, ...]
