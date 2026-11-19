@@ -12,10 +12,17 @@ import torch
 
 import flagquantum as fq
 from flagquantum.compiler.registers.comparison.controlled_comparison import (
-    controlled_greater_ir,
     controlled_greater_requirements,
 )
+from flagquantum.compiler.registers.comparison.controlled_component import (
+    controlled_greater_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.register_types import (
+    signed_register_type,
+    unsigned_register_type,
+)
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
@@ -28,18 +35,13 @@ class ControlledGreater:
     control_value: int
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        q, c = controlled_greater_requirements(2)
-        gates = controlled_greater_ir(
-            0,
-            (1, 2),
-            (3, 4),
-            5,
-            tuple(range(6, 6 + q)),
-            tuple(range(c)),
-            signed=self.signed,
-            control_value=self.control_value,
+        dtype = signed_register_type(2) if self.signed else unsigned_register_type(2)
+        bound = bind_register_program(
+            controlled_greater_program(dtype, control_value=self.control_value),
+            ((0,), (1, 2), (3, 4), (5,)),
+            clean=tuple(range(6, 13)),
         )
-        return circuit.compose(CircuitIR(circuit.n_qubits, gates))
+        return circuit.compose(CircuitIR(circuit.n_qubits, bound.circuit.instructions))
 
 
 def main() -> None:
@@ -63,9 +65,8 @@ def main() -> None:
             expected = torch.zeros_like(state)
             expected[mapped << q] = amps
             operation = ControlledGreater(signed, cv)
-            circuit = DynamicCircuit(
-                n_qubits, inputs=state, dtype=torch.complex128
-            ).append(operation)
+            circuit = DynamicCircuit(n_qubits, inputs=state, dtype=torch.complex128)
+            circuit.append(operation)
             result = run_dynamic(circuit, shots=32, seed=41, strategy="trajectory")
             torch.testing.assert_close(
                 result.final_states.reshape(32, -1),
@@ -74,9 +75,8 @@ def main() -> None:
                 atol=1e-12,
             )
             counts = Counter(g.name for g in circuit.to_ir().instructions)
-            restored = run_dynamic(
-                circuit.append(operation), shots=8, seed=41, strategy="trajectory"
-            )
+            circuit.append(operation)
+            restored = run_dynamic(circuit, shots=8, seed=41, strategy="trajectory")
             torch.testing.assert_close(
                 restored.final_states.reshape(8, -1),
                 state.expand(8, -1),
