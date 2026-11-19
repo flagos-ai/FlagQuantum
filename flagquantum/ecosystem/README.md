@@ -95,3 +95,18 @@ matrix leaves still require a typed definition because the Program vocabulary
 does not carry matrix payloads. Run `tests/unit/test_cirq_register_leaf_closure.py`
 with the frozen reference environment to check wrapper, lifetime and append
 round trips.
+
+### Real parameter expressions and scalar phases
+
+Cirq and Qiskit conversion translate the approved sin/cos/exp/log/pow/div
+expressions directly into Core ParameterExpression values. SDK symbolic objects
+stop at this boundary. Circuit binding validates real domains and preserves
+Torch scalar gradients. Cirq symbol discovery preserves assumptions while
+rejecting distinct symbols with the same native name across supported gates.
+
+Cirq exp(i * real_angle) and Qiskit symbolic global phase use Compiler's existing
+scalar phase emitter. Static Cirq requires a declared wire; register conversion
+can allocate its clean scalar carrier. One- and two-control binary patterns
+preserve exact phase and operand order. Generic eigen-gate global shifts remain
+an explicit unsupported boundary. Run tests/unit/test_nonlinear_sdk_parameters.py
+and tests/unit/test_symbolic_global_phase.py for the shortest executable examples.

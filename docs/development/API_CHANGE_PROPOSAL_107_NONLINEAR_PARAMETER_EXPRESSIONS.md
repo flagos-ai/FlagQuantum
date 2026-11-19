@@ -117,10 +117,9 @@ reproduces the same mismatch between the old allowed Operation tail and the
 already present callee/register/workspace/matrix/kraus fields. This evidence
 is stored in g2-nonlinear-core-baseline.log. It is not counted as passing.
 
-Ecosystem nonlinear import/export and symbolic global phase remain pending.
-Full Proposal 107 and Q-0156 acceptance await those consumers and the complete
-source audit. The Core batch does not imply that SDK conversion accepts the new
-expressions yet.
+The Core batch was followed by the adapter delivery recorded below. Q-0156
+acceptance still requires the complete source audit and generic eigen-gate
+global-shift boundary.
 
 ## Adapter delivery boundary
 
@@ -138,3 +137,43 @@ Static Cirq phase export/import admits the existing phase opcode. Symbolic
 Qiskit global phase becomes the same physical primitive sequence on wire zero,
 with no duplicate phase metadata. Numeric Qiskit phase metadata retains its
 previous representation. No SDK objects enter Core or Compiler.
+
+## Nonlinear SDK and scalar-phase evidence — 2026-11-20
+
+Cirq and Qiskit import/export now accept the six approved operators through the
+existing parameter representation. Commit 6a4f21155 implements expressions;
+Compiler b58be7cb4 and Ecosystem a14c013f5 implement scalar phase and consumers.
+The exact old expression fixture continues to pass. Assumption-bearing SymPy
+symbols retain their original identity during translation. Distinct same-name
+symbols in one expression or across supported gates remain rejected.
+
+The concentrated suite passes 398 cases. Two unchanged optional cases skip
+because PennyLane and Qiskit Aer are absent in this environment. Cirq 1.6.1
+passes its separate 130-case lane; Cirq 1.7.0 is used in the concentrated lane.
+Qiskit 2.5.0 passes its separate 94-case lane; 2.0.0 is used in the concentrated
+lane. Local native, register-export and Rydberg training integration passes 213
+cases. Seven files pass strict typing, Black and Ruff. Architecture, IR and
+scope checks pass. Dependency inspection records 687 whole-repository findings
+and zero changed-path findings. The test harness registers the unchanged source
+notebook marker before importing source test helpers; reference files are not
+modified.
+
+Whole complex amplitudes, serialized export/reimport, tensor gradients, both
+measurement polarities and every two-outcome branch are checked. One- and
+two-control scalar phases cover every binary control pattern with an entangled
+spectator. Source composite nonlinear Rz transport is checked with both plain
+and assumption-bearing symbols. Zero-port scalar programs allocate and release
+one clean carrier and return it exactly to zero. No global phase is removed
+from comparisons.
+
+| Workflow | Emitted primitives | Independent source model |
+| --- | --- | --- |
+| Entangled nonlinear rotation | H, CX, Rz; no extra work | No independent model supplied by this SDK fixture |
+| Scalar phase | X, phase, X, phase; one existing carrier or one clean allocated carrier | Frozen GlobalPhase QEC cost empty, logical qubit count zero |
+| Binary controlled scalar | phase or cphase, plus X pairs for zero controls | Primitive count is kept separate from higher-level source models |
+| Conditional scalar with record reset | Four condition-bearing phase primitives, existing measurement and reset | No independent model supplied by this feedback fixture |
+
+Q-0156 stays open for generic symbolic global shifts on eigen-gates and the
+final full-definition audit. The diagnostic source probe is retained; no
+unchecked parent is marked accepted. The earlier pre-existing Rydberg legacy
+field assertion remains recorded separately from passing integration.

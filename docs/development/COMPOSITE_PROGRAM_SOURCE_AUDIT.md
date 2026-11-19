@@ -368,3 +368,21 @@ The source-intake receipt is `g2-nonlinear-parameter-intake.json`. This audit
 changes documentation only and reuses the previous 4099 concentrated and 96
 integration results for unchanged production. No new native acceptance or
 resource count is inferred from the intake.
+
+## Approved nonlinear and scalar-phase dependency delivery — 2026-11-20
+
+Proposal 107 received explicit user approval. Its Core implementation and
+Ecosystem consumers are delivered. See the proposal's evidence table for
+primitive/model separation and exact verification results. The 64-definition
+inventory remains authoritative. The nonlinear Rz gap in the historical intake
+is resolved for all six approved operations, including original SymPy symbol
+identity with assumptions. Scalar phase transport now uses the existing
+four-primitive emission in static, register and measured-feedback paths.
+
+The final parent still has one concrete SDK boundary. Generic symbolic
+EigenGate.global_shift is rejected or cannot be decomposed through the current
+register importer. The frozen-source eigen-gate decomposition must be checked
+and connected before complete Q-0156 acceptance. Earlier pending-approval text
+above records historical intake and is superseded by the approved proposal.
+No earlier source defect, optional test skip or baseline failure is hidden by
+this dependency delivery.

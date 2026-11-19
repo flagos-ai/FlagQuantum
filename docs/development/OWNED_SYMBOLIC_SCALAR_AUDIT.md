@@ -87,3 +87,13 @@ QEC cases. Neither run establishes a passing whole-repository result.
 
 The implementation commits are Core 244e0f780, Compiler 27154329a and Ecosystem
 ad34f3b8c, preceded by contract f88a890fa.
+
+## Proposal 107 follow-up — 2026-11-20
+
+The approved vocabulary now also includes sin/cos/exp/log/pow/div. Scalar phase
+uses the same physical four-primitive emission, including symbolic register
+carriers and conditional measurement branches. Both SDK expression lanes and
+the original assumption-bearing symbol identity are verified. See Proposal 107
+for the current acceptance evidence. Generic eigen-gate symbolic global shifts
+remain the explicit Q-0156 boundary; earlier nonlinear-refusal paragraphs are
+historical evidence from before the approved extension.

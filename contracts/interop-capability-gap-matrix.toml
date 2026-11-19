@@ -44,7 +44,7 @@ reason = "Mapped parameterized gates preserve their named scalar parameters."
 name = "symbolic_parameters"
 status = "partial"
 evidence = ["semantics.parameter_identity", "unsupported.qiskit_features"]
-reason = "Named add, multiply, and negation expressions are supported; other expression operations fail closed."
+reason = "Named arithmetic and approved real sin/cos/exp/log/pow/div expressions round-trip; other functions fail closed."
 
 [[frameworks.capabilities]]
 name = "measurements"
@@ -110,7 +110,7 @@ reason = "Finite bound real gate parameters are converted."
 name = "symbolic_parameters"
 status = "partial"
 evidence = ["symbolic_parameter_contract", "unsupported.issue_codes"]
-reason = "Named add, multiply, and negation expressions round-trip for rx, ry, and rz; other symbolic forms fail closed."
+reason = "Named arithmetic and approved real sin/cos/exp/log/pow/div expressions round-trip; symbolic scalar phase uses existing physical primitives. Generic eigen-gate global shifts remain open."
 
 [[frameworks.capabilities]]
 name = "measurements"
