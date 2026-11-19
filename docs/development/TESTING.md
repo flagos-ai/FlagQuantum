@@ -580,7 +580,9 @@ The checked-in `ci.yml` defines twenty-seven jobs:
 - `cpu-runtime`: the Python 3.12 integration tier and launched CPU-distributed
   proofs, running in parallel with the complete unit suite. The full integration
   selection is partitioned deterministically across eight jobs; the two launcher
-  proofs run only in shard zero. Each job retains the 60-minute limit;
+  proofs run only in shard zero. At most four runtime partitions are admitted
+  concurrently to reduce dispatch pressure on the shared A800 pool; this does not
+  reserve runners or guarantee availability. Each job retains the 60-minute limit;
 - `cpu-core-3-12`: the required aggregation gate, reported to branch protection
   as `cpu-core (3.12)`, that succeeds only when both Python 3.12 suites pass;
 - `jax-optional`: the JAX extra and its focused hybrid/distributed regression;
