@@ -11,8 +11,9 @@ from flagquantum.core.ir.program import (
     FunctionRecord,
     Operation,
     ProgramRecord,
+    ValueRef,
+    verify_program_record,
 )
-from flagquantum.core.ir.program import ValueRef, verify_program_record
 from flagquantum.core.ir.program.lowering import circuit_to_program, program_to_circuit
 from flagquantum.core.ir.program.matrix import matrix_error
 
@@ -64,6 +65,19 @@ def test_matrix_lowering_copies_entries_and_attests_full_phase() -> None:
 )
 def test_malformed_matrix_has_typed_diagnostic(matrix: object) -> None:
     assert matrix_error(matrix, 1) is not None
+
+
+@pytest.mark.parametrize("matrix", [None, ((1 + 0j, 1 + 0j), (0j, 1 + 0j))])
+def test_verifier_rejects_missing_or_nonunitary_payload(
+    matrix: tuple[tuple[complex, ...], ...] | None,
+) -> None:
+    q = ValueRef("entry", 0, "qubit")
+    r = ValueRef("entry", 1, "qubit")
+    op = Operation("any", (q,), (r,), matrix=matrix)
+    record = ProgramRecord(
+        (FunctionRecord("main", (BlockRecord("entry", (q,), operations=(op,)),)),)
+    )
+    assert "program.matrix_invalid" in {d.code for d in verify_program_record(record)}
 
 
 def test_payload_on_other_opcode_and_zero_arity_are_rejected() -> None:
