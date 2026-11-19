@@ -21,21 +21,30 @@ from flagquantum.compiler.registers.modular.bounded_modular_addition import (
     bounded_modular_add_requirements,
 )
 from flagquantum.compiler.registers.modular.controlled_modular_addition import (
-    controlled_modular_add_ir,
     controlled_modular_requirements,
 )
+from flagquantum.compiler.registers.modular.controlled_modular_addition_component import (
+    controlled_modular_addition_program,
+)
 from flagquantum.compiler.registers.modular.modular_addition import (
-    modular_add_ir,
     modular_add_requirements,
 )
+from flagquantum.compiler.registers.modular.modular_addition_component import (
+    modular_addition_program,
+)
 from flagquantum.compiler.registers.modular.modular_constant_addition import (
-    controlled_modular_add_constant_ir,
     modular_constant_requirements,
 )
+from flagquantum.compiler.registers.modular.modular_constant_component import (
+    controlled_modular_constant_program,
+)
 from flagquantum.compiler.registers.modular.modular_scaled_addition import (
-    controlled_modular_scaled_add_ir,
     modular_scaled_requirements,
 )
+from flagquantum.compiler.registers.modular.scaled_modular_addition_component import (
+    scaled_modular_addition_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.core.ir.program.register_types import (
     montgomery_register_type,
@@ -130,24 +139,36 @@ class ModularAdditionExample:
             raise ValueError("Modular addition requires its data and clean work wires")
         workspace = tuple(range(end, end + work))
         classical = tuple(range(slots))
+        if p == 1 << n and self.kind != "ModAddK":
+            raise ValueError("Modulus must be a positive integer fitting the operand")
         if self.kind == "ModAdd":
-            gates = modular_add_ir(x, y, p, workspace, classical)
+            graph = modular_addition_program(n, p)
         elif self.kind == "CModAdd":
-            gates = controlled_modular_add_ir(0, x, y, p, workspace, classical)
+            graph = controlled_modular_addition_program(unsigned_register_type(n), p)
         else:
             k = self.constant
             if type(k) is not int:
                 raise ValueError("Append requires a concrete modular constant")
             if self.kind == "ModAddK":
                 gates = bounded_modular_add_ir(x, k, p, workspace, classical)
-            elif self.kind == "CModAddK":
-                gates = controlled_modular_add_constant_ir(
-                    0, x, k, p, workspace, classical
+                return circuit.compose(
+                    CircuitIR(
+                        circuit.n_qubits, gates, metadata={"batch_size": circuit.bsz}
+                    )
                 )
+            if self.kind == "CModAddK":
+                if not 0 <= k <= p:
+                    raise ValueError(
+                        "Modular constant must be a concrete integer in [0,modulus]"
+                    )
+                graph = controlled_modular_constant_program(n, p, k)
             else:
-                gates = controlled_modular_scaled_add_ir(
-                    0, x, y, k, p, workspace, classical
-                )
+                graph = scaled_modular_addition_program(n, p, k)
+        inputs: tuple[tuple[int, ...], ...] = ((0,),) if control else ()
+        inputs += (x, y) if pair else (x,)
+        gates = bind_register_program(
+            graph, inputs, clean=workspace
+        ).circuit.instructions
         return circuit.compose(
             CircuitIR(circuit.n_qubits, gates, metadata={"batch_size": circuit.bsz})
         )
