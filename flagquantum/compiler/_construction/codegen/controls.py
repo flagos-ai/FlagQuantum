@@ -4,6 +4,7 @@ from ....core._composition import controlled_instruction, inverted_instruction
 from ....core.controlled import _clean_mcx_instructions
 from ....core.ir import Instruction
 from ..._hybrid.model import Operation
+from ..mcx import one_clean_mcx
 from ..semantics._phase_polynomial import MAX_PHASE_DEGREE
 from ..verification.profile import _fail
 
@@ -38,6 +39,8 @@ def _array_controlled_x(
             )
         if count <= MAX_PHASE_DEGREE:
             return controlled_instruction(Instruction("x", (target,)), controls), 0
+        if workspace_start < n_qubits:
+            return one_clean_mcx(controls, target, workspace_start), 1
         _fail("lowering.workspace", "array control exceeds clean workspace", op)
     flags = tuple(range(workspace_start, workspace_start + flags_width))
     scratch_wires = tuple(

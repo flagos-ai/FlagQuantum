@@ -1,0 +1,73 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/quantum_counting/quantum_counting.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "693c922187f720855c39288642a6081ee2937b985f0ab4e37e65ce119ec17dd5",
+  "git_blob_sha1": "6152a039953599b70544f88e25ed2e19585a0bc5",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "sha256": "266b862ab4b9e6bb892ac0aaa79026b3055559c7d34ff12c5ad5fe81dc5200a8"
+    },
+    {
+      "index": 8,
+      "sha256": "ad6c24ba8af6175a89acfb18e2e3c4884f7c5038d3d3cffca57fe446578c3ddc"
+    },
+    {
+      "index": 11,
+      "sha256": "fb55e5b57fbb037569a0d6312468fdbc043cacabbec91fe02e98968c56c1b63e"
+    },
+    {
+      "index": 13,
+      "sha256": "65f5a2ea29393ee5647e534fd2551771303ba6e658b15466e80da669cf19378b"
+    },
+    {
+      "index": 15,
+      "sha256": "b91540a9e870c68452431b1b6b9cc530b1e14ede53df2f031f2c09ce4e5ef237"
+    },
+    {
+      "index": 17,
+      "sha256": "7f6862c2a427744faecf862c58be6613ffbae44bc0cfef823a785a1af43f117e"
+    },
+    {
+      "index": 19,
+      "sha256": "78d73c2fcaed25a4993cddd166275d4ecd84fb1b8e2d8df02a3ccd8e70f670d2"
+    },
+    {
+      "index": 21,
+      "sha256": "c93c077cedeab5e133151818af4aa75b468aea9ab802af0e7407df37177d1497"
+    },
+    {
+      "index": 25,
+      "sha256": "7f0ae3dd0e62e12a84dc8f4ce5632eba9b8c7dbbb1b8a5100ce57611364e6dd8"
+    },
+    {
+      "index": 28,
+      "sha256": "c1167ff28493ba11ac23c3ebc21adcbb8cad475be4e781866a7062599b3f312b"
+    },
+    {
+      "index": 30,
+      "sha256": "405ce5300269080d8d1a172093c4d86706434d519f1db463e2d8cb3b6bcdf094"
+    },
+    {
+      "index": 32,
+      "sha256": "d241a6c7c56bb4e387ab7be41a257a72984bd55a69468ee28777f21ad206f9e1"
+    },
+    {
+      "index": 34,
+      "sha256": "3d0cc96fc7a0a9eff540490b5806d748d70503b9dfec89d1ded3bb687c39eb76"
+    },
+    {
+      "index": 35,
+      "sha256": "9600d4b167aabc6098cbaf8ed950195856413469da68cb567c4b30a8091c73cf"
+    },
+    {
+      "index": 37,
+      "sha256": "5efe0785cb77d540386c7dbfe3bf5dfbe80acc0bf1eaa848d9ac8731770c1083"
+    }
+  ],
+  "scope": "Complete native counting Notebook: five-bit fractional QPE,100-point resolution calculation,2048 local samples and histogram; adaptive count-only bounded Hoeffding estimation with source epsilon1/32 and alpha0.01 plus explicit stronger epsilon1/(16*15) run for stricter final source point tolerance. Fresh seed123 local binomial counts,confidence intervals and iteration statistics. Independent fullstates for every visited Grover power and QPE; dropped data remains retained,zero workspace. No production API,hardware,private IQAE equivalence or speedup claim.",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification_and_estimation.quantum_counting.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/amplitude_amplification_and_estimation/quantum_counting/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_counting_notebook.py",
+  "native_semantic_adaptations": "Complete native counting Notebook: five-bit fractional QPE,100-point resolution calculation,2048 local samples and histogram; adaptive count-only bounded Hoeffding estimation with source epsilon1/32 and alpha0.01 plus explicit stronger epsilon1/(16*15) run for stricter final source point tolerance. Fresh seed123 local binomial counts,confidence intervals and iteration statistics. Independent fullstates for every visited Grover power and QPE; dropped data remains retained,zero workspace. No production API,hardware,private IQAE equivalence or speedup claim."
+}

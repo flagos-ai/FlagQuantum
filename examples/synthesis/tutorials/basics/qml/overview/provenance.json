@@ -1,0 +1,93 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/qml_with_classiq_guide/qml_with_classiq_guide.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "3bf05b7e1ac9ef8d7b8ac14f0ce42dedc3e8a181bf60d0d674a290f0fd2609f5",
+  "git_blob_sha1": "4df463d78eda91ed04a0642134146fc896e7aefd",
+  "reviewed_code_cells": [
+    {
+      "index": 8,
+      "sha256": "20b8e78a176626e0983c29032a9aa5355d4072097a5ceeba013d72eae9bd6e7a"
+    },
+    {
+      "index": 9,
+      "sha256": "18771e5fc17f596ce70cca8b69ab20e17f665941b52327ddff6d9a11c2d87879"
+    },
+    {
+      "index": 12,
+      "sha256": "4c715d48cbc2788c8df1640db4944de85c34844a77b5a1e2f91728d714d1c4d7"
+    },
+    {
+      "index": 14,
+      "sha256": "5593ad726f74a8205e7af2d3211c33d78b4119483b1397f9cd296c3329b65d4c"
+    },
+    {
+      "index": 17,
+      "sha256": "b7f841a7c6fcba5b5d78bd3d1e510c3c1303fb7a162817d73f41262038724b41"
+    },
+    {
+      "index": 19,
+      "sha256": "86d00e056cc58c3728dd544a7afdf26456762e92b2ae983d2a73ffbba2e73c31"
+    },
+    {
+      "index": 35,
+      "sha256": "259775ea18dea1dc2e8e9b0831d3eada1133726edfb82a1df070d24e9c99d035"
+    },
+    {
+      "index": 40,
+      "sha256": "08828b2996f7d2a66ad98d56a5ee20b30d2b2a9cd08709e35d5d83283e237541"
+    },
+    {
+      "index": 42,
+      "sha256": "b81808ceeae801a504e6bfc87811ec71e46ed2768dab1f7a6aeb25d169415751"
+    },
+    {
+      "index": 44,
+      "sha256": "e28c3cc104d3d2ddf92f3a176d5291ac4bbab2d8250ea3b396c083740cc66f38"
+    },
+    {
+      "index": 46,
+      "sha256": "10b628baa6fe1dc780bfd884ca5b5b157d5c13ab995f1677c08881e86e4beac7"
+    },
+    {
+      "index": 50,
+      "sha256": "1770896b6defe2a4f4725d937d148cbb561f6953f307e95cd4729698e6176c70"
+    },
+    {
+      "index": 54,
+      "sha256": "9f40ad8e9e5599355dc4324a6a9bae8ff96e7bd3f5a0f65ff2a5c922ed47024a"
+    },
+    {
+      "index": 58,
+      "sha256": "1c785c7b9138d1028252bba876b592f31d0b2dc648539e617b2de4fe11efb488"
+    },
+    {
+      "index": 62,
+      "sha256": "4a5c3db6b6c1903bf3b6d009e0e891b0233024ea133c02d0ed345ce8d57e860c"
+    },
+    {
+      "index": 65,
+      "sha256": "d1c704302562e9f449fddeae039d2f7efb2a25cc4cf3e336af4f09be04d4e254"
+    },
+    {
+      "index": 67,
+      "sha256": "bb705d0bf406165df725f8d87071d433c8bf5516a9f785179c9c2d0ce84fb6c7"
+    },
+    {
+      "index": 68,
+      "sha256": "b67687c55e8059fd502ca55623457f4a116b4095b67f086ae79bb42690e1b494"
+    },
+    {
+      "index": 70,
+      "sha256": "2b3552f3b53d068c54b6ec711a2e543cbfc12ba0ff181712c8febb2092856dce"
+    },
+    {
+      "index": 71,
+      "sha256": "8fb087b59419f72aa82257d7f3ad4eb0e13b72553718a04adddf6816566b3f49"
+    }
+  ],
+  "scope": "Both native QML guide sections:three-angle single-bit VQE with zero initialization and200iterationlimit;five full-batch NOT updates with initialweight3,MAE andSGDlr1.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.qml.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/qml/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qml_guide_notebook.py",
+  "native_semantic_adaptations": "Exact local complex128 quantum execution replaces remote sampled objectives. Reuse existing native Nelder-Mead for VQE;retain zero initial angles and200maximumiterations,report convergence. NOT uses explicit quantum parameter-shift gradients assigned to PyTorch SGD parameter;no claim of differentiable static float synthesis or generic QLayer. Source printed NOT data interpreted as float64 pi/zero with labels1/0;initialweight3,lr1,MAE,5epochs,accuracyatol1e-2 retained. Native costs/trajectories differ from sampled source;no identical optimizerorremote resultclaim."
+}

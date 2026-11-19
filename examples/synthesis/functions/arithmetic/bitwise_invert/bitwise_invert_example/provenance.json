@@ -17,5 +17,6 @@
   "scope": "Complete local computational Notebook workflow: native finite-width inversion, synthesis, execution and 1000 seeded named samples; local sampling replaces the cloud call and does not claim hardware execution.",
   "native_semantic_adaptations": "Existing FlagQuantum qfunc with finite-width complement; local execution and seeded host sampling from executed named probabilities replace the cloud sampler.",
   "notebook_path": "functions/function_usage_examples/arithmetic/bitwise_invert/bitwise_invert_example.ipynb",
-  "original_sha256": "7ec7ce1ccc51f567147112a7b7e6f5490a4e13fb6cd2f97a44c876895cf3d139"
+  "original_sha256": "7ec7ce1ccc51f567147112a7b7e6f5490a4e13fb6cd2f97a44c876895cf3d139",
+  "native_notebook": "examples/synthesis/functions/arithmetic/bitwise_invert/bitwise_invert_example/walkthrough.ipynb"
 }

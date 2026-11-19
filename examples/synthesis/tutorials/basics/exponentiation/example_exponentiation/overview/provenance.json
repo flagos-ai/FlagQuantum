@@ -1,0 +1,32 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/exponentiation/example_exponentiation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "ba5a71a10177b7834d013739962d7fb78a0ad39363d1f01139788c484e57bb6d",
+  "git_blob_sha1": "6b8c297fc7e060a829837c611f175c543b9185a1",
+  "scope": "All three source stages, original water geometry and STO-3G basis, one frozen spatial orbital, eight active electrons, all 551 freshly generated Pauli terms on twelve qubits, and one first-order step at time one.",
+  "native_semantic_adaptations": "Use the repository native RHF path with a largest-atomic-orbital coefficient sign convention and spin-blocked Jordan-Wigner mapping. Use the pinned source Pauli supports only for product order and source coefficient comparison. Every synthesized coefficient comes from the new RHF run. Verify the native absolute state against Circuit and separately validate CX/U3 conversion up to global phase. Use the complete converted circuit for the displayed gate counts.",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.exponentiation.example_exponentiation.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/exponentiation/example_exponentiation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_water_exponentiation_notebook.py",
+  "ordered_data": {
+    "path": "hamiltonian.json",
+    "sha256": "32f4f830cc5a04656c0c1781b5043becaf0d94a883e013603465d7b7f9eac77f"
+  },
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "sha256": "b0b645ed774a69a8f2ce9aa98133dbcf8ae08ec9ee9709b0b235ab511c11768e"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "92dc6e9941c0dd3e66701404fc3700a82c20a49bee0a10f2c0172627c44fb409"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "f63e034ffeb7c454df371590ed6411bd71ab6901a71c177dba7cd9095f23dd9e"
+    }
+  ]
+}

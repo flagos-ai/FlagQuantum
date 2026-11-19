@@ -19,7 +19,7 @@ from ....core.ir import CircuitIR, Instruction
 from ....noise import amplitude_damping_channel
 from ..._hybrid.model import Block, HybridProgram, Operation, Region, Value, ValueId
 from ..._hybrid.verifier import Diagnostic
-from ...noise import _encode_channel_instruction
+from ...lowering.noise import _encode_channel_instruction
 from ...optimization.canonicalization import merge_self_inverse
 from ...optimization.commutation_cancellation import cancel_commuting_self_inverse
 from ...optimization.state_preparation_synthesis import _synthesize_real_state

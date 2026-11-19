@@ -31,5 +31,6 @@
   "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_state_and_amplitudes.main",
   "acceptance_test": "tests/integration/test_synthesis_native_preparation_bindings.py",
   "scope": "Complete local computational Notebook workflow: original nonuniform probability vector, seeded sampling and probability reconstruction; host-generated signed linear amplitudes, normalization, native synthesis, raw complex state reconstruction and phase-aligned presentation. Local execution replaces cloud calls and plain Python arrays replace dataframes; no hardware result is claimed.",
-  "native_semantic_adaptations": "Ordinary host Python generates and normalizes the evenly spaced amplitude vector, then supplies immutable classical_inputs. Root preparation consumes bound vectors through existing register lowering. Independent acceptance compares raw absolute amplitudes and separately checks phase-aligned display."
+  "native_semantic_adaptations": "Ordinary host Python generates and normalizes the evenly spaced amplitude vector, then supplies immutable classical_inputs. Root preparation consumes bound vectors through existing register lowering. Independent acceptance compares raw absolute amplitudes and separately checks phase-aligned display.",
+  "native_notebook": "examples/synthesis/functions/state_preparation/prepare_state_and_amplitudes/walkthrough.ipynb"
 }

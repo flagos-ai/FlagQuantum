@@ -1,0 +1,21 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/grover_operator/grover_operator.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "ba0508213d094790fa9d98ecba1b41668709b901",
+  "original_sha256": "00d7112a8b69eec3766cdaf0aa4c1de5dcb29e7868180669a09f847558e0c0cf",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "5cfe2872f260ea92af55b3de03f5dabf5ea221c28723412d5f0a1e50222adf5d"
+    },
+    {
+      "index": 5,
+      "sha256": "643c85bbd368df7c0f03194295e8f3d540d0ba47663298484ac59d68112c06cd"
+    }
+  ],
+  "scope": "Retain two two-bit values, the complete predicate, two Grover iterations and width objective. Execute locally, draw 1000 seeded host samples from exact probabilities, and annotate each sampled row with the predicate. Native x/y names replace source structure fields; no cloud or optimizer-equivalence claim.",
+  "native_entrypoint": "examples.synthesis.functions.grover_operator.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/grover_operator/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Retain two two-bit values, the complete predicate, two Grover iterations and width objective. Execute locally, draw 1000 seeded host samples from exact probabilities, and annotate each sampled row with the predicate. Native x/y names replace source structure fields; no cloud or optimizer-equivalence claim."
+}

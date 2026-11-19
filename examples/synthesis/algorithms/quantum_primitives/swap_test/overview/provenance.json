@@ -1,0 +1,37 @@
+{
+  "upstream_path": "algorithms/quantum_primitives/swap_test/swap_test.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "ffe2cde961043887d5fccd7285ab24549dbaa8820533e9d8da923e2af4d96cba",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "fd51322c30e0a7243bcf3f09b393af5e93081118d11df4d57594a971009b6412"
+    },
+    {
+      "index": 4,
+      "sha256": "f55cdefb0320bca11ee604adb7808cc413936ad3f09ce3638305a16dfa97b5f8"
+    },
+    {
+      "index": 7,
+      "sha256": "22724e5d0fe1e1b70527b921aca92c9c2af8c3a9aa19f171650718c6a0c7d79d"
+    },
+    {
+      "index": 9,
+      "sha256": "6c43172611248b828b6326c9bfd19c41ea285b57b08931eae7f534c9df608cdf"
+    },
+    {
+      "index": 10,
+      "sha256": "07c42c21a99ca84c76215e63564ec08895527caae84ce3575d410e65eeb7b2ca"
+    },
+    {
+      "index": 11,
+      "sha256": "eaa2faf499c1657d793b9a4e7fd448e02869bf36338ee9f73b0e21a79c3da1c4"
+    }
+  ],
+  "scope": "Retain both original seed0 NumPy vectors without rounded Qmod substitution, three bits per input and 100000 shots. Prepare the two amplitude vectors, measure overlap and drop the entangled inputs. Check full seven-qubit amplitudes and the original 0.05 absolute overlap tolerance. Correct the source failure message referring to undefined RTOL; do not change its absolute-tolerance criterion.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_primitives.swap_test.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_interference_notebooks.py",
+  "native_notebook": "examples/synthesis/algorithms/quantum_primitives/swap_test/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Retain both original seed0 NumPy vectors without rounded Qmod substitution, three bits per input and 100000 shots. Prepare the two amplitude vectors, measure overlap and drop the entangled inputs. Check full seven-qubit amplitudes and the original 0.05 absolute overlap tolerance. Correct the source failure message referring to undefined RTOL; do not change its absolute-tolerance criterion.",
+  "git_blob_sha1": "ebacf2195c8c88c411dbf177df70133c90af6e23"
+}

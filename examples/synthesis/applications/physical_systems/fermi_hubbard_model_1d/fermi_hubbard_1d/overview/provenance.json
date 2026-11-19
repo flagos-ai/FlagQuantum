@@ -1,0 +1,208 @@
+{
+  "upstream_path": "applications/physical_systems/fermi_hubbard_model_1D/fermi_hubbard_1D.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "8ddcb129b7162945deedf44c016a989c5201c7b2",
+  "original_sha256": "aa9d8289053773dbd45b503c46e8655d7d16932e7cfb1c890c9cb5108b103ccd",
+  "scope": "All 39 source stages: four-mode factorization, four-site eight-mode Slater preparation, quarter-filling interacting dynamics on steps 0\u20139, one-electron noninteracting dynamics and half-filling vanishing hopping on steps 0\u201310, and two 400-point classical one-electron comparisons.",
+  "native_semantic_adaptations": "Fresh real eigendecomposition and adjacent row rotations replace the OpenFermion factorization for these number-conserving real matrices. The occupied Slater determinant is checked independently from its minors. Native rotations and Pauli exchange preserve the source little-endian mode order, the implemented positive contact phase and the five Trotter stages. Each time point binds a static step count; exact named-state occupation expectations replace hosted finite-shot observe calls. The spread plot retains the final source formula with center (N + 1)/2. Exact expectations do not reproduce the original shot noise or hosted trajectory.",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.fermi_hubbard_model_1d.fermi_hubbard_1d.overview.main",
+  "native_notebook": "examples/synthesis/applications/physical_systems/fermi_hubbard_model_1d/fermi_hubbard_1d/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_fermi_hubbard_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 6,
+      "sha256": "4c8013cb7f7e29989964b37dfe12051aaef0674b5eef9f4b3ac01be46a0be5b3",
+      "native_code_cell": 1
+    },
+    {
+      "index": 7,
+      "sha256": "dc785895f5c01bfcef2e4e218603957d122114a100024e4065c644bc7ac829e4",
+      "native_code_cell": 2
+    },
+    {
+      "index": 8,
+      "sha256": "c8a4d91864e45698a3bd6edab1e52accebc8b753442260d382193049a82af504",
+      "native_code_cell": 3
+    },
+    {
+      "index": 14,
+      "sha256": "81bb496f930e4c2b035a53e7b0354391f30ac7f3c0a57d1594643c1a9cd3c687",
+      "native_code_cell": 4
+    },
+    {
+      "index": 16,
+      "sha256": "3059a73f0426c036a150cd84f3a020c04518b0e2fa6656f76686c86a7b2afaf1",
+      "native_code_cell": 5
+    },
+    {
+      "index": 18,
+      "sha256": "f92df0ecdec4b725c6dc6a5e6a5dfeeb014ea5b4ee99d6dd1a41afeb205c7bee",
+      "native_code_cell": 6
+    },
+    {
+      "index": 20,
+      "sha256": "b60869f66f4fb883f9d2ba1d96f1220647e1c0cad883405d6293d61e02c2ba53",
+      "native_code_cell": 7
+    },
+    {
+      "index": 22,
+      "sha256": "33b6f6c5fb2baffe7203a7802739799d265f83824550ac92a02ee9f311c9388c",
+      "native_code_cell": 8
+    },
+    {
+      "index": 24,
+      "sha256": "51718b8c8155e744f43caeb5a31965eeec83802d21856d989f27958cf6fff371",
+      "native_code_cell": 9
+    },
+    {
+      "index": 27,
+      "sha256": "d925465822de4e8f4e5001dae196f461c3a5d831955091a2f3266c58a004ae9e",
+      "native_code_cell": 10
+    },
+    {
+      "index": 29,
+      "sha256": "465d86e6c51942c6689cb6dbae2e5ea7d554edcb439d2d2f594b4338026d969a",
+      "native_code_cell": 11
+    },
+    {
+      "index": 32,
+      "sha256": "f60519f31c1329c67fe419c71803373521857db873056607f64a3a94bb7894c0",
+      "native_code_cell": 12
+    },
+    {
+      "index": 33,
+      "sha256": "71ed526a4892dbfb0058c211580682c4d30686c44b9891e2bddf6fa7403fdb4c",
+      "native_code_cell": 13
+    },
+    {
+      "index": 34,
+      "sha256": "554dec1bbb038848dcf29ff88f160bb1d7408fafb5e34a6b232036fb58716999",
+      "native_code_cell": 14
+    },
+    {
+      "index": 38,
+      "sha256": "36bd6bec26841079a123d060525111725297cc072e72c5c1affbb44248deeafe",
+      "native_code_cell": 15
+    },
+    {
+      "index": 39,
+      "sha256": "f76e146acb6840622cdc5db6c3c4b3ce5f32ba334a6bb6109486b7b8920fde0c",
+      "native_code_cell": 16
+    },
+    {
+      "index": 40,
+      "sha256": "1601676f07137c57ce4e77eaa6d256545f97512596ad60040115cffeb07214ce",
+      "native_code_cell": 17
+    },
+    {
+      "index": 42,
+      "sha256": "e4265c7c6ae9adca084ac7f9de4d3c394269522ef35c4f25e25a3431d223fe22",
+      "native_code_cell": 18
+    },
+    {
+      "index": 43,
+      "sha256": "554dec1bbb038848dcf29ff88f160bb1d7408fafb5e34a6b232036fb58716999",
+      "native_code_cell": 19
+    },
+    {
+      "index": 45,
+      "sha256": "c6dd5d7454da3247e7cedaff4d578b48cb59dbd69177402981292c11481c0eff",
+      "native_code_cell": 20
+    },
+    {
+      "index": 47,
+      "sha256": "0ab81a2cdde8a875cec141998a9697a8e7c509fe1c874cfb8f9ac15c3a85238a",
+      "native_code_cell": 21
+    },
+    {
+      "index": 48,
+      "sha256": "d4014c0ba124d99d4a0cda04443590c9742d9d042ade62c3fb9945944ec9b90d",
+      "native_code_cell": 22
+    },
+    {
+      "index": 52,
+      "sha256": "4c0165db38ac66a08f8a347cbe9fb05c165ffd5297fc9c422a7b677897a58dba",
+      "native_code_cell": 23
+    },
+    {
+      "index": 54,
+      "sha256": "72bffb341fa49dd481aff82e9beafa4935de163d6b58351159808d0c6348b26c",
+      "native_code_cell": 24
+    },
+    {
+      "index": 56,
+      "sha256": "cfe01142ec24a8f02694fbd571b95395b5d77adc6703b7f8fab981584a56d933",
+      "native_code_cell": 25
+    },
+    {
+      "index": 58,
+      "sha256": "a13c91200e344f65da3193c4f7e3a8d5d9b5c6f15deafeb73b2eaed56e1c2073",
+      "native_code_cell": 26
+    },
+    {
+      "index": 60,
+      "sha256": "756b4bb11a0bcc36b3f1d475411713f19f36f1dd1338996705da6fbdfb94f680",
+      "native_code_cell": 27
+    },
+    {
+      "index": 62,
+      "sha256": "534375b3d4ac57236e72e77e29c481447e3a631c543d07daac40887c1c5537eb",
+      "native_code_cell": 28
+    },
+    {
+      "index": 64,
+      "sha256": "960147b4340f3f25c1a7d2d80799a0323ccd82fcb32e4d0e55df46dcbbf56fc4",
+      "native_code_cell": 29
+    },
+    {
+      "index": 65,
+      "sha256": "5a4282a0804d0b9fb4a23fd93d50a5ab857315a3fc026c16a382d49248d495e4",
+      "native_code_cell": 30
+    },
+    {
+      "index": 66,
+      "sha256": "65e52c10183da23108cbb507d295ebf2dc6ab923f6813ff2d5641ff743365030",
+      "native_code_cell": 31
+    },
+    {
+      "index": 68,
+      "sha256": "f758d20c741916be7cce53fcdd6d008976a24541c2b5fdce97cadd526947796b",
+      "native_code_cell": 32
+    },
+    {
+      "index": 75,
+      "sha256": "60c1240110bc416f8911c2a0791a004082890799a57fc0d9675b4e3b3ed3e999",
+      "native_code_cell": 33
+    },
+    {
+      "index": 76,
+      "sha256": "85da8c5163825aa01ffd8687eade9b6d19061d6e72e09bfc0a0c60a287699475",
+      "native_code_cell": 34
+    },
+    {
+      "index": 77,
+      "sha256": "3116cd1c9cb92d330d93be86624821f9b122898c24744c6df4df6bbb0ff067d8",
+      "native_code_cell": 35
+    },
+    {
+      "index": 81,
+      "sha256": "cab1e7a53aaa97f32508747a1155319953d73a532611708a4de478a74a6a90d8",
+      "native_code_cell": 36
+    },
+    {
+      "index": 82,
+      "sha256": "cd290a061ee31cb563feb9750b5742ea1f001e4af3cd541d58867acdd747aa4c",
+      "native_code_cell": 37
+    },
+    {
+      "index": 83,
+      "sha256": "8b75ae6f720a88c5e94a0eaa64a0d99beeb4b4bc9b4ad3498306d7385db83282",
+      "native_code_cell": 38
+    },
+    {
+      "index": 84,
+      "sha256": "8c04cc737b9f548e12b65335a7a2a2b69e27584664a2fcb45cca12c60892c746",
+      "native_code_cell": 39
+    }
+  ]
+}

@@ -17,5 +17,6 @@
   ],
   "native_entrypoint": "examples.synthesis.functions.state_preparation.prepare_ghz_state.main",
   "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
-  "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state."
+  "native_semantic_adaptations": "Use QNum as the named whole-register view of the upstream QArray[QBit]; the program performs no element indexing and preserves its width and state.",
+  "native_notebook": "examples/synthesis/functions/state_preparation/prepare_ghz_state/walkthrough.ipynb"
 }

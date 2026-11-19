@@ -1,0 +1,45 @@
+{
+  "upstream_path": "community/paper_implementation_project/bb84/bb84_implementation.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "a0827fbfd7cb5bcf68a7aa92bd438caebdeaf75198ae6e0b71fcc4cde56abde4",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "sha256": "ff7923cde8f21034ab143db739a20539da6cd77befd1e34fb5effa5f5fa78500"
+    },
+    {
+      "index": 8,
+      "sha256": "3c5b95bd6d9b6d787d5763d4343b93a094c22b85cb322ace893256047eb9ac14"
+    },
+    {
+      "index": 9,
+      "sha256": "a879fea8c62c957ccf35b965d7a56f87ce24f9d732df925fa675031f89557c42"
+    },
+    {
+      "index": 10,
+      "sha256": "8f5c6d5b1bc74e9e333f1374e812611d820b1e794d2d186ea12028728da9c145"
+    },
+    {
+      "index": 12,
+      "sha256": "22724e5d0fe1e1b70527b921aca92c9c2af8c3a9aa19f171650718c6a0c7d79d"
+    },
+    {
+      "index": 13,
+      "sha256": "5176fbbb51bbbe0ad929de6ad081e3b051532e498bc43eeabc3db11e0efc7630"
+    },
+    {
+      "index": 15,
+      "sha256": "5de8f5b8bef1085dcfe83cfd7ec1683e1c4f05bdeb1a1f2f3c20d9cbccd6fabb"
+    },
+    {
+      "index": 16,
+      "sha256": "797b0404b38f863cd5564dffb824982f3a5a9874e68cf8441247ab2ead376aab"
+    }
+  ],
+  "scope": "Original eight-signal native BB84 teaching Notebook;source seed3 inputs,2048 actual observations,modal packet andclassical postprocessing with actual preparation inputs.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.bb84.bb84_implementation.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/bb84/bb84_implementation/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_bb84_notebook.py",
+  "native_semantic_adaptations": "Reuse frozen native qfunc. Correct source final-call input mismatch by explicitly passing actual message/Alice/Bob bases. Preserve8signals,2048observations,modal packet,strict0.15threshold,matching-bit filter andpairwise parity. Final sampling seed3 explicit;ties ascending numeric word;no identical remote samples orcryptographic security claim. Numeric bit i is signal i;workflow handles decoding.",
+  "git_blob_sha1": "9682b87f89f4a67fe47273520925b815b09996d9"
+}

@@ -13,5 +13,6 @@
       "index": 2,
       "sha256": "7be2bf433661aa064bacba8fac7527b3233eb9edb71525ed1f109f7c61cd4acf"
     }
-  ]
+  ],
+  "native_notebook": "examples/synthesis/functions/hamiltonian_evolution/suzuki_trotter/walkthrough.ipynb"
 }

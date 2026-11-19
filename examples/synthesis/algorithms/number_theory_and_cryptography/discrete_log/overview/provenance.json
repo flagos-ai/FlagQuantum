@@ -1,0 +1,81 @@
+{
+  "upstream_path": "algorithms/number_theory_and_cryptography/discrete_log/discrete_log.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "c85739c53975b2d1bdb09fe848677a35928af6497ff5586134c637c806e4d929",
+  "git_blob_sha1": "03b7356de9a0c6cc9fbb484be747c2adecce92df",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "cbe7e0c667f67fdc2696ca2fa2c8721cda158cd74a139e47494e9d77b164e6be"
+    },
+    {
+      "index": 7,
+      "sha256": "9947555b546dae934d89f73ce5d6a862f58e1c546c4aa169a1d3eb9d0a64de1d"
+    },
+    {
+      "index": 9,
+      "sha256": "a90558a59bd25137bd026d2263079adf48bd3c627b760d04a64f51cf11833a23"
+    },
+    {
+      "index": 14,
+      "sha256": "7c9f4b354d561d6e7ed4a5e080ff18a6dda0e4f0fb0209deca354cdaf253981d"
+    },
+    {
+      "index": 15,
+      "sha256": "8f4a638e0c32c9e0f383caf84c37f8abd2ed77be2093076a419f6546220d9fa8"
+    },
+    {
+      "index": 16,
+      "sha256": "6ec28b2be645cf8428630617ca04d82c102b302fbdeb673bc799507dd23968ca"
+    },
+    {
+      "index": 18,
+      "sha256": "a53a0ac0e1bdc91ea0292758b8eea05ea99cfbbffcd78e36362270db4a23e602"
+    },
+    {
+      "index": 20,
+      "sha256": "db8965de2765c51837e3cfa246bfeda2cfeb6ca85d1b526090581a933d7890f4"
+    },
+    {
+      "index": 25,
+      "sha256": "c57ec50f1dcb33c707131f349d1401ad5c8fc645b662559e92ac0ee805cdcbdb"
+    },
+    {
+      "index": 26,
+      "sha256": "cb04177fb2bde9f00d9dd99f993bc54d2bf4dcd93fcec2e2b73bc34264eeba0e"
+    },
+    {
+      "index": 27,
+      "sha256": "b228fab472cff8b4a6d20b7bf922567bf489e4192f8f38413db26ae7b19f67b0"
+    },
+    {
+      "index": 30,
+      "sha256": "8030bb665e44abaca5a2c2af18843f23b77f758f0853311e33784df4f583564c"
+    },
+    {
+      "index": 32,
+      "sha256": "d45e3292b362be4110bb050fbe8ebc7961d1aa108b5c7f1dbdc14555ee52e1f5"
+    },
+    {
+      "index": 33,
+      "sha256": "9ad55819e849c554eec75f3e469d8298f15842d993cf6fd58bf578e452976a38"
+    },
+    {
+      "index": 35,
+      "sha256": "aef129607b0f4b9da5c956b1332707c4c4cc560ac6a792f1b9758baa38ef93b8"
+    },
+    {
+      "index": 37,
+      "sha256": "4822363eb0856b88c66ebe47645596edadd6e4cb95d49faee4162262db7938d4"
+    },
+    {
+      "index": 38,
+      "sha256": "12cb45e899e2d5851446b4ae9f1427836ce45e0459605ad7b4887dab86e64efe"
+    }
+  ],
+  "scope": "Complete Discrete Log Notebook: original mod-5 and mod-13 scenarios;4000/10000 shots;integer and exact fractional labels;source rounding, inverse filters and assertions;two real-log-ratio illustrations;independent full complex states and clean workspace.",
+  "native_entrypoint": "examples.synthesis.algorithms.number_theory_and_cryptography.discrete_log.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/number_theory_and_cryptography/discrete_log/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_discrete_log_notebook.py",
+  "native_semantic_adaptations": "Local seeds1605/1613 replace unseeded hosted sampling,without identical-hosted-sample claims.Named integer readout is used for mod5 and exact Fraction readout for mod13.Source plots retain their real log(3)/log(7) ratio and are explicitly distinguished from modular logarithm8.All selected approximate tails remain visible;only source top-ten assertion is imposed for mod13.Hosted rendering is replaced by local resource reports."
+}

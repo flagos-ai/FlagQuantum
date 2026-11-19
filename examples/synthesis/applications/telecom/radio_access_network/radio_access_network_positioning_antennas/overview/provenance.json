@@ -1,0 +1,63 @@
+{
+  "upstream_path": "applications/telecom/radio_access_network/radio_access_network_positioning_antennas.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "61bf8aa0d907bab11c5f1dac0096f29bb02e709b",
+  "original_sha256": "c60c6fe1a5bbb842290e96943c9d1e35dee8aee1c208153d1016d832687cf8b8",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "56567c6238666a867069ab0170c4e93967b5174bcf0b1b7c47f4b1180eae66d7",
+      "native_code_cell": 1
+    },
+    {
+      "index": 4,
+      "sha256": "d4058fb51a8bc626d4c55137601982de4ff74c57782db4e472bc17ebdf9bfb20",
+      "native_code_cell": 2
+    },
+    {
+      "index": 7,
+      "sha256": "32accf8535e1586a3c8341c990601f0079bf6dfd23101d5f0e6e82ed9791537b",
+      "native_code_cell": 3
+    },
+    {
+      "index": 10,
+      "sha256": "435da85df27be7f55980c575d3f8c58a7938f89e0fc0afcc7cb75e1096d313a8",
+      "native_code_cell": 4
+    },
+    {
+      "index": 12,
+      "sha256": "0e6c707e4890a6c7198f4377b1a0f1a7c56f91df940e7a0cfe9ce72cb27a4811",
+      "native_code_cell": 5
+    },
+    {
+      "index": 14,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa",
+      "native_code_cell": 6
+    },
+    {
+      "index": 16,
+      "sha256": "8d734eb2254eba27bc27d4179cdf02922a6c257670d4be0701263d94c6a63c5e",
+      "native_code_cell": 7
+    },
+    {
+      "index": 18,
+      "sha256": "0ff1051ce8394ca463dcdd9723609c8473dc7497e6e19338cc8fdddd7a1803c5",
+      "native_code_cell": 8
+    },
+    {
+      "index": 20,
+      "sha256": "66eb29306bf2ae397d30b3f983b9ba84a5713939e93149122b0e9a16c8173d9b",
+      "native_code_cell": 9
+    },
+    {
+      "index": 21,
+      "sha256": "29d0bc59eedb083ea4f8de402ad2b2d470d4ac54e58970cbc2bb76719483f68e",
+      "native_code_cell": 10
+    }
+  ],
+  "native_semantic_adaptations": "Fresh NumPy RandomState(0).rand(1,13)[0] reproduces the source legacy RNG without mutating global state. Native qfunc directly composes fresh real coefficients and original squared residuals, avoiding a saved Hamiltonian table whose identity coefficient differs from the fresh Notebook model. Public Nelder-Mead and exact local mean replace private optimization and shot estimates; explicit current-SDK-reviewed initial schedule does not establish historical optimizer trajectory equivalence. Each angle tuple is synthesized; actual final3000shots use an explicit local seed. Source MAXIMIZATION and slack-inclusive sampled cost remain unchanged.",
+  "scope": "All ten original source stages: fresh seed0 NumPy coefficients at thirteen locations, at most seven antennas, original three neighbor equalities and maximization sign, thirteen decisions plus three binary modeled-slack bits, four layers, penalty3,60iteration exact mean search, actual3000finiteCPUshots, sampledtopfive, trace and weightedcosthistogram. All65536jointcost and two nonzero complete Circuit state checks required. No frozen Qmod coefficient substitution, frozen quantum counterpart changes, production API/dependency changes, proprietary trajectory equivalence, runtime binding, cloud, hardware, speedup or scalability claim.",
+  "native_entrypoint": "examples.synthesis.applications.telecom.radio_access_network.radio_access_network_positioning_antennas.overview.main",
+  "native_notebook": "examples/synthesis/applications/telecom/radio_access_network/radio_access_network_positioning_antennas/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_radio_access_network_notebook.py"
+}

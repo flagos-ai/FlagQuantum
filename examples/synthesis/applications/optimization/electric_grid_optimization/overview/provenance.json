@@ -1,0 +1,78 @@
+{
+  "upstream_path": "applications/optimization/electric_grid_optimization/electric_grid_optimization.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "86b991564a1a6de5065316f48f91bb2617f23eb1",
+  "original_sha256": "768120b45dcefff7ac0c5248629483fb3e2aa4139ad3b013598c6b78ffc82d65",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "c65be5a36f8afc039329394c5e57f9f0f9f9a5e0741e128c2377dad50f81d331",
+      "native_code_cell": 1
+    },
+    {
+      "index": 5,
+      "sha256": "0995a6ba5886bc46d311cce28b697d8836d87bf9f65836bdb77de436cf1382f1",
+      "native_code_cell": 2
+    },
+    {
+      "index": 7,
+      "sha256": "5ddb32dd7d2bb4290a183458f16790070a5694a67c08b60d7a128089ed97864a",
+      "native_code_cell": 3
+    },
+    {
+      "index": 9,
+      "sha256": "83e79ddedb06c94c955d0074c6a4b6653e301ed00f193c3a5e6e5d11eb27b3c3",
+      "native_code_cell": 4
+    },
+    {
+      "index": 11,
+      "sha256": "a9eb60da95461e7d5df34c770029985ec13403d86a87a06fef9be52a9152bddf",
+      "native_code_cell": 5
+    },
+    {
+      "index": 13,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa",
+      "native_code_cell": 6
+    },
+    {
+      "index": 15,
+      "sha256": "35c5569dd29fe1e51232cb204b731c2d0881e8671c30b8551e825baeb888b67a",
+      "native_code_cell": 7
+    },
+    {
+      "index": 17,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f",
+      "native_code_cell": 8
+    },
+    {
+      "index": 19,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373",
+      "native_code_cell": 9
+    },
+    {
+      "index": 21,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042",
+      "native_code_cell": 10
+    },
+    {
+      "index": 23,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b",
+      "native_code_cell": 11
+    },
+    {
+      "index": 25,
+      "sha256": "a56699f91e462c9500584bf67cd5c6c8ad0cdfd0651b770cf94db307dfbb0e44",
+      "native_code_cell": 12
+    },
+    {
+      "index": 27,
+      "sha256": "166a0c6a7c9922fab22fdb73457dcd42abb8d942143c9d0f72e0ecdcdf3cddb4",
+      "native_code_cell": 13
+    }
+  ],
+  "native_semantic_adaptations": "Fresh explicit model replaces Pyomo; exact enumeration of4096decision words replaces external Couenne after quantum sampling, preserving all constraints and ties. Six slack bits retained with two unit weights per source; penalties computed before any slack removal. Public native Nelder-Mead and exact local mean replace private optimizer and shot estimates, with explicit SDK-reviewed initial schedule but no historical SDK trajectory equivalence. Actual1000finiteoptimized and zero-angle native uniform shots with explicit independent seeds. Default native synthesis objective retained and reported.",
+  "scope": "All thirteen original source stages: three sources/four consumers, twelve binary decisions plus six bounded-slack bits, four QAOA layers, penalty10,100iteration mean-cost search, actual optimized and zero-angle uniform samples, original network/trace/histogram/observed table and graph, fresh exact constrained reference and graph. Full18-bit costs and two nonzero complete Circuit-state references required. No frozen quantum counterpart, API or dependency changes, proprietary optimization trajectory, runtime binding, cloud, hardware, speedup or scalability claim.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.electric_grid_optimization.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/electric_grid_optimization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_electric_grid_notebook.py"
+}

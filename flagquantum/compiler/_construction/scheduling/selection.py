@@ -12,7 +12,7 @@ from ....core.operator_schema import get_operator_schema
 from ....core.parameters import parameter_names_in_value
 from ..._hybrid.model import HybridProgram
 from ..._hybrid.verifier import Diagnostic, HybridVerificationError
-from ...resource_estimation import ResourceEstimate, estimate_resources
+from ...optimization.resource_estimation import ResourceEstimate, estimate_resources
 from ..codegen.arithmetic import ArithmeticCandidate, BoundArithmetic, Schedule
 from ..codegen.boolean import BooleanCandidateError
 from ..codegen.register_expansion import expand_register_calls
@@ -423,6 +423,11 @@ def _select_candidates(
 ) -> Selection:
     """Share target checks, final costs, ranking and recovery across both builders."""
     rows: list[CandidateRow] = []
+    # At most three candidates share one target and operation budget. Reuse only
+    # exact source content within this request; each row still checks identities,
+    # resources and its own workspace constraints. Shared products remain sealed
+    # by TargetProduct.validate(), including their nested mutable IR annotations.
+    products: dict[str, TargetProduct] = {}
     complete = True
     builders: list[
         tuple[CandidateStrategy, Callable[[], ArithmeticCandidate | RegisterCandidate]]
@@ -464,8 +469,12 @@ def _select_candidates(
                 source = replace(
                     circuit, instructions=(*preparation, *circuit.instructions)
                 )
-                product = compile_target(source, target, budget.operations)
+                source_identity = source.content_hash
+                product = products.get(source_identity)
+                if product is None:
+                    product = compile_target(source, target, budget.operations)
                 product.validate()
+                products[source_identity] = product
                 resources = estimate_resources(product.executable)
                 stages = tuple(
                     (name, estimate_resources(program))
@@ -487,7 +496,7 @@ def _select_candidates(
                 complete = False
             except TargetError as error:
                 diagnostics = (Diagnostic(error.code, str(error)),)
-                if error.code == "target.budget":
+                if error.code in {"target.budget", "target.identity"}:
                     complete = False
         elapsed = (
             construction_seconds if arithmetic is not None else perf_counter() - start

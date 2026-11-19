@@ -1,0 +1,144 @@
+{
+  "upstream_path": "tutorials/basic_tutorials/the_classiq_tutorial/Qmod_tutorial_part1.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0ee7fcea581fa9adc0a7e213dbcd1d5c4b8f3c5a4594066f9ce8c3d253ade588",
+  "git_blob_sha1": "5faf2d7ea96b85a660dddf42c450733d378d7070",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "30fa9d81458d7c67926e4fce7361380203366419c8707fbac2200b84370b5274",
+      "native_code_cell": 2,
+      "stage": "Local setup"
+    },
+    {
+      "index": 5,
+      "sha256": "8743f79f8101d7aa6a8f311cc3eb143317fa9ce86ddbc6fdb6af6f0b85e4cba1",
+      "native_code_cell": 4,
+      "stage": "Bell preparation"
+    },
+    {
+      "index": 9,
+      "sha256": "30833d38710ce1c2382f5c327076453302a380cddad45b35f5c66f7d93258212",
+      "native_code_cell": 6,
+      "stage": "Exercise A reference solution"
+    },
+    {
+      "index": 12,
+      "sha256": "e646a4497bcc50ebfd6f46680d8cb1416f08230a37d0a88dbe781fb59de2b307",
+      "native_code_cell": 8,
+      "stage": "Signed numeric view reference solution"
+    },
+    {
+      "index": 16,
+      "sha256": "e126d09f723765edf6d5ecfb27a7b3d2cc766d34b1b7d700f734f6fdbab32777",
+      "native_code_cell": 10,
+      "stage": "Probability preparation reference solution"
+    },
+    {
+      "index": 19,
+      "sha256": "3c4a25cc4fec1fd33f87b92d538e8f2009b3cda3ac6b3986eedee3f3995344d6",
+      "native_code_cell": 12,
+      "stage": "Expected initialization refusal"
+    },
+    {
+      "index": 22,
+      "sha256": "8fd3a1eca3f90b972ca9dcdf437a6dac6ca3a87b4872077c0c08c5b20a4127f9",
+      "native_code_cell": 14,
+      "stage": "Rotation reference solution"
+    },
+    {
+      "index": 25,
+      "sha256": "e7e60c3532d5af005dd95ff18236cc948ad368d92928555a35d4ce9af06a3108",
+      "native_code_cell": 16,
+      "stage": "Parameter binding reference solution"
+    },
+    {
+      "index": 28,
+      "sha256": "e542ed48a82128b5b8131c0df4e7e8d8228c16cb3c045ca80b8dc8dc139032d5",
+      "native_code_cell": 18,
+      "stage": "Array helper reference solution"
+    },
+    {
+      "index": 31,
+      "sha256": "2827c6ca761df77befe31dde44af8fc97bb47b47a75e9d68f5158747f5f16c84",
+      "native_code_cell": 20,
+      "stage": "Arithmetic reference solution"
+    },
+    {
+      "index": 34,
+      "sha256": "1ed3bdfe6dec3c4a4c350c6f2b41c8c5fbc33bd0faf8bd0c46b2f0e27fcaa04a",
+      "native_code_cell": 22,
+      "stage": "In-place addition reference solution"
+    },
+    {
+      "index": 38,
+      "sha256": "082e6c80f4b9f3a2c3d5505cee02597f1c96e7a39b1a6c03b39ecdfbe810e569",
+      "native_code_cell": 24,
+      "stage": "Coherent condition reference solution"
+    },
+    {
+      "index": 43,
+      "sha256": "4f196513eb2f38e7788abffdc43da8c1f85e0c3db3203faabe45a374bf5f51f3",
+      "native_code_cell": 26,
+      "stage": "Exercise A solution"
+    },
+    {
+      "index": 45,
+      "sha256": "c07295048257b8af2a840120e1305921cc8da8e57eec69ae44ca48f45b052e4f",
+      "native_code_cell": 28,
+      "stage": "Signed solution"
+    },
+    {
+      "index": 48,
+      "sha256": "6a513080321c51d3701b2b12b2a1491f7f4f1f73d79f3293af14023caffe0e7f",
+      "native_code_cell": 30,
+      "stage": "Preparation solution"
+    },
+    {
+      "index": 50,
+      "sha256": "7978d7fa4438d512a3e4c94a2a0826101aae1ecc5a0669c5fc8cffda82889913",
+      "native_code_cell": 32,
+      "stage": "Ownership correction"
+    },
+    {
+      "index": 53,
+      "sha256": "fa37e53260f3d37e4b1bf689a9d74cb94e9f5a3a43c1d1fb14d61a8e876bacac",
+      "native_code_cell": 34,
+      "stage": "Turns solution"
+    },
+    {
+      "index": 55,
+      "sha256": "7e96b0b4f64d796a0199826b1d7823a01820c3a8dc73f17442c26fe842615ca3",
+      "native_code_cell": 36,
+      "stage": "Parameter solution"
+    },
+    {
+      "index": 57,
+      "sha256": "a8afe475bfe5a973769149ff14d4cc7742bb6d2549eb7f6cd630f6d889c16085",
+      "native_code_cell": 38,
+      "stage": "Layer solution"
+    },
+    {
+      "index": 60,
+      "sha256": "e81b6f40620361fd97bed90c0aa4320f48d2b42d6acb39fae741a395543c34a5",
+      "native_code_cell": 40,
+      "stage": "Arithmetic solution"
+    },
+    {
+      "index": 62,
+      "sha256": "a0795b3bc5ce6f61d855238e0e1bde404850e40036ebd01c99fda4552687d8f3",
+      "native_code_cell": 42,
+      "stage": "Accumulator solution"
+    },
+    {
+      "index": 64,
+      "sha256": "1f265f690215b9e0938969ae0a04aa78e903fa6510dae98005fa140e73d49373",
+      "native_code_cell": 44,
+      "stage": "Condition solution"
+    }
+  ],
+  "scope": "Complete all22 original code stages as native teaching workflow: Bell/GHZ helpers and signed QNum view; original8-entry probabilities and10000 actual draws per preparation stage; expected uninitialized-storage refusal and Output-owned correction; original0.3/0.2 turns and0.1/0.3/0.5 layer; synthesis-time classical bindings; two-bit sum/product; acc initialized4 then += y; coherent x==5. TODO exercises are labeled reference solutions, never extra algorithm coverage. Independent absolute Circuit states and zero compiler workspace. No source importer, hosted IDE, authentication or remote execution. Frozen retained Qmod counterpart is a different polynomial-phase program and remains unchanged.",
+  "acceptance_test": "tests/integration/test_synthesis_tutorial1_notebook.py",
+  "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.qmod_tutorial_part1.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/basics/quantum_programming/qmod_tutorial_part1/overview/walkthrough.ipynb"
+}
