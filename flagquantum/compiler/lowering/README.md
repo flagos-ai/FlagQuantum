@@ -38,6 +38,11 @@ and recomputes the 4x4 operators, phase witness, CZ costs and combined budget.
 Dependency validation scans the source once; it does not compare every block
 against every spectator.
 
+Native target declarations of ProgramIR measurement and reset capabilities do
+not count as additional entanglers. They do not enable dynamic instructions in
+this CircuitIR stage. Terminal measurement requests are retained, while noise
+channels and unknown annotations remain global collection boundaries.
+
 The implementation currently remains private and is not connected to automatic
 target compilation. Routing annotations are still boundaries. Enabling it in
 that workflow requires validated routing provenance, v4 physical-plan generation

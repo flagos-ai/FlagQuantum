@@ -16,6 +16,7 @@ from types import MappingProxyType
 
 from ...core._compilation_evidence_v4 import BlockRewriteEvidence
 from ...core.ir import CircuitIR, Instruction
+from ...core.ir.program import MEASURE_OPCODE, RESET_OPCODE
 from ...core.operator_schema import get_operator_schema
 from ...core.target_capabilities import TargetCapabilitySnapshot
 from ...errors import CompilationError
@@ -96,7 +97,8 @@ def _admitted_target(
     entanglers = {
         opcode
         for opcode in descriptors
-        if (schema := get_operator_schema(opcode)) is None or schema.arity != 1
+        if opcode not in {MEASURE_OPCODE, RESET_OPCODE}
+        and ((schema := get_operator_schema(opcode)) is None or schema.arity != 1)
     }
     return entanglers == {"cz"} and all(
         _supports(descriptors, Instruction(opcode, (0,), {"theta": 0.0}))
