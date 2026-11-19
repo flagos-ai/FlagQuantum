@@ -1,0 +1,112 @@
+{
+  "upstream_path": "applications/finance/portfolio_optimization/portfolio_optimization.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "2e638115076799547644029281eec55b95bc49e663a73f5ca22c2c0622303e23",
+  "git_blob_sha1": "92b4a92ae7cef34c9619132e730b641ceb7cc670",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "e78043ec862bcf78a0efc868d82c0d02cd836161ac8e2577cd571717796b80c4"
+    },
+    {
+      "index": 4,
+      "sha256": "84073fa0c7b18205ef8a9b81940e6564523f903fac7527877d1cfcb9218b0812"
+    },
+    {
+      "index": 6,
+      "sha256": "65b89ea754b77e5f0a9ed3d22a63a44dee6652655e3bc057c25a8572be2ef645"
+    },
+    {
+      "index": 8,
+      "sha256": "50cc99bff0516865a43c9d5f0d38d8647f21be631df3e828f6e88df5df9ac0ee"
+    },
+    {
+      "index": 10,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 12,
+      "sha256": "b203d85c82784ca814ba2905bf03286197c547266a49ea950012d148e183f333"
+    },
+    {
+      "index": 14,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 18,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 20,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 22,
+      "sha256": "ef99e0efacf88e6d1666c361200324011f8abfef7162a49ba53568ec7d9933ba"
+    },
+    {
+      "index": 23,
+      "sha256": "ab1628ae7fc8d920e09362de56e2fdcccd2892cf4418e94e8ea5602328919423"
+    },
+    {
+      "index": 25,
+      "sha256": "2ea8b94e7c9bcfa491ccc293e12a70784bb783379461b31f729c2b8470e9bc71"
+    }
+  ],
+  "scope": "Complete original twelve-cell three-asset portfolio workflow: covariance and return data, integer holdings0..7,budget6,three QAOA layers,penalty10,CVaR0.7,60iteration optimization,actual optimized/uniform sampling,two charts,best observed feasible allocation and exact classical optimum.",
+  "native_entrypoint": "examples.synthesis.applications.finance.portfolio_optimization.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/portfolio_optimization/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_portfolio_notebook.py",
+  "frozen_quantum_entry_sha256": "b1388390e3e936897d2083c057c43d688a7342c966d140f31f9e1734791d0f69",
+  "native_semantic_adaptations": "Use direct Python objective/constraint evaluation instead of Pyomo model objects; preserve all mathematical coefficients,integer domains,budget and native slack encoding1/2/3. Native COBYLA against exact local encoded-cost CVaR0.7 replaces unspecified hosted optimization details;initial parameters and trust radii explicit,60iteration budget retained,no trajectory equality claim. Explicit1000shotseeded local samples replace unspecified source shot count. Independent enumeration of all512holdings replaces Couenne and certifies the classical optimum;never replace observed quantum samples with that answer. Report feasibility and original objective separately from encoded penalty. Weighted original-cost histograms include infeasible holdings with explicit labeling. No optimal-QAOA,provider or quantum-advantage claim.",
+  "cell_mapping": [
+    {
+      "source_index": 2,
+      "native_code_cell": 1
+    },
+    {
+      "source_index": 4,
+      "native_code_cell": 2
+    },
+    {
+      "source_index": 6,
+      "native_code_cell": 3
+    },
+    {
+      "source_index": 8,
+      "native_code_cell": 4
+    },
+    {
+      "source_index": 10,
+      "native_code_cell": 5
+    },
+    {
+      "source_index": 12,
+      "native_code_cell": 6
+    },
+    {
+      "source_index": 14,
+      "native_code_cell": 7
+    },
+    {
+      "source_index": 18,
+      "native_code_cell": 8
+    },
+    {
+      "source_index": 20,
+      "native_code_cell": 9
+    },
+    {
+      "source_index": 22,
+      "native_code_cell": 10
+    },
+    {
+      "source_index": 23,
+      "native_code_cell": 11
+    },
+    {
+      "source_index": 25,
+      "native_code_cell": 12
+    }
+  ]
+}

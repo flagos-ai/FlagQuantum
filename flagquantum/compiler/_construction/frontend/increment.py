@@ -62,9 +62,14 @@ def _emit(
                 )
 
 
-def _target(owner: _Body, node: ast.expr) -> tuple[tuple[Value, int], ...]:
+def _target(
+    owner: _Body, node: ast.expr, *, writable: bool = True
+) -> tuple[tuple[Value, int], ...]:
     ports = owner.alias_ports if owner.aliases is not None else owner.ports
     assert ports is not None
+    message = (
+        "use a writable raw unsigned QNum" if writable else "use a raw unsigned QNum"
+    )
     explicit = isinstance(node, (ast.List, ast.Tuple))
     base = node
     while isinstance(base, ast.Subscript):
@@ -74,18 +79,16 @@ def _target(owner: _Body, node: ast.expr) -> tuple[tuple[Value, int], ...]:
         or base.id not in ports
         or ports[base.id].kind != "qnum"
     ):
-        _error(
-            owner.source, node, "program.increment", "use a writable raw unsigned QNum"
-        )
+        _error(owner.source, node, "program.increment", message)
     for child in ast.walk(node):
         if isinstance(child, ast.Name) and child.id in ports:
             port = ports[child.id]
-            if has_numeric(port) or port.role not in {"output", "inout"}:
+            if has_numeric(port) or (writable and port.role not in {"output", "inout"}):
                 _error(
                     owner.source,
                     child,
                     "program.increment",
-                    "use a writable raw unsigned QNum",
+                    message,
                 )
     view = packed_locations(owner, node) if explicit else locations(owner, node)
     if not 1 <= len(view) <= 256 or len(set(view)) != len(view):
@@ -101,18 +104,40 @@ def _target(owner: _Body, node: ast.expr) -> tuple[tuple[Value, int], ...]:
             for name, port in owner.ports.items()
             if owner.registers.get(name) == value
         )
-        if has_numeric(actual) or actual.role not in {"output", "inout"}:
+        if has_numeric(actual) or (writable and actual.role not in {"output", "inout"}):
             _error(
                 owner.source,
                 node,
                 "program.increment",
-                "use a writable raw unsigned QNum",
+                message,
             )
     return view
 
 
 def capture_increment(owner: _Body, node: ast.AugAssign) -> None:
     target = _target(owner, node.target)
+    ports = owner.alias_ports if owner.aliases is not None else owner.ports
+    assert ports is not None
+    quantum_source = any(
+        isinstance(child, ast.Name) and child.id in ports
+        for child in ast.walk(node.value)
+    )
+    if quantum_source:
+        source = _target(owner, node.value, writable=False)
+        if set(source) & set(target):
+            _error(
+                owner.source,
+                node,
+                "program.increment",
+                "quantum addend and accumulator must be physically disjoint",
+            )
+        # Logical view element zero is the low bit. Each source bit controls a
+        # unit increment of the suffix starting at its weight, modulo target width.
+        # Higher addend bits vanish modulo that width; no carry storage is needed.
+        direction = -1 if isinstance(node.op, ast.Sub) else 1
+        for bit, selector in enumerate(source[: len(target)]):
+            _emit(owner, node, target[bit:], direction, selector)
+        return
     amount = static_integer(owner, node.value)
     if isinstance(node.op, ast.Sub):
         amount = -amount
@@ -180,8 +205,12 @@ def capture_increment_call(
     assert isinstance(statement, ast.AugAssign) and isinstance(
         statement.target, ast.Name
     )
+    # Computed predicates borrow complete source Values; a direct selector
+    # borrows one physical bit, including through nested helper aliases.
+    direct_scalar = condition_inputs == (predicate[0],)
     if statement.target.id != ports[0].name or any(
-        value in condition_inputs for value, _ in target
+        (value, bit) == predicate if direct_scalar else value in condition_inputs
+        for value, bit in target
     ):
         _error(
             owner.source,

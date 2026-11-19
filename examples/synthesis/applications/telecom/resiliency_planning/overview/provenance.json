@@ -1,0 +1,139 @@
+{
+  "upstream_path": "applications/telecom/resiliency_planning/resiliency_planning.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "72e5b239317ba0f78782f2f5ccace8c1d96ae60347e5ea9144f32f609f57ac1d",
+  "git_blob_sha1": "fc27767d74859f03d9090a0fcf27cb31da05cefb",
+  "scope": "All 21 original stages, full 24-bit two-demand model, twenty layers, forty nonzero angles, one objective query and independent final finite sampling.",
+  "native_semantic_adaptations": "Use native COBYLA with an explicit one-query cap, select only evaluated parameters and report unconverged budget termination. The source NUM_SHOTS=20000 declaration is not passed to hosted primitives; make 20000 draws per objective and final readout explicit locally without claiming equality to unpinned hosted defaults. Preserve the source validity check, which tests flow and node overlap but does not reject correlation separately. Correct the topology title to the actual five nodes. No remote execution.",
+  "native_entrypoint": "examples.synthesis.applications.telecom.resiliency_planning.overview.main",
+  "native_notebook": "examples/synthesis/applications/telecom/resiliency_planning/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_resiliency_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Load native problem, sampling and plotting helpers.",
+      "sha256": "399e3a6a362d8542a0b777c3d0f3cfbce1c3c0a986b3be01064e82b7afbfdb8b"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "stage": "Retain the original five-node graph, seven weighted edges and two demands.",
+      "sha256": "6df21cc034f765295153f3bb979355bd31840b669cc5e5ad7b54271786e5cd05"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "stage": "Preserve the correlated edge pair in both cross-demand directions.",
+      "sha256": "efc9fc998ff3f4e9d3bbdca0cd9ea10ecb89d7b0f5074e10768624e54d074e4a"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "stage": "Keep the source illustrative routing assignment distinct from observations.",
+      "sha256": "8b7d59671d9c0ebc21507cb3623053bad5d34269dc90a63a88f9378d1d30252a"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "stage": "Retain latency .025, node-overlap .25, correlation 1 and constraint .125.",
+      "sha256": "8a275d9234a5e304272b931231c67f64257def862c3b46c88cc684dd634f3c18"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 6,
+      "stage": "Use two contiguous twelve-bit edge/node rows.",
+      "sha256": "7c39390854bc64a88185745d5f39d05e1bf6ed4ce410c66fa58c8a5035d690c4"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 7,
+      "stage": "Read the original cost for a complete assignment.",
+      "sha256": "dd9569d89d0779884ced5fa1eb2dfbb8202f1c90936a23af9e881333770abdee"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "stage": "Enforce all node-flow squares and source/target participation.",
+      "sha256": "68d6b87ec69ea85536fb963024c1f8e184b15f57e7328c07a88b5410172761cb"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 9,
+      "stage": "Penalize shared nodes other than the common source and correlated cross-demand edges.",
+      "sha256": "96dd2f19bb314bb460851638330bedc72e2439a749e9290e96eaa65c818d8e1d"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 10,
+      "stage": "Retain all cost components, including constant phases.",
+      "sha256": "bf22539410f53b0a963a376bdbca032dee207ce416303e4e7e1203cecfe25691"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 11,
+      "stage": "Use twenty full cost/RX layers and forty angles.",
+      "sha256": "9494ac2f6e53b4c10c8c2ec4bbac88971f2f1257681d43d95a19db007991f93e"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 12,
+      "stage": "Bind the original nonzero pi-linear schedule through the public native qfunc.",
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 13,
+      "stage": "Use the public Program resource report instead of a hosted visualizer.",
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 14,
+      "stage": "Report actual native static resources.",
+      "sha256": "bc6bed80b1e6d16a5cbd2372b78aee5ea9103d69c1788d808bfe325891881029"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 15,
+      "stage": "Make the source 20,000-shot setting explicit for local execution.",
+      "sha256": "cfd88d76e0ae0d4252d4760908351116a5b314840d9b470cff29e555893571fe"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 16,
+      "stage": "Keep the one-query optimization budget and record the actual stop.",
+      "sha256": "8eb03c37aca885232393ae9d5a676b717467ec79e4d9adb2abe111985010b235"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 17,
+      "stage": "Retain the independently drawn final sample.",
+      "sha256": "898a91fab5eb157ad01087ebd6a1727abf9a6bcc8e8fa53cfa99143f4fea0f6b"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 18,
+      "stage": "Apply the original flow and node-disjoint validity rule.",
+      "sha256": "25f3ddb482272d4bb6f87a8a0ded4b14efe5e16de0e27389b869cb023e96fafd"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 19,
+      "stage": "Inspect real top-100 valid outcomes and actual valid probability.",
+      "sha256": "46233cda8458ca42f3262faef73b7ba521e95a3cea3d49a4cfc187944a7d25b5"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 20,
+      "stage": "Keep all edge and node bits for both demand rows.",
+      "sha256": "ea8d3b4f0882e9f9cbcb317fe4fc050d673cad00b442d878e6ccafdb725eb889"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 21,
+      "stage": "Plot the topology, source illustration and only genuinely observed valid routes.",
+      "sha256": "a857f1dd86f3d9bd490f5362705ed76b677d142a93cd305c0f28d8a97bc30263"
+    }
+  ]
+}

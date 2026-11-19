@@ -1,0 +1,61 @@
+{
+  "upstream_path": "applications/optimization/min_graph_coloring/min_graph_coloring.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "bd6c474f630b06a172f98a75b75aa9a21871527f6357343441a89c2af4cd753c",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "sha256": "1e84d755d1f0e4752e21b4408c868a9d81d3253b642aa00fe65c07d897adda35"
+    },
+    {
+      "index": 7,
+      "sha256": "1fd0380298c8d81561ee233bf7d676d6ce0dbcfd908d56c604ea10351052d397"
+    },
+    {
+      "index": 9,
+      "sha256": "73c5ffae1ba82360b5fa11b01b9a1d918a0fcbae27751b24f72eefbbffa22c9c"
+    },
+    {
+      "index": 11,
+      "sha256": "cf5c591160400c3e2b025432b2b1cf5c0e7defcd4430be6e1b287fe6cf6e76a5"
+    },
+    {
+      "index": 13,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 15,
+      "sha256": "22e211f866c526498cc890f1f039f0574175af822dc82f3feb06ea08c5fd8a13"
+    },
+    {
+      "index": 17,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 20,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 22,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 24,
+      "sha256": "5584220bb6f82cf8da89f08a4557d35e9a161d13d9792ed51f38965a608aa42b"
+    },
+    {
+      "index": 26,
+      "sha256": "d51c269c50391a8a91acd25014d60389ef540fcf8f15774af44ec5fbdd194280"
+    },
+    {
+      "index": 27,
+      "sha256": "176ce8f9026fec0d070ef9e904689f16c8853c5cdafb704433460fd70de2dd71"
+    }
+  ],
+  "scope": "Original five-node, three-color, six-layer native Notebook; 100 iterations, CVaR0.7, 1000 optimized and1000 uniform observations.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.min_graph_coloring.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/min_graph_coloring/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_min_coloring_notebook.py",
+  "native_semantic_adaptations": "Reuse frozen fifteen-bit native encoding. Preserve exactly-one-color constraints and source directed adjacency square. Native Nelder-Mead with twelve explicit angles, step0.07 and exact local CVaR replaces private optimization. Samples use seeds2718/31415. Separate exhaustive32768-assignment reference after sampling never supplies observations. Missing feasible sample stays None. Circular layout changes drawing positions only. No trajectory, convergence, optimality or advantage claim.",
+  "git_blob_sha1": "846048a3e3b61f7418980227409005428cf20356"
+}

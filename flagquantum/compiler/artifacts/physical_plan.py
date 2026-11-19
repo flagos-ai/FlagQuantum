@@ -21,7 +21,7 @@ from ..lowering.schedule_legalization import (
     schedule_circuit_dependencies,
 )
 from ..lowering.target_legalization import TargetLegalizationResult
-from ..routing import CouplingMap
+from ..topology.coupling import CouplingMap
 from ..topology.directed_topology import DirectedCouplingMap
 from .native_block_evidence import _native_input_evidence, _output_instruction_evidence
 

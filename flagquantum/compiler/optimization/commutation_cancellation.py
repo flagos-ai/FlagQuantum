@@ -99,6 +99,12 @@ def _is_cancellable(
 
     return (
         instruction.matrix is None
+        # A routed SWAP decomposes to three marked CX leaves. Retain the
+        # complete witness until a rewrite can update its layout proof.
+        and not (
+            instruction.name == "cx"
+            and instruction.metadata.get("routing_phase") is not None
+        )
         and canonical_opcode(instruction.name) in self_inverse
         and not instruction.params
     )

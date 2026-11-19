@@ -34,3 +34,6 @@ optimization claim. Width, workspace, operations, depth and memory constraints
 are enforced on the actual synthesized program. Read the main module's named
 controller/psi probabilities using the runnable command in README. This accepts
 the quantum program, not a full Notebook workflow or a successful LCU postselection.
+
+See the [complete native Notebook workflow](overview/README.md) for all retained
+computational stages, parameters, observation and documented adaptations.

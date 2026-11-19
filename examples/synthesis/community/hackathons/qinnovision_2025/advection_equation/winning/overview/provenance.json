@@ -1,0 +1,319 @@
+{
+  "upstream_path": "community/Hackathons/QInnovision_2025/advection_equation/advection_equation_winning_submission.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "66b72268e86b010c1f2074301e0e7dcd48d14ec206bb32b14a379238931b1920",
+  "git_blob_sha1": "75d082760c4d8b48c0b77c0bf2791b1d288c0e37",
+  "scope": "All 51 winning-advection stages, original seven-bit grid and all three ten-step quantum schedules, fresh 127-term Hamiltonian, unchanged numerical baselines, both full resource sweeps, and thirteen actual figures.",
+  "native_semantic_adaptations": "Use native qfunc for precision-preserving state preparation, public Circuit for W/custom W and ordered Pauli evolution, and explicit U3/CX resource conversion. Preserve the source RK4 index-26 readout and its disabled Euler and authentication stages. Independently check every complex amplitude and disclose actual low-fidelity results.",
+  "native_entrypoint": "examples.synthesis.community.hackathons.qinnovision_2025.advection_equation.winning.overview.main",
+  "native_notebook": "examples/synthesis/community/hackathons/qinnovision_2025/advection_equation/winning/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_advection_winning_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 5,
+      "native_code_cell": 1,
+      "stage": "Keep the source's package-install example disabled.",
+      "sha256": "78be35331b597656e172278af675be39e48695f22c4129e4b40bba2c18d8a44a"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 2,
+      "stage": "Keep remote authentication disabled for this local example.",
+      "sha256": "c4e908d29228f6288544f697e86c52c2098872edf7c5bd7f71e0fa0c03849797"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "stage": "Load the native workflow and display helpers.",
+      "sha256": "e24a030e93d29fb4c22a0c93c6323b0f28c24d2d19e92c9a666ef8fc31704fa5"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 4,
+      "stage": "Build the fresh Dirichlet derivative.",
+      "sha256": "a5d751d322479121c0361fbbf174ccbe6268b1ae54953896f2aaacca6499a121"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "stage": "Use the source RK4 update.",
+      "sha256": "f2cb6c550ba692a4629ee12be32759dc8b660133f7ee351900fefe692ed50410"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "stage": "Retain the source's disabled Euler alternative.",
+      "sha256": "bb40a20b103fc4ef031bd13834d0b6f95d795075666c786cdd31c288b9db4d21"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 7,
+      "stage": "Keep the original seven-bit grid and classical timestep.",
+      "sha256": "7690ac30c71803afdee964e7882f8d01cc3365cce11e23e04ec5f5624c6d16f9"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 8,
+      "stage": "Retain the fresh derivative matrix.",
+      "sha256": "a9f134d86d54880789b0306d15a4a655eded7faee75eee0bee975861eb91dc87"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 9,
+      "stage": "Keep the original normalized 26-point plateau.",
+      "sha256": "e912ccbe3d8d91f9de871219c174bca3131683cdf870f8c1b69a2473a8d840fb"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 10,
+      "stage": "Run all original-sized classical and quantum comparisons and resource sweeps.",
+      "sha256": "67e61df9486efb162eef4d1ba5a16bccd51f6bdfb9911037e5b5459c931b9f3f"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 11,
+      "stage": "Use the exact source RK4 readout index.",
+      "sha256": "3cd6bbca499b6c9b842165f3764b7c99da561aba825792dfb10c4c5aa602407d"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 12,
+      "stage": "Evaluate the unchanged theoretical Trotter estimate.",
+      "sha256": "c333b2d59624b9899586c419f7a6b3f350367f9fb28c683e7b988d00c9242ca5"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 13,
+      "stage": "Retain ten matrix-exponential evolution steps.",
+      "sha256": "0ed7fbd158d9f039cbf63a78d741381ed152b735c64c401b9b0f946cbb5e7b51"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 14,
+      "stage": "Show the original classical and matrix comparisons.",
+      "sha256": "0854a64bfffc139519bf626fb871089a2b832db8179dc1e072acb47f081ed769"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 15,
+      "stage": "Show their original amplitude difference.",
+      "sha256": "b8c046c8d9cb001e9e3e847832c4be37bd34a0fa330703f5966b09e787586244"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 16,
+      "stage": "Inspect the freshly decomposed 127 Pauli terms.",
+      "sha256": "32bb16a4f00ba1b84bcfbea6ac34da91bd368a940dcf3b3c63f9a567f266ea02"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 17,
+      "stage": "Use the explicit native U3/CX basis.",
+      "sha256": "ab007cd4e9761dbe097782469b615447a18411301663f21fecb45c37201dc2b1"
+    },
+    {
+      "index": 38,
+      "native_code_cell": 18,
+      "stage": "Use the native W sequence and controlled-RZ implementation.",
+      "sha256": "321e0debeea7e144dbb16da430332436036319d52404c7f012e55a1b98f75aa4"
+    },
+    {
+      "index": 40,
+      "native_code_cell": 19,
+      "stage": "Retain all ten proposed evolution steps.",
+      "sha256": "4aab22b352a577359d1a02375959dea2437de4727fa148a0defd5ad0e3322646"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 20,
+      "stage": "Keep the source seven-wire constraint.",
+      "sha256": "929bd95795fabb2d6ff261f6cd5bf9e25a2d0df313339bda437bdc1a7018e2aa"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 21,
+      "stage": "Read the native proposed state and independent oracle check.",
+      "sha256": "a711ae7811babcba87654003bdecd91511d343729eed766a6a7c864d143134b6"
+    },
+    {
+      "index": 46,
+      "native_code_cell": 22,
+      "stage": "Retain every component of the 128-amplitude readout.",
+      "sha256": "e349e2a7c3504a52924f813ab595d992aea7a5ce7d8cd1d4440c1fafa5f50e93"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 23,
+      "stage": "Use the source global-phase and sign convention.",
+      "sha256": "c5e5d35397cda747cd8b74b27ba6ae45b08122a4ce70e8ddea2884d9b84ad5c2"
+    },
+    {
+      "index": 50,
+      "native_code_cell": 24,
+      "stage": "Read the independently recorded phase and sign.",
+      "sha256": "befc21c011a0f46a7dd98a776cdf29eccb24140e3839446f553d43f9eda23119"
+    },
+    {
+      "index": 54,
+      "native_code_cell": 25,
+      "stage": "Read the normalized source-reference fidelity.",
+      "sha256": "ad5f0ee67df803744bd4fad43cd151f7b3b4263ff2f59ae5e23f338583ba2349"
+    },
+    {
+      "index": 55,
+      "native_code_cell": 26,
+      "stage": "Plot the actual proposed profile.",
+      "sha256": "5888784dbb579aac96b423fbd5f41dddc9d1293fd1f28f979cefa98eae9c2dc2"
+    },
+    {
+      "index": 57,
+      "native_code_cell": 27,
+      "stage": "Plot the actual proposed amplitude error.",
+      "sha256": "7348870984775a43df1b67466d9110e09551b1ee3247e75c31a96511e5854776"
+    },
+    {
+      "index": 59,
+      "native_code_cell": 28,
+      "stage": "Keep the original ten-step first-order Pauli product.",
+      "sha256": "6aadcd2de9e06573fd7e7ba1d17f80d8aac53252e59d000ee90c597a951cdf22"
+    },
+    {
+      "index": 61,
+      "native_code_cell": 29,
+      "stage": "Keep the same seven-wire constraint for Trotter.",
+      "sha256": "40b353b217aea215bfa04cb84a3479f5807c9f59ad1bb302b427065f801bb661"
+    },
+    {
+      "index": 63,
+      "native_code_cell": 30,
+      "stage": "Read the native ordered Pauli-product result.",
+      "sha256": "bfb337fffc2e07051b9403bb5bc56cc6897111d6ca6f3ed98728859869276044"
+    },
+    {
+      "index": 65,
+      "native_code_cell": 31,
+      "stage": "Retain all Trotter amplitudes.",
+      "sha256": "1f1cb60c2bc49a64f2a3ea371195debd15622a3580b6b158f3edfe532f4ef5d7"
+    },
+    {
+      "index": 67,
+      "native_code_cell": 32,
+      "stage": "Read its recorded phase and sign convention.",
+      "sha256": "6e03a4661ffe955f5270bece42e7eced6216fa3a24e0ffdfd5e1ae812eb9166f"
+    },
+    {
+      "index": 70,
+      "native_code_cell": 33,
+      "stage": "Plot its actual profile.",
+      "sha256": "efdac96b301ac3bf24fd52e3f52805b9de0d74cc178ec7bca7c4628a1acec0b8"
+    },
+    {
+      "index": 72,
+      "native_code_cell": 34,
+      "stage": "Plot its amplitude error.",
+      "sha256": "feadeba3e4201ac7802e90b61fd2f950666503563fb2b95219e99fe379ebb929"
+    },
+    {
+      "index": 76,
+      "native_code_cell": 35,
+      "stage": "Use the source custom split-control rotation.",
+      "sha256": "d5f73c59f7cd860d5cd84c04ff7c69aa6dabe78752acf5728c4c13e913479225"
+    },
+    {
+      "index": 78,
+      "native_code_cell": 36,
+      "stage": "Compose the source custom W ordering.",
+      "sha256": "28ce87bd9e8703872e360f1f26a493d035c0b028c91de10aa5e84bce6621b705"
+    },
+    {
+      "index": 79,
+      "native_code_cell": 37,
+      "stage": "Retain ten custom evolution steps.",
+      "sha256": "836bd1d424154a4547b16122ce17bf14f34354a35fac76f95e640fe927bc13f1"
+    },
+    {
+      "index": 81,
+      "native_code_cell": 38,
+      "stage": "Keep the original custom circuit width.",
+      "sha256": "925c54477765a3ecee4c7e045b4a30dca6ed305717a60f84c5a7b64150f0049d"
+    },
+    {
+      "index": 83,
+      "native_code_cell": 39,
+      "stage": "Read the custom native result.",
+      "sha256": "ec5812789cc0ae3da9d578381f29d0575afe8e6917bdea727622f265f858036e"
+    },
+    {
+      "index": 85,
+      "native_code_cell": 40,
+      "stage": "Retain every custom-method amplitude.",
+      "sha256": "01741265244e0abc8be3d78b7e2c6120a1ae5459e3fabb04c2d82d170bd06b81"
+    },
+    {
+      "index": 87,
+      "native_code_cell": 41,
+      "stage": "Read its recorded phase and sign.",
+      "sha256": "63d7c6d0d769adf3faffe068fd91a52d049dd35d51b845e301867935f5b5230b"
+    },
+    {
+      "index": 90,
+      "native_code_cell": 42,
+      "stage": "Plot its actual profile.",
+      "sha256": "280e286a7311ac585543f698506760579875345951e7f7890a90dd386bf66c70"
+    },
+    {
+      "index": 92,
+      "native_code_cell": 43,
+      "stage": "Plot its amplitude error.",
+      "sha256": "58064a5e285a46c6ae8cf574e6d15dc39e2158f3bd9fdca746594e87218b1cda"
+    },
+    {
+      "index": 94,
+      "native_code_cell": 44,
+      "stage": "Compare every original amplitude-error curve.",
+      "sha256": "453dcdb02b18a4bd804933e6b547f6bb21391ee4c1e78206874f816b63596523"
+    },
+    {
+      "index": 96,
+      "native_code_cell": 45,
+      "stage": "Use the original problem generator for resource sweeps.",
+      "sha256": "deecaf12e3212f6da390ad8d172c18338cc99c6b94adb1d509083f3c44e717d4"
+    },
+    {
+      "index": 99,
+      "native_code_cell": 46,
+      "stage": "Keep the original unprepared three-to-six-bit sweep.",
+      "sha256": "bd14758f1d0375e2b7d9e60d1552622ae9430506de87e5a3c07927b3100d1ff1"
+    },
+    {
+      "index": 102,
+      "native_code_cell": 47,
+      "stage": "Plot all native named-basis counts and paper estimates.",
+      "sha256": "b72aec6e8b3624c97ccdac9619c03fcc09a02ddad554b0ec45171d9f1a741919"
+    },
+    {
+      "index": 105,
+      "native_code_cell": 48,
+      "stage": "Retain state preparation in the source's second sweep.",
+      "sha256": "4cd945bc68f5ee2d5391b45a5f9de8e52ad72a12332660140e0a0d315b274638"
+    },
+    {
+      "index": 107,
+      "native_code_cell": 49,
+      "stage": "Keep the original duplicated first step and all ten entries.",
+      "sha256": "f414d3eefb5a84b7971afebe04510a0b5f5abff73abd064b22d0d74c79965050"
+    },
+    {
+      "index": 109,
+      "native_code_cell": 50,
+      "stage": "Plot the full three-bit step sweep.",
+      "sha256": "b74c979d44c72a7c09f557b8e76bdd1fb5a1f9dc1796cc7fbd80e003b8d953d0"
+    },
+    {
+      "index": 110,
+      "native_code_cell": 51,
+      "stage": "Save and report all actual results.",
+      "sha256": "caa35cb9bd1a84393b5b0c920e949ede79bbac9f11453e25392a8f7701569f95"
+    }
+  ]
+}

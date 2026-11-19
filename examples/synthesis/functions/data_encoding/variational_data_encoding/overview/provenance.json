@@ -1,0 +1,29 @@
+{
+  "upstream_path": "functions/qmod_library_reference/classiq_open_library/variational_data_encoding/variational_data_encoding.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "0929a853500c1a4c3d85b052e577b22482d545a1",
+  "original_sha256": "c3b9c7635e843d2de587d7ac2459584759cfaa548e2e3976ad084539beeab665",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "656600437e9f189d12dcddd9c8a5523f11f49e7e27cebd5e6632486512db0885"
+    },
+    {
+      "index": 5,
+      "sha256": "e4dfd76888891f8c56ebe37803c4368361d4579c73e5831cea9b684f5c31592a"
+    },
+    {
+      "index": 10,
+      "sha256": "6b807f35fab3a5b5cb4bbf82b09df78be1f2fbe84038b3a1f5a1e97629a27518"
+    },
+    {
+      "index": 11,
+      "sha256": "e4dfd76888891f8c56ebe37803c4368361d4579c73e5831cea9b684f5c31592a"
+    }
+  ],
+  "scope": "Retain both four-feature angle and seven-feature Bloch stages, including the odd Bloch tail. Introduce two explicitly labeled nonzero demonstration bindings per stage and execute locally. The original declares symbolic inputs; these concrete values are not attributed to the source.",
+  "native_entrypoint": "examples.synthesis.functions.data_encoding.variational_data_encoding.overview.main",
+  "acceptance_test": "tests/integration/test_synthesis_search_encoding_notebooks.py",
+  "native_notebook": "examples/synthesis/functions/data_encoding/variational_data_encoding/overview/walkthrough.ipynb",
+  "native_semantic_adaptations": "Retain both four-feature angle and seven-feature Bloch stages, including the odd Bloch tail. Introduce two explicitly labeled nonzero demonstration bindings per stage and execute locally. The original declares symbolic inputs; these concrete values are not attributed to the source."
+}

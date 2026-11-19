@@ -37,3 +37,5 @@ readout. No upstream source file is loaded at runtime.
 The [provenance record](provenance.json) identifies the reviewed Notebook and its
 code cell. This Notebook has no corresponding file in the 216-source Qmod corpus
 and is counted separately from native quantum-program counterparts.
+
+Run [the native Notebook](walkthrough.ipynb) to edit the quantum functions, execute the complete local workflow, and check every complex amplitude against an independent Circuit.

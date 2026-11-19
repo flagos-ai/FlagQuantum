@@ -1,0 +1,37 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/oblivious_amplitude_amplification.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "3ec4060a9266ac16e71c8fd15f77e5cc95374cc329f09518c4618938557d2448",
+  "git_blob_sha1": "e12b8c82a56c16ea6e2a5454ab65627d72b0f496",
+  "reviewed_code_cells": [
+    {
+      "index": 16,
+      "sha256": "757623fbc000b2e00d3b6f5220387180ffa4743a186ccfed82a6f15f2eecb895"
+    },
+    {
+      "index": 18,
+      "sha256": "ea30fe853c42401efb98d474479ff4033549d4f46d6e816ed02a672cb5f2ab09"
+    },
+    {
+      "index": 19,
+      "sha256": "836dc45508c25a1b9031c6f760bf4832889af08ef94e95ffa32f88b7aeb87a79"
+    },
+    {
+      "index": 22,
+      "sha256": "064d3ebd6d9baa7f204457729e0c999b19112fbe32ca3b337cdeb706c2db839d"
+    },
+    {
+      "index": 24,
+      "sha256": "bf2e52a890306340396fb468dbeeda2fb8a913b825ecc25486207c188b6eb8ce"
+    },
+    {
+      "index": 25,
+      "sha256": "2e90a3e3232bed278a6d6d5c42b979aea3edcaf1929f63acd82d17c5725efb1c"
+    }
+  ],
+  "scope": "Complete source OAA Notebook: seed1 normalized random four-amplitude input,both block-encoding and one-iteration experiments,named good-state tables and actual1/4to1 success probabilities. Correct source final all-row normalization assertion to actual block-zero marginal and check norm separately. Reuse existing native qfunc helpers and independent Pauli SELECT/reflection Circuit. Exact local probabilities replace cloud sampling;resources replace cloud viewer. No finite-shot,hardware,robust nonunitary or general optimization claim.",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification_and_estimation.oblivious_amplitude_amplification.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/amplitude_amplification_and_estimation/oblivious_amplitude_amplification/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_oaa_notebook.py",
+  "native_semantic_adaptations": "Complete source OAA Notebook: seed1 normalized random four-amplitude input,both block-encoding and one-iteration experiments,named good-state tables and actual1/4to1 success probabilities. Correct source final all-row normalization assertion to actual block-zero marginal and check norm separately. Reuse existing native qfunc helpers and independent Pauli SELECT/reflection Circuit. Exact local probabilities replace cloud sampling;resources replace cloud viewer. No finite-shot,hardware,robust nonunitary or general optimization claim."
+}

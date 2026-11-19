@@ -1,0 +1,133 @@
+{
+  "upstream_path": "community/Hackathons/QInnovision_2025/advection_equation/advection_equation_2nd_place_submission.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "fd061b1360fa38cbe7d08bf5891bc321f974e3c1ef70eeaca46210b1a2b3f09a",
+  "git_blob_sha1": "9f86263dbc7859733e8ee155a64105482c506206",
+  "scope": "All 20 source stages, original seven-bit 128-point grid, thirty-two-step ladder, four-time resource sweep, full controlled-rotation sweep, and eight actual figures.",
+  "native_semantic_adaptations": "Use an exact native Gray-code multiplexor for positive-control RY gates. Measure static resources after explicit U3/CX conversion. Preserve source initial state, timestep and classical floating loop; retain paper predictions separately and display the full native ratio range.",
+  "native_entrypoint": "examples.synthesis.community.hackathons.qinnovision_2025.advection_equation.second_place.overview.main",
+  "native_notebook": "examples/synthesis/community/hackathons/qinnovision_2025/advection_equation/second_place/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_advection_second_place_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Load the native numerical and quantum workflow.",
+      "sha256": "c505716c0f3595b767b9f008a7c7c13f2bda85be37852b91de24f5fda7076e5e"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "stage": "Keep seven spatial bits and the original evolution and Trotter times.",
+      "sha256": "d3752a14f46891b1135f33220894cc9152592566e9a9e58e5849ca66e8f924cb"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 3,
+      "stage": "Use the original Dirichlet initial profile on 128 points.",
+      "sha256": "561964c82bdaf59322ee7b4a991b5586ede667e5c6dedbcc4f98effabb69bd9f"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "stage": "Retain the source initial profile.",
+      "sha256": "a3bcaf57943b85c61bff17f1b47e13db1c5b315d50b715697bfbe68f9f61571c"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "stage": "Use the original explicit centered-difference evolution.",
+      "sha256": "247e3a8c3904ab730517cc6c337dbf80e7a92e6bc029fd19bc40f7b0154062b9"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 6,
+      "stage": "Retain its actual overshoot and finite values.",
+      "sha256": "07617b6d4f28fb5fcdbca0a48c56309b65b42da1e0f85b1fae10311c850e638b"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 7,
+      "stage": "Use the native exact Gray-code controlled rotation ladder.",
+      "sha256": "3cb18eeba661af648a8eed832cf9344bda47777125142b67749b6c258a451548"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 8,
+      "stage": "Keep the original complete program factory.",
+      "sha256": "df5957ba66114885177929b44abe14608d1f134cc6a4a39d00e80c6c112e25b7"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 9,
+      "stage": "Execute the original-sized experiment and all resource sweeps.",
+      "sha256": "ff2485884d926c1de270355e76e6d3f123441bf9a9f7a01770d12e18ee646147"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 10,
+      "stage": "Inspect the complete state check and actual circuit metrics.",
+      "sha256": "5f7232672485906374e4111be3ed0f033b3b0bf1ca71e835b66499b3d2f36ef4"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 11,
+      "stage": "Plot the initial state and quantum readout.",
+      "sha256": "1a57e2617a92a384c7b8af75c345cd50d1e396fe87992021ed4ae106203f5611"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 12,
+      "stage": "Compare original classical and quantum readouts.",
+      "sha256": "47dec37fe4a32e68c5382b332b77d2fb09cfa2ff652f6c65b3a09a35e057ff61"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 13,
+      "stage": "Use the unchanged paper resource formula.",
+      "sha256": "3a2d7df0d5ddd21d1cae5c7071d801d1608612d5118067882adcafff5eb67a67"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 14,
+      "stage": "Keep measured named-basis resources alongside the theory.",
+      "sha256": "a2ea2263448b1e5a3859b9a1871374f6517c64aa29750e9b0081fea3f0b61b21"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 15,
+      "stage": "Plot every original evolution time.",
+      "sha256": "fc1d44f679eda888a80a0bb9a8c323e4962ccb08d2899f5f3968a019ab8d8174"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 16,
+      "stage": "Compute all measured-to-theory ratios.",
+      "sha256": "2ca5f5536abd52f094208f14117bbeddd73f25a9b19830f9758a4a67661c747b"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 17,
+      "stage": "Plot measured and theoretical CX counts together.",
+      "sha256": "60f8d6d81932f82c06703f4550e2b5de035baa55b477ff4b6326d44546e80a61"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 18,
+      "stage": "Show the complete ratio range.",
+      "sha256": "909f9ec7fff8c81530b35f933b2390d537cd73687f41c76bfda32af00a23532c"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 19,
+      "stage": "Keep every controlled-rotation width and paper comparison.",
+      "sha256": "9ce34ee11c5b8f6dfbce4bb51d74bcaa57eeced6d458bbcf8ae069936b47b891"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 20,
+      "stage": "Plot the full controlled-rotation resource comparison.",
+      "sha256": "33e88837b077268b776effad66b84690d6529f708315f0eabcb93780062bc9e8"
+    }
+  ]
+}

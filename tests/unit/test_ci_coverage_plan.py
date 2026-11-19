@@ -182,3 +182,42 @@ def test_measured_heavy_cases_in_one_file_can_use_separate_slots(tmp_path, monke
     shards = [verify_plan(directory, i).read_text().splitlines() for i in range(4)]
     assert sorted(n for shard in shards for n in shard) == sorted(nodes)
     assert all(sum(node in shard for node in nodes[:3]) <= 1 for shard in shards)
+
+
+@pytest.mark.parametrize("requested", [1, 4])
+def test_original_optimization_workloads_receive_only_their_finite_budgets(
+    tmp_path, monkeypatch, requested
+):
+    from tools.ci_coverage_plan import LONG_TEST_TIMEOUT_MINUTES
+
+    monkeypatch.setenv("GITHUB_SHA", "e" * 40)
+    monkeypatch.setenv("GITHUB_OUTPUT", str(tmp_path / "output"))
+    long_nodes = tuple(LONG_TEST_TIMEOUT_MINUTES)
+    neighbors = tuple(
+        node.rsplit("::", 1)[0] + "::test_neighbor" for node in long_nodes
+    )
+    ordinary = "tests/unit/test_small.py::test_small"
+    nodes = (*long_nodes, *neighbors, ordinary)
+    count = write_plan(nodes, tmp_path / "plan", requested)
+    rows = json.loads((tmp_path / "output").read_text().split("matrix=", 1)[1])[
+        "include"
+    ]
+    shards = [
+        verify_plan(tmp_path / "plan", i).read_text().splitlines() for i in range(count)
+    ]
+    assert sorted(node for shard in shards for node in shard) == sorted(nodes)
+    assert len(rows) == count
+    for row, shard in zip(rows, shards, strict=True):
+        expected = sum(LONG_TEST_TIMEOUT_MINUTES.get(node, 0) for node in shard)
+        assert row["timeout-minutes"] == max(60, expected)
+    if requested == 1:
+        assert rows[0]["timeout-minutes"] == 240
+    else:
+        owners = [
+            i for i, shard in enumerate(shards) if any(n in long_nodes for n in shard)
+        ]
+        assert len(owners) == 2
+        assert all(rows[i]["timeout-minutes"] == 120 for i in owners)
+        assert all(
+            rows[i]["timeout-minutes"] == 60 for i in range(count) if i not in owners
+        )

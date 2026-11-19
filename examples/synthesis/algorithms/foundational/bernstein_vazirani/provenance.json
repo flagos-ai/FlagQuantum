@@ -33,5 +33,6 @@
   "native_entrypoint": "examples.synthesis.algorithms.foundational.bernstein_vazirani.main",
   "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
   "scope": "Complete local computational Notebook workflow: quantum composition, synthesis, text visualization, seeded sampling from exact named probabilities, and classical decision/recovery. Local drawing and sampling replace cloud services; no hardware result is claimed. Concrete tutorial oracles are specialized; general quantum callable ports are not added.",
-  "native_semantic_adaptations": "Use an equivalent linear phase oracle instead of a CX predicate with a minus-state auxiliary. Explicit Hadamard transforms replace gate-preparation within/apply."
+  "native_semantic_adaptations": "Use an equivalent linear phase oracle instead of a CX predicate with a minus-state auxiliary. Explicit Hadamard transforms replace gate-preparation within/apply.",
+  "native_notebook": "examples/synthesis/algorithms/foundational/bernstein_vazirani/walkthrough.ipynb"
 }

@@ -32,5 +32,6 @@
     }
   ],
   "native_entrypoint": "examples.synthesis.tutorials.basics.quantum_programming.classiq_overview_tutorial.main",
-  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py"
+  "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
+  "native_notebook": "examples/synthesis/tutorials/basics/quantum_programming/classiq_overview_tutorial/walkthrough.ipynb"
 }

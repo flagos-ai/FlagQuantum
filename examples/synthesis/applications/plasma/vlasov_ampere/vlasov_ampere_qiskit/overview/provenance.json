@@ -1,0 +1,163 @@
+{
+  "upstream_path": "applications/plasma/vlasov_ampere/vlasov_ampere_qiskit.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "43277bfc3c8e723567a34a74db029312d7f46be671841855e4fa72f03a3fbe85",
+  "git_blob_sha1": "9ff087277aad595bdd369dccbd9e7a189b14f1d0",
+  "scope": "All 25 source stages, original 8x8 phase-space grid, all 17 encoding qubits, fresh 128-amplitude random input, complex block projection and original 18-qubit single-pair QSVT demonstration.",
+  "native_semantic_adaptations": "Use public native Circuit operations and explicitly controlled complex128 local matrices. Replace the four-bit Draper network with its exact modular-shift permutation. Real state preparations use an explicit Householder unitary extension, preserving every source-required projected block and its absolute phase. These extensions can differ outside the projected block. Native static matrix-operation resources are declared separately from source Qiskit U/CX counts. Pin local random seed 17 because the source random input is unseeded. Keep the source dummy QSVT pair 0.1/0.2 and compile-only role, without replacing it with a fitted inverse. Both original scratch bits are retained and checked clean.",
+  "native_entrypoint": "examples.synthesis.applications.plasma.vlasov_ampere.vlasov_ampere_qiskit.overview.main",
+  "native_notebook": "examples/synthesis/applications/plasma/vlasov_ampere/vlasov_ampere_qiskit/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_vlasov_circuit_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "stage": "Use the installed FlagQuantum runtime.",
+      "sha256": "f2b58179ea898d4668270b574a54f7b3f3464362a8e669ef0f4b218ad42625b1"
+    },
+    {
+      "index": 2,
+      "native_code_cell": 2,
+      "stage": "Load native Circuit composition and fresh physics helpers.",
+      "sha256": "069eff40a17f3a0091948675e8a1e368531f1c21cf8733f306cc3b0e201d5db7"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "stage": "Use an exact modular shift with the same complete four-bit permutation as the source Draper adder.",
+      "sha256": "06b6a54e0a4b3332eadc9338cbf15a9a1312c736a4024ceba1012cc42a49445d"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 4,
+      "stage": "Use explicit uniformly controlled real rotations for amplitude assignment.",
+      "sha256": "e7cbf28097da8f21a44a7d5edbf5751e4da7e6a009f42e0ddd1dc4dcc4ac1b8f"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "stage": "Keep the original 8 by 8 phase-space grid, temperature, source and domain.",
+      "sha256": "e3e01c3809e71594cd68f3f0133028990d26fa4e7c22af62654e7f4bad32b0de"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 6,
+      "stage": "Freshly normalize the original boundary coefficients.",
+      "sha256": "074a907e57da83254a686edb8143e2a63eacdf14eae43076b444bec02883e925"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 7,
+      "stage": "Compose every derivative, boundary, signed-velocity, zeta and E selection branch.",
+      "sha256": "6eb8fbbdf1044e25dac472dd338e6978594a1f9371af317191db651c92db7cea"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 8,
+      "stage": "Retain force, current and unequal branch normalization.",
+      "sha256": "be2bdb6b92e04e41db25c550c9fc2560fec3cd4430e25bd3b927c9d13c4cdfab"
+    },
+    {
+      "index": 15,
+      "native_code_cell": 9,
+      "stage": "Compute original term scale factors directly.",
+      "sha256": "bf5c86d73814d9cf627ad5051c71ea70e3877b48e629ff7c2d7c60f862c00352"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 10,
+      "stage": "Preserve the controlled iI branch and all relative global phases.",
+      "sha256": "a2c8d81d516b56dd0b0c79edc09c47ebb40357eff4e6bb4306b8c1bb6ef5063f"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 11,
+      "stage": "Build the original seven-data-bit, ten-block-bit encoding.",
+      "sha256": "77175ce6b7dace64f17769884ce9f3e3b2aa4846774f366f33272853b0281804"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 12,
+      "stage": "Retain the complete normalization sum.",
+      "sha256": "170a827e9ad6e5fba3a0cb248a66137b37666c60ac2c72e3ce09198d7b8be24a"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 13,
+      "stage": "Construct the fresh classical advection and off-diagonal operator.",
+      "sha256": "9a171fb41a3376942aeaa75e86bd4ccd6bc6f91882b2195a01d4635413b7bb84"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 14,
+      "stage": "Keep both E sectors and all phase-space indices.",
+      "sha256": "31a31d024f25f1e76320aad119ed80731be610e8e8229f08bf021875f08cbc3e"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 15,
+      "stage": "Generate a fresh 128-amplitude random input with an explicit local seed.",
+      "sha256": "e3ab18cca1df8df9f2a048e7eae3eff957c1c7faa57f0daf30c374ee9b191095"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 16,
+      "stage": "Run the complete native encoding and report its actual static basis.",
+      "sha256": "946e1d8b51c5aca7e26847fd301624012d930a946dff83a95dd642e11fa7e3b9"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 17,
+      "stage": "Execute the entire 17-bit state before selecting the zero block.",
+      "sha256": "c0b6a48c6712fdfce5e2a2acc606350a2dd3a6e0654a986d5365d83abc5374b6"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 18,
+      "stage": "Read the actual unnormalized block-zero projection.",
+      "sha256": "d37256d058f819f537b9612824f77397ec3dec0e78e19abeff4a375f4b7ff277"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 19,
+      "stage": "Apply the independent classical matrix to the identical input.",
+      "sha256": "188fe94b3d16b6aac214b4757eeafb60cb7bb96ff4fdd777656363b6f9f64547"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 20,
+      "stage": "Compare every original data-basis amplitude.",
+      "sha256": "832daebaa908f696748557b799aaae594de940b3b10451aa775e5a39dc8a639e"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 21,
+      "stage": "Check the source complex-vector L2 threshold and clean auxiliary bits.",
+      "sha256": "de681bbd9df58c41638d15b72cb5ec07504f0bef441281a226b5d4aa7a65713f"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 22,
+      "stage": "Retain both eight-bit block-zero projectors and the separate QSVT auxiliary.",
+      "sha256": "45931552a8e33f632c5cc5a23d0feace851026c08f35122e9140cc8ca8552e67"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 23,
+      "stage": "Build the source single QSVT demonstration pair with angles 0.1 and 0.2.",
+      "sha256": "c3c28547ead7aa67bf99dbe022400d959075f857b24b3c7816b913423e1ee3f5"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 24,
+      "stage": "Keep all original data, block and auxiliary bits.",
+      "sha256": "3d357b32b8bf4b26c4d9e412530242502c18375ac416c363a2a6336a7de0f487"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 25,
+      "stage": "Report actual native static resources and persist the observed projection.",
+      "sha256": "924f953c7340970f08ae784f4448418ab6aa78ad288836a67128c752edd3bd91"
+    }
+  ]
+}

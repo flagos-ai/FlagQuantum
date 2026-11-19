@@ -1,0 +1,78 @@
+{
+  "upstream_path": "algorithms/amplitude_amplification_and_estimation/qsvt_fixed_point_amplitude_amplification/qsvt_fixed_point_amplitude_amplification.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "b43a39b1a7b3cb87b25fea93390ba9050887a1d0c14ad6279931bc2df0dfeda2",
+  "git_blob_sha1": "7be737d4168e917b4713539ca5799c63f8d42757",
+  "scope": "All 13 source stages, original six-bit predicate, degree-25 sign fit, 26 fresh projected rotations and 2048 actual samples.",
+  "native_semantic_adaptations": "Fit the bounded odd polynomial by local Remez exchange and factor the projected phases through a seeded numerical warm-up and collocation. Derive disjoint native predicates by enumerating every source word, and use a seeded local 2048-shot simulation.",
+  "native_entrypoint": "examples.synthesis.algorithms.amplitude_amplification.qsvt_fixed_point.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/amplitude_amplification/qsvt_fixed_point/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_fixed_point_qsvt_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "sha256": "57be17beb8fffc074b3f616a226d9d620ef2e6c5286773c78a7998646fec52fb"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "ff7923cde8f21034ab143db739a20539da6cd77befd1e34fb5effa5f5fa78500"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 3,
+      "sha256": "ff933385f0dea5b73b00818ebe0d442a9771db844f238508d245d5401c4627e3"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 4,
+      "sha256": "3e40e6bba9e214d3189b5cc61bddd4438937706e5fef09a6dad8669d7ae74b4d"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 5,
+      "sha256": "e4fa2bb40804cea68788e77bae1e276163b6abaa7a713b6e12c7c5ca29890d54"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 6,
+      "sha256": "5e1854a77f5c06352e0a89e7427aeba38d3b83f76a16a9029b83001705c5e93e"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 7,
+      "sha256": "367be4a24e968bf09bdd471443bebcfb631f7be8289e9137198e549ebd6c2069"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 8,
+      "sha256": "67f61b29de8fffdc7c4d00d92b36e56ddad235d512156179b62d27bd84986ae0"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 9,
+      "sha256": "5407f8b35b8be42dbdc54f1b7ca86b591e4027cc05f1643f0e42ec4793059ff6"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 10,
+      "sha256": "b62e72102823a6662c3b09e32d6186fc943eff15756f78157682a3720fc989f7"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 11,
+      "sha256": "2079afe069631651a8752421aae49e18e162dce34d216302cdc65c6969105717"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 12,
+      "sha256": "644bb00a7c08497678e6612b3122964428689da53967d0fab025506d0302a308"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 13,
+      "sha256": "4e68fb194ffba4dce1ce10cae728cde39f320dadf82ed9d7fa738321ef40d806"
+    }
+  ]
+}

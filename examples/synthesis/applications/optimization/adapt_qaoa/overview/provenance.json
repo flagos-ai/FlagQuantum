@@ -1,0 +1,113 @@
+{
+  "upstream_path": "applications/optimization/adapt_qaoa/adapt_qaoa.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "dac51d5dc4dc52d148e21e1ab63ace6cfadfdd3f",
+  "original_sha256": "8059150c437d9190a6fbd03cad57a47d43ef8770b9698e9a8774df7860043c7b",
+  "scope": "All twenty source stages, eight decision qubits, a three-layer ordinary comparator, all 74 candidate mixers in the original order, and adaptive growth until the source scaled gradient norm falls below 0.027. Each optimization allows 60 objective evaluations.",
+  "native_semantic_adaptations": "Native COBYLA replaces the hosted optimizer with the source ramp, an explicit query cap, and exact state expectations. Independent final draws use 1000 shots per variant with fixed local seeds. Public post-synthesis gate conversion measures the original CZ/RZ/RX/RY counts after verifying absolute amplitudes; the logical synthesis path preserves phase. A local 24-layer guard raises an error instead of treating exhaustion as convergence. This run does not reproduce historical hosted sampling or optimizer trajectories.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.adapt_qaoa.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/adapt_qaoa/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_adapt_qaoa_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "sha256": "2d70adf1f177c87b708ee757044ec3778139b966dd9ff5d83df42d802ce936d1"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "0c1a49538e1868f212ce0a22340e892f55d3cb4914f1575654eef9a83c791bb4"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 3,
+      "sha256": "f349a61b9704524fcf8a8f97a71369208c68c4f49ae3ad93e7e9de1b3cc3aed3"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 4,
+      "sha256": "e87f58e2a968b6247da080572306d92643e758f78d01892eec39b2e8cfadcbbe"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "sha256": "3ab4383c222090d91bd02db819031554e9f008fed4ad2fd0715a20ab840d98c7"
+    },
+    {
+      "index": 12,
+      "native_code_cell": 6,
+      "sha256": "39c7101273b296fc205b4a9f7741ce7eb2fb118007fb0b3cfd726697be2cc268"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 7,
+      "sha256": "2ede02ca1a8e85e69404de496366ca4f2d8b045592a321b21cb85c182460f0dc"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 8,
+      "sha256": "53cdb6a5f16db23e711bb111020e0532b7e324aa2606ac59cfd8eb7af0930bd0"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 9,
+      "sha256": "205d4b67bac369fcf2ed178bd6573f06c70a2d49c5f45ce022175e674bfefb1b"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 10,
+      "sha256": "dfeb26846e01008eff5f25dce6b2da697d7e72ac62001c6265a8d52e86c2fff3"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 11,
+      "sha256": "eb0d6e3410c0a37ebc4af60e378d96d2de053b5257dbedb31bf4cc618e8cd45b"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 12,
+      "sha256": "2e44c7b6f4f35d892ab49dd95f0943f7fa97e8e100bb1a565ad5724074a23bef"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 13,
+      "sha256": "97d9ca7119c03409a0d424f6765353195686842f06925a47f4ead4c2bcba0ced"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 14,
+      "sha256": "cc458e4bdadb9619bc7956ba7833f7a370c09d42b97a9c79789d2a9c6fa4c84f"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 15,
+      "sha256": "5466aecb051bbb842a4057b77e63addd46a9780a7acfb729c4ebfcf24af4074f"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 16,
+      "sha256": "0e45589ac0076ffb39e0d1488e9589b57d8fbbdeb57d3f7a72a1db24e1611cde"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 17,
+      "sha256": "eb0d6e3410c0a37ebc4af60e378d96d2de053b5257dbedb31bf4cc618e8cd45b"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 18,
+      "sha256": "32c220482c68413fbf8290e3b1e49b0a85901cfcd62ab0738760568a2a6e8a57"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 19,
+      "sha256": "cd7f2a804913b44a9541c3a24c401f68ad17e8af39a8613492bb5d91b8e785ce"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 20,
+      "sha256": "8e59b72bcf753ee0635f0813493b01c4f60250b722e9bd0c380c2e27da066bf6"
+    }
+  ]
+}

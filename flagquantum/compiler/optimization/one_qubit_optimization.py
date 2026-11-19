@@ -94,9 +94,11 @@ from .one_qubit_synthesis import (
     _PHASE_EPS,
     HALF_PI_PULSE_OPCODES,
     Z_ROTATION_OPCODES,
+    _euler_scalar_phase,
     _has_small_component,
     _is_unitary,
     _polar_angle,
+    _synthesize_u3,
 )
 
 #: A 2x2 matrix of Python complex numbers, rows first.
@@ -135,13 +137,8 @@ def _convention_phase(opcode: str, params: Mapping[str, Any]) -> float:
     pins all three against the runtime gate table, which is the authority.
     """
 
-    if opcode == "rz":
-        return -0.5 * float(params["theta"])
-    if opcode == "sx":
-        return 0.25 * math.pi
-    if opcode == "sxdg":
-        return -0.25 * math.pi
-    return 0.0
+    scalar = _euler_scalar_phase(opcode, params)
+    return 0.0 if scalar is None else float(scalar)
 
 
 def _u3_matrix(theta: float, phi: float, lam: float) -> Matrix:
@@ -413,7 +410,9 @@ def _declines_vocabulary(
     return _single_basis_pair(instructions) is not None
 
 
-def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None:
+def _fold_run(
+    instructions: list[Instruction], *, preserve_u3: bool = False
+) -> tuple[Instruction, ...] | None:
     """The exact replacement of one same-qubit run, or None to leave it.
 
     Decline a replacement that is not shorter, changes its permitted vocabulary,
@@ -428,6 +427,16 @@ def _fold_run(instructions: list[Instruction]) -> tuple[Instruction, ...] | None
         qubit=instructions[0].wires[0],
         metadata=instructions[0].metadata,
     )
+    if preserve_u3 and all(item.name == "u3" for item in instructions):
+        # Preserve an already universal U vocabulary through Runtime's normal
+        # optimization; a legal CX/U target must not acquire phase/RZ leaves.
+        converted: list[Instruction] = []
+        for item in replacement:
+            leaves = _synthesize_u3(item)
+            if leaves is None:
+                return None
+            converted.extend(leaves)
+        replacement = tuple(converted)
     if len(replacement) >= len(instructions):
         return None
     if _declines_vocabulary(instructions, replacement):
@@ -461,6 +470,7 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     either side of one still fold.
     """
 
+    preserve_u3 = all(instruction.name in {"u3", "cx"} for instruction in ir)
     output: list[Instruction | None] = []
     open_runs: dict[int, list[int]] = {}
     closed_runs: list[list[int]] = []
@@ -487,7 +497,9 @@ def collapse_one_qubit_runs(ir: CircuitIR) -> CircuitIR:
     for run in closed_runs:
         if len(run) < 2:
             continue
-        replacement = _fold_run([output[position] for position in run])  # type: ignore[misc]
+        replacement = _fold_run(
+            [output[position] for position in run], preserve_u3=preserve_u3  # type: ignore[misc]
+        )
         if replacement is None:
             continue
         for offset, instruction in enumerate(replacement):

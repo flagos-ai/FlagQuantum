@@ -1,0 +1,57 @@
+{
+  "upstream_path": "applications/physical_systems/ising_model/ising_model.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "47d498e33362424a7f5ef7478bb5afafe311fb4de9f96cf576f393e7170944f4",
+  "git_blob_sha1": "4ed7e31c88ceb594d7399d73548dcd48469a6724",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "e78043ec862bcf78a0efc868d82c0d02cd836161ac8e2577cd571717796b80c4"
+    },
+    {
+      "index": 4,
+      "sha256": "6b00d194ce70f2df6c613403adc48241117a456f4dcf26e3c270c4feaa9c932d"
+    },
+    {
+      "index": 6,
+      "sha256": "2ae7a2f61736f51ebbf866cc46a7d2120134d08951bf96bfd59143f5b939d304"
+    },
+    {
+      "index": 8,
+      "sha256": "843be4eb884d9c083987d1bac9658e9d2b565725eb57bca1a016fea3d6969315"
+    },
+    {
+      "index": 10,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 12,
+      "sha256": "22e211f866c526498cc890f1f039f0574175af822dc82f3feb06ea08c5fd8a13"
+    },
+    {
+      "index": 14,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 16,
+      "sha256": "404d8f1645647175686ed93d4e388ccafb6f3e78d7fdf5482c7cf5f9ccaf215a"
+    },
+    {
+      "index": 18,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 20,
+      "sha256": "ee2fe26da4644e7bae6be2f832e6e0cad1ba82fe0a1f4d02352b019ad58ede05"
+    },
+    {
+      "index": 22,
+      "sha256": "b805f9be1d9057306e5f79521a489b841f8e0f3cf3160943ff4b28a3785d872e"
+    }
+  ],
+  "scope": "Complete source Ising Notebook: six periodic spins, J=10, h=-20, five QAOA layers, CVaR quantile 0.7 and 100 actual native objective evaluations using explicit bounded coordinate search. Includes convergence, optimized and uniform 2048-shot local samples (seeds 123/456), ranked solutions and 30-bin weighted histograms. Source energy equals negative frozen exported cost on all 64 states; negate gammas and retain the frozen counterpart unchanged. Independent Circuit checks all complex amplitudes. Exact optimization probabilities are separate from finite samples. Budget exhaustion does not certify convergence or a pure ground state. No private optimizer equivalence, hardware, speedup, API or dependency claim.",
+  "native_entrypoint": "examples.synthesis.applications.physical_systems.ising_model.overview.main",
+  "native_notebook": "examples/synthesis/applications/physical_systems/ising_model/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_ising_notebook.py",
+  "native_semantic_adaptations": "Complete source Ising Notebook: six periodic spins, J=10, h=-20, five QAOA layers, CVaR quantile 0.7 and 100 actual native objective evaluations using explicit bounded coordinate search. Includes convergence, optimized and uniform 2048-shot local samples (seeds 123/456), ranked solutions and 30-bin weighted histograms. Source energy equals negative frozen exported cost on all 64 states; negate gammas and retain the frozen counterpart unchanged. Independent Circuit checks all complex amplitudes. Exact optimization probabilities are separate from finite samples. Budget exhaustion does not certify convergence or a pure ground state. No private optimizer equivalence, hardware, speedup, API or dependency claim."
+}

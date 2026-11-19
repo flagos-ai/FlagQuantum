@@ -1,0 +1,108 @@
+{
+  "upstream_path": "applications/CFD/QLS_for_hybrid_solvers/qls_chebyshev_lcu.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "bb82cf6de744f534b23fbf2b39e261341bd31cdf5dba27ab653d9674f2b99911",
+  "git_blob_sha1": "4008295588845472997bbae456b3c766c7524f69",
+  "scope": "All sixteen source stages. Original eight- and sixteen-row systems with both right-hand sides, 24-to-20 Pauli trim, 31/255 odd degrees, full LCU selectors and exact or 0.03 approximate preparation.",
+  "native_semantic_adaptations": "Regenerate both encodings and Chebyshev coefficients. Use native preparations and verified exact powered matrix blocks in the local Circuit to retain each original binary control. Report simulator macro instructions separately from gate-level resources. Validate full states, spectral projection and the original dense-solve thresholds.",
+  "native_entrypoint": "examples.synthesis.applications.cfd.qls_for_hybrid_solvers.qls_chebyshev_lcu.overview.main",
+  "native_notebook": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_cfd_chebyshev_lcu_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "native_code_cell": 1,
+      "sha256": "e1e7084369c960ca2a2a46c2275a2bd852599f805de63ec29b23c49fe0452dd8"
+    },
+    {
+      "index": 3,
+      "native_code_cell": 2,
+      "sha256": "d720d224b3428802a9d4f2408c74692f51d8a0dd6873defbff4eccf29ea80eb6"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 3,
+      "sha256": "2fdf27855cf2470f4d8c684ebd864e4eb914fa11efe65d541e0078b3d9a7391a"
+    },
+    {
+      "index": 6,
+      "native_code_cell": 4,
+      "sha256": "02376b416ce49683f89cb423e1f2d12db4665107c1cba8408389d8e0a8d8081b"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 5,
+      "sha256": "3db3f4b38612329ef718865572a0bf960ba4690ad1499c1122861a1c49f8f866"
+    },
+    {
+      "index": 9,
+      "native_code_cell": 6,
+      "sha256": "c02af3cead8065cf9987f6c9be58aefea2444421fa0abbb695a243cf1e05c9c7"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 7,
+      "sha256": "06f618906409d41f32eac8cb91aae58687f5459f6082a2a9641513be1d0f75ba"
+    },
+    {
+      "index": 11,
+      "native_code_cell": 8,
+      "sha256": "0224462c89887494f18878aaac00724baa60df2ec89fda9563638b9b6d198273"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 9,
+      "sha256": "72b3d5ccc3e3037b894c9752ed1a0365998725879c5a3491f0866706efc59366"
+    },
+    {
+      "index": 14,
+      "native_code_cell": 10,
+      "sha256": "33537b5e3e2bd46be3e4e430b5be3b86a45dd0d174eb48ca8f1637a488c49638"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 11,
+      "sha256": "853522160959464e4fb5423555690f8f2a1efc5315c6cd79af02e311db615a19"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 12,
+      "sha256": "0e689a3b5949d347745b040a311e43fcd336e5cb0fe9223bbd183d57f21ec299"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 13,
+      "sha256": "2df99a7858c171d63afd6eef19a1ec5ca205b4d6b5cbe2f3355b5c3a75d8a963"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 14,
+      "sha256": "9e61b386cd97df2bd48d7ace2973416c2b3344baeea78ec71061597fc2a18cc6"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 15,
+      "sha256": "04d839cb5dba8c6badea4d8ea1a26a6965de32f9654dc09e04c7abd8b318817a"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 16,
+      "sha256": "a9a658c1969d87c25f4454123c6d0a11cc7d51ffe13d5873200d76f962f507dd"
+    }
+  ],
+  "data_resources": [
+    {
+      "upstream_path": "applications/CFD/QLS_for_hybrid_solvers/matrices/b_nozzle_small.npy",
+      "original_sha256": "c41b05f1768b5a2a1dd1930594154f57ee1e06db6dd6cd07686b64fb235b0ed4",
+      "native_path": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview/b_nozzle_small.json",
+      "native_sha256": "0ffd0d8d217827baca4cf3cd1d8abfc9384c2ecd83589cd6ec7c52e784e7d983"
+    },
+    {
+      "upstream_path": "applications/CFD/QLS_for_hybrid_solvers/matrices/nozzle_008_b.npy",
+      "original_sha256": "b9a2cd28599109fe8715cca916b60e4d018d88b7bdeddcfb5981179b95524bd1",
+      "native_path": "examples/synthesis/applications/cfd/qls_for_hybrid_solvers/qls_chebyshev_lcu/overview/nozzle_008_b.json",
+      "native_sha256": "546a0c401d673b54bc76a18b8922646a54c115f038fb54baef19234b898ef554"
+    }
+  ],
+  "license_sha256": "241f68c9f35357f97e8a2a195e447d4f80098c140f0b3b3c770a11eed96f58e0"
+}
