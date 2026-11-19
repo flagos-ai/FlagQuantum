@@ -160,6 +160,84 @@ class ComponentProgramBuilder:
             return outputs[0]
         return outputs
 
+    def inline_calls(
+        self,
+        record: ProgramRecord,
+        bindings: Mapping[str, object],
+        *,
+        entry: str = "main",
+    ) -> dict[str, BindingCollection]:
+        """Insert one verified function's immediate calls into this builder.
+
+        The explicit source decomposition stays immutable. Named definitions
+        are reused when equal and isolated on conflict. Initial mapping does
+        not consume handles; every inserted call uses the ordinary linear
+        checks and retains its usual failure prefix. Unused extra initial
+        bindings follow the source inlining behavior and are ignored.
+        """
+        from .component_binding_map import map_register_bindings
+        from .component_graph import (
+            _call_entry,
+            _collections,
+            _defined_bindings,
+            _elements,
+            _iter_calls,
+            _namespace_helpers,
+        )
+
+        function = _call_entry(record, entry)
+        if any(
+            f.name != entry
+            and (
+                f.name == self._name
+                or f.name in self._functions
+                and self._functions[f.name] != f
+            )
+            for f in record.functions
+        ):
+            index = 0
+            reserved = {*self._functions, self._name}
+            while any(
+                f"__fq_inline_{index}_{f.name}" in reserved for f in record.functions
+            ):
+                index += 1
+            prefix = f"__fq_inline_{index}"
+            record = _namespace_helpers(record, prefix)
+            entry = f"{prefix}_{entry}"
+            function = _call_entry(record, entry)
+        assert function.registers is not None
+        signature = Signature(function.registers)
+        block = function.blocks[0]
+        initial = _defined_bindings(signature.lefts(), block.arguments)
+        replacements: list[tuple[BindingCollection, BindingCollection]] = []
+        for name, old in initial.items():
+            supplied = bindings[name]
+            replacement = (
+                supplied
+                if isinstance(supplied, RegisterBinding)
+                else np.asarray(supplied)
+            )
+            replacements.append((old, replacement))
+        # Force the same scalar/shape checks before inserting the first call.
+        map_register_bindings({}, replacements)
+        for definition in record.functions:
+            if definition.name != entry and definition.name not in self._functions:
+                self.define(definition)
+        functions = {f.name: f for f in record.functions}
+        known = {binding.value: binding for binding in _elements(initial.values())}
+        for position, inputs, outputs in _iter_calls(function, functions):
+            arguments = map_register_bindings(inputs, replacements)
+            new_outputs = self.call_tuple(
+                block.operations[position].callee or "", arguments
+            )
+            replacements.extend(zip(outputs, new_outputs, strict=True))
+            known.update((value.value, value) for value in _elements(outputs))
+        assert block.return_values is not None
+        returned = _collections(
+            signature.rights(), (known[value] for value in block.return_values)
+        )
+        return map_register_bindings(returned, replacements)
+
     def finalize(self, bindings: Mapping[str, object]) -> ProgramRecord:
         """Consume declared returns and verify the complete finite module.
 
