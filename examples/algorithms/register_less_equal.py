@@ -15,9 +15,12 @@ from flagquantum.compiler.registers.comparison.comparison_resource_model import 
     source_less_equal_cost,
 )
 from flagquantum.compiler.registers.comparison.less_equal import (
-    less_equal_ir,
     less_equal_requirements,
 )
+from flagquantum.compiler.registers.comparison.ordering_component import (
+    less_equal_program,
+)
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.qec.resources.estimation import estimate_ftqc_resources
@@ -28,11 +31,13 @@ class LessEqual:
     """Bind two-bit x and three-bit y, one XOR target and explicit work."""
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        quantum, classical = less_equal_requirements(2, 3)
-        gates = less_equal_ir(
-            (0, 1), (2, 3, 4), 5, tuple(range(6, 6 + quantum)), tuple(range(classical))
+        quantum, _ = less_equal_requirements(2, 3)
+        bound = bind_register_program(
+            less_equal_program(2, 3),
+            ((0, 1), (2, 3, 4), (5,)),
+            clean=tuple(range(6, 6 + quantum)),
         )
-        return circuit.compose(CircuitIR(circuit.n_qubits, gates))
+        return circuit.compose(CircuitIR(circuit.n_qubits, bound.circuit.instructions))
 
 
 def main() -> None:
