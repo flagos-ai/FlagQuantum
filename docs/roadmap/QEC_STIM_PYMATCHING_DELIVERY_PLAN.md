@@ -1,5 +1,24 @@
 # QEC Stim and PyMatching delivery plan
 
+## SDK-free memory export candidate — 2026-11-19
+
+The opt-in embedded profile now exports owned memory circuits through the same
+positioned operation translation and native text validator used by execution.
+`memory_to_stim_text()` keeps its signature, parity order, binary64 noise values,
+resource bounds and failure categories. The standard profile retains its SDK
+path. No vendor source or public contract changes are required.
+
+The candidate generated all 28 Toric configurations directly from constructors
+without Stim or PyMatching, then sampled original noisy circuits, constructed
+strict undecomposed DEMs and decoded with BP/OSD. Mechanisms agree with Stim
+1.16.0 references. The preceding Toric campaign below is historical: its
+no-SDK profile consumed captured text and did not prove SDK-free export.
+SDK and no-SDK installed acceptance passed. Full smoke/unit acceptance accounts
+for 21,162 passed and 344 runtime-skipped nodes; full integration accounts for
+12,183 passed and 276 runtime-skipped nodes. Completed records were merged
+without repeating completed tests. The per-configuration and source evidence is
+recorded in [the acceptance artifact](../../artifacts/development/qec_sdk_free_memory_export_20261119.json).
+
 ## Toric distance implementation candidate — 2026-11-18
 
 The existing Toric constructor now uses an exact matrix-derived logical-cycle

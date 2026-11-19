@@ -50,6 +50,13 @@ the ones no amplitude store can hold.
 - Do not import `stim` anywhere but `engine.py`. It is the single seam a
   replacement Clifford kernel replaces, and keeping it in one place is what
   makes that replacement a local change.
+- `qec.adapters.stim.memory_to_stim_text` reuses the same positioned operation
+  translation. In an embedded build, `_circuit_text.py` serializes that sequence
+  and the native parser validates it, so constructing an owned memory circuit
+  does not require the Python Stim package. In a standard build the existing
+  SDK parser remains the reference path. The embedded engine still owns text
+  sampling and strict DEM conversion; this does not expand the accepted gate or
+  noise domain.
 - The accepted gates are `CLIFFORD_GATE_NAMES`. Everything else - a
   parameterized rotation, `t`, `ccx`, `cswap` - is refused with `CapabilityError`
   naming the accepted set. Nothing is approximated and nothing falls back. Noise
@@ -75,6 +82,8 @@ the ones no amplitude store can hold.
   refusals because they are separate facts.
 - Run `python -m pytest tests/team/simulation/test_stabilizer_engine.py tests/team/simulation/test_stabilizer_positioned_noise.py -q`
   after a typical local change.
+- Run `python -m pytest tests/team/simulation/test_stim_memory_export.py tests/team/simulation/test_stim_annotated_engine.py -q`
+  after changing annotated text serialization or its embedded validation path.
 
 The private `_fault_signatures.py` primitive reuses the engine's Clifford images
 to propagate recorded-measurement and terminal-Z parities backwards through gates,
