@@ -1,0 +1,23 @@
+{
+  "upstream_path": "applications/optimization/qaoa_in_qaoa/qaoa_in_qaoa.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "8b302f8d938b414cfe98e87fd1f418de83b0e07f",
+  "original_sha256": "069eabebf8290bc0e8e29fd928272976519b72240001db73eaa31901cfea5803",
+  "reviewed_code_cells": [
+    {
+      "index": 1,
+      "sha256": "a8bca1702997951cbf8d18b211da71793ae870b9ce8004163ef817ef8ae3b40d",
+      "native_code_cell": 1
+    },
+    {
+      "index": 2,
+      "sha256": "93278bda60395fa3520d95f863b0de040870fa10c8c09cec22bb5f888dca935c",
+      "native_code_cell": 2
+    }
+  ],
+  "native_semantic_adaptations": "Native public COBYLA with a hard 20-query cap uses the exact mean negative cut. The initial schedule follows the norm formula reviewed in current Classiq SDK 1.35.0. The source leaves the historical SDK and shot default unspecified; use 1000 actual CPU samples per quantum subproblem, seed 10, and resolve identical cut/count ties by ascending word. Every trial specializes a fresh native program at synthesis. Keep Python seed 246 and use NumPy seed 4812 for layout with local RNGs. No frozen subproblem, historical trajectory equivalence, runtime parameter binding, hardware or optimum claim.",
+  "scope": "Both source code stages, the fresh 40-node graph with edge probability 0.2, a six-qubit cap per community, two QAOA layers, and 20 objective queries per community. Signed contractions and original-node flips, finite sample ranking, both classical comparisons and the complete labeled graph. Independent absolute Circuit states and cut tables for all realized quantum subproblems.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.qaoa_in_qaoa.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/qaoa_in_qaoa/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_qaoa_in_qaoa_notebook.py"
+}

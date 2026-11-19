@@ -170,8 +170,11 @@ def allocate(
 ) -> None:
     """Declare fresh zero storage inside a captured qfunc.
 
-    Pass a sized output, or a literal width and an unsigned output. This
-    operation cannot run in the host interpreter; use synthesize and fq.run.
+    Pass a sized output, or a checked synthesis-time integer width in 1..256
+    and an unsigned output. Bound integer parameters and closed static integer
+    expressions specialize independently for each synthesis. Calls and quantum
+    reads cannot determine a width. This operation cannot run in the host
+    interpreter; use synthesize and fq.run.
     """
     raise TypeError("allocate is captured inside qfunc; synthesize the program")
 
@@ -194,11 +197,17 @@ def drop(target: QNum | QArray[QBit], /) -> None:
     raise TypeError("drop is captured inside qfunc; synthesize the program")
 
 
-def qpe(callback: Callable[[], None], phase_result: QNum, /) -> None:
+def qpe(
+    callback: Callable[[], None] | Callable[[int], None], phase_result: QNum, /
+) -> None:
     """Estimate a pure quantum callback's eigenphase into a fresh counter.
 
     Use one positional captured operation or qfunc call in a zero-argument
-    lambda, at the root or in root pure unitary regions. The allocated unused
+    lambda for repeated U, or a one-argument lambda for U(power). The latter
+    receives static powers 1, 2, ..., 2**(bits-1) and is controlled once per bit,
+    without another matrix power. Both run at the root or in root pure unitary
+    regions. Defaults, variadics and shadowing captured names are rejected.
+    The allocated unused
     counter has one to eight signed or unsigned all-fractional bits. Callback
     storage must be initialized, writable and disjoint from the counter;
     allocation, publication and unsupported nested controls are rejected.

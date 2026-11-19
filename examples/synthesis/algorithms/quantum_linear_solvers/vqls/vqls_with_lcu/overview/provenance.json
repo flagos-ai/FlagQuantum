@@ -1,0 +1,98 @@
+{
+  "upstream_path": "algorithms/quantum_linear_solvers/vqls/vqls_with_lcu.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "23163779dabe1f85f3cd83d5593c8fc1a48a1807",
+  "original_sha256": "9b9fb0841758a1962e986bad0937e6b1ba09282e016a5b237eb3876d3ce41b63",
+  "scope": "All 17 source code stages, the original three-term 8 by 8 matrix, three system and two selector bits, all nine ansatz angles, the conditional cost with 204800 actual draws per query, a cap of 2000 objective queries, and comparison of the final state with the direct solve.",
+  "native_semantic_adaptations": "Native COBYLA replaces the unpinned hosted optimization, with seed 1000 for the source initial angles and an independent local sampling stream. Preserve the last executed parameter binding returned by the source wrapper. Statevector readout yields the actual final amplitudes. The final phase is aligned to the source last-component convention. The routine counts postselection events and reports the actual trace; no historical optimizer trajectory, convergence, or speedup claim.",
+  "native_entrypoint": "examples.synthesis.algorithms.quantum_linear_solvers.vqls.vqls_with_lcu.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/quantum_linear_solvers/vqls/vqls_with_lcu/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_vqls_lcu_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 7,
+      "native_code_cell": 1,
+      "sha256": "08dd9b387c03d86c8f9d556d4302fdc842ed2f6789a7460e07a5fb05f483929c"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 2,
+      "sha256": "522f6bd0a7006ce168bcc76f7974ee4fb9015bf3b6fa8ffa2124c9a9e53bc51b"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 3,
+      "sha256": "4429284eac0388efce931237468b47aa6eb3b79da521dd6b9feb8b08c116ef88"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 4,
+      "sha256": "bcf8531be062b60bfedc58c4200a5938400e70c422d4735941b81b9520d75a86"
+    },
+    {
+      "index": 19,
+      "native_code_cell": 5,
+      "sha256": "93164aa912bf8bcb29f394bb8413c7a70b07d0ac38f10ae4415de4c23ff00ec0"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 6,
+      "sha256": "f0688f83b69d5af9ae82b548c243811875150987cdedd25b51f98db07aed1761"
+    },
+    {
+      "index": 25,
+      "native_code_cell": 7,
+      "sha256": "a3f76c56255f8ed354b12eeaceee32351369f0334e370c151b9ea700c0c84783"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 8,
+      "sha256": "10b628baa6fe1dc780bfd884ca5b5b157d5c13ab995f1677c08881e86e4beac7"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 9,
+      "sha256": "1bc86b451a428ee987b3b6cc6d4df8945fe884bb2442098ccf4429a0c0c73618"
+    },
+    {
+      "index": 32,
+      "native_code_cell": 10,
+      "sha256": "06c2253b1acddce2acf98f2389508c4e0d8347b7f3a3c107a2afe2cf80785198"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 11,
+      "sha256": "5ff3fbe890dbd2f39112a12f9407627e2ca6f2a976e5dff899d5abe452c3dc78"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 12,
+      "sha256": "1034cc49766a98a927f2b62cdd6224057a768b1fdeabe594f38bcb0e2de160dc"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 13,
+      "sha256": "ab4235c8fd7682383eb1abbcc63df6ef30466dc7cd46c6b783589655caf56d0c"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 14,
+      "sha256": "5cfe1f266747b72358c7054f7a44c6897064497d84c3e529ad0c25a44b7d27fe"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 15,
+      "sha256": "36ef5ae8a57602a1e0b407e6d2b0f42f199297f71bbaf18f9ee6010d6516659a"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 16,
+      "sha256": "03dbef59bcb42523591944f3b1245984975711fe7f65a8dfa1355c649d338e16"
+    },
+    {
+      "index": 44,
+      "native_code_cell": 17,
+      "sha256": "126c43c6e6cff1ce782252c77c0d6217b880f23d26b852d9637822abb2d62b5a"
+    }
+  ]
+}

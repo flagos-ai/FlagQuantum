@@ -72,6 +72,17 @@ These examples do not use that alias:
   references, and `synthesis/community/paper_implementation_project/block_encoding_nd_laplacian/periodic_laplacian_nd/main.py`
   defines its quantum function through the synthesis namespace.
 
+- Other synthesis support files use their owning module APIs instead of importing
+  the root alias: `__init__.py`, `ansatz.py`, `approximation.py`, `archive.py`,
+  `arithmetic.py`, `arithmetic_candidate.py`, `benchmark.py`, `classical.py`,
+  `datasets.py`, `even_phases.py`, `exact_basis.py`, `fitting.py`,
+  `graph_optimization_plot.py`, `iterative.py`, `kaliski.py`, `measurements.py`,
+  `model.py`, `phases.py`, `phasing.py`, `plots.py`, `plotting.py`,
+  `portfolio_programs.py`, `presentation.py`, `problem.py`, `program.py`,
+  `quantum.py`, `reference_programs.py`, `reference_rotation_basis.py`,
+  `symmetry.py`, `synthesis.py`, and `workflow.py`. Their workflow entry points
+  and roles are linked from the [synthesis catalog](synthesis/CATALOG.md).
+
 - [`algorithms/fermion_orbital_rotation.py`](algorithms/fermion_orbital_rotation.py)
   differentiates a real orbital angle through domain tensor functions.
 

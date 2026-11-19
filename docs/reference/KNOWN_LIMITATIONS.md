@@ -1218,8 +1218,9 @@ offsets in -256..256 with modular wraparound at its declared width. Plain
 all-inout helpers and coherent calls to a helper containing exactly one update
 use existing checked indexed-X effects. Zero offsets retain initialization
 checks. Conditions and target storage must be disjoint; predicate controls keep
-their eight-input-bit limit. Numeric formats, arrays, partial/permuted words,
-quantum offsets and arbitrary controlled mutable helpers refuse. The native
+their eight-input-bit limit. Numeric formats, direct array targets and arbitrary controlled mutable helpers
+refuse. The later register-update extension below admits disjoint static slices
+and raw quantum addends. The native
 two-dimensional walk retains five-bit position words, the signed original coin
 and its retained quantum environment. Full complex-state acceptance does not
 claim resource parity, complete Notebook coverage or acceptance of QLBM's
@@ -1723,6 +1724,83 @@ integral storage and is not a scalability claim. Differentiable tensors must
 remain outside the static `MolecularProblem` snapshot path. See
 [the stage contract](../development/FERMION_ORBITAL_GRADIENTS.md) and run
 `python -m examples.algorithms.fermion_orbital_rotation`.
+
+## Scalar-view controlled modular updates
+
+Direct raw one-bit controls and zero/one equality or inequality on one-bit QNum
+views can guard a single-update helper whose raw unsigned target is physically
+disjoint. Static slices and explicit least-significant-first target compositions
+may share the selector's owning register when they exclude its bit. Nested
+helper aliases preserve this location check. Computed predicates retain the
+conservative whole-register mutation refusal; this change does not permit
+arbitrary read/write overlap or dirty workspace. Negative Const selectors retain
+the checked computed path instead of being flipped. Numeric formats,
+initialization, ownership, expansion and actual resource budgets remain checked.
+
+The focused integration tests exhaust all 32 inputs for each of 96 combinations
+of control spelling, target layout, offset and helper nesting. Independent
+complex-amplitude Circuit checks include absolute phase and zero hidden work.
+This compiler slice alone does not certify an additional original or Notebook.
+
+## Static power-dependent native QPE
+
+Experimental native `qpe` also accepts one positional lambda parameter. The
+compiler binds it to powers 1,2,...,128 for the existing one-to-eight-bit counter.
+`qpe(lambda power: operation(power, data), counter)` captures and controls each
+family member once. It does not repeat that member or raise a returned matrix
+to the same power again. Zero-argument callbacks keep repeated-U semantics.
+
+This supports the matrix-QPE Notebook's seven-bit, second-order Suzuki schedule
+with repetitions 2,3,5,7,11,16,23. Reuse finite static array lookup for the schedule;
+no host callback runs. Defaults, variadics, keyword calls, captured-name
+shadowing, counter aliases, ownership changes and Output escapes remain rejected.
+All intermediate effects and final resources count against existing budgets.
+Dropped entangled data stays physically retained and is not clean workspace.
+See the [native matrix-QPE workflow](../../examples/synthesis/algorithms/quantum_phase_estimation/qpe_for_matrix/overview/README.md).
+
+## Native bound allocation boundary
+
+Unreleased native `allocate(bits, q)` accepts a checked synthesis-time integer
+in 1..256. Names bound through classical inputs, static integer constants,
+bounded loop indices, classical integer-array reads and closed `+`, `-`, `*`
+expressions use the existing depth-32 and absolute-value-4096 evaluator limits.
+Bool, float, quantum reads, unresolved names, calls (including `len`) and dynamic
+attributes cannot determine allocation width. Existing width agreement,
+ownership and actual resource budgets still apply. This does not admit bound
+names in numeric annotations, quantum type aliases or parameterized Output
+helpers. Width 256 is validated without allocating a dense state. See the
+[approved scope](../api-changes/FQ-SYNTH-NATIVE-BOUND-ALLOCATION-20261113.md).
+
+## Constrained native wide MCX
+
+The private one-clean fallback extends array-controlled X under tight width
+limits; it does not supply a globally optimal hardware-aware decomposition.
+The source-sized15-control demonstration uses the same exact decomposition in
+both topologies and pays additional CX routing cost on the line. Complete
+three-CX routing SWAP witnesses are preserved through optimization, so some
+otherwise cancellable routing CX gates are deliberately retained. Exact U3
+conversion emits scalar-phase compensation where necessary; it does not expand
+the separately restricted phase-output target profiles. Native original-size
+full-state tests compare Circuit preparation plus an independent basis-index
+permutation, avoiding an exponentially large dense MCX matrix. Larger MCX
+Notebooks, proprietary backend choices and CX-specific optimization need their
+own acceptance and are not credited by this demonstration.
+
+## Native register modular addition and subtraction
+
+Initialized raw unsigned QNum words now admit `target += source` and
+`target -= source`, including static disjoint helper views and packed source views. Direct indexed
+augmented assignment retains its existing refusal.
+Source storage is preserved, Const reads are allowed and target-width modular
+wraparound is explicit. Signed/fractional storage, quantum expressions as
+addends, overlap, uninitialized storage and Const writes refuse. Two-register
+controlled helper updates remain unsupported. The existing indexed-X lowering
+owns compiler workspace and budgets; no optimality or resource-parity claim
+follows. See the [semantic contract](../api-changes/FQ-SYNTH-NATIVE-REGISTER-ADDITION-20261113.md).
+
+## Native numeric scalar bit gates
+
+Static scalar gate indices can select encoded bits of initialized signed and binary-scaled QNum registers while preserving exact numeric formats. Width, bounds, initialization, Const, alias and budget checks still apply. This supports the original five-bit flexible-QPE comparison without resetting its shared data. General signed/fractional numerical slices, unsigned arithmetic reinterpreting those slices and dynamic indices remain unsupported. Dropped QPE data and counters remain retained private environment, not clean compiler workspace.
 
 Experimental Torch-FL FP64 RY/CX statevector training has a bounded
 [development experiment](../../benchmarks/torch_fl_fp64/README.md). It uses

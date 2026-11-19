@@ -27,7 +27,7 @@ from ...core.target_capabilities import TargetCapabilitySnapshot
 from ...errors import CompilationError
 from ..lowering.native_block_optimization import verify_native_block_optimization
 from ..lowering.schedule_legalization import schedule_circuit_dependencies
-from ..routing import CouplingMap
+from ..topology.coupling import CouplingMap
 from .artifact_compilation import ArtifactCompilationResult
 from .physical_plan import build_physical_circuit_plan
 

@@ -4,8 +4,8 @@
 # Copyright 2022 The Cirq Developers
 # Licensed under the Apache License, Version 2.0. See the repository LICENSE or
 # https://www.apache.org/licenses/LICENSE-2.0.
-# Modified for FlagQuantum: native IR relative scoring, deterministic ties,
-# repeated-layout detection, bounded rollback and shortest-path progress.
+# Modified for FlagQuantum: incidence-indexed native IR scoring, deterministic
+# ties, repeated-layout detection, bounded rollback and shortest-path progress.
 # Sources: docs/development/COMPILER_UPSTREAM_REUSE.md and
 # docs/development/COMPILER_SABRE_RELATIVE_SCORING.md.
 

@@ -14,5 +14,6 @@
       "sha256": "b9f320b6728e522bc83f20cb7a56ee31732efd1df4cc7fcc7fa5b8cc9f186766"
     }
   ],
-  "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.auxiliary_managment.auxiliary_management.workflow"
+  "workflow_entrypoint": "examples.synthesis.tutorials.technology_demonstrations.auxiliary_managment.auxiliary_management.workflow",
+  "native_notebook": "examples/synthesis/tutorials/technology_demonstrations/auxiliary_managment/auxiliary_management/walkthrough.ipynb"
 }

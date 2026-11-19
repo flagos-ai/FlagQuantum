@@ -1,0 +1,61 @@
+{
+  "upstream_path": "applications/optimization/integer_linear_programming/integer_linear_programming.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "f39454c942af77029b5d92d61ac40b1a7294085f",
+  "original_sha256": "29a5b6e3dcd5cd1aa5495a985024e36bbfa414fd6197cce1972040cb62149a06",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "sha256": "bc595f5651029d0fba507d7fdc693fb5f4468edfbc23de92d3c1591b4e250b95"
+    },
+    {
+      "index": 4,
+      "sha256": "837f188041c1762bc2e59c2079520e01a750ade4eef27fc10f7ec28149f63f93"
+    },
+    {
+      "index": 5,
+      "sha256": "0bbeaac50ff4a6c51720912ab508a93ae1e9ae2268135f0f720d0d4e10041860"
+    },
+    {
+      "index": 7,
+      "sha256": "36f6097f644be5af04e022036c6cfad6c2d700c02089a9c9ea7412369430f9e2"
+    },
+    {
+      "index": 9,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 11,
+      "sha256": "b79312ec9fee249418e90607178a498de726b5f28a5a8fe5597e2d4f5c639241"
+    },
+    {
+      "index": 13,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 17,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 19,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 21,
+      "sha256": "ee2fe26da4644e7bae6be2f832e6e0cad1ba82fe0a1f4d02352b019ad58ede05"
+    },
+    {
+      "index": 23,
+      "sha256": "d51c269c50391a8a91acd25014d60389ef540fcf8f15774af44ec5fbdd194280"
+    },
+    {
+      "index": 26,
+      "sha256": "5e2d617f27b5cdc4550c36998a9960265978642c3796ed7cb4b65eed9fbfab3c"
+    }
+  ],
+  "scope": "Complete local native integer linear programming Notebook with original A,b,c,integer bounds0..3,all three inequalities,three layers,90-iteration setting,CVaR0.7,1000 optimized and1000 uniform observations,trace,30-bin histogram,observed feasible solution and separate bounded classical reference.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.integer_linear_programming.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/integer_linear_programming/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_integer_linear_optimization_notebook.py",
+  "native_semantic_adaptations": "Reuse frozen native quantum encoding and independent Circuit. Preserve all three original inequalities separately from retained quantum penalty. Two slack outputs are modeled variables,not clean workspace. Public Nelder-Mead step0.07 andexplicit six-angle seed replace private optimizer;exact local CVaR0.7 replaces shot estimation during search. Final1000+1000 CPU samples use seeds2718/31415. Missing feasible observation stays None. Separate exact reference over64 original-domain assignments aftersampling replaces Couenne;never supplies parameters,probabilities orobservations. Named integer bit0 isLSB;physical axes handled separately. No optimizer trajectory,convergence,hardware oradvantage claim."
+}

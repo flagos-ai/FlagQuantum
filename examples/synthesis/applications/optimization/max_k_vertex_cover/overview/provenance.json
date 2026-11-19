@@ -1,0 +1,77 @@
+{
+  "upstream_path": "applications/optimization/max_k_vertex_cover/max_k_vertex_cover.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "293bca45b4a2c52fa177635d99636a14379695c6",
+  "original_sha256": "6b9efeb0bbe023f6280d2dbc71a67dc712c511d499643f1e783a726bd5b21adc",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "c97b87366883c0d89d829f86112c5e2e4d699ed4171864e76e0fe62ebcc96f71"
+    },
+    {
+      "index": 4,
+      "sha256": "3b4ccdf526429fbece737fd787a647ce926f15697708a4bb974f4e03e0b6e7a2"
+    },
+    {
+      "index": 6,
+      "sha256": "48aa3fc71736ba9a2b832a4b4e1a784ef50f495359fd40aa2ee59d52dd86d56f"
+    },
+    {
+      "index": 7,
+      "sha256": "1cf68dac70309a2eae6cab5b96cc45d9404bd6d48b7db04493016f3dab17a49d"
+    },
+    {
+      "index": 9,
+      "sha256": "946f0d74b2863738c810be419af9d7b93fb8a5bfaaff77540134ea2f2a4e52c8"
+    },
+    {
+      "index": 11,
+      "sha256": "f984cf3e354ee9ba2129f26528c60f8f1a4f7b47d263187a24041c9e1284a6fa"
+    },
+    {
+      "index": 13,
+      "sha256": "b79312ec9fee249418e90607178a498de726b5f28a5a8fe5597e2d4f5c639241"
+    },
+    {
+      "index": 15,
+      "sha256": "00343d5811b16fa3e94c7992f9afc8a2fbb2359e0390e54c9356cc5d1c696a5f"
+    },
+    {
+      "index": 18,
+      "sha256": "c0f0dad93027060c0abe4099959527d3af5c3560ca22109e15dceb281d77d373"
+    },
+    {
+      "index": 20,
+      "sha256": "c1e35b8f57fac0568a1fc75328623aa5319c1bb33d92fe9f824019a7d7996042"
+    },
+    {
+      "index": 22,
+      "sha256": "ef99e0efacf88e6d1666c361200324011f8abfef7162a49ba53568ec7d9933ba"
+    },
+    {
+      "index": 24,
+      "sha256": "06a8faa25df9cb1b0d6ba489c2bf6c941ba59d8367b71b4cbdbc3e3c411215d7"
+    },
+    {
+      "index": 25,
+      "sha256": "b21ab9060d245fecee405159c16d03cc43724a13e701ffc89bc773ce739bda55"
+    },
+    {
+      "index": 28,
+      "sha256": "bd4735217a9e08ba28d89f375c049ef7c73c17ad3d1790d7e1f280c7de4b0dbe"
+    },
+    {
+      "index": 29,
+      "sha256": "b3f4a942116a104f8c203823088eea0c5e5d33b3c5d3a7584fefd6c31d6d6694"
+    },
+    {
+      "index": 30,
+      "sha256": "a1bd586c329197c65b256f6987cb6aa66175dcd7e065a9cc1e9f41044537b628"
+    }
+  ],
+  "scope": "Complete local native maximum-k-vertex-cover Notebook: original10nodes,seed13graph,K5,21edges,3layers,90iteration setting,CVaR0.7,1000optimized/uniform observations,trace,histogram,feasible observed graph andseparate exact reference.",
+  "native_entrypoint": "examples.synthesis.applications.optimization.max_k_vertex_cover.overview.main",
+  "native_notebook": "examples/synthesis/applications/optimization/max_k_vertex_cover/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_max_k_cover_optimization_notebook.py",
+  "native_semantic_adaptations": "Reuse frozen native quantum functions and independent Circuit. Minimize uncovered edges with10times squared cardinality penalty;separate raw objective,penalized cost andexactly-five feasibility. Public Nelder-Mead step0.07,explicit6angle seed andexact local CVaR0.7 replace private optimizer/shot estimation during search.90iterations. Final1000+1000CPU samples seeds2718/31415. Missing feasible observation stays None. Exact reference over252feasible assignments computed only after sampling replaces Couenne. Node0namedLSB. Seeded spring layout replaces Kamada-Kawai,retains all source plot roles. No trajectory,convergence,hardware oradvantage claim."
+}

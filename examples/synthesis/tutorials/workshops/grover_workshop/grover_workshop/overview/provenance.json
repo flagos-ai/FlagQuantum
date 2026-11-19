@@ -1,0 +1,69 @@
+{
+  "upstream_path": "tutorials/workshops/grover_workshop/grover_workshop.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "2614109e5dcfe03fcf1918d3bc8878202d17724d52288356272c37c0afdf6007",
+  "git_blob_sha1": "e37a03db6c5c9d473f71e4ec01389dbbab8f20ff",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "sha256": "ff638c56e28f76fb4451e6606c7a01d9faa33f8f2869099917f2a1a0c14b5872"
+    },
+    {
+      "index": 3,
+      "sha256": "b78feff84b8050eba06f04153b1dfe691a515fe8278fcb4dfdcb4cfd7fe024c8"
+    },
+    {
+      "index": 7,
+      "sha256": "8cd6a557056cb12760d7f7ff84049be7e32ba7b94c67bfcfcfd9018fc703f1a1"
+    },
+    {
+      "index": 9,
+      "sha256": "fdda5535af72dfb68f96abeed7bac55e836d4dac31593906264b5b17faff8ad2"
+    },
+    {
+      "index": 10,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 11,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 28,
+      "sha256": "4d832575c81f2a1cfee9be707083788248147afaf163acad3dbd119af1b66a19"
+    },
+    {
+      "index": 37,
+      "sha256": "1b43a286a4d7c1c7c08e95d82aed0e1110188fd2bb43eef600de5d6415f3bf2f"
+    },
+    {
+      "index": 40,
+      "sha256": "d9915bf1fe4b76db53afdf0ec7b89ca3afdd0d8c0e993f02cf43b018c5e9fccc"
+    },
+    {
+      "index": 42,
+      "sha256": "537d884165bb6149ac89d37c564bf10e502df7f31363272d7b0c5e5938eed61a"
+    },
+    {
+      "index": 44,
+      "sha256": "6608b6628705adf4ba4e837b01a64a6b4b2078463c1d1b7b802b5e4c8499a376"
+    },
+    {
+      "index": 46,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 48,
+      "sha256": "6c2369edac38a3395a7d9890e2d1bbcd1ee332d89f581b42e1e97a9e470cd146"
+    },
+    {
+      "index": 51,
+      "sha256": "ee0a75d64f192aed03f6e97f13643207b892d984a08c47eb1c505560517f6903"
+    }
+  ],
+  "scope": "Retain the initial five-qubit uniform state, seven-qubit allocation-only exercise drafts under width and depth objectives, and complete arithmetic-oracle solutions under both objectives. All five construction stages are preserved. Exercise TODOs remain explicitly unfinished; they are not presented as working searches. Reuse the existing native arithmetic predicate and Grover reflection. Native resource summaries replace cloud circuit viewers; no Classiq search or optimized-resource equivalence is claimed.",
+  "native_semantic_adaptations": "Retain the initial five-qubit uniform state, seven-qubit allocation-only exercise drafts under width and depth objectives, and complete arithmetic-oracle solutions under both objectives. All five construction stages are preserved. Exercise TODOs remain explicitly unfinished; they are not presented as working searches. Reuse the existing native arithmetic predicate and Grover reflection. Native resource summaries replace cloud circuit viewers; no Classiq search or optimized-resource equivalence is claimed.",
+  "native_entrypoint": "examples.synthesis.tutorials.workshops.grover_workshop.grover_workshop.overview.main",
+  "native_notebook": "examples/synthesis/tutorials/workshops/grover_workshop/grover_workshop/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_vqe_grover_jacobi_notebooks.py"
+}

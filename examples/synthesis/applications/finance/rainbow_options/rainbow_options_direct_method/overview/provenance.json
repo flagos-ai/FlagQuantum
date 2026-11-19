@@ -1,0 +1,88 @@
+{
+  "upstream_path": "applications/finance/rainbow_options/rainbow_options_direct_method.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "git_blob_sha1": "172de87214de53803012970b90c8509746db0649",
+  "original_sha256": "1acdc36a01b8ebd7cd57ee59bdc7f1d409a9ae719f391a44a73e4bc2f5735a66",
+  "scope": "All 15 source stages, two assets with two bits apiece, five-bit selector with two fractional bits, width budget 25, epsilon 0.05, alpha 0.1, and the original confidence check.",
+  "native_semantic_adaptations": "Regenerate the normal cell masses, Cholesky coefficients, rounded affine offset, strike threshold and controlled rotations. Execute the original direct exponential loading and full auxiliary environment. Use a local count-only estimator with the original epsilon and alpha and a bounded Grover power. Verify each complete native state against an independent Circuit and report both the source historical reference and a fresh direct-grid classical result.",
+  "native_entrypoint": "examples.synthesis.applications.finance.rainbow_options.rainbow_options_direct_method.overview.main",
+  "native_notebook": "examples/synthesis/applications/finance/rainbow_options/rainbow_options_direct_method/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_rainbow_direct_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 3,
+      "native_code_cell": 1,
+      "sha256": "831d04d31d9640a4426246b42aecf266a09456014ae26dc6539b2637e19937b1"
+    },
+    {
+      "index": 4,
+      "native_code_cell": 2,
+      "sha256": "50d81b0dcb2ba949f83bff0baa65c9317fd27fd5bfd1e3b6361e6483d8f04483"
+    },
+    {
+      "index": 5,
+      "native_code_cell": 3,
+      "sha256": "3be53b89902323b1bf34a6d514b06266e077725ae84f3096a4a07a69a348af9a"
+    },
+    {
+      "index": 7,
+      "native_code_cell": 4,
+      "sha256": "9cf45bddbd47fc04ece968c19edfc3d7d5e06d01eb73e3fe89fca1cf8331ef24"
+    },
+    {
+      "index": 10,
+      "native_code_cell": 5,
+      "sha256": "b1f8da754c623ae5ab65095ecd515f75251313d05fbde77cfef15c0e35171294"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 6,
+      "sha256": "1009c522421cdcb1eb9286e26925c9ab6ec8a6974e396b3012276c44a3e15c34"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 7,
+      "sha256": "e92f0f5ca173f640c32a0234ce1d959e38ddbc6bc71cf9a7ace30763ae2dfcff"
+    },
+    {
+      "index": 18,
+      "native_code_cell": 8,
+      "sha256": "ab5ee9a1cbb85198857af7d084e7d458a45cc0d6c97b4f11ce407d0be8e948ed"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 9,
+      "sha256": "ccabd7db6dea79a3876443114170f39d1819db28e7d800f349e5fe4765272240"
+    },
+    {
+      "index": 21,
+      "native_code_cell": 10,
+      "sha256": "b052f90e16ef5758bd04348f9b821ee80d73c9c04ef5932c62f2843981773a64"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 11,
+      "sha256": "e7f26e21a6a7c268c460b8641e4a19ae8a63a2b2eb4df577acd639a33cd0e72f"
+    },
+    {
+      "index": 24,
+      "native_code_cell": 12,
+      "sha256": "0df90d126c20d3f24fa5e2124d8c74fb48596d4bfefb797efd58e15f9526f9ca"
+    },
+    {
+      "index": 26,
+      "native_code_cell": 13,
+      "sha256": "8d5cc47bcc324719910f3ece66280edaef971d88f26ae0812435027aadc02100"
+    },
+    {
+      "index": 28,
+      "native_code_cell": 14,
+      "sha256": "b5145e19d76289844e8fbf2498b8539411e75abbe7459ae3171e072a404f6017"
+    },
+    {
+      "index": 30,
+      "native_code_cell": 15,
+      "sha256": "ad3bbe8fb9ad48415aef3d7d7d14f14ae7e057d01eb9e699d488cd9c6e3a8e62"
+    }
+  ]
+}

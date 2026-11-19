@@ -18,6 +18,7 @@ from examples.synthesis.applications.finance.autocallable_options.partial_expone
     shift_matrix,
 )
 from flagquantum import synth
+from flagquantum.compiler import ResourceEstimate
 from flagquantum.compiler._hybrid.verifier import HybridVerificationError
 from flagquantum.ecosystem.contracts import InteropConversionError
 from flagquantum.errors import PlanningError
@@ -214,6 +215,8 @@ def test_invalid_overlap_refuses(success: float) -> None:
     "limits",
     [
         {"max_qubits": 5},
+        {"max_qubits": 7, "max_operations": 2399},
+        {"max_workspace": 1, "max_operations": 2399},
         {"max_operations": 2398},
         {"max_depth": 2045},
         {"memory_limit_bytes": 1024},
@@ -227,6 +230,26 @@ def test_resource_budgets_refuse(limits: Limits) -> None:
         synth.synthesize(
             native.main, classical_inputs=native.classical_inputs(), **limits
         )
+
+
+@pytest.mark.parametrize("workspace", (0, 1))
+def test_tighter_workspace_uses_more_gates_and_preserves_full_state(
+    workspace: int,
+) -> None:
+    program = synth.synthesize(
+        native.main,
+        classical_inputs=native.classical_inputs(),
+        max_workspace=workspace,
+        max_qubits=6 + workspace,
+    )
+    resources = program.report["resources"]
+    assert isinstance(resources, ResourceEstimate)
+    assert resources.n_qubits <= 6 + workspace
+    assert resources.n_operations > 2399
+    expected = fq.run(reference_circuit(-0.5, native.SUCCESS_AMPLITUDE)).statevector()
+    torch.testing.assert_close(
+        state(program, 64), expected.reshape(64), atol=1e-11, rtol=0
+    )
 
 
 def test_scratch_free_exponential_preserves_the_complete_state() -> None:

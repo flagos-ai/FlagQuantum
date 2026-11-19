@@ -1,0 +1,127 @@
+{
+  "upstream_path": "community/Hackathons/iQuHack_2025/Challenge_solution/our_solution/classiq_iQuHack_2025_final_sol.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "0682c636eb26943bb1b9266c43a5e9e90eef6c6a100477fbd62ef705d1083ec8",
+  "git_blob_sha1": "a60c88694d51f9978ca1ea0869bb7543f0d96eb3",
+  "scope": "All 19 source stages, original six-bit direct, eight-bit and four-bit amplitude-amplification paths, and the original disabled team export.",
+  "native_semantic_adaptations": "Execute the archived overlap without discarding work qubits and report actual leakage. Preserve both original data widths, recompute the exact overlap on the supplied Gaussian lookup grid for the local corrected circuits, and verify full states and clean work. Render the corrected stage-one probabilities and take one actual local draw.",
+  "native_entrypoint": "examples.synthesis.community.hackathons.iquhack_2025.gaussian_reference.overview.main",
+  "native_notebook": "examples/synthesis/community/hackathons/iquhack_2025/gaussian_reference/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_iquhack_gaussian_reference_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 11,
+      "native_code_cell": 1,
+      "stage": "Use the local FlagQuantum runtime.",
+      "sha256": "ff638c56e28f76fb4451e6606c7a01d9faa33f8f2869099917f2a1a0c14b5872"
+    },
+    {
+      "index": 13,
+      "native_code_cell": 2,
+      "stage": "Run the sourced reference locally.",
+      "sha256": "bbdeb407b181b85f255c2170a1a8a5d3e156474dd89a082a5e5b9b6ff1ef3e61"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 3,
+      "stage": "Use native qfunc synthesis and local plotting.",
+      "sha256": "b16d971db84ad05802bd354b1399ea95e239b6764aaf9729add77cd637a05795"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 4,
+      "stage": "Generate probabilities in raw signed two\u2019s-complement order.",
+      "sha256": "11df89a3416c09ffa750209868e5434f9524096f9aeae4b3442756ec004009af"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 5,
+      "stage": "Keep the original stage-specific width constraints.",
+      "sha256": "8fe03a3f32cf0dda6237d237a0e418f83ccbeddf29b53e6feb42d31cbe91fa9c"
+    },
+    {
+      "index": 27,
+      "native_code_cell": 6,
+      "stage": "Synthesize the original six-qubit direct preparation.",
+      "sha256": "f7677c6d03130e83d92684d857831f4e06b01cffc967a46bdc1cfe95e606d930"
+    },
+    {
+      "index": 31,
+      "native_code_cell": 7,
+      "stage": "Compare the archived endpoint with the actual lookup-table grid.",
+      "sha256": "1cf7fb7e3df64ccfbd23614526b8719c0b0ef4d5d6302db7cff9b55284533d6d"
+    },
+    {
+      "index": 34,
+      "native_code_cell": 8,
+      "stage": "Synthesize the original eight-data-qubit amplitude-loading stages.",
+      "sha256": "d8eb09d14ab9322c75d957dc33cf0f6ee852e43d57c5812a67804c6b32a4cda2"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 9,
+      "stage": "Read the diagnosed leakage and the verified clean result.",
+      "sha256": "d124fc3a890a7a226d620a60d23f3689db88f1e29d09c490ce5ccd2c8da98031"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 10,
+      "stage": "Draw one actual sample from the checked state.",
+      "sha256": "9e914bb1c1fed72b251b9e499bf0ab479326316ea3274af065af0ea64126dcdc"
+    },
+    {
+      "index": 39,
+      "native_code_cell": 11,
+      "stage": "Keep the complete checked signed amplitudes.",
+      "sha256": "9bb146f979ec100a142db9950f8fe8e047068a20cb2bd3ab2733d35d5499f398"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 12,
+      "stage": "Build the original four-data-qubit second stage.",
+      "sha256": "e4551b2c3fd3d6a01dec966df7de72a4cbc286c69fe7e2780279c258673cf163"
+    },
+    {
+      "index": 45,
+      "native_code_cell": 13,
+      "stage": "Keep the original four-bit resolution and both cleanup results.",
+      "sha256": "c4a8c78d479010229f5033c7a9924a3ed5c04711710d7af6243c3db31b355bd3"
+    },
+    {
+      "index": 48,
+      "native_code_cell": 14,
+      "stage": "Compare the normalized eight-bit amplitudes with the Gaussian target.",
+      "sha256": "1ac9a911991f1eddd8fce628cdf0aa51937414bed6bb4745744770c5a3b431b3"
+    },
+    {
+      "index": 50,
+      "native_code_cell": 15,
+      "stage": "Use the measured native resource records.",
+      "sha256": "dafb7efa302125f3febb668d979da13eeaa7720c6310f376f600123fe7bbfa67"
+    },
+    {
+      "index": 52,
+      "native_code_cell": 16,
+      "stage": "Plot the checked stage-one state against its exact target.",
+      "sha256": "671f7ac31fff1f69df1629a518f8f11e54ba3992a7d3868131f329c8717c2560"
+    },
+    {
+      "index": 55,
+      "native_code_cell": 17,
+      "stage": "Report the original second-stage width, errors and resources.",
+      "sha256": "5457fcc8bd6f59ca76da4294cf9aa6ff149de22db9aa3a3b96902a6d0e5d9686"
+    },
+    {
+      "index": 58,
+      "native_code_cell": 18,
+      "stage": "Expose the optional native export after a cleanup check.",
+      "sha256": "ceaae97c96c9a403a8430676723fd08fb6eb62feb7bbdd9cff33a74a70c13109"
+    },
+    {
+      "index": 60,
+      "native_code_cell": 19,
+      "stage": "Keep the original team export disabled.",
+      "sha256": "cf11954201a169089c965144c4f84528dce1d7c17bb1b5b8c6b8fa95c48e6753"
+    }
+  ]
+}

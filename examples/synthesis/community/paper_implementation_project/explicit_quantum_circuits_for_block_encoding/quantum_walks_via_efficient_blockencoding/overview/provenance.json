@@ -1,0 +1,139 @@
+{
+  "upstream_path": "community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "48863e57557723b702712046df69154a997118a2a054745ece9ea5965575d0a0",
+  "git_blob_sha1": "2344df845f89d23fcadcf25553f6c890ec742346",
+  "scope": "All 21 source stages, 2/4/8/16-vertex tree oracle and native Pauli LCU, eight-site stochastic and Chebyshev projections, both four-vertex discriminants, and both 16-vertex walks through twenty repetitions.",
+  "native_semantic_adaptations": "Use the native public Pauli LCU in the original resource comparison and explicit Circuit arithmetic and coherent controls for the structured workloads. Report each native normalization and scratch cost. Reuse one native template per walk, use explicit seeded one-thousand-draw shots where the source leaves defaults, and check all full states. Display projected states after global-phase alignment as in the source.",
+  "native_entrypoint": "examples.synthesis.community.paper_implementation_project.explicit_quantum_circuits_for_block_encoding.quantum_walks_via_efficient_blockencoding.overview.main",
+  "native_notebook": "examples/synthesis/community/paper_implementation_project/explicit_quantum_circuits_for_block_encoding/quantum_walks_via_efficient_blockencoding/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_quantum_walk_block_encoding_notebook.py",
+  "reviewed_code_cells": [
+    {
+      "index": 2,
+      "native_code_cell": 1,
+      "stage": "Set up the local FlagQuantum experiments.",
+      "sha256": "7499d8a2f4c7ae29743536e2df7ec451f196659c8b7bb5770e603aa4de92e9d5"
+    },
+    {
+      "index": 8,
+      "native_code_cell": 2,
+      "stage": "Build the original eight-vertex extended tree adjacency matrix.",
+      "sha256": "162c8e937dd7e7d77782373d5f43c4509ca3c762cc88ea65d8d869f8942e573f"
+    },
+    {
+      "index": 16,
+      "native_code_cell": 3,
+      "stage": "Use the original edge, self-loop and root rotation coefficients.",
+      "sha256": "61c2034dbeda1ccdbfda85856ea7fbc362649faa41481d89f3ab30518e5ecf43"
+    },
+    {
+      "index": 17,
+      "native_code_cell": 4,
+      "stage": "Execute the complete graph workflow and check the eight-vertex structured projection.",
+      "sha256": "bf6699258f03339eecd2ae69502e1950e3e13d01d808e2db1274d22f7a36008d"
+    },
+    {
+      "index": 20,
+      "native_code_cell": 5,
+      "stage": "Regenerate all real Pauli coefficients and load each public LCU encoding.",
+      "sha256": "4dcdb05a65ab624e98e4598ab4e8f68f4a0bb0109165f3956e99f6b4b22212aa"
+    },
+    {
+      "index": 22,
+      "native_code_cell": 6,
+      "stage": "Retain 2, 4, 8 and 16 vertices and measure actual Pauli LCU resources.",
+      "sha256": "0e15847e0cb9e739482db3fb8814eb5ea3987c28bbdeec4d76c2ef0ce83f536d"
+    },
+    {
+      "index": 23,
+      "native_code_cell": 7,
+      "stage": "Compare both implementations in a common gate basis.",
+      "sha256": "c2cfac39e5f6018896f262570d5e3b0697d53af9b56061e12dfeed79e8c9474b"
+    },
+    {
+      "index": 29,
+      "native_code_cell": 8,
+      "stage": "Build the original eight-site banded circulant matrix and verify its stochastic rows.",
+      "sha256": "d12adf6a99c2026edc5c1849169d24ddf6276c4efd7cdbfef35bd8bc1a24e882"
+    },
+    {
+      "index": 33,
+      "native_code_cell": 9,
+      "stage": "Derive the two amplitudes for the coherent shift selector.",
+      "sha256": "e9bf51617673e9d66e74229ca31f43a35d0bd0b1883ec40dd1e31780d8b03a69"
+    },
+    {
+      "index": 35,
+      "native_code_cell": 10,
+      "stage": "Form the source cyclic adder, swap and inverse adder.",
+      "sha256": "0c159a5462da6415d4d88001888585ff097cdc74b214a54b46f715fb401ea0d5"
+    },
+    {
+      "index": 36,
+      "native_code_cell": 11,
+      "stage": "Verify all cyclic basis columns against the independent shifted permutation.",
+      "sha256": "0c6608bc839f04f083e356bca0d509220be802161ee59bca0ff14b21c2da0287"
+    },
+    {
+      "index": 37,
+      "native_code_cell": 12,
+      "stage": "Read the uniform circulant projection.",
+      "sha256": "f62f324c9adb0b47eaaecb409e51dc0b8a8b8fdf90f4a21708277e09239e0a6f"
+    },
+    {
+      "index": 41,
+      "native_code_cell": 13,
+      "stage": "Construct the independent T2 target from the full cyclic matrix.",
+      "sha256": "73a6e8129d20954de7b5f14d4f4f03a28ee8d14fffdbb9117ef4cad9e7a5bdb1"
+    },
+    {
+      "index": 42,
+      "native_code_cell": 14,
+      "stage": "Use the original nonuniform amplitudes and apply two coherent projector reflections.",
+      "sha256": "42f14cb9a5c91c39046ee63d502ca27b94c99d951655137d9bdbfa4eaf0f4a02"
+    },
+    {
+      "index": 43,
+      "native_code_cell": 15,
+      "stage": "Read the projected result in the source global phase convention.",
+      "sha256": "6d8674bda6fe01b2094fe85f380958b616dc28f97ad9309d10f6ab8b07bd334f"
+    },
+    {
+      "index": 47,
+      "native_code_cell": 16,
+      "stage": "Build both mathematical discriminants on four vertices.",
+      "sha256": "63346b354b94b05f015624f26939c50bc1cff17aebbcace5d2f648f462981ee0"
+    },
+    {
+      "index": 49,
+      "native_code_cell": 17,
+      "stage": "Execute the unmarked H and SWAP discriminant.",
+      "sha256": "32bc1646ec3f9e6796c4a1e1846ea993b52640f024bf284f25b0fc1e01942771"
+    },
+    {
+      "index": 50,
+      "native_code_cell": 18,
+      "stage": "Read the full unmarked projected vector.",
+      "sha256": "b678415dc9e4255e830d70c17bfa55d7bd6e19df5c8f2c79f658731435e6caac"
+    },
+    {
+      "index": 52,
+      "native_code_cell": 19,
+      "stage": "Check the original rounded controlled rotations around the marked discriminant.",
+      "sha256": "407a0ff5f493cdbdb27b7f354fad532f13889221d08ebdbf1c12a0e2f091ece3"
+    },
+    {
+      "index": 53,
+      "native_code_cell": 20,
+      "stage": "Read the marked projected vector with the source display phase.",
+      "sha256": "af1a282852cb16fa2b03fa80a0def6e4cba64339d931c941e5f83ca81ce160e8"
+    },
+    {
+      "index": 56,
+      "native_code_cell": 21,
+      "stage": "Sample the 16-vertex walks at each of the original 20 repetitions.",
+      "sha256": "e9b86b24758233b213d637fe784c07790c713ce9f5c22c8968de824cd4cee4fd"
+    }
+  ]
+}

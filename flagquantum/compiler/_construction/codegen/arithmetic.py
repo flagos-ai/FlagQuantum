@@ -15,6 +15,7 @@ from typing import Literal
 from ....core.ir import CircuitIR, Instruction
 from ..._hybrid.model import INDEX, HybridProgram, Operation, ValueId
 from ..._hybrid.verifier import Diagnostic, HybridVerificationError
+from ...optimization.resource_estimation import estimate_resources
 from ...registers._arithmetic_kernels import (
     borrowed_less_xor,
     comparison_xor,
@@ -25,7 +26,6 @@ from ...registers._arithmetic_kernels import (
     square_accumulate,
     xor_add_parts,
 )
-from ...resource_estimation import estimate_resources
 from ..analysis.arithmetic_rewrites import ArithmeticNormalization, normalize_arithmetic
 from ..analysis.lifetimes import LifetimeAnalysis, analyze_lifetimes
 from ..analysis.ranges import unsigned_width

@@ -1,0 +1,81 @@
+{
+  "upstream_path": "algorithms/number_theory_and_cryptography/shor/shor.ipynb",
+  "upstream_commit": "b69c4893d8264d1e59ce0909df2bd88efed25e00",
+  "original_sha256": "3b14511c2b47637be6aeb0637a2df79d96de7237b3783dc2ee8c737a8738019e",
+  "git_blob_sha1": "b87b91d31e7588576507ac89a7c107474c1da9d9",
+  "reviewed_code_cells": [
+    {
+      "index": 4,
+      "sha256": "203db0aea62a3178e8b8813b40245d142207b0a4c1891b59421a9b336440202a"
+    },
+    {
+      "index": 6,
+      "sha256": "7a5e4c0deea792df8e9f59b53555f8b8b7935e1d3e672d1f3aef3b0416dcaf05"
+    },
+    {
+      "index": 9,
+      "sha256": "afe2ba0824e7e19a253ae89d220c4f079255dd1437d934141036989bf3332f2e"
+    },
+    {
+      "index": 13,
+      "sha256": "8d956a5f392541ad240327f7e6f54b4886e1964ee0b3cf7607b08ff96e26c6d5"
+    },
+    {
+      "index": 15,
+      "sha256": "b09d9e8e8df33242f0fb7d86cc0d30e3685af7569ba17883749a582ae19dc224"
+    },
+    {
+      "index": 17,
+      "sha256": "ef9fbf9dd50b0b7819ba654236a741e8bcffa1487940e229cd9291184dd8ffbb"
+    },
+    {
+      "index": 19,
+      "sha256": "f64675f9253e45d0f9f243938b79d7f9a808008384c1f510c22fa61f3d8f6692"
+    },
+    {
+      "index": 23,
+      "sha256": "494c99ef33571fdf68a24f5d011556d1b881f5b0b2a2dfb3cc8037750815c0f2"
+    },
+    {
+      "index": 26,
+      "sha256": "59e05c290f42e5efe88a407f7379e3838d3f350a229191fc05b9f22d987ba1d5"
+    },
+    {
+      "index": 28,
+      "sha256": "2e5ec41f1a9314ae309fe6a86b41300dd428f17c3619da8b821e5828bc18fcff"
+    },
+    {
+      "index": 29,
+      "sha256": "507974fedbf4fd453a6b082521b6605c7ab171ca50a50a348eb4e684f1717f78"
+    },
+    {
+      "index": 32,
+      "sha256": "10ea69caacc8d11d37b59a8006eb5037f258d3b50f00c095da6865e27bc61e4d"
+    },
+    {
+      "index": 33,
+      "sha256": "fcc2d0944a56d96950e872865cba5d06335396c6e4e28ad0437738a78bec11e2"
+    },
+    {
+      "index": 35,
+      "sha256": "b550d65eff23ba5a48a96736dba17f3b40406ca378c64db1cdfa78626fd94079"
+    },
+    {
+      "index": 36,
+      "sha256": "45bd67714ffb6def10aece263a2bf5ef84d76870e997bc30e65f44bc87c67aa0"
+    },
+    {
+      "index": 38,
+      "sha256": "fe081ffe8b65c2760d57ef8c9477399eaffa3264cda9a222000cbcde69c62b87"
+    },
+    {
+      "index": 40,
+      "sha256": "27fc7cfbc1ae6daf95609bbcb2b8375d40853f3d659d0cafd7311ee2908ce353"
+    }
+  ],
+  "scope": "Complete Shor Notebook: classical123456789 warm-up,all continued-fraction examples,original21/base11 quantum period finding with10phase+5residue bits,2048actualshots,count>10/denominator<21 filters,histogram with rational axis,derived order6 and verified factors3/7;explicit mathematical corrections.",
+  "native_entrypoint": "examples.synthesis.algorithms.number_theory_and_cryptography.shor.overview.main",
+  "native_notebook": "examples/synthesis/algorithms/number_theory_and_cryptography/shor/overview/walkthrough.ipynb",
+  "acceptance_test": "tests/integration/test_synthesis_shor_notebook.py",
+  "native_semantic_adaptations": "Existing native modular exponentiation and inverseQFT implement periodfinding.Exact stdlib Fraction convergents replace optional SymPy for this classical helper;float inputs retain exact binary values.Local seeds1700/1701 replace unseeded hosted sampling.Source XOR-as-exponent typo is explicitly corrected using pow and valid counterexamples;period is derived from retained-denominatorLCM instead of hardcoded6,then original assertions checked.Local resources replace hosted show.Large123456789 warm-up remains classical only."
+}

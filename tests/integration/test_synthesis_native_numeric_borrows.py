@@ -124,7 +124,7 @@ def test_coherent_control_and_adjoint_preserve_absolute_phase(inverse: bool) -> 
         "increment([flag,flag])",
         "increment([x,x[1:3]])",
         "increment([x[1:3],x[2]])",
-        "control(x[0],lambda:increment([flag,x[1:3]]))",
+        "control(x[0],lambda:increment([flag,x[0:2]]))",
         "increment(x[3:4])",
     ],
 )

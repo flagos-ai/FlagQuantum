@@ -47,5 +47,6 @@
   "native_entrypoint": "examples.synthesis.functions.standard_gates.overview.main",
   "acceptance_test": "tests/integration/test_synthesis_native_workflows.py",
   "scope": "Complete local computational Notebook workflow: reuse and synthesize all nine native gate examples in source order, preserving source parameters. Direct synthesize(qfunc) replaces separate create_model and synthesis calls. Local execution and named probabilities additionally check each program; independent gate Circuit comparisons retain absolute phase. No cloud or hardware result is claimed.",
-  "native_semantic_adaptations": "Use a named two-bit QNum for the RZZ whole-register QArray; no indexing occurs. Other output names and order are unchanged."
+  "native_semantic_adaptations": "Use a named two-bit QNum for the RZZ whole-register QArray; no indexing occurs. Other output names and order are unchanged.",
+  "native_notebook": "examples/synthesis/functions/standard_gates/overview/walkthrough.ipynb"
 }
