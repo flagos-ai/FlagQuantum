@@ -7,8 +7,9 @@
 
 import numpy as np
 
-from ..core.ir.program.registers import Register
-from .register_score_data import SymbolClass
+from ..core.ir.program.registers import Register, RegisterSide
+from .register_score import RegisterStep
+from .register_score_data import SymbolClass, adjoint_wire_symbol
 
 
 def control_register_wire_symbol(
@@ -36,3 +37,39 @@ def controlled_wire_title(
         raise ValueError("a controlled child must provide a Text title")
     text = attributes["text"]
     return "Text", {"text": f"C[{text}]" if text != "" else "", "fontsize": 10}
+
+
+def control_predicate_wire_symbol(
+    step: "RegisterStep",
+    register: Register | None,
+    index: tuple[int, ...] | None,
+    *,
+    values: tuple[tuple[int, ...] | None, ...],
+    uncompute: bool = False,
+) -> tuple[SymbolClass, dict[str, str | int | bool]]:
+    """Present grouped equality controls and directional predicate outputs."""
+    if uncompute:
+        return adjoint_wire_symbol(
+            *control_predicate_wire_symbol(
+                step,
+                None if register is None else register.adjoint(),
+                index,
+                values=values,
+            )
+        )
+    if register is None:
+        return "Text", {"text": "Ctrl", "fontsize": 10}
+    if register.name.startswith("ctrl_"):
+        if index is None:
+            raise ValueError("Control presentation requires an element index")
+        group = int(register.name[5:])
+        return control_register_wire_symbol(register, index, values[group])
+    text = "C" if register.name == "target" else register.name
+    if register.name != "target" and index:
+        text += "[" + ", ".join(map(str, index)) + "]"
+    glyphs: dict[RegisterSide, SymbolClass] = {
+        RegisterSide.LEFT: "RarrowTextBox",
+        RegisterSide.RIGHT: "LarrowTextBox",
+        RegisterSide.THRU: "TextBox",
+    }
+    return glyphs[register.side], {"text": text}
