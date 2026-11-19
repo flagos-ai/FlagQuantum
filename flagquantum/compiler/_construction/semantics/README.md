@@ -33,3 +33,55 @@ The offline Bell-state example captures a Python `@qfunc`, emits OpenQASM 3 with
 H and CX, and builds a `DeploymentPackage` for `local/offline-line` with 256 shots.
 It requires no credentials. The integration test reads the output back and
 checks the Bell state. Change the source gates to exercise the compilation path.
+
+## Numerical matrix decomposition
+
+`unitary.py` expands bounded dense matrices using Givens rotations and registered
+gates. Its elimination residual floor is `1e-15`, matching its existing phase
+residual floor. Complete matrix reconstruction still has to pass the unchanged
+`1e-12` absolute bound. This numerical matrix path does not edit submitted gate
+parameters or symbolic expressions. It introduces no backend or public policy.
+
+The previous `1e-16` floor admitted eigensolver/BLAS roundoff as extra controlled
+rotation networks. In PR #1229's Linux coverage job `135597091704`, the unchanged
+Lanchester case emitted 20,227 operations and depth 18,028, exceeding its existing
+20,213/18,016 ceilings. The same source on macOS ARM64/Torch 2.14.0 emitted
+20,213/18,016. With the residual floor aligned, the authoring host emits
+19,194/17,107 and retains the full-state, absolute-phase, named-field and clean
+workspace checks. These are diagnostic observations, not a timing or SDKBench
+result. Linux confirmation remains required; the test ceilings are unchanged.
+
+```bash
+python -m pytest -q tests/team/compiler/test_construction_unitary_matrices.py
+python -m pytest -q tests/integration/test_synthesis_native_lanchester.py
+```
+
+The matrix checks replay every computational-basis column of complex Fourier
+and seeded random matrices with and without coherent controls, including global
+phase and clean workspace. They use the workspace count chosen by the existing
+allocator. A diagnostic with one fewer workspace bit for the controlled
+four-qubit case exposed approximately `2.2e-12` inactive-branch simulator drift;
+that separate fallback precision issue is tracked in
+[issue #1240](https://github.com/flagos-ai/FlagQuantum/issues/1240) and is not
+claimed fixed here.
+
+### Harmonic oscillator resource regression
+
+Aligning the residual floor also removes roundoff-generated rotations from the
+native harmonic oscillator. A controlled replay on macOS ARM64 / Torch 2.14.0
+changed only the elimination floor: `1e-16` produced 7 qubits, 387 operations and
+depth 335; `1e-15` produced 7 qubits, 203 operations and depth 173. Both used two
+workspace qubits and passed all 32 input columns against the independent
+reference, including absolute phase and clean workspace at the existing bounds.
+Linux job `135633176038` also reported 203 operations and depth 173, passing those
+semantic checks before failing the old exact resource assertion.
+
+The regression test now pins the improved exact resource tuple `(7, 203, 173)`;
+it does not widen a tolerance or replace equality with a looser resource ceiling.
+The historical counts in the example provenance remain unchanged. The complete
+harmonic suite additionally exercises nonzero bindings, resource refusal and
+invalid-input rejection.
+
+```bash
+python -m pytest -q tests/integration/test_synthesis_native_harmonic.py
+```

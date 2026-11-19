@@ -23,9 +23,14 @@ def _absolute_choice(
     extended: list[int],
     layout: list[int],
     distances: tuple[tuple[float, ...], ...],
+    *,
+    tie_rng: random.Random | None = None,
 ) -> tuple[int, int] | None:
     costs = {}
-    for edge in sorted(candidates):
+    ordered = sorted(candidates)
+    if tie_rng is not None:
+        tie_rng.shuffle(ordered)
+    for edge in ordered:
         moved = [
             edge[1] if x == edge[0] else edge[0] if x == edge[1] else x for x in layout
         ]

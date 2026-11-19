@@ -1,4 +1,5 @@
 import random
+from unittest.mock import patch
 
 import pytest
 import torch
@@ -190,7 +191,13 @@ def test_sabre_uses_fewer_swaps_than_the_shortest_path_strategies() -> None:
 
     routing = sabre.metadata["routing"]
     assert routing["strategy"] == "sabre"
-    assert routing["inserted_swap_count"] == 30
+    with patch(
+        "flagquantum.compiler.topology.sabre._select_sabre_trials",
+        side_effect=lambda program, coupling, baseline: baseline,
+    ):
+        original = route_to_topology(program, coupling, strategy="sabre")
+    assert original.metadata["routing"]["inserted_swap_count"] == 30
+    assert routing["inserted_swap_count"] < 30
     assert (
         routing["inserted_swap_count"]
         < persistent.metadata["routing"]["inserted_swap_count"]
@@ -226,7 +233,15 @@ def test_sabre_plan_is_reproducible_and_places_every_instruction_once() -> None:
         for instruction in first
         if instruction.metadata.get("routing_phase") == "final_restore"
     ]
-    assert len(forward) == 26
+    with patch(
+        "flagquantum.compiler.topology.sabre.choose_layer_swaps", return_value=None
+    ):
+        previous = route_to_topology(program, coupling, strategy="sabre")
+    assert sum(op.metadata.get("routing_phase") == "forward" for op in previous) == 26
+    assert (
+        first.metadata["routing"]["inserted_swap_count"]
+        <= previous.metadata["routing"]["inserted_swap_count"]
+    )
     # The restore is not required to be the forward SWAPs in reverse: a restore
     # that walks the final layout home along coupling edges can be shorter. What
     # matters is that the restore is legal, that replaying it reaches the identity
@@ -328,7 +343,13 @@ def test_sabre_uses_a_bounded_number_of_swaps_on_a_larger_device() -> None:
 
     routed = route_to_topology(program, coupling, strategy="sabre")
 
-    assert routed.metadata["routing"]["inserted_swap_count"] == 92
+    with patch(
+        "flagquantum.compiler.topology.sabre._select_sabre_trials",
+        side_effect=lambda program, coupling, baseline: baseline,
+    ):
+        original = route_to_topology(program, coupling, strategy="sabre")
+    assert original.metadata["routing"]["inserted_swap_count"] == 92
+    assert routed.metadata["routing"]["inserted_swap_count"] < 92
     assert all(
         len(instruction.wires) != 2
         or instruction.metadata.get("is_channel")

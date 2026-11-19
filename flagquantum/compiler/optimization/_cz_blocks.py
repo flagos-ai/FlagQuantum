@@ -14,6 +14,7 @@ from typing import Literal
 
 from ...core.ir import CircuitIR, Instruction
 from ..lowering.basis_translation import translate
+from ._cz_local_cleanup import compact_native_cz_locals
 from .two_qubit_optimization import _IDENTITY, Matrix, _lifted_matrix, _matmul
 from .two_qubit_synthesis import synthesize_two_qubit
 
@@ -140,6 +141,10 @@ def _candidate(
     if sum(item.name == "cz" for item in candidate) >= cz_count:
         reject("not_lower_cz_cost")
         return None
+    # This pass explicitly assumes arbitrary one-qubit target rotations. Keep
+    # the generic synthesis entry's fixed-pulse contract unchanged, and compact
+    # only bounded proposals that already satisfy the raw resource limits.
+    candidate = compact_native_cz_locals(candidate, pair)
     # Bounded numerical synthesis is a proposal, not its own acceptance oracle.
     reconstructed = _product(candidate, pair)
     if reconstructed is None or not _verified(product, reconstructed):
