@@ -117,3 +117,21 @@ python -m pytest tests/unit/test_constant_addition_component.py tests/unit/test_
 [The complete addition audit](../../../../docs/development/ADDITION_FILE_AUDIT.md)
 separates stored calls, measured primitive inventories, source analytical costs
 and remaining foreign/symbolic admission boundaries.
+
+`subtraction_component.py` stores both complete subtraction bodies.
+`subtraction_program(a_dtype, b_dtype=None)` preserves a and writes a-b, retaining
+unsigned casts, three OnEach complements, the shared equal-width Add and the
+original prefix lifecycle. Signed a copies its sign through shared fanout;
+other integer inputs zero-extend. `subtract_from_program(dtype)` preserves a and
+writes b-a through typed BitwiseNot/Add/BitwiseNot. Add owns its measured carries.
+All prefixes and carries return clean. The source's loose QAny/QUInt view edges
+stay separate from strict dtype-check admission. The existing append example uses
+these native graphs through the shared binder.
+
+```bash
+python -m examples.algorithms.register_subtraction
+python -m pytest tests/unit/test_subtraction_component.py tests/unit/test_fanout_component.py -q
+```
+
+See [the complete subtraction audit](../../../../docs/development/SUBTRACTION_FILE_AUDIT.md)
+for original tests, source declarations and remaining generic admission gaps.

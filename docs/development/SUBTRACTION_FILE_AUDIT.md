@@ -69,3 +69,58 @@ Q-0219 closes as a complete teaching asset. Q-0220 stays open for generic
 foreign dtype/wire callbacks, controlled construction, and executable
 symbolic decomposition. Q-0221 stays open for the original strict dtype
 and generic count-mode boundaries above. The immutable reference is retained.
+
+## Native graph batch interface — 2026-11-20
+
+The complete-file batch owns `Subtract` and `SubtractFrom` executable
+component graphs in Compiler arithmetic. It reuses typed Add, BitwiseNot,
+OnEach, Cast and word-lifetime owners. A shared bits fanout graph reuses the
+existing `fanout_ir` source sequence and has no workspace or measurements.
+Its control is QBit, targets are one opaque MSB-first word, and both remain live.
+
+Subtract accepts concrete signed, unsigned or Montgomery a/b descriptors with
+0 < width(a) <= width(b). It preserves a and writes a-b into b. Unequal widths
+own an opaque prefix of width(b)-width(a), sign-extended only for signed a.
+The original three OnEach complements, unsigned equal-width Add and all Cast,
+Split/Join and prefix allocate/free calls remain explicit. Prefix work and Add
+carries return clean. SubtractFrom uses equal-width typed inputs, preserves a
+and writes b-a into b by BitwiseNot/Add/BitwiseNot. The user append entry remains
+unchanged. Numerical conversion and execution stay outside Compiler.
+
+The native root call sequence, named operands and all Cast/Split/Join calls
+match the unmodified source. Add, OnEach and fanout implementation evidence is
+reused at those dependency boundaries. Actual CNOT/T/measurement/reset and
+conditional CZ streams are independently matched on unsigned, signed,
+Montgomery and mixed descriptors through eight bits, including unequal widths.
+The five concrete original subtraction factories (signed4, signed64, signed4
+into signed16, and SubtractFrom signed4/signed64) use all five existing native
+check modes. No replacement testing framework is introduced.
+
+Full source complex tensors with an entangled spectator are checked at small
+widths. Every raw erasure history and every restoration history pair agrees
+without normalizing away branch amplitude or global phase. Prefix/carry work
+returns zero. The a-b graph restores by a second a-b call. The b-a graph restores
+through the accepted typed Add owner. The existing user append example now
+binds both native component graphs.
+
+Model and primitive counts remain separate. For signed2 into signed3 a-b,
+measured emission is 23CX, 9X, 6H, 4T, 4Tdg, 2S, 2measurement, 2CZ and 2reset.
+The independent source model is 2And, 22Clifford, 2measurement and peak8.
+Three-bit b-a emits 21CX, 6X, 6H, 4T, 4Tdg, 2S, 2measurement, 2CZ and 2reset,
+with source model 2And, 17Clifford, 2measurement and peak8. The shared fanout
+emits 2n-1 CNOTs, while source QEC charges the entire fanout as one Clifford.
+All seven model categories are checked against the accepted Add formula plus
+source complement/fanout declarations. The existing whole-file source77pass,
+4skip, 4xfail and notebook evidence is reused. Generic foreign callbacks,
+controlled/symbolic admission and original strict dtype/count-mode boundaries
+remain open in Q-0220/Q-0221.
+
+Final local acceptance has 74 focused and 4,072 concentrated passes, with six
+paired original/native NumPy warnings and two existing notebook/environment
+warnings. Strict typing covers all five changed Python files. Black, Ruff,
+team scope, architecture, IR, API checks, the append example and four related
+integration checks pass. The default suite has 434 passes and 51 skips before
+the established docstring coverage failure. Its nine reported modules and
+failing test are byte-identical to base `bc082ff96`. Dependency policy reports
+688 whole-repository findings and none in changed paths. Evidence receipts use
+`g2-subtraction-native-*`. Q-0220/Q-0221 remain open for the explicit boundaries.
