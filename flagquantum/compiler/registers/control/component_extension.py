@@ -34,9 +34,9 @@ def extend_component_control_system(
     record: ProgramRecord,
     controlled: Mapping[str, ControlAdder],
     existing_controls: tuple[Register, ...],
-    existing_patterns: tuple[ControlRegister, ...],
+    existing_patterns: tuple[ControlRegister, ...] | None,
     additional_controls: tuple[Register, ...],
-    additional_patterns: tuple[ControlRegister, ...],
+    additional_patterns: tuple[ControlRegister, ...] | None,
     entry: str = "main",
 ) -> tuple[ProgramRecord, StructuredControlAdder]:
     """Return a combined wrapper and the source's control-extracting adder.
@@ -50,7 +50,9 @@ def extend_component_control_system(
 
     Invalid descriptors and name collisions raise ValueError. Missing old inputs
     raise KeyError after earlier successful pops, as in the original callback.
-    Builder failures retain the existing binding-consumption behavior.
+    Builder failures retain the existing binding-consumption behavior. None
+    marks unknown activation. If either group is unknown the combined predicate
+    follows the source's whole-spec HasLength rule, including known groups.
     """
     function = _call_entry(record, entry)
     assert function.registers is not None
@@ -65,8 +67,13 @@ def extend_component_control_system(
     )
     combined = tuple(signature)[: len(descriptors)]
     names = tuple(register.name for register in combined)
+    patterns = (
+        None
+        if additional_patterns is None or existing_patterns is None
+        else (*additional_patterns, *existing_patterns)
+    )
     module = control_component_via_predicate(
-        record, controlled, combined, (*additional_patterns, *existing_patterns), entry
+        record, controlled, combined, patterns, entry
     )
     new_count = len(additional_controls)
 

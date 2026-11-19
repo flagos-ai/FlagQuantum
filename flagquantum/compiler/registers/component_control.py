@@ -243,7 +243,7 @@ def control_component_via_predicate(
     record: ProgramRecord,
     controlled: Mapping[str, ControlAdder],
     controls: tuple[Register, ...],
-    patterns: tuple[ControlRegister, ...],
+    patterns: tuple[ControlRegister, ...] | None,
     entry: str = "main",
 ) -> ProgramRecord:
     """Wrap a stored hierarchy using the pinned ControlledViaAnd call chain.
@@ -257,7 +257,10 @@ def control_component_via_predicate(
     outputs, call the positive body once, then measure-erase and release them.
     Specialized adders own their
     private workspace and must preserve the predicate. Invalid controls, name
-    collisions and incompatible data signatures raise ValueError.
+    collisions and incompatible data signatures raise ValueError. Unknown
+    multi-bit activations use patterns=None. Binary conjunctions remain declared
+    with explicit leaf bindings. Wider unknown activation follows the locked
+    MultiAnd constructor, which converts a concrete HasLength into all ones.
     """
     function = _call_entry(record, entry)
     count = validate_control_ports(controls, patterns)
@@ -266,6 +269,8 @@ def control_component_via_predicate(
         raise ValueError("control names conflict with component data ports")
     if count == 1 and len(controls) != 1:
         raise ValueError("single control requires exactly one register")
+    if count == 1 and patterns is None:
+        raise ValueError("single control requires a concrete activation")
     adder = controlled.get(entry)
     if adder is not None:
         rights = tuple(r.name for r in Signature(function.registers).rights())
@@ -302,7 +307,7 @@ def control_component_via_predicate(
                     uncompute=uncompute,
                 ).functions
             )
-    elif patterns[0].bits() == (0,):
+    elif patterns is not None and patterns[0].bits() == (0,):
         definitions.append(
             bit_gate_function(
                 prefix + "x",
@@ -317,6 +322,7 @@ def control_component_via_predicate(
         r.name: builder.inputs[r.name] for r in Signature(function.registers).lefts()
     }
     if count == 1:
+        assert patterns is not None
         q = np.asarray(builder.inputs[controls[0].name]).flat[0]
         if controls[0].dtype != quantum_bit_type():
             q = builder.split(q)[0]
