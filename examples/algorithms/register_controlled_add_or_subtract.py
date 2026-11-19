@@ -9,10 +9,12 @@ from dataclasses import dataclass
 import torch
 
 import flagquantum as fq
-from flagquantum.compiler.registers.arithmetic.addition import (
-    measurement_add_or_subtract_ir,
+from flagquantum.compiler.registers.arithmetic.conditional_addition_component import (
+    conditional_addition_program,
 )
+from flagquantum.compiler.registers.register_binding import bind_register_program
 from flagquantum.core.ir import CircuitIR
+from flagquantum.core.ir.program.registers import RegisterType
 from flagquantum.dynamic import DynamicCircuit
 from flagquantum.runtime.dynamic.execution import run_dynamic
 
@@ -24,15 +26,13 @@ class ConditionalArithmetic:
     add_on: bool = True
 
     def append_to(self, circuit: fq.Circuit) -> fq.Circuit:
-        gates = measurement_add_or_subtract_ir(
-            0,
-            (1, 2, 3),
-            (4, 5, 6),
-            (7, 8),
-            (0, 1),
-            add_when_ctrl_is_on=self.add_on,
+        program = conditional_addition_program(
+            RegisterType("uint", 3), add_when_control_is_on=self.add_on
         )
-        return circuit.compose(CircuitIR(circuit.n_qubits, gates))
+        bound = bind_register_program(
+            program, ((0,), (1, 2, 3), (4, 5, 6)), clean=(7, 8)
+        )
+        return circuit.compose(CircuitIR(circuit.n_qubits, bound.circuit.instructions))
 
 
 def main() -> None:

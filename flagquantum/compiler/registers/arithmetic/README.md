@@ -23,6 +23,29 @@ Physical binding retains the existing append workflow; explicit numerical
 suppliers can contract large closed graphs without a full addition matrix.
 Run `tests/unit/test_addition_component.py` for the complete contributor scenario.
 
+`addition_component_program` also accepts explicit `left_dtype` and
+`right_dtype` integer descriptors. Their concrete widths must match the width
+arguments. Omitting them retains the original unsigned graph. Signed and
+Montgomery metadata survive split/join and physical binding, including explicit
+Montgomery moduli. The original Add circuit zero-extends a narrower signed input.
+
+`conditional_addition_component.py` composes the complete conditional
+sum/difference body from that Add graph, the shared bitwise complement,
+hierarchical control propagation and X. It retains ctrl/a/b through words and
+the original polarity-switch adjoint. Add owns its measured clean carries.
+The existing contributor example now uses this graph and the shared binder.
+
+```bash
+python -m examples.algorithms.register_controlled_add_or_subtract
+python -m pytest tests/unit/test_typed_addition_component.py tests/unit/test_conditional_addition_component.py -q
+```
+
+The example still uses `circuit.append(ConditionalArithmetic())`, verifies
+complex amplitudes, checks clean work and appends the opposite-polarity inverse.
+Source call/view occurrences, stored-call counts, primitive inventories and QEC
+estimates have separate checks. See
+[the complete source audit](../../../../docs/development/CONTROLLED_ADD_OR_SUBTRACT_FILE_AUDIT.md).
+
 `addition_width.py` binds existing Add resource identities to connection widths
 using `addition_components`. Each logical AND creates a carry, and its adjoint
 consumes it. Both words remain caller-owned. The native query supports source

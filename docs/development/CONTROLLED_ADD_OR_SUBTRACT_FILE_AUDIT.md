@@ -84,3 +84,73 @@ this batch to point SignedIntegerToTwosComplement's declared one's-complement
 input to `ones_complement_to_twos_ir`. They had incorrectly named the separate
 sign-magnitude path. The existing signed-encoding code and tests already separate
 those contracts and remain unchanged by this documentation correction.
+
+## Native stored-call execution closure
+
+The complete `arithmetic/conditional_addition_component.py` now implements the
+original build-composite body in native typed Program calls. The signature is
+ctrl/a/b in source order, with caller-owned through values. The omitted b dtype
+defaults to a's descriptor. Source-supported concrete unsigned, two's-complement
+and Montgomery words retain their exact neutral descriptors. Symbolic physical
+execution remains outside this finite binder.
+
+The direct dependency `addition_component_program` gains optional integer dtype
+descriptors while preserving its existing unsigned graph exactly when omitted.
+It retains its authoritative `addition_components` sequence and shared
+compute/erase owners. No signed-value codec or sign-extension circuit is added.
+The one-bit case and unequal widths retain the source's actual quantum behavior.
+Explicit Montgomery modulus metadata is preserved at the same boundary.
+
+Each controlled complement starts from the native bitwise NOT Program and
+uses `control_component_hierarchy`. X specializes to the existing CX primitive
+function. Split and Join pass the control through unchanged. Thus the actual
+Controlled(BitwiseNot), Controlled(OnEach), Split, ordered CNOT and Join levels
+remain visible and compare against the original call graph, named operands and
+SSA predecessor connections. The Add child has independent full stream and
+tensor/branch tests. The root retains three or five original child occurrences
+according to polarity, with one shared complement definition used twice.
+
+The original declared controlled-OnEach resource recipe omits zero-cost
+Split/Join views even though its actual decomposition includes them. The native
+stored graph retains these occurrences. Tests compare every actual view and
+separately compare the declared non-view edges and terminal multiplicities.
+Measured primitives and independently queried source QEC totals remain separate.
+The one-bit source model's four-Clifford undercount remains explicitly asserted.
+
+Acceptance covers all four unsigned/signed/Montgomery/mixed dtype combinations,
+both control polarities and widths (1,1), (1,2), (2,2), (2,3), (3,5), (8,8).
+Logical input wires are reversed for primitive/feedback and output-ownership
+checks. Full coherent source tensors with an entangled spectator cover the
+first four width pairs. Every raw measurement history and every composed
+forward/inverse history pair is projected, retaining unnormalized complex
+amplitudes and checking all carries are zero. The two eight-bit concrete
+factories pass all five existing native make/decompose/counts/serialize/qtyping
+modes. No new example-testing framework is introduced.
+
+The existing `register_controlled_add_or_subtract` example now binds the native
+typed graph through its unchanged `ConditionalArithmetic` append operation.
+The ordinary DynamicCircuit execution path verifies the complete source tensor
+and opposite-polarity inverse. Extra circuit wires remain spectators as before.
+The narrow signed classical/quantum disagreement recorded above is preserved.
+Broader symbolic object conversion/roundtrip and outer generic controls remain
+shared admission gaps. Q-0183/Q-0184 stay open for those explicit boundaries.
+Batch receipts use `ftqc-reference-env/g2-conditional-component-*`.
+
+The final focused batch passes 128 cases and the concentrated dependency
+regression passes 1,355 cases without warnings or skips. Five files pass strict
+typing, Black, Ruff, Compiler ownership, architecture and multilevel IR checks.
+The unchanged user example executes both coherent control sectors and its inverse.
+Its width-three measured stream contains 2 X, 27 CX, 6 H, 4 T, 4 T-dagger, 2 S,
+2 measurements, 2 conditional CZ and 2 resets. The independent original model
+reports 8 T, 2 measurements and 9 peak qubits.
+
+Default verification reaches 434 passed and 51 skipped before the established
+docstring-example coverage failure. All nine reported modules and the failed
+policy test are byte-identical to the batch baseline e4acfb741. The global
+integration attempt reaches 11 passed and 52 skipped before a QEC retirement
+subprocess imports a different editable checkout. Its 94 relevant files are
+baseline-identical. Explicitly pinning PYTHONPATH to this worktree passes that
+retirement gate and the native conditional append/inverse integration test
+(2 passed, 127 deselected). These scoped results do not certify the complete
+global suites. Dependency-policy findings are recorded separately for the
+whole repository and the changed paths.
