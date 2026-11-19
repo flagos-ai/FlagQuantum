@@ -1,6 +1,6 @@
 # Bounded native routing trials
 
-Status: implementation and development evidence, pending complete CI. Compiler
+Status: integrated in PR #1233 at `2d2390767e1697bf0630f0be86fb4b6d07fabad0`. Compiler
 owns this single-device CPU planning change. No public signature, routing option,
 IR schema, dependency, or final-layout contract is added or changed.
 
@@ -121,8 +121,9 @@ The existing automatic path now prices bounded SABRE trials alongside its other
 strategies. Its output retains the existing topology, provenance and restoration
 contracts. Independent SDKBench candidate freezing, resource-qualified runs,
 matched layout controls, full-CZ/depth/time/memory reporting and replay are still
-required before drawing comparative conclusions. Paired-SWAP lookahead and
-broader initial-placement search remain open work, not implemented claims.
+required before drawing comparative conclusions. Bounded paired-SWAP lookahead
+is integrated separately in [PR #1234](COMPILER_LAYER_LOOKAHEAD.md); broader
+initial-placement search remains open work.
 
 ## Validation record (2026-11-19)
 
@@ -149,7 +150,8 @@ two files passed with the required local socket access. The remaining evidence
 revision test reported 98 differences. The checker, declarations and evidence
 files are unchanged from the main baseline in this worktree; this is still an
 unresolved local qualification failure, not a waived gate. The original full
-run remains failed and complete CI remains required.
+run remains failed. Subsequent PR CI permitted integration; the candidate and
+current qualification scope are recorded in [the upstream audit](COMPILER_UPSTREAM_REUSE.md).
 
 ## Historical lookahead experiment and production trials
 

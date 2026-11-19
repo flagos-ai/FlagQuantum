@@ -123,3 +123,15 @@ The tests cover complete operators, reversed/nonconsecutive wires, singular and
 near-singular Euler cases, protected inputs, corrupt-proposal rejection and raw
 proposal resource limits before cleanup. They accompany the existing artifact
 and application conformance tests; coverage does not replace those checks.
+
+
+## Integration status
+
+PR #1229 integrated this cleanup at
+`f9487973b653015f4ab5842df39ade21497c74cf`. Its exact head
+`ff0728bf4899651c4d61afd257e850436211b4b7` passed 239 checks, with three
+optional checks skipped. The PR retains earlier runner permission failures,
+dependency-download timeouts and one resource-pressure timeout, together with
+the repairs and successful bounded retry. No tolerance, selected test or
+timeout budget was relaxed. These CI results support integration; the
+development probes above still do not establish comparative performance.
