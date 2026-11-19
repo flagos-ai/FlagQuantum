@@ -69,3 +69,41 @@ the explicit domain-name substitution. The 25-file concentrated regression
 passes 915 cases without skips. Strict typing of both changed Python files,
 Black, Ruff, Compiler scope, architecture and internal IR checks pass.
 The broader SDK wrapper conversion remains open.
+
+## Recursive SDK decomposition follow-up
+
+The Ecosystem register importer now resolves SDK decomposition protocols before
+creating owned typed functions. Explicit native definitions take precedence.
+Every sibling operand is reserved during recursive allocation. The shared
+interop manager prevents collisions with caller inputs, including a deliberately
+colliding allocator name. Dirty borrowing is refused before clean workspace is
+assumed. Cycles and nesting beyond 256 frames produce an explicit error.
+
+The frozen `SwapTest` and `BloqAsCirqGate` fixtures for widths one through three
+match every emitted SWAP operand and the complete complex operator, including
+reversed SDK operand order. Native gate export and reimport retain the same
+primitives. A two-level clean-work decomposition emits four CNOTs and one T,
+restores both work bits, and matches full complex amplitudes through the existing
+`Circuit.append` workflow. Primitive resource counts are asserted directly.
+This fixture has no independent source cost model, so no model estimate is
+inferred from the primitive counts. The previous measured Program export tests
+are reused for all-branch evidence, while recursive measured SDK leaves remain
+open. The concentrated graph and Cirq regression passes 997 cases without skips.
+
+The remaining arbitrary SDK leaf boundary is concrete. The existing physical
+CircuitIR supports explicit matrices, but typed Program operations cannot yet
+carry an `any` matrix operand. Both control polarities of an original
+`CirqGateAsBloq` matrix wrapper are verified as source evidence and rejected by
+the native register importer with a specific definition requirement. This needs
+a shared Core contract before implementation. Tensor-only source component
+fallback, arbitrary channels, and recursive measurement-key transfer also remain
+open. Q-0156 is therefore still unaccepted as a complete source file.
+
+Strict typing of both changed Python files, Black, Ruff, Ecosystem scope,
+architecture and internal IR checks pass. Dependency inspection records 709
+whole-repository findings and zero changed-path findings. The default smoke/unit
+tier stops after 434 passes and 51 skips at the pre-existing docstring-example
+registry failure. Its test and every scanned example-bearing module are byte
+identical to the baseline. The only changed production module contains no
+docstring examples in either revision. The persistent evidence is
+`g2-sdk-leaf-default-baseline.json`. Whole-repository acceptance remains open.

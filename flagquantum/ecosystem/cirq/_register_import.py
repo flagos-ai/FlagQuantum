@@ -5,8 +5,9 @@
 
 """Import a supported Cirq operation tree into the typed register Program."""
 
-from collections.abc import Hashable, Iterable, Mapping
+from collections.abc import Hashable, Iterable, Iterator, Mapping
 from math import prod
+from typing import Any
 
 import numpy as np
 from numpy.typing import NDArray
@@ -23,13 +24,76 @@ from ...core.ir.program.register_bindings import RegisterBinding
 from ...core.ir.program.register_types import quantum_bit_type
 from ...core.ir.program.registers import Register, RegisterSide, RegisterType
 from ...core.ir.program.signatures import Signature
-from ._decompose import decompose_cirq_once
+from ._feedback_import import (
+    _has_explicit_matrix,
+    _lower_feedback_gate,
+)
 from ._gate_metadata import cirq_gate_signature
+from ._qubit_manager import InteropQubitManager
 from ._register_export import _register_shape
-from .conversion import _cirq, _lower_gate, _raise_if_lossy, _report
+from .conversion import _cirq, _raise_if_lossy, _report
 from .models import CirqConversionIssue
 
 Qureg = NDArray[np.object_]
+
+
+class _CleanDecompositionManager(InteropQubitManager):
+    def qborrow(self, n: int, dim: int = 2) -> list[Any]:
+        raise ValueError("Cirq register import requires clean decomposition workspace")
+
+
+def _register_operations(
+    circuit: Any, declared: Mapping[Hashable, FunctionRecord]
+) -> Iterator[Any]:
+    """Resolve SDK bodies while reserving every live sibling operand."""
+    cirq = _cirq()
+    manager = _CleanDecompositionManager(
+        cirq.GreedyQubitManager(prefix="register_work", maximize_reuse=True)
+    )
+    context = cirq.DecompositionContext(manager)
+
+    def expand(operations: Iterable[Any], ancestors: tuple[Any, ...]) -> Iterator[Any]:
+        frame = tuple(operations)
+        with manager.reserve_qubits(q for op in frame for q in op.qubits):
+            for operation in frame:
+                if not isinstance(operation.gate, cirq.Gate) or operation.tags:
+                    raise ValueError(
+                        "Cirq register import requires untagged gate operations"
+                    )
+                gate = operation.gate
+                if any(qubit.dimension != 2 for qubit in operation.qubits):
+                    raise ValueError(
+                        "Cirq register import requires two-dimensional operands"
+                    )
+                definition = (
+                    declared.get(gate)
+                    if declared and isinstance(gate, Hashable)
+                    else None
+                )
+                if (
+                    definition is not None
+                    or getattr(gate, "flagquantum_register_definition", None)
+                    is not None
+                    or isinstance(gate, (cirq.GlobalPhaseGate, cirq.ResetChannel))
+                    or gate in (cirq.ISWAP, cirq.ISWAP**-1)
+                    or _lower_feedback_gate(cirq, gate, [], 0) is not None
+                    or _has_explicit_matrix(cirq, gate)
+                ):
+                    yield operation
+                    continue
+                if gate in ancestors or len(ancestors) >= 256:
+                    raise ValueError(
+                        "Cirq register decomposition is cyclic or too deep"
+                    )
+                tree = cirq.decompose_once(
+                    operation, context=context, flatten=False, default=None
+                )
+                if tree is None:
+                    yield operation
+                else:
+                    yield from expand(cirq.flatten_to_ops(tree), (*ancestors, gate))
+
+    yield from expand(circuit.all_operations(), ())
 
 
 def _port_arrays(
@@ -166,7 +230,9 @@ def import_cirq_register_optree(
     satisfy when binding and executing the Program. Gate definitions can
     provide native typed operand groups for selected SDK gates. A gate can
     supply its own FunctionRecord as `flagquantum_register_definition`.
-    An explicit definition for that gate takes precedence.
+    An explicit definition takes precedence over recursive SDK decomposition.
+    Recursive decompositions require clean workspace and a maximum nesting depth
+    of 256. Matrix leaves require a typed native definition.
     """
     cirq = _cirq()
     circuit = cirq.Circuit(optree)
@@ -189,8 +255,8 @@ def import_cirq_register_optree(
     declared = {} if gate_definitions is None else gate_definitions
     definitions: dict[str, FunctionRecord] = {}
     gates: list[tuple[object, tuple[Hashable, ...], FunctionRecord | None]] = []
-    for operation in circuit.all_operations():
-        if not isinstance(operation, cirq.GateOperation) or operation.tags:
+    for operation in _register_operations(circuit, declared):
+        if not isinstance(operation.gate, cirq.Gate) or operation.tags:
             raise ValueError("Cirq register import requires untagged gate operations")
         gate = operation.gate
         qubits = operation.qubits
@@ -246,13 +312,17 @@ def import_cirq_register_optree(
             instructions = (Instruction(opcode, (0, 1)),)
         elif isinstance(gate, cirq.ResetChannel) and len(qubits) == 1:
             instructions = (Instruction("reset", (0,), metadata={"is_dynamic": True}),)
+        elif _has_explicit_matrix(cirq, gate):
+            raise ValueError(
+                "Cirq matrix leaves require a typed native FunctionRecord definition"
+            )
         else:
             if not qubits:
                 raise ValueError(
                     "Cirq register import requires nonempty two-dimensional operands"
                 )
             issues: list[CirqConversionIssue] = []
-            lowered = _lower_gate(cirq, gate, issues, index)
+            lowered = _lower_feedback_gate(cirq, gate, issues, index)
             _raise_if_lossy(
                 _report("from_cirq", str(cirq.__version__), issues), allow_lossy=False
             )
@@ -294,7 +364,11 @@ def import_cirq_register_gate(
     cirq = _cirq()
     if isinstance(value, cirq.Gate):
         value = value.on(*cirq.LineQid.for_gate(value))
-    if not isinstance(value, cirq.GateOperation) or value.tags:
+    if (
+        not isinstance(value, cirq.Operation)
+        or not isinstance(value.gate, cirq.Gate)
+        or value.tags
+    ):
         raise ValueError(
             "Cirq register decomposition requires an untagged gate operation"
         )
@@ -306,7 +380,13 @@ def import_cirq_register_gate(
         in_quregs, out_quregs = _operation_ports(signature, value.qubits)
     elif in_quregs is None or out_quregs is None:
         raise ValueError("Cirq signature placement requires input and output quregs")
-    operations = decompose_cirq_once(value)
+    manager = _CleanDecompositionManager(
+        cirq.GreedyQubitManager(prefix="register_work", maximize_reuse=True)
+    )
+    manager.manage_qubits(value.qubits)
+    operations = cirq.decompose_once(
+        value, context=cirq.DecompositionContext(manager), default=None
+    )
     if operations is None:
         return None
     return import_cirq_register_optree(

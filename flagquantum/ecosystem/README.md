@@ -87,3 +87,11 @@ new output leases to the caller. Allocation policy stays in Compiler. Follow
 when modifying this internal adapter. Run
 `tests/unit/test_cirq_register_program_export.py` and
 `tests/test_cirq_register_export.py` to cover direct and gate-frame conversion.
+
+The register importer recursively resolves concrete SDK decompositions while
+reserving sibling operands through the shared interop qubit manager. Native
+typed definitions take precedence. Decompositions require clean work. Explicit
+matrix leaves still require a typed definition because the Program vocabulary
+does not carry matrix payloads. Run `tests/unit/test_cirq_register_leaf_closure.py`
+with the frozen reference environment to check wrapper, lifetime and append
+round trips.
