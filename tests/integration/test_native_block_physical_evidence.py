@@ -43,6 +43,11 @@ from flagquantum.core.target_capabilities import (
     TargetCapabilitySnapshot,
     TargetIdentity,
 )
+from flagquantum.errors import ExecutionError
+from flagquantum.runtime.compilation_evidence import (
+    validate_executable_result_samples,
+    verify_compilation_evidence_handoff,
+)
 from flagquantum.simulation.gate_matrix import gate_matrix
 
 pytestmark = pytest.mark.integration
@@ -452,3 +457,67 @@ def test_actual_collective_plan_rejects_resealed_inconsistent_stage_evidence(
                 program=compiled.legalization.native_gate_legalization.program,
                 plan_identity="",
             )
+
+
+def test_runtime_accepts_v4_without_recompilation_or_evidence_mutation() -> None:
+    source = CircuitIR(
+        2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))), dtype="complex128"
+    )
+    compiled = _compile(source)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    before = bundle.to_json()
+    with patch(
+        "flagquantum.compiler.lowering.target_legalization.optimize_native_blocks",
+        side_effect=AssertionError("Runtime must remain read-only"),
+    ):
+        verify_compilation_evidence_handoff(
+            bundle,
+            compiled.input_artifact,
+            compiled.executable_artifact,
+            snapshot=_snapshot(),
+        )
+    assert bundle.to_json() == before
+    samples = torch.tensor([[0, 1], [1, 0]])
+    assert (
+        validate_executable_result_samples(compiled.executable_artifact, samples)
+        is samples
+    )
+
+
+@pytest.mark.parametrize(
+    "role,field",
+    [
+        ("source", "source_artifact_identity"),
+        ("target", "target_legalization_identity"),
+        ("output", "payload_sha256"),
+    ],
+)
+def test_runtime_rejects_rehashed_v4_handoff_role_substitution(
+    role: str, field: str
+) -> None:
+    source = CircuitIR(
+        2, (Instruction("swap", (0, 1)), Instruction("cx", (1, 0))), dtype="complex128"
+    )
+    compiled = _compile(source)
+    bundle = build_compilation_evidence_bundle(
+        compiled, snapshot=_snapshot(), producer="block-test"
+    )
+    assert isinstance(bundle, CompilationEvidenceBundleV4)
+    fields = dict(getattr(bundle, role))
+    fields[field] = "b" * 64
+    if role == "source":
+        forged = replace(bundle, source=fields, bundle_identity="")
+    elif role == "target":
+        forged = replace(bundle, target=fields, bundle_identity="")
+    else:
+        forged = replace(bundle, output=fields, bundle_identity="")
+    with pytest.raises(ExecutionError, match="does not match"):
+        verify_compilation_evidence_handoff(
+            forged,
+            compiled.input_artifact,
+            compiled.executable_artifact,
+            snapshot=_snapshot(),
+        )
