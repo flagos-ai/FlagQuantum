@@ -64,3 +64,33 @@ test blobs are asserted. Logs use
 `ftqc-reference-env/g2-greedy-schedule-file-*.log`. The Always and AutoPartition
 audit disposition rows are synchronized with their already published concrete
 source-capture evidence. Their remaining gaps retain their own parent items.
+
+## Complete implementation closure after symbolic metadata re-audit
+
+Contract prerequisite 1.23 and Compiler commit b63c020d9 close Q-0149's remaining
+implementation boundary. The original tests had covered symbolic bit widths but
+missed symbolic dtype metadata with a concrete bit width. The recorded probe
+uses QFxp(8, f) with symbolic fractional width. The source priority is zero while
+the former native priority was eight for an expanding call. The private WidthStep
+now retains the signature's symbolic classification before widths are reduced to
+edges. Allocation/free priorities still take precedence. Both concrete and
+symbolic full typed Program orders match their original source graphs, including
+the change in tie ordering. Malformed flags fail explicitly.
+
+The source and native builders both reject symbolic element counts. The frozen
+source raises DecomposeTypeError before constructing such a graph. A symbolic
+shape is therefore not an executable source graph omitted from this closure.
+Existing logical width, fixed-point, bounded and shaped finite-port witnesses,
+copy/expansion, original priority tests and physical workspace consumers are
+reused. The two source functions and their direct scheduling dependencies are
+covered. Source mutation and isolated-node ordering adaptations described above
+remain explicit boundaries, not unresolved implementation tasks.
+
+The final concentrated regression passes 1,102 cases without skips and the
+interop integration passes 96 cases. Three changed Python files pass strict
+typing, formatting, lint, scope, architecture and internal IR checks. Dependency
+policy records 689 global findings and zero batch findings. The recent default
+suite retains its unrelated example-registry failure after 434 passes and
+51 skips. Evidence uses g2-symbolic-priority-. The sort itself emits zero gates,
+uses zero work and has no measurements. Existing executed consumer witnesses
+retain their full complex states, branch checks and separate resource models.
